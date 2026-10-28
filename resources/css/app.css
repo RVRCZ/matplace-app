@@ -68,8 +68,10 @@
     :where(input[type='number'], output, dd, td, .num) { font-variant-numeric: tabular-nums; }
     body { font-feature-settings: 'cv11', 'ss03'; }
     /* room for the cookie bar while it shows (resources/js/site/bar.ts) */
-    html { scroll-padding-bottom: var(--consent-h, 0px); }
+    html { scroll-padding-bottom: calc(var(--consent-h, 0px) + var(--action-bar-h, 0px)); }
     body { padding-bottom: var(--consent-h, 0px); }
+    /* the page keeps room under its end while an action bar is fixed to the bottom (site/sticky.ts) */
+    body.has-action-bar { padding-bottom: calc(var(--consent-h, 0px) + var(--action-bar-h, 0px)); }
 }
 
 @layer components {
@@ -83,7 +85,7 @@
     .card { @apply rounded-xl border border-line bg-card shadow-sm; }
     /* a link of the header: a thumb's height (44 px) whatever its words (audit 10/2026, bod 4) */
     .nav-link { @apply inline-flex min-h-11 items-center rounded-lg px-2 hover:bg-slate-50 hover:text-slate-900; }
-    .btn-primary { @apply inline-flex min-h-11 items-center justify-center rounded-xl px-4 py-3 text-center font-semibold transition disabled:cursor-not-allowed disabled:opacity-60 bg-action text-white hover:bg-action-dark; }
+    .btn-primary { @apply inline-flex min-h-11 items-center justify-center rounded-xl px-4 py-3 text-center font-semibold transition disabled:cursor-not-allowed disabled:opacity-60 aria-disabled:opacity-60 bg-action text-white hover:bg-action-dark; }
     .btn-secondary { @apply inline-flex min-h-11 items-center justify-center rounded-xl px-4 py-3 text-center font-semibold transition disabled:cursor-not-allowed disabled:opacity-60 border border-slate-400 bg-card text-ink hover:border-ink; }
     .btn-quiet { @apply inline-flex min-h-11 items-center justify-center rounded-xl px-4 py-3 text-center font-semibold transition disabled:cursor-not-allowed disabled:opacity-60 border border-line bg-card text-ink hover:border-muted; }
     /* "do it" inside a form, where the orange main action of the screen is elsewhere */
@@ -216,4 +218,35 @@
     font-family: 'Noto Emoji';
     font-display: swap;
     src: url('/fonts/NotoEmoji-symbols.woff') format('woff');   /* a subset: only the symbols the form offers (docs/N.md says how it is made) */
+}
+
+/* ── Sticky layouts without jumps (docs/AN.md §18, docs/AO.md §5): the preview and the actions stay, the options scroll ── */
+@layer components {
+    /* the column that stays on the screen from lg: the preview with the actions or the price under it (#tool-stage, the order's left side);
+       a flex column, so the preview (flex-1 min-h-0) gives way and the actions never leave the window */
+    .stick-stage { @apply lg:sticky lg:top-3 lg:flex lg:min-h-[560px] lg:flex-col lg:gap-3; }
+    /* a card that stays at the top of its column from lg (the calculation's price card with the way on) */
+    .stick-top { @apply lg:sticky lg:top-3 lg:z-10; }
+    /* the column whose options scroll inside it from lg: the height of the window, its own scrollbar; room at its top for a sticky step
+       bar and at its bottom for a sticky action row, so a revealed field stops under / above them */
+    .stick-col { @apply lg:overflow-y-auto lg:overscroll-contain lg:pr-2; scrollbar-gutter: stable; scroll-padding-top: 3.5rem; scroll-padding-bottom: 5.5rem; }
+    /* the window less the margins and the bars fixed to its bottom (the cookie bar, the action bar): what stays on the screen must end above them */
+    @media (min-width: 64rem) { .stick-stage, .stick-col { height: calc(100vh - 1.5rem - var(--consent-h, 0px) - var(--action-bar-h, 0px)); } }
+    /* the same scrolling column when its height comes from the grid row it sits in (the tool page's panel under its heading) */
+    .stick-scroll { @apply lg:min-h-0 lg:overflow-y-auto lg:overscroll-contain lg:pr-2; scrollbar-gutter: stable; scroll-padding-top: 3.5rem; scroll-padding-bottom: 1rem; }
+    /* the window must not follow what moves inside these boxes: Chrome's scroll anchoring took a node in the panel for its anchor and moved the page by 132 px when the panel scrolled (measured 28 Oct 2026) */
+    .stick-scroll, .stick-col { overflow-anchor: none; }
+    /* a grid that fills the window under what stands above it (the site's header, the margins): --fit-top is measured by site/sticky.ts fitWindow() */
+    @media (min-width: 64rem) { .stick-fit { height: calc(100vh - var(--fit-top, 6rem) - 0.75rem - var(--consent-h, 0px) - var(--action-bar-h, 0px)); min-height: 36rem; } }
+    /* the action row that stays at the bottom of a .stick-col (and of the page under lg) */
+    .stick-actions { @apply sticky bottom-0 z-10 -mx-1 bg-page/95 px-1 pb-1 pt-2 backdrop-blur; }
+    /* the bar fixed to the bottom of the window with the price and the one main action (components/action-bar.blade.php, site/sticky.ts):
+       above the cookie bar while that shows (--consent-h, site/bar.ts); the page gets room for it through body.has-action-bar */
+    .action-bar { @apply fixed inset-x-0 z-30 border-t border-line bg-card/95 px-4 pt-2 shadow-[0_-8px_24px_rgba(23,43,77,0.12)] backdrop-blur; bottom: var(--consent-h, 0px); padding-bottom: calc(0.5rem + env(safe-area-inset-bottom, 0px)); }
+    .action-bar-inner { @apply mx-auto flex max-w-6xl items-center justify-between gap-3; }
+    .action-bar-price { @apply truncate text-xl font-extrabold leading-tight text-ink; font-variant-numeric: tabular-nums; }
+    .action-bar-sub { @apply truncate text-xs text-muted; }
+    /* a change that happened out of sight (a new price, a model ready): a ring that fades, nothing moves (sticky.ts flash()) */
+    .flash-change { animation: mp-flash 1.2s ease-out; }
+    @keyframes mp-flash { from { box-shadow: 0 0 0 3px rgb(201 71 20 / 0.55); } to { box-shadow: 0 0 0 3px rgb(201 71 20 / 0); } }
 }

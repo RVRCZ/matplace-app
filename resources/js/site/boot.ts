@@ -7,6 +7,7 @@ import { bootModelPage } from './model_page';
 import { bootMeasure } from './measure';
 import { bootMenu } from './menu';
 import { bootBar } from './bar';
+import { mountActionBars } from './sticky';
 
 export function bootSite(): void {
     bootThumbs();
@@ -17,4 +18,5 @@ export function bootSite(): void {
     bootMeasure();
     bootMenu();
     bootBar();
+    mountActionBars();   // the bars fixed to the bottom with the price and the main action (docs/AN.md §18)
 }

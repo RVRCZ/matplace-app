@@ -49,7 +49,7 @@
     {{-- ── Result: viewer + controls + price ─────────────────────────── --}}
     <section id="result" class="hidden">
         <div class="grid grid-cols-1 gap-4 lg:grid-cols-[1.2fr_1fr]">
-            <div class="min-w-0 overflow-hidden rounded-2xl border border-slate-200 bg-white">
+            <div class="stick-top min-w-0 overflow-hidden rounded-2xl border border-slate-200 bg-white">
                 <div class="relative">
                 <canvas id="viewer" class="block h-[45vh] w-full touch-none lg:h-[70vh]"></canvas>
                 {{-- the page's own heading: the name of the model (audit 10/2026, AH §5 #8: the only h1 of /c/<code> was the hidden slogan);
@@ -68,7 +68,8 @@
             {{-- on a phone the price card comes first and the viewer under it (Z.md N11: the price was on the second
                  screen); the column dissolves into the grid there, so the card can be ordered before the viewer --}}
             <div class="flex flex-col gap-4 max-lg:contents">
-                <div class="min-w-0 rounded-2xl border border-slate-200 bg-white p-4 max-lg:order-first">
+                {{-- the price with the way on stays at the top of the column from lg (docs/AN.md §18); the settings scroll under it --}}
+                <div id="price-card" class="stick-top min-w-0 rounded-2xl border border-slate-200 bg-white p-4 max-lg:order-first">
                     <div class="flex items-center justify-between gap-2 text-sm">
                         <span id="status" class="font-medium text-slate-600">{{ __('calc.status.reading') }}</span>
                         <span id="status-spinner" class="h-4 w-4 animate-spin rounded-full border-2 border-action border-t-transparent"></span>
@@ -83,10 +84,13 @@
                         @if($priced)<span class="pb-1 text-slate-500">{{ \App\Support\Money::symbol($config['currency']) }}</span>@else<span class="pb-1 text-slate-500">{{ __('calc.time') }}</span>@endif
                     </div>
                     <div id="price-sub" class="mt-1 text-sm text-slate-500"></div>
-                    <p id="price-orient" class="mt-1 hidden text-sm text-slate-600"></p>
+                    <p id="price-orient" class="mt-1 hidden text-sm text-slate-600"><span id="price-orient-amount"></span></p>
                     {{-- what delivery adds (config/farm.php shipping, the visitor's currency): the price above is for the print alone --}}
                     <p id="price-shipping" class="hidden text-xs text-slate-500"></p>
+                    @if($mode !== 'printer')<div class="mt-3">@include('farm.cta')</div>@endif
+                </div>
 
+                <div class="min-w-0 rounded-2xl border border-slate-200 bg-white p-4">
                     {{-- size and quantity first: what the customer decides, right under the price they decide it by --}}
                     <div class="mt-3 rounded-xl bg-slate-50 p-3">
                         <div class="flex items-baseline justify-between gap-2">
@@ -247,7 +251,6 @@
                     <button id="cta-new" type="button" class="rounded-xl border border-slate-300 bg-white px-4 py-3 font-semibold text-slate-700 {{ $mode === 'printer' ? 'sm:col-span-2' : '' }}">{{ __('calc.cta.new') }}</button>
                 </div>
                 <p id="make-note" class="hidden text-sm text-slate-500">{{ __('inquiry.wait_precise') }}</p>
-                @if($mode !== 'printer')@include('farm.cta')@endif
                 <div id="download-panel" class="hidden rounded-2xl border border-slate-200 bg-white p-4">
                     <div id="dl-picker">
                         <div class="font-bold">{{ __('download.title') }}</div>
@@ -299,5 +302,9 @@
             </div>
         </div>
     </section>
+    {{-- a phone: the farm's price and the way on in a bar fixed to the bottom, shown with the result (calculator.ts showResult; docs/AN.md §18) --}}
+    @if($mode !== 'printer' && \App\Domain\Farm\FarmGate::offered(auth()->user()))
+        <x-action-bar id="calc-bar" for="cta-farm" :price="$config['marketplace'] ? 'price-main' : 'price-orient-amount'" :suffix="$config['marketplace'] ? ' '.\App\Support\Money::symbol($config['currency']) : ''" :sub="$config['marketplace'] ? 'price-sub' : 'price-main'" class="lg:hidden" hidden />
+    @endif
 </div>
 @endsection

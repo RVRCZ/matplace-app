@@ -547,3 +547,74 @@ odpověď API to nese v `rough`. `calculator.ts` (`setBigOnly`) ukáže „Vět�
 spočítáme při objednávce.“ (`calc.status.by_parts`, cs/en/es, v `CalculatorTexts`) a nepollí; odhad zůstává. Test
 `ByPartsCalculationTest`. **Další krok (a)**, až se obraz z filamentu bude objednávat: řezat díly zvlášť a sečíst
 (viz výše), čísla pak budou stejná jako na stránce objednávky.
+
+## 18. Rozložení bez skoků: stránka nástroje a kalkulace (větev `feature/layout-sticky-tools-calc`, 28. 10. 2026)
+
+Zadání `docs/prompts/rozlozeni-bez-skoku.md` (Roman, vzor paramet.io). Session G dělá stránku zakázky (AO.md §5) a převzala
+společné kusy níže (commit 19dfe46c a navazující). Žádná změna výpočtů ani textů kroků.
+
+### 18.1 Společné kusy (app.css, `resources/js/site/sticky.ts`, `components/action-bar.blade.php`)
+
+- Třídy: `.stick-stage` (sloupec, co zůstává od lg: sticky, výška okna bez okrajů a bez spodních lišt, flex sloupec, náhled
+  `min-h-0 flex-1` ustoupí, tlačítka ne), `.stick-top` (karta přilepená nahoře sloupce), `.stick-col` (sloupec voleb
+  s vlastním posuvníkem, výška okna bez lišt, scroll-padding nahoře 3,5 rem a dole 5,5 rem), `.stick-scroll` (totéž, výšku
+  dá řádek mřížky), `.stick-fit` (mřížka vyplní okno pod tím, co je nad ní: `--fit-top` změří `fitWindow()`),
+  `.stick-actions` (řádek akcí přilepený ke spodku sloupce), `.action-bar` + `.action-bar-inner/-price/-sub` (lišta
+  přilepená ke spodku okna nad cookie lištou: `bottom: var(--consent-h)`, `padding-bottom` se safe-area), `.flash-change`
+  (prstenec 1,2 s). Výšky `.stick-stage`, `.stick-col` a `.stick-fit` odečítají `--consent-h` i `--action-bar-h`
+  (změřeno session G: bez toho bylo při 1366×768 215 px karty pod lištami). `body.has-action-bar` a `html
+  { scroll-padding-bottom }` dávají stránce místo pod lištou. `.btn-primary` má `aria-disabled:opacity-60`.
+  `.stick-scroll`/`.stick-col` mají `overflow-anchor: none`, aby okno nesledovalo, co se hýbe uvnitř.
+- `sticky.ts`: `isInView(el)` (v okně nad spodními lištami i uvnitř každého rolujícího předka), `revealIfHidden(el, block)`
+  (roluje jen když cíl není vidět: nejbližší rolující box o nejmenší kus, `start` pod jeho scroll-padding; okno jen když
+  je sám box mimo obraz; bez boxu okno `scrollIntoView nearest`), `focusCalm(el)` (`focus({preventScroll})` +
+  reveal), `flash(el)`, `fitWindow(el)`, `mountActionBars()` (každý `[data-action-bar]`: zrcadlí tlačítko stránky –
+  text nebo jeho `data-bar-label`, `disabled` jen z `disabled`, `aria-disabled` zvlášť a klik se dál předá, `hidden` –
+  a prvek s cenou včetně `suffix` a druhého řádku; při změně čísla lišta blikne; `--action-bar-h` a `body.has-action-bar`
+  přes ResizeObserver a MutationObserver na `hidden`).
+- `<x-action-bar for= price= suffix= sub= label= class= hidden>`: lišta je zrcadlo, skripty stránek pro ni nic nemění.
+  Volá se z `site/boot.ts`.
+
+### 18.2 Stránka nástroje (`tools/page.blade.php`, `tool_page.ts`)
+
+- Od lg mřížka `#tool-page.stick-fit` vyplní okno pod hlavičkou (řádky `auto` + `minmax(0,1fr)`), panel `#tool-panel.stick-scroll`
+  roluje uvnitř svého řádku s lištou kroků `sticky top-0` nahoře, `#tool-stage` vyplní oba řádky (`lg:h-full`, už ne
+  sticky: nemá kam utíkat) – náhled `min-h-0 flex-1`, karta tlačítek pod ním vždy vidět; při 1366×768 se vejde obojí
+  (snímky `docs/img/audit/{qr,box,figure}-{390,768,1280,1366}-cs-st.webp`: h1, náhled i hlavní akce na prvním
+  obrazu ve všech šířkách, bez vodorovného posuvu). Text o nástroji následuje pod mřížkou jako dřív.
+- Telefon: `<x-action-bar for="tool-go" sub="tool-status" class="lg:hidden">` – „Spočítat cenu“ (zrcadlo `#tool-go`,
+  který je na telefonu skrytý, `max-lg:hidden lg:contents`, aby oranžové tlačítko bylo jedno) a pod ním stav modelu
+  (`#tool-status`: „vytvářím…“, hotovo s rozměry). Po dokončení modelu se stránka nehýbe (`revealStage()` jen blikne
+  kartou náhledu); dřív skočila nahoru k vieweru.
+- Kroky v liště: klik přepíná sekci uvnitř panelu (`revealIfHidden(sec, 'start')` pod sticky lištu), bez `#hash`
+  a bez pohybu stránky; `reveal()` modulů (chyby, výsledky, barvy) roluje panel jen když cíl není vidět, prstenec zůstává.
+  Na telefonu (panel není rolující) se stránka posune k sekci, jen když není vidět.
+- Měření (headless Chrome, `scripts/review_round2.mjs --flows=jumps-tool`, čtení polohy lišty kroků a náhledu na obrazu
+  před a po kliku): 1366×768 – klik na poslední krok: okno 0 → 0, panel 0 → 685, náhled 65 → 65; klik na první krok:
+  okno 0 → 0, panel 685 → 36. 390: stránka roluje k sekci (900 → 0 lišta kroků), jak má. Harness dřív každý klikaný prvek
+  centroval (`scrollIntoView center`) a sám tak hýbal oknem o 132 px: teď roluje jen k prvku mimo obraz.
+
+### 18.3 Kalkulace (`calculator/index.blade.php`, `calculator.ts`)
+
+- Od lg: viewer `.stick-top` (zůstává), karta ceny `#price-card.stick-top` nahoře pravého sloupce **s „Vytisknout u nás“**
+  (`farm.cta` přesunuta do karty ceny, dřív až pod volbami); pod ní rolují se stránkou velikost a množství, materiály,
+  kvalita, podpěry, Přepočítat, stažení, příklady a důvěra. Telefon: karta ceny první, viewer, pak volby (jako dřív);
+  `<x-action-bar id="calc-bar" for="cta-farm" price=… sub=… class="lg:hidden" hidden>` se ukáže s výsledkem
+  (`showResult`), schová s návratem na úvod; cena z `#price-orient-amount` (nový span s částkou v řádku farmy; s tržištěm
+  `#price-main` + měna), druhý řádek doba tisku.
+- Skoky: `showResult()` už neroluje na vrch stránky (jen když výsledek není vidět), Přepočítat neroluje k ceně – karta
+  ceny blikne, až čísla dorazí (`flashNext` → `flash(#price-card)`), lišta telefonu blikne sama při změně čísla;
+  `download.ts`, `inquiry.ts`, `search.ts` přes `revealIfHidden`, souhlas u busty přes `focusCalm`.
+- Měření (`--flows=jumps-calc`, tlačítko Přepočítat na obraz jako u člověka, pak klik): 390 – tlačítko 398 → 398,
+  viewer −1200 → −1200; 1366 – tlačítko 360 → 360, karta ceny 12 → 12 (sticky), viewer −934 → −934. Nic se nehnulo.
+  Snímky `flow-file-price-{390,768,1280,1366}-cs-*.webp`.
+
+### 18.4 Testy a co zůstává
+
+- `StickyLayoutTest` (třídy a lišty na obou stránkách, jen oranžové tlačítko navíc v liště), `ToolPageTest` (počet
+  oranžových tlačítek bez lišty), `ToolsFlowTest`, `CalculationFlowTest`, `AuditRestTest`, `FarmGuestCheckoutTest`,
+  `FarmSalesPathTest`, `FarmPagesTest` zelené; pint, tsc, build.
+- Klávesnice na Androidu: lišta je `fixed`, Chrome ji s vizuálním viewportem posune; `scroll-padding-bottom` drží pole nad
+  ní. Ověřeno jen v emulaci (rozměr okna), ne s otevřenou klávesnicí.
+- Stránky `check`, `mold`, `repair` mají vlastní layout mimo `tools/page` – beze změny; kdyby chtěly lištu, stačí
+  `<x-action-bar>`.

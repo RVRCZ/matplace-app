@@ -47,7 +47,9 @@
 {{-- Under lg one column in the order a visitor from a search needs it: the name and the sentence, the model, the way on,
      then the steps (docs/AF.md §1). On lg the name and the panel on the left, the stage over both rows on the right.
      The DOM keeps the panel before the stage, so the keyboard still goes through the form before the buttons. --}}
-<div id="tool-page" data-tool="{{ $tool }}" data-module="{{ $module }}" class="grid gap-3 lg:grid-cols-[340px_minmax(0,1fr)] lg:grid-rows-[auto_1fr] lg:items-start lg:gap-x-4 lg:gap-y-0">
+{{-- From lg the grid fills the window under the header (stick-fit, docs/AN.md §18): the panel scrolls inside its row, the stage
+     fills both rows, so the preview and the buttons stay while the options move; the text about the tool follows below the grid. --}}
+<div id="tool-page" data-tool="{{ $tool }}" data-module="{{ $module }}" class="stick-fit grid gap-3 lg:grid-cols-[340px_minmax(0,1fr)] lg:grid-rows-[auto_minmax(0,1fr)] lg:items-start lg:gap-x-4 lg:gap-y-0">
     {{-- ── the name and what it is ── --}}
     <header id="tool-head" class="order-1 min-w-0 lg:col-start-1 lg:row-start-1">
         @php $heading = \App\Support\ToolSeo::heading($tool); @endphp
@@ -68,7 +70,7 @@
     </header>
 
     {{-- ── the panel ── --}}
-    <div id="tool-panel" class="order-3 min-w-0 lg:col-start-1 lg:row-start-2">
+    <div id="tool-panel" class="stick-scroll order-3 min-w-0 lg:col-start-1 lg:row-start-2 lg:self-stretch">
         @unless($available)
             <div class="note-warn text-sm lg:mt-4">{{ $unavailable ?? __('sign.unavailable') }}</div>
         @else
@@ -101,7 +103,7 @@
     </div>
 
     {{-- ── the stage: viewer, status, the ways on ── --}}
-    <div id="tool-stage" class="order-2 flex min-w-0 scroll-mt-3 flex-col gap-3 lg:sticky lg:top-3 lg:col-start-2 lg:row-span-2 lg:row-start-1 lg:h-[calc(100vh-1.5rem)] lg:min-h-[560px]">
+    <div id="tool-stage" class="order-2 flex min-w-0 scroll-mt-3 flex-col gap-3 lg:col-start-2 lg:row-span-2 lg:row-start-1 lg:h-full lg:min-h-0">
         <div class="card relative flex min-h-0 flex-1 flex-col overflow-hidden">
             <div class="relative min-h-0 flex-1">
                 <canvas id="tool-viewer" class="block h-[46vh] w-full touch-none lg:absolute lg:inset-0 lg:h-full" role="img" aria-label="{{ __('param.viewer') }}"></canvas>
@@ -172,11 +174,14 @@
                 </div>
                 {{-- share the result: the phone's share sheet, else the link copied (Stage.shareable; docs/AN.md §12) --}}
                 <button type="button" id="tool-share" class="btn-secondary w-full gap-1.5 sm:w-auto" hidden data-copied="{{ __('toolpage.share.copied') }}"><x-icon name="share" class="h-4 w-4" />{{ __('toolpage.share') }}</button>
-                <button type="button" id="tool-go" class="btn-primary gap-1.5" disabled><span id="tool-go-label">{{ __('param.go') }}</span><x-icon name="arrow-right" class="h-4 w-4" /></button>
+                {{-- on a phone the way on is the bar fixed to the bottom (x-action-bar below), which mirrors this button; the button itself stays for lg --}}
+                <span class="max-lg:hidden lg:contents"><button type="button" id="tool-go" class="btn-primary gap-1.5" disabled><span id="tool-go-label">{{ __('param.go') }}</span><x-icon name="arrow-right" class="h-4 w-4" /></button></span>
             </div>
             <p class="w-full text-xs text-muted">@hasSection('price-note')@yield('price-note')@else{{ \App\Support\NextStep::text('param.go.hint') }}@endif</p>
         </div>
         @yield('stage')
     </div>
 </div>
+{{-- a phone: the way on in a bar fixed to the bottom, the status of the model as its second line (components/action-bar, docs/AN.md §18) --}}
+<x-action-bar for="tool-go" sub="tool-status" class="lg:hidden" />
 @endsection
