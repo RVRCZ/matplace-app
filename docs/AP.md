@@ -467,6 +467,22 @@ stojánek klín 80 mm 120 Kč a A‑rám 170 Kč, váza hladká 190 Kč / spirá
 99 Kč a „Novákovi 12“ 99 Kč, krabička 99/110 Kč, držák 100/99/99 Kč, klíčenka z obrázku 99 Kč (AK.md §5.5 až §5.7),
 medaile zkušební `/c/naze69mzmy0h` (P.md §8d). Logo, razítko a světelný nápis spočítám na produkci (s `mp_test=1`).
 
+### 9.1 Dávka A: stojánek, cedulka, klíčenka (28. 10. 2026)
+
+- `lang/{cs,en,es}/tools_seo/{phone_stand,sign,keychain}.php`: title a heading na dotaz („Stojánek na telefon na míru
+  k 3D tisku“, „Cedulka se jménem na 3D tisk“, „Klíčenka se jménem na 3D tisk“; en „Custom phone stand to 3D print“,
+  „3D printed name sign with your text“, „Custom keychain with a name to 3D print“), description do 155, druhý
+  odstavec s čísly, 6 otázek (nové: jaký sklon, cena pro třídu, velikost klíčenky); stojánek má 8 obrázků příkladů,
+  popisky zůstaly a první dva dostaly čísla.
+- `lang/{cs,en,es}/landing.php` + `config/landing.php` + `LandingPagesTest::PAGES` (20 stránek).
+- Čísla: stojánek klín 80 mm 39 g, 1 h 8 min, 120 Kč a A‑rám 75 mm 65 g, 1 h 45 min, 170 Kč (AK.md §5.6); cedulka
+  klíčenka „Jana“ 2 g, 5 min, 99 Kč, 10 ks 99 Kč, dveře „Novákovi 12“ 30 g, 46 min, 99 Kč (AK.md §5.6); klíčenka
+  kost 70 mm „Rex“ 3,8 g, 10 min, 99 Kč (`/c/fwgocmbyzfx6`), 10 ks 100 Kč (`/c/teyrxpsrhi4k`), produkce 28. 10.
+  s `mp_test=1`. „Nejčastěji počítaný“ (cedulka 33) a „po medaili nejobjednávanější“ (stojánek 7) jsou z §7.5.
+- Ověření: `LandingPagesTest|SeoTest|ToolsCatalogTest|BlogSyncTest` (+CatalogSeoTest) **30 testů, 7 800 assertions, OK**;
+  `pint` čistý; title 51 až 60, description 138 až 152; JSON‑LD HowTo + FAQPage 10 otázek na 9 stránkách; snímky
+  `docs/img/seo-n1/{phone-stand,sign,keychain}-{390,1280}-cs-1.webp` bez posunu a chyb.
+
 ## 10. Komunitní příspěvky (28. 10. 2026)
 
 `docs/data/komunita-prispevky.md`: šest odpovědí cs + en (oprava STL, SVG do STL, G‑kód zpět, vydutit, rozdělit,

@@ -25,7 +25,9 @@ class LandingPagesTest extends TestCase
         'svg_to_stl' => '/tools/svg-to-stl', 'repair' => '/tools/repair', 'check' => '/tools/check',
         'hollow' => '/tools/hollow', 'split' => '/tools/split', 'gcode' => '/tools/gcode-model', 'relief' => '/tools/relief', 'map' => '/tools/map',
         // the Christmas tools (docs/AP.md §6)
-        'gingerbread' => '/tools/gingerbread', 'ornament' => '/tools/ornament', 'cutter' => '/tools/cookie-cutter', 'nameplate' => '/tools/nameplate', 'topper' => '/tools/cake-topper', 'name_letter' => '/tools/name-letter'];
+        'gingerbread' => '/tools/gingerbread', 'ornament' => '/tools/ornament', 'cutter' => '/tools/cookie-cutter', 'nameplate' => '/tools/nameplate', 'topper' => '/tools/cake-topper', 'name_letter' => '/tools/name-letter',
+        // the next 10 tools (docs/AP.md §9)
+        'phone_stand' => '/tools/phone-stand', 'sign' => '/tools/sign', 'keychain' => '/tools/keychain'];
 
     /** @return list<array<string, mixed>> the JSON-LD blocks of a page */
     private function jsonLd(string $html): array
