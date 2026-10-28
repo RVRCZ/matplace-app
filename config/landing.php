@@ -38,5 +38,10 @@ return [
         // batch B (docs/AP.md §9); the box keeps its entry above
         'medallion' => ['related' => ['badge', 'sign', 'keychain'], 'blog' => ['co-lide-tisknou-nejcasteji-cisla-z-farmy', 'cedulka-jmenovka-a-klicenka-se-jmenem']],
         'vase' => ['related' => ['holder', 'organizer', 'hollow'], 'blog' => ['vaza-a-obal-na-kvetinac-na-miru', 'pla-vs-petg-vs-asa-jaky-material-vybrat']],
+        // batch C (docs/AP.md §9)
+        'logo' => ['related' => ['svg_to_stl', 'lightbox', 'stamp'], 'blog' => ['svg-do-stl-logo-a-kresba-jako-3d-model', 'cedulka-jmenovka-a-klicenka-se-jmenem']],
+        'holder' => ['related' => ['cable_holder', 'phone_stand', 'box'], 'blog' => ['drzak-na-zed-na-miru', 'pla-vs-petg-vs-asa-jaky-material-vybrat']],
+        'stamp' => ['related' => ['cutter', 'logo', 'svg_to_stl'], 'blog' => ['vykrajovatko-na-cukrovi-podle-vlastniho-tvaru', 'svg-do-stl-logo-a-kresba-jako-3d-model']],
+        'lightbox' => ['related' => ['logo', 'sign', 'name_letter'], 'blog' => ['cedulka-jmenovka-a-klicenka-se-jmenem', 'svg-do-stl-logo-a-kresba-jako-3d-model']],
     ],
 ];

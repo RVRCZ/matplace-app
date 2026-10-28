@@ -503,8 +503,46 @@ medaile zkušební `/c/naze69mzmy0h` (P.md §8d). Logo, razítko a světelný n�
 Řídící 28. 10.: 7d00604b a ecc8a530 sloučeny (main 61c48774) a nasazeny (server cb0cd4f7); `blog:sync` na produkci
 naplánoval 6 článků (3. až 20. 11.), sitemapa obnovena, `/3d-tisk-praha` cs/en 200. Další merge main až po dávce C.
 
+### 9.3 Dávka C: logo, držák, razítko, světelný nápis (28. 10. 2026)
+
+- `lang/{cs,en,es}/tools_seo/{logo,holder,stamp,lightbox}.php`: title a heading na dotaz („Logo na 3D tisk z SVG,
+  obrázku nebo textu“, „Držák na zeď na míru k 3D tisku“, „Razítko na míru k 3D tisku do hlíny a modelovací hmoty“,
+  „Světelný nápis na 3D tisk s LED páskem“; en „3D printed logo sign from your SVG, picture or text“, „Custom wall
+  mount to 3D print“, „Custom stamp to 3D print for clay and polymer clay“, „3D printed lightbox sign with an LED
+  strip“), description do 155, druhý odstavec s čísly, 6 otázek (nové: velikost loga na dveře a recepci, držák
+  v koupelně a venku, tisk a čištění razítka, zavěšení nápisu).
+- `lang/{cs,en,es}/landing.php` + `config/landing.php` (4 nové bloky), `LandingPagesTest::PAGES` 26 stránek
+  (landing 29); světelný nápis má adresu `/tools/illuminated-sign`.
+- Čísla z produkce 28. 10. (PLA, `mp_test=1`): logo reliéf 100 mm s kočkou 27,6 g, 43 min, 99 Kč (`/c/11vhrvmivr3e`);
+  razítko EVA 50 mm s držadlem 6,8 g, 28 min, 99 Kč (`/c/qr5iss66z3ip`); nápis OPEN 180 × 64 × 37 mm, 4 díly, 96,7 g,
+  2 h 17 min, 180 Kč v jedné barvě (`/c/haqwdtiseafu`); držák kolébka 27 g, 1 h 12 min, 100 Kč, hák 11 g, 27 min,
+  99 Kč, klip 8 g, 21 min, 99 Kč (AK.md §5.7). „11 držáků za 90 dní“ z §7.5.
+- Ověření: `LandingPagesTest|SeoTest|ToolsCatalogTest|BlogSyncTest` (+CatalogSeoTest) **30 testů, 8 364 assertions,
+  OK**; `pint` čistý; title 54 až 60, description 139 až 153; JSON‑LD HowTo + FAQPage 10 otázek na 12 stránkách;
+  snímky `docs/img/seo-n1/{logo,holder,stamp,illuminated-sign}-{390,1280}-cs-1.webp` bez posunu a chyb.
+- Po dávce C sloučen `origin/main` 604b8248 do větve (f252e3ba, bez konfliktů; přišly fotky výtisků relace 3,
+  `ToolPhotos`), `npm run build`, pak celá sada `LandingPagesTest|SeoTest|ToolsCatalogTest|BlogSyncTest|PraguePageTest|
+  BlogEmbedsTest|ToolPageTest` (+CatalogSeoTest) **56 testů, 13 040 assertions, OK** (240 s).
+- Neověřeno a ponecháno z původního textu: u světelného nápisu věta „Jedna zakázka se u nás tiskne jednou barvou“
+  (difuzor v bílé jako druhá zakázka). Farma dnes umí víc filamentů v jedné podložce (AL.md §10), ale jestli to platí
+  i pro díly světelného nápisu, nevím; řídící může větu zrušit, pokud ano.
+
 ## 10. Komunitní příspěvky (28. 10. 2026)
 
 `docs/data/komunita-prispevky.md`: šest odpovědí cs + en (oprava STL, SVG do STL, G‑kód zpět, vydutit, rozdělit,
 litofanie) jako odpověď pod dotaz, s hranicemi nástroje a jedním odkazem s `utm_source` (facebook / reddit /
 printables), bez ceny tisku u nás. Roman je posílá sám.
+
+## 11. Stav zadání (28. 10. 2026)
+
+| bod zadání | stav |
+|---|---|
+| 1. výběr 10 nástrojů s dotazy | hotovo, §1 (odhady bez Search Console) |
+| 2. stránky 10 nástrojů | hotovo, §3 až §5, vše sloučeno a nasazeno řídící |
+| 3. vánoční nástroje do poloviny listopadu | hotovo, §6 (6 nástrojů), nasazeno; vánoční Shorts dělá session 2 |
+| 4. blog 1 až 2 týdně, 6 článků, 2 z dat farmy | hotovo, §7: články 3., 6., 10., 13., 17. a 20. 11. naplánované na produkci; vložky video a kalkulace; `blog:sync` datum dopředu umí bez úpravy |
+| 5. prolinkování | hotovo: `article` u 29 nástrojů (6 nových článků ↔ svg_to_stl, gingerbread, name_letter, nameplate, topper, gcode), „Kam dál“ v `config/landing.php` u 29 stránek, každý článek v „Co dál“ odkazuje na svůj nástroj (hlídá `BlogSyncTest`) |
+| navíc od řídící | `/3d-tisk-praha` + `google-business.md` (§8), dalších 10 nástrojů (§9, dávky A, B, C), `komunita-prispevky.md` (§10) |
+
+Co zůstává na jiných: fotky výtisků (session 2, Roman vybere), Search Console export (Roman) a podle něj druhé kolo
+title/description, Google Business Profile založí Roman, vánoční Shorts session 2.
