@@ -18,7 +18,9 @@ use Illuminate\Support\Facades\Storage;
  */
 class YouTubePriceShort extends Command
 {
-    protected $signature = 'youtube:price-short {--n=5 : how many pieces} {--dry-run : pick and plan, build nothing} {--seed= : the random draw made repeatable}';
+    protected $signature = 'youtube:price-short {--n=5 : how many pieces} {--dry-run : pick and plan, build nothing} {--seed= : the random draw made repeatable}
+        {--check-inputs : list every input file with its length and the window taken of it (with --dry-run: build nothing)}
+        {--keep : leave the lists, texts and graph next to the video, to run ffmpeg by hand}';
 
     protected $description = 'Build the Short "Kolik stojí 3D tisk?" from photographed prints with their prices, for the admin to approve';
 
@@ -43,11 +45,15 @@ class YouTubePriceShort extends Command
             $this->line(sprintf('  %d. %s · %s · %s', $i + 1, $o->number, str_replace("\n", ' ', $cut->chapters[$i][0]), $cut->chapters[$i][1] ?? '-'));
         }
         $this->line('title: '.$texts['title']);
+        if ($this->option('check-inputs')) {
+            $this->inputs($cutter, $cut);
+        }
         if ($this->option('dry-run')) {
             return self::SUCCESS;
         }
-        if (! $cutter->render($cut, 900)) {
-            $this->error('ffmpeg failed (see the log).');
+        if (! $cutter->render($cut, 900, (bool) $this->option('keep'))) {
+            $this->error('ffmpeg failed: '.PHP_EOL.implode(PHP_EOL, array_slice(explode("\n", (string) $cutter->lastError()), -15)));
+            $this->line('(the same in the log as "Farm video failed"'.($this->option('keep') ? '; the lists, texts and graph stayed next to the video' : '; --keep leaves the lists, texts and graph in place').')');
 
             return self::FAILURE;
         }
@@ -55,5 +61,16 @@ class YouTubePriceShort extends Command
         $this->info('Waiting for approval in /admin/youtube ('.$video->path.').');
 
         return self::SUCCESS;
+    }
+
+    /** --check-inputs: every file the video is cut from, with its length and the window taken of it. */
+    private function inputs(TimelapseCutter $cutter, $cut): void
+    {
+        $rows = $cutter->checkInputs($cut);
+        $this->table(['input', 'there', 'kB', 'length', 'window', 'problem'], array_map(fn ($r) => [
+            $r['file'], $r['exists'] ? 'yes' : 'NO', (int) round($r['size'] / 1024), $r['duration'] !== null ? number_format($r['duration'], 1).' s' : '?', $r['window'], $r['problem'] ?? '',
+        ], $rows));
+        $bad = array_filter($rows, fn ($r) => $r['problem'] !== null);
+        $this->line($bad ? '<comment>'.count($bad).' input(s) with a problem</comment>' : '<info>every input is there</info>'.(array_filter($rows, fn ($r) => $r['duration'] === null && ! str_starts_with($r['window'], 'picture') && ! str_starts_with($r['window'], 'track')) ? ' (lengths unknown: no ffmpeg here?)' : ''));
     }
 }

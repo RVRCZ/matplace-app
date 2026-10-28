@@ -54,7 +54,7 @@ class FarmWeeklyVideo extends Command
             return self::SUCCESS;
         }
         if (! $cutter->render($cut, 1800)) {
-            $this->error('ffmpeg failed (see the log).');
+            $this->error('ffmpeg failed: '.PHP_EOL.implode(PHP_EOL, array_slice(explode("\n", (string) $cutter->lastError()), -15)));
 
             return self::FAILURE;
         }

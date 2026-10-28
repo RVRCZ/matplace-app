@@ -20,7 +20,9 @@ use Illuminate\Support\Facades\Storage;
  */
 class FarmMonthlyVideo extends Command
 {
-    protected $signature = 'farm:monthly-video {--month= : YYYY-MM (default: the month that ended last)} {--dry-run : list the prints and the chapters, build nothing}';
+    protected $signature = 'farm:monthly-video {--month= : YYYY-MM (default: the month that ended last)} {--dry-run : list the prints and the chapters, build nothing}
+        {--check-inputs : list every input file with its length and the window taken of it}
+        {--keep : leave the lists, texts and graph next to the video, to run ffmpeg by hand}';
 
     protected $description = 'Build the monthly video "Jak funguje naše 3D tisková farma" for the admin to approve';
 
@@ -59,11 +61,20 @@ class FarmMonthlyVideo extends Command
         if ($cut->seconds < (float) config('youtube.cut.monthly.min_seconds', 180)) {
             $this->warn(sprintf('Shorter than %d s: a quiet month. Built anyway; the admin decides.', (int) config('youtube.cut.monthly.min_seconds', 180)));
         }
+        if ($this->option('check-inputs')) {
+            $rows = $cutter->checkInputs($cut);
+            $this->table(['input', 'there', 'kB', 'length', 'window', 'problem'], array_map(fn ($r) => [
+                $r['file'], $r['exists'] ? 'yes' : 'NO', (int) round($r['size'] / 1024), $r['duration'] !== null ? number_format($r['duration'], 1).' s' : '?', $r['window'], $r['problem'] ?? '',
+            ], $rows));
+            $bad = array_filter($rows, fn ($r) => $r['problem'] !== null);
+            $this->line($bad ? '<comment>'.count($bad).' input(s) with a problem</comment>' : '<info>every input is there</info>');
+        }
         if ($this->option('dry-run')) {
             return self::SUCCESS;
         }
-        if (! $cutter->render($cut, 2400)) {
-            $this->error('ffmpeg failed (see the log).');
+        if (! $cutter->render($cut, 2400, (bool) $this->option('keep'))) {
+            $this->error('ffmpeg failed: '.PHP_EOL.implode(PHP_EOL, array_slice(explode("\n", (string) $cutter->lastError()), -15)));
+            $this->line('(the same in the log as "Farm video failed"'.($this->option('keep') ? '; the lists, texts and graph stayed next to the video' : '; --keep leaves the lists, texts and graph in place').')');
 
             return self::FAILURE;
         }
