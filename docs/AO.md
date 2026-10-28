@@ -254,3 +254,66 @@ Klíč Stripe musí smět vytvářet refundy (běžný secret key smí; omezený
 - První skutečné vrácení přes Stripe projde až na produkci: stojí za to sledovat první `payment_refunds` řádek a mail
   obsluze.
 - Admin sekce „Vrátit na kartu“ v prohlížeči nikdo neviděl (ověřená jen testem, který čte HTML).
+
+## 5. Rozložení zakázky bez skoků (28. 10. 2026, `feature/layout-sticky-order`)
+
+Zadání `docs/prompts/rozlozeni-bez-skoku.md`. Session G má stránku zakázky, session 3 nástroj a kalkulaci (AN.md §18).
+Společné kusy navrhla session 3 v commitu 19dfe46c: třídy v `app.css`, `resources/js/site/sticky.ts` a komponenta
+`<x-action-bar>`. Tady jsou převzaté cherry-pickem a nijak upravené.
+
+### 5.1 Co je jinak
+
+- **Vlevo náhled a karta ceny.** Karta se stavem a cenou (`#farm-card`) se přestěhovala z pravého sloupce pod náhled do
+  `#farm-side`. Na telefonu je pořadí stejné jako dřív: náhled, cena, volby, objednávka.
+- **Přilepený je jen během výběru.** Ve stavech uploaded, awaiting_choices, sliced a failed bez čísla dá `farm.ts`
+  zakázce `data-choosing` a sloupci `.stick-stage`. Od `lg` pak sloupec stojí v okně a náhled (`flex-1`, nejmíň 180 px)
+  ustoupí kartě, karta ustoupit nemusí. Po zaplacení (kamera, časosběr) sloupec roluje se stránkou, jinak by se obrázky
+  z kamery nevešly.
+- **Vpravo kroky rolují se stránkou, ne ve vlastním posuvníku (`.stick-col`).** Při 1366×768 je nad mřížkou asi
+  145 px hlavičky a nadpisu. Spodek sloupce s vlastním posuvníkem by byl po načtení pod oknem a kolečko nad sloupcem
+  (overscroll-contain) by stránku neposunulo.
+- **Dole lišta na všech šířkách** (`<x-action-bar for="farm-pay-btn" id="farm-bar">`):
+  - Vlevo je velká částka a pod ní, co znamená: „Celkem k zaplacení“, „Celkem asi, dopravu upřesní dopravce“, nebo jen
+    tisk s řádkem o dopravě, dokud doručení není vybrané. Celou větu by vedle tlačítka na 390 px nebylo vidět.
+  - Vpravo je zrcadlo tlačítka Zaplatit. Stejné tlačítko zůstává i na konci formuláře.
+  - Lišta je vidět jen se zaplacením na stránce, ve stavu sliced a během přepočtu. Sedí nad cookie lištou a stránka
+    pod ní nechává místo (`body.has-action-bar`).
+- **Zaplatit u nehotové objednávky.** Tlačítko nemá `disabled`, má `aria-disabled` a vypadá vypnuté. Po stisku řekne
+  pod sebou a v liště, co chybí (`payBlocker`). Pořadí kontrol: barva, barva z jiné tiskárny, kombinace bez tiskárny,
+  doručení a jeho pole, potom první neplatné pole formuláře (e‑mail hosta, souhlas s podmínkami, se zprávou
+  prohlížeče). Pole dostane focus bez skoku (`focusCalm`) a vjede do okna, jen když vidět není. Roluje se až po
+  dvou snímcích, protože text chyby lištu zvětší. Enter v poli dělá totéž.
+- **Přepočítat a volby.** Během přepočtu zůstanou stará čísla a krabice s placením na místě, jen zašedlé
+  (`opacity-50`, placení `inert`). Stránka pod prstem se nezmenší a nic neposkočí. Nová cena dostane prstenec
+  (`flash`) na kartě, nová částka v liště taky. Chyba přepočtu se ukáže v kartě a na telefonu vjede do okna.
+- **„Změnit“ barvy v souhrnu** roluje k barvám, jen když vidět nejsou (dřív vždy na začátek).
+- **Zaplaceno z kreditu**: krabice s volbami zmizí a do okna vjede karta se stavem (dřív zůstal pohled na konci
+  stránky).
+- Nové texty v `lang/src/layout_order.json` (6 klíčů): krátké popisy tlačítka pro lištu, „Vyberte barvu.“, popisy
+  částky. Texty kroků jsou beze změny.
+
+### 5.2 Ověření
+
+- Průchod v headless Chrome přes CDP (skript ve scratchpadu, zakázka hosta v sliced na lokální MariaDB) na 390, 768,
+  1280 a 1366×768. Na každé šířce:
+  - bez vodorovného posuvu;
+  - lišta nezakryje poslední řádek patičky (24 px rezerva);
+  - `scrollY` před a po kliknutí na kvalitu: beze změny; po Přepočítat: beze změny;
+  - Zaplatit bez výdejního místa: stránka dojede jen k boxu výdejního místa, jeho spodek je přesně nad lištou
+    (577 = 844 − 267 px lišt na 390);
+  - „Změnit“ dojede k barvám, které nebyly vidět.
+- Testy `ToolPageTest|ToolsFlowTest|CalculationFlowTest|FarmGuestCheckoutTest|FarmSalesPathTest|AuditRestTest|FarmOrderFlowTest`:
+  **106 testů, 6 665 asercí, zelené**. `tsc` a `npm run build` prošly; PHP se neměnilo.
+- Neověřeno: Android s otevřenou klávesnicí v emulaci (lišta je `fixed` nad `--consent-h`), skutečný přepočet trvající
+  sekundy. Falešný slicer odpoví hned, takže zašedlý stav byl vidět jen v kódu.
+
+### 5.3 Čeká na session 3 (sdílené `sticky.ts` a `app.css`, požádáno zprávou)
+
+1. Tlačítko lišty dnes zrcadlí `aria-disabled` jako `disabled`. Na liště proto stisk nehotové objednávky nic neřekne,
+   na tlačítku ve formuláři ano. Prosba: zrcadlit jen `aria-disabled` a klik předat.
+2. Krátký popis z `data-bar-label` zdroje: `farm.ts` ho už plní („Zaplatit kartou“, „Doplatit kartou 120 Kč“). Do
+   té doby lišta ukazuje celou větu a na 390 px zúží částku.
+3. Výška `.stick-stage` bez spodních lišt: `calc(100vh − 1.5rem − --consent-h − --action-bar-h)`. Dnes je spodek
+   karty ceny při 1366×768 pod lištami.
+
+Po těch úpravách se na zakázce nic měnit nemusí, jen znovu projít snímky.

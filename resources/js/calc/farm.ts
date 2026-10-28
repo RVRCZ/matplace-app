@@ -6,6 +6,7 @@
  *   bootFarmDashboard  /admin/farm: buttons post over fetch, the answer is a short toast, cards redraw in place
  */
 import { icon } from '../site/icon';
+import { flash, focusCalm, revealIfHidden } from '../site/sticky';
 import { BufferGeometry, Float32BufferAttribute } from 'three';
 import { Viewer, FacePaint, cutAtHeight, deep } from './viewer';
 import { loadGeometryFromUrl } from './loaders';
@@ -444,6 +445,35 @@ export function bootFarmOrder(): void {
         if (kind() === 'point') return pointOf().id && val('name') ? null : tr('farm.delivery.pick_point');
         return ['name', 'phone', 'street', 'city', 'zip'].every((f) => val(f) !== '') ? null : tr('farm.delivery.fill_address');
     };
+    // the field the delivery still needs: the way, the pickup point, or the first empty line of the address
+    const deliveryField = (): HTMLElement | null => {
+        if (!kind()) return $('farm-delivery');
+        const empty = (f: string) => { const i = document.querySelector<HTMLInputElement>(`#farm-address [name="address[${f}]"]`); return i && i.value.trim() === '' ? i : null; };
+        // a field not on the page (no picker without the carrier's key): the choice of the way above it instead
+        const onPage = (el: HTMLElement | null | undefined) => (el && el.offsetParent !== null ? el : $('farm-delivery'));
+        if (kind() === 'point') return onPage(pointOf().id ? empty('name') : pointBox);
+        return onPage(['name', 'phone', 'street', 'city', 'zip'].map(empty).find((i) => i !== null));
+    };
+    // why the order cannot be paid yet, and where on the page that is fixed; null = ready
+    const payBlocker = (): { el: HTMLElement | null; text: string } | null => {
+        if (picked === null) return { el: $('farm-material'), text: tr('farm.order.bar.pick_color') };
+        if (state.colors.find((c) => c.slot === picked)?.sliced === false) return { el: $('farm-recolor'), text: tr('farm.order.recolor_first') };
+        if (noMachine()) return { el: $('farm-material'), text: tr('farm.order.colors_no_machine') };
+        const missing = deliveryMissing();
+        if (missing) return { el: deliveryField(), text: missing };
+        if (total() === null) return { el: null, text: '' };   // the delivery's price is on its way
+        // the e-mail of a guest, the terms
+        const bad = $('farm-pay')?.querySelector<HTMLInputElement>(':invalid');
+        return bad ? { el: bad, text: bad.validationMessage } : null;
+    };
+    // what keeps the order from being paid, said under the pay button and in the bar at the bottom ('' = nothing);
+    // `hinting` = the words came from a press of the button and follow the choices until nothing is missing
+    let hinting = false;
+    const say = (text: string, hint = false): void => {
+        hinting = hint && text !== '';
+        const box = $('farm-pay-error'); if (box) { box.textContent = text; show(box, text !== ''); }
+        const barErr = $('farm-bar-error'); if (barErr) { barErr.textContent = text; barErr.hidden = text === ''; }
+    };
 
     // "U33 · U13": the spools a colour sits in (farm, printer, slot), small, after the kind
     const codeTag = (codes: (string | null | undefined)[]): string => { const list = codes.filter(Boolean) as string[]; return list.length ? `<span class="font-mono text-[11px] text-slate-500" title="${esc(tr('farm.order.codes_hint'))}">${esc(list.join(' · '))}</span>` : ''; };
@@ -652,6 +682,12 @@ export function bootFarmOrder(): void {
     };
 
     // what the price was made of before a new calculation: said again when the new one comes back with another price
+    // what the page shows now: the result box through a recalculation, the print price and the sum of the bar (both ringed
+    // when they change), the payment box with its bar
+    let resultShown = false;
+    let shownPrice: number | null = null;
+    let shownTotal = '';
+    let payShown = false;
     let before: { total: number | null; printer: string | null; kind: string | null; minutes: number | null; settings: string } | null = null;
     const kindOf = (): string | null => state.colors.find((c) => c.slot === picked)?.kind ?? null;
     const settingsKey = (): string => [state.quality, state.strength, state.supports_mode, state.copies, state.scale, state.unit, !!state.by_parts, settingsOf(state.settings)].join('|');
@@ -700,12 +736,24 @@ export function bootFarmOrder(): void {
         show($('farm-oriented'), s.orientation_changed && s.status !== 'failed');
         const balance = $('farm-balance'); if (balance) balance.textContent = money(s.balance);   // a guest has none
 
+        // while the customer chooses, the model and the price stay in the window on a desktop (the left column, order.blade.php)
+        const choosing = ['uploaded', 'awaiting_choices', 'sliced'].includes(s.status) || (s.status === 'failed' && !s.number);
+        $('farm-order')?.toggleAttribute('data-choosing', choosing);
+        $('farm-side')?.classList.toggle('stick-stage', choosing);
         const hasResult = s.minutes !== null && s.status !== 'uploaded' && !(s.status === 'failed' && !s.number);
-        show($('farm-result'), hasResult);
-        show($('farm-total-line'), false);   // filled below once the delivery on offer is known (sliced)
+        // a recalculation keeps the last numbers in place, greyed, until the new ones come (the page under the finger does
+        // not shrink and nothing below moves up, docs/AO.md §5); the payment box and its bar stay the same way
+        const stale = working && resultShown;
+        resultShown = hasResult || stale;
+        show($('farm-result'), resultShown);
+        $('farm-result')?.classList.toggle('opacity-50', stale);
+        if (!stale) show($('farm-total-line'), false);   // filled below once the delivery on offer is known (sliced)
         if (hasResult) {
             const print = printPrice();
             $('farm-price')!.textContent = print !== null ? money(print) : '—';
+            // another price than the one shown: a ring that fades round the card, where the customer's eyes are not
+            if (print !== null && shownPrice !== null && Math.abs(print - shownPrice) > 0.005) flash($('farm-card'));
+            if (print !== null) shownPrice = print;
             const shipLine = $('farm-shipping-line');
             if (shipLine) { shipLine.textContent = shippingLine(); show(shipLine, shipLine.textContent !== ''); }
             const copiesLine = $('farm-copies-line');
@@ -777,7 +825,16 @@ export function bootFarmOrder(): void {
             $('farm-slice-hint')!.textContent = tr('farm.order.slice_start_hint', { n: s.slice_minutes ?? 1 });
         }
 
-        show($('farm-pay'), s.status === 'sliced');
+        payShown = s.status === 'sliced' || (working && payShown);
+        show($('farm-pay'), payShown);
+        const payForm = $('farm-pay');
+        if (payForm) { payForm.inert = payShown && s.status !== 'sliced'; payForm.classList.toggle('opacity-50', payForm.inert); }
+        // the bar at the bottom: while the payment box is on the page (components/action-bar, hidden by the attribute)
+        const bar = $('farm-bar');
+        if (bar) bar.hidden = !payShown;
+        if (!payShown) say('');
+        $('farm-bar-total')?.classList.toggle('opacity-50', !!payForm?.inert);
+        if (payForm?.inert) $('farm-pay-btn')?.setAttribute('aria-disabled', 'true');
         show($('farm-material'), !!s.choosing);
         if (s.choosing && s.status !== 'sliced') renderColors();
         renderEstimate(awaiting, working);   // after the colours: the picked colour's kind and machine set the rates
@@ -789,10 +846,11 @@ export function bootFarmOrder(): void {
             // a top-up of the account stays as the second way
             // the sum with the delivery right under the price: exact from the quote, until then from the carrier's list
             const totalLine = $('farm-total-line');
+            const k = kind();
+            const offered = k ? (s.shipping?.countries[country]?.[k] ?? null) : null;
+            const quotedNow = k && quoted?.key === quoteKey() ? quoted.price : null;
             if (totalLine) {
-                const k = kind();
-                const offered = k ? (s.shipping?.countries[country]?.[k] ?? null) : null;
-                totalLine.textContent = totalText(delivery, printPrice(), k && quoted?.key === quoteKey() ? quoted.price : null, offered, tr, money);
+                totalLine.textContent = totalText(delivery, printPrice(), quotedNow, offered, tr, money);
                 show(totalLine, totalLine.textContent !== '');
             }
             const payBtn = $('farm-pay-btn') as HTMLButtonElement;
@@ -800,8 +858,28 @@ export function bootFarmOrder(): void {
             // what the card takes: the shortfall rounded up to whole crowns or euros, never under the gateway's smallest charge
             const need = short > 0.005 ? Math.max(Math.ceil(short), s.min_charge ?? 0) : 0;
             payBtn.dataset.need = need > 0 ? String(need) : '';
-            payBtn.textContent = need > 0 ? (s.balance > 0.005 ? tr('farm.order.pay_card_rest', { amount: money(need), balance: money(s.balance) }) : tr('farm.order.pay_card', { amount: money(need) })) : tr('farm.order.pay');
-            payBtn.disabled = picked === null || total() === null || deliveryMissing() !== null || noMachine() || !($('farm-terms') as HTMLInputElement).checked;
+            // the whole sentence on the button, the short one for the bar on a phone (data-bar-label, site/sticky.ts)
+            if (!payBtn.dataset.busy) {
+                payBtn.textContent = need > 0 ? (s.balance > 0.005 ? tr('farm.order.pay_card_rest', { amount: money(need), balance: money(s.balance) }) : tr('farm.order.pay_card', { amount: money(need) })) : tr('farm.order.pay');
+                payBtn.dataset.barLabel = need > 0 ? (s.balance > 0.005 ? tr('farm.order.bar.pay_card_rest', { amount: money(need) }) : tr('farm.order.bar.pay_card')) : tr('farm.order.bar.pay');
+            }
+            // not ready yet: the button looks off but still answers, by showing what is missing (payBlocker)
+            payBtn.setAttribute('aria-disabled', String(!!payBtn.dataset.busy || payBlocker() !== null));
+            // the bar: the amount big (it must fit next to the button on a phone), what it is under it – the sum with the
+            // delivery, the sum with the carrier's list price, or the print alone with the line about the delivery
+            const print = printPrice();
+            const [amount, what] = print === null ? [null, ''] : delivery === 'pickup' ? [print, tr('farm.order.bar.total')] : quotedNow ? [quotedNow.total, tr('farm.order.bar.total')]
+                : k && offered !== null ? [Math.round((print + offered) * 100) / 100, tr('farm.order.bar.total_estimate')] : [print, shippingLine()];
+            const barTotal = $('farm-bar-total');
+            if (barTotal) {
+                const text = amount !== null ? money(amount) : '—';
+                if (shownTotal && text !== shownTotal) flash(barTotal);
+                barTotal.textContent = shownTotal = text;
+            }
+            const barSub = $('farm-bar-sub');
+            if (barSub) { barSub.textContent = what; barSub.hidden = what === ''; }
+            // a hint shown by a press of the button follows the choices: the next thing missing, or gone once nothing is
+            if (hinting) say(payBlocker()?.text ?? '', true);
             // under the button: the card takes a little more than the shortfall (rounding, or the gateway's floor), the rest stays as credit
             const payNote = $('farm-pay-note');
             if (payNote) {
@@ -824,7 +902,7 @@ export function bootFarmOrder(): void {
             if (note) { note.textContent = kept ? tr('farm.order.card_kept', { reason: s.card!.result! }) : pending ? tr('farm.order.card_pending') : ''; show(note, !!(kept || pending)); }
             // another colour may mean another machine and another kind of filament: the numbers above must be computed again first
             const recolor = picked !== null && state.colors.find((c) => c.slot === picked)?.sliced === false;
-            show($('farm-recolor'), recolor); show($('farm-recolor-note'), recolor); show($('farm-pay-recolor'), recolor); show($('farm-pay-btn'), !recolor);
+            show($('farm-recolor'), recolor); show($('farm-recolor-note'), recolor); show($('farm-pay-recolor'), recolor);
             sayWhy();
         }
 
@@ -948,7 +1026,8 @@ export function bootFarmOrder(): void {
         // the spools of the parts travel with the first colour: the server keeps them on its machine (20 Oct 2026, order 198)
         const r = await post(cfg.routes.reslice, { ...wanted, slot: resolved().slot, ...otherSlots() });
         [btn, recolor, start].forEach((b) => { if (b) { b.disabled = false; b.textContent = b.dataset.label ?? ''; delete b.dataset.label; } });
-        if (r.ok) { state = r.json as unknown as FarmState; picked = state.slot ?? null; wanted.by_parts = !!state.by_parts; render(); poll(); } else { before = null; const err = $('farm-error')!; err.textContent = String(r.json.message ?? ''); show(err, true); }
+        // a refusal is said in the card with the price; on a phone that card is above the choices, so it is brought into sight
+        if (r.ok) { state = r.json as unknown as FarmState; picked = state.slot ?? null; wanted.by_parts = !!state.by_parts; render(); poll(); } else { before = null; const err = $('farm-error')!; err.textContent = String(r.json.message ?? ''); show(err, true); revealIfHidden(err); }
     });
     document.querySelectorAll<HTMLElement>('#farm-delivery .seg').forEach((b) => b.addEventListener('click', () => { delivery = b.dataset.value!; render(); }));
     $('farm-country')?.addEventListener('change', (e) => { country = (e.target as HTMLSelectElement).value; render(); });
@@ -958,20 +1037,34 @@ export function bootFarmOrder(): void {
     // "Spočítat přesnou cenu": the same request as a recalculation, the first one of a waiting big model
     $('farm-slice-start')?.addEventListener('click', () => ($('farm-presets') as HTMLFormElement | null)?.requestSubmit());
     // "Změnit" in the summary: back up to the colours, chosen only there
-    $('farm-change-colors')?.addEventListener('click', (e) => { e.preventDefault(); $('farm-material')?.scrollIntoView({ behavior: 'smooth', block: 'start' }); });
+    $('farm-change-colors')?.addEventListener('click', (e) => { e.preventDefault(); revealIfHidden($('farm-material'), 'start'); });
     $('farm-terms')?.addEventListener('change', render);
+    $('farm-email')?.addEventListener('input', render);
+
+    // the pay button (and the bar's, which presses it) before the order is complete: what is missing is said under it and in
+    // the bar, and its field comes into sight with the focus, without the page jumping (docs/AO.md §5)
+    const payBtn = $<HTMLButtonElement>('farm-pay-btn');
+    const guide = (): boolean => {
+        if (payBtn?.dataset.busy) return true;
+        const b = payBlocker();
+        if (!b) return false;
+        say(b.text, true);
+        const field = b.el && (b.el.matches('input, select, textarea, button') ? b.el : b.el.querySelector<HTMLElement>('button:not(.hidden), input:not([type=hidden]), select, textarea'));
+        // the words make the bar taller: the field is brought into sight once the page knows the bar's new height
+        requestAnimationFrame(() => requestAnimationFrame(() => { if (field) focusCalm(field); else revealIfHidden(b.el); }));
+        return true;
+    };
+    payBtn?.addEventListener('click', (e) => { if (payBtn.getAttribute('aria-disabled') === 'true') { e.preventDefault(); guide(); } });
 
     $('farm-pay')?.addEventListener('submit', async (e) => {
         e.preventDefault();
-        const btn = $<HTMLButtonElement>('farm-pay-btn')!;
-        const errBox = $('farm-pay-error')!;
+        const btn = payBtn!;
         const form = e.target as HTMLFormElement;
-        const missing = deliveryMissing();
-        if (missing) { errBox.textContent = missing; show(errBox, true); return; }
+        if (guide()) return;   // Enter in a field of an order not complete yet
         const address: Record<string, unknown> = { country };
         new FormData(form).forEach((v, k) => { const m = k.match(/^address\[(\w+)\]$/); if (m) address[m[1]] = String(v); });
         if (kind() === 'point') address.point = pointOf();
-        btn.disabled = true; btn.textContent = tr('farm.order.paying'); show(errBox, false); show($('farm-topup'), false);
+        btn.dataset.busy = '1'; btn.setAttribute('aria-disabled', 'true'); btn.textContent = tr('farm.order.paying'); say(''); show($('farm-topup'), false);
         // short of credit: the gateway's page for what is missing; the webhook then pays the order with these very choices
         const r = await post(btn.dataset.need ? cfg.routes.checkout : cfg.routes.pay, {
             slot: resolved().slot, change_slots: changes, part_slots: resolved().part_slots, delivery, terms: ($('farm-terms') as HTMLInputElement).checked, expected_total: total(),
@@ -981,10 +1074,10 @@ export function bootFarmOrder(): void {
             ...(cfg.guest ? { email: ($('farm-email') as HTMLInputElement | null)?.value.trim() ?? '' } : {}),
         });
         if (r.ok && r.json.checkout_url) { window.location.href = String(r.json.checkout_url); return; }
-        btn.textContent = tr('farm.order.pay');
-        if (r.ok) { state = r.json as unknown as FarmState; render(); poll(); return; }
-        errBox.textContent = String(r.json.message ?? (r.json.errors ? Object.values(r.json.errors as Record<string, string[]>)[0][0] : ''));
-        show(errBox, true);
+        delete btn.dataset.busy;
+        // paid from credit: the choices give way to the order's state, which is brought into sight instead of the page's end
+        if (r.ok) { state = r.json as unknown as FarmState; render(); revealIfHidden($('farm-card')); poll(); return; }
+        say(String(r.json.message ?? (r.json.errors ? Object.values(r.json.errors as Record<string, string[]>)[0][0] : '')));
         if (r.status === 402 && r.json.topup_url) { const a = $<HTMLAnchorElement>('farm-topup')!; a.href = String(r.json.topup_url); show(a, true); }
         quoted = null;   // whatever went wrong, the price is asked again
         if (r.json.error === 'price_changed' || r.json.error === 'color_gone' || r.json.error === 'filament_low') await poll();
