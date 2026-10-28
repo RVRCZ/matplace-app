@@ -520,6 +520,9 @@ naplánoval 6 článků (3. až 20. 11.), sitemapa obnovena, `/3d-tisk-praha` cs
 - Ověření: `LandingPagesTest|SeoTest|ToolsCatalogTest|BlogSyncTest` (+CatalogSeoTest) **30 testů, 8 364 assertions,
   OK**; `pint` čistý; title 54 až 60, description 139 až 153; JSON‑LD HowTo + FAQPage 10 otázek na 12 stránkách;
   snímky `docs/img/seo-n1/{logo,holder,stamp,illuminated-sign}-{390,1280}-cs-1.webp` bez posunu a chyb.
+- Po dávce C sloučen `origin/main` 604b8248 do větve (f252e3ba, bez konfliktů; přišly fotky výtisků relace 3,
+  `ToolPhotos`), `npm run build`, pak celá sada `LandingPagesTest|SeoTest|ToolsCatalogTest|BlogSyncTest|PraguePageTest|
+  BlogEmbedsTest|ToolPageTest` (+CatalogSeoTest) **56 testů, 13 040 assertions, OK** (240 s).
 - Neověřeno a ponecháno z původního textu: u světelného nápisu věta „Jedna zakázka se u nás tiskne jednou barvou“
   (difuzor v bílé jako druhá zakázka). Farma dnes umí víc filamentů v jedné podložce (AL.md §10), ale jestli to platí
   i pro díly světelného nápisu, nevím; řídící může větu zrušit, pokud ano.
