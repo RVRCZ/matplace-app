@@ -2,8 +2,11 @@
 
 namespace Tests\Feature;
 
+use App\Domain\Farm\FarmPricingProfile;
+use App\Domain\Farm\FarmSettings;
 use App\Domain\Farm\GcodeSlot;
 use App\Domain\Farm\OrderService;
+use App\Domain\Farm\PriceCalculator;
 use App\Domain\Files\PaintedColors;
 use App\Engines\Contracts\Slicer;
 use App\Engines\Mesh\StlFile;
@@ -145,6 +148,20 @@ final class ThreeMfColorsTest extends TestCase
         $this->assertNull($this->getJson('/api/calculations/'.$c2['token'])->json('calculation.colors'));
     }
 
+    public function test_the_farm_minimum_in_the_calculator_is_the_one_the_order_charges(): void
+    {
+        // a minimum of 82 net is 99.22 with VAT: the order rounds it up to 100, the calculator showed 99 (28 Oct 2026)
+        $settings = app(FarmSettings::class);
+        $settings->set('min_price', 82.0);
+        $settings->set('rounding', 10.0);
+        $profile = app(FarmPricingProfile::class)->profile('PLA');
+        $order = app(PriceCalculator::class)->price(10, 2.0, ['hourly_rate' => 35.0, 'price_per_gram' => 0.5, 'fixed_fee' => 0.0, 'min_price' => 82.0,
+            'vat_percent' => (float) $settings->get('vat_percent'), 'rounding' => 10.0]);
+        $this->assertTrue($order['min_price_applied']);
+        $this->assertEquals($order['total'], $profile->minPrice);
+        $this->assertEquals(100.0, $profile->minPrice);
+    }
+
     /** @return array{0: FarmColor, 1: FarmColor, 2: FarmColor} green, red and yellow spools of the S1 run by an agent (it changes spools) */
     private function spools(): array
     {
@@ -180,6 +197,9 @@ final class ThreeMfColorsTest extends TestCase
         $this->assertSame(FarmOrder::STATUS_SLICED, $order->status, (string) $order->error);
         $this->assertTrue($order->onePlate(), 'three spools of one machine with a changer: one plate');
         $this->assertCount(3, (array) ($order->slice_params['filaments'] ?? []));
+        // the parts are our cut of the file: no "N separate bodies", no "we repaired the surface" on the order page
+        $this->assertSame([], array_values(array_intersect(['multiple_shells', 'repaired'], array_column((array) ($order->check['warnings'] ?? []), 'code'))));
+        $this->assertGreaterThan(1, (int) ($order->check['mesh']['shells'] ?? 0), 'the plate does hold several bodies');
         // the parts were made once, in place: the red cube still 30 mm to the right of the green one on the plate
         $dir = Storage::disk(ModelFile::DISK)->path('files/'.$f['uuid'].'/parts');
         foreach (['color_1', 'color_2', 'color_3'] as $part) {

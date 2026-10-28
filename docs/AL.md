@@ -1777,3 +1777,26 @@ Testy: `ThreeMfColorsTest` (rozbor, seřazené STL a `groups`, sloučení, soubo
 ceny, zakázka po barvách s nejbližšími cívkami na jedné podložce a díly na místě, `colors=one`; skutečná Orca volitelně),
 `ModelEditTest`, `FarmOnePlateTest`, `FarmOrderColorsTest`, `FarmOrderFlowTest`, `StickyLayoutTest`, `ToolPageTest`,
 `CalculationFlowTest`, `ToolsFlowTest`, `StandPartsFarmTest`, `GcodeModelTest`; pint, tsc, build.
+
+### 14.7 Po nasazení: želva na produkci, cena a hlášky (29. 10. 2026)
+
+Dry run řídící session na produkční Orce 2.4.0-beta (zakázka hosta bez platby, nic netištěno): kalkulace „2 namalované
+barvy (a 2 drobné, sloučené)“, zakázka po barvách zelená + zlatá na jednom stroji (žlutá je na jiném), řez celkem 44 s
+(příprava 10,4 s, repaint 4,3 s, Orca 13,7 s), `one_plate_project` painted, 69 výměn, 181 min, 7,5 + 4,3 g – stejně jako
+místní Orca. Cena 100 Kč, kalkulace „Barevně od 99 Kč · Jednobarevně 99 Kč“.
+
+- **Výměny v ceně jsou.** Cena farmy se počítá z minut a gramů řezu (`PriceCalculator`), Orca do nich výměny započítá
+  (čas ~2,2 min na výměnu v minutách, proplach a věž v gramech); kalkulace u „barevně“ přičítá totéž odhadem
+  (`PaintedColors::extra`). Obě ceny i zakázka u želvy padly na **minimum** farmy: 3 h a 12 g jsou v produkčním ceníku
+  levnější než minimum. Zvláštní příplatek za výměnu (riziko, obsluha ACE) by byl nové nastavení ceníku – rozhodne Roman.
+- **99 vs. 100 Kč.** Kalkulace brala minimum s DPH zaokrouhlené na celé koruny (`round(min × 1,21)`), zakázka ho
+  zaokrouhluje nahoru na krok farmy (`rounding`). `FarmPricingProfile` teď minimum zaokrouhlí stejně
+  (`PriceCalculator::roundUp`), kalkulace ukáže tolik, kolik zakázka účtuje.
+- **Dvě stejné ceny** v kalkulaci: zobrazení je stránka session 3 (`painted.ts`); API dává `colors.one` a `colors.multi`,
+  stejná čísla stačí porovnat a ukázat jednu cenu.
+- **Hlášky na stránce zakázky** „Model se skládá z 26 samostatných těles“ a „Model měl chyby v povrchu, opravili jsme
+  je“ mluvily o našem řezu na díly (vložky po ostrůvcích, švy zavře příprava), ne o zákazníkově modelu. Zakázka
+  namalovaného souboru je vynechá (jedna podložka i po dílech); podložka z dílů jakéhokoli návrhu nehlásí „víc těles“
+  (díly jsou návrh, nahrání to u souborů s díly vynechává také). Chyby (rozměr, podložka) zůstávají.
+
+Testy: `ThreeMfColorsTest` (zakázka bez těch dvou hlášek, minimum kalkulace = minimum zakázky).

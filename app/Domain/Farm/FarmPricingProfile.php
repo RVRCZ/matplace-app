@@ -49,7 +49,9 @@ final class FarmPricingProfile
             'price_per_gram' => (float) $material->price_per_gram * $printer->weight_factor * $ratio,
             'setup_fee' => (float) $this->settings->get('fixed_fee'),
             'margin_pct' => (float) $this->settings->get('vat_percent'),
-            'min_price' => round((float) $this->settings->get('min_price') * (1 + (float) $this->settings->get('vat_percent') / 100)),
+            // the order rounds its total up to the farm's step (PriceCalculator), the minimum included: a minimum of 82 net
+            // is 99.22 with VAT, the order charged 100 while the calculator showed 99 (the painted turtle, 28 Oct 2026)
+            'min_price' => PriceCalculator::roundUp((float) $this->settings->get('min_price') * (1 + (float) $this->settings->get('vat_percent') / 100), (float) $this->settings->get('rounding')),
             'lead_time_days' => 2,
             'time_factor' => $printer->time_factor,
         ]);

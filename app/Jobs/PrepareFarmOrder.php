@@ -442,6 +442,9 @@ class PrepareFarmOrder implements ShouldQueue
                 $stlRel = $plateRel;
             }
             $verdict = ModelValidator::judge($mesh, $bed, ['min_model_mm' => (float) $settings->get('min_model_mm'), 'bed_margin_mm' => (float) $settings->get('bed_margin_mm')]);
+            if ($file->origin !== 'tool' && PaintedColors::printed($file) !== []) {
+                $verdict = self::withoutWarnings($verdict, self::PAINTED_WARNINGS);
+            }
             if ($verdict['ok'] && $order->copies > 1 && $capacity['max'] < $order->copies) {
                 // the copies of this part do not fit one plate: an order by parts prints each part on one plate
                 $verdict = ['ok' => false, 'errors' => [['code' => 'copies_fit', 'data' => ['part' => $plate['part'], 'max' => $capacity['max']]]], 'warnings' => $verdict['warnings'] ?? []] + $verdict;
@@ -501,6 +504,24 @@ class PrepareFarmOrder implements ShouldQueue
         ])->save();
         $clock->note('print_minutes', $order->est_minutes)->note('parts', count($plates));
         $this->price($order, $printer, $settings, $orders, $flow, $clock);
+    }
+
+    /**
+     * The warnings an order of a painted 3MF leaves out (docs/AL.md §14): its parts are our own cut of the file, the
+     * inlays come out in islands and the preparer closes their seams, so "26 separate bodies" and "we repaired the
+     * surface" spoke of the cut, not of the customer's model (the turtle on production, 28 Oct 2026).
+     */
+    private const PAINTED_WARNINGS = ['multiple_shells', 'repaired'];
+
+    /**
+     * @param  array{warnings?: array<int, array{code: string, data: array}>}  $verdict
+     * @param  list<string>  $codes
+     */
+    private static function withoutWarnings(array $verdict, array $codes): array
+    {
+        $verdict['warnings'] = array_values(array_filter((array) ($verdict['warnings'] ?? []), fn ($w) => ! in_array($w['code'] ?? null, $codes, true)));
+
+        return $verdict;
     }
 
     /** The process settings of a plate that changes filaments: the prime tower on, the purge into the infill where it can go. */
@@ -702,7 +723,9 @@ class PrepareFarmOrder implements ShouldQueue
             engine: $all->first()->engine,
             footprint: $all->first()->footprint,
         );
-        $verdict = $judge($mesh);
+        // the plate is its parts side by side: several bodies are the design, not a broken mesh (the upload drops the same
+        // warning for a file with parts, UploadController::describe)
+        $verdict = self::withoutWarnings($judge($mesh), $paintedFile ? self::PAINTED_WARNINGS : ['multiple_shells']);
         $order->check = $verdict + ['mesh' => $mesh->toArray(), 'unit_guess' => ModelValidator::guessUnit($raw, $bed), 'raw_dims' => $raw->toArray(), 'piece_dims' => $mesh->bbox->toArray(), 'max_copies' => 1];
         $order->orientation = $mesh->orientation;
         $order->print_stl_path = $printRel;
