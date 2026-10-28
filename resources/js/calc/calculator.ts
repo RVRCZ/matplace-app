@@ -461,7 +461,7 @@ function poll(token: string): void {
             const c = await getCalculation(token);
             if (state.calc?.token !== token) return; // superseded by a newer calculation
             state.calc = c;
-            if (c.file) { state.file = c.file; showNearest(c.file); renderSize(); void showPainted(c.file); }
+            takeFile(c.file);
             if (c.status === 'done') {
                 setStatus(marketplace() ? 'calc.status.done' : 'calc.status.done_facts', false);
                 renderPrecise(c);
@@ -486,15 +486,20 @@ function poll(token: string): void {
     tick();
 }
 
-async function showServerStl(url: string): Promise<void> {
+async function showServerStl(url: string): Promise<boolean> {
     try {
         const geom = await loadGeometryFromUrl(url);
         state.geometry = geom;
         state.geo = stats(geom);
         const parts = partsByColour(geom, state.file?.tool?.params);
         viewer?.setGeometry(geom, state.params.scale, state.file?.kind ?? null, parts ? null : twoColorRegions(state.file?.tool?.params));
-        // colours painted in a slicer: the server's STL has its triangles sorted by colour, the runs paint it (docs/AN.md §19)
-        if (viewer && !parts && state.file?.groups && paintGroups(viewer, state.file.groups, triangleCount(geom))) paintedFor = state.file.uuid;
+        // colours painted in a slicer: the server's STL has its triangles sorted by colour, the runs paint it (docs/AN.md §19);
+        // the canvas says how it went (data-painted: colors, or mismatch when the runs do not cover this STL), for a check from outside
+        if (viewer && !parts && state.file?.groups?.length) {
+            const ok = paintGroups(viewer, state.file.groups, triangleCount(geom));
+            if (ok) paintedFor = state.file.uuid;
+            markPainted(ok ? 'colors' : 'mismatch');
+        }
         if (viewer && parts) {
             viewer.setPieces(parts.pieces);
             parts.colors.forEach((hex, i) => { if (hex) viewer!.setPieceColor(i, hex); });
@@ -503,7 +508,8 @@ async function showServerStl(url: string): Promise<void> {
             const tip = document.getElementById('kind-tip');
             if (tip) { tip.textContent = t('farm.calc_parts_by_colour'); tip.classList.remove('hidden'); }
         }
-    } catch { /* viewer is optional */ }
+        return true;
+    } catch { return false; /* viewer is optional */ }
 }
 
 /**
@@ -611,6 +617,7 @@ function requestRough(): void {
             const c = await createCalculation({ ...calcPayload(), rough_only: 1 });
             if (state.file !== file) return;   // another file was chosen meanwhile: this one is history
             state.calc = c;
+            takeFile(c.file);
             history.replaceState(null, '', c.url);
             if (c.status === 'done') { setStatus(marketplace() ? 'calc.status.done' : 'calc.status.done_facts', false); renderPrecise(c); }
             else setBigOnly(c.file ?? file, c);
@@ -631,6 +638,7 @@ function requestPrecise(): void {
             enableQuote(null);
             const c = await createCalculation(calcPayload());
             state.calc = c;
+            takeFile(c.file);   // a slice the server already had comes back done at once, with the file processed meanwhile
             history.replaceState(null, '', c.url);
             if (c.status === 'done') {
                 setStatus(marketplace() ? 'calc.status.done' : 'calc.status.done_facts', false);
@@ -685,7 +693,8 @@ function showResult(): void {
 function showHero(): void {
     stopPolling();
     document.getElementById('calc-bar')?.setAttribute('hidden', '');
-    state.file = null; state.calc = null; state.geometry = null; state.geo = null; paintedFor = null;
+    state.file = null; state.calc = null; state.geometry = null; state.geo = null; paintedFor = null; paintingFor = null;
+    document.getElementById('viewer')?.removeAttribute('data-painted');
     $('result').classList.add('hidden');
     $('hero').classList.remove('hidden');
     history.replaceState(null, '', homeUrl());
@@ -745,6 +754,7 @@ async function handleFile(file: File): Promise<void> {
     if (file.size > cfg.max_upload_mb * 1024 * 1024) { heroError(t('calc.error.too_big', { max: cfg.max_upload_mb })); refused('too_big'); return; }
 
     state.localFile = file;
+    document.getElementById('viewer')?.removeAttribute('data-painted');   // the mark is the shown file's
     showKindTip(undefined);
     showResult();
     $('file-badge').textContent = file.name;
@@ -1001,6 +1011,21 @@ function showNearest(file: FileInfo | null): void {
 
 /** The file whose painted colours the viewer shows (one load of the server's sorted STL per file). */
 let paintedFor: string | null = null;
+/** The file whose sorted STL is being loaded now (two answers in a row do not load it twice). */
+let paintingFor: string | null = null;
+
+/**
+ * The file as a calculation brings it (polled, or created already done): the server may have processed it since the
+ * upload answered, so its colour runs, the nearest spools and the size come from here. A file other than the shown
+ * one (an answer that came late) is left alone.
+ */
+function takeFile(f: FileInfo | null | undefined): void {
+    if (!f || (state.file && state.file.uuid !== f.uuid)) return;
+    state.file = f;
+    showNearest(f);
+    renderSize();
+    void showPainted(f);
+}
 
 const triangleCount = (g: BufferGeometry): number => (g.index ? g.index.count : g.getAttribute('position').count) / 3;
 
@@ -1039,16 +1064,38 @@ function renderColors(file: FileInfo | null, calc: CalcInfo | null): void {
     const prices = $('calc-colors-prices');
     const p = calc?.colors;
     prices.classList.toggle('hidden', !p);
-    if (p) prices.textContent = `${t('calc.colors.price_multi', { price: priceText(p.multi) })} · ${t('calc.colors.price_one', { price: priceText(p.one) })}`;
+    // two equal prices side by side look like a mistake (the turtle: both at the price list's minimum): then one line, one price
+    if (p) prices.textContent = priceText(p.multi) === priceText(p.one)
+        ? t('calc.colors.price_same', { price: priceText(p.one) })
+        : `${t('calc.colors.price_multi', { price: priceText(p.multi) })} · ${t('calc.colors.price_one', { price: priceText(p.one) })}`;
 }
 
 async function showPainted(file: FileInfo | null): Promise<void> {
     renderColors(file, state.calc);
-    if (!file?.groups?.length || !file.stl_url || paintedFor === file.uuid || !viewer) return;
-    paintedFor = file.uuid;
-    // the same model in another triangle order: the visitor's view stays (the viewer frames anew only a clearly different model)
-    viewer.keepView(true);
-    try { await showServerStl(file.stl_url); } finally { viewer?.keepView(false); }
+    if (!file?.groups?.length || !file.stl_url || paintedFor === file.uuid || paintingFor === file.uuid || !viewer) return;
+    paintingFor = file.uuid;
+    markPainted('loading');
+    try {
+        // the sorted STL once per file; a load that failed (the network, a busy server) is tried again on its own: the
+        // answers that could retry it stop coming once the price is done (the turtle stayed blue on production, 28 Oct 2026)
+        for (let attempt = 0; attempt < 4; attempt++) {
+            if (attempt) await new Promise((r) => window.setTimeout(r, 1500 * attempt));
+            if (state.file?.uuid !== file.uuid || !viewer) return;   // another file meanwhile
+            // the same model in another triangle order: the visitor's view stays (the viewer frames anew only a clearly different model)
+            viewer.keepView(true);
+            const loaded = await showServerStl(file.stl_url).finally(() => viewer?.keepView(false));
+            if (loaded) { paintedFor = file.uuid; return; }   // painted, or runs that do not fit (data-painted says which): not again
+        }
+        markPainted('failed');
+    } finally {
+        if (paintingFor === file.uuid) paintingFor = null;
+    }
+}
+
+/** How the painted preview went, on the viewer's canvas (read by the review harness and by hand in the console). */
+function markPainted(how: 'loading' | 'colors' | 'mismatch' | 'failed'): void {
+    const canvas = document.getElementById('viewer');
+    if (canvas) canvas.dataset.painted = how;
 }
 
 /** Tool-specific line under the viewer: how this kind of model is meant to be printed. */

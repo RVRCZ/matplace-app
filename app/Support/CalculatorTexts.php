@@ -12,7 +12,7 @@ final class CalculatorTexts
 {
     public const KEYS = [
         'calc.status.reading', 'calc.status.rough', 'calc.status.uploading', 'calc.status.queued', 'calc.status.done',
-        'calc.status.failed', 'calc.status.not_model', 'calc.status.converting', 'calc.status.big_model', 'calc.status.big_only', 'calc.status.big_only_n', 'calc.status.by_parts', 'calc.colors.count', 'calc.colors.merged', 'calc.colors.price_one', 'calc.colors.price_multi', 'calc.colors.order', 'calc.price.orient_range', 'calc.price.shape_hint', 'calc.time.range', 'calc.price.from', 'calc.price.range', 'calc.price.per_piece',
+        'calc.status.failed', 'calc.status.not_model', 'calc.status.converting', 'calc.status.big_model', 'calc.status.big_only', 'calc.status.big_only_n', 'calc.status.by_parts', 'calc.colors.count', 'calc.colors.merged', 'calc.colors.price_one', 'calc.colors.price_multi', 'calc.colors.price_same', 'calc.colors.order', 'calc.price.orient_range', 'calc.price.shape_hint', 'calc.time.range', 'calc.price.from', 'calc.price.range', 'calc.price.per_piece',
         'calc.days', 'calc.cta.copied', 'calc.error.read', 'calc.error.upload', 'calc.error.too_big', 'calc.est_only',
         'calc.profile.budget', 'calc.profile.standard', 'calc.profile.express', 'calc.profile.mine', 'calc.others_from',
         'calc.breakdown.material', 'calc.breakdown.time', 'calc.breakdown.setup', 'calc.breakdown.total', 'calc.breakdown.discount', 'calc.breakdown.margin', 'calc.breakdown.min_price', 'calc.breakdown.rounded',

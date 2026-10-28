@@ -26,12 +26,13 @@ final class PaintedColorsPageTest extends TestCase
         $this->assertGreaterThan(strpos($html, 'id="price-card"'), strpos($html, 'id="calc-colors"'), 'in the price card');
 
         $i18n = $this->calcConfig('/', ['Accept-Language' => 'cs'])['i18n'];
-        foreach (['calc.colors.count', 'calc.colors.merged', 'calc.colors.price_one', 'calc.colors.price_multi', 'calc.colors.order'] as $key) {
+        // price_same: one line when the price in colour and in one colour come out the same (the turtle at the price list's minimum)
+        foreach (['calc.colors.count', 'calc.colors.merged', 'calc.colors.price_one', 'calc.colors.price_multi', 'calc.colors.price_same', 'calc.colors.order'] as $key) {
             $this->assertArrayHasKey($key, $i18n, $key);
         }
         $this->assertStringContainsString('[2,4] Soubor má :n namalované barvy', $i18n['calc.colors.count'], 'the forms travel for the script\'s plural()');
         foreach (['cs', 'en', 'es'] as $locale) {
-            foreach (['calc.colors.count', 'calc.colors.merged', 'calc.colors.order', 'calc.colors.order_one', 'edit.colors.painted'] as $key) {
+            foreach (['calc.colors.count', 'calc.colors.merged', 'calc.colors.price_same', 'calc.colors.order', 'calc.colors.order_one', 'edit.colors.painted'] as $key) {
                 $this->assertNotSame($key, trans($key, [], $locale), "{$key} ({$locale})");
             }
         }

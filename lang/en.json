@@ -1954,5 +1954,6 @@
     "calc.colors.price_one": "In one colour :price",
     "calc.colors.price_multi": "In colour from :price",
     "calc.colors.order": "Print in colour",
-    "calc.colors.order_one": "Print in one colour"
+    "calc.colors.order_one": "Print in one colour",
+    "calc.colors.price_same": "Same price in colour and in one colour: :price"
 }
