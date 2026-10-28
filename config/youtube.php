@@ -42,6 +42,14 @@ return [
         'wide' => ['growth' => [20, 28], 'title' => 1.5, 'hold' => 2.0, 'photo' => 3.0, 'end' => 3.0, 'fps' => 30, 'width' => 1920, 'height' => 1080],
         // "Tento týden na farmě": intro, every print of the week with its name, the closing card; 2 to 4 min
         'weekly' => ['growth' => [8.5, 10], 'piece_min' => 10.0, 'intro' => 3.0, 'end' => 4.0, 'max_seconds' => 240, 'min_prints' => 3, 'fps' => 30, 'width' => 1920, 'height' => 1080],
+        // the Short "Kolik stojí 3D tisk?" (youtube:price-short, docs/AL.md §13.7): the opening card, then every piece a second of its
+        // print growing (cut from its rendered Short this many seconds before the end, i.e. before the held plate and the end card;
+        // from the customer's video otherwise) fading into the photographed piece with its price, the closing card with the tools' address
+        'price' => ['clip' => 1.0, 'piece' => 4.0, 'open' => 1.2, 'end' => 3.5, 'short_from_end' => 5.7, 'customer_from_end' => 9.5, 'fps' => 24, 'width' => 1080, 'height' => 1920],
+        // "Jak funguje naše 3D tisková farma" (farm:monthly-video): intro, five cards with the steps, the month's prints between them
+        // (`piece` seconds each, longer when the month was quiet so the video reaches `min_seconds`), the photographed pieces, the
+        // numbers card, the closing card; never over `max_seconds` (the likely hits stay)
+        'monthly' => ['piece' => [12, 20], 'card' => 3.0, 'intro' => 4.0, 'photo' => 3.0, 'photos_max' => 6, 'numbers' => 6.0, 'end' => 4.0, 'min_seconds' => 180, 'max_seconds' => 300, 'min_prints' => 4, 'fps' => 30, 'width' => 1920, 'height' => 1080],
     ],
 
     // the classic 16:9 of a print is built for the customer and the weekly cut but not uploaded next to its Short (the same

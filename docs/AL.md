@@ -1538,3 +1538,98 @@ levitoval dál, ačkoli výřez je čistý (572×653, pevná maska 14–638, lem
 Testy: `PrintPhotosTest` (nový test: černá fotka → `dark:` výjimka, odmítnutí ve foto‑boxu + `dark_photo_at` + smazání
 po dobré fotce, nahrání na stránce zakázky → `photo_meta.error` + text, legacy 097 → redo vyčistí složenou i foto‑box,
 video se přestaví), `FarmTestPhotosTest` – zelené.
+
+## 13.7 Seriál „Kolik stojí 3D tisk?“ a měsíční video o farmě (audit B7, priority bod 6)
+
+Dvě videa z toho, co farma už má – nic se netočí znovu: vyrenderované časosběry tisků (Short, 16:9, zákaznické video
+na farm disku) a složené fotky kusů (PrintPhotos). Větev `feature/youtube-series` z main 0974844, 28. 10. 2026. Nová
+třída `App\Domain\YouTube\SeriesCutter` (plán bez ffmpeg jako `VideoCut`, renderuje `TimelapseCutter::render`), dva
+příkazy, dva nové druhy videa `price` a `monthly` (`FarmVideo::OF_MANY` = weekly + price + monthly: bez vlastní
+zakázky, `meta.orders`, každý zákazník musí dál souhlasit), obě čekají v `/admin/youtube` jako „Ke schválení“
+(Roman zveřejní). Žádné volání YouTube API.
+
+### 13.7.1 `youtube:price-short --n=5 [--dry-run] [--seed=]`
+
+- **Výběr** (`priceCandidates`): zakázky zákazníků a ukázky se souhlasem, složenou fotkou (`photo_path` + render
+  `short`), cenou > 0, časosběrem na disku, bez odmítnutého videa, nic z fotek lidí (`PRIVATE_KINDS`); seskupené
+  podle nástroje (vlastní soubor = jedna skupina). `pickForPrice`: z každého nástroje jeden, náhodně; napřed
+  nástroje a kusy, které žádný dosavadní price‑Short neukázal (`meta.orders`); stejný nástroj dvakrát jen když je
+  nástrojů málo. `--seed` pro opakovatelné losování (testy). Min. 2 kusy, max. 8.
+- **Střih** (`priceShort`, `config youtube.cut.price`): úvodní karta 1,2 s („Kolik stojí 3D tisk?“ + „5 věcí s cenou“),
+  každý kus = 1 s rostoucího tisku vystřižená z jeho hotového Shortu (`-sseof -5.7`, tj. před drženou deskou a
+  závěrem; ze zákaznického videa `-9.5`, kdyby Short chyběl; jakýkoli tvar zdroje přes rozostřené pozadí) →
+  prolínačka 0,3 s → složená fotka 9:16 na 4 s s cenou „Cena: 320 Kč“ (72 % výšky); název kusu (titulek nástroje,
+  jinak jméno modelu) nahoře celou dobu; závěr 3,5 s logo + `matplace.com/tools` + „Co by stálo za vytištění vám?
+  Napište do komentáře.“ Pět kusů = 1,2 + 5 × 4,7 + 3,5 = **28,2 s**. Hudba podle dne v roce z knihovny.
+- **Texty** (`priceTexts`, `youtube.price.*` cs/en/es): titulek „Kolik stojí 3D tisk? 5 věcí s cenou“ (trans_choice),
+  popis = CTA na `/tools` s `utm_campaign=video_price`, věta o tom, z čeho se cena počítá, seznam „název – cena –
+  odkaz nástroje“ (každý s `video_price`), hudba, `#Shorts #3dtisk #3dtiskarna #kolikstoji #cena`.
+- Soubor `series/price-<datum>-<n>.mp4` na farm disku; `FarmVideos::queueCollection(kind, meta{key, orders}, …)`
+  (jeden řádek na klíč, přestavba vezme nový soubor, dokud není na YouTube). `VideoSharer` bere `price` jako
+  vertikální (Facebook/Instagram), `linkOf` míří na `/tools`, `pathOf`/`allowed`/`consented`/odvolání souhlasu
+  (`withdraw` hlásí „sestavte video znovu“) umí všechny `OF_MANY`.
+
+### 13.7.2 `farm:monthly-video [--month=2026-10] [--dry-run]`
+
+- **Výběr** (`monthCandidates`): tisky dokončené v měsíci se souhlasem, bez odmítnutých, bez fotek lidí, s 16:9 nebo
+  zákaznickým videem na disku; `fitMonth` nechá tolik, kolik se vejde do 300 s při nejkratším kusu (12 s) po odečtení
+  karet, čísel, závěru a až 6 fotek – přednost mají pravděpodobné hity (`FarmVideos::score`), pořadí podle dokončení.
+  Min. 4 tisky (`min_prints`).
+- **Střih** (`monthly`, `config youtube.cut.monthly`, 1920×1080, 30 fps): intro 4 s (logo, „Jak funguje naše 3D tisková
+  farma“, „říjen 2026“) → 5 karet kroků po 3 s (`youtube.monthly.steps`: 1. Nahrajete model nebo fotku · 2. Cena hned ·
+  3. Tisk na farmě · 4. Fotka hotového kusu · 5. Odeslání, každá s podtitulkem) → tisky rozdělené na tři skupiny pod
+  kroky 1–3 (segment z 16:9 od 1,5 s za titulní kartou, ze zákaznického videa od 7 s; jméno v rohu jako v týdenním
+  sestřihu), pod krokem 4 složené fotky po 3 s, pod krokem 5 karta čísel z `PublicStats::summary()` („Za posledních 30
+  dní: 37 výtisků · Celkem vytištěno: 412 kusů · Od zaplacení k předání: 3 dny · 31 videí na našem kanálu“, 6 s) →
+  závěr 4 s (logo, matplace.com, „Co byste si nechali vytisknout?“). **Délka 3–5 min:** kusy mají 12–20 s a natahují
+  se, aby video došlo ke 180 s (8 tisků → 16,6 s/kus = přesně 3:00; 3 tisky → 20 s a 98 s s varováním „quiet month“,
+  přesto se postaví); strop 300 s drží `fitMonth`. Kapitoly: 0:00 Úvod, 0:04 1. …, atd.
+- **Texty** (`monthlyTexts`): titulek „Jak funguje 3D tisková farma: od modelu k zásilce (říjen 2026)“, popis začíná CTA
+  na úvodní stránku (`video_monthly`), pak odstavec na hledané dotazy („Jak funguje 3D tisková farma a jak zjistit cenu
+  3D tisku? …“), „Naše čísla: …“, kapitoly s časy, hudba, `#3dtisk #3dtiskarna #3dtiskovafarma #jakfunguje3dtisk
+  #cena3dtisku`. Soubor `series/month-YYYY-MM.mp4`, klíč = měsíc. Plán (`routes/console.php`): 1. den v měsíci 19:00
+  pro měsíc, který skončil.
+- Admin: `/admin/youtube` ukazuje oba druhy mezi čekajícími („Seriál „Kolik stojí 3D tisk?“ · 5 kusů s cenou“,
+  „Měsíc 2026-10 · 8 tisků“), `_video` bere `path` a Short jako svislý.
+
+### 13.7.3 Oprava při tom: `only()` na Eloquent kolekci
+
+`TimelapseCutter::fitWeek` (a první verze `fitMonth`) vybíraly hity přes `$orders->only($keys)` – na Eloquent kolekci
+`only()` filtruje podle **id modelů**, ne podle pozic: z 30 tisků měsíce zůstalo 17 místo 22 (ty, jejichž id náhodou
+odpovídalo pozicím 0–21). Týden nikdy neměl víc tisků, než se vejde (23), takže se to neprojevilo; obě místa teď
+filtrují podle pozic.
+
+### 13.7.4 Ověření a ukázky
+
+`tests/Feature/YouTubeSeriesTest.php`: (1) výběr podle nástrojů s `--seed`, plán Shortu (28,2 s, 12 vstupů, texty, graf
+s xfade/concat), titulek a popis, dry‑run příkazu, fronta přes `queueCollection` (pending, cesta, souhlas, odkaz na
+`/tools`, admin stránka), příští Short bere nejdřív neukázané kusy, odvolání souhlasu označí video; (2) měsíc: 8 tisků
++ mimo (září, figurka, odmítnuté, bez souboru) → 180 s, 16 vstupů, kapitoly, karta čísel, texty, dry‑run, prázdný
+měsíc, chybný parametr, 30 tisků → 21 se vejde do 300 s; (3) **skutečný render** (FFMPEG_BIN): tři tisky → Shorty, 16:9
+a zákaznická videa ze syntetických snímků, fotky přes falešný odstraňovač → `youtube:price-short --n=3` = 18,8 s
+1080×1920 se zvukem, `farm:monthly-video` = 98 s 1920×1080 se zvukem. Dále `FarmVideosCutTest`, `YouTubeChannelTest`,
+`YouTubeVideosTest`, `FarmStatusColumnsTest` (nové druhy se vejdou do `kind` varchar(8)) – zelené; pint čistý.
+
+Ukázky (syntetický materiál – barevné sloupce místo tisků, elipsy místo kusů; rozvržení, časování a texty jsou skutečné):
+`C:\Users\roman\AppData\Local\Temp\claude\c--Users-roman-Documents-MatPlace-conceprt19092026\18e3d80f-ba4e-42a8-b6d7-75b3417a895b\scratchpad\video-samples\series\`
+`price-short.mp4`, `monthly.mp4` a stills `price-open/clip/piece/end.jpg`, `monthly-intro/card/print/photo/numbers.jpg`.
+Na produkci stačí `php artisan youtube:price-short --n=5 --dry-run` (plán) a pak bez `--dry-run`; měsíční
+`php artisan farm:monthly-video --month=2026-10 --dry-run`. Nic z toho nebylo zkoušeno se skutečnými videi z farmy –
+první ostrý běh ukáže, jak sedí `-sseof -5.7` u starších čtvercových Shortů (jiné časování závěru; vteřina pak může
+padnout do držené desky, ne do růstu).
+
+### 13.7.5 Po nasazení: bez názvů souborů na kartě ceny
+
+Řídící 28. 10.: sloučeno (main 61c48774) a nasazeno (server cb0cd4f7); dry‑run na produkci: 9 kusů s fotkou a cenou ze
+4 nástrojů, vybráno 5 (váza 419, QR 199, Cat 779, stojánek 289, drak 499), 28,2 s; měsíc 22 vstupů, 3:35, kapitoly
+sedí; ostrý render obou běžel na serveru. Připomínka: u kusů z vlastních souborů šel na kartu ceny surový název
+(„Cat“, „Mystical Chine Dragon V EYE“).
+
+`SeriesCutter::pieceName`: nástroj → titulek nástroje jako dřív; **vlastní soubor → titulek, který admin dal videu**
+(nejnovější Short/16:9 zakázky, zveřejněný přednostně, bez odvolaných/odmítnutých/chybějících; část před
+„ – 1 h 33 min tisku“, tedy po `youtube:retitle` to, co Roman schválil), **jinak „Vlastní model zákazníka · PLA Silk
+měděná“** – název souboru se na kartu nedostane nikdy. Totéž jméno jde do seznamu v popisu. Texty
+`youtube.price.own_file` cs/en/es. Větev `feature/youtube-series-names` z main 528ef812; test v `YouTubeSeriesTest`
+(video s titulkem „Kočka z vlastního souboru – 6 h 33 min tisku“ → karta „Kočka z vlastního souboru“; bez videa →
+„Vlastní model zákazníka“, nikde „Cat“). Měsíční video a týdenní sestřih nechávají jméno v rohu jako dosud
+(`cardFacts`), to je jméno modelu, ne karta ceny; změnit lze stejně, řekne‑li Roman.

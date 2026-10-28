@@ -3,11 +3,15 @@
 namespace Tests\Feature;
 
 use App\Domain\Catalog\ModelPricing;
+use App\Domain\Stats\SearchConsole;
 use App\Models\Calculation;
 use App\Models\CatalogModel;
 use App\Models\ModelFile;
+use App\Models\SearchConsoleRow;
+use App\Models\User;
 use Database\Seeders\FarmSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use Tests\Support\MeshFixtures;
@@ -168,5 +172,88 @@ class CatalogValueTest extends TestCase
         $this->assertStringNotContainsString('/c/'.$personal->sliceCalculation->token, $html);
         $this->assertNull(collect($this->things($html))->first(fn (array $t) => ($t['@type'] ?? null) === 'Product'));
         $this->assertStringContainsString('data-use="personal"', $html);
+    }
+
+    private function admin(): User
+    {
+        $admin = User::factory()->create();
+        $admin->setRole(User::ROLE_ADMIN, true);
+
+        return $admin;
+    }
+
+    public function test_the_admin_uploads_a_file_to_a_model_and_the_slice_follows_it_on_the_queue(): void
+    {
+        $admin = $this->admin();
+        $model = $this->model(['enriched_at' => now(), 'license' => 'cc_by', 'license_restricted' => false]);
+        $tmp = sys_get_temp_dir().'/mp_cube_'.uniqid().'.stl';
+        MeshFixtures::cubeStl($tmp, 30);
+        $cube = fn () => new UploadedFile($tmp, 'dragon.stl', null, null, true);
+
+        // not for everybody, not every file
+        $this->actingAs(User::factory()->create())->post(route('admin.catalog.file', $model->id), ['file' => $cube()])->assertRedirect();
+        $this->assertNull($model->fresh()->model_file_id);
+        $this->actingAs($admin)->from(route('admin.catalog.edit', $model->id))->post(route('admin.catalog.file', $model->id), ['file' => UploadedFile::fake()->create('notes.txt', 10)])
+            ->assertRedirect(route('admin.catalog.edit', $model->id))->assertSessionHasErrors('file');
+        $this->assertNull($model->fresh()->model_file_id);
+
+        // the cube: a hidden file of the catalogue, processed and sliced at once (the queue is sync here)
+        $this->actingAs($admin)->from(route('admin.catalog.files'))->post(route('admin.catalog.file', $model->id), ['file' => $cube()])
+            ->assertRedirect(route('admin.catalog.files'))->assertSessionHas('status');
+        $model->refresh();
+        $file = $model->modelFile;
+        $this->assertNotNull($file);
+        $this->assertSame(['catalog', (string) $model->id, null, ModelFile::STATUS_READY], [$file->origin, $file->origin_ref, $file->owner_user_id, $file->status]);
+        $this->assertTrue($model->file_available);
+        $this->assertNotNull($model->sliced_at, 'the slice followed the processing on the queue');
+        $this->assertGreaterThan(0, $model->slice_minutes);
+        $this->assertNull($model->slice_error);
+        $this->assertTrue($model->isIndexable(), 'a text, the file and now the price: indexed');
+        $this->get('/model/'.$model->slug)->assertOk()->assertSee('id="model-calc"', false);
+
+        $this->actingAs($admin)->get(route('admin.catalog.edit', $model->id))->assertOk()->assertSee('dragon.stl')->assertSee('Rozřezat znovu')->assertSee('kalkulace');
+        $this->actingAs($admin)->from(route('admin.catalog.edit', $model->id))->post(route('admin.catalog.slice', $model->id))->assertRedirect(route('admin.catalog.edit', $model->id))->assertSessionHas('status');
+        $this->assertNotNull($model->fresh()->sliced_at);
+
+        // a new file replaces the slice and is sliced again
+        $this->actingAs($admin)->from(route('admin.catalog.files'))->post(route('admin.catalog.file', $model->id), ['file' => $cube()])->assertRedirect();
+        $this->assertNotSame($file->id, $model->fresh()->model_file_id);
+        $this->assertNotNull($model->fresh()->sliced_at);
+        @unlink($tmp);
+    }
+
+    public function test_the_files_page_lists_the_models_most_shown_in_search_console_first_each_with_an_upload(): void
+    {
+        $admin = $this->admin();
+        $dragon = $this->model(['slug' => 'dragon', 'view_count' => 10]);
+        $cat = $this->model(['slug' => 'cat', 'view_count' => 900]);
+        $owl = $this->model(['slug' => 'owl', 'view_count' => 50]);
+        $this->model(['slug' => 'hidden-one', 'visible' => false, 'view_count' => 5000]);
+        $withFile = $this->model(['slug' => 'with-file', 'view_count' => 1, 'model_file_id' => $this->fileOnDisk()->id]);
+
+        // no Search Console rows: the most visited first
+        $html = (string) $this->actingAs($admin)->get(route('admin.catalog.files'))->assertOk()->getContent();
+        $this->assertLessThan(strpos($html, 'data-top-model="owl"'), strpos($html, 'data-top-model="cat"'));
+        $this->assertLessThan(strpos($html, 'data-top-model="dragon"'), strpos($html, 'data-top-model="owl"'));
+        $this->assertStringNotContainsString('hidden-one', $html);
+        $this->assertStringContainsString('data-file-model="'.$withFile->id.'"', $html);
+        $this->assertStringNotContainsString('data-top-model="with-file"', $html);
+        foreach ([$dragon, $cat, $owl] as $m) {
+            $this->assertStringContainsString(route('admin.catalog.file', $m->id), $html, 'an upload for every model');
+        }
+        $this->assertStringContainsString('https://www.printables.com/model/', $html, 'the source to fetch the file from');
+
+        // Search Console knows the pages: the most shown first, every language together, the rest by visits
+        foreach ([['https://matplace.com/model/dragon', 500], ['https://matplace.com/en/model/dragon', 100], ['https://matplace.com/model/owl', 50], ['https://matplace.com/model/hidden-one', 900], ['https://matplace.com/tools/box', 999]] as [$page, $n]) {
+            $date = now()->subDays(2)->toDateString();
+            SearchConsoleRow::create(['row_key' => SearchConsoleRow::keyFor($date, $page, null, 'cze'), 'date' => $date, 'page' => $page, 'country' => 'cze', 'clicks' => 1, 'impressions' => $n, 'ctr' => 0.01, 'position' => 5]);
+        }
+        $this->assertSame(['hidden-one' => 900, 'dragon' => 600, 'owl' => 50], SearchConsole::modelPages(90, 10));
+        $html = (string) $this->actingAs($admin)->get(route('admin.catalog.files'))->assertOk()->getContent();
+        $this->assertLessThan(strpos($html, 'data-top-model="owl"'), strpos($html, 'data-top-model="dragon"'));
+        $this->assertLessThan(strpos($html, 'data-top-model="cat"'), strpos($html, 'data-top-model="owl"'));
+        $this->assertStringContainsString('600', $html);
+        $this->assertStringNotContainsString('hidden-one', $html);
+        $this->actingAs(User::factory()->create())->get(route('admin.catalog.files'))->assertRedirect();
     }
 }

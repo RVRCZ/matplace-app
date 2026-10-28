@@ -76,6 +76,7 @@ final class SearchConsoleApiTest extends TestCase
                         ['keys' => ['https://matplace.com/tools/box', 'krabička na míru', 'cze'], 'clicks' => 8, 'impressions' => 120, 'ctr' => 0.066, 'position' => 5.0],
                         ['keys' => ['https://matplace.com/tools/box', 'krabička s víkem', 'cze'], 'clicks' => 1, 'impressions' => 30, 'ctr' => 0.033, 'position' => 9.0],
                         ['keys' => ['https://matplace.com/en/tools/box', 'box generator', 'usa'], 'clicks' => 2, 'impressions' => 80, 'ctr' => 0.025, 'position' => 11.0],
+                        ['keys' => ['https://matplace.com/tools/box', 'krabička zdarma', 'cze'], 'clicks' => 0, 'impressions' => 60, 'ctr' => 0.0, 'position' => 15.0],
                     ];
                 }
                 // the last day has nothing yet, as Search Console has not finished it
@@ -153,13 +154,13 @@ final class SearchConsoleApiTest extends TestCase
         $since = now()->subDays(2)->toDateString();
 
         $this->artisan("searchconsole:pull --since={$since}")->expectsOutputToContain('Done: 3 days')->assertSuccessful();   // one substring: Mockery hands a line to the first expectation it fits
-        // two finished days × (4 page rows + 3 query rows); today is empty
-        $this->assertSame(14, SearchConsoleRow::count());
+        // two finished days × (4 page rows + 4 query rows); today is empty
+        $this->assertSame(16, SearchConsoleRow::count());
         $this->assertSame(8, SearchConsoleRow::whereNull('query')->count());
         $this->assertSame(['cze', 'usa'], SearchConsoleRow::whereNotNull('country')->distinct()->orderBy('country')->pluck('country')->all());
-        // the answer came in pages of two: 3 requests for 4 page rows (the third finds the end), 2 for 3 query rows, 1 for each empty kind of today, plus the 429 that was tried again
+        // the answer came in pages of two: 3 requests for 4 page rows (the third finds the end), 3 for 4 query rows, 1 for each empty kind of today, plus the 429 that was tried again
         $queries = array_values(array_filter($this->calls, fn ($c) => str_contains($c['url'], '/searchAnalytics/query')));
-        $this->assertCount(2 * (3 + 2) + 2 + 1, $queries);
+        $this->assertCount(2 * (3 + 3) + 2 + 1, $queries);
         $this->assertSame([0, 2], array_values(array_unique(array_map(fn ($c) => (int) $c['body']['startRow'], array_slice($queries, 0, 3)))));
         $this->assertStringContainsString('sc-domain%3Amatplace.com', $queries[0]['url'], 'the property is URL-encoded in the address');
         $this->assertSame('web', $queries[0]['body']['type']);
@@ -171,16 +172,16 @@ final class SearchConsoleApiTest extends TestCase
         // the same again: written over, not doubled; a changed number wins
         SearchConsoleRow::where('page', 'https://matplace.com/')->whereNull('query')->update(['clicks' => 1]);
         $this->artisan("searchconsole:pull --since={$since}")->assertSuccessful();
-        $this->assertSame(14, SearchConsoleRow::count());
+        $this->assertSame(16, SearchConsoleRow::count());
         $this->assertSame(20, SearchConsoleRow::where('page', 'https://matplace.com/')->whereNull('query')->first()->clicks);
 
         // the daily run: the last three days by default, one of them (three days ago) new here
         $this->artisan('searchconsole:pull')->expectsOutputToContain('4 days')->assertSuccessful();
-        $this->assertSame(21, SearchConsoleRow::count());
+        $this->assertSame(24, SearchConsoleRow::count());
 
         // "pull now" from the admin page does the same
         $this->actingAs($this->admin)->post('/admin/search-console/pull')->assertRedirect('/admin/search-console')->assertSessionHas('status');
-        $this->actingAs($this->admin)->get('/admin/search-console')->assertOk()->assertSee('data-days', false)->assertSee('21 řádků');
+        $this->actingAs($this->admin)->get('/admin/search-console')->assertOk()->assertSee('data-days', false)->assertSee('24 řádků');
     }
 
     public function test_the_first_run_of_a_fresh_account_goes_sixteen_months_back_and_a_refused_grant_asks_for_a_new_connection(): void
@@ -241,7 +242,18 @@ final class SearchConsoleApiTest extends TestCase
         $this->assertSame('api', $old['source']);
         $this->assertSame([], $old['tools']);
 
+        // the weeks of every tool and the queries nobody clicked (docs/AN.md §15)
+        $weekly = SearchConsole::weeklyByTool(4);
+        $this->assertSame(600, array_sum(array_column($weekly['box'], 'impressions')));
+        $this->assertSame(24, array_sum(array_column($weekly['box'], 'clicks')));
+        $this->assertSame(800, array_sum(array_column($weekly['calc'], 'impressions')));
+        $zero = SearchConsole::zeroClickQueries(28, 20);
+        $this->assertSame([['query' => 'krabička zdarma', 'impressions' => 120, 'position' => 15.0, 'page' => '/tools/box']], $zero);
+        $this->assertSame([], SearchConsole::zeroClickQueries(28, 20, 'other'));
+        $this->assertSame([], SearchConsole::modelPages(90, 10), 'no /model/ pages in these rows');
+
         $page = $this->actingAs($this->admin)->get(route('admin.stats.tools', ['country' => 'cz']))->assertOk();
+        $page->assertSee('Dotazy bez kliknutí')->assertSee('krabička zdarma')->assertSee('data-zero-clicks', false);
         $page->assertSee('Data ze Search Console')->assertSee(now()->subDays(1)->format('j. n. Y'))->assertSee(__('tools.box.title'))->assertSee('400')->assertDontSee('search-console-2026-10-20.csv');
         $page->assertSee(route('admin.stats.tools', ['weeks' => 12, 'country' => 'other']));
         File::deleteDirectory($dir);

@@ -75,4 +75,39 @@ return [
         'title' => 'This week on the farm – :dates',
         'description' => ":cta\nWhat our 3D print farm printed this week (:dates): :count prints in time-lapse. Every piece has a chapter with a link to the tool it was made in.\n\nWe publish the videos with our customers' consent.",
     ],
+
+    // the Short "How much does 3D printing cost?" (youtube:price-short, docs/AL.md §13.7)
+    'price' => [
+        'card' => 'How much does 3D printing cost?',
+        'things' => '{1} :n thing with its price|[2,*] :n things with their prices',
+        'pieces' => '{1} :n piece|[2,*] :n pieces',
+        'title' => 'How much does 3D printing cost? :things',
+        'ask' => 'What would be worth printing for you? Tell us in a comment.',
+        'line' => ':name – :price – :url',
+        'own_file' => 'A customer\'s own model',
+        'description' => ":cta\n:pieces from our 3D print farm and what they cost. The price always comes from the model: its size, the material and the print time. Yours takes a minute, no account needed.\n\nIn the video:",
+        'hashtags' => '#Shorts #3dprinting #3dprintfarm #howmuch #price',
+    ],
+
+    'monthly' => [
+        'card' => 'How our 3D print farm works',
+        'intro_chapter' => 'Intro',
+        'title' => 'How a 3D print farm works: from the model to the parcel (:month)',
+        'ask' => 'What would you have printed? Tell us in a comment.',
+        'steps' => [
+            ['title' => '1. Upload a model or a photo', 'sub' => 'STL, 3MF, OBJ – or a photo for a figure and made-to-measure tools'],
+            ['title' => '2. The price at once', 'sub' => 'We slice the model and you see the price within a minute, no account'],
+            ['title' => '3. Printed on the farm', 'sub' => 'Anycubic Kobra printers, PLA, PETG and more'],
+            ['title' => '4. A photo of the finished piece', 'sub' => 'Every print is photographed in the photo box'],
+            ['title' => '5. Shipped', 'sub' => 'A parcel shop or a pick-up'],
+        ],
+        'numbers' => [
+            'recent' => '{1} Last 30 days: :n print|[2,*] Last 30 days: :n prints',
+            'printed' => '{1} Printed so far: :n piece|[2,*] Printed so far: :n pieces',
+            'days' => '{0} From payment to hand-over: the same day|{1} From payment to hand-over: :d day|[2,*] From payment to hand-over: :d days',
+            'videos' => '{1} :n video on our channel|[2,*] :n videos on our channel',
+        ],
+        'description' => ":cta\nHow does a 3D print farm work and how do you find out the price of a 3D print? This video follows an order all the way (:month): the upload of a model or a photo, the slice and the price within a minute, the print, the photo of the finished piece and the shipping, with time-lapses of our prints in between.\n\nOur numbers: :numbers\n\nChapters:",
+        'hashtags' => '#3dprinting #3dprintfarm #howitworks #3dprintcost',
+    ],
 ];

@@ -1870,5 +1870,8 @@
     "calc.trust.photo_alt": "Výtisk z farmy matplace: :what",
     "calc.trust.photo_own": "model zákazníka",
     "calc.config_failed": "Nepodařilo se načíst nastavení kalkulace. Obnovte prosím stránku.",
-    "site.examples.item.svg_to_stl": "Silueta kočky ze SVG, :size"
+    "site.examples.item.svg_to_stl": "Silueta kočky ze SVG, :size",
+    "tools.photos.title": "Takhle to vytiskli",
+    "tools.photos.lead": "Skutečné výtisky z naší farmy, které si zákazníci nechali udělat tímto nástrojem.",
+    "tools.photos.alt": "Výtisk z nástroje :tool, :material, :date"
 }

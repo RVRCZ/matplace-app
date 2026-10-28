@@ -411,3 +411,55 @@ minut) – nebo nechat noci.
 - Stránka `/model/<slug>` v Search Console: řádky má, do nástrojů se nepočítá (spadá do „ostatní stránky“, top 20);
   pro katalog (§13) by stálo za to přidat součet „inspirace“ – malá úprava `SearchConsole::aggregate`.
 - Výmaz starých řádků neděláme (16 měsíců × stovky řádků denně = statisíce řádků, v pořádku).
+
+## 15. Návštěvnost, třetí dávka: soubory k modelům ručně, fotky výtisků u nástrojů, Search Console týden po týdnu (větev `feature/traffic-photos-console`, 28. 10. 2026)
+
+### 15.1 Katalog: soubor k modelu nahraný ručně (Romanova varianta b)
+
+Produkce nedrží žádný soubor modelu (§13.3), stahování ze zdrojů Roman odložil; soubory stáhne ručně a nahraje.
+- **`/admin/catalog/files`** (chip „Soubory“): **Top 30 modelů bez souboru** podle zobrazení stránek `/model/<slug>`
+  v Search Console za 90 dní (`SearchConsole::modelPages`, jazyky dohromady), doplněno nejnavštěvovanějšími
+  (`view_count`); bez řádků Search Console jen podle návštěvnosti. U každého odkaz na zdroj, licence, čísla a formulář
+  „Nahrát soubor“. Pod tím **modely se souborem**: stav zpracování, stav řezu (datum, minuty, gramy, odkaz na kalkulaci
+  `/c/<token>`, nebo chyba), „Rozřezat znovu“ a nahrazení souboru.
+- **Nahrání** (`CatalogController::file`, i v detailu modelu v boxu „Soubor modelu“): formáty kalkulačky
+  (`ConverterChain::inputFormats`, STL/3MF/OBJ…), limit `uploads.max_mb`; soubor se uloží jako `ModelFile`
+  s `origin = catalog`, `origin_ref` = id modelu, bez vlastníka (nikde ke stažení; `matplace:prune` ho nechá, dokud na
+  něj model ukazuje), `model_file_id` + `file_available` se nastaví, starý řez se smaže. Pak ve frontě
+  `ProcessModelFile` a za ním řetězem `SliceCatalogModel` (nová úloha, `CatalogSlicer` = logika vyňatá z `catalog:slice`,
+  obě cesty sdílí). Výsledek i chyba (`slice_error`, stav souboru) jsou vidět v adminu. „Rozřezat znovu“ dá řez do fronty.
+- Test `CatalogValueTest`: nahrání (ne-admin, špatný formát, krychle → soubor připraven a řez hotový, stránka indexovaná a
+  s `#model-calc`, znovu řez, nový soubor nahradí starý), stránka Soubory (pořadí bez a se Search Console, skryté modely
+  vynechané, formulář u každého, zdroj k stažení).
+
+### 15.2 Fotky výtisků na stránkách nástrojů
+
+- **`App\Domain\Tools\ToolPhotos`**: zaplacené dokončené zakázky s fotkou (`photo_path`, `PrintPhotos`), jejichž model
+  vznikl nástrojem (`model_files.origin_ref`; busta z fotky = `origin generated`), nejnovější první, nejvíc čtyři, hodinu
+  v cache per nástroj. **Souhlas:** jen zakázky s `video_consent`, výjimkou nástroje, které berou jen rozměry
+  (`ToolInput::of` = `sizes`: krabička, váza, organizér…), jejich výtisk nenese nic o majiteli. Fotka je výtisk na pozadí,
+  ne člověk; cena zákazníka se neukazuje nikde.
+- **Blok „Takhle to vytiskli“** (`tools/_photos.blade.php`, v `tools/_content` za vstupní stránkou): mřížka 2 × 2
+  (na větším displeji 4), `<picture>` s WebP, `loading="lazy"`, alt „Výtisk z nástroje <název>, <materiál>, <datum>“,
+  pod fotkou materiál a datum. Bez fotek se nic nevykreslí.
+- **`calculator/_examples`**: karta příkladu bez ručně vybrané fotky (`photo` null v `config/site.php`) vezme nejnovější
+  fotku výtisku stejného nástroje a odloží štítek „náhled“; Romanův ruční výběr má přednost.
+- Texty `tools.photos.*` (`lang/src/tool_photos.json`). Test `ToolPhotosTest` (souhlas vs. rozměrový nástroj, nejvíc 4,
+  nejnovější první, busta = figure, en datum, cena mimo blok; příklad bere fotku).
+
+### 15.3 Search Console: týden proti týdnu a dotazy bez kliknutí
+
+- `/admin/stats/tools` (jen se zdrojem API): **„Týden proti týdnu: zobrazení → kliknutí → použití“** pro poslední
+  kalendářní týden, který má Search Console celý (neděle ≤ nejnovější datum dat), proti týdnu před ním, per nástroj
+  s rozdílem (zelené plus, červené minus); použití = unikátní návštěvníci s nástrojem v tom týdnu (`ToolUse::weekly`),
+  zobrazení a kliknutí `SearchConsole::weeklyByTool` (součty stránek po týdnech od pondělí). Respektuje filtr země.
+- **„Dotazy bez kliknutí (28 dní)“**: `SearchConsole::zeroClickQueries` – dotazy se součtem kliknutí 0, podle zobrazení,
+  s pozicí a jednou ze stránek, které se u nich ukázaly; 20 řádků, námět pro N1 a blog.
+- Dnes (28. 10.) je vlastnost nová a historie se teprve doplňuje: tabulka týdnů se objeví, až bude celý týden dat.
+- Test v `SearchConsoleApiTest` (týdny po nástrojích, dotaz bez kliku, filtr země, stránka).
+
+### 15.4 Co zůstává
+
+- Nahrání souboru je ruční: 30 modelů = 30 stažení u zdroje; stránka ukazuje další, jak ubývají.
+- Sada s více díly: nahrát jeden hlavní díl, cena je pak za něj (v adminu to není řečeno u modelu; poznámka je v hlavičce).
+- Fotky: dnes 12 složených fotek v produkci; které nástroje mají výtisk s fotkou, se ukáže po nasazení.

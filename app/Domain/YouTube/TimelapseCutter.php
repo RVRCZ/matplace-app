@@ -406,9 +406,11 @@ class TimelapseCutter
         if ($orders->count() <= $max) {
             return $orders;
         }
-        $keep = $orders->sortByDesc(fn (FarmOrder $o) => FarmVideo::where('farm_order_id', $o->id)->value('score') ?? $this->videos->score($o) ?? 0)->take($max)->keys();
+        // positions, not ids: an Eloquent collection's only() takes the models whose ids happen to match the positions
+        // (28 Oct 2026: a month of 30 prints kept 17 of 22 that way; no week has had more prints than fit yet)
+        $keep = $orders->sortByDesc(fn (FarmOrder $o) => FarmVideo::where('farm_order_id', $o->id)->value('score') ?? $this->videos->score($o) ?? 0)->take($max)->keys()->all();
 
-        return $orders->only($keep->all())->values();
+        return $orders->filter(fn (FarmOrder $o, $k) => in_array($k, $keep, true))->values();
     }
 
     /** @return list<array{0: string, 1: float}> */

@@ -6,6 +6,8 @@ use App\Domain\Catalog\CatalogImporter;
 use App\Domain\Catalog\CategoryClassifier;
 use App\Domain\Catalog\License;
 use App\Domain\Catalog\ModelTexts;
+use App\Domain\Stats\SearchConsole;
+use App\Engines\Converter\ConverterChain;
 use App\Engines\DTO\SearchOptions;
 use App\Engines\DTO\SearchResultSet;
 use App\Engines\Exceptions\EngineException;
@@ -16,13 +18,19 @@ use App\Http\Controllers\Controller;
 use App\Jobs\ClassifyModel;
 use App\Jobs\EnrichCatalogModel;
 use App\Jobs\PrepareDesignerFile;
+use App\Jobs\ProcessModelFile;
+use App\Jobs\SliceCatalogModel;
 use App\Models\CatalogCategory;
 use App\Models\CatalogModel;
 use App\Models\DesignerImport;
 use App\Models\DesignerModel;
+use App\Models\ModelFile;
 use App\Support\Locales;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Str;
+use Illuminate\Validation\ValidationException;
 use Illuminate\View\View;
 
 /**
@@ -125,6 +133,80 @@ class CatalogController extends Controller
         return view('admin.catalog.import', ['import' => $import, 'models' => CatalogModel::whereIn('id', array_filter(array_column((array) $import->items, 'model_id')))->get()->keyBy('id')]);
     }
 
+    /**
+     * "Soubory" (docs/AN.md §15, Roman's variant b): the models worth a file first – the most shown /model/ pages of Search
+     * Console, filled up with the most visited – each with an upload, so the files are fetched from the source by hand and
+     * put here one by one; then the models with a file and how far their slice got.
+     */
+    public function files(ConverterChain $converters): View
+    {
+        $limit = 30;
+        $days = 90;
+        $shown = SearchConsole::modelPages($days, $limit * 2);   // slug → impressions, the most shown first
+        $without = fn () => CatalogModel::shown()->whereNull('model_file_id');
+        $top = [];
+        if ($shown) {
+            $bySlug = $without()->whereIn('slug', array_keys($shown))->get()->keyBy('slug');
+            foreach ($shown as $slug => $impressions) {
+                if (isset($bySlug[$slug]) && count($top) < $limit) {
+                    $top[] = ['model' => $bySlug[$slug], 'impressions' => $impressions];
+                }
+            }
+        }
+        if (count($top) < $limit) {
+            $taken = array_map(fn ($r) => $r['model']->id, $top);
+            foreach ($without()->whereNotIn('id', $taken)->orderByDesc('view_count')->orderBy('id')->limit($limit - count($top))->get() as $m) {
+                $top[] = ['model' => $m, 'impressions' => $shown ? ($shown[$m->slug] ?? 0) : null];
+            }
+        }
+
+        return view('admin.catalog.files', [
+            'top' => $top, 'hasConsole' => $shown !== [], 'consoleDays' => $days, 'formats' => $converters->inputFormats(),
+            'withFile' => CatalogModel::shown()->whereNotNull('model_file_id')->with(['modelFile', 'sliceCalculation'])->orderByDesc('updated_at')->limit(100)->get(),
+        ]);
+    }
+
+    /**
+     * "Nahrát soubor k modelu": the file becomes a hidden ModelFile of the catalogue (origin `catalog`, nobody's, kept by
+     * matplace:prune while the model points at it), is processed on the queue and then sliced for the page's price
+     * (SliceCatalogModel chained after ProcessModelFile). A new file replaces the old slice.
+     */
+    public function file(Request $request, CatalogModel $model, ConverterChain $converters): RedirectResponse
+    {
+        $formats = $converters->inputFormats();
+        $request->validate(['file' => ['required', 'file', 'max:'.((int) config('uploads.max_mb', 120) * 1024)]]);
+        $upload = $request->file('file');
+        $ext = strtolower($upload->getClientOriginalExtension());
+        if (! in_array($ext, $formats, true)) {
+            throw ValidationException::withMessages(['file' => 'Formát .'.$ext.' neumíme; nahrajte '.strtoupper(implode(', ', $formats)).'.']);
+        }
+        $uuid = (string) Str::uuid();
+        $dir = 'files/'.$uuid;
+        Storage::disk(ModelFile::DISK)->putFileAs($dir, $upload, 'original.'.$ext);
+        $file = ModelFile::create([
+            'uuid' => $uuid, 'original_name' => mb_substr($upload->getClientOriginalName(), 0, 255), 'ext' => $ext, 'mime' => $upload->getClientMimeType(),
+            'size_bytes' => $upload->getSize(), 'sha256' => hash_file('sha256', Storage::disk(ModelFile::DISK)->path($dir.'/original.'.$ext)),
+            'storage_path' => $dir.'/original.'.$ext, 'status' => ModelFile::STATUS_UPLOADED, 'origin' => 'catalog', 'origin_ref' => (string) $model->id,
+        ]);
+        $model->forceFill([
+            'model_file_id' => $file->id, 'file_available' => true,
+            'slice_minutes' => null, 'slice_grams' => null, 'slice_material' => null, 'sliced_at' => null, 'slice_error' => null, 'slice_calculation_id' => null,
+        ])->save();
+        ProcessModelFile::withChain([new SliceCatalogModel($model->id)])->dispatch($file->id);
+
+        return redirect()->back()->with('status', 'Soubor '.$file->original_name.' je u modelu „'.$model->title.'“: zpracování a řez běží ve frontě, za chvíli obnovte stránku.');
+    }
+
+    /** "Rozřezat znovu": the slice of the model's file once more, on the queue. */
+    public function slice(CatalogModel $model): RedirectResponse
+    {
+        abort_unless($model->model_file_id, 404);
+        $model->forceFill(['slice_error' => null])->save();
+        SliceCatalogModel::dispatch($model->id);
+
+        return redirect()->back()->with('status', 'Řez modelu „'.$model->title.'“ je ve frontě; za chvíli obnovte stránku.');
+    }
+
     public function edit(Request $request, CatalogModel $model): View
     {
         return view('admin.catalog.edit', [
@@ -133,6 +215,7 @@ class CatalogController extends Controller
             'licenses' => array_keys((array) __('models.license')),
             // an AI text offered by the buttons below: shown in the form, saved only with "Uložit"
             'offered' => (array) $request->session()->get('offered_text', []),
+            'formats' => app(ConverterChain::class)->inputFormats(),
         ]);
     }
 

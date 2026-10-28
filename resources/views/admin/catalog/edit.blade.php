@@ -54,6 +54,18 @@
                 @if($model->slug)· <a href="{{ route('catalog.show', $model->slug) }}" target="_blank" class="underline">stránka</a>@endif</p>
             <p class="text-xs text-slate-600">Zobrazení: {{ $model->view_count }} · {{ $model->license_restricted ? 'licence: jen pro vlastní potřebu' : 'licence dovoluje i prodej výtisků' }}</p>
         </div>
+        {{-- the model's own file: uploaded by hand from the source, sliced for the page's price (docs/AN.md §15) --}}
+        <div class="rounded-2xl border border-slate-200 bg-white p-3" data-model-file>
+            <h2 class="font-bold">Soubor modelu</h2>
+            @if($model->modelFile)
+                <p class="mt-1 text-xs text-slate-600">{{ $model->modelFile->original_name }} · {{ ['uploaded' => 'čeká na zpracování', 'processing' => 'zpracovává se', 'ready' => 'připraven', 'failed' => 'zpracování selhalo', 'deleted' => 'smazán'][$model->modelFile->status] ?? $model->modelFile->status }}</p>
+                <p class="text-xs text-slate-600">Řez: @if($model->sliced_at)<span class="text-ok">{{ $model->sliced_at->format('j. n. Y') }}</span>, {{ $model->slice_minutes >= 60 ? intdiv((int) $model->slice_minutes, 60).' h '.($model->slice_minutes % 60).' min' : $model->slice_minutes.' min' }}, {{ $model->slice_grams }} g @if($model->sliceCalculation) · <a href="{{ url('/c/'.$model->sliceCalculation->token) }}" target="_blank" class="underline">kalkulace</a>@endif @elseif($model->slice_error)<span class="text-amber-700">selhal: {{ $model->slice_error }}</span>@else čeká @endif</p>
+                <form method="post" action="{{ route('admin.catalog.slice', $model->id) }}" class="mt-2">@csrf<button class="btn-quiet w-full min-h-0 py-2 text-sm">Rozřezat znovu</button></form>
+            @else
+                <p class="mt-1 text-xs text-slate-600">Bez souboru: stáhněte ho u zdroje (STL nebo 3MF, u sady největší díl) a nahrajte sem. Zůstane skrytý, rozřeže se ve frontě a stránka pak ukáže cenu ve třech materiálech.</p>
+            @endif
+            <div class="mt-2">@include('admin.catalog._file_form', ['model' => $model, 'formats' => $formats])</div>
+        </div>
         <div class="rounded-2xl border border-slate-200 bg-white p-3">
             <h2 class="font-bold">AI</h2>
             <form method="post" action="{{ route('admin.catalog.classify.one', $model->id) }}" class="mt-2">@csrf<button class="btn-quiet w-full min-h-0 py-2 text-sm">Navrhnout kategorii</button></form>

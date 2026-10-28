@@ -78,4 +78,40 @@ return [
         'title' => 'Tento týden na farmě – :dates',
         'description' => ":cta\nCo se tento týden (:dates) tisklo na naší 3D tiskové farmě: :count tisků v časosběru. Každý kus má kapitolu s odkazem na nástroj, ve kterém vznikl.\n\nVidea zveřejňujeme se souhlasem zákazníků.",
     ],
+
+    // the Short "Kolik stojí 3D tisk?" (youtube:price-short, docs/AL.md §13.7)
+    'price' => [
+        'card' => 'Kolik stojí 3D tisk?',
+        'things' => '{1} :n věc s cenou|[2,4] :n věci s cenou|[5,*] :n věcí s cenou',
+        'pieces' => '{1} :n kus|[2,4] :n kusy|[5,*] :n kusů',
+        'title' => 'Kolik stojí 3D tisk? :things',
+        'ask' => 'Co by stálo za vytištění vám? Napište do komentáře.',
+        'line' => ':name – :price – :url',
+        'own_file' => 'Vlastní model zákazníka',
+        'description' => ":cta\n:pieces z naší 3D tiskové farmy a co stály. Cena se vždy počítá z modelu: z velikosti, materiálu a doby tisku. Vlastní cenu zjistíte do minuty, bez registrace.\n\nCo je ve videu:",
+        'hashtags' => '#Shorts #3dtisk #3dtiskarna #kolikstoji #cena',
+    ],
+
+    // "Jak funguje naše 3D tisková farma" (farm:monthly-video): the steps of an order between the month's prints
+    'monthly' => [
+        'card' => 'Jak funguje naše 3D tisková farma',
+        'intro_chapter' => 'Úvod',
+        'title' => 'Jak funguje 3D tisková farma: od modelu k zásilce (:month)',
+        'ask' => 'Co byste si nechali vytisknout? Napište do komentáře.',
+        'steps' => [
+            ['title' => '1. Nahrajete model nebo fotku', 'sub' => 'STL, 3MF, OBJ – nebo fotka pro figurku a nástroje na míru'],
+            ['title' => '2. Cena hned', 'sub' => 'Model rozřežeme a cenu vidíte do minuty, bez registrace'],
+            ['title' => '3. Tisk na farmě', 'sub' => 'Tiskárny Anycubic Kobra, PLA, PETG a další materiály'],
+            ['title' => '4. Fotka hotového kusu', 'sub' => 'Každý výtisk vyfotíme ve foto-boxu'],
+            ['title' => '5. Odeslání', 'sub' => 'Zásilkovna nebo osobní vyzvednutí'],
+        ],
+        'numbers' => [
+            'recent' => '{1} Za posledních 30 dní: :n výtisk|[2,4] Za posledních 30 dní: :n výtisky|[5,*] Za posledních 30 dní: :n výtisků',
+            'printed' => '{1} Celkem vytištěno: :n kus|[2,4] Celkem vytištěno: :n kusy|[5,*] Celkem vytištěno: :n kusů',
+            'days' => '{0} Od zaplacení k předání: tentýž den|{1} Od zaplacení k předání: :d den|[2,4] Od zaplacení k předání: :d dny|[5,*] Od zaplacení k předání: :d dní',
+            'videos' => '{1} :n video na našem kanálu|[2,4] :n videa na našem kanálu|[5,*] :n videí na našem kanálu',
+        ],
+        'description' => ":cta\nJak funguje 3D tisková farma a jak zjistit cenu 3D tisku? V tomto videu projdete celou cestu zakázky (:month): nahrání modelu nebo fotky, řez a cena do minuty, tisk, fotka hotového kusu a odeslání. Mezi tím časosběry tisků z našeho provozu.\n\nNaše čísla: :numbers\n\nKapitoly:",
+        'hashtags' => '#3dtisk #3dtiskarna #3dtiskovafarma #jakfunguje3dtisk #cena3dtisku',
+    ],
 ];

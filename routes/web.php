@@ -516,6 +516,9 @@ Route::middleware(['auth', 'role:admin'])->prefix('admin')->name('admin.')->grou
     Route::get('/catalog/cards', [$catalog, 'cards'])->name('catalog.cards');
     Route::post('/catalog/cards/{card:id}', [$catalog, 'updateCard'])->whereNumber('card')->name('catalog.cards.update');
     Route::post('/catalog/cards/{card:id}/reslice', [$catalog, 'reslice'])->whereNumber('card')->name('catalog.cards.reslice');
+    Route::get('/catalog/files', [$catalog, 'files'])->name('catalog.files');   // the models worth a file, each with an upload (docs/AN.md §15)
+    Route::post('/catalog/models/{model:id}/file', [$catalog, 'file'])->whereNumber('model')->name('catalog.file');
+    Route::post('/catalog/models/{model:id}/slice', [$catalog, 'slice'])->whereNumber('model')->name('catalog.slice');
     Route::get('/catalog/models/{model:id}', [$catalog, 'edit'])->whereNumber('model')->name('catalog.edit');
     Route::post('/catalog/models/{model:id}', [$catalog, 'update'])->whereNumber('model')->name('catalog.update');
     Route::post('/catalog/models/{model:id}/toggle', [$catalog, 'toggle'])->whereNumber('model')->name('catalog.toggle');

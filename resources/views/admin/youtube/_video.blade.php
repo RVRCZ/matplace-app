@@ -1,6 +1,6 @@
 {{-- one waiting video: the Short, the 16:9 or the weekly cut, with its own approval --}}
-@php($file = in_array($v->kind, ['weekly', 'howto'], true) ? $v->path : ($v->kind === 'wide' ? $v->order?->timelapse_wide_path : ($v->order?->timelapse_short_path ?: $v->order?->timelapse_path)))
-@php($vertical = $v->kind === 'howto' && ($v->meta['variant'] ?? null) === 'short')
+@php($file = in_array($v->kind, ['weekly', 'howto', 'price', 'monthly'], true) ? $v->path : ($v->kind === 'wide' ? $v->order?->timelapse_wide_path : ($v->order?->timelapse_short_path ?: $v->order?->timelapse_path)))
+@php($vertical = $v->kind === 'price' || ($v->kind === 'howto' && ($v->meta['variant'] ?? null) === 'short'))
 <div>
     <h3 class="text-sm font-bold">{{ $kindNames[$v->kind] ?? $v->kind }}{{ $v->kind === 'howto' ? ($vertical ? ' · Short 9:16' : ' · 16:9') : '' }}
         @if($v->score !== null)
