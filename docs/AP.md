@@ -626,6 +626,33 @@ z AH.md §11 už jsou, jen se doplní), `config/landing.php` related + blog, `La
   cedulek teď není dostupný“ je jen lokální engine). Vložka `[farm:]` a články: `BlogEmbedsTest` 4 testy,
   `BlogSyncTest` 9 testů OK (commit 15f3099b).
 
+### 12.2 Dávka E: víčko, podtácek, magnetka, náušnice (28. 10. 2026)
+
+- Soubory: `lang/{cs,en,es}/tools_seo/{cap,coaster,magnet,earrings}.php` přepsány (title, heading, description, h1,
+  2 úvody, 4 kroky, 6 FAQ, 3 příklady), bloky v `lang/{cs,en,es}/landing.php` (6 otázek, farm 101000, 3 pro koho),
+  `config/landing.php` (cap ↔ box, holder, cable_holder; coaster ↔ magnet, nameplate, ornament; magnet ↔ coaster,
+  keychain, ornament; earrings ↔ keychain, medallion, nameplate; blog: krabička + materiály, ozdoba z obrázku +
+  vánoční dárky, ozdoba + klíčenka, klíčenka + vánoční dárky), `LandingPagesTest::PAGES` 33 stránek. H1 na dotaz:
+  „Víčko, zátka nebo krytka na míru pro 3D tisk podle naměřeného rozměru“, „Podtácek s vlastní fotkou nebo kresbou
+  pro 3D tisk“, „Magnetka na lednici z fotky nebo obrázku pro 3D tisk“, „Náušnice z vlastního obrázku nebo nápisu
+  pro 3D tisk“ (en: threaded cap generator, custom coaster generator, custom fridge magnet, 3D printed earrings
+  generator).
+- Čísla z produkce (28. 10., PLA, cookie `mp_test=1`), všechno malé kusy na minimu 99 Kč: víčko na PET lahev 28 mm
+  s těsnicím kroužkem (předvolba `pet`) 5,7 g, 22 min (`/c/5omcbkke1541`); krytka profilu 36 × 16 mm 4,7 g, 15 min
+  (`/c/ldniassche8t`); nasazovací víčko na sklenici 70 mm 17,8 g, 39 min (`/c/hgabcfckkauy`); kulatý podtácek
+  100 mm se sněhulákem, 4 mm, drážky: 20,4 g, 40 min, 99 Kč, 4 kusy 170 Kč (`/c/xqbu3qsmyqm0`, `/c/57k7ndo2ibxo`);
+  tlapka v kruhu 60 mm s kapsou Ø 10 × 2: 7 g, 14 min (`/c/gob4imtsfmor`); pár srdcí 28 mm: 2,2 g, 6 min
+  (`/c/5xbjn5tfg5gn`), tedy zhruba gram na náušnici, jak FAQ říká.
+- Rozhodnutí: věta „na farmě vytiskneme až čtyři barvy najednou: podklad a tři další“ z původních textů zůstala,
+  odpovídá AL.md §10 (2 až 4 filamenty v jedné podložce). Odkazy „Kam dál“ u podtácku a náušnic vedou i na článek
+  `vanocni-darky-z-3d-tisku-do-24-12-terminy` (vyjde 24. 11.); do té doby ho `LandingPage::blog()` nenabídne, nic
+  se nerozbije. Otázky bloků jsem volil mimo FAQ (měření závitu, kde koupit magnety, háčky z galanterie, čištění,
+  firemní dárky), duplicitu hlídá test.
+- Ověření: `SeoTest|LandingPagesTest|ToolsCatalogTest|CatalogSeoTest` **21 testů, 8 220 assertions, OK**; `pint`
+  čistý; title 52 až 58, description 141 až 155 ve všech třech jazycích; H1 = heading, JSON‑LD HowTo + FAQPage
+  10 otázek na čtyřech stránkách (lokální server 8077); snímky
+  `docs/img/seo-n1/{cap,coaster,magnet,earrings}-{390,1280}-cs-1.webp` bez posunu a bez chyb.
+
 ## 13. Další 4 články po 20. 11. (plán 28. 10. 2026)
 
 Řídící: čtyři články na listopad a prosinec, stejná pravidla (video, kalkulace, místo pro fotku). Termíny

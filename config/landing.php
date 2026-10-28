@@ -47,5 +47,10 @@ return [
         'text' => ['related' => ['sign', 'name_letter', 'nameplate'], 'blog' => ['cedulka-jmenovka-a-klicenka-se-jmenem', 'jmenovky-na-darky-a-vykrajovatka-vanocni-dilna']],
         'filament_art' => ['related' => ['relief', 'svg_to_stl', 'logo'], 'blog' => ['litofanie-z-fotky', 'vanocni-ozdoba-z-obrazku']],
         'modular' => ['related' => ['organizer', 'box', 'holder'], 'blog' => ['organizer-do-supliku-na-miru', 'krabicka-na-miru']],
+        // batch E (gifts)
+        'cap' => ['related' => ['box', 'holder', 'cable_holder'], 'blog' => ['krabicka-na-miru', 'pla-vs-petg-vs-asa-jaky-material-vybrat']],
+        'coaster' => ['related' => ['magnet', 'nameplate', 'ornament'], 'blog' => ['vanocni-ozdoba-z-obrazku', 'vanocni-darky-z-3d-tisku-do-24-12-terminy']],
+        'magnet' => ['related' => ['coaster', 'keychain', 'ornament'], 'blog' => ['vanocni-ozdoba-z-obrazku', 'klicenka-a-privesek-z-obrazku']],
+        'earrings' => ['related' => ['keychain', 'medallion', 'nameplate'], 'blog' => ['klicenka-a-privesek-z-obrazku', 'vanocni-darky-z-3d-tisku-do-24-12-terminy']],
     ],
 ];

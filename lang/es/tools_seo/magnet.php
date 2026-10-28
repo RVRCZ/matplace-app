@@ -1,30 +1,32 @@
 <?php
 
+// La página para la búsqueda «imán de nevera con foto impresión 3d» (docs/AP.md §12). 'heading' = el H1 de la página, 'h1' = el título del contenido bajo la herramienta.
 return [
-    'title' => 'Imán de nevera con su propia imagen o foto',
-    'description' => 'De una imagen, una foto o un texto sale un imán de nevera en colores de filamento, con un hueco a la medida de su imán. Lo imprimimos o lo descarga gratis.',
-    'h1' => 'Imán de nevera con una imagen, una foto o un texto',
+    'title' => 'Imán de nevera con su foto o imagen, impreso en 3D, gratis',
+    'heading' => 'Imán de nevera a partir de una foto o una imagen, impreso en 3D',
+    'description' => 'Una foto, una imagen o un nombre se convierte en un imán de nevera en colores de filamento con un hueco a medida para su imán. Impresión o descarga gratis.',
+    'h1' => 'Cómo nace el imán, qué imán lleva dentro y cuánto cuesta',
     'intro' => [
-        'La herramienta convierte una imagen en un imán de nevera. Suba un PNG, JPG, WebP o SVG, elija un motivo de la biblioteca o escriba un nombre. La imagen se reduce a entre 1 y 8 colores de filamentos que tenemos de verdad en stock en nuestra granja de impresión. La pieza sigue el contorno de la imagen, o es un círculo o un rectángulo, de 40 a 100 mm de ancho y de 3 a 6 mm de grosor.',
-        'En el centro de la parte trasera hay un hueco para el imán. Elija un imán de disco corriente, de Ø 6 × 2 a Ø 20 × 3 mm, o indique su propia medida. El imán se pega, se encaja a presión o se deja un agujero pasante; para lámina magnética adhesiva elija la versión sin hueco. Si hace falta, la herramienta engrosa la base para que queden cuatro capas de plástico sobre el imán. Los imanes no están incluidos. Pida la impresión a nuestra granja con hasta cuatro colores, o descargue el modelo gratis.',
+        'La herramienta convierte una imagen en un imán de nevera. Suba un PNG, JPG, WebP o SVG, elija un motivo de la biblioteca o escriba un nombre. La imagen se reduce a 1 a 8 colores de filamentos que tenemos en la granja; el fondo de una foto se quita solo y la pieza sigue el contorno del motivo, o es un círculo o un rectángulo con la foto entera. Ancho de 40 a 100 mm, grosor de 3 a 6 mm, un marco de hasta 3 mm alrededor de la imagen y, si quiere, un borde biselado. Por detrás hay en el centro un hueco para el imán: elige un imán de disco corriente de Ø 6 × 2 a Ø 20 × 3 mm, o indica su propia medida, y lo pega, lo encaja a presión o deja un agujero pasante; para lámina magnética adhesiva elige la versión sin hueco. Si el imán es alto para el grosor elegido, la herramienta engrosa la base para que queden cuatro capas de plástico encima. Los imanes no se incluyen.',
+        'Un ejemplo de la calculadora en producción (28 de octubre de 2026, PLA): la huella de la biblioteca en un círculo de 60 mm, de 3 mm de grosor y con hueco para un imán de Ø 10 × 2 mm, pesa 7 g, se imprime en 14 minutos y cuesta 99 CZK (unos 4 EUR) con nosotros, el pedido mínimo, sin envío (cálculo /c/gob4imtsfmor). Varias unidades del mismo diseño se indican como cantidad y el precio por pieza baja; los imanes con las fotos de toda la familia son diseños distintos. Nuestra granja imprime hasta cuatro colores en una impresión, la base y tres más; confirma la bobina de cada color al encargar. El STL, un ZIP con un STL por color y los proyectos para el slicer se descargan gratis, sin registro.',
     ],
     'steps' => [
-        ['name' => 'Suba una imagen o una foto', 'text' => 'El fondo se quita solo y la forma sigue entonces el contorno del motivo. Para conservar la foto entera, desactive la eliminación del fondo. El contraste, el brillo y la saturación de la foto se ajustan con controles deslizantes.'],
+        ['name' => 'Suba una imagen o una foto', 'text' => 'El fondo se quita solo y la forma sigue entonces el contorno del motivo. Para conservar la foto entera, desactive la eliminación del fondo. Los deslizadores ajustan contraste, brillo y saturación de una foto.'],
         ['name' => 'Elija la forma y las medidas', 'text' => 'La forma sigue la imagen, o es un círculo o un rectángulo. Ajuste el ancho, el grosor, un marco de hasta 3 mm alrededor de la imagen y, si quiere, un borde biselado.'],
-        ['name' => 'Elija el imán y su fijación', 'text' => 'Elija la medida del imán y cómo se sujeta: un hueco para pegar con holgura de 0,1 a 0,3 mm, un hueco a presión, un agujero pasante o ningún hueco.'],
-        ['name' => 'Pida la impresión o descargue', 'text' => 'Junto a la vista previa aparecen las medidas; el precio exacto y el tiempo de impresión los muestra el cálculo tras «Continuar». El STL, un ZIP con un STL por color y los proyectos para el laminador se descargan gratis y sin registro.'],
+        ['name' => 'Elija el imán y su sujeción', 'text' => 'Elija la medida del imán y cómo se sujeta: un hueco para pegar con holgura de 0,1 a 0,3 mm, un hueco a presión, un agujero pasante o sin hueco para lámina magnética.'],
+        ['name' => 'Encargue la impresión o descargue', 'text' => 'Junto a la vista previa ve las medidas; el cálculo tras «Continuar» muestra el precio y el tiempo exactos. El STL, un ZIP con un STL por color y los proyectos para el slicer se descargan gratis, sin registro.'],
     ],
     'faq' => [
-        ['q' => '¿Qué imanes caben en el hueco?', 'a' => 'Hay medidas predefinidas para los imanes de disco corrientes de Ø 6 × 2, 8 × 3, 10 × 2, 12 × 3, 15 × 3 y 20 × 3 mm. Una medida propia puede tener de 4 a 30 mm de diámetro y de 1 a 6 mm de altura. Los imanes no vienen con la impresión.'],
-        ['q' => '¿Cómo se sujeta el imán?', 'a' => 'En el hueco para pegar se pega, por ejemplo con pegamento instantáneo; la holgura alrededor del imán se ajusta de 0,1 a 0,3 mm. En el hueco a presión el imán se empuja hasta que encaja. El agujero pasante atraviesa toda la pieza, así que el imán puede verse por delante.'],
-        ['q' => '¿Y si el imán es demasiado alto para el grosor elegido?', 'a' => 'La herramienta engrosa la base por sí sola para que queden cuatro capas de plástico sobre el imán, e indica el nuevo grosor. Si el imán no cabe en la forma, le avisa para que aumente el ancho o elija un imán más pequeño.'],
-        ['q' => '¿Con qué material se imprime el imán de nevera?', 'a' => 'Recomendamos PLA. Se imprime con la cara hacia arriba, el hueco hacia abajo y sin soportes. Para lugares donde la pieza se calienta, elija PETG.'],
-        ['q' => '¿Imprimen el imán en color?', 'a' => 'Sí, con hasta cuatro colores en una misma impresión: la base y hasta tres colores encima. Usted confirma la bobina de cada color al hacer el pedido; las del diseño vienen preseleccionadas. Los diseños con más colores se descargan gratis; los colores van uno sobre otro, así que cualquier impresora los imprime cambiando el filamento a las alturas que incluye el proyecto.'],
-        ['q' => '¿Cómo se paga y cómo se recibe el imán?', 'a' => 'Se paga con crédito prepagado que usted recarga con tarjeta; los precios se muestran en coronas checas o en euros. Enviamos la impresión con Packeta a un punto de recogida o a domicilio en toda la UE.'],
+        ['q' => '¿Qué imanes encajan en el hueco?', 'a' => 'Hay preajustes para los imanes de disco corrientes de Ø 6 × 2, 8 × 3, 10 × 2, 12 × 3, 15 × 3 y 20 × 3 mm. Una medida propia puede tener de 4 a 30 mm de diámetro y de 1 a 6 mm de alto. Los imanes no forman parte de la impresión; para una pieza de 60 mm basta un neodimio de Ø 10 × 2 mm.'],
+        ['q' => '¿Cómo se sujeta el imán?', 'a' => 'En un hueco para pegar lo fija con pegamento, por ejemplo cianoacrilato; la holgura alrededor del imán se ajusta de 0,1 a 0,3 mm. En un hueco a presión el imán se empuja. Un agujero pasante atraviesa toda la pieza, así que el imán puede verse por delante.'],
+        ['q' => '¿Qué foto sale bien?', 'a' => 'Un dibujo, un logotipo o una foto con un motivo claro sobre un fondo tranquilo; la herramienta quita el fondo y la pieza sigue el contorno. Para un retrato deje un círculo o un rectángulo con la foto entera y 6 a 8 colores, sale como un cartel. Los detalles por debajo de 0,8 mm se funden.'],
+        ['q' => '¿Y si el imán es demasiado alto para el grosor elegido?', 'a' => 'La herramienta engrosa la base por sí sola para que queden cuatro capas de plástico sobre el imán, y muestra el nuevo grosor. Si el imán no cabe dentro de la forma, le avisa de que aumente el ancho o elija un imán menor.'],
+        ['q' => '¿De qué se imprime y cómo lo imprimo en casa?', 'a' => 'Recomendamos PLA. Se imprime con la cara hacia arriba, el hueco hacia abajo y sin soportes, capas de 0,2 mm; el hueco está en la base, así que la impresora puentea unos milímetros sobre él. Para lugares donde se calienta, elija PETG.'],
+        ['q' => '¿Imprimen el imán en colores?', 'a' => 'Sí, hasta cuatro colores en una impresión: la base y tres colores encima. Confirma la bobina de cada color al encargar; las del diseño vienen preseleccionadas. Un diseño con más colores se descarga gratis; los colores van uno sobre otro, así que cualquier impresora lo imprime cambiando el filamento a las alturas que indica el proyecto.'],
     ],
     'examples' => [
-        'Huella en un círculo de 60 mm de ancho, con hueco trasero para un imán de Ø 10 × 2 mm.',
-        'Corazón rojo de 50 mm de ancho con un imán de Ø 8 × 3 mm encajado a presión.',
-        'Muñeco de nieve sobre un rectángulo de 45 mm de ancho.',
+        'Huella en un círculo de 60 mm de ancho, con hueco por detrás para un imán de Ø 10 × 2 mm: 7 g, 14 minutos, 99 CZK.',
+        'Corazón rojo de 50 mm de ancho con un imán a presión de Ø 8 × 3 mm.',
+        'Una foto en un rectángulo de 80 mm de ancho, 6 colores, agujero pasante para un imán de Ø 12 × 3 mm.',
     ],
 ];

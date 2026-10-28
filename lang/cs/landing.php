@@ -531,4 +531,68 @@ return [
             ['t' => 'Stůl v kanceláři', 'text' => 'Čtyři misky s vnějším tácem 240 × 120 mm na tužky, sponky a kabely; tác drží sadu pohromadě.'],
         ],
     ],
+    // víčko, zátka nebo krytka na míru (docs/AP.md §12, dávka E)
+    'cap' => [
+        'order' => [
+            ['q' => 'Kolik stojí víčko u vás?', 'farm' => true, 'a' => 'Víčko na PET lahev stojí 99 Kč, což je nejnižší cena zakázky, nasazovací víčko na sklenici 70 mm 99 Kč (PLA, bez dopravy, kalkulace z 28. 10. 2026). Víc kusů stejného víčka zadáte jako počet kusů a cena za kus klesne.'],
+            ['q' => 'Co když neznám stoupání závitu?', 'a' => 'Změřte délku deseti závitů a vydělte ji deseti, nebo zkuste předvolbu: PET lahve mají 2,7 mm, metrické závity stoupání podle řady M6 až M30. U neznámého závitu vytiskněte jeden kus a teprve potom objednejte víc.'],
+            ['q' => 'Jak dlouho trvá tisk a doručení?', 'farm' => true, 'a' => 'Víčko na PET lahev se tiskne 22 minut, víčko na sklenici 39 minut. Odesíláme v den, kdy tisk skončí, v pracovní dny, a Zásilkovna v Česku obvykle doručí do 1 až 2 pracovních dnů (na výdejní místo :cz_point).'],
+            ['q' => 'Co když víčko nepasuje?', 'a' => 'Zkontrolujte, že jste zadali skutečný rozměr bez vůle; vůli přidává nástroj. Když jde díl ztuha, zvětšete vůli o 0,1 mm, když je volný, zmenšete ji, a nový kus objednáte ze stejného návrhu.'],
+            ['q' => 'Vydrží víčko venku a v teple?', 'a' => 'Na zahradní nádrž, sud nebo do auta zvolte ASA nebo PETG; PLA na slunci a nad 55 °C měkne a závit povolí. Do interiéru stačí PLA.'],
+            ['q' => 'Potřebuji účet?', 'a' => 'Na návrh a stažení ne. Účet potřebujete, až když si víčko necháte vytisknout u nás; platí se z kreditu dobitého kartou.'],
+        ],
+        'who' => [
+            ['t' => 'Ztracené víčko od lahve nebo kanystru', 'text' => 'Šroubovací víčko na PET lahev 28 mm, nebo vlastní závit podle změřeného průměru a stoupání, s těsnicím kroužkem.'],
+            ['t' => 'Krytky profilů a trubek', 'text' => 'Zátky do nábytkových trubek a krytky hliníkových profilů podle vnitřního rozměru, po pěti i deseti kusech.'],
+            ['t' => 'Víčko na sklenici nebo dózu', 'text' => 'Nasazovací víčko na sklenici s hrdlem 70 mm s lůžkem pro vložku, z PETG do spíže.'],
+        ],
+    ],
+    // podtácek s obrázkem (docs/AP.md §12, dávka E)
+    'coaster' => [
+        'order' => [
+            ['q' => 'Kolik stojí podtácek u vás?', 'farm' => true, 'a' => 'Kulatý podtácek 100 mm stojí 99 Kč, což je nejnižší cena zakázky, sada čtyř 170 Kč (PLA, bez dopravy, kalkulace z 28. 10. 2026). Cena roste s tloušťkou a počtem kusů; vidíte ji dřív, než cokoli objednáte.'],
+            ['q' => 'Jaký tvar a velikost zvolit?', 'a' => 'Na sklenici a hrnek stačí kruh 90 až 100 mm, na půllitr čtverec 100 až 110 mm; šestiúhelníky se skládají vedle sebe do sady. Tloušťka 4 mm je dost, 6 mm působí masivněji.'],
+            ['q' => 'Jak dlouho trvá tisk a doručení?', 'farm' => true, 'a' => 'Jeden podtácek se tiskne 40 minut, sada čtyř úměrně déle. Odesíláme v den, kdy tisk skončí, v pracovní dny, a Zásilkovna v Česku obvykle doručí do 1 až 2 pracovních dnů (na výdejní místo :cz_point).'],
+            ['q' => 'Jak podtácek čistit?', 'a' => 'Otřít vlhkým hadrem nebo opláchnout vlažnou vodou; do myčky ne, PLA by se při 60 °C zkroutilo. Barvy jsou plast, nesmývají se ani neblednou.'],
+            ['q' => 'Hodí se jako firemní dárek s logem?', 'a' => 'Ano. Logo nahrajete jako SVG v jedné až čtyřech barvách, zvolíte tvar a počet kusů; cena za kus s počtem klesá. Různé motivy v jedné sadě jsou různé návrhy, každý se objedná zvlášť.'],
+            ['q' => 'Potřebuji účet?', 'a' => 'Na návrh a stažení ne. Účet potřebujete, až když si podtácky necháte vytisknout u nás; platí se z kreditu dobitého kartou.'],
+        ],
+        'who' => [
+            ['t' => 'Sada na stůl nebo do kavárny', 'text' => 'Čtyři až šest podtácků 100 mm se stejným motivem a drážkami zespodu, PLA.'],
+            ['t' => 'Dárek s fotkou', 'text' => 'Kulatý podtácek s fotkou přes celou plochu, 6 až 8 barev, zkosená hrana.'],
+            ['t' => 'Firemní logo', 'text' => 'Čtvercový podtácek s logem z SVG ve dvou barvách, 20 kusů do zasedačky.'],
+        ],
+    ],
+    // magnetka na lednici (docs/AP.md §12, dávka E)
+    'magnet' => [
+        'order' => [
+            ['q' => 'Kolik stojí magnetka u vás?', 'farm' => true, 'a' => 'Tlapka 60 mm s kapsou na magnet stojí 99 Kč, což je nejnižší cena zakázky (PLA, bez dopravy, kalkulace z 28. 10. 2026). Víc kusů stejného návrhu zadáte jako počet kusů a cena za kus klesne; magnet není v ceně.'],
+            ['q' => 'Kde koupit magnety?', 'a' => 'Neodymové kulaté magnety Ø 10 × 2 nebo Ø 12 × 3 mm prodává železářství i e-shopy po desítkách kusů; na magnetku do 60 mm stačí jeden, na 100 mm zvolte větší, třeba Ø 20 × 3 mm. Zadejte rozměr magnetu, který opravdu máte.'],
+            ['q' => 'Jak dlouho trvá tisk a doručení?', 'farm' => true, 'a' => 'Magnetka 60 mm se tiskne 14 minut. Odesíláme v den, kdy tisk skončí, v pracovní dny, a Zásilkovna v Česku obvykle doručí do 1 až 2 pracovních dnů (na výdejní místo :cz_point).'],
+            ['q' => 'Udrží magnetka na lednici papír?', 'a' => 'Neodymový magnet Ø 10 × 2 mm v magnetce 60 mm udrží několik listů papíru; na tlustší svazek zvolte Ø 12 × 3 nebo Ø 15 × 3 mm. Na nerezových dveřích bez železné vrstvy magnet nedrží, vyzkoušejte je obyčejným magnetem.'],
+            ['q' => 'Hodí se jako dárek nebo firemní drobnost?', 'a' => 'Ano: fotka dítěte pro babičku, logo firmy pro zákazníky nebo svatební magnetky pro hosty; stejný návrh ve 20 kusech vyjde na kus levněji. Různé fotky jsou různé návrhy.'],
+            ['q' => 'Potřebuji účet?', 'a' => 'Na návrh a stažení ne. Účet potřebujete, až když si magnetky necháte vytisknout u nás; platí se z kreditu dobitého kartou.'],
+        ],
+        'who' => [
+            ['t' => 'Fotka na lednici', 'text' => 'Obdélník 80 mm s fotkou přes celou plochu, 6 až 8 barev, magnet Ø 12 × 3 mm vlepený.'],
+            ['t' => 'Svatební nebo firemní magnetky', 'text' => 'Logo nebo jména ve dvou barvách, 50 mm, 20 až 50 kusů stejného návrhu.'],
+            ['t' => 'Kresba dítěte', 'text' => 'Vyfocená kresba jako magnetka kopírující obrys, 60 mm, 4 barvy.'],
+        ],
+    ],
+    // náušnice z obrázku (docs/AP.md §12, dávka E)
+    'earrings' => [
+        'order' => [
+            ['q' => 'Kolik stojí náušnice u vás?', 'farm' => true, 'a' => 'Pár srdcí 28 mm stojí 99 Kč, což je nejnižší cena zakázky (PLA, bez dopravy, kalkulace z 28. 10. 2026). Víc párů stejného návrhu zadáte jako počet kusů a cena za pár klesne; háčky nejsou v ceně.'],
+            ['q' => 'Jaké háčky a kroužky koupit?', 'a' => 'Afroháčky nebo puzety z chirurgické oceli a spojovací kroužky 4 až 5 mm z galanterie. Kroužek rozevřete dvěma kleštičkami do strany, navléknete do očka a zavřete; očko nastavte na 2 mm.'],
+            ['q' => 'Jak dlouho trvá tisk a doručení?', 'farm' => true, 'a' => 'Pár náušnic se tiskne 6 minut. Odesíláme v den, kdy tisk skončí, v pracovní dny, a Zásilkovna v Česku obvykle doručí do 1 až 2 pracovních dnů (na výdejní místo :cz_point).'],
+            ['q' => 'Dotýká se plast ucha?', 'a' => 'Ne, v uchu je jen háček nebo puzeta; plastová část visí pod ním. Háčky volte z chirurgické oceli, titanu nebo stříbra. PLA neobsahuje nikl.'],
+            ['q' => 'Hodí se na dárek nebo na malou sérii na trh?', 'a' => 'Ano. Stejný návrh zadáte v deseti párech a cena za pár klesne; pro další sérii stačí vyměnit barvy nebo obrázek. Na trhy se hodí jednoduché siluety ve dvou barvách.'],
+            ['q' => 'Potřebuji účet?', 'a' => 'Na návrh a stažení ne. Účet potřebujete, až když si náušnice necháte vytisknout u nás; platí se z kreditu dobitého kartou.'],
+        ],
+        'who' => [
+            ['t' => 'Dárek k narozeninám', 'text' => 'Pár srdcí nebo hvězd 28 až 32 mm ve dvou barvách, háčky z chirurgické oceli zvlášť.'],
+            ['t' => 'Iniciály nebo jméno', 'text' => 'Krátký nápis místo obrázku, 25 mm, zrcadlení vypnuté, aby se text četl.'],
+            ['t' => 'Malá série na trh', 'text' => 'Deset párů stejné siluety, každý pár v jiné kombinaci barev z našich cívek.'],
+        ],
+    ],
 ];
