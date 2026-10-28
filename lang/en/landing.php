@@ -594,4 +594,52 @@ return [
             ['t' => 'A small series for a market', 'text' => 'Ten pairs of the same silhouette, every pair in another combination of colours from our spools.'],
         ],
     ],
+    // puzzle from a model (docs/AP.md §12, batch F)
+    'puzzle' => [
+        'order' => [
+            ['q' => 'How much does a puzzle cost from you?', 'farm' => true, 'a' => 'The 100 mm coaster cut into 3 × 4 pieces costs 99 CZK (PLA, without delivery, calculation of 28 October 2026). The tool is free, you pay only for the print; the price grows with the size of the model and the tray, not with the number of pieces.'],
+            ['q' => 'Which model should I upload?', 'a' => 'A flat one: a relief or a lithophane from a photo, a logo, a coaster from our tools, up to 25 mm high and at least 80 mm wide so that the pieces reach 25 mm. Your own STL needs a flat bottom; a model from a calculation comes here with one click.'],
+            ['q' => 'How long do printing and delivery take?', 'farm' => true, 'a' => 'The puzzle from the 100 mm coaster prints in 1 h 3 min, all pieces together. We ship on the day the print finishes, on working days, and Packeta in Czechia usually delivers within 1 to 2 working days (to a pick-up point :cz_point).'],
+            ['q' => 'Can every piece have another colour?', 'a' => 'Yes, for a print from us you pick the colour of every piece when ordering, in one order; a puzzle from a coaster in colours keeps the colours of the picture and the pieces differ only by outline. At home print the pieces from two spools in turns.'],
+            ['q' => 'Which age is the puzzle for?', 'a' => 'Pieces of 25 to 40 mm with knobs of 0.2 mm play suit children from three years; for smaller ones choose a 2 × 2 or 3 × 3 grid and the tray the pieces drop into. PLA holds no plasticisers, but do not give pieces under 30 mm to small children.'],
+            ['q' => 'Do I need an account?', 'a' => 'Not for the cutting or the download. You need one only when you have the puzzle printed by us; that is paid from credit topped up by card.'],
+        ],
+        'who' => [
+            ['t' => 'A photo as a puzzle', 'text' => 'A relief from a photo, 200 × 150 mm, cut into 6 × 5 pieces of about 33 mm, with a tray.'],
+            ['t' => 'A company logo for customers', 'text' => 'A 120 mm logo as a 4 × 3 puzzle in two colours, ten pieces of the same design.'],
+            ['t' => 'A gift for a child', 'text' => 'A coaster in colours or an ornament from a drawing as a 3 × 3 puzzle with big pieces and a tray.'],
+        ],
+    ],
+    // desk cable holder (docs/AP.md §12, batch F)
+    'cable_holder' => [
+        'order' => [
+            ['q' => 'How much does a holder cost from you?', 'farm' => true, 'a' => 'A holder for four 6 mm cables costs 99 CZK, the lowest order price (PLA, without delivery, calculation of 28 October 2026). Several holders of the same design go in as the quantity and the price per piece falls.'],
+            ['q' => 'Which diameter do common cables have?', 'a' => 'A headphone cable 3 to 4 mm, USB‑C and Lightning 4 to 5 mm, a laptop power cable 5 to 6 mm, HDMI 6 to 7 mm, a monitor mains cable 7 to 8 mm. Measure yours with callipers or with a strip of paper wrapped round the cable.'],
+            ['q' => 'How long do printing and delivery take?', 'farm' => true, 'a' => 'The holder for four cables prints in 42 minutes, the one for six cables with tabs in 56 minutes. We ship on the day the print finishes, on working days, and Packeta in Czechia usually delivers within 1 to 2 working days (to a pick-up point :cz_point).'],
+            ['q' => 'Where should the holder go?', 'a' => 'On the back edge of the desk top, where the cables come from the socket, or under the top at the front edge, so that chargers hang within reach and out of sight. Put tape under the whole holder, not just a bit of it.'],
+            ['q' => 'Can the holder be taken off and moved?', 'a' => 'Yes. Warm foam tape with a hair dryer to peel it off and wipe the rest away, wash the holder and stick it with new tape. With screws you move it any time; the screw holes stay.'],
+            ['q' => 'Do I need an account?', 'a' => 'Not for the design or the download. You need one only when you have the holder printed by us; that is paid from credit topped up by card.'],
+        ],
+        'who' => [
+            ['t' => 'A desk at home', 'text' => 'A holder for four 5 to 6 mm cables on the edge of the desk: charger, USB‑C, headphones, HDMI.'],
+            ['t' => 'An office with ten desks', 'text' => 'The same holder in ten pieces, with screw tabs under the top; the price per piece falls with the count.'],
+            ['t' => 'A bedside table', 'text' => 'A holder for one or two 4 mm cables, so that the charger does not fall behind the bed.'],
+        ],
+    ],
+    // charm from a picture (docs/AP.md §12, batch F)
+    'charm' => [
+        'order' => [
+            ['q' => 'How much does a charm cost from you?', 'farm' => true, 'a' => 'The 45 mm happy ghost costs 99 CZK, the lowest order price (PLA, without delivery, calculation of 28 October 2026). Several pieces of the same design go in as the quantity and the price per piece falls; the key ring is not in the price.'],
+            ['q' => 'Which size and thickness should I choose?', 'a' => 'For keys 35 to 45 mm and 3 mm thick, for a backpack or a bag 50 to 60 mm, for a zip pull 20 to 25 mm and 2 mm. A gift tag can be 60 to 80 mm and 2 mm thick, nothing strains it.'],
+            ['q' => 'How long do printing and delivery take?', 'farm' => true, 'a' => 'The 45 mm ghost prints in 7 minutes, the name Ela at 60 mm in 12 minutes. We ship on the day the print finishes, on working days, and Packeta in Czechia usually delivers within 1 to 2 working days (to a pick-up point :cz_point).'],
+            ['q' => 'Which picture suits it?', 'a' => 'A drawing, a logo or a photo with a clear motif on a calm background; the tool removes the background and the charm follows the outline. Thin spikes under 0.8 mm would break, so the tool merges them or warns; put a portrait from a photo on a circle or a rectangle.'],
+            ['q' => 'Does it suit a company gift or a market stall?', 'a' => 'Yes. A logo from an SVG in two colours or the names of the staff, 50 mm, 20 to 50 pieces; the same design in pieces comes cheaper per piece, different names are different designs. For markets, library silhouettes in various colours work well.'],
+            ['q' => 'Do I need an account?', 'a' => 'Not for the design or the download. You need one only when you have the charms printed by us; that is paid from credit topped up by card.'],
+        ],
+        'who' => [
+            ['t' => 'A name tag for a nursery backpack', 'text' => 'The child’s name in a script or a favourite animal from the library, 50 mm, 3 mm, an eyelet for a carabiner.'],
+            ['t' => 'A gift with a pet’s photo', 'text' => 'The silhouette of a dog from a photo in three colours, 45 mm, for keys.'],
+            ['t' => 'Company charms with a logo', 'text' => 'A logo from an SVG in two colours, 40 mm, 50 pieces of the same design, rings bought separately.'],
+        ],
+    ],
 ];

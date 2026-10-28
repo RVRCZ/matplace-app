@@ -544,7 +544,7 @@ printables), bez ceny tisku u nás. Roman je posílá sám.
 | 3. vánoční nástroje do poloviny listopadu | hotovo, §6 (6 nástrojů), nasazeno; vánoční Shorts dělá session 2 |
 | 4. blog 1 až 2 týdně, 6 článků, 2 z dat farmy | hotovo, §7: články 3., 6., 10., 13., 17. a 20. 11. naplánované na produkci; vložky video a kalkulace; `blog:sync` datum dopředu umí bez úpravy |
 | 5. prolinkování | hotovo: `article` u 29 nástrojů (6 nových článků ↔ svg_to_stl, gingerbread, name_letter, nameplate, topper, gcode), „Kam dál“ v `config/landing.php` u 29 stránek, každý článek v „Co dál“ odkazuje na svůj nástroj (hlídá `BlogSyncTest`) |
-| navíc od řídící | `/3d-tisk-praha` + `google-business.md` (§8), dalších 10 nástrojů (§9, dávky A, B, C), `komunita-prispevky.md` (§10) |
+| navíc od řídící | `/3d-tisk-praha` + `google-business.md` (§8), dalších 10 nástrojů (§9, dávky A, B, C), `komunita-prispevky.md` (§10), druhá desítka nástrojů (§12, dávky D, E, F), 4 články na 24. 11. až 4. 12. a vložka `[farm:]` (§13) |
 
 Co zůstává na jiných: fotky výtisků (session 2, Roman vybere), Search Console export (Roman) a podle něj druhé kolo
 title/description, Google Business Profile založí Roman, vánoční Shorts session 2.
@@ -652,6 +652,35 @@ z AH.md §11 už jsou, jen se doplní), `config/landing.php` related + blog, `La
   čistý; title 52 až 58, description 141 až 155 ve všech třech jazycích; H1 = heading, JSON‑LD HowTo + FAQPage
   10 otázek na čtyřech stránkách (lokální server 8077); snímky
   `docs/img/seo-n1/{cap,coaster,magnet,earrings}-{390,1280}-cs-1.webp` bez posunu a bez chyb.
+
+### 12.3 Dávka F: puzzle, držák kabelů, přívěsek (28. 10. 2026)
+
+- Soubory: `lang/{cs,en,es}/tools_seo/{puzzle,cable_holder,charm}.php` přepsány (title, heading, description, h1,
+  2 úvody, 4 kroky, 6 FAQ, 3 příklady; puzzle měl dosud `examples` prázdné), bloky v `lang/{cs,en,es}/landing.php`
+  (6 otázek, farm 101000, 3 pro koho), `config/landing.php` (puzzle ↔ relief, coaster, logo; cable_holder ↔ holder,
+  phone_stand, box; charm ↔ keychain, earrings, magnet; blog: litofanie + rozdělení, držák na zeď + stojánek,
+  klíčenka + ozdoba z obrázku), `LandingPagesTest::PAGES` 36 stránek. H1 na dotaz: „Puzzle z 3D modelu nebo z fotky:
+  skládačka pro 3D tisk zdarma“, „Držák kabelů na stůl na míru pro 3D tisk: kabely zacvaknou a nespadnou“, „Přívěsek
+  z vlastního obrázku nebo jména pro 3D tisk: na klíče, tašku i batoh“ (en: 3D printed puzzle generator, cable holder
+  generator, custom charm).
+- Čísla z produkce (28. 10., PLA, cookie `mp_test=1`), vše na minimu 99 Kč: puzzle z podtácku 100 mm se sněhulákem
+  (soubor kalkulace `/c/xqbu3qsmyqm0` přes `POST /api/files/{uuid}/edit` op=puzzle, 3 × 4, zámky, čísla; scratchpad
+  `edit_create.py`): 12 dílků, 234 × 128 × 5,6 mm, 22,6 g, 1 h 3 min (`/c/wnr4wkkungpz`); držák na 4 kabely 6 mm
+  17,1 g, 42 min (`/c/mjyodedmxzye`); držák na 6 kabelů 4 mm s oušky 24,6 g, 56 min (`/c/kop5zm2dhbtw`); veselý duch
+  45 mm 3 g, 7 min (`/c/mca5ddgfzctt`); jméno Ela psacím písmem 60 mm 3,7 g, 12 min (`/c/gmfsgcpwmjl8`).
+- Rozhodnutí: u puzzle jsem poslal `frame: true`, ale soubor má jen dílky `piece_1` až `piece_12` a žádný tácek
+  (výška 5,6 mm), proto příklad tácek nejmenuje; tácek jako volba nástroje v textu zůstal podle původního popisu.
+  Jestli vlajka `frame` na produkci opravdu tácek přidává, nevím; zmíním řídícímu. Puzzle z fotky vede přes dva
+  nástroje (reliéf nebo podtácek → puzzle), FAQ to říká. U držáku kabelů tabulka průměrů běžných kabelů (sluchátka
+  3 až 4, USB‑C 4 až 5, HDMI 6 až 7, síťový kabel monitoru 7 až 8 mm) je z běžné praxe, ne z měření.
+- `SeoTest` chce u každého nástroje tolik popisků příkladů, kolik má `config/tools.php` v `seo.examples`; puzzle
+  tam má prázdné pole (nástroj „mám soubor“ nemá obrázky příkladů), proto jsou `examples` u puzzle prázdné ve všech
+  třech jazycích a čísla jsou jen v úvodu a FAQ.
+- Ověření: `LandingPagesTest|ToolsCatalogTest|CatalogSeoTest` 20 testů OK, `SeoTest` po vyprázdnění příkladů
+  **12 testů, 4 322 assertions, OK**; `pint` čistý; title 54 až 59, description 140 až 154 ve všech třech
+  jazycích; H1 = heading, JSON‑LD HowTo + FAQPage 10 otázek na třech stránkách (lokální server 8077); snímky
+  `docs/img/seo-n1/{puzzle,cable-holder,charm}-{390,1280}-cs-1.webp` bez posunu a bez chyb.
+- Druhá desítka (§12) je tím hotová: D 8bc986fd, E 426d1b29, F tento commit.
 
 ## 13. Další 4 články po 20. 11. (plán 28. 10. 2026)
 
