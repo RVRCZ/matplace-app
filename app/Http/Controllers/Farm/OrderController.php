@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Farm;
 
 use App\Domain\Calculation\BigModel as Threshold;
 use App\Domain\Farm\BigModel;
+use App\Domain\Farm\CardRefunds;
 use App\Domain\Farm\Dispatcher;
 use App\Domain\Farm\FarmGate;
 use App\Domain\Farm\FarmRefusal;
@@ -826,7 +827,9 @@ class OrderController extends Controller
             'stage_step' => $stage ? (array_search($stage, self::STAGES, true) ?: 0) + 1 : null,
             'stage_total' => count(self::STAGES),
             'error' => $order->error,
-            'error_text' => $order->error ? __('farm.error.'.$order->error, $this->errorDataFor($order, $check)) : null,
+            'error_text' => $order->error ? CardRefunds::errorText($order, $this->errorDataFor($order, $check)) : null,
+            // money sent back to the card for this order (what the bank has confirmed giving back)
+            'refunded' => $order->paid_at ? (app(CardRefunds::class)->refunded($order) ?: null) : null,
             // a model of millions of triangles takes minutes to check and slice (thinned first, docs/AL.md §10.11): said while it works
             'big_model' => ($triangles = (int) ($order->modelFile?->triangles ?? 0)) > (int) config('engines.mesh.decimate_above')
                 ? __('farm.order.big_model', ['n' => number_format($triangles / 1e6, 1, app()->getLocale() === 'en' ? '.' : ',', '')]) : null,

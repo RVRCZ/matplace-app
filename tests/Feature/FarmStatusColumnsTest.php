@@ -2,12 +2,14 @@
 
 namespace Tests\Feature;
 
+use App\Models\CreditTransaction;
 use App\Models\FarmCommand;
 use App\Models\FarmOrder;
 use App\Models\FarmPrinter;
 use App\Models\FarmPrinterMaterial;
 use App\Models\FarmPrintJob;
 use App\Models\FarmVideo;
+use App\Models\PaymentRefund;
 use Tests\TestCase;
 
 /**
@@ -74,6 +76,10 @@ final class FarmStatusColumnsTest extends TestCase
             ['farm_commands', 'type', self::constants(FarmCommand::class, 'TYPE_')],
             ['farm_commands', 'status', ['pending', 'sent', 'done', 'failed']],
             ['farm_printer_materials', 'status', self::constants(FarmPrinterMaterial::class, 'STATUS_')],
+            // money back to the card (docs/AO.md §2)
+            ['payment_refunds', 'status', self::constants(PaymentRefund::class, 'STATUS_')],
+            ['payment_refunds', 'reason', self::constants(PaymentRefund::class, 'REASON_')],
+            ['credit_transactions', 'type', self::constants(CreditTransaction::class, 'TYPE_')],
         ];
         foreach ($cases as [$table, $column, $values]) {
             $this->assertNotEmpty($values, "$table.$column: no states to check");

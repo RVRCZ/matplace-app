@@ -33,6 +33,8 @@ class CreditTransaction extends Model
 
     public const TYPE_FORFEIT = 'forfeit';   // − unused credit given up when the owner deleted the account
 
+    public const TYPE_CARD_REFUND = 'card_refund';   // − money of a card payment sent back to the card (App\Domain\Farm\CardRefunds)
+
     public const TYPE_ROYALTY = 'royalty';   // + a designer's reward for a finished print of their model
 
     public const TYPE_ROYALTY_REVERSAL = 'royalty_reversal';   // − the reward taken back when the print was refunded after it was done

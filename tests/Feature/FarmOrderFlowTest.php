@@ -778,6 +778,8 @@ T2 ; slot chosen by matplace farm
 
     public function test_failed_print_returns_the_credit_and_alerts_the_admin(): void
     {
+        // a failure that ends the order at once: the one automatic reprint is FarmGuestCheckoutTest's (docs/AO.md §2)
+        config(['farm.payments.auto_reprint' => false]);
         [$printer, $auth] = $this->agentPrinter();
         $this->sync($auth);
         $order = $this->order();
@@ -796,6 +798,8 @@ T2 ; slot chosen by matplace farm
 
     public function test_an_error_reported_for_a_moment_at_the_start_does_not_close_the_order(): void
     {
+        // a failure that ends the order at once: the one automatic reprint is FarmGuestCheckoutTest's (docs/AO.md §2)
+        config(['farm.payments.auto_reprint' => false]);
         [$printer, $auth] = $this->agentPrinter();
         $this->sync($auth);
         $order = $this->order();

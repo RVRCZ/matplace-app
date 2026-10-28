@@ -374,6 +374,12 @@ class FarmOrder extends Model
         return in_array($this->kind, [self::KIND_TEST, self::KIND_SHOWCASE], true);
     }
 
+    /** Money of this order sent back to the card (App\Domain\Farm\CardRefunds). */
+    public function refunds(): HasMany
+    {
+        return $this->hasMany(PaymentRefund::class);
+    }
+
     public function events(): HasMany
     {
         return $this->hasMany(FarmOrderEvent::class)->orderBy('id');

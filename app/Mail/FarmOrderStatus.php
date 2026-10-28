@@ -2,6 +2,7 @@
 
 namespace App\Mail;
 
+use App\Domain\Farm\CardRefunds;
 use App\Models\FarmOrder;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
@@ -15,6 +16,9 @@ class FarmOrderStatus extends Mailable implements ShouldQueue
 {
     use Queueable, SerializesModels;
 
+    /** Not a status: the print failed and is printed again on its own (OrderFlow::fail), the money stays where it is. */
+    public const REPRINT = 'reprint';
+
     public function __construct(public FarmOrder $order, public string $status) {}
 
     /**
@@ -25,6 +29,10 @@ class FarmOrderStatus extends Mailable implements ShouldQueue
     {
         if ($this->status === FarmOrder::STATUS_DONE && $this->order->isParcel()) {
             return 'done_parcel';
+        }
+        // paid by card: the money goes back to the card, not to the credit (CardRefunds; a mail of its own follows)
+        if (in_array($this->status, [FarmOrder::STATUS_FAILED, FarmOrder::STATUS_CANCELLED], true) && app(CardRefunds::class)->goesToCard($this->order)) {
+            return $this->status.'_card';
         }
 
         return $this->status === FarmOrder::STATUS_HANDED_OVER && $this->order->tracking_url ? 'shipped' : $this->status;
@@ -43,7 +51,7 @@ class FarmOrderStatus extends Mailable implements ShouldQueue
             'text' => $this->key(),
             'url' => route('farm.orders.show', $this->order),
             'trackingUrl' => $this->key() === 'shipped' ? $this->order->tracking_url : null,
-            'reason' => $this->order->error ? __('farm.error.'.$this->order->error) : null,
+            'reason' => $this->order->error ? CardRefunds::errorText($this->order) : null,
         ]);
     }
 }

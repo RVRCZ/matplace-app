@@ -224,6 +224,8 @@ class FarmAdminNotifyTest extends TestCase
 
     public function test_a_failed_print_a_failed_start_and_a_customer_s_cancellation_are_problems_told_once(): void
     {
+        // a failure that ends the order at once: the one automatic reprint is FarmGuestCheckoutTest's (docs/AO.md §2)
+        config(['farm.payments.auto_reprint' => false]);
         [$printer, $auth, $agent] = $this->agentPrinter();
         $this->sync($auth);
         $order = $this->order();
@@ -271,6 +273,8 @@ class FarmAdminNotifyTest extends TestCase
      */
     public function test_a_print_the_printer_gave_no_numbers_for_gets_them_estimated_and_marked(): void
     {
+        // a failure that ends the order at once: the one automatic reprint is FarmGuestCheckoutTest's (docs/AO.md §2)
+        config(['farm.payments.auto_reprint' => false]);
         [$printer, $auth] = $this->agentPrinter();
         $this->sync($auth);
         $this->credit(2000);

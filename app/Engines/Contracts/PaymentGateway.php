@@ -24,5 +24,15 @@ interface PaymentGateway
      */
     public function parseWebhook(Request $request): ?array;
 
+    /**
+     * Send money of a paid payment back to the card it came from (part of it or all).
+     *
+     * @param  string  $reason  ours, for the gateway's records (PaymentRefund::REASON_*)
+     * @return string the gateway's id of the refund
+     *
+     * @throws EngineException when the gateway refuses or cannot be reached
+     */
+    public function refund(Payment $payment, float $amount, string $reason): string;
+
     public function name(): string;
 }

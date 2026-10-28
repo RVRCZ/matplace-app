@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Admin;
 
+use App\Domain\Farm\CardRefunds;
 use App\Domain\Farm\Dispatcher;
 use App\Domain\Farm\FarmRefusal;
 use App\Domain\Farm\FarmSettings;
@@ -21,6 +22,7 @@ use App\Models\FarmCommand;
 use App\Models\FarmOrder;
 use App\Models\FarmPrinter;
 use App\Models\FarmPrintJob;
+use App\Models\PaymentRefund;
 use App\Support\Money;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\JsonResponse;
@@ -64,7 +66,11 @@ class FarmOrderController extends Controller
     {
         return FarmOrder::query()
             ->where(fn ($q) => $q->where('status', FarmOrder::STATUS_PAID)->orWhere('status', FarmOrder::STATUS_DONE)
-                ->orWhere(fn ($f) => $f->where('status', FarmOrder::STATUS_FAILED)->whereNotNull('paid_at')))
+                ->orWhere(fn ($f) => $f->where('status', FarmOrder::STATUS_FAILED)->whereNotNull('paid_at'))
+                // the gateway refused to send money back to the card: somebody must do it by hand (CardRefunds)
+                ->orWhereHas('refunds', fn ($r) => $r->where('status', PaymentRefund::STATUS_FAILED)
+                    ->whereNotExists(fn ($d) => $d->from('payment_refunds as later')->whereColumn('later.farm_order_id', 'payment_refunds.farm_order_id')
+                        ->where('later.status', PaymentRefund::STATUS_DONE)->whereColumn('later.id', '>', 'payment_refunds.id'))))
             ->where(fn ($q) => $q->whereNull('attention_cleared_at')->orWhereColumn('attention_cleared_at', '<', 'updated_at'));
     }
 
@@ -100,6 +106,9 @@ class FarmOrderController extends Controller
             'eta' => $this->dispatcher->estimate($order, $this->settings),
             // a guest's order before its payment has no account and no credit (docs/AO.md)
             'balance' => $order->user ? app(Wallet::class)->balance($order->user) : null,
+            // money back to the card: what can still go, and every refund with how it went
+            'cardLeft' => app(CardRefunds::class)->refundable($order),
+            'cardRefunds' => $order->refunds()->latest('id')->get(),
         ]);
     }
 
@@ -229,6 +238,27 @@ class FarmOrderController extends Controller
         $amount = $wallet->giveBack($order, $request->user()->id, $data['note']);
 
         return back()->with('status', __('farm.admin.refunded', ['amount' => Money::of($amount, $order->currency)->format()]));
+    }
+
+    /**
+     * "Vrátit na kartu": money of an order paid by card goes back to that card (CardRefunds::byAdmin), at most what the
+     * card paid and has not got back; the gateway is asked right after (RefundToCard), the page says what came of it.
+     */
+    public function cardRefund(Request $request, FarmOrder $order, CardRefunds $refunds): RedirectResponse
+    {
+        $left = $refunds->refundable($order);
+        $data = $request->validate([
+            'amount' => ['required', 'numeric', 'min:0.01', 'max:'.max(0.01, $left)],
+            'note' => ['required', 'string', 'max:300'],
+        ]);
+        $sent = $refunds->byAdmin($order, round((float) $data['amount'], 2), $data['note'], $request->user()->id);
+        $failed = CardRefunds::failedFor($order->refresh());
+
+        return $sent <= 0
+            ? back()->with('error', __('farm.refund.admin.nothing'))
+            : ($failed && $failed->created_at >= now()->subMinute()
+                ? back()->with('error', __('farm.refund.admin.failed_now', ['error' => (string) $failed->error]))
+                : back()->with('status', __('farm.refund.admin.sent', ['amount' => Money::of($sent, $order->currency)->format()])));
     }
 
     /** "Create the parcel": the finished print is announced to Packeta, handed over, and the customer gets the tracking link. */

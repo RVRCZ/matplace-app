@@ -13,6 +13,12 @@ use Illuminate\Http\Request;
  */
 final class FakeGateway implements PaymentGateway
 {
+    /** Tests: the next refunds are refused, as a gateway would (an expired card, a payment refunded already). */
+    public static bool $refundFails = false;
+
+    /** Tests: what was refunded, [payment id, amount, reason] each. */
+    public static array $refunds = [];
+
     public function name(): string
     {
         return 'fake';
@@ -23,6 +29,16 @@ final class FakeGateway implements PaymentGateway
         $payment->update(['gateway_ref' => 'fake_'.$payment->id]);
 
         return $successUrl;
+    }
+
+    public function refund(Payment $payment, float $amount, string $reason): string
+    {
+        if (self::$refundFails) {
+            throw new EngineException('Fake refund refused.');
+        }
+        self::$refunds[] = [$payment->id, $amount, $reason];
+
+        return 'fake_refund_'.$payment->id.'_'.count(self::$refunds);
     }
 
     public function parseWebhook(Request $request): ?array

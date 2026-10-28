@@ -14,6 +14,7 @@ use App\Models\FarmOrder;
 use App\Models\FarmPrinterSlot;
 use App\Models\FarmPrintJob;
 use App\Models\Payment;
+use App\Models\PaymentRefund;
 use App\Support\Money;
 use App\Support\Track;
 use Carbon\Carbon;
@@ -44,6 +45,15 @@ final class OrderFlow
 
     /** The order being paid right now: what its queueing would say goes into the one "paid" mail, not into a second one. */
     private ?int $paying = null;
+
+    /** The order failing on the printer right now and going to be printed again on its own: its money stays held. */
+    private ?int $reprinting = null;
+
+    /** Failures of a paid print that are ours: the printer said so, it was stopped at the printer, or the operator said so. */
+    public const REPRINT_CODES = ['print_failed', 'print_cancelled', 'operator'];
+
+    /** How many times a failed print is printed again on its own before its money goes back (docs/AO.md §2). */
+    public const AUTO_REPRINTS = 1;
 
     public function __construct(private readonly Wallet $wallet, private readonly FarmSettings $settings, private readonly OrderService $orders, private readonly Shipping $shipping, private readonly ShippingCarrier $carrier) {}
 
@@ -256,15 +266,43 @@ final class OrderFlow
         return $order;
     }
 
-    /** Failure with a reason code the customer can read (`farm.error.<code>`). Works from any status that allows it. */
+    /**
+     * Failure with a reason code the customer can read (`farm.error.<code>`). Works from any status that allows it.
+     * A paid print that failed on the printer (our fault) is printed once more on its own: failed → queued, the money
+     * stays held, the customer hears "we print it again"; the second failure ends the order and gives the money back
+     * (to the card when it came from one, CardRefunds).
+     */
     public function fail(FarmOrder $order, string $code, string $actor, ?int $actorId = null, ?string $detail = null): void
     {
         $order->forceFill(['error' => $code, 'error_detail' => $detail, 'stage' => null]);
-        if ($order->canMoveTo(FarmOrder::STATUS_FAILED)) {
-            $this->move($order, FarmOrder::STATUS_FAILED, $actor, $actorId, $code);   // keeps the error: only other targets clear it; the operator's mail goes from move()
-        } else {
+        if (! $order->canMoveTo(FarmOrder::STATUS_FAILED)) {
             $order->save();
+
+            return;
         }
+        $again = $this->printsAgain($order, $code, $actor);
+        $this->reprinting = $again ? $order->id : null;
+        try {
+            $this->move($order, FarmOrder::STATUS_FAILED, $actor, $actorId, $code);   // keeps the error: only other targets clear it; the operator's mail goes from move()
+            if ($again) {
+                $order->forceFill(['reprints' => (int) $order->reprints + 1])->save();
+                $this->move($order, FarmOrder::STATUS_QUEUED, 'system', null, 'automatic reprint '.$order->reprints.' after '.$code);
+            }
+        } finally {
+            $this->reprinting = null;
+        }
+    }
+
+    /**
+     * A failure is printed again on its own: switched on (`farm.payments.auto_reprint`), a customer's paid print, not
+     * printed again yet, a failure on the printer (REPRINT_CODES) while it printed – or, reported by the agent, while it
+     * was starting.
+     */
+    private function printsAgain(FarmOrder $order, string $code, string $actor): bool
+    {
+        return (bool) config('farm.payments.auto_reprint', true) && $order->paid_at !== null && $order->kind === FarmOrder::KIND_PRINT
+            && (int) $order->reprints < self::AUTO_REPRINTS && in_array($code, self::REPRINT_CODES, true)
+            && ($order->status === FarmOrder::STATUS_PRINTING || ($actor === 'agent' && $order->status === FarmOrder::STATUS_QUEUED));
     }
 
     /**
@@ -323,7 +361,13 @@ final class OrderFlow
         // by the printed share (a failed print is the farm's problem and costs nothing)
         $progress = $cancelPrint ? (float) $jobs->whereIn('status', [FarmPrintJob::STATUS_PRINTING, FarmPrintJob::STATUS_PAUSED])->max('progress') : 0.0;
         $keep = $progress > 0 ? $this->shareOfPrice((array) $order->price, $progress / 100) : 0.0;
-        $this->wallet->giveBack($order, note: $keep > 0 ? __('farm.credit.partial', ['percent' => round($progress)]) : null, keep: $keep);
+        // printed again on its own (fail()): the money stays held, only the print stops
+        $back = $this->reprinting === $order->id ? 0.0
+            : $this->wallet->giveBack($order, note: $keep > 0 ? __('farm.credit.partial', ['percent' => round($progress)]) : null, keep: $keep);
+        if ($back > 0) {
+            // what the card paid goes back to the card (the gateway is asked after the commit); credit stays credit
+            app(CardRefunds::class)->afterGiveBack($order, $back, ! $cancelPrint ? PaymentRefund::REASON_PRINT_FAILED : ($keep > 0 ? PaymentRefund::REASON_CANCELLED_RUNNING : PaymentRefund::REASON_CANCELLED));
+        }
         if ($keep > 0) {
             $order->forceFill(['price' => ['charged_on_cancel' => $keep, 'printed_percent' => round($progress, 1)] + (array) $order->price])->save();
             $order->events()->create(['from' => $order->status, 'to' => $order->status, 'actor' => 'system', 'note' => "kept {$keep} for {$progress} % printed"]);
@@ -379,8 +423,13 @@ final class OrderFlow
         if (! $user || ! $user->email || $user->notify_email === false) {
             return;
         }
+        // printed again on its own: no "it failed", one "we print it again" when it is back in the queue
+        if ($this->reprinting === $order->id && $order->status === FarmOrder::STATUS_FAILED) {
+            return;
+        }
+        $status = $this->reprinting === $order->id && $order->status === FarmOrder::STATUS_QUEUED ? FarmOrderStatus::REPRINT : $order->status;
         try {
-            Mail::to($user->email)->locale($user->locale ?: config('app.locale'))->queue(new FarmOrderStatus($order, $order->status));
+            Mail::to($user->email)->locale($user->locale ?: config('app.locale'))->queue(new FarmOrderStatus($order, $status));
         } catch (\Throwable $e) {
             Log::warning('Farm status mail failed', ['order' => $order->id, 'error' => $e->getMessage()]);
         }
@@ -495,7 +544,9 @@ final class OrderFlow
             $where = ($order->printer?->name ?? '—').($order->plates > 1 ? ', '.$this->t('line_plate', ['n' => $job->plate, 'of' => $order->plates]) : '').', '.$this->t('line_progress', ['percent' => round((float) $job->progress)]);
             $lines[] = $this->t('line_where', ['where' => $where]);
         }
-        $lines[] = $this->t('line_next_failed');
+        // printed again on its own, or the money goes back (to the card when it came from one)
+        $lines[] = $this->reprinting === $order->id ? $this->t('line_next_reprint', ['n' => (int) $order->reprints + 1])
+            : (app(CardRefunds::class)->goesToCard($order) ? Lang::get('farm.refund.admin.line_next_failed_card', [], 'cs') : $this->t('line_next_failed'));
         $this->alertAdmin($this->t('failed', ['number' => $order->number, 'reason' => $code]), $order, $lines, 'problem');
     }
 
