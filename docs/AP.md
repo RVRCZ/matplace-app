@@ -549,6 +549,11 @@ printables), bez ceny tisku u nás. Roman je posílá sám.
 Co zůstává na jiných: fotky výtisků (session 2, Roman vybere), Search Console export (Roman) a podle něj druhé kolo
 title/description, Google Business Profile založí Roman, vánoční Shorts session 2.
 
+Nasazeno 28. 10. 2026 večer: dávky D, E, F a články (8bc986fd, 15f3099b, 426d1b29, b8bbb35a) sloučeny v main
+c7cd068f, server 7968245d, `blog:sync` na produkci proběhl, sitemapa obnovená. Nález o puzzle (`frame`) má relace 3,
+nález o velkém vrstveném obrazu relace 2. Termíny v článku o dárcích řídící přijal. Zadání N1 je uzavřené; další
+úkol přijde po Romanově rozhodnutí o dalším směru.
+
 ## 12. Dalších 10 nástrojů, druhé kolo (plán 28. 10. 2026)
 
 Řídící po dávce C: dalších 10 stránek v pořadí podle potenciálu, po dávkách 3 až 4. Zbývající nástroje
