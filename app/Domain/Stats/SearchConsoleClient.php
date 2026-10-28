@@ -76,12 +76,26 @@ class SearchConsoleClient
         ]);
     }
 
+    /**
+     * Forgets the account. Google's revoke takes the whole grant of the user for the OAuth client, every scope of it: with
+     * the client shared with YouTube that would log the channel out too (it did, 28 Oct 2026), so the token is revoked at
+     * Google only when Search Console has a client of its own; otherwise it is only forgotten here (Roman can drop it in
+     * his Google account).
+     */
     public function disconnect(): void
     {
-        if ($account = SearchConsoleAccount::current()) {
+        if (($account = SearchConsoleAccount::current()) && ! self::sharesClientWithYouTube()) {
             Http::asForm()->timeout(10)->post(self::REVOKE, ['token' => $account->refresh_token]);   // best effort
         }
         SearchConsoleAccount::query()->delete();
+    }
+
+    /** The same OAuth client as the YouTube channel (config/seo.php `search_console` falls back to it): one grant for both. */
+    public static function sharesClientWithYouTube(): bool
+    {
+        $own = (string) config('seo.search_console.client_id');
+
+        return $own !== '' && $own === (string) config('youtube.client_id');
     }
 
     /** @return list<string> the properties the connected account may read (sites.list), read again */

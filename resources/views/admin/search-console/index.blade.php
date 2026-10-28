@@ -35,7 +35,7 @@
         @endif
         <div class="mt-3 flex flex-wrap gap-2">
             <form method="post" action="{{ route('admin.search_console.pull') }}">@csrf<button class="btn-primary text-sm" @disabled(! $account->ready())>Stáhnout teď</button></form>
-            <form method="post" action="{{ route('admin.search_console.disconnect') }}" onsubmit="return confirm('Odpojit účet? Stažené řádky zůstanou, nové se nestahují.')">@csrf<button class="btn-quiet text-sm">Odpojit</button></form>
+            <form method="post" action="{{ route('admin.search_console.disconnect') }}" onsubmit="return confirm('Odpojit účet? Stažené řádky zůstanou, nové se nestahují. Oprávnění u Googlu zůstane (sdílí ho YouTube kanál); zrušit je lze v účtu Google.')">@csrf<button class="btn-quiet text-sm">Odpojit</button></form>
         </div>
         <p class="mt-2 text-xs text-slate-500">
             @if($account->last_pulled_at)Poslední stažení {{ $account->last_pulled_at->format('j. n. Y H:i') }} ({{ $account->last_pulled_from?->format('j. n.') }} až {{ $account->last_pulled_to?->format('j. n. Y') }}).@else Zatím nic staženo: první stažení jde 16 měsíců zpět (tolik API drží), pak každou noc poslední 3 dny.@endif

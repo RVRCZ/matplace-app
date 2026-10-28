@@ -407,6 +407,12 @@ minut) – nebo nechat noci.
 
 ### 14.3 Co zůstává
 
+- **Odpojení a sdílený grant (oprava 28. 10. večer, větev `fix/shared-google-grant`):** Googlův `revoke` zneplatní celé
+  oprávnění uživatele pro OAuth klienta, všechny rozsahy. Když Roman v adminu Search Console odpojil a znovu připojil,
+  přestal fungovat i YouTube (stejný klient, stejný účet; `youtube:stats` „Token has been expired or revoked“). Teď
+  `SearchConsoleClient::disconnect` token jen zapomene, pokud klient sdílí s YouTube (`sharesClientWithYouTube`), revoke volá
+  jen s vlastním klientem; `YouTubeClient::disconnect` revoke přeskočí, dokud Search Console čte stejným klientem. Potvrzení
+  v adminu to říkají. YouTube Roman připojí znovu ručně. Test v `SearchConsoleApiTest`.
 - Země v CSV nejsou: filtr se ukazuje jen u dat z API.
 - Stránka `/model/<slug>` v Search Console: řádky má, do nástrojů se nepočítá (spadá do „ostatní stránky“, top 20);
   pro katalog (§13) by stálo za to přidat součet „inspirace“ – malá úprava `SearchConsole::aggregate`.

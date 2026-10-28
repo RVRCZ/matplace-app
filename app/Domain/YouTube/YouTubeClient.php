@@ -2,6 +2,8 @@
 
 namespace App\Domain\YouTube;
 
+use App\Domain\Stats\SearchConsoleClient;
+use App\Models\SearchConsoleAccount;
 use App\Models\YouTubeAccount;
 use Carbon\Carbon;
 use GuzzleHttp\Psr7\Utils;
@@ -91,9 +93,13 @@ class YouTubeClient
         ]);
     }
 
+    /**
+     * Forgets the channel. Google's revoke takes the user's whole grant for the OAuth client, so while Search Console reads
+     * with the same client and account (docs/AN.md §14), the token is only forgotten here and the grant stays for it.
+     */
     public function disconnect(): void
     {
-        if ($account = YouTubeAccount::current()) {
+        if (($account = YouTubeAccount::current()) && ! (SearchConsoleClient::sharesClientWithYouTube() && SearchConsoleAccount::query()->exists())) {
             Http::asForm()->timeout(10)->post(self::REVOKE, ['token' => $account->refresh_token]);   // best effort
         }
         YouTubeAccount::query()->delete();
