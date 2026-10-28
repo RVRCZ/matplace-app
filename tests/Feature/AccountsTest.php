@@ -145,15 +145,16 @@ class AccountsTest extends TestCase
         $this->assertFalse($late->fresh()->hasVerifiedEmail());
     }
 
-    public function test_an_unverified_account_cannot_order_or_top_up_and_can_ask_for_the_link_again(): void
+    public function test_an_unverified_account_cannot_top_up_and_can_ask_for_the_link_again(): void
     {
         Notification::fake();
         $user = User::factory()->unverified()->create();
         $file = $this->model($user);
 
         $this->actingAs($user)->get('/farm')->assertOk()->assertSee('id="verify-banner"', false);
-        $this->actingAs($user)->postJson('/farm/orders', ['file' => $file->uuid])->assertStatus(403)->assertJsonPath('error', 'email_unverified');
-        $this->actingAs($user)->from('/farm')->post('/farm/orders', ['file' => $file->uuid])->assertRedirect('/farm')->assertSessionHas('error', __('user.verify.needed'));
+        // ordering and paying by card need no confirmed e-mail any more (a guest orders too, docs/AO.md); only credit does
+        // (here the order fails only because the farm has no printer)
+        $this->assertNotSame(403, $this->actingAs($user)->postJson('/farm/orders', ['file' => $file->uuid])->status());
         $this->actingAs($user)->from('/account/credit')->post('/account/credit', ['amount' => 200])->assertRedirect('/account/credit')->assertSessionHas('error');
         $this->assertSame(0, FarmOrder::count());
         $this->assertSame(0, Payment::count());

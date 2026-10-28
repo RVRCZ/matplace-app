@@ -24,22 +24,27 @@ final class StripeGateway implements PaymentGateway
         if (empty($this->config['secret'])) {
             throw new EngineException('Stripe is not configured (STRIPE_SECRET_KEY).');
         }
-        $session = (new StripeClient($this->config['secret']))->checkout->sessions->create([
+        // a guest's payment for an order carries the e-mail it typed (the account is made when the payment arrives)
+        $email = $payment->user?->email ?: ($payment->context['email'] ?? null);
+        $session = (new StripeClient($this->config['secret']))->checkout->sessions->create(array_filter([
             'mode' => 'payment',
             'client_reference_id' => (string) $payment->id,
-            'customer_email' => $payment->user->email,
+            'customer_email' => $email ?: null,
             'line_items' => [[
                 'quantity' => 1,
                 'price_data' => [
                     'currency' => strtolower($payment->currency),
                     'unit_amount' => (int) round($payment->amount * 100),
-                    'product_data' => ['name' => __('farm.credit.stripe_item')],
+                    // an order's own payment names the order, not credit ("dobít kredit" is not what the customer does)
+                    'product_data' => ['name' => $payment->purpose === Payment::PURPOSE_ORDER && $payment->order
+                        ? __('farm.guest.stripe_item', ['name' => (string) ($payment->order->modelFile?->original_name ?: $payment->order->token)])
+                        : __('farm.credit.stripe_item')],
                 ],
             ]],
             'metadata' => ['payment_id' => (string) $payment->id, 'purpose' => $payment->purpose],
             'success_url' => $successUrl,
             'cancel_url' => $cancelUrl,
-        ]);
+        ], fn ($v) => $v !== null));
         $payment->update(['gateway_ref' => $session->id]);
 
         return (string) $session->url;

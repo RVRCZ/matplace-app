@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Farm;
 use App\Domain\Calculation\BigModel as Threshold;
 use App\Domain\Farm\BigModel;
 use App\Domain\Farm\Dispatcher;
+use App\Domain\Farm\FarmGate;
 use App\Domain\Farm\FarmRefusal;
 use App\Domain\Farm\FarmSettings;
 use App\Domain\Farm\InsufficientCredit;
@@ -21,6 +22,7 @@ use App\Domain\Tools\ArtGenerator;
 use App\Domain\YouTube\FarmVideos;
 use App\Engines\Contracts\PaymentGateway;
 use App\Http\Controllers\Controller;
+use App\Models\AnonymousSession;
 use App\Models\Calculation;
 use App\Models\CatalogModel;
 use App\Models\DesignerModel;
@@ -42,7 +44,12 @@ use Illuminate\Support\Facades\Storage;
 use Illuminate\View\View;
 use Symfony\Component\HttpFoundation\BinaryFileResponse;
 
-/** "Print on our printer" (the customer rents it): the customer's side of a farm order. Logged-in users only; an order is visible to its owner and admins. */
+/**
+ * "Print on our printer" (the customer rents it): the customer's side of a farm order. An account, or a guest: a guest's
+ * order belongs to the anonymous session that made it and is paid by card with an e-mail, which gives it an account
+ * (App\Domain\Farm\GuestCheckout, docs/AO.md). An order is visible to its owner, its session, the signed link of the
+ * guest's mail, and admins.
+ */
 class OrderController extends Controller
 {
     public function __construct(private readonly OrderService $orders, private readonly FarmSettings $settings, private readonly Wallet $wallet, private readonly Shipping $shipping) {}
@@ -58,8 +65,11 @@ class OrderController extends Controller
      * and no settings here: both are chosen once, on the order page. What the address hands over (the calculation,
      * the settings and colours of a repeated print) rides along to the order in hidden fields.
      */
-    public function start(Request $request): View
+    public function start(Request $request): View|RedirectResponse
     {
+        if ($guest = $this->guestBlocked($request)) {
+            return $guest;
+        }
         $file = $request->query('file') ? ModelFile::where('uuid', $request->query('file'))->first() : null;
         // a designer's model from the catalogue: the file is the card's, the customer never holds it
         $card = $request->query('designer_model') ? DesignerModel::with(['profile', 'modelFile', 'images'])->find((int) $request->query('designer_model')) : null;
@@ -95,12 +105,14 @@ class OrderController extends Controller
             'calc' => $calc,
             'carry' => $carry,
             // no 3D preview of a designer's file that is not offered for download
-            'previewUrl' => $file && (! $card || $card->download_allowed || $request->user()->isAdmin() || $request->user()->id === $card->profile->user_id) ? route('api.files.stl', $file) : null,
+            'previewUrl' => $file && (! $card || $card->download_allowed || $request->user()?->isAdmin() || ($request->user() && $request->user()->id === $card->profile->user_id)) ? route('api.files.stl', $file) : null,
             'bed' => $this->orders->largestBed(),
             'settings' => $this->settings->all(),
-            'balance' => $this->wallet->balance($request->user()),
-            // null = no daily count (the admin, or the limit switched off in the settings)
-            'slicesLeft' => $this->settings->get('daily_slices_per_user') > 0 && ! $request->user()->isAdmin() ? max(0, (int) $this->settings->get('daily_slices_per_user') - $this->orders->slicesToday($request->user())) : null,
+            // a guest has no credit (null: the page offers the login instead)
+            'balance' => $request->user() ? $this->wallet->balance($request->user()) : null,
+            // null = no daily count (the admin, or the limit switched off in the settings); a guest counts by the session
+            'slicesLeft' => $this->settings->get('daily_slices_per_user') > 0 && ! $request->user()?->isAdmin() && ($who = $request->user() ?? $this->session($request))
+                ? max(0, (int) $this->settings->get('daily_slices_per_user') - $this->orders->slicesToday($who)) : null,
         ]);
     }
 
@@ -287,6 +299,9 @@ class OrderController extends Controller
      */
     public function store(Request $request): RedirectResponse|JsonResponse
     {
+        if ($guest = $this->guestBlocked($request)) {
+            return $request->expectsJson() ? response()->json(['error' => 'closed', 'message' => __('farm.refuse.closed')], 403) : $guest;
+        }
         $data = $request->validate([
             'calc' => ['nullable', 'string', 'max:64'],
             'file' => ['required_without_all:calc,designer_model', 'nullable', 'uuid'],
@@ -332,7 +347,7 @@ class OrderController extends Controller
         try {
             $order = $this->orders->create($request->user(), $file, $quality, (string) ($data['strength'] ?? $from['strength'] ?? 'standard'), $data['unit'] ?? null,
                 (int) ($data['copies'] ?? $from['copies'] ?? 1), (float) ($data['scale'] ?? $from['scale'] ?? 1), $pick['color'], (string) ($data['supports'] ?? $from['supports'] ?? 'auto'), null, $card, $inspiration,
-                $pick['changes'] ?: null, $pick['by_parts'] ? $pick['parts'] : null, $from['material'] ?? null, $calc);
+                $pick['changes'] ?: null, $pick['by_parts'] ? $pick['parts'] : null, $from['material'] ?? null, $calc, $request->user() ? null : $this->session($request));
             Track::event('order_created', $card ?? $order->modelFile, array_filter(['order' => $order->id, 'tool' => $order->modelFile?->origin === 'tool' ? $order->modelFile->kind() : null]));
         } catch (FarmRefusal $e) {
             return $request->expectsJson()
@@ -352,17 +367,21 @@ class OrderController extends Controller
         $order->load(['modelFile', 'color', 'printer', 'material']);
 
         $user = $request->user();
-        $point = (array) $user->pickup_point;
+        $point = (array) $user?->pickup_point;
 
         return view('farm.order', [
             'order' => $order,
             'packetaKey' => (string) config('services.packeta.api_key'),
-            // what the delivery form starts with: the address and the favourite pickup point of the profile
+            // what the delivery form starts with: the address and the favourite pickup point of the profile (a guest: empty)
             'prefill' => [
-                'name' => $user->recipientName(), 'phone' => (string) $user->phone, 'street' => (string) $user->street, 'city' => (string) $user->city,
-                'zip' => (string) $user->zip, 'country' => strtoupper((string) ($user->country ?: 'CZ')),
+                'name' => (string) $user?->recipientName(), 'phone' => (string) $user?->phone, 'street' => (string) $user?->street, 'city' => (string) $user?->city,
+                'zip' => (string) $user?->zip, 'country' => strtoupper((string) ($user?->country ?: 'CZ')),
                 'point' => ! empty($point['id']) ? ['id' => (string) $point['id'], 'name' => (string) ($point['name'] ?? ''), 'carrier_id' => (string) ($point['carrier_id'] ?? ''), 'country' => strtoupper((string) ($point['country'] ?? ''))] : null,
+                // a guest's e-mail for the card payment, as typed last time in this browser
+                'email' => $user ? null : (string) $request->session()->get('farm.guest_email', ''),
             ],
+            // a guest on the page: no credit, no "my prints"; the card payment asks for the e-mail
+            'guest' => $user === null,
             'card' => $order->designer_model_id ? $order->designerModel?->load(['profile', 'images']) : null,
             'modelHidden' => $order->hidesModelFrom($request->user()),
             'state' => $this->describe($order, $request),
@@ -462,6 +481,8 @@ class OrderController extends Controller
     public function pay(Request $request, FarmOrder $order, OrderFlow $flow, FarmVideos $videos): JsonResponse
     {
         $this->authorizeOrder($request, $order);
+        // credit is an account's: a guest's order (or one somebody else holds) pays by card
+        abort_if($order->user_id !== $request->user()->id && ! $request->user()->isAdmin(), 403);
         $data = $request->validate(self::payRules(), ['terms.accepted' => __('farm.refuse.terms')]);
         Track::event('checkout_started', $order->modelFile, ['order' => $order->id, 'kind' => 'credit']);
 
@@ -495,18 +516,25 @@ class OrderController extends Controller
     public function checkout(Request $request, FarmOrder $order, OrderFlow $flow, FarmVideos $videos, PaymentGateway $gateway): JsonResponse
     {
         $this->authorizeOrder($request, $order);
-        $data = $request->validate(self::payRules(), ['terms.accepted' => __('farm.refuse.terms')]);
+        // a guest's order is paid with an e-mail: the webhook makes the account (or finds the e-mail's) before the money is credited
+        $guest = $order->isGuest();
+        $data = $request->validate(self::payRules() + ($guest ? ['email' => ['required', 'email:rfc', 'max:190']] : []), ['terms.accepted' => __('farm.refuse.terms')]);
         Track::event('checkout_started', $order->modelFile, ['order' => $order->id, 'kind' => 'card']);
+        if ($guest) {
+            $data['email'] = strtolower(trim((string) $data['email']));
+            $request->session()->put('farm.guest_email', $data['email']);
+        }
 
         try {
+            // a guest's order holds no credit (Wallet::hold): the card pays all of it
             return $this->payFromRequest($request, $order, $flow, $videos, $data);
         } catch (InsufficientCredit $e) {
             // whole crowns or euros, never under the gateway's smallest charge; what is over the shortfall stays as credit
             $amount = max((float) ceil($e->missing()), self::minCharge($e->currency));
             $payment = Payment::create([
-                'user_id' => $request->user()->id, 'farm_order_id' => $order->id, 'gateway' => $gateway->name(), 'purpose' => Payment::PURPOSE_ORDER,
+                'user_id' => $order->user_id, 'farm_order_id' => $order->id, 'gateway' => $gateway->name(), 'purpose' => Payment::PURPOSE_ORDER,
                 'amount' => $amount, 'currency' => $e->currency, 'status' => Payment::STATUS_PENDING,
-                'context' => array_filter($data, fn ($v) => $v !== null) + ['ip' => $request->ip(), 'currency' => $this->currencyFor($order, $request), 'video_consent' => $request->boolean('video_consent')],
+                'context' => array_filter($data, fn ($v) => $v !== null) + ['ip' => $request->ip(), 'currency' => $this->currencyFor($order, $request), 'video_consent' => $request->boolean('video_consent'), 'locale' => app()->getLocale()],
             ]);
             try {
                 $url = $gateway->checkoutUrl($payment->load('user'), route('farm.orders.show', ['order' => $order, 'paid' => $payment->id]), route('farm.orders.show', $order));
@@ -571,7 +599,7 @@ class OrderController extends Controller
         }
         $order->refresh();
         Track::event('order_paid', $order->designer_model_id ? $order->designerModel : $order->modelFile, array_filter(['order' => $order->id, 'value' => (float) $order->price_total, 'currency' => (string) $order->currency, 'kind' => 'credit', 'tool' => $order->modelFile?->origin === 'tool' ? $order->modelFile->kind() : null, 'event_id' => 'order-'.$order->id]));
-        app(SocialPublisher::class)->conversion('order_paid', 'order-'.$order->id, $request, $request->user()->email, ['value' => (float) $order->price_total, 'currency' => (string) $order->currency]);
+        app(SocialPublisher::class)->conversion('order_paid', 'order-'.$order->id, $request, (string) $order->user?->email, ['value' => (float) $order->price_total, 'currency' => (string) $order->currency]);
 
         return response()->json($this->describe($order->refresh(), $request));
     }
@@ -580,7 +608,7 @@ class OrderController extends Controller
     public function videoConsent(Request $request, FarmOrder $order, FarmVideos $videos): RedirectResponse
     {
         $this->authorizeOrder($request, $order);
-        abort_unless($order->user_id === $request->user()->id && $order->kind === FarmOrder::KIND_PRINT, 403);
+        abort_unless($order->user_id === $request->user()?->id && $order->kind === FarmOrder::KIND_PRINT, 403);
         $consent = $request->boolean('consent');
         $videos->setConsent($order, $consent);
 
@@ -597,7 +625,7 @@ class OrderController extends Controller
         if ($order->status !== FarmOrder::STATUS_PRINTING && $order->printJobs()->whereIn('status', ['sent', 'printing', 'paused', 'unknown'])->exists()) {
             return response()->json(['error' => 'locked', 'message' => __('farm.refuse.locked')], 422);
         }
-        $flow->move($order, FarmOrder::STATUS_CANCELLED, 'user', $request->user()->id);
+        $flow->move($order, FarmOrder::STATUS_CANCELLED, 'user', $request->user()?->id);
 
         return $request->expectsJson() ? response()->json($this->describe($order->refresh(), $request)) : redirect()->route('farm.orders');
     }
@@ -692,8 +720,9 @@ class OrderController extends Controller
         if ($order->paid_at !== null) {
             return (string) $order->currency;
         }
-        $mine = $request->user()->id === $order->user_id;
-        $owner = $mine ? $request->user() : $order->user;
+        // a guest's order: the currency its visitor sees prices in, until the payment fixes it
+        $mine = $order->user_id === null ? $request->user() === null : $request->user()?->id === $order->user_id;
+        $owner = $order->user_id === null ? null : ($mine ? $request->user() : $order->user);
 
         return (string) ($owner?->currency ?: ($mine ? Currency::current($owner) : $order->currency));
     }
@@ -847,7 +876,9 @@ class OrderController extends Controller
             // delivery is on the page at once; paid: the one chosen
             'delivery' => $order->paid_at !== null ? $order->delivery : $this->preselectedDelivery($order, $request),
             'min_charge' => self::minCharge($currency),
-            'balance' => $this->wallet->balance($request->user()->id === $order->user_id ? $request->user() : $order->user)->amount,
+            // a guest's order, or a guest looking at it: no credit (the card pays all of it)
+            'balance' => $order->user && $request->user() ? $this->wallet->balance($request->user()->id === $order->user_id ? $request->user() : $order->user)->amount : 0.0,
+            'guest' => $request->user() === null || $order->isGuest(),
             'model_url' => ($order->print_stl_path || $order->modelFile?->stl_path) && ! $order->hidesModelFrom($request->user()) ? route('farm.orders.model', $order).'?v='.($order->updated_at?->timestamp ?? 0) : null,
             'supports_url' => $order->absoluteSupportsPath() ? route('farm.orders.supports', $order).'?v='.($order->updated_at?->timestamp ?? 0) : null,
             'queue' => app(Dispatcher::class)->estimate($order, $this->settings),
@@ -910,14 +941,14 @@ class OrderController extends Controller
     private function preselectedDelivery(FarmOrder $order, Request $request): string
     {
         $modes = $this->shipping->modes();
-        $last = FarmOrder::where('user_id', $order->user_id)->whereNotNull('paid_at')->where('id', '!=', $order->id)->latest('paid_at')->value('delivery');
+        $last = $order->user_id === null ? null : FarmOrder::where('user_id', $order->user_id)->whereNotNull('paid_at')->where('id', '!=', $order->id)->latest('paid_at')->value('delivery');
         if ($last && in_array($last, $modes, true)) {
             return (string) $last;
         }
         if (in_array(Shipping::PICKUP, $modes, true)) {
             return Shipping::PICKUP;
         }
-        $owner = $request->user()->id === $order->user_id ? $request->user() : $order->user;
+        $owner = $order->user;
         $country = strtoupper((string) ($owner?->country ?: 'CZ'));
         $currency = $this->currencyFor($order, $request);
         $grams = $this->shipping->parcelGrams($order);
@@ -965,20 +996,60 @@ class OrderController extends Controller
         return [];
     }
 
+    /**
+     * Who may see and act on the order: its account, an admin, the anonymous session that made it (a guest, also after
+     * the payment gave it an account), and whoever opened the signed link of the guest's mail in this browser.
+     */
     private function authorizeOrder(Request $request, FarmOrder $order): void
     {
-        abort_unless($order->user_id === $request->user()->id || $request->user()->isAdmin(), 404);
+        $user = $request->user();
+        if ($user && ($order->user_id === $user->id || $user->isAdmin())) {
+            return;
+        }
+        $session = $this->session($request);
+        if ($order->anonymous_session_id !== null && $session?->id === $order->anonymous_session_id) {
+            return;
+        }
+        // the link of the confirmation mail works without signing in; the page's later requests ride on the session
+        $seen = (array) ($request->hasSession() ? $request->session()->get('farm.orders', []) : []);
+        if ($request->hasValidSignature() && $request->hasSession()) {
+            $request->session()->put('farm.orders', array_values(array_unique([...$seen, $order->token])));
+
+            return;
+        }
+        abort_unless(in_array($order->token, $seen, true), 404);
     }
 
-    /** A file uploaded before logging in belongs to the anonymous session: take it over; somebody else's file is refused. */
+    /** The visitor's anonymous session (cookie mp_sid), saved: a robot's unsaved one owns nothing. */
+    private function session(Request $request): ?AnonymousSession
+    {
+        $session = $request->attributes->get('anon_session');
+
+        return $session instanceof AnonymousSession && $session->exists ? $session : null;
+    }
+
+    /** A guest while the farm is not offered to guests (`farm.public` off): the login first, as before. */
+    private function guestBlocked(Request $request): ?RedirectResponse
+    {
+        return $request->user() || FarmGate::offered() ? null : redirect()->guest(route('login'));
+    }
+
+    /**
+     * A file uploaded before logging in belongs to the anonymous session: an account takes it over, a guest orders it
+     * from that session (the payment's account takes it over later, GuestCheckout); somebody else's file is refused.
+     */
     private function claim(Request $request, ModelFile $file): void
     {
         $user = $request->user();
         if ($file->owner_user_id === null) {
-            $session = $request->attributes->get('anon_session');
+            $session = $this->session($request);
             abort_unless($session && $file->anonymous_session_id === $session->id, 403);
-            $file->forceFill(['owner_user_id' => $user->id])->save();
+            if ($user) {
+                $file->forceFill(['owner_user_id' => $user->id])->save();
+            }
+
+            return;
         }
-        abort_unless($file->owner_user_id === $user->id || $user->isAdmin(), 403);
+        abort_unless($user && ($file->owner_user_id === $user->id || $user->isAdmin()), 403);
     }
 }

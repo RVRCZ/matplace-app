@@ -165,6 +165,8 @@ class User extends Authenticatable implements HasLocalePreference, MustVerifyEma
     {
         ModelFile::where('anonymous_session_id', $session->id)->whereNull('owner_user_id')->update(['owner_user_id' => $this->id]);
         Calculation::where('anonymous_session_id', $session->id)->whereNull('owner_user_id')->update(['owner_user_id' => $this->id]);
+        // a guest's orders not paid yet (docs/AO.md): signed in, they are the account's, with its credit
+        FarmOrder::where('anonymous_session_id', $session->id)->whereNull('user_id')->whereNull('paid_at')->update(['user_id' => $this->id]);
         if ($session->claimed_by_user_id === null) {
             $session->forceFill(['claimed_by_user_id' => $this->id])->saveQuietly();
         }

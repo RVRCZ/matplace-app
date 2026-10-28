@@ -1,0 +1,72 @@
+{
+    "farm.cta_hint_guest": [
+        "Zatím nic neplatíte a účet nepotřebujete: vyberete barvu a doručení, uvidíte konečnou cenu a zaplatíte kartou až na konci.",
+        "Nothing to pay yet and no account needed: pick the colour and delivery, see the final price and pay by card only at the end.",
+        "Todavía no paga nada y no necesita cuenta: elige el color y la entrega, ve el precio final y paga con tarjeta solo al final."
+    ],
+    "farm.guest.sign_in": [
+        "Máte účet? Přihlásit se",
+        "Have an account? Sign in",
+        "¿Tiene cuenta? Inicie sesión"
+    ],
+    "farm.guest.email": [
+        "E-mail pro potvrzení zakázky",
+        "E-mail for the order confirmation",
+        "Correo electrónico para la confirmación del pedido"
+    ],
+    "farm.guest.email_placeholder": [
+        "vas@email.cz",
+        "you@example.com",
+        "usted@ejemplo.com"
+    ],
+    "farm.guest.email_hint": [
+        "Pošleme na něj potvrzení a odkaz na zakázku. Účet k němu založíme sami; heslo si nastavíte z e-mailu, až budete chtít.",
+        "We send the confirmation and the link to the order there. We make an account for it ourselves; you set its password from the e-mail whenever you like.",
+        "Allí le enviamos la confirmación y el enlace al pedido. Nosotros creamos la cuenta; la contraseña la establece desde el correo cuando quiera."
+    ],
+    "farm.guest.stripe_item": [
+        "Tisk „:name“ (matplace)",
+        "Print of \":name\" (matplace)",
+        "Impresión de «:name» (matplace)"
+    ],
+    "farm.guest.mail.subject": [
+        "Zakázka :number je zaplacená",
+        "Order :number is paid",
+        "El pedido :number está pagado"
+    ],
+    "farm.guest.mail.body": [
+        "Děkujeme. Tisk „:name“ je zaplacený (:total) a jde k tiskárně. Jak pokračuje, uvidíte na stránce zakázky; o každém kroku vám napíšeme.",
+        "Thank you. The print of \":name\" is paid (:total) and goes to the printer. You can follow it on the order page; we write to you at every step.",
+        "Gracias. La impresión de «:name» está pagada (:total) y va a la impresora. Puede seguirla en la página del pedido; le escribimos en cada paso."
+    ],
+    "farm.guest.mail.created": [
+        "K e-mailu :email jsme vám založili účet, abyste zakázku viděli odkudkoli a příště nic nevyplňovali. Heslo si nastavíte odkazem níže (platí :days dní, potom přes Zapomenuté heslo).",
+        "We made you an account for :email, so you can see the order from anywhere and fill in nothing next time. Set its password with the link below (it works for :days days, then use Forgot password).",
+        "Le creamos una cuenta para :email, para que vea el pedido desde cualquier lugar y la próxima vez no tenga que rellenar nada. Establezca la contraseña con el enlace de abajo (funciona :days días, después use ¿Olvidó la contraseña?)."
+    ],
+    "farm.guest.mail.password": [
+        "Nastavit heslo",
+        "Set a password",
+        "Establecer contraseña"
+    ],
+    "farm.guest.mail.attached": [
+        "E-mail :email už u nás účet má, zakázku jsme k němu připojili. Po přihlášení ji najdete v Moje tisky.",
+        "The e-mail :email already has an account with us, so we attached the order to it. Sign in and you will find it in My prints.",
+        "El correo :email ya tiene una cuenta con nosotros, así que le añadimos el pedido. Inicie sesión y lo encontrará en Mis impresiones."
+    ],
+    "farm.guest.password_set": [
+        "Heslo k účtu už je nastavené. Přihlaste se, nebo použijte Zapomenuté heslo.",
+        "The account already has a password. Sign in, or use Forgot password.",
+        "La cuenta ya tiene contraseña. Inicie sesión o use ¿Olvidó la contraseña?"
+    ],
+    "farm.guest.admin_not_paid": [
+        "Platba hosta :payment dorazila, ale zakázka se nezaplatila (:reason)",
+        "A guest's payment :payment arrived, but the order was not paid (:reason)",
+        "Llegó el pago de invitado :payment, pero el pedido no se pagó (:reason)"
+    ],
+    "farm.guest.admin_guest": [
+        "host bez účtu (účet vznikne platbou)",
+        "guest without an account (the payment makes one)",
+        "invitado sin cuenta (el pago crea una)"
+    ]
+}

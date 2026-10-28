@@ -51,6 +51,7 @@ use App\Http\Controllers\DesignerPageController;
 use App\Http\Controllers\EditToolsController;
 use App\Http\Controllers\EmbedController;
 use App\Http\Controllers\Farm\CreditController;
+use App\Http\Controllers\Farm\GuestController;
 use App\Http\Controllers\Farm\OrderController;
 use App\Http\Controllers\FeedController;
 use App\Http\Controllers\InquiryController;
@@ -271,21 +272,26 @@ $pages = function () {
         Route::post('/upload/{token}', [DesignerBulkController::class, 'confirm'])->name('bulk.confirm');
     });
 
-    // ── Print farm: "Rent a printer" (logged-in users; credit from the payment gateway) ──
+    // ── Print farm: "Rent a printer" (an account, or a guest whose card payment makes one: docs/AO.md) ──
     Route::get('/farm/terms', [OrderController::class, 'terms'])->name('farm.terms');
     Route::view('/privacy', 'pages.privacy')->name('privacy');
+    // a guest's order belongs to the anonymous session; OrderController::authorizeOrder lets in its owner, that
+    // session, the signed link of the confirmation mail, and admins
+    Route::get('/farm', [OrderController::class, 'start'])->name('farm.start');
+    Route::post('/farm/orders', [OrderController::class, 'store'])->middleware('throttle:20,1,farm_order')->name('farm.orders.store');
+    Route::get('/farm/orders/{order}', [OrderController::class, 'show'])->name('farm.orders.show');
+    Route::get('/farm/orders/{order}/repeat', [OrderController::class, 'repeat'])->name('farm.orders.repeat');
+    Route::get('/farm/orders/{order}/status', [OrderController::class, 'status'])->name('farm.orders.status');
+    Route::post('/farm/orders/{order}/reslice', [OrderController::class, 'reslice'])->middleware('throttle:20,1,farm_reslice')->name('farm.orders.reslice');
+    Route::post('/farm/orders/{order}/quote', [OrderController::class, 'quote'])->middleware('throttle:120,1,farm_quote')->name('farm.orders.quote');
+    // by card: a guest too (the e-mail goes with the payment); from credit: a signed-in account with a confirmed e-mail
+    Route::post('/farm/orders/{order}/checkout', [OrderController::class, 'checkout'])->middleware('throttle:10,1,farm_checkout')->name('farm.orders.checkout');
+    Route::post('/farm/orders/{order}/cancel', [OrderController::class, 'cancel'])->name('farm.orders.cancel');
+    // "set a password" from the mail of a guest's order: signed, it makes a fresh reset token
+    Route::get('/farm/password/{user}', [GuestController::class, 'password'])->whereNumber('user')->middleware(['signed', 'throttle:10,1,farm_password'])->name('farm.guest.password');
     Route::middleware('auth')->group(function () {
-        Route::get('/farm', [OrderController::class, 'start'])->name('farm.start');
         Route::get('/farm/orders', fn () => redirect()->route('account.orders', [], 301))->name('farm.orders');
-        Route::post('/farm/orders', [OrderController::class, 'store'])->middleware(['verified.email', 'throttle:20,1,farm_order'])->name('farm.orders.store');
-        Route::get('/farm/orders/{order}', [OrderController::class, 'show'])->name('farm.orders.show');
-        Route::get('/farm/orders/{order}/repeat', [OrderController::class, 'repeat'])->name('farm.orders.repeat');
-        Route::get('/farm/orders/{order}/status', [OrderController::class, 'status'])->name('farm.orders.status');
-        Route::post('/farm/orders/{order}/reslice', [OrderController::class, 'reslice'])->middleware('throttle:20,1,farm_reslice')->name('farm.orders.reslice');
-        Route::post('/farm/orders/{order}/quote', [OrderController::class, 'quote'])->middleware('throttle:120,1,farm_quote')->name('farm.orders.quote');
         Route::post('/farm/orders/{order}/pay', [OrderController::class, 'pay'])->middleware(['verified.email', 'throttle:10,1,farm_pay'])->name('farm.orders.pay');
-        Route::post('/farm/orders/{order}/checkout', [OrderController::class, 'checkout'])->middleware(['verified.email', 'throttle:10,1,farm_checkout'])->name('farm.orders.checkout');
-        Route::post('/farm/orders/{order}/cancel', [OrderController::class, 'cancel'])->name('farm.orders.cancel');
         Route::post('/farm/orders/{order}/video-consent', [OrderController::class, 'videoConsent'])->middleware('throttle:10,1,video-consent')->name('farm.orders.video_consent');
 
         Route::get('/account/credit', [CreditController::class, 'index'])->name('account.credit');
@@ -342,15 +348,13 @@ Route::get('/sitemap.xml', [SitemapController::class, 'index'])->name('sitemap')
 Route::get('/sitemap-{name}.xml', [SitemapController::class, 'show'])->where('name', '[a-z0-9-]+')->name('sitemap.file');
 Route::get('/robots.txt', [SitemapController::class, 'robots'])->name('robots');
 
-// ── Files of a farm order (not pages: one address for every language) ────────
-Route::middleware('auth')->group(function () {
-    Route::get('/farm/orders/{order}/model.stl', [OrderController::class, 'model'])->name('farm.orders.model');
-    Route::get('/farm/orders/{order}/parts/{part}.stl', [OrderController::class, 'partModel'])->where('part', '[A-Za-z0-9_-]+')->name('farm.orders.part_model');
-    Route::get('/farm/orders/{order}/supports.bin', [OrderController::class, 'supports'])->name('farm.orders.supports');
-    Route::get('/farm/orders/{order}/snapshot', [OrderController::class, 'snapshot'])->name('farm.orders.snapshot');
-    Route::get('/farm/orders/{order}/timelapse.mp4', [OrderController::class, 'timelapse'])->name('farm.orders.timelapse');
-    Route::get('/farm/orders/{order}/short.mp4', [OrderController::class, 'short'])->name('farm.orders.short');
-});
+// ── Files of a farm order (not pages: one address for every language; a guest's order too, OrderController::authorizeOrder) ──
+Route::get('/farm/orders/{order}/model.stl', [OrderController::class, 'model'])->name('farm.orders.model');
+Route::get('/farm/orders/{order}/parts/{part}.stl', [OrderController::class, 'partModel'])->where('part', '[A-Za-z0-9_-]+')->name('farm.orders.part_model');
+Route::get('/farm/orders/{order}/supports.bin', [OrderController::class, 'supports'])->name('farm.orders.supports');
+Route::get('/farm/orders/{order}/snapshot', [OrderController::class, 'snapshot'])->name('farm.orders.snapshot');
+Route::get('/farm/orders/{order}/timelapse.mp4', [OrderController::class, 'timelapse'])->name('farm.orders.timelapse');
+Route::get('/farm/orders/{order}/short.mp4', [OrderController::class, 'short'])->name('farm.orders.short');
 // a print video for Instagram to fetch (signed address that expires; App\Domain\Social\VideoSharer)
 Route::get('/social/videos/{video}.mp4', [SocialVideoController::class, 'show'])->whereNumber('video')->middleware('signed')->name('social.video');
 

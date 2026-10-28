@@ -21,6 +21,8 @@
             'topup' => route('account.credit', ['back' => $order->token]),
         ],
         'csrf' => csrf_token(),
+        // a guest pays by card with an e-mail and never sees credit (docs/AO.md)
+        'guest' => $guest ?? false,
         'paid' => (int) request()->query('paid'),   // back from the card payment of this order: the page waits for the webhook
         'i18n' => collect($keys)->mapWithKeys(fn ($k) => [$k => __($k)])->all(),
     ];
@@ -35,8 +37,13 @@
     <div class="flex flex-wrap items-center justify-between gap-2">
         <h1 class="text-xl font-extrabold sm:text-2xl">{{ __('farm.order.title', ['name' => $order->modelFile?->original_name]) }}</h1>
         <div class="flex items-center gap-3 text-sm">
-            <a href="{{ route('account.orders') }}" class="text-action-dark underline">{{ __('farm.my_orders') }}</a>
-            <a href="{{ route('account.credit') }}" class="rounded-full border border-line bg-white px-3 py-1 font-semibold">{{ __('farm.credit_balance') }}: <span id="farm-balance">@money($state['balance'], $state['currency'])</span></a>
+            @if($guest ?? false)
+                {{-- a guest: nothing of an account here; one who has an account signs in and comes back to this order --}}
+                <a href="{{ route('login') }}" class="text-action-dark underline">{{ __('farm.guest.sign_in') }}</a>
+            @else
+                <a href="{{ route('account.orders') }}" class="text-action-dark underline">{{ __('farm.my_orders') }}</a>
+                <a href="{{ route('account.credit') }}" class="rounded-full border border-line bg-white px-3 py-1 font-semibold">{{ __('farm.credit_balance') }}: <span id="farm-balance">@money($state['balance'], $state['currency'])</span></a>
+            @endif
         </div>
     </div>
 
@@ -275,6 +282,13 @@
                     </div>
                     <p class="mt-1 text-xs text-slate-500">{{ __('farm.delivery.phone_hint') }}</p>
                 </div>
+                @if($guest ?? false)
+                    {{-- a guest: the e-mail goes with the card payment; the account is made when the bank confirms it --}}
+                    <label class="mt-3 block text-sm font-semibold text-slate-700" for="farm-email">{{ __('farm.guest.email') }}</label>
+                    <input id="farm-email" name="email" type="email" required autocomplete="email" maxlength="190" value="{{ $prefill['email'] ?? '' }}" placeholder="{{ __('farm.guest.email_placeholder') }}"
+                           class="mt-1 w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm">
+                    <p class="mt-1 text-xs text-slate-500">{{ __('farm.guest.email_hint') }}</p>
+                @endif
                 <textarea name="note" rows="2" maxlength="500" placeholder="{{ __('farm.order.note') }}" aria-label="{{ __('farm.order.note') }}" class="mt-2 w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm"></textarea>
 
                 <label class="mt-3 flex items-start gap-2 text-sm text-slate-700">

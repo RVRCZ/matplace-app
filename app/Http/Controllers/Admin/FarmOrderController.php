@@ -98,7 +98,8 @@ class FarmOrderController extends Controller
             'order' => $order,
             'targets' => FarmOrder::TRANSITIONS[$order->status] ?? [],
             'eta' => $this->dispatcher->estimate($order, $this->settings),
-            'balance' => app(Wallet::class)->balance($order->user),
+            // a guest's order before its payment has no account and no credit (docs/AO.md)
+            'balance' => $order->user ? app(Wallet::class)->balance($order->user) : null,
         ]);
     }
 
