@@ -87,6 +87,7 @@ return [
         'title' => 'Kolik stojí 3D tisk? :things',
         'ask' => 'Co by stálo za vytištění vám? Napište do komentáře.',
         'line' => ':name – :price – :url',
+        'own_file' => 'Vlastní model zákazníka',
         'description' => ":cta\n:pieces z naší 3D tiskové farmy a co stály. Cena se vždy počítá z modelu: z velikosti, materiálu a doby tisku. Vlastní cenu zjistíte do minuty, bez registrace.\n\nCo je ve videu:",
         'hashtags' => '#Shorts #3dtisk #3dtiskarna #kolikstoji #cena',
     ],

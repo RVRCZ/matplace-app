@@ -84,6 +84,7 @@ return [
         'title' => 'How much does 3D printing cost? :things',
         'ask' => 'What would be worth printing for you? Tell us in a comment.',
         'line' => ':name – :price – :url',
+        'own_file' => 'A customer\'s own model',
         'description' => ":cta\n:pieces from our 3D print farm and what they cost. The price always comes from the model: its size, the material and the print time. Yours takes a minute, no account needed.\n\nIn the video:",
         'hashtags' => '#Shorts #3dprinting #3dprintfarm #howmuch #price',
     ],

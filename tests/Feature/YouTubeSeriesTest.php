@@ -111,6 +111,18 @@ final class YouTubeSeriesTest extends TestCase
         $this->assertCount(5, $picked);
         $this->assertCount(5, $picked->map(fn (FarmOrder $o) => (string) (app(FarmVideos::class)->toolKind($o) ?? ''))->unique(), 'one of every tool');
 
+        // a customer's own file never shows its file name: the title the admin gave the video, else a plain label
+        FarmVideo::create(['farm_order_id' => $file->id, 'kind' => FarmVideo::KIND_SHORT, 'status' => FarmVideo::STATUS_PUBLISHED, 'youtube_id' => 'cat1', 'title' => 'Kočka z vlastního souboru – 6 h 33 min tisku', 'published_at' => now()]);
+        $named = $series->priceShort(collect([$file, $vase2]), Storage::disk('farm')->path('series/price-names.mp4'));
+        $names = array_values(array_filter($named->texts, fn ($t, $f) => str_contains($f, '_name_'), ARRAY_FILTER_USE_BOTH));
+        $this->assertSame(['Kočka z vlastního souboru', 'Váza bez jediného švu'], array_map(fn ($n) => str_replace('
+', ' ', $n), $names), 'the card wraps the words, the title stays');
+        FarmVideo::where('youtube_id', 'cat1')->delete();
+        $plain = $series->priceShort(collect([$file]), Storage::disk('farm')->path('series/price-names.mp4'));
+        $this->assertStringStartsWith('Vlastní model zákazníka', str_replace('
+', ' ', array_values(array_filter($plain->texts, fn ($t, $f) => str_contains($f, '_name_'), ARRAY_FILTER_USE_BOTH))[0]), 'no video title yet: a label with the material, never "cat.stl"');
+        $this->assertStringNotContainsString('Cat', implode(' ', $plain->texts));
+
         $cut = $series->priceShort($picked, Storage::disk('farm')->path('series/price-test.mp4'));
         $this->assertSame(FarmVideo::KIND_PRICE, $cut->kind);
         $this->assertEqualsWithDelta(1.2 + 5 * (1 + 4 - 0.3) + 3.5, $cut->seconds, 0.01, 'the opening card, five pieces of a second of growing and four of the photo, the end card');

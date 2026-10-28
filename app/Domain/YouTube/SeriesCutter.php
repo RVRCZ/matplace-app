@@ -383,13 +383,28 @@ class SeriesCutter
         return implode("\n", $lines);
     }
 
-    /** What the piece is called on its card: the tool's title ("Busta z jedné fotky"), else the model's name. */
+    /**
+     * What the piece is called on its card: the tool's title ("Busta z jedné fotky"). A customer's own file never shows
+     * its file name ("Mystical Chine Dragon V EYE", the dry run of 28 Oct 2026): the title the admin gave its video
+     * (before the print time, i.e. after the retitle of the channel), else a plain label with the material.
+     */
     private function pieceName(FarmOrder $order, string $locale): string
     {
         $kind = $this->videos->toolKind($order);
         $key = 'youtube.title.'.$kind;
+        if ($kind !== null && __($key, [], $locale) !== $key) {
+            return __($key, [], $locale);
+        }
+        $title = (string) FarmVideo::where('farm_order_id', $order->id)->whereIn('kind', [FarmVideo::KIND_SHORT, FarmVideo::KIND_WIDE])
+            ->whereNotIn('status', [FarmVideo::STATUS_WITHDRAWN, FarmVideo::STATUS_FAILED, FarmVideo::STATUS_REJECTED, FarmVideo::STATUS_MISSING])
+            ->orderByRaw("case when status = 'published' then 0 else 1 end")->orderByDesc('id')->value('title');
+        $name = trim((string) preg_split('/\s+[–-]\s+/u', $title, 2)[0]);
+        if ($name !== '' && $name !== $title) {
+            return mb_substr($name, 0, 60);
+        }
+        $material = trim(($order->color?->material?->label() ?? '').' '.($order->color?->displayName() ?? ''));
 
-        return $kind !== null && __($key, [], $locale) !== $key ? __($key, [], $locale) : $this->videos->cardFacts($order, $locale)['name'];
+        return __('youtube.price.own_file', [], $locale).($material !== '' ? ' · '.$material : '');
     }
 
     /** The tools page, absolute and without marks: where the price Short sends people. */
