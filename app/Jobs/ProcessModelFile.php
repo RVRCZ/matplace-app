@@ -3,6 +3,7 @@
 namespace App\Jobs;
 
 use App\Domain\Farm\OrderFlow;
+use App\Domain\Files\PaintedColors;
 use App\Engines\Contracts\MeshRepair;
 use App\Engines\Converter\ConverterChain;
 use App\Engines\Mesh\StlFile;
@@ -72,6 +73,11 @@ class ProcessModelFile implements ShouldQueue
                 }
             });
 
+            // a 3MF painted in colours (Bambu Studio, OrcaSlicer, Anycubic Slicer Next, PrusaSlicer): its colours read, the
+            // STL ordered by them for the preview (docs/AL.md §14); a file without colours, or one that cannot be read, stays as it was
+            if ($file->ext === '3mf') {
+                $file->colors = $clock->measure('colors', fn () => app(PaintedColors::class)->analyse($file, $stlAbs));
+            }
             $report = $clock->measure('analyse', fn () => $repair->check($stlAbs));
             if ($report->triangles > (int) config('engines.mesh.max_triangles')) {
                 // beyond what thinning before the slice (MeshDecimator) can make printable in reasonable time: the customer

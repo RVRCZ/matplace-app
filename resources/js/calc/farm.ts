@@ -83,7 +83,8 @@ export function bootFarmCta(): void {
         // the calculator rewrites the address to /c/{token} (/en/c/{token} in another language) once the calculation exists
         const m = location.pathname.match(/^(?:\/[a-z]{2})?\/c\/([A-Za-z0-9_-]+)/);
         if (!m) { if (note) note.textContent = wait; show(note, true); return; }
-        const start = `${btn.dataset.url}?calc=${encodeURIComponent(m[1])}`;
+        // a painted 3MF (docs/AL.md §14): the calculator's two buttons set data-colors on this one (painted | one) before the click
+        const start = `${btn.dataset.url}?calc=${encodeURIComponent(m[1])}${btn.dataset.colors === 'one' ? '&colors=one' : ''}`;
         if (!btn.dataset.store) { location.href = start; return; }
         // the order is made now (a guest's under the anonymous session) and its page opens (material, settings, colours, price); the button says it works
         const label = btn.innerHTML;
@@ -93,7 +94,7 @@ export function bootFarmCta(): void {
         const done = (): void => { btn.innerHTML = label; btn.disabled = false; btn.removeAttribute('aria-busy'); };
         try {
             const csrf = document.querySelector<HTMLMetaElement>('meta[name="csrf-token"]')?.content ?? '';
-            const res = await fetch(btn.dataset.store, { method: 'POST', credentials: 'same-origin', headers: { 'Content-Type': 'application/json', Accept: 'application/json', 'X-CSRF-TOKEN': csrf }, body: JSON.stringify({ calc: m[1], copies: Number((document.getElementById('quantity') as HTMLInputElement | null)?.value) || undefined }) });
+            const res = await fetch(btn.dataset.store, { method: 'POST', credentials: 'same-origin', headers: { 'Content-Type': 'application/json', Accept: 'application/json', 'X-CSRF-TOKEN': csrf }, body: JSON.stringify({ calc: m[1], copies: Number((document.getElementById('quantity') as HTMLInputElement | null)?.value) || undefined, colors: btn.dataset.colors === 'one' || btn.dataset.colors === 'painted' ? btn.dataset.colors : undefined }) });
             const json = await res.json().catch(() => ({})) as { url?: string; message?: string };
             if (res.ok && json.url) { location.href = json.url; return; }
             // the farm said why not (closed, daily limit, e-mail not confirmed…): said here, the button stays

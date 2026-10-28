@@ -77,6 +77,21 @@ return [
     // the mesh is thinned to about `target` triangles before it is sliced (quadric decimation, engines/python/decimate_tool.py),
     // only while the worst deviation stays within `max_deviation_mm` and the mesh stays watertight; the original is what
     // the customer sees and downloads. Above `max_triangles` a file is refused on upload with the advice to thin it at home.
+    // the colours painted in an uploaded 3MF (App\Domain\Files\PaintedColors, docs/AL.md §14): a colour under `merge_below`
+    // per cent of the area joins the colour of its body (the turtle of 28 Oct 2026: eyes 0.8 %, pupils 0.1 %); at most `max`
+    // colours print (FarmOrder::MAX_COLORS), the smaller ones join theirs too
+    'colors' => [
+        'merge_below' => (float) env('COLORS_MERGE_BELOW', 1.0),
+        'max' => 4,
+        'timeout' => 180,
+        // what a colour change of a one-plate print costs for the calculator's "in colours from", measured on the turtle of
+        // 28 Oct 2026 sliced by Orca 2.4 for the S1 with ACE (docs/AL.md §14.5): 69 changes added 155 min and 2.9 g (the
+        // purge goes into the infill and the tower); a little under, so "from" stays a floor
+        'change_minutes' => 2.2,
+        'flush_mm3' => 30,
+        'tower_g' => 0.5,
+    ],
+
     'mesh' => [
         'decimate_above' => (int) env('MESH_DECIMATE_ABOVE', 400000),
         // a file whose last slice on the first page took longer than this is "big" too: the calculator shows its estimate with a

@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api;
 
 use App\Domain\Calculation\CalculationService;
 use App\Domain\Calculation\PricingSource;
+use App\Domain\Files\PaintedColors;
 use App\Http\Controllers\Controller;
 use App\Models\Calculation;
 use App\Models\ModelFile;
@@ -89,6 +90,37 @@ class CalculationController extends Controller
         return $service->pricesFor((float) ($c->slicer['grams'] ?? 0), (int) ($c->slicer['minutes'] ?? 0), (int) ($c->params['quantity'] ?? 1), $profiles);
     }
 
+    /**
+     * The first price list's total in one colour (the price as shown) and printed in the file's painted colours on one
+     * plate (PaintedColors::extra: the tower and the changes on top of the same grams and minutes); null for a file
+     * without colours or a calculation without a price yet.
+     *
+     * @return array{one: float, multi: float, count: int, changes: int}|null
+     */
+    private static function colorPrices(Calculation $c, ?array $prices): ?array
+    {
+        $file = $c->modelFile;
+        if (! $file || PaintedColors::printed($file) === []) {
+            return null;
+        }
+        $material = (string) ($c->params['material'] ?? 'PLA');
+        $extra = PaintedColors::extra($file, (string) ($c->params['quality'] ?? 'standard'), (float) ($c->params['scale'] ?? 1), $material);
+        $done = $c->status === Calculation::STATUS_DONE && $prices && $c->slicer;
+        $rough = is_array($c->rough) ? $c->rough : null;
+        $list = $done ? $prices : ($rough['prices'] ?? null);
+        if (! $extra || ! $list || ! isset($list[0]['total'])) {
+            return null;
+        }
+        $grams = (float) ($done ? ($c->slicer['grams'] ?? 0) : ($rough['grams'] ?? 0));
+        $minutes = (int) ($done ? ($c->slicer['minutes'] ?? 0) : ($rough['minutes'] ?? 0));
+        $quantity = max(1, (int) ($c->params['quantity'] ?? 1));
+        // the copies share the plate and its changes: per piece, the tower and the changes divided among them
+        $profiles = app(PricingSource::class)->fromContext($c->pricing_context ?? ($done ? null : ['farm' => true]), $material);
+        $multi = app(CalculationService::class)->pricesFor($grams + $extra['grams'] / $quantity, $minutes + (int) ceil($extra['minutes'] / $quantity), $quantity, $profiles);
+
+        return ['one' => (float) $list[0]['total'], 'multi' => (float) ($multi[0]['total'] ?? $list[0]['total']), 'count' => $extra['count'], 'changes' => $extra['changes']];
+    }
+
     public static function describe(Calculation $c): array
     {
         return [
@@ -99,7 +131,9 @@ class CalculationController extends Controller
             'params' => $c->params,
             'rough' => config('features.marketplace') || ! is_array($c->rough) ? $c->rough : collect($c->rough)->except(['prices'])->all(),   // printers' rough lists never leak past the switch
             'slicer' => $c->slicer ? collect($c->slicer)->except(['gcode_path', 'raw'])->all() : null,
-            'prices' => self::currentPrices($c),
+            'prices' => $prices = self::currentPrices($c),
+            // a painted 3MF (docs/AL.md §14): the price in one colour and in its colours, with the colour changes of one plate
+            'colors' => self::colorPrices($c, $prices),
             'file' => $c->modelFile ? UploadController::describe($c->modelFile) : null,
             'created_at' => $c->created_at?->toIso8601String(),
         ];
