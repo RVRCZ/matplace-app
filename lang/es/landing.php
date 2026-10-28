@@ -469,7 +469,7 @@ return [
 
     'lightbox' => [
         'order' => [
-            ['q' => '¿Cuánto cuestan las piezas con ustedes?', 'farm' => true, 'a' => 'El cartel OPEN de 180 mm, cuatro piezas, cuesta 180 CZK en un solo color (PLA, sin envío, cálculo del 28 de octubre de 2026). El difusor en blanco lo encarga como segundo pedido a partir de su propio STL, o lo imprime en casa; ve el precio antes de encargar nada.'],
+            ['q' => '¿Cuánto cuestan las piezas con ustedes?', 'farm' => true, 'a' => 'El cartel OPEN de 180 mm, cuatro piezas, cuesta 180 CZK (PLA, sin envío, cálculo del 28 de octubre de 2026). Los colores de las piezas se eligen al encargar, en un solo pedido, cuerpo oscuro y difusor blanco; ve el precio antes de encargar nada.'],
             ['q' => '¿Qué compro para el cartel?', 'a' => 'Una tira LED de 5 V de 8 o 10 mm de ancho con la longitud que la herramienta indica bajo la vista previa, un cable USB con alimentación (basta un cargador de móvil) y cinta de doble cara o pegamento. Una tira con mando elíjala de hasta 18 × 8 mm.'],
             ['q' => '¿Cuánto tardan la impresión y el envío?', 'farm' => true, 'a' => 'Las cuatro piezas de un cartel de 180 mm se imprimen en 2 h 17 min. Enviamos el mismo día en que termina la impresión, en días laborables, y Packeta suele entregar en 1 a 2 días laborables en Chequia (a un punto de recogida :cz_point).'],
             ['q' => '¿Cómo imprimo el cartel en casa?', 'a' => 'Las piezas se imprimen en plano; el proyecto descargado lleva los ajustes del cálculo. El cuerpo, la máscara y la tapa trasera en PLA o PETG oscuro; el difusor en PLA blanco o translúcido; la máscara con puentes dentro de las letras imprímala más despacio para que los puentes aguanten.'],

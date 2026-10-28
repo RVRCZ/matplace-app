@@ -523,9 +523,11 @@ naplánoval 6 článků (3. až 20. 11.), sitemapa obnovena, `/3d-tisk-praha` cs
 - Po dávce C sloučen `origin/main` 604b8248 do větve (f252e3ba, bez konfliktů; přišly fotky výtisků relace 3,
   `ToolPhotos`), `npm run build`, pak celá sada `LandingPagesTest|SeoTest|ToolsCatalogTest|BlogSyncTest|PraguePageTest|
   BlogEmbedsTest|ToolPageTest` (+CatalogSeoTest) **56 testů, 13 040 assertions, OK** (240 s).
-- Neověřeno a ponecháno z původního textu: u světelného nápisu věta „Jedna zakázka se u nás tiskne jednou barvou“
-  (difuzor v bílé jako druhá zakázka). Farma dnes umí víc filamentů v jedné podložce (AL.md §10), ale jestli to platí
-  i pro díly světelného nápisu, nevím; řídící může větu zrušit, pokud ano.
+- Věta „Jedna zakázka se u nás tiskne jednou barvou“ (difuzor v bílé jako druhá zakázka) podle řídícího už neplatí:
+  farma tiskne díly jedné zakázky v různých barvách (každý díl ze své cívky, nebo jedna podložka na tiskárně
+  s měničem, AL.md §10). Opraveno 28. 10. 2026 v úvodu i FAQ `tools_seo/lightbox.php` a v otázce „Kolik stojí díly
+  u vás?“ v `landing.php` (cs/en/es): difuzor bílý nebo průsvitný, tělo tmavé, barvu každého dílu vyberete při
+  objednávce v jedné zakázce.
 
 ## 10. Komunitní příspěvky (28. 10. 2026)
 

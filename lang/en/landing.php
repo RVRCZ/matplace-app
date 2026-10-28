@@ -469,7 +469,7 @@ return [
 
     'lightbox' => [
         'order' => [
-            ['q' => 'How much do the parts cost from you?', 'farm' => true, 'a' => 'The sign OPEN of 180 mm, four parts, costs 180 CZK in one colour (PLA, without delivery, calculation of 28 October 2026). You order the diffuser in white as a second order from its own STL, or print it at home; you see the price before you order anything.'],
+            ['q' => 'How much do the parts cost from you?', 'farm' => true, 'a' => 'The sign OPEN of 180 mm, four parts, costs 180 CZK (PLA, without delivery, calculation of 28 October 2026). You pick the colours of the parts when ordering, in one order, a dark body and a white diffuser; you see the price before you order anything.'],
             ['q' => 'What do I buy for the sign?', 'a' => 'A 5 V LED strip 8 or 10 mm wide in the length the tool lists under the preview, a USB cable with power (a phone charger is enough) and double-sided tape or glue. Choose a strip with a remote up to 18 × 8 mm.'],
             ['q' => 'How long do printing and delivery take?', 'farm' => true, 'a' => 'The four parts of a 180 mm sign print in 2 h 17 min. We dispatch on the day the print ends, on working days, and Packeta usually delivers within 1 to 2 working days in the Czech Republic (to a pickup point :cz_point).'],
             ['q' => 'How do I print the sign at home?', 'a' => 'The parts print flat; the downloaded project carries the settings of the calculation. The body, the mask and the back cover from dark PLA or PETG, the diffuser from white or translucent PLA; print the mask with the bridges inside the letters slower so that the bridges hold.'],
