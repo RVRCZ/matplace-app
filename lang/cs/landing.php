@@ -483,4 +483,52 @@ return [
             ['t' => 'Noční světlo se jménem', 'text' => 'Jméno dítěte 120 mm s LED modulem a ovladačem, tlumené světlo do pokojíčku.'],
         ],
     ],
+    // 3D nápis, který stojí (docs/AP.md §12, dávka D)
+    'text' => [
+        'order' => [
+            ['q' => 'Kolik stojí nápis u vás?', 'farm' => true, 'a' => 'Slovo HOME 144 mm stojí 99 Kč (PLA, bez dopravy, kalkulace z 28. 10. 2026), dvouřádkový nápis KAVÁRNA u Jany 130 Kč. Cena roste s počtem písmen, výškou a hloubkou; vidíte ji dřív, než cokoli objednáte, i pro víc kusů.'],
+            ['q' => 'Jaký text a písmo se hodí?', 'a' => 'Krátké slovo nebo jméno v tučném bezpatkovém písmu stojí nejjistěji; psaná písma volte od výšky 30 mm. Diakritiku nástroj přichytí spojkou, symboly pod poli vložíte jedním klepnutím.'],
+            ['q' => 'Jak dlouho trvá tisk a doručení?', 'farm' => true, 'a' => 'HOME se tiskne 40 minut, dvouřádkový nápis 1 h 53 min. Odesíláme v den, kdy tisk skončí, v pracovní dny, a Zásilkovna v Česku obvykle doručí do 1 až 2 pracovních dnů (na výdejní místo :cz_point).'],
+            ['q' => 'Dá se nápis přilepit na stěnu?', 'a' => 'Ano. Nápis se tiskne na zádech, takže zadní strana je rovná a hladká; na stěnu nebo na dveře ho přilepíte oboustrannou páskou. Na zavěšení je lepší cedulka s očkem, nápis očko nemá.'],
+            ['q' => 'Vydrží nápis ve výloze na slunci?', 'a' => 'Do interiéru stačí PLA. Do výlohy, kam svítí slunce, zvolte PETG nebo ASA; PLA u teplého skla měkne. Nápis delší než 250 mm rozdělte do dvou řádků nebo na dvě slova.'],
+            ['q' => 'Potřebuji účet?', 'a' => 'Na návrh a stažení ne. Účet potřebujete, až když si nápis necháte vytisknout u nás; platí se z kreditu dobitého kartou.'],
+        ],
+        'who' => [
+            ['t' => 'Jméno na poličku dětského pokoje', 'text' => 'Psané písmo 40 mm vysoké se srdcem nebo hvězdou na společné patce, hloubka 15 mm.'],
+            ['t' => 'Slovo na stůl v kavárně nebo kanceláři', 'text' => 'OPEN, HOME nebo název podniku v Bebas Neue 30 až 50 mm, hloubka pětina výšky.'],
+            ['t' => 'Jmenovky na svatební stůl', 'text' => 'Jména hostů ve stejném písmu, každé jako samostatný návrh; na cedulku s destičkou je nástroj Cedulka.'],
+        ],
+    ],
+    // obraz z filamentu (docs/AP.md §12, dávka D)
+    'filament_art' => [
+        'order' => [
+            ['q' => 'Kolik stojí obraz u vás?', 'farm' => true, 'a' => 'Sněhulák ze čtyř desek v kulatém rámu 120 mm stojí 200 Kč, perníček jako jeden tisk 120 mm 99 Kč (PLA, bez dopravy, kalkulace z 28. 10. 2026). Cena roste se šířkou a počtem desek; vidíte ji dřív, než cokoli objednáte.'],
+            ['q' => 'Jaký obrázek nahrát?', 'a' => 'Kresbu nebo logo s několika plnými barvami, PNG nebo JPG s jasným pozadím, nebo SVG. Fotku nástroj zjednoduší na hlavní barvy v režimu „malba“; portrét ve stupních šedi dejte raději do litofanie.'],
+            ['q' => 'Jak dlouho trvá tisk a doručení?', 'farm' => true, 'a' => 'Sněhulák se tiskne 2 h 46 min, perníček 26 minut. Odesíláme v den, kdy tisk skončí, v pracovní dny, a Zásilkovna v Česku obvykle doručí do 1 až 2 pracovních dnů (na výdejní místo :cz_point).'],
+            ['q' => 'Jak obraz tisknout doma?', 'a' => 'Naplocho, bez podpěr, vrstva 0,2 mm, PLA. Každou desku ze své cívky; u jednoho tisku má projekt výměny filamentu ve výškách barev, tiskárna se zastaví a vy cívku vyměníte.'],
+            ['q' => 'Jak se obraz skládá a věší?', 'a' => 'Desky lepíte podle návodu od zadní k přední vteřinovým lepidlem, sloupky zapadnou pod desku před nimi. Rám má v zadní stěně drážku na hřebík; s místem na LED pásek je dole výřez na kabel.'],
+            ['q' => 'Potřebuji účet?', 'a' => 'Na návrh a stažení ne. Účet potřebujete, až když si obraz necháte vytisknout u nás; platí se z kreditu dobitého kartou.'],
+        ],
+        'who' => [
+            ['t' => 'Dětská kresba na zeď pokoje', 'text' => 'Vyfocená kresba jako vrstvený obraz 150 až 200 mm ze 4 až 6 desek v rámu; hrubé linky kresby vrstvám svědčí.'],
+            ['t' => 'Logo firmy na recepci', 'text' => 'SVG loga jako desky v čtvercovém rámu 250 mm s místem na LED pásek; barvy vyberete z našich cívek podle firemních.'],
+            ['t' => 'Dárek z fotky nebo motivu', 'text' => 'Plakátový obraz z fotky v režimu „malba“, 180 mm, nebo motiv z knihovny jako jeden tisk bez lepení.'],
+        ],
+    ],
+    // modulární organizér z misek (docs/AP.md §12, dávka D)
+    'modular' => [
+        'order' => [
+            ['q' => 'Kolik stojí sada misek u vás?', 'farm' => true, 'a' => 'Čtyři misky tří velikostí pro zásuvku 300 × 150 mm, 40 mm vysoké, stojí 310 Kč (PLA, bez dopravy, kalkulace z 28. 10. 2026). Cena roste s velikostí, výškou a počtem misek; vidíte ji dřív, než cokoli objednáte.'],
+            ['q' => 'Jak změřit zásuvku?', 'a' => 'Vnitřní šířku a hloubku na dně zásuvky, od obou odečtěte 1 až 2 mm. Výšku misek zvolte aspoň o 5 mm nižší, než je světlá výška zásuvky, aby se dala zavřít.'],
+            ['q' => 'Jak dlouho trvá tisk a doručení?', 'farm' => true, 'a' => 'Čtyři misky se tisknou 3 h 45 min, větší sada úměrně déle. Odesíláme v den, kdy tisk skončí, v pracovní dny, a Zásilkovna v Česku obvykle doručí do 1 až 2 pracovních dnů (na výdejní místo :cz_point).'],
+            ['q' => 'Jak misky tisknout doma?', 'a' => 'Dnem dolů, bez podpěr, vrstva 0,2 mm, PLA nebo PETG. Každou misku ze své cívky, nebo několik najednou na jedné podložce; projekt pro slicer má misky rozložené vedle sebe.'],
+            ['q' => 'Vydrží misky v kuchyni a v dílně?', 'a' => 'Na příbory, kosmetiku a kancelář stačí PLA. Do dílny na šroubky a nářadí nebo k teplu zvolte PETG. Misky myjte rukou, ne v myčce.'],
+            ['q' => 'Potřebuji účet?', 'a' => 'Na návrh a stažení ne. Účet potřebujete, až když si sadu necháte vytisknout u nás; platí se z kreditu dobitého kartou.'],
+        ],
+        'who' => [
+            ['t' => 'Zásuvka s kosmetikou nebo šperky', 'text' => 'Šest až osm misek 30 mm vysokých v různých barvách, jedna dlouhá na štětce.'],
+            ['t' => 'Dílna a šroubky', 'text' => 'Stejné čtvercové misky 40 mm vysoké na mřížce 8 × 4, každá druhá v jiné barvě, aby se obsah našel.'],
+            ['t' => 'Stůl v kanceláři', 'text' => 'Čtyři misky s vnějším tácem 240 × 120 mm na tužky, sponky a kabely; tác drží sadu pohromadě.'],
+        ],
+    ],
 ];

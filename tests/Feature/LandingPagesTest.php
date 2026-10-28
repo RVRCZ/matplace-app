@@ -28,7 +28,8 @@ class LandingPagesTest extends TestCase
         'gingerbread' => '/tools/gingerbread', 'ornament' => '/tools/ornament', 'cutter' => '/tools/cookie-cutter', 'nameplate' => '/tools/nameplate', 'topper' => '/tools/cake-topper', 'name_letter' => '/tools/name-letter',
         // the next 10 tools (docs/AP.md §9)
         'phone_stand' => '/tools/phone-stand', 'sign' => '/tools/sign', 'keychain' => '/tools/keychain', 'medallion' => '/tools/medallion', 'vase' => '/tools/vase',
-        'logo' => '/tools/logo', 'holder' => '/tools/holder', 'stamp' => '/tools/stamp', 'lightbox' => '/tools/illuminated-sign'];
+        'logo' => '/tools/logo', 'holder' => '/tools/holder', 'stamp' => '/tools/stamp', 'lightbox' => '/tools/illuminated-sign',
+        'text' => '/tools/text', 'filament_art' => '/tools/filament-art', 'modular' => '/tools/modular-organizer'];
 
     /** @return list<array<string, mixed>> the JSON-LD blocks of a page */
     private function jsonLd(string $html): array

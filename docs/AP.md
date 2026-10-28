@@ -590,6 +590,42 @@ Postup u každé dávky jako v §9: `heading` = H1 na dotaz, 2 úvody, kroky, 6 
 z AH.md §11 už jsou, jen se doplní), `config/landing.php` related + blog, `LandingPagesTest::PAGES`, snímky
 390/1280, testy, push, zpráva řídícímu.
 
+### 12.1 Dávka D: stojící nápis, obraz z filamentu, modulární organizér (28. 10. 2026)
+
+- Soubory: `lang/{cs,en,es}/tools_seo/{text,filament_art,modular}.php` přepsány (title, heading, description, h1,
+  2 úvody, 4 až 5 kroků, 6 FAQ, 3 příklady), bloky v `lang/{cs,en,es}/landing.php` (6 otázek, farm 101000, 3 pro
+  koho), `config/landing.php` (text ↔ sign, name_letter, nameplate; filament_art ↔ relief, svg_to_stl, logo; modular ↔
+  organizer, box, holder; blog: cedulka + jmenovky, litofanie + ozdoba z obrázku, organizér + krabička),
+  `LandingPagesTest::PAGES` 29 stránek. H1 na dotaz: „3D nápis ze jména nebo slova, který stojí sám“, „Obraz
+  z filamentu: obrázek nebo fotka jako vrstvy barevného plastu“, „Modulární organizér do zásuvky na míru z volných
+  misek“ (en: 3D text generator for 3D printing, filament painting generator, modular drawer organizer generator).
+- Čísla z produkce (28. 10., PLA, cookie `mp_test=1`): nápis HOME Archivo Black 30 mm, hloubka 12 mm, 144 × 34 mm:
+  21,1 g, 40 min, 99 Kč (`/c/bkdbbtgjavzn`); dvouřádkový KAVÁRNA u Jany Bebas Neue 30 mm, hloubka 20 mm: 55,7 g,
+  1 h 53 min, 130 Kč (`/c/qxcoca4ayqkb`); sněhulák z knihovny jako vrstvený obraz ze 4 desek v kulatém rámu 120 mm:
+  105,6 g, 2 h 46 min, 200 Kč (`/c/tmwh0ok9ixpv`); sněhulák 100 mm ze 3 desek bez rámu 25,3 g, 46 min, 99 Kč
+  (`/c/iljuoz61xdug`); perníček jako jeden tisk 120 mm, 4 barvy: 15,9 g, 26 min, 99 Kč (`/c/etcdmot38mpy`); čtyři
+  misky tří velikostí 300 × 150 × 40 mm (mřížka 6 × 3): 188 g, 3 h 45 min, 310 Kč (`/c/fsgkqtoncl9f`). Obraz
+  z filamentu jde přes `POST /api/tools/art` (scratchpad `art_create.py`), ne přes `/api/tools/param`.
+- **Nález pro řídícího (ne moje):** vrstvený obraz 180 mm z 5 desek s rámem dá soubor 232 × 551 × 25 mm (desky
+  a rám vedle sebe), `POST /api/calculations` ho řeže jako jednu podložku a **selže** („Slice failed (no gcode)…“,
+  `/c/9rs4xrseapqu`); zůstane jen hrubý odhad 343 g, 390 až 770 Kč. Tisk po dílech umí až objednávka
+  (`OrderService` by_parts), veřejná kalkulace ne. Totéž potká každý vrstvený obraz nad zhruba 120 mm s rámem
+  (120 mm: 228 × 268 mm ještě prošlo). Na stránce o tom nepíšu; příklad je 120 mm.
+- Rozhodnutí: `heading` i u nástroje `text`, i když je to preset nástroje `sign` (`/tools/text` = sign, as=text,
+  preset=stand); texty se berou z `tools_seo/text.php`, nástroj sám se nemění. Organizér z jednoho kusu má rozsah
+  30 až 400 mm, ale nad 250 mm se nevejde na podložku, proto FAQ u modulárního říká „zásuvka do 250 mm“. Obraz
+  z filamentu nemá vlastní článek (`article` není), „Kam dál“ vede na litofanii a ozdobu z obrázku; článek
+  o obrazu z filamentu je kandidát na další dávku blogu. Věta o HueForge je obecný popis (průsvit tenkých vrstev,
+  výměny ve sliceru), bez čísel.
+- Duplicita FAQ ↔ Než objednáte: u `text` se opakovalo „Jak nápis tisknout doma?“ (chytil to i `LandingPagesTest`),
+  v bloku nahrazeno otázkou o přilepení na stěnu (zadní strana je po tisku na zádech rovná).
+- Ověření: `SeoTest|ToolsCatalogTest|CatalogSeoTest` 20 testů OK, `LandingPagesTest` po opravě 5 testů, 3 007
+  assertions, OK; `pint` čistý; title 54 až 60, description 150 až 154 ve všech třech jazycích; H1 = heading,
+  JSON‑LD HowTo + FAQPage 10 otázek na třech stránkách (lokální server 8077); snímky
+  `docs/img/seo-n1/{text,filament-art,modular-organizer}-{390,1280}-cs-1.webp` bez posunu a bez chyb („Generátor
+  cedulek teď není dostupný“ je jen lokální engine). Vložka `[farm:]` a články: `BlogEmbedsTest` 4 testy,
+  `BlogSyncTest` 9 testů OK (commit 15f3099b).
+
 ## 13. Další 4 články po 20. 11. (plán 28. 10. 2026)
 
 Řídící: čtyři články na listopad a prosinec, stejná pravidla (video, kalkulace, místo pro fotku). Termíny

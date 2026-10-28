@@ -482,4 +482,52 @@ return [
             ['t' => 'Luz nocturna con nombre', 'text' => 'El nombre de un niño, 120 mm, con módulo LED y mando, luz suave para la habitación.'],
         ],
     ],
+    // texto 3D de pie (docs/AP.md §12, lote D)
+    'text' => [
+        'order' => [
+            ['q' => '¿Cuánto cuesta el texto con ustedes?', 'farm' => true, 'a' => 'La palabra HOME, de 144 mm, cuesta 99 CZK (PLA, sin envío, cálculo del 28 de octubre de 2026); el texto de dos líneas KAVÁRNA u Jany, 130 CZK. El precio crece con el número de letras, la altura y el fondo; lo ve antes de encargar nada, también para varias unidades.'],
+            ['q' => '¿Qué texto y tipografía van bien?', 'a' => 'Una palabra corta o un nombre en sans serif negrita se sostiene mejor; las caligráficas, a partir de 30 mm. La herramienta sujeta las tildes con una unión corta y los símbolos bajo los campos entran con un toque.'],
+            ['q' => '¿Cuánto tardan la impresión y el envío?', 'farm' => true, 'a' => 'HOME se imprime en 40 minutos; el texto de dos líneas, en 1 h 53 min. Enviamos el día en que termina la impresión, en días laborables, y Packeta en Chequia suele entregar en 1 o 2 días laborables (a un punto de recogida :cz_point).'],
+            ['q' => '¿Se puede pegar el texto a una pared?', 'a' => 'Sí. El texto se imprime sobre la espalda, así que la cara trasera queda plana y lisa; péguelo a una pared o una puerta con cinta de doble cara. Para colgarlo es mejor el cartel con ojal; el texto no lo tiene.'],
+            ['q' => '¿Aguantará el texto en un escaparate al sol?', 'a' => 'En interior basta el PLA. Para un escaparate al sol elija PETG o ASA; el PLA se ablanda junto a un cristal caliente. Un texto de más de 250 mm, divídalo en dos líneas o dos palabras.'],
+            ['q' => '¿Necesito una cuenta?', 'a' => 'Para el diseño y la descarga, no. Solo la necesita cuando nos encarga el texto impreso; se paga con crédito recargado con tarjeta.'],
+        ],
+        'who' => [
+            ['t' => 'Un nombre para la estantería infantil', 'text' => 'Caligráfica de 40 mm de alto con un corazón o una estrella en la misma base, 15 mm de fondo.'],
+            ['t' => 'Una palabra para la mesa de una cafetería u oficina', 'text' => 'OPEN, HOME o el nombre del negocio en Bebas Neue, de 30 a 50 mm, con un quinto de fondo respecto a la altura.'],
+            ['t' => 'Marcadores para una mesa de boda', 'text' => 'Los nombres de los invitados en la misma tipografía, cada uno como diseño propio; para una tarjeta con placa está la herramienta Cartel.'],
+        ],
+    ],
+    // cuadro de filamento (docs/AP.md §12, lote D)
+    'filament_art' => [
+        'order' => [
+            ['q' => '¿Cuánto cuesta el cuadro con ustedes?', 'farm' => true, 'a' => 'El muñeco de nieve de cuatro placas en un marco redondo de 120 mm cuesta 200 CZK; el hombre de jengibre como una sola impresión de 120 mm, 99 CZK (PLA, sin envío, cálculo del 28 de octubre de 2026). El precio crece con el ancho y el número de placas; lo ve antes de encargar nada.'],
+            ['q' => '¿Qué imagen subo?', 'a' => 'Un dibujo o un logotipo con pocos colores planos, un PNG o JPG con fondo claro, o un SVG. Una foto la herramienta la simplifica a sus colores principales en modo «pintura»; un retrato en escala de grises queda mejor como litofanía.'],
+            ['q' => '¿Cuánto tardan la impresión y el envío?', 'farm' => true, 'a' => 'El muñeco de nieve se imprime en 2 h 46 min; el hombre de jengibre, en 26 minutos. Enviamos el día en que termina la impresión, en días laborables, y Packeta en Chequia suele entregar en 1 o 2 días laborables (a un punto de recogida :cz_point).'],
+            ['q' => '¿Cómo imprimo el cuadro en casa?', 'a' => 'Plano, sin soportes, capas de 0,2 mm, PLA. Cada placa con su bobina; en la impresión única el proyecto lleva los cambios de filamento a las alturas de los colores, la impresora se detiene y usted cambia la bobina.'],
+            ['q' => '¿Cómo se monta y se cuelga el cuadro?', 'a' => 'Pegue las placas según la guía, de atrás hacia delante, con cianoacrilato; los postes encajan bajo la placa de delante. El marco tiene una ranura para un clavo en la parte trasera; con sitio para tira LED hay una ranura para el cable abajo.'],
+            ['q' => '¿Necesito una cuenta?', 'a' => 'Para el diseño y la descarga, no. Solo la necesita cuando nos encarga el cuadro impreso; se paga con crédito recargado con tarjeta.'],
+        ],
+        'who' => [
+            ['t' => 'Un dibujo infantil en la pared de la habitación', 'text' => 'Un dibujo fotografiado como cuadro en capas de 150 a 200 mm con 4 a 6 placas en un marco; las líneas gruesas del dibujo favorecen a las capas.'],
+            ['t' => 'El logotipo de la empresa en la recepción', 'text' => 'El SVG del logotipo como placas en un marco cuadrado de 250 mm con sitio para tira LED; los colores se eligen entre nuestras bobinas según los de la marca.'],
+            ['t' => 'Un regalo a partir de una foto o un motivo', 'text' => 'Un cuadro de cartel a partir de una foto en modo «pintura», 180 mm, o un motivo de la biblioteca como una sola impresión sin pegar.'],
+        ],
+    ],
+    // organizador modular de bandejas (docs/AP.md §12, lote D)
+    'modular' => [
+        'order' => [
+            ['q' => '¿Cuánto cuesta un juego de bandejas con ustedes?', 'farm' => true, 'a' => 'Cuatro bandejas de tres tamaños para un cajón de 300 × 150 mm, de 40 mm de alto, cuestan 310 CZK (PLA, sin envío, cálculo del 28 de octubre de 2026). El precio crece con el tamaño, la altura y el número de bandejas; lo ve antes de encargar nada.'],
+            ['q' => '¿Cómo mido el cajón?', 'a' => 'El ancho y el fondo interiores en el suelo del cajón, restando 1 o 2 mm a ambos. Haga las bandejas al menos 5 mm más bajas que la altura libre del cajón para que cierre.'],
+            ['q' => '¿Cuánto tardan la impresión y el envío?', 'farm' => true, 'a' => 'Cuatro bandejas se imprimen en 3 h 45 min; un juego mayor, proporcionalmente más. Enviamos el día en que termina la impresión, en días laborables, y Packeta en Chequia suele entregar en 1 o 2 días laborables (a un punto de recogida :cz_point).'],
+            ['q' => '¿Cómo imprimo las bandejas en casa?', 'a' => 'Con el fondo abajo, sin soportes, capas de 0,2 mm, PLA o PETG. Cada bandeja con su bobina, o varias a la vez en una cama; el proyecto para el slicer tiene las bandejas colocadas una junto a otra.'],
+            ['q' => '¿Aguantarán las bandejas en la cocina y el taller?', 'a' => 'Para cubiertos, cosmética y oficina basta el PLA. Para un taller con tornillos y herramientas, o cerca del calor, elija PETG. Lave las bandejas a mano, no en el lavavajillas.'],
+            ['q' => '¿Necesito una cuenta?', 'a' => 'Para el diseño y la descarga, no. Solo la necesita cuando nos encarga el juego impreso; se paga con crédito recargado con tarjeta.'],
+        ],
+        'who' => [
+            ['t' => 'Un cajón de cosmética o joyas', 'text' => 'De seis a ocho bandejas de 30 mm de alto en distintos colores, una larga para los pinceles.'],
+            ['t' => 'Taller y tornillos', 'text' => 'Bandejas cuadradas iguales de 40 mm de alto en una cuadrícula de 8 × 4, una de cada dos en otro color para encontrar el contenido.'],
+            ['t' => 'La mesa de la oficina', 'text' => 'Cuatro bandejas en una bandeja exterior de 240 × 120 mm para bolígrafos, clips y cables; la bandeja mantiene el juego unido.'],
+        ],
+    ],
 ];
