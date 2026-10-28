@@ -162,8 +162,11 @@ final class YouTubeSeriesTest extends TestCase
         foreach (['short.mp4', 'photo-short.jpg', 'from the end -5.7 s, 1.3 s', 'picture × 4.5 s', 'logo.png', 'track, looped', 'every input is there'] as $needle) {
             $this->assertStringContainsString($needle, $out, $needle);
         }
-        Storage::disk('farm')->delete($vase->timelapse_short_path);
-        $vase->forceFill(['timelapse_short_path' => null])->save();
+        // without a Short the customer's video is the source (both vases: the draw may take either of them)
+        foreach ([$vase, $vase2] as $v) {
+            Storage::disk('farm')->delete($v->timelapse_short_path);
+            $v->forceFill(['timelapse_short_path' => null])->save();
+        }
         $this->assertStringContainsString('from the end -9.5 s', $check(), 'without a Short the customer\'s video is the source');
         // a file gone between the plan and the render (the command itself never picks a print without one)
         Storage::disk('farm')->delete($vase->timelapse_path);
@@ -234,6 +237,35 @@ final class YouTubeSeriesTest extends TestCase
         $this->assertSame('říjen 2026', $cut->texts[Storage::disk('farm')->path('series/month-2026-10_month.txt')]);
         $this->assertStringContainsString('-ss', $cut->inputs[0]);
         $this->assertSame('1.5', $cut->inputs[1], 'the 16:9 of a print is taken after its title card');
+        $this->assertSame('17.125', $cut->inputs[3], 'the window: the piece plus the half second the trim cuts');
+
+        // a short print measured by ffmpeg: the window never reaches the held piece or the customer's thank-you card
+        $brief = $this->print('box', 350, Carbon::parse('2026-10-26 10:00', 'Europe/Prague'));
+        Storage::disk('farm')->delete($brief->timelapse_wide_path);
+        $brief->forceFill(['timelapse_wide_path' => null])->save();
+        $long = $orders->first();
+        $tight = $orders->last();
+        $this->partialMock(TimelapseCutter::class, function ($mock) use ($brief, $long, $tight) {
+            $mock->shouldReceive('duration')->andReturnUsing(fn (string $file) => match (true) {
+                str_contains($file, $brief->token) => 18.8,                    // 7 s intro, 3 s held, 3 s photo, 5 s thanks: 0.8 s of print
+                str_contains($file, $long->token) => 30.0,                      // a 16:9: 1.5 s title, 2 s held, 3 s photo, 3 s end: 20.5 s of print
+                str_contains($file, $tight->token) => 15.0,                     // a 16:9 of a quick print: 5.5 s of growing
+                default => null,
+            });
+        });
+        $measured = app(SeriesCutter::class);
+        $this->assertFalse($measured->monthCandidates($month)->contains('id', $brief->id), '0.8 s of growing print is too little for a segment');
+        $brief->forceFill(['timelapse_wide_path' => $brief->dir().'/wide.mp4'])->save();
+        Storage::disk('farm')->put($brief->timelapse_wide_path, 'x');
+        $found = $measured->monthCandidates($month);
+        $this->assertCount(9, $found);
+        $cutMeasured = $measured->monthly($found, $month, $numbers, Storage::disk('farm')->path('series/month-2026-10.mp4'));
+        $per9 = (180 - $fixed - 6 * 3) / 9;
+        $this->assertEqualsWithDelta(min($per9, 30.0 - 1.5 - 8.0) + 0.5, (float) $cutMeasured->inputs[3], 0.01, 'a measured 16:9 with 20.5 s of growing: the piece takes its share');
+        $rows = app(TimelapseCutter::class)->checkInputs($cutMeasured);
+        $tightRow = collect($rows)->first(fn ($r) => str_contains($r['file'], $tight->token));
+        $this->assertSame('from 1.5 s, 6 s', $tightRow['window'], 'a quick print gives only its 5.5 s of growing, never the held piece or the end card');
+        $this->assertEmpty(array_filter($rows, fn ($r) => $r['problem'] !== null), 'no window past the end');
         $this->assertStringContainsString('concat=n=22', $cut->graph, 'intro, five cards, eight prints, six photos, the numbers, the end');
 
         $texts = $series->monthlyTexts($cut, $month, $numbers, 'Artist - Song.mp3');
@@ -244,7 +276,7 @@ final class YouTubeSeriesTest extends TestCase
         $this->assertStringContainsString('utm_campaign=video_monthly', $texts['description']);
         $this->assertStringEndsWith('#3dtisk #3dtiskarna #3dtiskovafarma #jakfunguje3dtisk #cena3dtisku', $texts['description']);
 
-        $this->artisan('farm:monthly-video', ['--month' => '2026-10', '--dry-run' => true])->expectsOutputToContain('2026-10 (říjen 2026): 8 prints')
+        $this->artisan('farm:monthly-video', ['--month' => '2026-10', '--dry-run' => true])->expectsOutputToContain('2026-10 (říjen 2026): 9 prints')
             ->expectsOutputToContain('0:04 1. Nahrajete model nebo fotku')->expectsOutputToContain('title: Jak funguje 3D tisková farma')->assertSuccessful();
         $this->artisan('farm:monthly-video', ['--month' => '2026-09', '--dry-run' => true])->expectsOutputToContain('no monthly video')->assertSuccessful();
         $this->artisan('farm:monthly-video', ['--month' => 'říjen'])->assertFailed();
