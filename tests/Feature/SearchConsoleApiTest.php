@@ -4,9 +4,11 @@ namespace Tests\Feature;
 
 use App\Domain\Stats\SearchConsole;
 use App\Domain\Stats\SearchConsoleClient;
+use App\Domain\YouTube\YouTubeClient;
 use App\Models\SearchConsoleAccount;
 use App\Models\SearchConsoleRow;
 use App\Models\User;
+use App\Models\YouTubeAccount;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\Client\Request as HttpRequest;
 use Illuminate\Support\Facades\DB;
@@ -33,7 +35,8 @@ final class SearchConsoleApiTest extends TestCase
         parent::setUp();
         $this->admin = User::factory()->create(['email' => 'admin@example.com']);
         $this->admin->setRole(User::ROLE_ADMIN, true);
-        config(['seo.search_console.client_id' => 'cid', 'seo.search_console.client_secret' => 'secret', 'seo.search_console.row_limit' => 2, 'seo.search_console.retry_seconds' => 0]);
+        // the same OAuth client as the YouTube channel, as on the server
+        config(['youtube.client_id' => 'cid', 'youtube.client_secret' => 'secret', 'seo.search_console.client_id' => 'cid', 'seo.search_console.client_secret' => 'secret', 'seo.search_console.row_limit' => 2, 'seo.search_console.retry_seconds' => 0]);
     }
 
     /** Google as the tests see it: the token exchange, two properties, and search analytics with two rows a page for the pages, three for the queries. */
@@ -133,9 +136,10 @@ final class SearchConsoleApiTest extends TestCase
         $host = parse_url((string) config('app.url'), PHP_URL_HOST);
         $this->assertSame('sc-domain:'.$host, SearchConsoleClient::pick(['https://other.example/', 'sc-domain:'.$host]));
 
+        // disconnecting forgets the token here and leaves the grant with Google: a revoke would take the YouTube channel's token too (28 Oct 2026)
         $this->actingAs($this->admin)->post('/admin/search-console/disconnect')->assertRedirect('/admin/search-console');
         $this->assertSame(0, SearchConsoleAccount::count());
-        $this->assertTrue(collect($this->calls)->contains(fn ($c) => str_contains($c['url'], '/revoke')));
+        $this->assertFalse(collect($this->calls)->contains(fn ($c) => str_contains($c['url'], '/revoke')), 'a shared client is never revoked');
     }
 
     public function test_only_admins_reach_the_page(): void
@@ -257,5 +261,33 @@ final class SearchConsoleApiTest extends TestCase
         $page->assertSee('Data ze Search Console')->assertSee(now()->subDays(1)->format('j. n. Y'))->assertSee(__('tools.box.title'))->assertSee('400')->assertDontSee('search-console-2026-10-20.csv');
         $page->assertSee(route('admin.stats.tools', ['weeks' => 12, 'country' => 'other']));
         File::deleteDirectory($dir);
+    }
+
+    public function test_a_grant_shared_between_search_console_and_youtube_is_revoked_by_neither_side_while_the_other_uses_it(): void
+    {
+        $this->fakeGoogle();
+        $revokes = fn () => collect($this->calls)->filter(fn ($c) => str_contains($c['url'], '/revoke'))->count();
+        $this->assertTrue(SearchConsoleClient::sharesClientWithYouTube());
+
+        // YouTube disconnects while Search Console reads with the same client and account: the grant stays
+        $this->connected();
+        YouTubeAccount::create(['channel_id' => 'UC123', 'channel_title' => 'Matplace 3D', 'refresh_token' => 'r', 'access_token' => 'a', 'access_expires_at' => now()->addHour()]);
+        app(YouTubeClient::class)->disconnect();
+        $this->assertSame(0, YouTubeAccount::count());
+        $this->assertSame(0, $revokes());
+
+        // nobody else uses the grant: YouTube revokes as before
+        SearchConsoleAccount::query()->delete();
+        YouTubeAccount::create(['channel_id' => 'UC123', 'channel_title' => 'Matplace 3D', 'refresh_token' => 'r', 'access_token' => 'a', 'access_expires_at' => now()->addHour()]);
+        app(YouTubeClient::class)->disconnect();
+        $this->assertSame(1, $revokes());
+
+        // Search Console with a client of its own revokes its own grant
+        config(['seo.search_console.client_id' => 'own-client']);
+        $this->assertFalse(SearchConsoleClient::sharesClientWithYouTube());
+        $this->connected();
+        app(SearchConsoleClient::class)->disconnect();
+        $this->assertSame(0, SearchConsoleAccount::count());
+        $this->assertSame(2, $revokes());
     }
 }

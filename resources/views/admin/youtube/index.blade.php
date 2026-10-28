@@ -19,7 +19,7 @@
     @elseif($account)
         <p class="mt-1 text-sm">Připojeno: <a href="{{ $account->url() }}" target="_blank" rel="noopener" class="font-semibold underline">{{ $account->channel_title }}</a>
             <span class="text-xs text-slate-500">· {{ $account->created_at->format('j. n. Y H:i') }}</span></p>
-        <form method="post" action="{{ route('admin.youtube.disconnect') }}" class="mt-2" onsubmit="return confirm('Odpojit kanál? Nová videa se přestanou nahrávat.')">@csrf<button class="btn-quiet text-sm">Odpojit</button></form>
+        <form method="post" action="{{ route('admin.youtube.disconnect') }}" class="mt-2" onsubmit="return confirm('Odpojit kanál? Nová videa se přestanou nahrávat. Oprávnění u Googlu zůstane, pokud ho používá i Search Console.')">@csrf<button class="btn-quiet text-sm">Odpojit</button></form>
     @else
         <p class="mt-1 text-sm text-slate-600">Kanál není připojený. Přihlaste se účtem, pod kterým kanál je (r.v@matplace.cz), a povolte přístup.</p>
         <form method="post" action="{{ route('admin.youtube.connect') }}" class="mt-2">@csrf<button class="btn-primary text-sm">Připojit YouTube kanál</button></form>
