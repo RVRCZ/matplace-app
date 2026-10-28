@@ -7,6 +7,7 @@ use App\Domain\Tools\ModelEditor;
 use App\Domain\Tools\ParametricGenerator;
 use App\Engines\DTO\Dimensions;
 use App\Jobs\PrepareFarmOrder;
+use App\Models\AnonymousSession;
 use App\Models\Calculation;
 use App\Models\CatalogModel;
 use App\Models\DesignerModel;
@@ -37,9 +38,12 @@ final class OrderService
      * and the page shows a rough price meanwhile (docs/AL.md §11). `$calculation` is the one the order comes from, when
      * it comes from the calculator: its slice time is part of the verdict and of the minutes the page promises.
      *
+     * A guest (no `$user`) orders under the anonymous session `$session`; the card payment gives the order an account
+     * (App\Domain\Farm\GuestCheckout, docs/AO.md).
+     *
      * @throws FarmRefusal with a code the UI translates: not_ready, too_big, daily_limit, no_printer
      */
-    public function create(User $user, ModelFile $file, string $quality = 'standard', string $strength = 'standard', ?string $unit = null, int $copies = 1, float $scale = 1.0, ?int $colorId = null, string $supports = 'auto', ?int $secondColorId = null, ?DesignerModel $card = null, ?CatalogModel $inspiration = null, ?array $changeColorIds = null, ?array $partColorIds = null, ?string $materialCode = null, ?Calculation $calculation = null): FarmOrder
+    public function create(?User $user, ModelFile $file, string $quality = 'standard', string $strength = 'standard', ?string $unit = null, int $copies = 1, float $scale = 1.0, ?int $colorId = null, string $supports = 'auto', ?int $secondColorId = null, ?DesignerModel $card = null, ?CatalogModel $inspiration = null, ?array $changeColorIds = null, ?array $partColorIds = null, ?string $materialCode = null, ?Calculation $calculation = null, ?AnonymousSession $session = null): FarmOrder
     {
         $scale = max(0.25, min((float) config('pricing.max_scale', 4), $scale));
         if (! FarmGate::open($user)) {
@@ -57,7 +61,10 @@ final class OrderService
         if ($file->size_bytes > $maxMb * 1024 * 1024) {
             throw new FarmRefusal('too_big', ['max' => $maxMb]);
         }
-        $this->assertDailyLimit($user);
+        if (! $user && ! $session?->id) {
+            throw new FarmRefusal('closed');   // nobody to own the order (a robot's unsaved session)
+        }
+        $this->assertDailyLimit($user ?? $session);
 
         // the kind the order is sliced and first priced for: the cheapest one really loaded in a printer whose plate
         // takes the model; the price is recomputed for the kind and machine of the colour the customer picks
@@ -105,7 +112,8 @@ final class OrderService
         // 25 Oct 2026: the event column was too narrow for the new state and the orders stayed without a history)
         $order = DB::transaction(fn () => tap(FarmOrder::create([
             'token' => Str::random(32),
-            'user_id' => $user->id,
+            'user_id' => $user?->id,
+            'anonymous_session_id' => $user ? null : $session->id,
             'model_file_id' => $file->id,
             'status' => $big['big'] ? FarmOrder::STATUS_AWAITING_CHOICES : FarmOrder::STATUS_UPLOADED,
             'stage' => $big['big'] ? null : 'checking',
@@ -127,12 +135,12 @@ final class OrderService
             'by_parts' => $partPlates !== [],
             'part_plates' => $partPlates ?: null,
             // the account's currency, or the one this customer sees prices in until the first payment fixes it
-            'currency' => $user->currency ?: Currency::current($user),
+            'currency' => $user?->currency ?: Currency::current($user),
             // a designer's card (the reward is added to the price) or the inspiration page the customer came from
             'designer_model_id' => $card?->id,
             'catalog_model_id' => $inspiration?->id,
             'note' => $inspiration?->attribution(),
-        ]), fn (FarmOrder $order) => $order->events()->create(['to' => $order->status, 'actor' => 'user', 'actor_id' => $user->id,
+        ]), fn (FarmOrder $order) => $order->events()->create(['to' => $order->status, 'actor' => 'user', 'actor_id' => $user?->id,
             'note' => $big['big'] ? 'big model ('.($big['reason'] === 'slice_time' ? 'calculation sliced in '.round((float) $big['slice_s']).' s' : number_format($big['triangles'] / 1e6, 1, '.', '').' M triangles').'): the slice waits for the choices' : null])));
         // after the commit: a worker that picks the job up before the row is there would find no order and give up
         if (! $big['big']) {
@@ -162,7 +170,7 @@ final class OrderService
         if ($first && ! FarmGate::open($order->user)) {
             throw new FarmRefusal('closed');   // the farm closed while the order waited; an admin goes on
         }
-        $this->assertDailyLimit($order->user);
+        $this->assertDailyLimit($order->user ?? $order->anonymousSession);
         $from = $order->status;
         $quality = $this->knownQuality($quality);
         $order->fill([
@@ -211,8 +219,10 @@ final class OrderService
         });
         if (! $first) {
             // the first slice of a waiting order was counted when the order was made (slicesToday counts the day's orders)
-            Cache::add($this->sliceCounterKey($order->user), 0, now()->endOfDay());
-            Cache::increment($this->sliceCounterKey($order->user));
+            if ($who = $order->user ?? $order->anonymousSession) {
+                Cache::add($this->sliceCounterKey($who), 0, now()->endOfDay());
+                Cache::increment($this->sliceCounterKey($who));
+            }
         }
         PrepareFarmOrder::dispatch($order->id, (int) $order->slice_run);
 
@@ -839,23 +849,27 @@ final class OrderService
         return null;
     }
 
-    public function slicesToday(User $user): int
+    /** Orders made and slices asked for today: by an account, or by a guest's anonymous session (its orders without an account). */
+    public function slicesToday(User|AnonymousSession $who): int
     {
-        return (int) Cache::get($this->sliceCounterKey($user), 0)
-            + FarmOrder::where('user_id', $user->id)->where('created_at', '>=', now()->startOfDay())->count();
+        $orders = $who instanceof User
+            ? FarmOrder::where('user_id', $who->id)
+            : FarmOrder::where('anonymous_session_id', $who->id)->whereNull('user_id');
+
+        return (int) Cache::get($this->sliceCounterKey($who), 0) + $orders->where('created_at', '>=', now()->startOfDay())->count();
     }
 
-    private function assertDailyLimit(User $user): void
+    private function assertDailyLimit(User|AnonymousSession|null $who): void
     {
         $limit = (int) $this->settings->get('daily_slices_per_user');
-        if ($limit > 0 && ! $user->isAdmin() && $this->slicesToday($user) >= $limit) {
+        if ($who && $limit > 0 && ! ($who instanceof User && $who->isAdmin()) && $this->slicesToday($who) >= $limit) {
             throw new FarmRefusal('daily_limit', ['limit' => $limit]);
         }
     }
 
-    private function sliceCounterKey(User $user): string
+    private function sliceCounterKey(User|AnonymousSession $who): string
     {
-        return 'farm:reslices:'.$user->id.':'.now()->toDateString();
+        return 'farm:reslices:'.($who instanceof User ? $who->id : 's'.$who->id).':'.now()->toDateString();
     }
 
     private function knownQuality(string $q): string

@@ -1748,7 +1748,7 @@
     "edit.gcode.error.empty_result": "De las trayectorias no salió ningún sólido.",
     "edit.gcode.error.too_big": "El archivo es demasiado grande, el límite es :max MB.",
     "hero.formats_short": "STL, 3MF, STEP y otros formatos, hasta :max MB",
-    "farm.cta_hint_guest": "Todavía no paga nada. Primero inicia sesión, luego elige el color y la entrega y ve el precio final; se paga solo al final, con crédito o con tarjeta.",
+    "farm.cta_hint_guest": "Todavía no paga nada y no necesita cuenta: elige el color y la entrega, ve el precio final y paga con tarjeta solo al final.",
     "farm.cta_busy": "Abriendo el pedido…",
     "farm.order.tl.print_label": "Impresión",
     "farm.order.tl.dispatch_label": "Envío",
@@ -1873,5 +1873,18 @@
     "site.examples.item.svg_to_stl": "Silueta de gato de un SVG, :size",
     "tools.photos.title": "Así quedó impreso",
     "tools.photos.lead": "Impresiones reales de nuestra granja que los clientes encargaron con esta herramienta.",
-    "tools.photos.alt": "Una impresión de la herramienta :tool, :material, :date"
+    "tools.photos.alt": "Una impresión de la herramienta :tool, :material, :date",
+    "farm.guest.sign_in": "¿Tiene cuenta? Inicie sesión",
+    "farm.guest.email": "Correo electrónico para la confirmación del pedido",
+    "farm.guest.email_placeholder": "usted@ejemplo.com",
+    "farm.guest.email_hint": "Allí le enviamos la confirmación y el enlace al pedido. Nosotros creamos la cuenta; la contraseña la establece desde el correo cuando quiera.",
+    "farm.guest.stripe_item": "Impresión de «:name» (matplace)",
+    "farm.guest.mail.subject": "El pedido :number está pagado",
+    "farm.guest.mail.body": "Gracias. La impresión de «:name» está pagada (:total) y va a la impresora. Puede seguirla en la página del pedido; le escribimos en cada paso.",
+    "farm.guest.mail.created": "Le creamos una cuenta para :email, para que vea el pedido desde cualquier lugar y la próxima vez no tenga que rellenar nada. Establezca la contraseña con el enlace de abajo (funciona :days días, después use ¿Olvidó la contraseña?).",
+    "farm.guest.mail.password": "Establecer contraseña",
+    "farm.guest.mail.attached": "El correo :email ya tiene una cuenta con nosotros, así que le añadimos el pedido. Inicie sesión y lo encontrará en Mis impresiones.",
+    "farm.guest.password_set": "La cuenta ya tiene contraseña. Inicie sesión o use ¿Olvidó la contraseña?",
+    "farm.guest.admin_not_paid": "Llegó el pago de invitado :payment, pero el pedido no se pagó (:reason)",
+    "farm.guest.admin_guest": "invitado sin cuenta (el pago crea una)"
 }

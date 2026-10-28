@@ -65,7 +65,7 @@ class FarmOrder extends Model
 
     protected $fillable = [
         'quality_rating', 'quality_note', 'timelapse_path', 'kind', 'farm_printer_material_id', 'test_params',
-        'token', 'number', 'user_id', 'model_file_id', 'status', 'stage', 'big_model', 'slice_run', 'slice_estimate_s', 'error', 'error_detail', 'quality', 'strength', 'supports', 'second_slot_id', 'second_color_id', 'color_changes', 'by_parts', 'part_plates', 'copies', 'plates', 'plates_done', 'plate_copies', 'rest_copies', 'unit_scale', 'scale',
+        'token', 'number', 'user_id', 'anonymous_session_id', 'model_file_id', 'status', 'stage', 'big_model', 'slice_run', 'slice_estimate_s', 'error', 'error_detail', 'quality', 'strength', 'supports', 'second_slot_id', 'second_color_id', 'color_changes', 'by_parts', 'part_plates', 'copies', 'plates', 'plates_done', 'plate_copies', 'rest_copies', 'unit_scale', 'scale',
         'farm_material_id', 'farm_color_id', 'farm_printer_id', 'farm_printer_slot_id', 'delivery', 'shipping_address', 'note',
         'print_settings', 'admin_overrides', 'check', 'orientation', 'print_stl_path', 'gcode_path', 'gcode_sha256', 'rest_gcode_path', 'slice_params', 'slice_result', 'est_minutes',
         'est_grams', 'est_meters', 'supports_used', 'price', 'price_total', 'currency', 'terms_version', 'terms_accepted_at',
@@ -138,6 +138,18 @@ class FarmOrder extends Model
     public function user(): BelongsTo
     {
         return $this->belongsTo(User::class);
+    }
+
+    /** A guest's order: the anonymous session (cookie mp_sid) that made it; it keeps seeing the order after the payment gave it an account. */
+    public function anonymousSession(): BelongsTo
+    {
+        return $this->belongsTo(AnonymousSession::class);
+    }
+
+    /** Nobody's account yet: a guest's order before the card payment (docs/AO.md). */
+    public function isGuest(): bool
+    {
+        return $this->user_id === null;
     }
 
     public function modelFile(): BelongsTo

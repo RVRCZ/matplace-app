@@ -174,10 +174,12 @@ class FarmOrderFlowTest extends TestCase
         $this->assertStringContainsString('reslice for kobra-3-max-01', $small->events->pluck('note')->implode(' '));
     }
 
-    public function test_guests_cannot_rent_a_printer(): void
+    public function test_guests_cannot_rent_a_printer_while_the_farm_is_not_public(): void
     {
+        // a public farm takes a guest's order (FarmGuestCheckoutTest); until then the guest signs in first
+        config(['farm.public' => false]);
         $this->get('/farm')->assertRedirect('/login');
-        $this->postJson('/farm/orders', ['file' => '00000000-0000-0000-0000-000000000000'])->assertUnauthorized();
+        $this->postJson('/farm/orders', ['file' => '00000000-0000-0000-0000-000000000000'])->assertForbidden();
     }
 
     public function test_order_is_sliced_priced_and_reproducible(): void

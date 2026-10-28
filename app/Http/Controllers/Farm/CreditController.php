@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Farm;
 
 use App\Domain\Farm\FarmSettings;
+use App\Domain\Farm\GuestCheckout;
 use App\Domain\Farm\OrderFlow;
 use App\Domain\Farm\Wallet;
 use App\Engines\Contracts\PaymentGateway;
@@ -112,12 +113,27 @@ class CreditController extends Controller
                 $payment->update(['status' => Payment::STATUS_PAID, 'paid_at' => now(), 'raw' => $event['raw']]);
             }
             try {
+                // a guest's payment (docs/AO.md): the order gets its account first – a new one, or the e-mail's
+                if ($payment->user_id === null && app(GuestCheckout::class)->attach($payment)) {
+                    $payment->refresh();
+                }
+                if ($payment->user_id === null) {
+                    // no e-mail, no order: nobody to credit; the money is at the gateway and a person decides
+                    Log::error('Guest payment without an account', ['payment' => $payment->id]);
+                    app(OrderFlow::class)->alertAdmin(__('farm.guest.admin_not_paid', ['payment' => $payment->id, 'reason' => 'no_email']), $payment->order, [Money::of($payment->amount, $payment->currency)->format()]);
+
+                    return response('ok', 200);
+                }
                 if ($this->wallet->topUp($payment)) {   // idempotent; the first one fixes the currency of the account
                     Track::toppedUp($payment);
                 }
                 if ($payment->purpose === Payment::PURPOSE_ORDER) {
                     // paid from the order's page: the credit just arrived is spent on that order right away
-                    app(OrderFlow::class)->payFromCard($payment->fresh());
+                    $first = empty($payment->context['result']);
+                    $result = app(OrderFlow::class)->payFromCard($payment->fresh());
+                    if ($first && isset($payment->context['account']) && $payment->order) {
+                        $this->guestPaid($payment->fresh(), $result);
+                    }
                 }
             } catch (CurrencyMismatch $e) {
                 // two checkouts in two currencies were open and both got paid: the money is at the gateway, the ledger
@@ -130,5 +146,21 @@ class CreditController extends Controller
         }
 
         return response('ok', 200);
+    }
+
+    /**
+     * A guest's payment has been applied: paid, the guest gets the confirmation with the links; not paid (the price
+     * moved, the spool is gone meanwhile), the money waits as credit on the account and the operator hears of it.
+     */
+    private function guestPaid(Payment $payment, string $result): void
+    {
+        $order = $payment->order->refresh();
+        if ($result === 'paid') {
+            app(GuestCheckout::class)->confirm($order, ($payment->context['account'] ?? null) === 'created');
+
+            return;
+        }
+        app(OrderFlow::class)->alertAdmin(__('farm.guest.admin_not_paid', ['payment' => $payment->id, 'reason' => $result]), $order,
+            [(string) $order->user?->email.': '.Money::of($payment->amount, $payment->currency)->format()]);
     }
 }

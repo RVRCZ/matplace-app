@@ -1748,7 +1748,7 @@
     "edit.gcode.error.empty_result": "No solid came out of the paths.",
     "edit.gcode.error.too_big": "The file is too big, the limit is :max MB.",
     "hero.formats_short": "STL, 3MF, STEP and other formats, up to :max MB",
-    "farm.cta_hint_guest": "Nothing to pay yet. You sign in first, then pick the colour and delivery and see the final price; you pay only at the end, with credit or by card.",
+    "farm.cta_hint_guest": "Nothing to pay yet and no account needed: pick the colour and delivery, see the final price and pay by card only at the end.",
     "farm.cta_busy": "Opening the order…",
     "farm.order.tl.print_label": "Print",
     "farm.order.tl.dispatch_label": "Dispatch",
@@ -1873,5 +1873,18 @@
     "site.examples.item.svg_to_stl": "Cat silhouette from an SVG, :size",
     "tools.photos.title": "How it came out",
     "tools.photos.lead": "Real prints from our farm that customers had made with this tool.",
-    "tools.photos.alt": "A print from the tool :tool, :material, :date"
+    "tools.photos.alt": "A print from the tool :tool, :material, :date",
+    "farm.guest.sign_in": "Have an account? Sign in",
+    "farm.guest.email": "E-mail for the order confirmation",
+    "farm.guest.email_placeholder": "you@example.com",
+    "farm.guest.email_hint": "We send the confirmation and the link to the order there. We make an account for it ourselves; you set its password from the e-mail whenever you like.",
+    "farm.guest.stripe_item": "Print of \":name\" (matplace)",
+    "farm.guest.mail.subject": "Order :number is paid",
+    "farm.guest.mail.body": "Thank you. The print of \":name\" is paid (:total) and goes to the printer. You can follow it on the order page; we write to you at every step.",
+    "farm.guest.mail.created": "We made you an account for :email, so you can see the order from anywhere and fill in nothing next time. Set its password with the link below (it works for :days days, then use Forgot password).",
+    "farm.guest.mail.password": "Set a password",
+    "farm.guest.mail.attached": "The e-mail :email already has an account with us, so we attached the order to it. Sign in and you will find it in My prints.",
+    "farm.guest.password_set": "The account already has a password. Sign in, or use Forgot password.",
+    "farm.guest.admin_not_paid": "A guest's payment :payment arrived, but the order was not paid (:reason)",
+    "farm.guest.admin_guest": "guest without an account (the payment makes one)"
 }

@@ -19,8 +19,13 @@
     <div class="flex flex-wrap items-center justify-between gap-2">
         <h1 class="text-2xl font-extrabold">{{ __('farm.title') }}</h1>
         <div class="flex items-center gap-3 text-sm">
-            <a href="{{ route('account.orders') }}" class="text-action-dark underline">{{ __('farm.my_orders') }}</a>
-            <a href="{{ route('account.credit') }}" class="rounded-full border border-line bg-white px-3 py-1 font-semibold">{{ __('farm.credit_balance') }}: @money($balance)</a>
+            @if($balance)
+                <a href="{{ route('account.orders') }}" class="text-action-dark underline">{{ __('farm.my_orders') }}</a>
+                <a href="{{ route('account.credit') }}" class="rounded-full border border-line bg-white px-3 py-1 font-semibold">{{ __('farm.credit_balance') }}: @money($balance)</a>
+            @else
+                {{-- a guest orders without an account (docs/AO.md); one who has an account signs in and comes back here --}}
+                <a href="{{ route('login') }}" class="text-action-dark underline">{{ __('farm.guest.sign_in') }}</a>
+            @endif
         </div>
     </div>
     <p class="mt-2 text-slate-600">{{ __('farm.lead') }}</p>

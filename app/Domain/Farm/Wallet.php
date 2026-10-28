@@ -40,9 +40,13 @@ final class Wallet
         }
     }
 
-    /** @throws InsufficientCredit */
+    /** @throws InsufficientCredit (always for a guest's order: no account, no credit; the card pays all of it) */
     public function hold(FarmOrder $order): CreditTransaction
     {
+        if ($order->user_id === null) {
+            throw new InsufficientCredit(0.0, (float) $order->price_total, (string) $order->currency);
+        }
+
         return DB::transaction(function () use ($order) {
             $user = User::whereKey($order->user_id)->lockForUpdate()->firstOrFail();
             if ($this->openHold($order) !== null) {

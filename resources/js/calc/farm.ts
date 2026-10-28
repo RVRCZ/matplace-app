@@ -1,6 +1,6 @@
 /**
  * Print farm ("Rent a printer").
- *   bootFarmCta    calculator: the button makes the order from the shared calculation (/c/{token}); a guest goes to /farm
+ *   bootFarmCta    calculator: the button makes the order from the shared calculation (/c/{token}), a guest's too (docs/AO.md)
  *   bootFarmStart  /farm: the way in that does not start in the calculator: the model handed over, or an STL uploaded
  *   bootFarmOrder  /farm/orders/{token}: preview of the print pose, presets, colours, pay, progress (polled)
  *   bootFarmDashboard  /admin/farm: buttons post over fetch, the answer is a short toast, cards redraw in place
@@ -62,8 +62,9 @@ interface FarmState {
 }
 /** What delivery is on offer: per country the price of a parcel to a pickup point and to the door (null = not offered there). */
 interface Shipping { weight_g: number; too_big: boolean; modes: string[]; countries: Record<string, { name: string; point: number | null; home: number | null; vendors: Record<string, string>[] }> }
-interface Prefill { name: string; phone: string; street: string; city: string; zip: string; country: string; point: { id: string; name: string; carrier_id: string; country: string } | null }
-interface FarmCfg { state: FarmState; prefill?: Prefill; routes: Record<string, string>; csrf: string; paid?: number; i18n: Record<string, string> }
+interface Prefill { name: string; phone: string; street: string; city: string; zip: string; country: string; point: { id: string; name: string; carrier_id: string; country: string } | null; email?: string | null }
+/** `guest`: an order without an account (docs/AO.md): no credit on the page, the card payment carries the e-mail typed in #farm-email */
+interface FarmCfg { state: FarmState; prefill?: Prefill; routes: Record<string, string>; csrf: string; guest?: boolean; paid?: number; i18n: Record<string, string> }
 
 const $ = <T extends HTMLElement = HTMLElement>(id: string) => document.getElementById(id) as T | null;
 const show = (el: HTMLElement | null, on: boolean) => el?.classList.toggle('hidden', !on);
@@ -80,9 +81,8 @@ export function bootFarmCta(): void {
         const m = location.pathname.match(/^(?:\/[a-z]{2})?\/c\/([A-Za-z0-9_-]+)/);
         if (!m) { if (note) note.textContent = wait; show(note, true); return; }
         const start = `${btn.dataset.url}?calc=${encodeURIComponent(m[1])}`;
-        // a guest signs in first and goes on from the start page
         if (!btn.dataset.store) { location.href = start; return; }
-        // signed in: the order is made now and its page opens (material, settings, colours, price); the button says it works
+        // the order is made now (a guest's under the anonymous session) and its page opens (material, settings, colours, price); the button says it works
         const label = btn.innerHTML;
         btn.disabled = true; show(note, false);
         btn.textContent = btn.dataset.busy || label;
@@ -695,7 +695,7 @@ export function bootFarmOrder(): void {
         $('farm-warnings')!.innerHTML = s.warnings.map((w) => `<li class="flex items-start gap-1.5">${icon('triangle-alert', 'mt-0.5 h-4 w-4')}<span>${esc(w)}</span></li>`).join('');
         $('farm-dims')!.textContent = s.dims ? `${s.dims.x.toFixed(1)} × ${s.dims.y.toFixed(1)} × ${s.dims.z.toFixed(1)} mm` : '';
         show($('farm-oriented'), s.orientation_changed && s.status !== 'failed');
-        $('farm-balance')!.textContent = money(s.balance);
+        const balance = $('farm-balance'); if (balance) balance.textContent = money(s.balance);   // a guest has none
 
         const hasResult = s.minutes !== null && s.status !== 'uploaded' && !(s.status === 'failed' && !s.number);
         show($('farm-result'), hasResult);
@@ -813,7 +813,7 @@ export function bootFarmOrder(): void {
                 show(payTotal, payTotal.textContent !== '');
             }
             const topup = $<HTMLAnchorElement>('farm-topup');
-            if (topup && payBtn.dataset.need) { topup.href = `${cfg.routes.topup}&need=${payBtn.dataset.need}`; show(topup, true); } else show(topup, false);
+            if (topup && payBtn.dataset.need && !cfg.guest) { topup.href = `${cfg.routes.topup}&need=${payBtn.dataset.need}`; show(topup, true); } else show(topup, false);
             // back from the card payment: the page waits for the bank's word; a payment that arrived but could not start the order says so
             const note = $('farm-card-note');
             const pending = (cfg.paid && !s.card) || s.card?.status === 'pending' || (s.card?.status === 'paid' && !s.card.result);
@@ -974,6 +974,8 @@ export function bootFarmOrder(): void {
             slot: resolved().slot, change_slots: changes, part_slots: resolved().part_slots, delivery, terms: ($('farm-terms') as HTMLInputElement).checked, expected_total: total(),
             video_consent: ($('farm-video-consent') as HTMLInputElement | null)?.checked ?? false,
             note: (form.elements.namedItem('note') as HTMLTextAreaElement).value, address: kind() ? address : null,
+            // a guest: the e-mail the account is made for when the bank confirms the payment
+            ...(cfg.guest ? { email: ($('farm-email') as HTMLInputElement | null)?.value.trim() ?? '' } : {}),
         });
         if (r.ok && r.json.checkout_url) { window.location.href = String(r.json.checkout_url); return; }
         btn.textContent = tr('farm.order.pay');

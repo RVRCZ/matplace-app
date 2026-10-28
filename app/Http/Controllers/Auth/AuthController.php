@@ -139,7 +139,8 @@ class AuthController extends Controller
             'token' => ['required'], 'email' => ['required', 'email'], 'password' => ['required', 'confirmed', PasswordRule::min(8)],
         ]);
         $status = Password::reset($data, function (User $user, string $password) {
-            $user->forceFill(['password' => Hash::make($password)])->save();
+            // the link came by e-mail: the address is confirmed too (an account made at a guest's payment has it unconfirmed)
+            $user->forceFill(['password' => Hash::make($password), 'email_verified_at' => $user->email_verified_at ?? now()])->save();
         });
         if ($status !== Password::PASSWORD_RESET) {
             return back()->withErrors(['email' => __($status)]);
