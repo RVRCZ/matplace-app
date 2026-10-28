@@ -231,6 +231,11 @@ class ModelEditTest extends TestCase
             $this->assertGreaterThanOrEqual(30 - 0.01, min($size[0], $size[1]));                   // a 30 mm cell, never smaller
         }
         $this->assertGreaterThan(30, max(array_column($sizes, 0)));                                 // with its knobs reaching out
+        // the settings wrapped in `params`, as a caller used to the generators' endpoints sends them (docs/AN.md §17.1): read the same way
+        $wrapped = $this->postJson('/api/files/'.$uuid.'/edit', ['op' => 'puzzle', 'params' => ['rows' => 2, 'cols' => 2, 'lock' => 'tabs', 'frame' => true]])->assertCreated();
+        $this->assertSame(['piece_1', 'piece_2', 'piece_3', 'piece_4', 'frame'], $wrapped->json('file.parts'));
+        $this->assertSame(2, $wrapped->json('file.edit.rows'));
+        $this->postJson('/api/files/'.$uuid.'/edit', ['op' => 'puzzle', 'params' => ['rows' => 9]])->assertStatus(422);   // the limits hold for the wrapped form too
         // hidden pins: straight cuts, pins as a piece of their own; a tall model gets pins whatever was asked
         $pins = $this->postJson('/api/files/'.$uuid.'/edit', ['op' => 'puzzle', 'rows' => 2, 'cols' => 3, 'lock' => 'pins'])->assertCreated();
         $this->assertSame(['piece_1', 'piece_2', 'piece_3', 'piece_4', 'piece_5', 'piece_6', 'pins'], $pins->json('file.parts'));

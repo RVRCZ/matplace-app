@@ -146,7 +146,7 @@ class EditApiController extends Controller
     public function analysis(Request $request, ModelFile $modelFile, ModelEditor $editor): JsonResponse
     {
         abort_unless($modelFile->isReady(), 404);
-        $data = $request->validate(['op' => ['required', 'in:'.implode(',', ModelEditor::KINDS)]] + ModelEditor::rules((string) $request->input('op')));
+        $data = $request->validate(['op' => ['required', 'in:'.implode(',', ModelEditor::KINDS)]] + ModelEditor::rules((string) $request->input('op')) + self::unwrapped($request));
         if (! $editor->available()) {
             return response()->json(['error' => 'edit_unavailable'], 503);
         }
@@ -161,7 +161,7 @@ class EditApiController extends Controller
     public function edit(Request $request, ModelFile $modelFile, ModelEditor $editor): JsonResponse
     {
         abort_unless($modelFile->isReady(), 404);
-        $data = $request->validate(['op' => ['required', 'in:'.implode(',', ModelEditor::KINDS)]] + ModelEditor::rules((string) $request->input('op')));
+        $data = $request->validate(['op' => ['required', 'in:'.implode(',', ModelEditor::KINDS)]] + ModelEditor::rules((string) $request->input('op')) + self::unwrapped($request));
         if (! $editor->available()) {
             return response()->json(['error' => 'edit_unavailable'], 503);
         }
@@ -172,5 +172,22 @@ class EditApiController extends Controller
         }
 
         return response()->json(['file' => UploadController::describe($new)], 201);
+    }
+
+    /**
+     * The tool's settings belong at the top level of the body ({op, rows, frame…}), as the page sends them; a caller who wraps
+     * them in `params` (the way the generators' endpoints take theirs) is read the same way – the keys are lifted before the
+     * validation, the top level wins where both say something (docs/AN.md §17).
+     *
+     * @return array<string, mixed> nothing: the lifting changes the request, the rules stay
+     */
+    private static function unwrapped(Request $request): array
+    {
+        $wrapped = $request->input('params');
+        if (is_array($wrapped) && $wrapped !== []) {
+            $request->merge(array_diff_key($wrapped, $request->except('params')));
+        }
+
+        return [];
     }
 }
