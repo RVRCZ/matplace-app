@@ -32,6 +32,8 @@ class TimelapseCutter
 
     private bool $silenceLogged = false;
 
+    private ?string $lastError = null;
+
     public function __construct(private readonly FarmVideos $videos, private readonly TestPhotos $photos) {}
 
     /**
@@ -324,10 +326,12 @@ class TimelapseCutter
     }
 
     /**
-     * Renders a planned video: writes its lists and texts, runs ffmpeg, cleans up. False (and one line in the log) when
-     * ffmpeg failed or wrote nothing.
+     * Renders a planned video: writes its lists and texts, runs ffmpeg, cleans up ($keep leaves the lists, texts and
+     * graph next to the video, to run ffmpeg by hand). False when ffmpeg failed or wrote nothing: lastError() has what
+     * it said and the log an error line (28 Oct 2026: a warning fell under the server's LOG_LEVEL and nobody saw why
+     * the price Short failed).
      */
-    public function render(VideoCut $cut, int $timeout = 300): bool
+    public function render(VideoCut $cut, int $timeout = 300, bool $keep = false): bool
     {
         foreach ($cut->lists as $file => $frames) {
             file_put_contents($file, VideoCut::listText($frames));
@@ -336,20 +340,102 @@ class TimelapseCutter
             file_put_contents($file, $text);
         }
         @unlink($cut->out);
-        // a long graph (a how-to video, a big weekly cut) goes through a file: Windows cuts long command lines
-        $graphFile = strlen($cut->graph) > 6000 ? $cut->out.'.filter.txt' : null;
+        // a long graph (a how-to video, a big weekly cut, the price Short) goes through a file on Windows only, where
+        // cmd.exe cuts the command line at 8191 characters: `-/filter_complex` needs ffmpeg 7, and Linux takes a graph
+        // of any length on the command line (28 Oct 2026: the server's ffmpeg refused the option, the Short never came)
+        $graphFile = PHP_OS_FAMILY === 'Windows' && strlen($cut->graph) > 6000 ? $cut->out.'.filter.txt' : null;
         if ($graphFile) {
             file_put_contents($graphFile, $cut->graph);
         }
-        $r = Process::timeout($timeout)->run($cut->command((string) config('farm.ffmpeg', 'ffmpeg'), $graphFile));
-        array_map(fn ($f) => @unlink($f), [...array_keys($cut->lists), ...array_keys($cut->texts), ...$graphFile ? [$graphFile] : []]);
-        if (! $r->successful() || ! is_file($cut->out)) {
-            Log::warning('Farm video failed', ['kind' => $cut->kind, 'out' => $cut->out, 'error' => mb_substr($r->errorOutput(), 0, 500)]);
+        $command = $cut->command((string) config('farm.ffmpeg', 'ffmpeg'), $graphFile);
+        try {
+            $r = Process::timeout($timeout)->run($command);
+            $ok = $r->successful() && is_file($cut->out);
+            $error = $ok ? null : (trim($r->errorOutput()) !== '' ? trim($r->errorOutput()) : 'ffmpeg exit '.$r->exitCode().', '.(is_file($cut->out) ? 'file written' : 'no file written'));
+        } catch (\Throwable $e) {
+            $ok = false;
+            $error = $e->getMessage();
+        }
+        if (! $keep) {
+            array_map(fn ($f) => @unlink($f), [...array_keys($cut->lists), ...array_keys($cut->texts), ...$graphFile ? [$graphFile] : []]);
+        }
+        if (! $ok) {
+            $this->lastError = mb_substr((string) $error, -2000);
+            Log::error('Farm video failed', ['kind' => $cut->kind, 'out' => $cut->out, 'error' => mb_substr((string) $error, -1500), 'command' => mb_substr(implode(' ', $command), 0, 1500)]);
 
             return false;
         }
+        $this->lastError = null;
 
         return true;
+    }
+
+    /** What ffmpeg said when the last render failed (the end of its stderr), null after a success. */
+    public function lastError(): ?string
+    {
+        return $this->lastError;
+    }
+
+    /** The length of a media file by ffmpeg (-i), null when it cannot say (no ffmpeg here, not a media file). */
+    public function duration(string $file): ?float
+    {
+        try {
+            $r = Process::timeout(20)->run([(string) config('farm.ffmpeg', 'ffmpeg'), '-hide_banner', '-i', $file]);
+        } catch (\Throwable) {
+            return null;
+        }
+
+        return preg_match('/Duration: (\d+):(\d+):(\d+(?:\.\d+)?)/', $r->errorOutput().$r->output(), $m) ? $m[1] * 3600 + $m[2] * 60 + (float) $m[3] : null;
+    }
+
+    /**
+     * Every input of a planned video with what is known of it, for a command's --check-inputs: the file, whether it is
+     * there and how big, its length by ffmpeg, and the window the plan takes of it (`-ss`/`-sseof` with `-t`, or a
+     * picture looped for `-t`). A window past the end or a missing file is marked.
+     *
+     * @return list<array{file: string, exists: bool, size: int, duration: ?float, window: string, problem: ?string}>
+     */
+    public function checkInputs(VideoCut $cut): array
+    {
+        $rows = [];
+        $args = $cut->inputs;
+        $opts = [];
+        for ($i = 0; $i < count($args); $i++) {
+            if ($args[$i] !== '-i') {
+                if (in_array($args[$i], ['-ss', '-sseof', '-t', '-loop', '-f', '-safe', '-stream_loop'], true)) {
+                    $opts[$args[$i]] = $args[$i + 1] ?? '';
+                    $i++;
+                }
+
+                continue;
+            }
+            $file = (string) $args[$i + 1];
+            $i++;
+            $exists = is_file($file);
+            $duration = $exists && ! in_array(strtolower(pathinfo($file, PATHINFO_EXTENSION)), ['jpg', 'jpeg', 'png', 'txt'], true) ? $this->duration($file) : null;
+            $take = isset($opts['-t']) ? (float) $opts['-t'] : null;
+            $problem = $exists ? null : 'missing';
+            if (isset($opts['-loop'])) {
+                $window = 'picture'.($take !== null ? ' × '.VideoCut::number($take).' s' : '');
+            } elseif (isset($opts['-sseof'])) {
+                $from = $duration !== null ? $duration + (float) $opts['-sseof'] : null;
+                $window = 'from the end '.$opts['-sseof'].' s'.($from !== null ? ' = '.VideoCut::number(max(0, $from)).' s' : '').($take !== null ? ', '.VideoCut::number($take).' s' : '');
+                if ($from !== null && $from < 0) {
+                    $problem = 'shorter than the seek';
+                }
+            } elseif (isset($opts['-ss'])) {
+                $window = 'from '.$opts['-ss'].' s'.($take !== null ? ', '.VideoCut::number($take).' s' : '');
+                if ($duration !== null && $take !== null && (float) $opts['-ss'] + $take > $duration + 0.05) {
+                    $problem = 'window past the end';
+                }
+            } else {
+                $window = isset($opts['-f']) && $opts['-f'] === 'concat' ? 'frame list' : (isset($opts['-stream_loop']) ? 'track, looped' : 'whole');
+            }
+            $rows[] = ['file' => $file, 'exists' => $exists, 'size' => $exists ? (int) filesize($file) : 0, 'duration' => $duration, 'window' => $window, 'problem' => $problem];
+            $opts = [];
+        }
+
+        return $rows;
     }
 
     /** The order's track: the one its videos already name, else the next in turn (FarmVideos::pickMusic). */

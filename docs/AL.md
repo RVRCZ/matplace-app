@@ -1633,3 +1633,28 @@ měděná“** – název souboru se na kartu nedostane nikdy. Totéž jméno jd
 (video s titulkem „Kočka z vlastního souboru – 6 h 33 min tisku“ → karta „Kočka z vlastního souboru“; bez videa →
 „Vlastní model zákazníka“, nikde „Cat“). Měsíční video a týdenní sestřih nechávají jméno v rohu jako dosud
 (`cardFacts`), to je jméno modelu, ne karta ceny; změnit lze stejně, řekne‑li Roman.
+
+### 13.7.6 Ostrý render na produkci padal bez stopy: graf přes soubor, chyba do hlášky, `--check-inputs`, `--keep`
+
+Řídící 28. 10.: `youtube:price-short --n=5` (jako www-data) vybere správně a skončí „ffmpeg failed (see the log)“, v
+`storage/logs` nic, `series/` prázdná (mezivýsledky se smažou). Dvě příčiny pohromadě:
+
+- **`-/filter_complex`**: dlouhý graf (nad 6 000 znaků – price Short s pěti kusy, měsíční video, instruktážní video)
+  šel přes soubor volbou, kterou zná až ffmpeg 7; na serveru se dosud nikdy nepoužila (týdenní sestřih je kratší,
+  instruktážní videa se stavěla lokálně) a serverový ffmpeg ji odmítl. Limit 8 191 znaků příkazové řádky má jen
+  cmd.exe; Linux vezme graf libovolné délky přímo. `TimelapseCutter::render` teď bere soubor **jen na Windows**.
+- **Warning pod LOG_LEVEL**: `render` logoval `Log::warning` a produkce ho zahodila. Teď `Log::error` („Farm video
+  failed“ s koncem stderr a začátkem příkazu), `TimelapseCutter::lastError()` drží konec stderr a všechny čtyři
+  příkazy (`youtube:price-short`, `farm:monthly-video`, `farm:weekly-video`, `farm:howto-video`) vypíší posledních
+  15 řádků do hlášky; výjimka procesu (chybějící binárka, timeout) se chytá a hlásí stejně.
+- **`--keep`** (price, monthly): seznamy, texty a graf zůstanou vedle videa v `series/`, aby šel ffmpeg pustit ručně.
+- **`--check-inputs`** (price, monthly; s `--dry-run` nic nestaví): tabulka každého vstupu – soubor, existuje, kB,
+  délka podle `ffmpeg -i` (`TimelapseCutter::duration`), okno, které plán bere (`from the end -5.7 s = 14.4 s, 1.3 s`
+  / `from 1.5 s, 16.6 s` / `picture × 4.5 s` / `track, looped`), problém (`missing`, `shorter than the seek`, `window
+  past the end`). `TimelapseCutter::checkInputs(VideoCut)` je obecný: projde `-i` vstupy s jejich `-ss`/`-sseof`/`-t`.
+
+Testy: `YouTubeSeriesTest` (tabulka vstupů čtená přes `Artisan::output()` – mock výstupu testovacího běžce řádky
+tabulky nevidí; zdroj bez Shortu = zákaznické video `-9.5`; chybějící soubor označen; render s neexistující binárkou
+→ „ffmpeg failed:“ + text, `--keep` nechá `_open.txt`, nic ve frontě), `FarmVideosCutTest` – zelené. Pro řídící:
+`youtube:price-short --n=5 --dry-run --check-inputs` ukáže délky a okna (u starších čtvercových Shortů je vidět, kam
+`-5.7` padne), pak `youtube:price-short --n=5 --keep`; selže‑li, hláška řekne proč.

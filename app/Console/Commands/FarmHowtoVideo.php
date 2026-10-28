@@ -51,7 +51,7 @@ class FarmHowtoVideo extends Command
                 continue;
             }
             if (! $cutter->render($plan['cut'], 1800)) {
-                $this->error($variant.': ffmpeg failed (see the log).');
+                $this->error($variant.': ffmpeg failed: '.PHP_EOL.implode(PHP_EOL, array_slice(explode("\n", (string) $cutter->lastError()), -15)));
 
                 return self::FAILURE;
             }

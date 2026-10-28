@@ -14,6 +14,7 @@ use App\Models\YouTubeAccount;
 use Database\Seeders\FarmSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Process;
 use Illuminate\Support\Facades\Storage;
@@ -150,6 +151,37 @@ final class YouTubeSeriesTest extends TestCase
         $this->artisan('youtube:price-short', ['--n' => 5, '--dry-run' => true, '--seed' => 7])->expectsOutputToContain('7 prints with a photo and a price, 6 tools; picked 5')
             ->expectsOutputToContain('title: Kolik stojí 3D tisk? 5 věcí s cenou')->assertSuccessful();
         $this->assertSame(0, FarmVideo::count(), 'a dry run queues nothing');
+        // --check-inputs: every file the Short is cut from (the fixture's stand-ins are there, their lengths unknown without
+        // ffmpeg); the table is read through Artisan::output (the test runner's output mock does not see table rows)
+        $check = function (): string {
+            $this->assertSame(0, Artisan::call('youtube:price-short', ['--n' => 5, '--dry-run' => true, '--seed' => 7, '--check-inputs' => true]));
+
+            return Artisan::output();
+        };
+        $out = $check();
+        foreach (['short.mp4', 'photo-short.jpg', 'from the end -5.7 s, 1.3 s', 'picture × 4.5 s', 'logo.png', 'track, looped', 'every input is there'] as $needle) {
+            $this->assertStringContainsString($needle, $out, $needle);
+        }
+        Storage::disk('farm')->delete($vase->timelapse_short_path);
+        $vase->forceFill(['timelapse_short_path' => null])->save();
+        $this->assertStringContainsString('from the end -9.5 s', $check(), 'without a Short the customer\'s video is the source');
+        // a file gone between the plan and the render (the command itself never picks a print without one)
+        Storage::disk('farm')->delete($vase->timelapse_path);
+        $rows = app(TimelapseCutter::class)->checkInputs($series->priceShort(collect([$vase, $box]), Storage::disk('farm')->path('series/price-check.mp4')));
+        $this->assertSame(['missing'], array_values(array_filter(array_column($rows, 'problem'))));
+        $this->assertFalse($rows[0]['exists']);
+        $this->assertSame('picture × 4.5 s', $rows[1]['window']);
+        Storage::disk('farm')->put($vase->timelapse_path, 'x');
+        // a render that fails says what ffmpeg said and, with --keep, leaves the texts next to the video
+        config(['farm.ffmpeg' => 'no-such-ffmpeg-binary']);
+        $this->artisan('youtube:price-short', ['--n' => 5, '--seed' => 7, '--keep' => true])->expectsOutputToContain('ffmpeg failed:')->expectsOutputToContain('stayed next to the video')->assertFailed();
+        $cutter = app(TimelapseCutter::class);
+        $this->assertFalse($cutter->render($cut, 30));
+        $this->assertNotEmpty($cutter->lastError(), 'what went wrong is kept for the command to print');
+        $kept = array_filter(Storage::disk('farm')->files('series'), fn ($f) => str_ends_with($f, '_open.txt'));
+        $this->assertCount(1, $kept, 'the open card text stayed');
+        $this->assertSame(0, FarmVideo::count(), 'nothing queued after a failed render');
+        config(['farm.ffmpeg' => 'ffmpeg']);
         $video = app(FarmVideos::class)->queueCollection(FarmVideo::KIND_PRICE, ['key' => 'price-2026-10-28-1', 'orders' => $picked->pluck('id')->all()], 'series/price-2026-10-28-1.mp4', $texts['title'], $texts['description'], 'Artist - Song.mp3');
         $this->assertSame([FarmVideo::STATUS_PENDING, null, 'series/price-2026-10-28-1.mp4'], [$video->status, $video->farm_order_id, $video->path]);
         $this->assertSame('series/price-2026-10-28-1.mp4', app(FarmVideos::class)->pathOf($video));
