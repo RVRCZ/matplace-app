@@ -469,3 +469,31 @@ Produkce nedrží žádný soubor modelu (§13.3), stahování ze zdrojů Roman 
 - Nahrání souboru je ruční: 30 modelů = 30 stažení u zdroje; stránka ukazuje další, jak ubývají.
 - Sada s více díly: nahrát jeden hlavní díl, cena je pak za něj (v adminu to není řečeno u modelu; poznámka je v hlavičce).
 - Fotky: dnes 12 složených fotek v produkci; které nástroje mají výtisk s fotkou, se ukáže po nasazení.
+
+## 16. Inspirace ve vyhledávání: titulky s naší hodnotou a staré adresy `?lang=` (větev `feature/inspiration-seo-titles`, 28. 10. 2026)
+
+Search Console (16 měsíců): stránky nástrojů bez zobrazení, hlavní stránka 394/84, stránky `/model/…` desítky zobrazení
+a skoro žádné kliknutí (wood-decking-spacer 142/0, drybox 96/0, cursed-furby-mask?lang=en 64/12).
+
+### 16.1 Titulek a popis detailu (`App\Domain\Catalog\InspirationSeo`)
+
+- Titulek: „<název>: cena 3D tisku a stažení modelu · matplace“ (en „3D printing price and model download“, es „precio de
+  impresión 3D y descarga del modelo“); název zkrácený na 45 znaků (`…`), aby slova titulku zůstala celá; dřív jen
+  „<název> · 3D model · matplace“.
+- Popis: s řezem souboru (§13) „Cena 3D tisku „<název>“: 99 Kč (PLA), 110 Kč (PETG), 130 Kč (ASA), doba tisku 1 h 30 min.
+  Soubor stáhnete u zdroje, licence CC BY…“ (měna návštěvníka, nejkratší doba ze tří); bez řezu „„<název>“: spočítáme cenu
+  3D tisku, vytiskneme a pošleme. Soubor stáhnete u zdroje.“ a za tím náš text stránky, pokud se vejde (obohacené modely).
+  Vždy nejvýš 155 znaků (`Str::limit` 152 + `…`). Texty `models.inspiration.seo_title_one`, `seo_desc_sliced`,
+  `seo_desc_plain` v `lang/*/models.php`. Test ve třech jazycích s limity délky (`CatalogValueTest`).
+- Zbývá: titulek i s brandem má až ~95 znaků; Google ukáže ~60, zkrátí za názvem. Dřívější „· 3D model“ v titulku
+  nikde jinde nebyl.
+
+### 16.2 Staré adresy `?lang=en` a jazykové verze
+
+- `/model/<slug>?lang=en` → 301 na `/en/model/<slug>` (middleware `SetLocale`, platilo už dřív); stránka v jazyce má
+  `canonical` na sebe a `hreflang` cs/en/x-default (jen indexovatelné stránky; `noindex, follow` bez canonicalu zůstává).
+- **Nález:** model bez textu v tom jazyce (`CatalogModel::locales()` = jen cs) dával na `/en/model/<slug>` 404 „jen česky“
+  – a tam vedl i 301 ze starého `?lang=en`. Teď `InspirationController::show` pošle 301 na českou stránku
+  (`Locales::urlFor('cs')`), takže řetěz `?lang=en → /en/… → /model/…` končí na stránce, ne na 404. Jen pro Inspiraci;
+  články a ostatní stránky nechávám (LocaleUrlTest).
+- `/admin/catalog/files`: sloupec „Zobrazení SC“ i u modelů se souborem (součet jazyků za 90 dní).

@@ -430,10 +430,11 @@ class CatalogTest extends TestCase
         $page->assertSee('data-use="commercial"', false);
         $this->assertStringNotContainsString('<link rel="alternate" hreflang=', $nc->getContent(), 'Czech only: no hreflang links (the RSS link is rel="alternate" too)');
 
-        // a page exists only in the languages it has a text in; the others point to the Czech one
+        // a page exists only in the languages it has a text in; the others send the visitor on to the Czech one (301, not a 404:
+        // the old site's ?lang=en links of Printables land there through the language redirect, docs/AN.md §16)
         $this->get('/en/model/phone-stand')->assertOk()->assertSee('A simple stand.');
-        $this->get('/en/model/dragon')->assertNotFound()->assertSee('id="czech-version" href="'.url('/model/dragon').'"', false);
-        $this->get('/es/model/phone-stand')->assertNotFound();
+        $this->get('/en/model/dragon')->assertStatus(301)->assertRedirect('/model/dragon');
+        $this->get('/es/model/phone-stand')->assertStatus(301)->assertRedirect('/model/phone-stand');
 
         // the customer brings the file: the order's note names the model, its author, address and licence
         $this->actingAs($this->customer)->get('/farm?source='.$free->id)->assertOk()->assertSee($free->attribution())->assertSee('name="catalog_model" value="'.$free->id.'"', false);

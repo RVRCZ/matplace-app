@@ -5,6 +5,8 @@
     $original = $ours ? $model->original() : null;
     $quote = $quote ?? ['available' => false];
     $sliced = $sliced ?? null;
+    // what the page says to search engines: our value, not the source's name alone (App\Domain\Catalog\InspirationSeo, docs/AN.md §16)
+    $seo = \App\Domain\Catalog\InspirationSeo::texts($model, $sliced, $ours ? $text : '');
     // a sale is offered only where the licence allows it: the order goes through the calculation's own page (/c/<token>)
     $sellable = $sliced && ! $model->license_restricted && $model->sliceCalculation;
     $dur = fn (int $m) => $m >= 60 ? intdiv($m, 60).' h '.($m % 60).' min' : $m.' min';
@@ -21,8 +23,8 @@
     ]);
 @endphp
 @extends('layouts.app', [
-    'title' => $model->title.' · '.__('models.inspiration.title_suffix').' · matplace',
-    'description' => $text !== '' ? \Illuminate\Support\Str::limit(preg_replace('/\s+/', ' ', $text), 155) : __('models.inspiration.description_one', ['title' => $model->title]),
+    'title' => $seo['title'],
+    'description' => $seo['description'],
     'ogImage' => $images[0] ?? null,
     // only a page with something of its own is for search engines; the rest stays reachable and keeps its links followed
     'robots' => ($indexable ?? false) ? null : 'noindex, follow',

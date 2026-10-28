@@ -10,6 +10,7 @@ use App\Support\Locales;
 use App\Support\Track;
 use Illuminate\Contracts\View\View;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 
@@ -34,11 +35,17 @@ class InspirationController extends Controller
         ]);
     }
 
-    public function show(Request $request, CatalogModel $catalogModel, ModelPricing $pricing): View
+    public function show(Request $request, CatalogModel $catalogModel, ModelPricing $pricing): View|RedirectResponse
     {
         $model = $catalogModel;
         abort_unless($model->getAttribute('visible'), 404);
-        Locales::only($model->locales());
+        $locales = $model->locales();
+        if (! in_array(Locales::current(), $locales, true)) {
+            // the old site's ?lang=en links land here through the language redirect (docs/AN.md §16): a model without a text in
+            // that language sends the visitor to its Czech page instead of a 404
+            return redirect()->to(Locales::urlFor(Locales::DEFAULT) ?? route('catalog.show', $model->slug), 301);
+        }
+        Locales::only($locales);
 
         if (Track::view($model)) {
             $model->increment('view_count');

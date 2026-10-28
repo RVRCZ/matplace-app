@@ -248,12 +248,78 @@ class CatalogValueTest extends TestCase
             $date = now()->subDays(2)->toDateString();
             SearchConsoleRow::create(['row_key' => SearchConsoleRow::keyFor($date, $page, null, 'cze'), 'date' => $date, 'page' => $page, 'country' => 'cze', 'clicks' => 1, 'impressions' => $n, 'ctr' => 0.01, 'position' => 5]);
         }
-        $this->assertSame(['hidden-one' => 900, 'dragon' => 600, 'owl' => 50], SearchConsole::modelPages(90, 10));
+        $date = now()->subDays(2)->toDateString();
+        SearchConsoleRow::create(['row_key' => SearchConsoleRow::keyFor($date, 'https://matplace.com/model/with-file', null, 'cze'), 'date' => $date, 'page' => 'https://matplace.com/model/with-file', 'country' => 'cze', 'clicks' => 0, 'impressions' => 77, 'ctr' => 0, 'position' => 9]);
+        $this->assertSame(['hidden-one' => 900, 'dragon' => 600, 'with-file' => 77, 'owl' => 50], SearchConsole::modelPages(90, 10));
         $html = (string) $this->actingAs($admin)->get(route('admin.catalog.files'))->assertOk()->getContent();
         $this->assertLessThan(strpos($html, 'data-top-model="owl"'), strpos($html, 'data-top-model="dragon"'));
         $this->assertLessThan(strpos($html, 'data-top-model="cat"'), strpos($html, 'data-top-model="owl"'));
         $this->assertStringContainsString('600', $html);
         $this->assertStringNotContainsString('hidden-one', $html);
+        $this->assertSame(1, preg_match('/data-file-model="'.$withFile->id.'".*?data-shown>77</s', $html), 'the impressions stand beside the model with a file too');
         $this->actingAs(User::factory()->create())->get(route('admin.catalog.files'))->assertRedirect();
+    }
+
+    public function test_the_title_and_the_description_say_our_value_in_three_languages_within_the_lengths(): void
+    {
+        $model = $this->model(['title' => 'Wood decking spacer', 'license' => 'cc_by', 'license_restricted' => false, 'enriched_at' => now(), 'model_file_id' => $this->fileOnDisk()->id,
+            'description' => ['cs' => 'Distanční podložka na terasová prkna.', 'en' => 'A spacer for decking boards.', 'es' => 'Un separador para tablas de tarima.']]);
+        $head = function (string $path): array {
+            $html = (string) $this->get($path)->assertOk()->getContent();
+            preg_match('~<title>(.*?)</title>~s', $html, $t);
+            preg_match('~<meta name="description" content="([^"]*)"~', $html, $d);
+
+            return [html_entity_decode($t[1] ?? '', ENT_QUOTES | ENT_HTML5), html_entity_decode($d[1] ?? '', ENT_QUOTES | ENT_HTML5)];
+        };
+
+        // before the slice: the promise, with the page's own text while there is room
+        [$title, $description] = $head('/model/'.$model->slug);
+        $this->assertSame('Wood decking spacer: cena 3D tisku a stažení modelu · matplace', $title);
+        $this->assertStringContainsString('spočítáme cenu 3D tisku, vytiskneme a pošleme', $description);
+        $this->assertStringContainsString('Distanční podložka', $description);
+        $this->assertStringNotContainsString('3D model · matplace', $title, 'the source\'s name alone is gone');
+
+        $this->artisan('catalog:slice --sleep=0')->assertSuccessful();
+        foreach (['cs' => ['/model/', 'cena 3D tisku a stažení modelu', 'doba tisku'], 'en' => ['/en/model/', '3D printing price and model download', 'print time'], 'es' => ['/es/model/', 'precio de impresión 3D y descarga del modelo', 'tiempo de impresión']] as $locale => [$prefix, $inTitle, $inDescription]) {
+            [$title, $description] = $head($prefix.$model->slug);
+            $this->assertStringStartsWith('Wood decking spacer: ', $title, $locale);
+            $this->assertStringContainsString($inTitle, $title, $locale);
+            $this->assertStringEndsWith(' · matplace', $title, $locale);
+            $this->assertStringContainsString($inDescription, $description, $locale);
+            foreach (['(PLA)', '(PETG)', '(ASA)'] as $code) {
+                $this->assertStringContainsString($code, $description, $locale.' '.$code);
+            }
+            $this->assertLessThanOrEqual(155, mb_strlen($description), $locale.': '.$description);
+            $this->assertLessThanOrEqual(100, mb_strlen($title), $locale.': '.$title);
+        }
+
+        // a long name is cut first, the words of the title stay whole
+        $long = $this->model(['title' => str_repeat('Dlouhý název modelu ', 6)]);
+        [$title, $description] = $head('/model/'.$long->slug);
+        $this->assertLessThanOrEqual(100, mb_strlen($title));
+        $this->assertStringContainsString('…: cena 3D tisku a stažení modelu · matplace', $title);
+        $this->assertLessThanOrEqual(155, mb_strlen($description));
+    }
+
+    public function test_the_old_language_query_leads_to_the_language_page_or_to_the_czech_one_when_the_model_has_no_such_text(): void
+    {
+        $translated = $this->model(['slug' => 'cursed-furby-mask', 'enriched_at' => now(), 'est_minutes' => 90, 'est_grams' => 30, 'file_available' => true, 'description' => ['cs' => 'Maska.', 'en' => 'A mask.']]);
+        $this->model(['slug' => 'drybox', 'description' => ['cs' => 'Krabice na filament.']]);
+
+        // the old site's addresses: 301 to the language page, which is canonical and names its languages
+        $this->get('/model/cursed-furby-mask?lang=en')->assertStatus(301)->assertRedirect('/en/model/cursed-furby-mask');
+        $en = $this->get('/en/model/cursed-furby-mask')->assertOk();
+        $en->assertSee('<link rel="canonical" href="'.url('/en/model/cursed-furby-mask').'">', false)
+            ->assertSee('<link rel="alternate" hreflang="en" href="'.url('/en/model/cursed-furby-mask').'">', false)
+            ->assertSee('<link rel="alternate" hreflang="cs" href="'.url('/model/cursed-furby-mask').'">', false)
+            ->assertSee('hreflang="x-default"', false)->assertDontSee('<link rel="alternate" hreflang="es"', false);   // the language menu names Spanish, the head does not
+        $this->get('/model/cursed-furby-mask')->assertOk()->assertSee('<link rel="canonical" href="'.url('/model/cursed-furby-mask').'">', false);
+
+        // a model with a Czech text alone: the language redirect lands on a page that does not exist, so it goes on to the Czech one (not a 404)
+        $this->get('/model/drybox?lang=en')->assertStatus(301)->assertRedirect('/en/model/drybox');
+        $this->get('/en/model/drybox')->assertStatus(301)->assertRedirect('/model/drybox');
+        $this->get('/es/model/drybox')->assertStatus(301)->assertRedirect('/model/drybox');
+        $this->get('/model/drybox')->assertOk();
+        $this->get('/en/model/no-such-model')->assertNotFound();
     }
 }

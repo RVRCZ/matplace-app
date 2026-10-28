@@ -167,7 +167,7 @@ class CatalogSeoTest extends TestCase
         // a model with an English text alone has a Czech page too (the old addresses): both get a text of ours, Spanish none
         $this->assertSame(['cs', 'en'], array_values(array_intersect(['cs', 'en', 'es'], array_keys($second->fresh()->description))));
         $this->assertSame('Second stand.', $second->fresh()->original()['text']);
-        $this->get('/es/model/'.$second->slug)->assertNotFound();
+        $this->get('/es/model/'.$second->slug)->assertStatus(301)->assertRedirect('/model/'.$second->slug);   // no Spanish text: on to the Czech page (docs/AN.md §16)
         // every call is booked with the Gemini prices
         $this->assertSame(2, AiCall::where('kind', 'enrich')->where('engine', 'gemini-2.5-flash')->count());
         $this->assertEqualsWithDelta((900 * 0.30 + 300 * 2.50) / 1_000_000 * config('ai.prices.usd_czk'), AiCall::first()->cost_czk, 0.001);
