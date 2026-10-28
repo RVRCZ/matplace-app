@@ -1945,5 +1945,7 @@
     "farm.order.bar.pay_card_rest": "Pagar el resto con tarjeta: :amount",
     "farm.order.bar.pick_color": "Elija un color.",
     "farm.order.bar.total": "Total a pagar",
-    "farm.order.bar.total_estimate": "Aproximado, en total; el transportista confirma el envío"
+    "farm.order.bar.total_estimate": "Aproximado, en total; el transportista confirma el envío",
+    "farm.order.bar.email": "Escriba un correo válido para la confirmación del pedido.",
+    "farm.order.bar.terms": "Confirme que acepta las condiciones de la granja de impresión."
 }

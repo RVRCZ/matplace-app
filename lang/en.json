@@ -1945,5 +1945,7 @@
     "farm.order.bar.pay_card_rest": "Pay the rest by card: :amount",
     "farm.order.bar.pick_color": "Choose a colour.",
     "farm.order.bar.total": "To pay",
-    "farm.order.bar.total_estimate": "About, in total; the carrier confirms the delivery"
+    "farm.order.bar.total_estimate": "About, in total; the carrier confirms the delivery",
+    "farm.order.bar.email": "Fill in a valid e-mail for the order confirmation.",
+    "farm.order.bar.terms": "Confirm that you agree with the print farm terms."
 }

@@ -307,13 +307,26 @@ Společné kusy navrhla session 3 v commitu 19dfe46c: třídy v `app.css`, `reso
 - Neověřeno: Android s otevřenou klávesnicí v emulaci (lišta je `fixed` nad `--consent-h`), skutečný přepočet trvající
   sekundy. Falešný slicer odpoví hned, takže zašedlý stav byl vidět jen v kódu.
 
-### 5.3 Čeká na session 3 (sdílené `sticky.ts` a `app.css`, požádáno zprávou)
+### 5.3 Doladění po úpravách session 3 (e0a3d82d, v main 6abfc7c7)
 
-1. Tlačítko lišty dnes zrcadlí `aria-disabled` jako `disabled`. Na liště proto stisk nehotové objednávky nic neřekne,
-   na tlačítku ve formuláři ano. Prosba: zrcadlit jen `aria-disabled` a klik předat.
-2. Krátký popis z `data-bar-label` zdroje: `farm.ts` ho už plní („Zaplatit kartou“, „Doplatit kartou 120 Kč“). Do
-   té doby lišta ukazuje celou větu a na 390 px zúží částku.
-3. Výška `.stick-stage` bez spodních lišt: `calc(100vh − 1.5rem − --consent-h − --action-bar-h)`. Dnes je spodek
-   karty ceny při 1366×768 pod lištami.
-
-Po těch úpravách se na zakázce nic měnit nemusí, jen znovu projít snímky.
+- Session 3 udělala všechny tři úpravy sdílených kusů:
+  - tlačítko lišty zrcadlí `aria-disabled` jako `aria-disabled`, ne jako `disabled`, a klik předává dál;
+  - lišta bere krátký popis z `data-bar-label`;
+  - výška `.stick-stage` je bez spodních lišt.
+- Na zakázce se kvůli nim nic měnit nemuselo.
+- Dvě drobnosti ze snímků:
+  - E‑mail hosta a souhlas s podmínkami hlásí vlastní věty stránky (`farm.order.bar.email`, `farm.order.bar.terms`).
+    Hláška prohlížeče byla v jeho jazyce, v headless Chromu anglicky.
+  - U zaškrtávacího pole se do okna doroluje celá jeho věta (`label`), ne jen samotné políčko.
+- Skoky se teď měří polohou kliknutého prvku a náhledu na obrazu, ne `scrollY`. Na to upozornila session 3: scroll
+  anchoring Chromu mění `scrollY`, i když se nic neposune.
+- Průchod na 390, 768, 1280 a 1366×768:
+  - kvalita i Přepočítat: prvek ani náhled se neposunou;
+  - Zaplatit v liště bez výdejního místa, bez adresy, bez e‑mailu a bez podmínek: pokaždé věta v liště a focus na
+    poli; na desktopu náhled stojí (13 px od horního okraje);
+  - lišta ukazuje „219 Kč · Celkem k zaplacení · Zaplatit kartou“;
+  - bez vodorovného posuvu.
+- Při 1366×768 je náhled vysoký 210 px. Ustupuje kartě ceny, jak zadání chce.
+- Spodek přilepeného sloupce je nad lištami, až když se stránka odroluje pod hlavičku. Hned po načtení sloupec
+  začíná pod hlavičkou na 113 px.
+- Nové texty: `lang/src/layout_order.json` má teď 8 klíčů.
