@@ -505,3 +505,37 @@ a skoro žádné kliknutí (wood-decking-spacer 142/0, drybox 96/0, cursed-furby
   (`Locales::urlFor('cs')`), takže řetěz `?lang=en → /en/… → /model/…` končí na stránce, ne na 404. Jen pro Inspiraci;
   články a ostatní stránky nechávám (LocaleUrlTest).
 - `/admin/catalog/files`: sloupec „Zobrazení SC“ i u modelů se souborem (součet jazyků za 90 dní).
+
+## 17. Dvě drobnosti obsahové session: tácek puzzle a kalkulace souboru s díly přes podložku (větev `fix/puzzle-tray-and-parts-calc`, 28. 10. 2026)
+
+### 17.1 Puzzle: tácek (`frame`) se zapíná na nejvyšší úrovni těla
+
+`POST /api/files/{uuid}/edit` bere nastavení nástroje **vedle `op`** (`{op: "puzzle", rows, cols, lock, frame: true}`), tak
+to posílá i stránka (`edit.ts`); `ModelEditor::rules()` zná jen tyto klíče, a co validace nezná, zahodí. Obsahová session
+poslala `params.frame = true` (tvar generátorů, `/api/tools/param`), vlajka tedy propadla a vznikly jen `piece_1…12`.
+Skript sám tácek umí (`edit_tool.py puzzle`, díl `frame`, výška min(H, 10) + dno, lem podle `notes.frame`). Oprava:
+koncový bod `edit` i `edit/analysis` teď nastavení zabalená v `params` před validací vyzvedne (`EditApiController::unwrapped`,
+nejvyšší úroveň má přednost), takže obě podoby fungují; test v `ModelEditTest`.
+
+### 17.2 Kalkulace souboru s díly většího než podložka (posudek, nic neprovedeno)
+
+Případ: vrstvený obraz z filamentu 180 mm z 5 desek s rámem = jeden soubor 232 × 551 × 25 mm (desky vedle sebe,
+`tool_params.parts`), `POST /api/calculations` ho řeže jako jednu podložku, Orca ho odmítne („Slice failed (no gcode)“,
+`/c/9rs4xrseapqu`), zůstane hrubý odhad a chybová hláška. Objednávka přitom umí tisk po dílech (`FarmOrder::isByParts`,
+`partPlates`, AL.md §10 a §11), veřejná kalkulace ne.
+
+Co se dá udělat (Roman vybere):
+- **(a) Řezat po dílech i v kalkulaci**: když má soubor `parts` a celek přesahuje `pricing.bed_mm`, `SliceCalculation` rozřeže
+  každý díl zvlášť (díly leží jako samostatné STL u designu, `api/tools/edit` je tak ukládá; `EditApiController::part`) a sečte
+  minuty a gramy, výsledek nese počet podložek; cena ze součtu, stejná čísla jako pak u objednávky. Práce ~1 den: cesta
+  v `SliceCalculation` (N řezů po sobě = minuty čekání → jít přes `rough_only` jako velký model a dořezat na pozadí),
+  `applySlice` se součtem, `calc.fit.plates` v textu, test s falešným slicerem; na produkci 5 × 20–90 s na kalkulaci.
+- **(b) Nehlásit chybu, říct pravdu**: v `CalculationService::create` poznat „díly + přesah podložky“ (bbox souboru proti
+  `pricing.bed_mm`, `Dimensions::fits`) a jít cestou velkého modelu: zůstat u odhadu (`sliceNow` false), v odpovědi důvod
+  (`rough_reason = by_parts`), stránka řekne „Větší než podložka: vytiskneme po dílech, přesnou cenu spočítáme při objednávce“
+  (nový klíč vedle `calc.status.big_only`) a nepollí. Práce 2 až 3 h, žádný řez navíc. Odhad ceny přitom je hrubý (bez
+  podpěr a rámu), ale pravdivě označený; objednávka ho dořeže po dílech jako dnes.
+- **(c) Nic**: nechat chybu. Nedoporučuji, hláška „Slice failed“ u hotového designu vypadá jako rozbitý nástroj.
+
+Doporučení: (b) hned (malé, odstraní chybu a lže se méně), (a) až bude obraz z filamentu objednávaný častěji; čísla z (a)
+beztak zákazník dostane na stránce objednávky.
