@@ -52,5 +52,9 @@ return [
         'coaster' => ['related' => ['magnet', 'nameplate', 'ornament'], 'blog' => ['vanocni-ozdoba-z-obrazku', 'vanocni-darky-z-3d-tisku-do-24-12-terminy']],
         'magnet' => ['related' => ['coaster', 'keychain', 'ornament'], 'blog' => ['vanocni-ozdoba-z-obrazku', 'klicenka-a-privesek-z-obrazku']],
         'earrings' => ['related' => ['keychain', 'medallion', 'nameplate'], 'blog' => ['klicenka-a-privesek-z-obrazku', 'vanocni-darky-z-3d-tisku-do-24-12-terminy']],
+        // batch F
+        'puzzle' => ['related' => ['relief', 'coaster', 'logo'], 'blog' => ['litofanie-z-fotky', 'rozdeleni-a-vyduteni-3d-modelu']],
+        'cable_holder' => ['related' => ['holder', 'phone_stand', 'box'], 'blog' => ['drzak-na-zed-na-miru', 'stojanek-na-telefon-na-miru']],
+        'charm' => ['related' => ['keychain', 'earrings', 'magnet'], 'blog' => ['klicenka-a-privesek-z-obrazku', 'vanocni-ozdoba-z-obrazku']],
     ],
 ];

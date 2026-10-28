@@ -594,4 +594,52 @@ return [
             ['t' => 'Una pequeña serie para un mercadillo', 'text' => 'Diez pares de la misma silueta, cada par en otra combinación de colores de nuestras bobinas.'],
         ],
     ],
+    // puzzle de un modelo (docs/AP.md §12, lote F)
+    'puzzle' => [
+        'order' => [
+            ['q' => '¿Cuánto cuesta un puzzle con ustedes?', 'farm' => true, 'a' => 'El posavasos de 100 mm cortado en 3 × 4 piezas cuesta 99 CZK (PLA, sin envío, cálculo del 28 de octubre de 2026). La herramienta es gratuita, solo paga la impresión; el precio crece con el tamaño del modelo y la bandeja, no con el número de piezas.'],
+            ['q' => '¿Qué modelo subo?', 'a' => 'Uno plano: un relieve o una litofanía de una foto, un logotipo, un posavasos de nuestras herramientas, de hasta 25 mm de alto y al menos 80 mm de ancho para que las piezas lleguen a 25 mm. Un STL propio necesita el fondo plano; un modelo de un cálculo llega aquí con un clic.'],
+            ['q' => '¿Cuánto tardan la impresión y el envío?', 'farm' => true, 'a' => 'El puzzle del posavasos de 100 mm se imprime en 1 h 3 min, todas las piezas juntas. Enviamos el día en que termina la impresión, en días laborables, y Packeta en Chequia suele entregar en 1 o 2 días laborables (a un punto de recogida :cz_point).'],
+            ['q' => '¿Puede tener cada pieza otro color?', 'a' => 'Sí, en la impresión con nosotros elige el color de cada pieza al encargar, en un solo pedido; un puzzle de un posavasos de colores conserva los colores de la imagen y las piezas solo se distinguen por el contorno. En casa imprima las piezas con dos bobinas alternas.'],
+            ['q' => '¿Para qué edad es el puzzle?', 'a' => 'Piezas de 25 a 40 mm con pestañas de 0,2 mm de holgura las montan niños desde tres años; para los más pequeños elija una cuadrícula de 2 × 2 o 3 × 3 y la bandeja en la que encajan las piezas. El PLA no lleva plastificantes, pero no dé piezas de menos de 30 mm a niños pequeños.'],
+            ['q' => '¿Necesito una cuenta?', 'a' => 'Para el corte y la descarga, no. Solo la necesita cuando nos encarga el puzzle impreso; se paga con crédito recargado con tarjeta.'],
+        ],
+        'who' => [
+            ['t' => 'Una foto como puzzle', 'text' => 'Un relieve de una foto de 200 × 150 mm cortado en 6 × 5 piezas de unos 33 mm, con bandeja.'],
+            ['t' => 'El logotipo de la empresa para los clientes', 'text' => 'Un logotipo de 120 mm como puzzle de 4 × 3 en dos colores, diez unidades del mismo diseño.'],
+            ['t' => 'Un regalo para un niño', 'text' => 'Un posavasos de colores o un adorno de un dibujo como puzzle de 3 × 3 con piezas grandes y bandeja.'],
+        ],
+    ],
+    // sujetacables de escritorio (docs/AP.md §12, lote F)
+    'cable_holder' => [
+        'order' => [
+            ['q' => '¿Cuánto cuesta un soporte con ustedes?', 'farm' => true, 'a' => 'Un soporte para cuatro cables de 6 mm cuesta 99 CZK, el pedido mínimo (PLA, sin envío, cálculo del 28 de octubre de 2026). Varios soportes del mismo diseño se indican como cantidad y el precio por pieza baja.'],
+            ['q' => '¿Qué diámetro tienen los cables corrientes?', 'a' => 'Un cable de auriculares, 3 a 4 mm; USB‑C y Lightning, 4 a 5 mm; el cable de alimentación de un portátil, 5 a 6 mm; HDMI, 6 a 7 mm; el cable de red de un monitor, 7 a 8 mm. Mida el suyo con un calibre o con una tira de papel enrollada en el cable.'],
+            ['q' => '¿Cuánto tardan la impresión y el envío?', 'farm' => true, 'a' => 'El soporte para cuatro cables se imprime en 42 minutos; el de seis cables con pestañas, en 56 minutos. Enviamos el día en que termina la impresión, en días laborables, y Packeta en Chequia suele entregar en 1 o 2 días laborables (a un punto de recogida :cz_point).'],
+            ['q' => '¿Dónde coloco el soporte?', 'a' => 'En el borde trasero del tablero, por donde llegan los cables del enchufe, o bajo el tablero junto al borde delantero, para que los cargadores cuelguen a mano y no se vean. Ponga cinta bajo todo el soporte, no solo un trozo.'],
+            ['q' => '¿Se puede quitar y recolocar el soporte?', 'a' => 'Sí. La cinta de espuma se despega calentándola con un secador y el resto se limpia; lave el soporte y péguelo con cinta nueva. Con tornillos lo cambia de sitio cuando quiera; los agujeros quedan.'],
+            ['q' => '¿Necesito una cuenta?', 'a' => 'Para el diseño y la descarga, no. Solo la necesita cuando nos encarga el soporte impreso; se paga con crédito recargado con tarjeta.'],
+        ],
+        'who' => [
+            ['t' => 'El escritorio de casa', 'text' => 'Un soporte para cuatro cables de 5 a 6 mm en el borde de la mesa: cargador, USB‑C, auriculares, HDMI.'],
+            ['t' => 'Una oficina con diez mesas', 'text' => 'El mismo soporte en diez unidades, con pestañas para tornillos bajo el tablero; el precio por pieza baja con la cantidad.'],
+            ['t' => 'La mesilla de noche', 'text' => 'Un soporte para uno o dos cables de 4 mm, para que el cargador no caiga tras la cama.'],
+        ],
+    ],
+    // colgante de una imagen (docs/AP.md §12, lote F)
+    'charm' => [
+        'order' => [
+            ['q' => '¿Cuánto cuesta un colgante con ustedes?', 'farm' => true, 'a' => 'El fantasma alegre de 45 mm cuesta 99 CZK, el pedido mínimo (PLA, sin envío, cálculo del 28 de octubre de 2026). Varias unidades del mismo diseño se indican como cantidad y el precio por pieza baja; la anilla de llaves no va en el precio.'],
+            ['q' => '¿Qué tamaño y grosor elijo?', 'a' => 'Para llaves, de 35 a 45 mm y 3 mm de grosor; para mochila o bolso, de 50 a 60 mm; para un tirador de cremallera, de 20 a 25 mm y 2 mm. Una etiqueta de regalo puede medir de 60 a 80 mm con 2 mm de grosor, nada la fuerza.'],
+            ['q' => '¿Cuánto tardan la impresión y el envío?', 'farm' => true, 'a' => 'El fantasma de 45 mm se imprime en 7 minutos; el nombre Ela de 60 mm, en 12 minutos. Enviamos el día en que termina la impresión, en días laborables, y Packeta en Chequia suele entregar en 1 o 2 días laborables (a un punto de recogida :cz_point).'],
+            ['q' => '¿Qué imagen va bien?', 'a' => 'Un dibujo, un logotipo o una foto con un motivo claro sobre un fondo tranquilo; la herramienta quita el fondo y el colgante sigue el contorno. Las puntas finas por debajo de 0,8 mm se romperían, así que la herramienta las funde o avisa; un retrato de una foto, póngalo en un círculo o un rectángulo.'],
+            ['q' => '¿Sirve como regalo de empresa o para un mercadillo?', 'a' => 'Sí. Un logotipo de un SVG en dos colores o los nombres del personal, 50 mm, de 20 a 50 unidades; el mismo diseño en varias unidades sale más barato por pieza, nombres distintos son diseños distintos. Para mercadillos funcionan las siluetas de la biblioteca en varios colores.'],
+            ['q' => '¿Necesito una cuenta?', 'a' => 'Para el diseño y la descarga, no. Solo la necesita cuando nos encarga los colgantes impresos; se paga con crédito recargado con tarjeta.'],
+        ],
+        'who' => [
+            ['t' => 'Una etiqueta para la mochila de la guardería', 'text' => 'El nombre del niño en caligráfica o su animal favorito de la biblioteca, 50 mm, 3 mm, ojal para un mosquetón.'],
+            ['t' => 'Un regalo con la foto de la mascota', 'text' => 'La silueta de un perro a partir de una foto en tres colores, 45 mm, para las llaves.'],
+            ['t' => 'Colgantes de empresa con logotipo', 'text' => 'Un logotipo de un SVG en dos colores, 40 mm, 50 unidades del mismo diseño, anillas aparte.'],
+        ],
+    ],
 ];

@@ -595,4 +595,52 @@ return [
             ['t' => 'Malá série na trh', 'text' => 'Deset párů stejné siluety, každý pár v jiné kombinaci barev z našich cívek.'],
         ],
     ],
+    // puzzle z modelu (docs/AP.md §12, dávka F)
+    'puzzle' => [
+        'order' => [
+            ['q' => 'Kolik stojí puzzle u vás?', 'farm' => true, 'a' => 'Podtácek 100 mm rozřezaný na 3 × 4 dílky stojí 99 Kč (PLA, bez dopravy, kalkulace z 28. 10. 2026). Nástroj je zdarma, platíte jen tisk; cena roste s velikostí modelu a s táckem, ne s počtem dílků.'],
+            ['q' => 'Jaký model do puzzle nahrát?', 'a' => 'Plochý: reliéf nebo litofanii z fotky, logo, podtácek z našich nástrojů, do 25 mm výšky a aspoň 80 mm široký, aby dílky měly 25 mm. Vlastní STL musí mít rovné dno; model z kalkulace sem pošlete jedním klepnutím.'],
+            ['q' => 'Jak dlouho trvá tisk a doručení?', 'farm' => true, 'a' => 'Puzzle z podtácku 100 mm se tiskne 1 h 3 min, všechny dílky najednou. Odesíláme v den, kdy tisk skončí, v pracovní dny, a Zásilkovna v Česku obvykle doručí do 1 až 2 pracovních dnů (na výdejní místo :cz_point).'],
+            ['q' => 'Může mít každý dílek jinou barvu?', 'a' => 'Ano, při objednávce u nás vyberete barvu každého dílku v jedné zakázce; u puzzle z barevného podtácku zůstávají barvy obrázku a dílky se liší jen obrysem. Doma vytisknete dílky ze dvou cívek střídavě.'],
+            ['q' => 'Pro jak staré děti se puzzle hodí?', 'a' => 'Dílky 25 až 40 mm se zámky s vůlí 0,2 mm skládají děti od tří let; pro menší zvolte mřížku 2 × 2 nebo 3 × 3 a tácek, do kterého dílky zapadnou. Plast PLA je bez změkčovadel, drobné dílky pod 30 mm ale malým dětem nedávejte.'],
+            ['q' => 'Potřebuji účet?', 'a' => 'Na rozřezání a stažení ne. Účet potřebujete, až když si puzzle necháte vytisknout u nás; platí se z kreditu dobitého kartou.'],
+        ],
+        'who' => [
+            ['t' => 'Fotka jako puzzle', 'text' => 'Reliéf z fotky 200 × 150 mm rozřezaný na 6 × 5 dílků, dílky kolem 33 mm, s táckem.'],
+            ['t' => 'Logo firmy pro zákazníky', 'text' => 'Logo 120 mm jako puzzle 4 × 3 ve dvou barvách, deset kusů stejného návrhu.'],
+            ['t' => 'Dárek pro dítě', 'text' => 'Barevný podtácek nebo ozdoba z kresby jako puzzle 3 × 3 s velkými dílky a táckem.'],
+        ],
+    ],
+    // držák kabelů na stůl (docs/AP.md §12, dávka F)
+    'cable_holder' => [
+        'order' => [
+            ['q' => 'Kolik stojí držák u vás?', 'farm' => true, 'a' => 'Držák na čtyři kabely 6 mm stojí 99 Kč, což je nejnižší cena zakázky (PLA, bez dopravy, kalkulace z 28. 10. 2026). Víc držáků stejného návrhu zadáte jako počet kusů a cena za kus klesne.'],
+            ['q' => 'Jaký průměr zadat u běžných kabelů?', 'a' => 'Kabel ke sluchátkům 3 až 4 mm, USB‑C a Lightning 4 až 5 mm, napájecí kabel notebooku 5 až 6 mm, HDMI 6 až 7 mm, síťový kabel monitoru 7 až 8 mm. Změřte svůj posuvným měřítkem nebo papírem obtočeným kolem kabelu.'],
+            ['q' => 'Jak dlouho trvá tisk a doručení?', 'farm' => true, 'a' => 'Držák na čtyři kabely se tiskne 42 minut, na šest kabelů s oušky 56 minut. Odesíláme v den, kdy tisk skončí, v pracovní dny, a Zásilkovna v Česku obvykle doručí do 1 až 2 pracovních dnů (na výdejní místo :cz_point).'],
+            ['q' => 'Kam držák umístit?', 'a' => 'Na zadní hranu desky stolu, kde kabely přicházejí od zásuvky, nebo zespodu desky u přední hrany, aby nabíječky visely po ruce a nebyly vidět. Pod držák dejte pásku v celé ploše, ne jen kousek.'],
+            ['q' => 'Dá se držák sundat a přelepit?', 'a' => 'Ano. Pěnovou pásku odlepíte zahřátím fénem a zbytek setřete, držák omyjete a přilepíte novou páskou. Se šrouby ho přemístíte kdykoli; díry po šroubech zůstanou.'],
+            ['q' => 'Potřebuji účet?', 'a' => 'Na návrh a stažení ne. Účet potřebujete, až když si držák necháte vytisknout u nás; platí se z kreditu dobitého kartou.'],
+        ],
+        'who' => [
+            ['t' => 'Pracovní stůl doma', 'text' => 'Držák na čtyři kabely 5 až 6 mm na hranu stolu: nabíječka, USB‑C, sluchátka, HDMI.'],
+            ['t' => 'Kancelář s deseti stoly', 'text' => 'Stejný držák v deseti kusech, s oušky na šrouby pod desku, cena za kus s počtem klesá.'],
+            ['t' => 'Noční stolek', 'text' => 'Držák na jeden nebo dva kabely 4 mm, aby nabíječka nepadala za postel.'],
+        ],
+    ],
+    // přívěsek z obrázku (docs/AP.md §12, dávka F)
+    'charm' => [
+        'order' => [
+            ['q' => 'Kolik stojí přívěsek u vás?', 'farm' => true, 'a' => 'Veselý duch 45 mm stojí 99 Kč, což je nejnižší cena zakázky (PLA, bez dopravy, kalkulace z 28. 10. 2026). Víc kusů stejného návrhu zadáte jako počet kusů a cena za kus klesne; kroužek na klíče není v ceně.'],
+            ['q' => 'Jakou velikost a tloušťku zvolit?', 'a' => 'Na klíče 35 až 45 mm a 3 mm tloušťky, na batoh nebo tašku 50 až 60 mm, na jezdec zipu 20 až 25 mm a 2 mm. Jmenovka na dárek může mít 60 až 80 mm a tloušťku 2 mm, nic ji nenamáhá.'],
+            ['q' => 'Jak dlouho trvá tisk a doručení?', 'farm' => true, 'a' => 'Duch 45 mm se tiskne 7 minut, jméno Ela 60 mm 12 minut. Odesíláme v den, kdy tisk skončí, v pracovní dny, a Zásilkovna v Česku obvykle doručí do 1 až 2 pracovních dnů (na výdejní místo :cz_point).'],
+            ['q' => 'Jaký obrázek se hodí?', 'a' => 'Kresba, logo nebo fotka s jasným motivem na klidném pozadí; nástroj pozadí odstraní a přívěsek kopíruje obrys. Drobné výběžky pod 0,8 mm se zlomí, proto je nástroj slije nebo na ně upozorní; portrét z fotky dejte na kruh nebo obdélník.'],
+            ['q' => 'Hodí se jako firemní dárek nebo na trh?', 'a' => 'Ano. Logo z SVG ve dvou barvách nebo jména zaměstnanců, 50 mm, 20 až 50 kusů; stejný návrh v kusech vyjde na kus levněji, různá jména jsou různé návrhy. Na trhy se hodí siluety z knihovny v různých barvách.'],
+            ['q' => 'Potřebuji účet?', 'a' => 'Na návrh a stažení ne. Účet potřebujete, až když si přívěsky necháte vytisknout u nás; platí se z kreditu dobitého kartou.'],
+        ],
+        'who' => [
+            ['t' => 'Jmenovka na batoh do školky', 'text' => 'Jméno dítěte psacím písmem nebo oblíbené zvíře z knihovny, 50 mm, 3 mm, očko na karabinku.'],
+            ['t' => 'Dárek s fotkou mazlíčka', 'text' => 'Silueta psa z fotky ve třech barvách, 45 mm, na klíče.'],
+            ['t' => 'Firemní přívěsky s logem', 'text' => 'Logo z SVG ve dvou barvách, 40 mm, 50 kusů stejného návrhu, kroužky zvlášť.'],
+        ],
+    ],
 ];
