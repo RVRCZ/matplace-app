@@ -1873,5 +1873,12 @@
     "site.examples.item.svg_to_stl": "Silueta kočky ze SVG, :size",
     "tools.photos.title": "Takhle to vytiskli",
     "tools.photos.lead": "Skutečné výtisky z naší farmy, které si zákazníci nechali udělat tímto nástrojem.",
-    "tools.photos.alt": "Výtisk z nástroje :tool, :material, :date"
+    "tools.photos.alt": "Výtisk z nástroje :tool, :material, :date",
+    "site.blog.farm.title": "Farma: :month",
+    "site.blog.farm.printed": "Dokončené výtisky: :n",
+    "site.blog.farm.median": "Medián od zaplacení k předání: :days dne",
+    "site.blog.farm.videos": "Videa z tisku zveřejněná na YouTube: :n",
+    "site.blog.farm.tools": "Nejčastější nástroje: :tools",
+    "site.blog.farm.uploads": "Vlastní soubory zákazníků: :n",
+    "site.blog.farm.note": "Čísla se počítají ze zakázek farmy ve chvíli, kdy se stránka zobrazí."
 }

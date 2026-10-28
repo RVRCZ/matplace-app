@@ -12,6 +12,8 @@ use App\Models\FarmVideo;
  *   [video: latest]         the newest published one; nothing when there is none
  *   [calc: <token>]         a shared calculation /c/<token> as a card with its size, grams, print time and price,
  *                           or just the link while the calculation is not here (another database, a typo)
+ *   [farm: <YYYY-MM>]       the farm's figures for that month (FarmMonthStats), counted when the page is shown, so an
+ *                           article scheduled for the month after carries real numbers; nothing for a bad month
  *
  * The line is swapped for a plain word before Markdown renders (raw HTML is stripped there on purpose) and the
  * paragraph the word becomes is swapped for the view afterwards.
@@ -19,7 +21,7 @@ use App\Models\FarmVideo;
 final class BlogEmbeds
 {
     // only spaces at the ends of the line: \s would eat the blank line after it and glue the word to the next paragraph
-    private const LINE = '/^\[(video|calc):[ \t]*([A-Za-z0-9_-]{1,40})\][ \t]*$/m';
+    private const LINE = '/^\[(video|calc|farm):[ \t]*([A-Za-z0-9_-]{1,40})\][ \t]*$/m';
 
     /** @param  callable(string): string  $toHtml  the Markdown renderer */
     public static function render(string $markdown, callable $toHtml): string
@@ -53,6 +55,11 @@ final class BlogEmbeds
             $video = $ref === 'latest' ? $query->latest('published_at')->first() : $query->where('youtube_id', $ref)->first();
 
             return $video ? view('blog._video', ['video' => $video])->render() : '';
+        }
+        if ($kind === 'farm') {
+            $stats = FarmMonthStats::month($ref);
+
+            return $stats ? view('blog._farm_month', ['stats' => $stats, 'ym' => $ref])->render() : '';
         }
         $calc = Calculation::query()->with('modelFile')->where('token', $ref)->first();
 

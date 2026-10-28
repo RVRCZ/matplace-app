@@ -1873,5 +1873,12 @@
     "site.examples.item.svg_to_stl": "Cat silhouette from an SVG, :size",
     "tools.photos.title": "How it came out",
     "tools.photos.lead": "Real prints from our farm that customers had made with this tool.",
-    "tools.photos.alt": "A print from the tool :tool, :material, :date"
+    "tools.photos.alt": "A print from the tool :tool, :material, :date",
+    "site.blog.farm.title": "The farm: :month",
+    "site.blog.farm.printed": "Prints finished: :n",
+    "site.blog.farm.median": "Median from payment to handover: :days days",
+    "site.blog.farm.videos": "Time-lapses published on YouTube: :n",
+    "site.blog.farm.tools": "Most used tools: :tools",
+    "site.blog.farm.uploads": "Customers' own files: :n",
+    "site.blog.farm.note": "The figures are counted from the farm's orders at the moment the page is shown."
 }

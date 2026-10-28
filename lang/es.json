@@ -1873,5 +1873,12 @@
     "site.examples.item.svg_to_stl": "Silueta de gato de un SVG, :size",
     "tools.photos.title": "Así quedó impreso",
     "tools.photos.lead": "Impresiones reales de nuestra granja que los clientes encargaron con esta herramienta.",
-    "tools.photos.alt": "Una impresión de la herramienta :tool, :material, :date"
+    "tools.photos.alt": "Una impresión de la herramienta :tool, :material, :date",
+    "site.blog.farm.title": "La granja: :month",
+    "site.blog.farm.printed": "Impresiones terminadas: :n",
+    "site.blog.farm.median": "Mediana del pago a la entrega: :days días",
+    "site.blog.farm.videos": "Vídeos de impresión publicados en YouTube: :n",
+    "site.blog.farm.tools": "Herramientas más usadas: :tools",
+    "site.blog.farm.uploads": "Archivos propios de los clientes: :n",
+    "site.blog.farm.note": "Las cifras se calculan a partir de los pedidos de la granja en el momento en que se muestra la página."
 }

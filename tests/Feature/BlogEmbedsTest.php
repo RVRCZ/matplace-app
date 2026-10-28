@@ -3,9 +3,12 @@
 namespace Tests\Feature;
 
 use App\Models\Calculation;
+use App\Models\FarmOrder;
+use App\Models\FarmOrderEvent;
 use App\Models\FarmVideo;
 use App\Models\ModelFile;
 use App\Models\Post;
+use Carbon\Carbon;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
@@ -66,5 +69,29 @@ class BlogEmbedsTest extends TestCase
         $html = (string) $this->get('/blog/clanek-s-vlozkami')->assertOk()->getContent();
         $this->assertStringNotContainsString('<iframe', $html);
         $this->assertStringNotContainsString('<script>alert(1)', $html, 'the tag is stripped, its words stay as text');
+    }
+
+    /** docs/AP.md §13.1: the month's figures are counted from the orders when the page is shown, not typed into the article. */
+    public function test_a_farm_month_line_shows_the_month_counted_from_the_orders(): void
+    {
+        $this->article("Před.\n\n[farm: 2026-11]\n\nPo.\n\n[farm: 2026-13]\n");
+        $sign = ModelFile::factory()->create(['origin' => 'tool', 'origin_ref' => 'sign']);
+        $november = FarmOrder::factory()->paid(Carbon::parse('2026-11-03 10:00:00', 'UTC'))
+            ->handedOver(Carbon::parse('2026-11-05 10:00:00', 'UTC'))->create(['model_file_id' => $sign->id]);
+        FarmOrderEvent::factory()->create(['farm_order_id' => $november->id, 'created_at' => '2026-11-05 10:00:00']);
+        FarmOrder::factory()->paid(Carbon::parse('2026-10-20 10:00:00', 'UTC'))->done(Carbon::parse('2026-10-21 10:00:00', 'UTC'))->create();   // October: not this month's
+        FarmVideo::factory()->published()->create(['published_at' => '2026-11-10 08:00:00']);
+        FarmVideo::factory()->published()->create(['published_at' => '2026-12-01 08:00:00']);
+
+        $html = (string) $this->get('/blog/clanek-s-vlozkami')->assertOk()->getContent();
+        $this->assertStringContainsString('data-blog-farm="2026-11"', $html);
+        $this->assertStringContainsString('listopad 2026', $html);
+        $this->assertStringContainsString('Dokončené výtisky: 1', $html);
+        $this->assertStringContainsString('Medián od zaplacení k předání: 2,0 dne', $html);
+        $this->assertStringContainsString('Videa z tisku zveřejněná na YouTube: 1', $html);
+        $this->assertStringContainsString(__('tools.sign.title').' (1)', $html);
+        $this->assertStringNotContainsString('data-blog-farm="2026-13"', $html, 'a bad month embeds nothing');
+        $this->assertStringNotContainsString('MPEMBED', $html);
+        $this->assertStringContainsString('<p>Po.</p>', $html);
     }
 }
