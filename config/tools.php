@@ -101,7 +101,7 @@ return [
         ['preset' => 'door', 'params' => ['line1' => 'Novákovi', 'line2' => '12']],
         ['preset' => 'name', 'params' => ['line1' => 'Ela']],
     ]]],
-    'nameplate' => ['route' => 'tools.nameplate', 'intent' => 'create', 'categories' => ['names', 'signs'], 'available' => true,
+    'nameplate' => ['route' => 'tools.nameplate', 'intent' => 'create', 'categories' => ['names', 'signs'], 'available' => true, 'article' => 'jmenovky-na-darky-a-vykrajovatka-vanocni-dilna',
         // the card opens the composer of layers with a nameplate in it (the quick form of the sign stays under ?form=1)
         'card' => ['kind' => 'compose', 'preset' => 'plate'],
         'seo' => ['kind' => 'compose', 'examples' => [
@@ -130,7 +130,7 @@ return [
         ['params' => ['mode' => 'standing', 'width' => 120, 'line1' => 'OPEN']],
         ['params' => ['mode' => 'cutout', 'shape' => 'circle', 'width' => 80, 'line1' => 'M']],
     ]]],
-    'svg_to_stl' => ['route' => 'tools.svg_to_stl', 'intent' => 'create', 'categories' => ['images', 'craft'], 'available' => true,
+    'svg_to_stl' => ['route' => 'tools.svg_to_stl', 'intent' => 'create', 'categories' => ['images', 'craft'], 'available' => true, 'article' => 'svg-do-stl-logo-a-kresba-jako-3d-model',
         'card' => ['kind' => 'logo', 'preset' => 'extrude', 'params' => ['artwork' => 'lib:animals/cat', 'line1' => '', 'width' => 80, 'thickness' => 6]],
         'seo' => ['kind' => 'logo', 'examples' => [
             ['preset' => 'extrude', 'params' => ['artwork' => 'lib:animals/cat', 'line1' => '', 'width' => 80, 'thickness' => 6]],
@@ -186,7 +186,7 @@ return [
         ['params' => ['artwork' => 'lib:colour/christmas-ball', 'width' => 70, 'frame' => 0]],
     ]]],
     // dough and icing with the name: two colours one on another, one filament change
-    'gingerbread' => ['route' => 'tools.gingerbread', 'intent' => 'create', 'categories' => ['names', 'images'], 'available' => true, 'seo' => ['examples' => [
+    'gingerbread' => ['route' => 'tools.gingerbread', 'intent' => 'create', 'categories' => ['names', 'images'], 'available' => true, 'article' => 'vanocni-ozdoby-se-jmenem-z-3d-tiskarny', 'seo' => ['examples' => [
         ['params' => ['line1' => 'Ela', 'cookie' => 'man', 'width' => 90]],
         ['params' => ['line1' => 'Mamince', 'cookie' => 'heart', 'width' => 90]],
         ['params' => ['line1' => 'Tom', 'cookie' => 'star', 'width' => 80]],
@@ -206,7 +206,7 @@ return [
             ['c' => 'red', 'w' => 4, 't' => 'round', 'p' => [[0.50, 0.70]]], ['c' => 'red', 'w' => 4, 't' => 'round', 'p' => [[0.28, 0.17]]], ['c' => 'red', 'w' => 4, 't' => 'round', 'p' => [[0.72, 0.17]]],
         ]]],
     ]]],
-    'topper' => ['route' => 'tools.topper', 'intent' => 'create', 'categories' => ['names', 'craft'], 'available' => true, 'seo' => ['examples' => [
+    'topper' => ['route' => 'tools.topper', 'intent' => 'create', 'categories' => ['names', 'craft'], 'available' => true, 'article' => 'jmenovky-na-darky-a-vykrajovatka-vanocni-dilna', 'seo' => ['examples' => [
         ['params' => ['template' => 'number', 'number' => '2', 'line1' => 'Olivia', 'width' => 110]],
         ['params' => ['template' => 'heart', 'line1' => 'Ela a Tom', 'width' => 120, 'text_size' => 90, 'text_y' => 5]],
         ['params' => ['template' => 'none', 'line1' => 'Všechno nejlepší', 'width' => 180, 'spike' => 80]],
@@ -226,7 +226,7 @@ return [
         ['params' => ['line1' => 'TOM', 'typeface' => 'sans', 'width' => 150, 'height' => 90]],
         ['params' => ['line1' => 'Ela', 'width' => 110, 'height' => 60, 'base' => false]],
     ]]],
-    'name_letter' => ['route' => 'tools.name_letter', 'intent' => 'create', 'categories' => ['names', 'signs'], 'available' => true, 'seo' => ['examples' => [
+    'name_letter' => ['route' => 'tools.name_letter', 'intent' => 'create', 'categories' => ['names', 'signs'], 'available' => true, 'article' => 'vanocni-ozdoby-se-jmenem-z-3d-tiskarny', 'seo' => ['examples' => [
         ['params' => ['line1' => 'Ela', 'height' => 120]],
         ['params' => ['line1' => 'Tomáš', 'height' => 150, 'letter_face' => 'serif', 'typeface' => 'sans']],
         ['params' => ['line1' => 'Ivana', 'height' => 100, 'thickness' => 12]],
@@ -329,7 +329,7 @@ return [
         'card' => ['edit' => 'flexi_cut', 'kind' => 'name_letter', 'params' => ['line1' => 'Ivo', 'height' => 140, 'thickness' => 14], 'edit_params' => ['segments' => 5, 'ball_d' => 8]]],
     // the card: a picture in colours (every plate its own filament) packed as a coloured 3MF and split by colour again
     // a model out of a G-code file (docs/AL.md): no card of its own yet (the drawing of tools/art), no examples
-    'gcode' => ['route' => 'tools.gcode', 'intent' => 'file', 'categories' => ['edit'], 'available' => true, 'seo' => ['examples' => []]],
+    'gcode' => ['route' => 'tools.gcode', 'intent' => 'file', 'categories' => ['edit'], 'available' => true, 'article' => 'gcode-zpet-na-stl-kdyz-se-ztratil-model', 'seo' => ['examples' => []]],
     'colors' => ['route' => 'tools.colors', 'intent' => 'file', 'categories' => ['edit', 'images'], 'available' => true, 'seo' => ['examples' => []],
         'card' => ['edit' => 'colors', 'kind' => 'filament_art', 'params' => ['artwork' => 'lib:colour/snowman', 'mode' => 'layered', 'frame' => 'none', 'width' => 160, 'height' => 160, 'colors_n' => 5], 'edit_params' => ['depth' => 1.2]]],
     // the card: a dish round the footprint of a rounded plate

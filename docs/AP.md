@@ -387,7 +387,24 @@ a name_letter → 2, gcode → 5, nameplate a topper → 4).
   u 65 ze 400; kvalita standard 390, fine 10; výplň 15 % u 391;
 - výsledná cena: medián 140 Kč, čtvrtiny 120 a 240 Kč, nejvíc 1 750 Kč, 12 % kalkulací na minimu 99 Kč.
 
-### 7.4 Co potřebuji od řídící (článek 6)
+### 7.4 Co je hotové (27. 10. 2026)
+
+- **Vložky**: `app/Support/BlogEmbeds.php` (řádek `[video: id|latest]` a `[calc: kód]` → zástupné slovo před
+  Markdownem, výměna odstavce za šablonu po něm; `\s*$` na konci vzoru by snědlo prázdný řádek a slepilo slovo
+  s dalším odstavcem, proto jen mezery), `Post::html()` ho volá, šablony `blog/_video.blade.php` (tmavý rámeček
+  s názvem, nocookie až po kliknutí jako `calculator/_trust`) a `blog/_calc.blade.php` (karta: soubor, rozměry,
+  gramy, doba, cena v Kč z uložených cen, odkaz; bez hotové kalkulace jen odkaz). `tests/Feature/BlogEmbedsTest.php`
+  (3 testy: video nic → rámeček, kalkulace odkaz → karta, cizí HTML zůstává odstraněné).
+- **Články 1 až 5** v `resources/blog/cs/` s `published_at` 3., 6., 10., 13. a 17. 11. 2026 07:00 UTC; každý 650 až
+  750 slov, místo pro fotku, `[video: latest]`, `[calc: …]` (1, 2, 4), blok Co dál. `config/tools.php` `article`:
+  svg_to_stl → 1, gingerbread a name_letter → 2, nameplate a topper → 4, gcode → 5; `config/landing.php` má nové
+  slugy v „Kam dál“ (ukážou se až po vydání). Článek 6 čeká na export (§7.4).
+- Ověřeno: `BlogEmbedsTest|BlogSyncTest` 12 testů OK; lokální `blog:sync` článků 1, 3 a 4 vykreslí 694/743/654 slov
+  bez zástupných slov, s odkazy na kalkulace (lokální databáze kalkulace nemá, na produkci budou karty), bez iframe.
+- Po nasazení: `php artisan blog:sync` na serveru (články vzniknou jako koncepty s budoucím datem a vyjdou samy);
+  `[video: latest]` tam ukáže poslední zveřejněné video farmy.
+
+### 7.5 Co potřebuji od řídící (článek 6)
 
 Export z produkce (tinker, jen počty, žádná osobní data): kalkulace za posledních 90 dní podle původu souboru
 (`model_files.origin` upload / tool / generation a `origin_ref` = druh nástroje), zaplacené zakázky podle druhu
