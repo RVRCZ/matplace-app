@@ -38,6 +38,8 @@ interface Change { z: number; hex: string; code: string | null; slot_id: number 
 interface Part { part: string; plate: number; label: string; hex: string | null; slot_id: number | null; color_id?: number | null; name?: string | null; copies: number; minutes?: number | null; grams?: number | null; spool_hex?: string | null; model_url?: string | null }
 interface FarmState {
     token: string; number: string | null; status: string; status_text: string; stage: string | null; stage_step: number | null; stage_total: number; error: string | null; error_text: string | null; big_model?: string | null;
+    /** money the bank has given back to the card for this order (docs/AO.md §2) */
+    refunded?: number | null;
     /** a big model: sliced only on the customer's word (awaiting_choices), the rough price until then; `choosing` = the colours are on offer right now */
     big?: boolean; choosing?: boolean; slice_minutes?: number | null; slice_run?: number; estimate?: EstimateCfg | null;
     quality: string; strength: string; copies: number; max_copies: number | null; plates: number; plates_done: number; plate_layout: number[]; plate_now: number | null;
@@ -692,6 +694,7 @@ export function bootFarmOrder(): void {
         const num = $('farm-number')!; num.textContent = s.number ? [s.number, (s.spools ?? []).map(spoolLine).join(', ') || s.color?.name || ''].filter(Boolean).join(' · ') : ''; show(num, !!s.number);
         const pr = $('farm-printer'); if (pr) { pr.textContent = s.printer ? tr('farm.order.printer', { name: s.printer.name, bed: s.printer.bed }) : ''; show(pr, !!s.printer); }
         const err = $('farm-error')!; err.textContent = s.error_text ?? ''; show(err, s.status === 'failed' && !!s.error_text);
+        const refunded = $('farm-refunded'); if (refunded) { refunded.textContent = s.refunded ? tr('farm.order.refunded', { amount: money(s.refunded) }) : ''; show(refunded, !!s.refunded); }
         $('farm-warnings')!.innerHTML = s.warnings.map((w) => `<li class="flex items-start gap-1.5">${icon('triangle-alert', 'mt-0.5 h-4 w-4')}<span>${esc(w)}</span></li>`).join('');
         $('farm-dims')!.textContent = s.dims ? `${s.dims.x.toFixed(1)} × ${s.dims.y.toFixed(1)} × ${s.dims.z.toFixed(1)} mm` : '';
         show($('farm-oriented'), s.orientation_changed && s.status !== 'failed');

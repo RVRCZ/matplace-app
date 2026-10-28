@@ -1,0 +1,222 @@
+{
+    "farm.mail.reprint.subject": [
+        "Zakázku :number tiskneme znovu",
+        "We are printing order :number again",
+        "Volvemos a imprimir el pedido :number"
+    ],
+    "farm.mail.reprint.body": [
+        "Tisk „:name“ se na tiskárně nepovedl. Není to vaše chyba: tiskneme ho znovu a peníze zůstávají, kde jsou. Dáme vědět, až se začne tisknout.",
+        "The print of \":name\" failed on the printer. It is not your fault: we are printing it again and your money stays where it is. We will let you know when it starts.",
+        "La impresión de «:name» falló en la impresora. No es culpa suya: la imprimimos de nuevo y su dinero sigue donde está. Le avisaremos cuando empiece."
+    ],
+    "farm.mail.failed_card.subject": [
+        "Zakázka :number se nepodařila",
+        "Order :number did not succeed",
+        "El pedido :number no salió bien"
+    ],
+    "farm.mail.failed_card.body": [
+        "Tisk „:name“ se bohužel nepovedl ani napodruhé. Peníze vám vracíme na kartu v plné výši včetně dopravy; o vrácení vám přijde zvláštní e-mail.",
+        "Unfortunately the print of \":name\" failed a second time as well. We are returning your money to your card in full, delivery included; a separate e-mail will confirm the refund.",
+        "Lamentablemente la impresión de «:name» falló también la segunda vez. Le devolvemos el dinero a la tarjeta íntegramente, envío incluido; un correo aparte le confirmará la devolución."
+    ],
+    "farm.mail.cancelled_card.subject": [
+        "Zakázka :number je zrušená",
+        "Order :number is cancelled",
+        "El pedido :number está cancelado"
+    ],
+    "farm.mail.cancelled_card.body": [
+        "Zakázka „:name“ je zrušená. Peníze vám vracíme na kartu; z rozpracovaného tisku si necháváme jen vytištěnou část. O vrácení vám přijde zvláštní e-mail.",
+        "Order \":name\" is cancelled. We are returning your money to your card; of a print already running we keep only the printed share. A separate e-mail will confirm the refund.",
+        "El pedido «:name» está cancelado. Le devolvemos el dinero a la tarjeta; de una impresión ya en curso solo cobramos la parte impresa. Un correo aparte le confirmará la devolución."
+    ],
+    "farm.refund.error.print_failed": [
+        "Tisk se nezdařil ani napodruhé. Peníze vracíme na kartu.",
+        "The print failed a second time as well. We are returning the money to your card.",
+        "La impresión falló también la segunda vez. Le devolvemos el dinero a la tarjeta."
+    ],
+    "farm.refund.error.print_cancelled": [
+        "Tisk byl zastaven. Peníze vracíme na kartu.",
+        "The print was stopped. We are returning the money to your card.",
+        "La impresión se detuvo. Le devolvemos el dinero a la tarjeta."
+    ],
+    "farm.refund.error.operator": [
+        "Zakázku zastavila obsluha. Peníze vracíme na kartu.",
+        "The operator stopped the order. We are returning the money to your card.",
+        "El operador detuvo el pedido. Le devolvemos el dinero a la tarjeta."
+    ],
+    "farm.order.refunded": [
+        "Vráceno na kartu: :amount",
+        "Returned to your card: :amount",
+        "Devuelto a su tarjeta: :amount"
+    ],
+    "farm.refund.mail.subject": [
+        "Vrátili jsme vám peníze za zakázku :number",
+        "We returned the money for order :number",
+        "Le devolvimos el dinero del pedido :number"
+    ],
+    "farm.refund.mail.body": [
+        "Na kartu jsme vám vrátili :amount. Banka je připíše obvykle do několika dnů.",
+        "We returned :amount to your card. The bank usually credits it within a few days.",
+        "Le devolvimos :amount a su tarjeta. El banco suele abonarlo en unos días."
+    ],
+    "farm.refund.mail.why.print_failed": [
+        "Tisk se nepovedl ani napodruhé, proto vám vracíme celou částku včetně dopravy.",
+        "The print failed a second time as well, so we are returning the whole amount, delivery included.",
+        "La impresión falló también la segunda vez, así que le devolvemos el importe completo, envío incluido."
+    ],
+    "farm.refund.mail.why.cancelled": [
+        "Zakázku jste zrušili dřív, než se začala tisknout, proto vám vracíme celou částku včetně dopravy.",
+        "You cancelled the order before it started printing, so we are returning the whole amount, delivery included.",
+        "Canceló el pedido antes de que empezara a imprimirse, así que le devolvemos el importe completo, envío incluido."
+    ],
+    "farm.refund.mail.why.cancelled_running": [
+        "Zakázku jste zrušili během tisku: účtujeme poplatek za přípravu a vytištěnou část, zbytek vracíme.",
+        "You cancelled the order while it was printing: we charge the handling fee and the printed share and return the rest.",
+        "Canceló el pedido durante la impresión: cobramos la tarifa de preparación y la parte impresa y le devolvemos el resto."
+    ],
+    "farm.refund.mail.why.not_paid": [
+        "Platba dorazila, ale zakázku jsme s ní nemohli spustit (cena nebo barva se mezitím změnila). Peníze vracíme celé; zakázku můžete zaplatit znovu.",
+        "The payment arrived, but we could not start the order with it (the price or the colour changed meanwhile). We are returning all of it; you can pay the order again.",
+        "El pago llegó, pero no pudimos iniciar el pedido con él (el precio o el color cambiaron entretanto). Le devolvemos todo; puede volver a pagar el pedido."
+    ],
+    "farm.refund.mail.why.admin": [
+        "Vracíme vám peníze za zakázku.",
+        "We are returning money for your order.",
+        "Le devolvemos dinero de su pedido."
+    ],
+    "farm.credit.type.card_refund": [
+        "Vráceno na kartu",
+        "Returned to card",
+        "Devuelto a la tarjeta"
+    ],
+    "farm.admin.mail.line_next_reprint": [
+        "Co dál: zakázka se tiskne znovu automaticky (:n. tisk), peníze zůstávají zablokované. Uvolněte a potvrďte podložku.",
+        "Next: the order is printed again automatically (print :n), the money stays held. Clear and confirm the plate.",
+        "Siguiente: el pedido se imprime de nuevo automáticamente (impresión :n), el dinero sigue retenido. Libere y confirme la placa."
+    ],
+    "farm.refund.admin.line_next_failed_card": [
+        "Co dál: zakázka byla placená kartou, peníze se zákazníkovi vracejí na kartu (přijde zvlášť zpráva, kdyby to brána odmítla). Zkontrolujte tiskárnu a podložku.",
+        "Next: the order was paid by card, the money goes back to the card (a separate mail comes if the gateway refuses). Check the printer and the plate.",
+        "Siguiente: el pedido se pagó con tarjeta, el dinero vuelve a la tarjeta (llega otro correo si la pasarela lo rechaza). Revise la impresora y la placa."
+    ],
+    "farm.refund.admin.refund_failed": [
+        ":number: vrácení na kartu selhalo",
+        ":number: the card refund failed",
+        ":number: la devolución a la tarjeta falló"
+    ],
+    "farm.refund.admin.line_refund_amount": [
+        "Částka: :amount",
+        "Amount: :amount",
+        "Importe: :amount"
+    ],
+    "farm.refund.admin.line_what": [
+        "Co: :what",
+        "What: :what",
+        "Qué: :what"
+    ],
+    "farm.refund.admin.line_refund_failed_credit": [
+        "Co dál: peníze zůstaly zákazníkovi jako kredit. Vraťte je v Stripe ručně, nebo zkuste znovu „Vrátit na kartu“ na stránce zakázky.",
+        "Next: the money stayed with the customer as credit. Refund it in Stripe by hand, or try \"Return to card\" on the order page again.",
+        "Siguiente: el dinero quedó como crédito del cliente. Devuélvalo a mano en Stripe o vuelva a intentar «Devolver a la tarjeta» en la página del pedido."
+    ],
+    "farm.refund.admin.line_refund_failed_order": [
+        "Co dál: nic se nevrátilo a v kreditu se nic nezměnilo. Vraťte peníze v Stripe ručně, nebo zkuste znovu „Vrátit na kartu“.",
+        "Next: nothing was returned and the credit did not change. Refund in Stripe by hand, or try \"Return to card\" again.",
+        "Siguiente: no se devolvió nada y el crédito no cambió. Devuelva a mano en Stripe o vuelva a intentar «Devolver a la tarjeta»."
+    ],
+    "farm.refund.admin.line_not_paid_card": [
+        "Peníze (:amount) se vracejí na kartu.",
+        "The money (:amount) is going back to the card.",
+        "El dinero (:amount) vuelve a la tarjeta."
+    ],
+    "farm.refund.admin.line_not_paid_credit": [
+        "Peníze zůstaly jako kredit na účtu (vracení na kartu je vypnuté).",
+        "The money stayed as credit on the account (card refunds are switched off).",
+        "El dinero quedó como crédito en la cuenta (las devoluciones a la tarjeta están desactivadas)."
+    ],
+    "farm.refund.admin.title": [
+        "Vrátit na kartu",
+        "Return to card",
+        "Devolver a la tarjeta"
+    ],
+    "farm.refund.admin.state": [
+        "Vráceno na kartu :refunded, ještě lze vrátit :left.",
+        "Returned to the card :refunded, still returnable :left.",
+        "Devuelto a la tarjeta :refunded, aún se puede devolver :left."
+    ],
+    "farm.refund.admin.status.pending": [
+        "čeká na bránu",
+        "waiting for the gateway",
+        "esperando a la pasarela"
+    ],
+    "farm.refund.admin.status.done": [
+        "vráceno",
+        "returned",
+        "devuelto"
+    ],
+    "farm.refund.admin.status.failed": [
+        "selhalo",
+        "failed",
+        "falló"
+    ],
+    "farm.refund.admin.reason.print_failed": [
+        "tisk selhal podruhé",
+        "the print failed twice",
+        "la impresión falló dos veces"
+    ],
+    "farm.refund.admin.reason.cancelled": [
+        "zrušeno před tiskem",
+        "cancelled before printing",
+        "cancelado antes de imprimir"
+    ],
+    "farm.refund.admin.reason.cancelled_running": [
+        "zrušeno během tisku",
+        "cancelled while printing",
+        "cancelado durante la impresión"
+    ],
+    "farm.refund.admin.reason.not_paid": [
+        "platba hosta nezaplatila zakázku",
+        "a guest's payment did not pay the order",
+        "el pago del invitado no pagó el pedido"
+    ],
+    "farm.refund.admin.reason.admin": [
+        "ručně",
+        "by hand",
+        "a mano"
+    ],
+    "farm.refund.admin.amount": [
+        "Částka",
+        "Amount",
+        "Importe"
+    ],
+    "farm.refund.admin.note": [
+        "Důvod (vidí jen admin)",
+        "Reason (admins only)",
+        "Motivo (solo administración)"
+    ],
+    "farm.refund.admin.button": [
+        "Vrátit na kartu",
+        "Return to card",
+        "Devolver a la tarjeta"
+    ],
+    "farm.refund.admin.confirm": [
+        "Opravdu vrátit peníze na kartu? Nejde to vzít zpět.",
+        "Really return the money to the card? It cannot be undone.",
+        "¿Devolver de verdad el dinero a la tarjeta? No se puede deshacer."
+    ],
+    "farm.refund.admin.nothing": [
+        "Není co vrátit: karta nic nezaplatila, nebo už je vše vrácené, nebo peníze v kreditu zákazník mezitím utratil.",
+        "Nothing to return: the card paid nothing, everything is back already, or the customer spent the credit meanwhile.",
+        "Nada que devolver: la tarjeta no pagó nada, ya se devolvió todo o el cliente gastó el crédito entretanto."
+    ],
+    "farm.refund.admin.failed_now": [
+        "Brána vrácení odmítla: :error",
+        "The gateway refused the refund: :error",
+        "La pasarela rechazó la devolución: :error"
+    ],
+    "farm.refund.admin.sent": [
+        "Na kartu jde :amount.",
+        ":amount is going back to the card.",
+        ":amount vuelve a la tarjeta."
+    ]
+}

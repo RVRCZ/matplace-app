@@ -89,3 +89,114 @@ Větev `feature/guest-checkout` (z `main` 3b5f4da5), od 28. 10. 2026. Zadání `
 
 `php artisan migrate` (jedna migrace), `npm run build` (farm.ts), `view:clear`. Nic v `.env`. Stripe: nic nového
 (`customer_email` a název položky jdou v `checkout.sessions.create`).
+
+Sloučeno a nasazeno řídící 28. 10. 2026 (main e13180d2, server a31bb2a4).
+
+## 2. Dávka 3: vrácení peněz na kartu a jeden automatický opakovaný tisk
+
+### 2.1 Co se děje
+
+- **Brána umí vracet.** `PaymentGateway::refund(Payment, float $amount, string $reason): string`. Stripe: z Checkout
+  session vezme `payment_intent` a zavolá Refunds API (`reason` requested_by_customer, náš důvod v `metadata`,
+  idempotency key podle platby, důvodu, částky a pořadí). `FakeGateway`: vrátí `fake_refund_…`; v testech
+  `FakeGateway::$refundFails` simuluje odmítnutí.
+- **Tabulka `payment_refunds`**: payment_id, farm_order_id, amount, currency, reason (`print_failed`, `cancelled`,
+  `cancelled_running`, `not_paid`, `admin`), note (adminův důvod), gateway_ref, status (`pending`/`done`/`failed`),
+  error, created_by, časy. U zakázky `refunds()`, v historii události „refunded 120.00 CZK to the card (…)“ nebo
+  „card refund #… failed: …“.
+- **Kde peníze jsou** (`App\Domain\Farm\CardRefunds`). Platba kartou za zakázku jde i dnes přes kredit (topUp + hold),
+  proto vrácení na kartu:
+  - **z kreditu**, když už zakázka peníze vrátila (`Wallet::giveBack` po selhání nebo zrušení; platba hosta, která
+    zakázku nezaplatila): jeden řádek `card_refund` (−částka, bez zakázky, poznámka `#id F26-…`);
+  - **za zakázku**, když jsou peníze ještě zablokované nebo stržené (admin vrací část dotištěné zakázky): řádek
+    `refund` (+, u zakázky) a `card_refund` (−). Zůstatek se nehne, zakázka drží o tolik méně.
+  - Na kartu jde nejvýš to, co karta za zakázku zaplatila a ještě se nevrátilo (`refundable`; víc plateb: od
+    nejnovější). Co bylo placeno z kreditu, zůstane kreditem. Z kreditu jen to, co v kreditu ještě je.
+  - Brána se volá v jobu **`RefundToCard`** po commitu (`afterCommit`, 1 pokus). Do účetní knihy se zapíše až po
+    přijetí branou. Při odmítnutí: refund `failed` s chybou, peníze zůstanou jako kredit (nebo jak byly), admin mail
+    „F26-…: vrácení na kartu selhalo“ s tím, co dál. Zakázka je na „Čeká na vás“, dokud po neúspěšném vrácení
+    nepřijde úspěšné. Zákazníkovi v tu chvíli nic nepřijde.
+  - Po úspěchu: zákazníkovi **`FarmCardRefund`** („Vrátili jsme vám peníze za zakázku F26-…“, proč, „Na kartu jsme
+    vám vrátili :amount. Banka je připíše obvykle do několika dnů.“), měření `refund`.
+- **Pravidla** (`OrderFlow`):
+  - Tisk se nepovede naší vinou (`print_failed`, `print_cancelled` od agenta, `operator` od admina) u zaplacené
+    zakázky zákazníka. Admin: jen když se tisklo. Agent: i když start selhal ve frontě. Zakázka jde
+    `printing → failed → queued` s poznámkou „automatic reprint 1 after …“ a `farm_orders.reprints` = 1. Peníze se
+    nehýbou. Zákazník dostane mail **„Zakázku F26-… tiskneme znovu“** místo „nepodařila se“ a „je ve frontě“.
+    Obsluha dostane mail o selhání s řádkem „Co dál: zakázka se tiskne znovu automaticky (2. tisk), peníze zůstávají
+    zablokované. Uvolněte a potvrďte podložku.“
+  - Druhé selhání: `failed`, `giveBack` vrátí do kreditu a kartou placená část jde hned na kartu (celá cena včetně
+    dopravy).
+  - Zrušení před tiskem: celá částka na kartu (`cancelled`). Zrušení běžícího tisku: dnešní pravidlo (poplatek a
+    vytištěná část zůstanou stržené), zbytek na kartu (`cancelled_running`).
+  - Kdo platil z kreditu, dostane kredit jako dřív.
+- **Texty zákazníkovi u zakázky placené kartou**: mail o selhání nebo zrušení má variantu `failed_card` /
+  `cancelled_card` („Peníze vám vracíme na kartu…“) místo „Kredit jsme vám vrátili“. Chyba na stránce zakázky
+  (`farm.refund.error.*`) taky. Stránka ukazuje zelený řádek „Vráceno na kartu: 120 Kč“ (`state.refunded`, jen
+  potvrzené branou).
+- **Platba hosta, která zakázku nezaplatila** (cena se změnila, cívka došla): celá platba jde zpátky na kartu
+  (`not_paid`), obsluha dostane mail s řádkem „Peníze (:amount) se vracejí na kartu“. Host kredit nechtěl.
+- **Admin** na stránce zakázky (`#card-refund`, jen u zakázky placené kartou): kolik je vráceno a kolik ještě jde
+  vrátit, seznam vrácení (stav, důvod, poznámka, id brány, chyba). Formulář „Vrátit na kartu“ s částkou (výchozí =
+  zbývající, víc nejde) a povinným důvodem, s potvrzením. `POST /admin/farm/orders/{order}/card-refund`. Kudy jdou
+  peníze, pozná samo: zakázka už nic nedrží → z kreditu, jinak za zakázku. Dosavadní „Vrátit kredit“ zůstal beze změny.
+- **Vypínače**: `farm.payments.auto_reprint` (`FARM_AUTO_REPRINT`, výchozí true) a `farm.payments.auto_refund`
+  (`FARM_AUTO_REFUND`, true). Vypnuté = dnešní chování (hned selhání, peníze do kreditu, texty o kreditu).
+
+### 2.2 Rozhodnutí
+
+- „Celá částka včetně dopravy“ = `price_total` zakázky. Přebytek platby nad cenu (zaokrouhlení, minimum brány
+  15 Kč) zůstane kreditem na účtu.
+- Admin, který zakázku označí jako selhanou, když se netiskla (ve frontě), automatický opakovaný tisk nespustí.
+  Zákazníkovi by jinak přišlo „tiskneme znovu“ u zakázky, kterou obsluha zastavila kvůli modelu.
+- Opakovaný tisk čeká jako každý jiný na potvrzení volné podložky. Odměna designéra se při ručním částečném vrácení
+  dotištěné zakázky nevrací (rozhodne admin).
+- Brána se zkouší jen jednou: opakovaný pokus by mohl peníze poslat dvakrát. Další pokus dělá admin tlačítkem.
+- Stripe webhooky pro refund (`charge.refunded`) nejsou potřeba: výsledek Refunds API je hned v odpovědi.
+
+### 2.3 Ověření
+
+- `FarmGuestCheckoutTest` (12 testů, 241 asercí). Nové:
+  - host zaplatí, tisk selže → zakázka znovu ve frontě, reprints 1, žádné vrácení, peníze zablokované, mail
+    „tiskneme znovu“ a žádný „nepodařila se“, admin mail s řádkem o opakování;
+  - druhé selhání → `failed`, vrácení `done` celé ceny přes falešnou bránu, kredit drží jen zaokrouhlení, jeden řádek
+    `card_refund`, maily `FarmCardRefund` a „failed_card“ bez slova o kreditu, `state.refunded`, karetní text
+    chyby, událost `refund`, záznam v historii;
+  - zrušení před tiskem: celá částka; zrušení při 40 %: cena − stržená část;
+  - zakázka placená kreditem: kredit zpět, žádné vrácení na kartu. Smíšená (10 Kč kredit + karta): na kartu jen
+    platba kartou, 10 Kč zpět do kreditu;
+  - brána odmítne → `failed`, peníze v kreditu, admin mail, sekce na admin stránce a zakázka na „Čeká na vás“. Ruční
+    „Vrátit na kartu“ pak projde. Víc než zbývá: chyba validace;
+  - admin vrátí 20 Kč z dotištěné zakázky: zůstatek se nehne, řádek `refund` u zakázky;
+  - vypnuté přepínače: hned `failed`, kredit, starý text mailu;
+  - platba hosta po změně ceny: celá zpátky na kartu, kredit 0, žádné potvrzení, mail o vrácení.
+- Čtyři starší testy o selhání, které zakázku končí hned (`FarmAdminNotifyTest` ×2, `FarmOrderFlowTest` ×2), mají
+  `auto_reprint` vypnuté (s poznámkou). Opakování ověřuje `FarmGuestCheckoutTest`.
+- `FarmStatusColumnsTest` hlídá i `payment_refunds.status`, `payment_refunds.reason` a `credit_transactions.type`.
+- Sada `Farm|AuditRest|Accounts|AuditEvents|SalesPathWeb|PublicStats|Shipping` (218 testů, 12,5 min): zelená kromě
+  těch čtyř, ty po úpravě znovu zelené. `pint --dirty`, `npm run build` (tsc, vite, kontroly) prošly.
+- Migrace `2026_10_28_110000_card_refunds` na místní MariaDB 12.2: nahoru, zpět, znovu nahoru. Cizí klíče: payment
+  cascade, zakázka a admin SET NULL. `reprints` tinyint unsigned default 0.
+- Neověřeno: skutečné Stripe Refunds API (žádné volání naostro; kód podle SDK, `checkout.sessions.retrieve` +
+  `refunds.create`). Admin sekce v prohlížeči (ověřena jen testem, který čte HTML). Opakovaný tisk přes agenta
+  (testovaný je admin; agent volá tutéž `fail()`).
+
+### 2.4 Soubory
+
+Nové: `database/migrations/2026_10_28_110000_card_refunds.php`, `app/Models/PaymentRefund.php`,
+`app/Domain/Farm/CardRefunds.php`, `app/Jobs/RefundToCard.php`, `app/Mail/FarmCardRefund.php` +
+`resources/views/mail/farm_card_refund.blade.php`, `lang/src/card_refunds.json`.
+
+Změněné: `app/Engines/Contracts/PaymentGateway.php`, `app/Engines/Payment/{FakeGateway,StripeGateway}.php`,
+`app/Domain/Farm/OrderFlow.php` (`fail`, `printsAgain`, `onStopped`, `notifyCustomer`, `adminFailed`),
+`app/Mail/FarmOrderStatus.php` (`REPRINT`, `*_card`), `app/Http/Controllers/Farm/{CreditController,OrderController}.php`,
+`app/Http/Controllers/Admin/FarmOrderController.php` (`cardRefund`, `show`, `attention`),
+`app/Models/{FarmOrder,Payment,CreditTransaction}.php`, `app/Support/Track.php` (`refunded`), `config/farm.php`,
+`routes/web.php`, `resources/views/{admin/farm/order,farm/order}.blade.php`, `resources/js/calc/farm.ts`,
+`lang/{cs,en,es}.json`, testy výše.
+
+### 2.5 Nasazení
+
+`php artisan migrate` (jedna migrace), `npm run build`, `config:clear`, `view:clear`. V `.env` nic povinného
+(volitelně `FARM_AUTO_REPRINT`, `FARM_AUTO_REFUND`). Worker fronty musí běžet (job `RefundToCard`, jako maily).
+Klíč Stripe musí smět vytvářet refundy (běžný secret key smí; omezený klíč by potřeboval právo Refunds).

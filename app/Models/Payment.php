@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 /**
  * A payment at a gateway: a credit top-up from the account page, or a card payment for one order made from the order's
@@ -38,5 +39,11 @@ class Payment extends Model
     public function order(): BelongsTo
     {
         return $this->belongsTo(FarmOrder::class, 'farm_order_id');
+    }
+
+    /** Money of this payment sent back to the card (App\Domain\Farm\CardRefunds). */
+    public function refunds(): HasMany
+    {
+        return $this->hasMany(PaymentRefund::class);
     }
 }

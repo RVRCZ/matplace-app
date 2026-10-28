@@ -159,6 +159,10 @@ return [
         // the smallest amount the gateway takes (Stripe: about 0.50 USD): a shortfall under it is charged as this much and
         // the rest stays as credit (the page says so under the button)
         'min_charge' => ['CZK' => (float) env('FARM_MIN_CHARGE_CZK', 15), 'EUR' => (float) env('FARM_MIN_CHARGE_EUR', 0.5)],
+        // a paid print that fails on the printer is printed once more on its own (docs/AO.md §2); off = it fails at once
+        'auto_reprint' => (bool) env('FARM_AUTO_REPRINT', true),
+        // money of an order paid by card goes back to the card when the order fails or is cancelled; off = as credit
+        'auto_refund' => (bool) env('FARM_AUTO_REFUND', true),
         'stripe' => [
             'secret' => env('STRIPE_SECRET_KEY'),
             'publishable' => env('STRIPE_PUBLISHABLE_KEY'),

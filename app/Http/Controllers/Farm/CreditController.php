@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Farm;
 
+use App\Domain\Farm\CardRefunds;
 use App\Domain\Farm\FarmSettings;
 use App\Domain\Farm\GuestCheckout;
 use App\Domain\Farm\OrderFlow;
@@ -150,7 +151,8 @@ class CreditController extends Controller
 
     /**
      * A guest's payment has been applied: paid, the guest gets the confirmation with the links; not paid (the price
-     * moved, the spool is gone meanwhile), the money waits as credit on the account and the operator hears of it.
+     * moved, the spool is gone meanwhile), the guest never wanted credit: the payment goes back to the card
+     * (CardRefunds, docs/AO.md §2; with refunds switched off it waits as credit) and the operator hears of it.
      */
     private function guestPaid(Payment $payment, string $result): void
     {
@@ -160,7 +162,10 @@ class CreditController extends Controller
 
             return;
         }
-        app(OrderFlow::class)->alertAdmin(__('farm.guest.admin_not_paid', ['payment' => $payment->id, 'reason' => $result]), $order,
-            [(string) $order->user?->email.': '.Money::of($payment->amount, $payment->currency)->format()]);
+        $back = app(CardRefunds::class)->notPaid($payment->fresh());
+        app(OrderFlow::class)->alertAdmin(__('farm.guest.admin_not_paid', ['payment' => $payment->id, 'reason' => $result]), $order, [
+            (string) $order->user?->email.': '.Money::of($payment->amount, $payment->currency)->format(),
+            __($back > 0 ? 'farm.refund.admin.line_not_paid_card' : 'farm.refund.admin.line_not_paid_credit', ['amount' => Money::of($back, $payment->currency)->format()]),
+        ]);
     }
 }

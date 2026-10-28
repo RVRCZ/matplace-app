@@ -2,13 +2,24 @@
 
 namespace Tests\Feature;
 
+use App\Domain\Farm\CardRefunds;
+use App\Domain\Farm\FarmSettings;
 use App\Domain\Farm\GuestCheckout;
+use App\Domain\Farm\OrderFlow;
 use App\Domain\Farm\Wallet;
+use App\Engines\Payment\FakeGateway;
+use App\Mail\FarmAdminAlert;
+use App\Mail\FarmCardRefund;
 use App\Mail\FarmGuestOrder;
+use App\Mail\FarmOrderStatus;
 use App\Models\AnonymousSession;
+use App\Models\CreditTransaction;
+use App\Models\Event;
 use App\Models\FarmOrder;
+use App\Models\FarmPrintJob;
 use App\Models\ModelFile;
 use App\Models\Payment;
+use App\Models\PaymentRefund;
 use App\Models\User;
 use Database\Seeders\FarmSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -22,7 +33,9 @@ use Tests\TestCase;
 /**
  * An order without an account (docs/AO.md): a guest makes the order under the anonymous session, chooses as anyone
  * does, pays by card with an e-mail; the webhook makes the account (or attaches the order to the e-mail's) and the
- * guest gets the confirmation with the links. Fake slicer, fake gateway, sync queue.
+ * guest gets the confirmation with the links. A print that fails is printed once more on its own; the second failure,
+ * a cancellation or a payment that could not pay the order sends the card's money back to the card (§2). Fake slicer,
+ * fake gateway, sync queue.
  */
 class FarmGuestCheckoutTest extends TestCase
 {
@@ -37,7 +50,55 @@ class FarmGuestCheckoutTest extends TestCase
         Storage::fake('farm');
         Mail::fake();
         $this->seed(FarmSeeder::class);
-        config(['farm.public' => true]);
+        config(['farm.public' => true, 'farm.settings.admin_email' => 'farm@example.com']);
+        FakeGateway::$refundFails = false;
+        FakeGateway::$refunds = [];
+    }
+
+    protected function tearDown(): void
+    {
+        FakeGateway::$refundFails = false;
+        FakeGateway::$refunds = [];
+        parent::tearDown();
+    }
+
+    /** A guest's order paid by card through the webhook (and approved, when the farm asks for that): the order, its payment, the account. */
+    private function paidGuestOrder(string $email = 'host@example.com'): array
+    {
+        $order = $this->guestOrder();
+        $this->checkout($order, ['email' => $email])->assertOk();
+        $payment = Payment::latest('id')->firstOrFail();
+        $this->bankConfirms($payment);
+        $order->refresh();
+        $this->assertContains($order->status, ['paid', 'queued']);
+        if ($order->status === FarmOrder::STATUS_PAID) {
+            app(OrderFlow::class)->approve($order, $this->admin()->id);
+        }
+
+        return [$order->refresh(), $payment->refresh(), $order->user];
+    }
+
+    private function admin(): User
+    {
+        $admin = User::where('email', 'admin@example.com')->first() ?? User::factory()->create(['email' => 'admin@example.com']);
+        $admin->setRole(User::ROLE_ADMIN, true);
+
+        return $admin;
+    }
+
+    /** The operator says what the printer did (a manual machine: this is how "printing" and "failed" happen). */
+    private function operator(FarmOrder $order, string $to, int $progress = 0): void
+    {
+        $this->actingAs($this->admin())->post("/admin/farm/orders/{$order->token}/status", ['to' => $to])->assertRedirect();
+        if ($progress > 0) {
+            $order->printJobs()->whereIn('status', FarmPrintJob::ACTIVE)->update(['progress' => $progress]);
+        }
+        auth()->logout();
+    }
+
+    private function balance(User $user): float
+    {
+        return round((float) CreditTransaction::where('user_id', $user->id)->sum('amount'), 2);
     }
 
     /** As a browser would: the anonymous session's cookie on every request (the test client keeps none). */
@@ -204,5 +265,200 @@ class FarmGuestCheckoutTest extends TestCase
     public function test_the_calculator_button_makes_a_guest_order_too(): void
     {
         $this->get('/')->assertOk()->assertSee('data-store="'.route('farm.orders.store').'"', false)->assertSee(e(__('farm.cta_hint_guest')), false);
+    }
+
+    // ── §2: money back to the card, one automatic reprint ────────────────────────────────────────────────────────────
+
+    public function test_a_failed_print_is_printed_again_and_the_second_failure_returns_everything_to_the_card(): void
+    {
+        [$order, $payment, $user] = $this->paidGuestOrder();
+        $total = (float) $order->price_total;
+        $leftover = round($payment->amount - $total, 2);
+        $this->assertEqualsWithDelta($leftover, $this->balance($user), 0.001);
+
+        // the first failure: printed again, the money stays held, the customer hears "we print it again"
+        $this->operator($order, 'printing');
+        $this->operator($order, 'failed');
+        $order->refresh();
+        $this->assertSame(FarmOrder::STATUS_QUEUED, $order->status);
+        $this->assertSame(1, $order->reprints);
+        $this->assertNull($order->error, 'back in the queue, nothing to show as an error');
+        $this->assertSame([], FakeGateway::$refunds);
+        $this->assertSame(0, PaymentRefund::count());
+        $this->assertEqualsWithDelta($leftover, $this->balance($user), 0.001, 'the money stays held');
+        $this->assertStringContainsString('automatic reprint 1 after operator', $order->events->pluck('note')->implode(' | '));
+        Mail::assertQueued(FarmOrderStatus::class, fn (FarmOrderStatus $m) => $m->status === FarmOrderStatus::REPRINT && $m->hasTo('host@example.com'));
+        Mail::assertNotQueued(FarmOrderStatus::class, fn (FarmOrderStatus $m) => $m->status === FarmOrder::STATUS_FAILED);
+        $alert = Mail::queued(FarmAdminAlert::class)->first(fn (FarmAdminAlert $m) => str_contains($m->subjectLine, 'tisk selhal'));
+        $this->assertNotNull($alert);
+        $this->assertTrue(collect($alert->lines)->contains(fn ($l) => str_contains($l, 'tiskne znovu automaticky')), implode(' | ', $alert->lines));
+
+        // the second failure: the order fails, the whole price (delivery included) goes back to the card
+        $this->operator($order, 'printing');
+        $this->operator($order, 'failed');
+        $order->refresh();
+        $this->assertSame(FarmOrder::STATUS_FAILED, $order->status);
+        $this->assertSame(1, $order->reprints);
+        $refund = PaymentRefund::sole();
+        $this->assertSame(PaymentRefund::STATUS_DONE, $refund->status);
+        $this->assertSame(PaymentRefund::REASON_PRINT_FAILED, $refund->reason);
+        $this->assertEqualsWithDelta($total, $refund->amount, 0.001);
+        $this->assertSame([[$payment->id, $total, 'print_failed']], FakeGateway::$refunds);
+        $this->assertStringStartsWith('fake_refund_', (string) $refund->gateway_ref);
+        $this->assertEqualsWithDelta($leftover, $this->balance($user), 0.001, 'the card got it back, the credit holds only the rounding');
+        $this->assertSame(1, CreditTransaction::where('user_id', $user->id)->where('type', CreditTransaction::TYPE_CARD_REFUND)->count());
+        Mail::assertQueued(FarmCardRefund::class, fn (FarmCardRefund $m) => $m->hasTo('host@example.com') && $m->refund->is($refund));
+        Mail::assertQueued(FarmOrderStatus::class, fn (FarmOrderStatus $m) => $m->status === FarmOrder::STATUS_FAILED);
+        $html = (new FarmOrderStatus($order, FarmOrder::STATUS_FAILED))->render();
+        $this->assertStringContainsString(e(__('farm.mail.failed_card.body', ['name' => 'part.stl'])), $html);
+        $this->assertStringNotContainsString('Kredit jsme vám vrátili', $html);
+        $this->assertStringContainsString(e(__('farm.refund.mail.body', ['amount' => $order->total()->format()])), (new FarmCardRefund($refund))->render());
+        $state = $this->asGuest()->getJson("/farm/orders/{$order->token}/status")->assertOk()->json();
+        $this->assertEqualsWithDelta($total, $state['refunded'], 0.001);
+        $this->assertSame(__('farm.refund.error.operator'), $state['error_text']);
+        $event = Event::where('type', 'refund')->sole();
+        $this->assertEquals(['order' => $order->id, 'value' => $total, 'currency' => 'CZK', 'kind' => 'print_failed', 'event_id' => 'refund-'.$refund->id], $event->meta);
+        $this->assertStringContainsString('refunded '.number_format($total, 2, '.', ''), $order->events()->pluck('note')->implode(' | '));
+    }
+
+    public function test_a_cancellation_before_the_print_returns_everything_and_during_it_all_but_the_printed_share(): void
+    {
+        [$order] = $this->paidGuestOrder();
+        $this->asGuest()->postJson("/farm/orders/{$order->token}/cancel")->assertOk()->assertJsonPath('status', 'cancelled');
+        $this->assertEqualsWithDelta((float) $order->price_total, PaymentRefund::sole()->amount, 0.001);
+        $this->assertSame(PaymentRefund::REASON_CANCELLED, PaymentRefund::sole()->reason);
+        Mail::assertQueued(FarmOrderStatus::class, fn (FarmOrderStatus $m) => $m->status === FarmOrder::STATUS_CANCELLED);
+        $this->assertStringContainsString(e(__('farm.mail.cancelled_card.body', ['name' => 'part.stl'])), (new FarmOrderStatus($order->refresh(), FarmOrder::STATUS_CANCELLED))->render());
+
+        // cancelled while printing: the handling fee and the printed share stay charged, the rest goes to the card
+        [$running] = $this->paidGuestOrder('druhy@example.com');
+        $this->operator($running, 'printing', 40);
+        $this->asGuest()->postJson("/farm/orders/{$running->token}/cancel")->assertOk();
+        $running->refresh();
+        $kept = (float) $running->price['charged_on_cancel'];
+        $this->assertGreaterThan(0, $kept);
+        $refund = PaymentRefund::where('farm_order_id', $running->id)->sole();
+        $this->assertSame(PaymentRefund::REASON_CANCELLED_RUNNING, $refund->reason);
+        $this->assertEqualsWithDelta((float) $running->price_total - $kept, $refund->amount, 0.001);
+    }
+
+    public function test_an_order_paid_from_credit_gets_credit_back_and_a_mixed_one_the_card_part_to_the_card(): void
+    {
+        $user = User::factory()->create(['email' => 'kredit@example.com']);
+        $this->actingAs($user)->post('/account/credit', ['amount' => 1000])->assertRedirect();
+        $this->bankConfirms(Payment::latest('id')->firstOrFail());
+        $order = $this->ownOrder($user);
+        $offer = $this->ownOffer($user, $order);
+        $this->actingAs($user)->postJson("/farm/orders/{$order->token}/pay", ['slot' => $offer['slot'], 'delivery' => 'pickup', 'terms' => true, 'expected_total' => $offer['total']])->assertOk();
+        $this->actingAs($user)->postJson("/farm/orders/{$order->token}/cancel")->assertOk();
+        $this->assertSame(0, PaymentRefund::count(), 'credit stays credit');
+        $this->assertEqualsWithDelta(1000.0, $this->balance($user), 0.001);
+
+        // 10 Kč of credit, the rest by card: the card part goes to the card, the 10 Kč stay as credit
+        $mixed = User::factory()->create(['email' => 'smes@example.com']);
+        app(Wallet::class)->adjust($mixed, 10, 'test', $this->admin()->id);
+        $order = $this->ownOrder($mixed);
+        $offer = $this->ownOffer($mixed, $order);
+        $this->actingAs($mixed)->postJson("/farm/orders/{$order->token}/checkout", ['slot' => $offer['slot'], 'delivery' => 'pickup', 'terms' => true, 'expected_total' => $offer['total']])->assertOk();
+        $card = Payment::latest('id')->firstOrFail();
+        $this->assertEqualsWithDelta(max(ceil($offer['total'] - 10), 15), $card->amount, 0.001);
+        $this->bankConfirms($card);
+        $this->actingAs($mixed)->postJson("/farm/orders/{$order->token}/cancel")->assertOk();
+        $refund = PaymentRefund::sole();
+        $this->assertEqualsWithDelta($card->amount, $refund->amount, 0.001, 'no more than the card paid');
+        $this->assertEqualsWithDelta(10.0, $this->balance($mixed), 0.001, 'what was paid from credit is credit again');
+    }
+
+    public function test_a_refund_the_gateway_refuses_stays_as_credit_tells_the_operator_and_can_be_done_by_hand(): void
+    {
+        [$order, $payment, $user] = $this->paidGuestOrder();
+        FakeGateway::$refundFails = true;
+        $this->asGuest()->postJson("/farm/orders/{$order->token}/cancel")->assertOk();
+        $refund = PaymentRefund::sole();
+        $this->assertSame(PaymentRefund::STATUS_FAILED, $refund->status);
+        $this->assertSame('Fake refund refused.', $refund->error);
+        $this->assertEqualsWithDelta($payment->amount, $this->balance($user), 0.001, 'the money waits as credit');
+        Mail::assertNotQueued(FarmCardRefund::class);
+        $alert = Mail::queued(FarmAdminAlert::class)->first(fn (FarmAdminAlert $m) => str_contains($m->subjectLine, 'vrácení na kartu selhalo'));
+        $this->assertNotNull($alert);
+        $admin = $this->admin();
+        $this->actingAs($admin)->get("/admin/farm/orders/{$order->token}")->assertOk()
+            ->assertSee('id="card-refund"', false)->assertSee('Fake refund refused.')->assertSee('data-refund="failed"', false);
+        $this->actingAs($admin)->get('/admin/farm')->assertOk()->assertSee($order->number);
+
+        // by hand: the money is in the credit (the order gave it back), so it leaves the credit
+        FakeGateway::$refundFails = false;
+        $this->actingAs($admin)->post("/admin/farm/orders/{$order->token}/card-refund", ['amount' => $order->price_total, 'note' => 'znovu'])->assertRedirect()->assertSessionHas('status');
+        $this->assertSame(PaymentRefund::STATUS_DONE, PaymentRefund::latest('id')->first()->status);
+        $this->assertEqualsWithDelta($payment->amount - (float) $order->price_total, $this->balance($user), 0.001);
+        $this->assertNull(CardRefunds::failedFor($order));
+        // more than the card paid and has not got back is refused
+        $this->actingAs($admin)->post("/admin/farm/orders/{$order->token}/card-refund", ['amount' => 1000, 'note' => 'moc'])->assertSessionHasErrors('amount');
+    }
+
+    public function test_the_admin_refunds_part_of_a_finished_print_to_the_card(): void
+    {
+        [$order, , $user] = $this->paidGuestOrder();
+        $this->operator($order, 'printing');
+        $this->operator($order, 'done');
+        $this->assertSame(FarmOrder::STATUS_DONE, $order->refresh()->status);
+        $before = $this->balance($user);
+        $this->actingAs($this->admin())->post("/admin/farm/orders/{$order->token}/card-refund", ['amount' => 20, 'note' => 'reklamace'])->assertRedirect()->assertSessionHas('status');
+        $refund = PaymentRefund::sole();
+        $this->assertSame(PaymentRefund::REASON_ADMIN, $refund->reason);
+        $this->assertSame('reklamace', $refund->note);
+        $this->assertEqualsWithDelta(20.0, $refund->amount, 0.001);
+        $this->assertEqualsWithDelta($before, $this->balance($user), 0.001, 'the credit does not move: the order gives it back, the card takes it');
+        $this->assertSame(1, CreditTransaction::where('farm_order_id', $order->id)->where('type', CreditTransaction::TYPE_REFUND)->count());
+    }
+
+    public function test_switched_off_the_print_fails_at_once_and_the_money_is_credit(): void
+    {
+        config(['farm.payments.auto_reprint' => false, 'farm.payments.auto_refund' => false]);
+        [$order, $payment, $user] = $this->paidGuestOrder();
+        $this->operator($order, 'printing');
+        $this->operator($order, 'failed');
+        $this->assertSame(FarmOrder::STATUS_FAILED, $order->refresh()->status);
+        $this->assertSame(0, PaymentRefund::count());
+        $this->assertEqualsWithDelta($payment->amount, $this->balance($user), 0.001);
+        $this->assertStringContainsString(e(__('farm.mail.failed.body', ['name' => 'part.stl'])), (new FarmOrderStatus($order, FarmOrder::STATUS_FAILED))->render());
+    }
+
+    public function test_a_guest_payment_that_cannot_pay_the_order_goes_back_to_the_card(): void
+    {
+        $order = $this->guestOrder();
+        $this->checkout($order, ['email' => 'pozde@example.com'])->assertOk();
+        $payment = Payment::latest('id')->firstOrFail();
+        // the prices go up while the guest is at the gateway
+        $settings = app(FarmSettings::class);
+        $settings->set('min_price', (float) $settings->get('min_price') * 3 + 100);
+        $settings->set('fixed_fee', (float) $settings->get('fixed_fee') + 100);
+        $this->bankConfirms($payment);
+
+        $this->assertSame('sliced', $order->fresh()->status);
+        $this->assertSame('price_changed', $payment->fresh()->context['result']);
+        $refund = PaymentRefund::sole();
+        $this->assertSame(PaymentRefund::REASON_NOT_PAID, $refund->reason);
+        $this->assertEqualsWithDelta($payment->amount, $refund->amount, 0.001, 'all of it');
+        $this->assertEqualsWithDelta(0.0, $this->balance(User::where('email', 'pozde@example.com')->sole()), 0.001);
+        Mail::assertNotQueued(FarmGuestOrder::class);
+        Mail::assertQueued(FarmCardRefund::class);
+    }
+
+    private function ownOrder(User $user): FarmOrder
+    {
+        $path = sys_get_temp_dir().'/mp_own_'.uniqid().'.stl';
+        MeshFixtures::cubeStl($path, 20.0);
+        $uuid = $this->actingAs($user)->postJson('/api/uploads', ['file' => new UploadedFile($path, 'part.stl', null, null, true)])->assertCreated()->json('file.uuid');
+
+        return FarmOrder::where('token', basename($this->actingAs($user)->postJson('/farm/orders', ['file' => $uuid])->assertCreated()->json('url')))->firstOrFail();
+    }
+
+    /** @return array{slot: int, total: float} */
+    private function ownOffer(User $user, FarmOrder $order): array
+    {
+        $state = $this->actingAs($user)->getJson("/farm/orders/{$order->token}/status")->assertOk()->json();
+
+        return ['slot' => $state['colors'][0]['slot'], 'total' => (float) $state['colors'][0]['total']];
     }
 }

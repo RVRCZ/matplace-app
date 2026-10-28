@@ -7,6 +7,7 @@ use App\Models\DesignerProfile;
 use App\Models\Event;
 use App\Models\FarmOrder;
 use App\Models\Payment;
+use App\Models\PaymentRefund;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Http\Request;
 use Illuminate\Routing\Route as MatchedRoute;
@@ -275,6 +276,32 @@ final class Track
             ]);
         } catch (\Throwable $e) {
             Log::warning('Card payment was not recorded', ['order' => $order->id, 'error' => $e->getMessage()]);
+
+            return null;
+        }
+    }
+
+    /**
+     * Money went back to the card (App\Domain\Farm\CardRefunds, docs/AO.md §2): one `refund` with the amount, in the
+     * visit that created the order when there was one. Not a person's action: the statistics read it as money back.
+     * `kind` is the reason (print_failed, cancelled, cancelled_running, not_paid, admin).
+     */
+    public static function refunded(PaymentRefund $refund): ?Event
+    {
+        try {
+            $id = 'refund-'.$refund->id;
+            if (Event::where('type', 'refund')->where('meta->event_id', $id)->exists()) {
+                return null;
+            }
+            $created = $refund->farm_order_id ? Event::where('type', 'order_created')->where('meta->order', $refund->farm_order_id)->latest('id')->first() : null;
+
+            return Event::create([
+                'session_id' => $created?->session_id, 'user_id' => $refund->payment?->user_id, 'locale' => $created?->locale ?? Locales::current(), 'type' => 'refund',
+                'source' => $created?->source ?? 'direct', 'ref_slug' => $created?->ref_slug, 'utm' => $created?->utm,
+                'meta' => self::clean(array_filter(['order' => $refund->farm_order_id, 'value' => (float) $refund->amount, 'currency' => (string) $refund->currency, 'kind' => $refund->reason, 'event_id' => $id], fn ($v) => $v !== null)),
+            ]);
+        } catch (\Throwable $e) {
+            Log::warning('Refund was not recorded', ['refund' => $refund->id, 'error' => $e->getMessage()]);
 
             return null;
         }

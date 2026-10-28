@@ -194,6 +194,29 @@
             <button class="btn-quiet mt-2 w-full text-sm">OK</button>
         </form>
 
+        @if($order->paid_at && ($cardRefunds->isNotEmpty() || $cardLeft > 0))
+            {{-- money back to the card the order was paid with (CardRefunds); a refused refund keeps the order on "Čeká na vás" --}}
+            <section id="card-refund" class="rounded-2xl border {{ \App\Domain\Farm\CardRefunds::failedFor($order) ? 'border-red-300 bg-red-50' : 'border-slate-200 bg-white' }} p-4 text-sm">
+                <h2 class="font-bold">{{ __('farm.refund.admin.title') }}</h2>
+                <p class="mt-1 text-xs text-slate-600">{{ __('farm.refund.admin.state', ['refunded' => \App\Support\Money::of(app(\App\Domain\Farm\CardRefunds::class)->refunded($order), $order->currency)->format(), 'left' => \App\Support\Money::of($cardLeft, $order->currency)->format()]) }}</p>
+                @if($cardRefunds->isNotEmpty())
+                    <ul class="mt-2 space-y-1 text-xs">
+                        @foreach($cardRefunds as $r)
+                            <li data-refund="{{ $r->status }}">{{ $r->created_at->format('j. n. H:i') }} · @money($r->amount, $r->currency) · {{ __('farm.refund.admin.status.'.$r->status) }} · {{ __('farm.refund.admin.reason.'.$r->reason) }}@if($r->note) · {{ $r->note }}@endif @if($r->gateway_ref)· <span class="font-mono">{{ $r->gateway_ref }}</span>@endif @if($r->error)<span class="block text-red-700">{{ $r->error }}</span>@endif</li>
+                        @endforeach
+                    </ul>
+                @endif
+                @if($cardLeft > 0)
+                    <form method="post" action="{{ route('admin.farm.orders.card_refund', $order) }}" class="mt-2 grid gap-2" onsubmit="return confirm(@js(__('farm.refund.admin.confirm')))">@csrf
+                        <label class="text-xs font-semibold text-slate-600">{{ __('farm.refund.admin.amount') }}
+                            <input name="amount" type="number" step="0.01" min="0.01" max="{{ $cardLeft }}" value="{{ $cardLeft }}" required class="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 font-normal"></label>
+                        <input name="note" required maxlength="300" placeholder="{{ __('farm.refund.admin.note') }}" aria-label="{{ __('farm.refund.admin.note') }}" class="w-full rounded-lg border border-slate-300 px-3 py-2">
+                        <button class="btn-secondary w-full text-sm">{{ __('farm.refund.admin.button') }}</button>
+                    </form>
+                @endif
+            </section>
+        @endif
+
         @if($order->paid_at)
             <form method="post" action="{{ route('admin.farm.orders.refund', $order) }}" class="rounded-2xl border border-slate-200 bg-white p-4 text-sm">@csrf
                 <h2 class="font-bold">{{ __('farm.admin.refund') }}</h2>

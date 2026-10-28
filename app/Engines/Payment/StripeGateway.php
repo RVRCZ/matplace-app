@@ -50,6 +50,34 @@ final class StripeGateway implements PaymentGateway
         return (string) $session->url;
     }
 
+    /** Stripe Refunds API against the payment intent of the Checkout session the payment went through. */
+    public function refund(Payment $payment, float $amount, string $reason): string
+    {
+        if (empty($this->config['secret'])) {
+            throw new EngineException('Stripe is not configured (STRIPE_SECRET_KEY).');
+        }
+        try {
+            $client = new StripeClient($this->config['secret']);
+            $intent = $client->checkout->sessions->retrieve((string) $payment->gateway_ref)->payment_intent;
+            if (! $intent) {
+                throw new EngineException('The Checkout session has no payment intent.');
+            }
+            $refund = $client->refunds->create([
+                'payment_intent' => is_string($intent) ? $intent : $intent->id,
+                'amount' => (int) round($amount * 100),
+                // Stripe knows three reasons; ours goes along in the metadata
+                'reason' => 'requested_by_customer',
+                'metadata' => ['payment_id' => (string) $payment->id, 'order_id' => (string) $payment->farm_order_id, 'reason' => $reason],
+            ], ['idempotency_key' => 'matplace-refund-'.$payment->id.'-'.$reason.'-'.(int) round($amount * 100).'-'.$payment->refunds()->count()]);
+        } catch (EngineException $e) {
+            throw $e;
+        } catch (\Throwable $e) {
+            throw new EngineException('Stripe refund failed: '.$e->getMessage());
+        }
+
+        return (string) $refund->id;
+    }
+
     public function parseWebhook(Request $request): ?array
     {
         try {
