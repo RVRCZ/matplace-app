@@ -1937,5 +1937,6 @@
     "site.blog.farm.videos": "Vídeos de impresión publicados en YouTube: :n",
     "site.blog.farm.tools": "Herramientas más usadas: :tools",
     "site.blog.farm.uploads": "Archivos propios de los clientes: :n",
-    "site.blog.farm.note": "Las cifras se calculan a partir de los pedidos de la granja en el momento en que se muestra la página."
+    "site.blog.farm.note": "Las cifras se calculan a partir de los pedidos de la granja en el momento en que se muestra la página.",
+    "farm.refuse.guest_limit": "Desde esta dirección llegaron muchos pedidos sin cuenta en la última hora. Inténtelo dentro de :minutes min o inicie sesión."
 }

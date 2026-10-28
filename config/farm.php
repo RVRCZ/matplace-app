@@ -24,6 +24,13 @@ return [
         'waiting_days' => (int) env('FARM_BIG_MODEL_WAITING_DAYS', 7),
     ],
 
+    // an order without an account (docs/AO.md): how many a guest makes from one address in an hour (the daily limit of
+    // `daily_slices_per_user` counts the guest's session too), and after how many unpaid days matplace:prune cancels it
+    'guest' => [
+        'orders_per_hour_ip' => (int) env('FARM_GUEST_ORDERS_PER_HOUR_IP', 10),
+        'unpaid_days' => (int) env('FARM_GUEST_UNPAID_DAYS', 7),
+    ],
+
     // extra slicer profiles uploaded for new printers/materials; looked up before engines/orca/profiles
     'profiles_dir' => storage_path('app/farm/profiles'),
 

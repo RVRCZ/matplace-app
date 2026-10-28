@@ -1937,5 +1937,6 @@
     "site.blog.farm.videos": "Videa z tisku zveřejněná na YouTube: :n",
     "site.blog.farm.tools": "Nejčastější nástroje: :tools",
     "site.blog.farm.uploads": "Vlastní soubory zákazníků: :n",
-    "site.blog.farm.note": "Čísla se počítají ze zakázek farmy ve chvíli, kdy se stránka zobrazí."
+    "site.blog.farm.note": "Čísla se počítají ze zakázek farmy ve chvíli, kdy se stránka zobrazí.",
+    "farm.refuse.guest_limit": "Z této adresy přišlo za poslední hodinu hodně objednávek bez účtu. Zkuste to za :minutes min, nebo se přihlaste."
 }

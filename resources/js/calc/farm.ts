@@ -96,7 +96,7 @@ export function bootFarmCta(): void {
             const json = await res.json().catch(() => ({})) as { url?: string; message?: string };
             if (res.ok && json.url) { location.href = json.url; return; }
             // the farm said why not (closed, daily limit, e-mail not confirmed…): said here, the button stays
-            if ((res.status === 422 || res.status === 403) && json.message) { if (note) note.textContent = json.message; show(note, true); done(); return; }
+            if ((res.status === 422 || res.status === 403 || res.status === 429) && json.message) { if (note) note.textContent = json.message; show(note, true); done(); return; }
         } catch { /* offline for a moment: the start page tries again */ }
         location.href = start;
     });

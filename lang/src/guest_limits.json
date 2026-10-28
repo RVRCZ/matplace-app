@@ -1,0 +1,7 @@
+{
+    "farm.refuse.guest_limit": [
+        "Z této adresy přišlo za poslední hodinu hodně objednávek bez účtu. Zkuste to za :minutes min, nebo se přihlaste.",
+        "Many orders without an account came from this address in the last hour. Try again in :minutes min, or sign in.",
+        "Desde esta dirección llegaron muchos pedidos sin cuenta en la última hora. Inténtelo dentro de :minutes min o inicie sesión."
+    ]
+}

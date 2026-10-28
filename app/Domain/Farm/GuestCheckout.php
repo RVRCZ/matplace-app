@@ -6,6 +6,7 @@ use App\Mail\FarmGuestOrder;
 use App\Models\FarmOrder;
 use App\Models\Payment;
 use App\Models\User;
+use App\Support\Track;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
@@ -86,6 +87,11 @@ final class GuestCheckout
             } elseif ($order && ($file = $order->modelFile) && $file->owner_user_id === null && $file->anonymous_session_id === $order->anonymous_session_id) {
                 // somebody's account: only this order's model comes along (print again, my models)
                 $file->forceFill(['owner_user_id' => $user->id])->save();
+            }
+
+            if ($created && $order) {
+                // an account made by a payment: a registration of its own kind for the statistics (the funnel's optional step)
+                Track::registeredAtCheckout($user, $order);
             }
 
             return ['user' => $user, 'created' => $created];

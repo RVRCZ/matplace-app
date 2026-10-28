@@ -1937,5 +1937,6 @@
     "site.blog.farm.videos": "Time-lapses published on YouTube: :n",
     "site.blog.farm.tools": "Most used tools: :tools",
     "site.blog.farm.uploads": "Customers' own files: :n",
-    "site.blog.farm.note": "The figures are counted from the farm's orders at the moment the page is shown."
+    "site.blog.farm.note": "The figures are counted from the farm's orders at the moment the page is shown.",
+    "farm.refuse.guest_limit": "Many orders without an account came from this address in the last hour. Try again in :minutes min, or sign in."
 }
