@@ -47,6 +47,8 @@
 @section('panel')
 <form id="edit-form" novalidate>
     <x-tool-section id="file" :title="__('toolpage.section.file')">
+        {{-- colours painted with the brush in a slicer are read on upload anywhere on the site (docs/AN.md §19) --}}
+        @if($op === 'colors')<p class="text-sm text-ink" data-painted-intro>{{ __('edit.colors.painted') }}</p>@endif
         <label id="edit-drop" class="block cursor-pointer rounded-xl border-2 border-dashed border-line p-6 text-center hover:border-ink">
             <input id="edit-file" type="file" class="sr-only" accept="{{ collect($formats)->map(fn ($f) => '.'.$f)->join(',') }}">
             <x-icon name="upload" class="mx-auto h-7 w-7 text-muted" />

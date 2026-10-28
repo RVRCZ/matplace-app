@@ -318,6 +318,10 @@ dobou tisku a orientační cenou je na telefonu nad prohlížečem (`flow-file-p
   registrace; tvorba z fotky má denní limit.“ Výhoda na hlavní stránce „Nástroje zdarma, z fotky 1 model denně bez
   účtu“ bere číslo z `ai.daily_limits.generate_guest` (mění se v /admin/ai). Forma v kalkulaci: „Zdarma. Forma vzniká
   desítky sekund…“ (dřív „pár vteřin“; §5 #10).
+- **Namalované barvy** (28. 10. 2026, AN.md §19): barvy, které zákazník ve sliceru namaloval štětcem na model
+  (Bambu Studio, OrcaSlicer, Anycubic Slicer Next: `paint_color`; PrusaSlicer: `mmu_segmentation`). Na webu vždy
+  „namalované barvy“ (ne „malování“, „obarvení“, „barvy dílů“); díly po barvách jsou „díly podle barev“. Tisk „barevně“
+  proti „jednobarevně“.
 - **Test chybějících klíčů** (`AuditRestTest::test_every_text_of_the_home_page_the_calculation_the_order_and_the_account_exists_in_all_three_languages`):
   šablony `calculator/*`, `farm/*`, `account/*`, layout a cookie lišta, texty v šabloně i seznamy předávané skriptům
   (i seznam `$keys` zakázky). Našel 3 klíče `check.*_ok.impact` bez překladu. Skript je u kontrol „v pořádku“ nikdy

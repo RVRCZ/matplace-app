@@ -87,7 +87,15 @@
                     <p id="price-orient" class="mt-1 hidden text-sm text-slate-600"><span id="price-orient-amount"></span></p>
                     {{-- what delivery adds (config/farm.php shipping, the visitor's currency): the price above is for the print alone --}}
                     <p id="price-shipping" class="hidden text-xs text-slate-500"></p>
-                    @if($mode !== 'printer')<div class="mt-3">@include('farm.cta')</div>@endif
+                    {{-- colours painted in a slicer (docs/AN.md §19): the line with the dots, the price in one colour and in colour; filled by calculator.ts renderColors --}}
+                    <div id="calc-colors" class="mt-3 hidden rounded-xl bg-slate-50 p-3 text-sm" aria-live="polite">
+                        <p id="calc-colors-line" class="flex flex-wrap items-center gap-2 font-medium text-ink"></p>
+                        <p id="calc-colors-prices" class="mt-1 hidden text-slate-700"></p>
+                    </div>
+                    @if($mode !== 'printer')<div class="mt-3">@include('farm.cta')</div>
+                        {{-- a painted file is ordered in colour by the farm's button; this one keeps the one-colour print (data-colors read by farm.ts) --}}
+                        @if(\App\Domain\Farm\FarmGate::offered(auth()->user()))<button type="button" id="cta-farm-one" data-colors="one" class="btn-secondary mt-2 hidden w-full">{{ __('calc.colors.order_one') }}</button>@endif
+                    @endif
                 </div>
 
                 <div class="min-w-0 rounded-2xl border border-slate-200 bg-white p-4">
