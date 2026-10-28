@@ -524,4 +524,27 @@ return [
             ],
         ],
     ],
+
+    // the local entry page "3D printing Prague" (docs/AP.md §8): only what is true today (the farm prints in Prague, Packeta, no pickup yet)
+    'praha' => [
+        'title' => '3D printing in Prague: made to order from our own farm',
+        'h1' => '3D printing in Prague, made to order',
+        'description' => 'Made-to-order 3D printing from our farm in Prague: upload a model and see the price at once, or make one free in your browser. Packeta delivery in the EU.',
+        'lead' => 'We print on our own farm in Prague and we answer for the result. Upload an STL, 3MF, OBJ or STEP and see the price and the print time at once, no sign-up. If you have no model, make one free in your browser: from a photo, a name, a picture or the size of a drawer.',
+        'sections' => [
+            ['h' => 'What we print in Prague', 'p' => ['Orders are printed by our own print farm in Prague from PLA, PETG, ASA and TPU, in 0.2 mm layers as standard on a 250 × 250 mm bed; a bigger model is split into parts with pins. Most often we print busts and figurines from a photo, lithophanes, QR signs, drawer organisers, 3D city maps and gifts with a name. Open any tool, the model is ready in a minute and nothing is paid until you order.'], 'tools' => ['figure', 'relief', 'qr', 'organizer', 'map', 'gingerbread', 'nameplate', 'cutter']],
+            ['h' => 'What 3D printing costs', 'p' => ['The price comes from the material and the print time and you see it before ordering, VAT included; the minimum order is 99 CZK. Examples from our real calculations:'], 'prices' => true, 'li' => ['Enter the number of pieces in the calculation and see the price of the whole batch at once.', 'For big models the calculation first shows a range and, after the slicer has run, the exact price; orders are always placed from the exact one.']],
+            ['h' => 'Delivery in Prague and Czechia', 'p' => ['We dispatch the finished print on the day it comes off the printer, on working days, by Packeta to a pickup point or a parcel box (:cz_point) or to your door (:cz_home). Prague has hundreds of pickup points and boxes and a parcel usually arrives there the next working day. Pickup at the farm is not offered yet.'], 'li' => ['To Slovakia from :sk_point, to other EU countries from :eu_point.', 'As soon as we hand the parcel over, an e-mail with the tracking link arrives.']],
+            ['h' => 'How to order', 'li' => ['Upload a model to the calculator at https://matplace.com, or make one in a tool at https://matplace.com/tools; nothing is paid yet.', 'You see the price with VAT, the print time and a 3D preview at once, without signing up.', 'In the order you choose the material, a colour from the spools we have in stock, the number of pieces and the delivery; you pay by card only at the end.']],
+            ['h' => 'Who prints', 'p' => ['matplace s.r.o., company ID 22499008, Rybná 716/24, 110 00 Prague 1. Orders are printed by our own print farm in Prague; we pass them on to nobody. For businesses we print small batches with a VAT document, see https://matplace.com/business. Questions: info@matplace.com.']],
+        ],
+        'items' => [
+            ['q' => 'Can I collect the print in person in Prague?', 'a' => 'Not yet. We send by Packeta to a pickup point or a parcel box; in Prague the nearest one is usually a few minutes from you and the parcel arrives there the next working day after dispatch. Once we open pickup, it will be another choice in the order.'],
+            ['q' => 'How soon do I get the print?', 'a' => 'You see the print time of every model in advance; printing starts as soon as a printer is free. We dispatch on the day the print ends, on working days, and Packeta usually delivers within 1 to 2 working days in Czechia. What finishes at the weekend leaves on Monday.'],
+            ['q' => 'Do I need my own model?', 'a' => 'No. Upload a model (STL, 3MF, OBJ, STEP), or make one free in your browser: a bust from a photo, a lithophane, a QR sign, an organiser to the size of your drawer, a 3D city map or a gift with a name. You can also download the model and print it at home.'],
+            ['q' => 'Which materials do you print with?', 'a' => 'PLA, PETG, ASA and TPU; the material comparison in the calculation says which suits your model. You pick the colour from the spools loaded in the printers right now.'],
+            ['q' => 'Do you print for businesses too?', 'a' => 'Yes, small batches of QR signs, logos, name tags and keyrings with a VAT document; enter the number of pieces in the calculation and see the price of the batch at once. For hundreds of pieces write to info@matplace.com.'],
+            ['q' => 'What if I do not like the print or it is faulty?', 'a' => 'Before ordering you see the 3D preview, the dimensions, the print time and the price. The print is made to order, so it cannot be returned within 14 days without a reason; a defect (cracks, missing layers, a size other than ordered) you claim under the complaints procedure.'],
+        ],
+    ],
 ];
