@@ -1,4 +1,5 @@
 /** "Describe it" / "Take a photo": text or image → what it is, size + price range, ready-made models, rough generated model. */
+import { revealIfHidden } from '../site/sticky';
 import { openFile } from './calculator';
 import { price as priceText } from '../site/money';
 
@@ -47,7 +48,7 @@ function renderResults(results: Candidate[], query: string): void {
     $('search-query').textContent = query;
     $('search-hint').classList.toggle('hidden', results.length === 0);
     $('search-section').classList.remove('hidden');
-    $('search-section').scrollIntoView({ behavior: 'smooth', block: 'start' });
+    revealIfHidden($('search-section'), 'start');   // the results appear under the form: the page moves only when they are out of view
 }
 
 function setBusy(on: boolean, msg = ''): void {

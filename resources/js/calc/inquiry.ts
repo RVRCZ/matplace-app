@@ -1,3 +1,4 @@
+import { revealIfHidden } from '../site/sticky';
 /** "Make it for me": small form under the price → POST /api/inquiries → customer page /i/{token}. */
 
 const routes = () => (window as unknown as { MP_ROUTES: Record<string, string> }).MP_ROUTES;
@@ -14,7 +15,7 @@ export function bootInquiry(getCalcToken: () => string | null): void {
         const token = getCalcToken();
         if (!token) { document.getElementById('make-note')?.classList.remove('hidden'); return; }
         panel.classList.remove('hidden');
-        panel.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+        revealIfHidden(panel);
         (form.querySelector('[name=quantity]') as HTMLInputElement).value = (document.getElementById('quantity') as HTMLInputElement).value;
     };
 

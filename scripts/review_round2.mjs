@@ -95,6 +95,8 @@ const ORDER = /Objednat tisk|Vytisknout u nás|Chci to vyrobit|Order the print|P
  * clickText (a pattern of the words of a button or a link), nav (the step that follows loads a page), wait, shot,
  * reload (the page again, as F5), read (a JS expression whose value is written to the facts).
  */
+const JUMP_TOOL = "(() => { const r = (id) => Math.round(document.getElementById(id)?.getBoundingClientRect().top ?? -1); return { y: window.scrollY, panel: document.getElementById('tool-panel').scrollTop, nav: r('tool-nav'), stage: r('tool-stage'), hash: location.hash }; })()";
+const JUMP_CALC = "(() => { const r = (id) => Math.round(document.getElementById(id)?.getBoundingClientRect().top ?? -1); return { y: window.scrollY, recalc: r('cta-recalc'), price: r('price-card'), viewer: r('viewer'), bar: document.getElementById('calc-bar') ? getComputedStyle(document.getElementById('calc-bar')).display : 'no bar' }; })()";
 const FLOWS = {
     'file-price': [['go', '/'], ['file', '#file-input', FIXTURES.cube], ['wait', 25000], ['shot'], ['nav'], ['clickText', ORDER], ['wait', 5000], ['shot']],
     'tool-price': [['go', '/tools/qr'], ['wait', 6000], ['shot'], ['nav'], ['click', '#tool-go'], ['wait', 20000], ['shot'], ['nav'], ['clickText', ORDER], ['wait', 5000], ['shot']],
@@ -108,6 +110,19 @@ const FLOWS = {
     // what a tool's default model costs on the farm (docs/AH.md §11, the "how it turned out" numbers): price-<tool>
     ...Object.fromEntries(['qr', 'organizer', 'box', 'sign', 'modular'].map((t) => [`price-${t}`, [['go', `/tools/${t}`], ['wait', 6000], ['nav'], ['click', '#tool-go'], ['wait', 30000],
         ['read', "[location.pathname, document.getElementById('price-main')?.textContent, document.getElementById('price-orient')?.textContent, document.getElementById('dims-badge')?.textContent, document.getElementById('stat-grams')?.textContent, document.getElementById('status')?.textContent].map((x) => (x || '').trim()).join(' | ')"]]])),
+    // no jumps (docs/AN.md §18): what the eye sees before and after the clicks that used to move the page: the top of the
+    // clicked control, of the stage and of the price card on the screen (window.scrollY alone misleads: Chrome's scroll
+    // anchoring changes it when content above grows, without moving anything visible); the steps switch inside the panel
+    'jumps-tool': [['go', '/tools/box'], ['wait', 5000], ['read', JUMP_TOOL], ['click', '#tool-nav [data-nav]:last-child'], ['wait', 1500], ['read', JUMP_TOOL],
+        ['click', '#tool-nav [data-nav]:first-child'], ['wait', 1500], ['read', JUMP_TOOL], ['shot']],
+    'jumps-calc': [['go', '/'], ['file', '#file-input', FIXTURES.cube], ['wait', 20000], ['type', '#quantity', '3'], ['wait', 600],
+        ['read', "document.getElementById('cta-recalc').scrollIntoView({ block: 'center' }); 'the button brought on the screen, as a person has it before the click'"], ['wait', 800],
+        ['read', JUMP_CALC], ['click', '#cta-recalc'], ['wait', 1500], ['read', JUMP_CALC], ['wait', 10000], ['read', JUMP_CALC], ['shot']],
+    // which of the two moves the window at lg: scrolling the panel itself, or the focus the browser gives the clicked step (a probe, docs/AN.md §18)
+    'jumps-probe': [['go', '/tools/box'], ['wait', 5000], ['read', JUMP_TOOL], ['read', "document.getElementById('tool-panel').scrollTo({ top: 685 }); 'panel scrolled by script'"], ['wait', 800], ['read', JUMP_TOOL],
+        ['read', "document.getElementById('tool-panel').scrollTo({ top: 36 }); 'panel scrolled back by script'"], ['wait', 800], ['read', JUMP_TOOL],
+        ['read', "document.querySelector('#tool-nav [data-nav]').focus(); 'first step focused by script'"], ['wait', 800], ['read', JUMP_TOOL],
+        ['read', "document.querySelector('#tool-nav [data-nav]:last-child').focus(); 'last step focused by script'"], ['wait', 800], ['read', JUMP_TOOL]],
     'photo-limit': [['go', '/tools/relief'], ['wait', 3000], ['file', '#relief-photo', FIXTURES.big], ['wait', 1000], ['click', '#relief-form button.btn-ink'], ['wait', 4000], ['shot']],
 };
 
@@ -320,7 +335,7 @@ async function walk(flow, width, lang, port) {
                 await evaluate(cdp, `(() => { const el = document.querySelector(${JSON.stringify(a)}); if (!el) return false; el.focus(); el.value = ${JSON.stringify(b)}; el.dispatchEvent(new Event('input', { bubbles: true })); el.dispatchEvent(new Event('change', { bubbles: true })); return true; })()`);
             } else if (what === 'click' || what === 'clickText') {
                 const found = await evaluate(cdp, what === 'click'
-                    ? `(() => { const el = document.querySelector(${JSON.stringify(a)}); if (!el || el.disabled) return el ? 'disabled' : null; el.scrollIntoView({ block: 'center' }); el.click(); return (el.textContent || '').trim().slice(0, 60); })()`
+                    ? `(() => { const el = document.querySelector(${JSON.stringify(a)}); if (!el || el.disabled) return el ? 'disabled' : null; const r = el.getBoundingClientRect(); if (r.bottom < 0 || r.top > innerHeight || r.right < 0 || r.left > innerWidth) el.scrollIntoView({ block: 'center' }); el.click(); return (el.textContent || '').trim().slice(0, 60); })()`
                     : `(() => { const re = new RegExp(${JSON.stringify(a.source)}, 'i'); const el = [...document.querySelectorAll('a, button')].find((x) => re.test(x.textContent) && x.offsetParent); if (!el) return null; el.scrollIntoView({ block: 'center' }); el.click(); return el.textContent.trim().slice(0, 60); })()`);
                 steps.push({ step: `${what} ${what === 'click' ? a : a.source}`, clicked: found });
                 if (!found || found === 'disabled') navigation = null;

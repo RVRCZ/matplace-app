@@ -68,7 +68,8 @@ class ToolPageTest extends TestCase
                 ->assertSee('window.MP_TOOL', false)->assertSee(__('tools.'.$key.'.title'));
             // one orange button on the screen: the main action of the price card; a bust or a pet has its "Create" in the
             // photo dialog, and while that is on the screen the way on waits in grey (app.css, #figure-create)
-            $this->assertSame(str_contains($html, 'id="figure-create"') ? 2 : 1, substr_count($html, 'class="btn-primary'), $key);
+            // (the bar fixed to the bottom of a phone mirrors that button, docs/AN.md §18: counted without it)
+            $this->assertSame(str_contains($html, 'id="figure-create"') ? 2 : 1, substr_count((string) preg_replace('/<div[^>]*data-action-bar.*?data-bar-button[^>]*>/s', '', $html), 'class="btn-primary'), $key);
             // every section named in the steps exists
             preg_match_all('/data-nav="([a-z]+)"/', $html, $nav);
             preg_match_all('/data-section="([a-z]+)"/', $html, $sections);

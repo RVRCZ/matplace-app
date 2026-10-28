@@ -5,6 +5,7 @@
  * undo / redo and the settings kept in this browser. What differs is the input of each tool: a text, a file,
  * a photo. That part is a module (param.ts, relief.ts, mold.ts, repair.ts, check.ts, figure.ts) handed this Stage.
  */
+import { fitWindow, flash, revealIfHidden } from '../site/sticky';
 import { BufferGeometry } from 'three';
 import { Viewer, Region, FacePaint, Piece, ViewName } from './viewer';
 import type { RoughConfig, Profile } from './rough';
@@ -143,10 +144,13 @@ export class Stage {
         if (!this.revealStage()) this.reveal('print');
     }
 
-    /** On a phone (under lg) the page goes up to the viewer: where a model is being made or shown. False on lg. */
+    /**
+     * On a phone (under lg) the viewer is above the options: nothing moves the page (docs/AN.md §18, no jumps), the model's
+     * card gets a ring and the bar at the bottom carries the status and the way on. False on lg, where both are in view.
+     */
     revealStage(): boolean {
         if (window.matchMedia('(min-width: 64rem)').matches) return false;
-        this.el('tool-stage').scrollIntoView({ behavior: 'smooth', block: 'start' });
+        flash(this.el('tool-stage').firstElementChild);
         return true;
     }
 
@@ -388,6 +392,8 @@ export class Stage {
         if (!links.length || !sections.length) return;
         const mark = (id: string): void => links.forEach((l) => l.setAttribute('aria-current', l.dataset.nav === id ? 'true' : 'false'));
         mark(sections[0].dataset.section!);
+        // a step switches its section inside the panel; the browser's own jump to the anchor (and the page) stays out of it
+        links.forEach((l) => l.addEventListener('click', (e) => { e.preventDefault(); const id = l.dataset.nav!; revealIfHidden(document.getElementById(`sec-${id}`), 'start'); mark(id); }));
         const seen = new Map<string, number>();
         const io = new IntersectionObserver((entries) => {
             entries.forEach((e) => seen.set((e.target as HTMLElement).dataset.section!, e.isIntersecting ? e.intersectionRatio : 0));
@@ -402,7 +408,7 @@ export class Stage {
     reveal(sectionId: string, target: HTMLElement | null = null): void {
         const el = target ?? document.getElementById(`sec-${sectionId}`);
         if (!el) return;
-        el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        revealIfHidden(el);   // inside the panel on lg (it scrolls itself); only when it is not already in view
         el.animate([{ boxShadow: '0 0 0 3px rgb(201 71 20 / 0.55)' }, { boxShadow: '0 0 0 3px rgb(201 71 20 / 0)' }], { duration: 1200, easing: 'ease-out' });
     }
 
@@ -486,6 +492,7 @@ export function bootToolPage(): void {
     const root = document.getElementById('tool-page');
     const canvas = document.getElementById('tool-viewer') as HTMLCanvasElement | null;
     if (!cfg || !root || !canvas) return;
+    fitWindow(root);   // from lg the grid fills the window under the header; the panel scrolls inside it (docs/AN.md §18)
     const stage = new Stage(cfg, canvas);
     const modules: Record<string, (stage: Stage) => void> = { param: bootParam, relief: bootRelief, mold: bootMoldPage, repair: bootRepairPage, check: bootCheckPage, figure: bootFigure, art: bootArt, edit: bootEdit, map: bootMap };
     modules[cfg.module]?.(stage);

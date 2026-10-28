@@ -4,9 +4,11 @@
  *    scrolling ancestors and the window alike, above the bars fixed to the bottom;
  *  - focusCalm(): focus without the browser's own jump, then reveal the field the same way;
  *  - flash(): a ring that fades on an element whose content changed out of sight (a new price, a model ready);
+ *  - fitWindow(): an element that fills the window under whatever stands above it (the tool page's grid: the site's
+ *    header and the margins are not the same on every page, so the height is measured, not guessed);
  *  - mountActionBars(): every [data-action-bar] (components/action-bar.blade.php) mirrors the page's own button (label,
- *    disabled, hidden) and price element, forwards the click, and keeps --action-bar-h and body.has-action-bar right
- *    while it is displayed, so the page keeps room under its end (app.css).
+ *    disabled, aria-disabled, hidden) and price element, forwards the click, flashes when the price changes, and keeps
+ *    --action-bar-h and body.has-action-bar right while it is displayed, so the page keeps room under its end (app.css).
  */
 
 /** The bars fixed to the bottom of the window, in px: the cookie bar (site/bar.ts) and the action bar. */
@@ -32,12 +34,48 @@ export function isInView(el: Element, margin = 4): boolean {
     return true;
 }
 
-/** Scrolls only when the element is not in view; returns whether it did. `nearest` moves the least that shows it. */
-export function revealIfHidden(el: Element | null, block: ScrollLogicalPosition = 'nearest'): boolean {
-    if (!el || isInView(el)) return false;
-    el.scrollIntoView({ behavior: 'smooth', block });
+/** The nearest ancestor that scrolls (a panel of options); null when only the window does. */
+function scroller(el: Element): HTMLElement | null {
+    for (let p = el.parentElement; p && p !== document.body; p = p.parentElement) {
+        const o = getComputedStyle(p).overflowY;
+        if ((o === 'auto' || o === 'scroll') && p.scrollHeight > p.clientHeight + 1) return p;
+    }
 
-    return true;
+    return null;
+}
+
+/**
+ * Scrolls only when the element is not in view; returns whether it did. Inside a scrolling box the box moves (by the
+ * least that shows the element, `start` puts it under the box's scroll-padding) and the window stays, unless the box
+ * itself is off the screen; without a box the window moves the least that shows the element.
+ */
+export function revealIfHidden(el: Element | null, block: ScrollLogicalPosition = 'nearest'): boolean {
+    if (!el) return false;
+    const box = scroller(el);
+    if (!box) {
+        if (isInView(el)) return false;
+        el.scrollIntoView({ behavior: 'smooth', block });
+
+        return true;
+    }
+    const r = el.getBoundingClientRect();
+    const b = box.getBoundingClientRect();
+    const cs = getComputedStyle(box);
+    const padTop = parseFloat(cs.scrollPaddingTop) || 0;
+    const padBottom = parseFloat(cs.scrollPaddingBottom) || 0;
+    const above = r.top < b.top + padTop - 1;
+    const below = r.bottom > b.bottom - padBottom + 1;
+    let moved = false;
+    if (block === 'start' ? Math.abs(r.top - (b.top + padTop)) > 2 : above || below) {
+        box.scrollBy({ top: block === 'start' || above ? r.top - (b.top + padTop) : r.bottom - (b.bottom - padBottom), behavior: 'smooth' });
+        moved = true;
+    }
+    if (b.bottom < 120 || b.top > window.innerHeight - barsHeight() - 120) {   // the box itself is off the screen: the window brings it back
+        box.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+        moved = true;
+    }
+
+    return moved;
 }
 
 /** Focus without the browser's jump to the field, then the same calm reveal (a field that failed validation). */
@@ -56,6 +94,20 @@ export function flash(el: Element | null): void {
     el.addEventListener('animationend', () => el.classList.remove('flash-change'), { once: true });
 }
 
+/**
+ * The element fills the window under what stands above it (.stick-fit in app.css reads --fit-top): measured where the
+ * page is loaded and again when the window changes, with the page at its top. Nothing under lg (the class does nothing there).
+ */
+export function fitWindow(el: HTMLElement | null): void {
+    if (!el) return;
+    const set = () => {
+        const top = Math.max(0, Math.round(el.getBoundingClientRect().top + window.scrollY));
+        el.style.setProperty('--fit-top', `${top}px`);
+    };
+    set();
+    window.addEventListener('resize', set);
+}
+
 export function mountActionBars(): void {
     document.querySelectorAll<HTMLElement>('[data-action-bar]').forEach(mountActionBar);
 }
@@ -65,27 +117,35 @@ function mountActionBar(bar: HTMLElement): void {
     const button = bar.querySelector<HTMLButtonElement>('[data-bar-button]');
     const root = document.documentElement;
     if (source && button) {
+        // disabled only when the source is disabled; a source that is merely aria-disabled still takes the click (it says what is missing)
         const sync = () => {
-            button.disabled = source.disabled || source.getAttribute('aria-disabled') === 'true';
+            button.disabled = source.disabled;
+            button.setAttribute('aria-disabled', source.getAttribute('aria-disabled') === 'true' ? 'true' : 'false');
             button.hidden = source.hidden || source.classList.contains('hidden');
-            if (!bar.dataset.label) button.textContent = source.textContent?.replace(/\s+/g, ' ').trim() ?? '';
+            const label = bar.dataset.label ?? source.dataset.barLabel ?? source.textContent?.replace(/\s+/g, ' ').trim() ?? '';
+            if (button.textContent !== label) button.textContent = label;
         };
         new MutationObserver(sync).observe(source, { attributes: true, childList: true, subtree: true, characterData: true });
         button.addEventListener('click', () => source.click());
         sync();
     }
-    const mirror = (target: HTMLElement | null, origin: HTMLElement | null, suffix = '') => {
+    const mirror = (target: HTMLElement | null, origin: HTMLElement | null, suffix = '', flashOnChange = false) => {
         if (!target || !origin) return;
+        let first = true;
         const copy = () => {
             const text = origin.textContent?.replace(/\s+/g, ' ').trim() ?? '';
             const empty = text === '' || text === '—' || text === '–' || origin.classList.contains('hidden') || origin.hidden;
-            target.textContent = empty ? '' : text + suffix;
+            const next = empty ? '' : text + suffix;
+            const changed = target.textContent !== next;
+            target.textContent = next;
             target.hidden = empty;
+            if (changed && !empty && !first && flashOnChange) flash(target);   // the badge of the bar: the number changed out of sight
+            first = false;
         };
         new MutationObserver(copy).observe(origin, { childList: true, characterData: true, subtree: true, attributes: true });
         copy();
     };
-    mirror(bar.querySelector<HTMLElement>('[data-bar-price]'), bar.dataset.priceFrom ? document.getElementById(bar.dataset.priceFrom) : null, bar.dataset.priceSuffix ?? '');
+    mirror(bar.querySelector<HTMLElement>('[data-bar-price]'), bar.dataset.priceFrom ? document.getElementById(bar.dataset.priceFrom) : null, bar.dataset.priceSuffix ?? '', true);
     mirror(bar.querySelector<HTMLElement>('[data-bar-sub]'), bar.dataset.subFrom ? document.getElementById(bar.dataset.subFrom) : null);
     // the page keeps room under its end while the bar is displayed (a phone; or every width when the page says so)
     const size = () => {
@@ -94,6 +154,7 @@ function mountActionBar(bar: HTMLElement): void {
         document.body.classList.toggle('has-action-bar', shown);
     };
     if (typeof ResizeObserver !== 'undefined') new ResizeObserver(size).observe(bar);
+    new MutationObserver(size).observe(bar, { attributes: true, attributeFilter: ['hidden', 'class'] });
     window.addEventListener('resize', size);
     size();
 }
