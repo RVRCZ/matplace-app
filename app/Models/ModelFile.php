@@ -80,6 +80,17 @@ class ModelFile extends Model
     }
 
     /**
+     * The parts a design made here is printed as (the plates of a picture, the pieces of a split model, a box and its
+     * lid): the generators' list, else the editor's; empty for an upload.
+     *
+     * @return list<string>
+     */
+    public function parts(): array
+    {
+        return $this->origin === 'tool' ? (ParametricGenerator::partsOf((string) $this->origin_ref, (array) $this->tool_params) ?: ModelEditor::partsOf($this)) : [];
+    }
+
+    /**
      * Sensible print settings for this kind of model; the calculator starts from them, the customer can still change them.
      *
      * @return array<string, mixed>

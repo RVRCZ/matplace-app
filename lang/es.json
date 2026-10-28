@@ -1938,5 +1938,6 @@
     "site.blog.farm.tools": "Herramientas más usadas: :tools",
     "site.blog.farm.uploads": "Archivos propios de los clientes: :n",
     "site.blog.farm.note": "Las cifras se calculan a partir de los pedidos de la granja en el momento en que se muestra la página.",
-    "farm.refuse.guest_limit": "Desde esta dirección llegaron muchos pedidos sin cuenta en la última hora. Inténtelo dentro de :minutes min o inicie sesión."
+    "farm.refuse.guest_limit": "Desde esta dirección llegaron muchos pedidos sin cuenta en la última hora. Inténtelo dentro de :minutes min o inicie sesión.",
+    "calc.status.by_parts": "Más grande que la placa: lo imprimimos por partes y calculamos el precio exacto al pedir."
 }

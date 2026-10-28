@@ -8,7 +8,6 @@ use App\Domain\Tools\MapBuilder;
 use App\Domain\Tools\ModelCheck;
 use App\Domain\Tools\ModelEditor;
 use App\Domain\Tools\MoldGenerator;
-use App\Domain\Tools\ParametricGenerator;
 use App\Engines\Converter\ConverterChain;
 use App\Http\Controllers\Controller;
 use App\Jobs\ProcessModelFile;
@@ -95,7 +94,7 @@ class UploadController extends Controller
     /** Products that consist of several printed parts offer each one as its own download. */
     private static function partsOf(ModelFile $f): array
     {
-        return $f->origin === 'tool' ? (ParametricGenerator::partsOf((string) $f->origin_ref, (array) $f->tool_params) ?: ModelEditor::partsOf($f)) : [];
+        return $f->parts();
     }
 
     /**

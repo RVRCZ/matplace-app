@@ -539,3 +539,11 @@ Co se dá udělat (Roman vybere):
 
 Doporučení: (b) hned (malé, odstraní chybu a lže se méně), (a) až bude obraz z filamentu objednávaný častěji; čísla z (a)
 beztak zákazník dostane na stránce objednávky.
+
+**Provedeno (b), 28. 10. večer, větev `feature/calc-by-parts`:** `CalculationService::printedByParts()` (soubor má aspoň dva
+díly, `ModelFile::parts()`, a jeho obálka × měřítko se nevejde na `pricing.bed_mm` ani otočená, `Dimensions::fits`) →
+`create()` nechá kalkulaci u odhadu s `rough.by_parts = true` a nic nezařadí do fronty (i když stránka řez chtěla);
+odpověď API to nese v `rough`. `calculator.ts` (`setBigOnly`) ukáže „Větší než podložka: vytiskneme po dílech, přesnou cenu
+spočítáme při objednávce.“ (`calc.status.by_parts`, cs/en/es, v `CalculatorTexts`) a nepollí; odhad zůstává. Test
+`ByPartsCalculationTest`. **Další krok (a)**, až se obraz z filamentu bude objednávat: řezat díly zvlášť a sečíst
+(viz výše), čísla pak budou stejná jako na stránce objednávky.
