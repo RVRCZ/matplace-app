@@ -1,30 +1,32 @@
 <?php
 
+// The page for the query "custom medal 3d print" (docs/AP.md §9). 'heading' = the page's H1, 'h1' = the heading of the content under the tool.
 return [
-    'title' => 'Medal for the winners on a chain: 1st, 2nd and 3rd place',
-    'description' => 'A gold, silver or bronze winner\'s medal with a red number level with the plate and a chain of 40 snap-in links. We print it, or you download the model.',
-    'h1' => 'Medal for the winners on a chain: gold, silver and bronze',
+    'title' => 'Custom medal to 3D print: gold, silver, bronze with a chain',
+    'heading' => 'Custom medal with a chain to 3D print',
+    'description' => 'A gold, silver or bronze medal for 1st, 2nd and 3rd place with a number or a name and a chain of 40 links. We print it, or you download the model free.',
+    'h1' => 'How the medal is made, what you can change and what it costs with the chain',
     'intro' => [
-        'The tool makes a medal for the winners of a children\'s race, a tournament, a school contest or a kids\' day. One click chooses 1st, 2nd or 3rd place: a gold, silver or bronze medal and chain with a red number and rim. You can change the number, a name in two lines of up to 16 characters or your own picture, and the colours and the size of the motif too. The plate comes in seven shapes: circle, star, hexagon, octagon, shield, a rosette with a scalloped edge and a heart, 40 to 120 mm wide, 60 mm to begin with.',
-        'The motif is flush to begin with: level with the plate and printed against the bed, so it comes out as smooth as the plate. The two colours lie side by side in the same layers; a printer with a spool changer prints them in one plate. The other choice is a raised motif that stands out 0.6 mm and changes colour by height. The 2 mm rim in the motif\'s colour can be switched off. A chain is printed next to the medal: 40 links to begin with, round 4 mm bars that snap into one another. Forty links make a chain of about 88 cm, and with a 60 mm medal they fit one bed of 220 × 220 mm.',
+        'The tool makes a medal for the winners of a children’s race, a tournament, a school contest or a kids’ day. With one click you choose 1st, 2nd or 3rd place: a gold, silver or bronze medal and chain with a red numeral and rim. The number, a name in two lines of 16 characters or your own picture can be changed, as can the colours and the size of the motif. The plate has seven shapes: a circle, a star, a hexagon, an octagon, a shield, a rosette with a scalloped edge and a heart, 40 to 120 mm wide, 60 mm by default. By default the motif lies flush with the plate and prints against the bed, so the face is smooth; the other option is a motif raised by 0.6 mm. Next to the medal prints the chain: 40 links by default with a round 4 mm section that snap into each other, about 88 cm in all.',
+        'An example from the production calculator (22 October 2026, PLA+): a round gold 60 mm medal with a red flush numeral 1 and a chain of 40 links takes 195 × 177 mm on the bed, weighs 41 g, prints in 1 h 42 min and costs 130 CZK (about 5 EUR) from us without delivery (calculation /c/naze69mzmy0h). It is our most often ordered tool: 31 calculations and 9 paid orders in 90 days, mostly sets for races. A flush motif is printed by a printer with a spool changer on one bed, a raised one by any printer with one filament change; the slicer project and the STL are free to download, no sign-up.',
     ],
     'steps' => [
-        ['name' => 'Choose the place', 'text' => '1st, 2nd or 3rd place: a gold, silver or bronze medal and chain, a red number and rim. You can still change the number, a name, a picture and the colours.'],
-        ['name' => 'Pick the motif, shape and size', 'text' => 'A flush or a raised motif; its size as a share of the width; a rim or none. The shape: circle, star, hexagon, octagon, shield, rosette or heart, 40 to 120 mm wide.'],
-        ['name' => 'Set the length of the chain', 'text' => 'From 0 to 80 links, 40 to begin with. Under the preview you read how many links fit the bed and how long a chain they make.'],
-        ['name' => 'Order the print or download', 'text' => 'Next to the preview you see the dimensions; the exact price is shown by the calculator after "Continue". The model and the slicer project download for free, without signing up.'],
+        ['name' => 'Choose the place', 'text' => '1st, 2nd or 3rd place: a gold, silver or bronze medal and chain, a red numeral and rim. You can still change the number, the name, the picture and the colours.'],
+        ['name' => 'Pick the motif, the shape and the size', 'text' => 'A flush or a raised motif; the size of the motif as a share of the diameter; a rim or none. The shape a circle, a star, a hexagon, an octagon, a shield, a rosette or a heart, 40 to 120 mm wide.'],
+        ['name' => 'Set the length of the chain', 'text' => 'The number of links from 0 to 80, 40 by default. Under the preview you read how many links fit the bed and how long a chain they make.'],
+        ['name' => 'Order the print or download', 'text' => 'Next to the preview you see the dimensions; the exact price shows in the calculation after "Continue". The model and the slicer project are free to download, no sign-up.'],
     ],
     'faq' => [
-        ['q' => 'What is the difference between a flush and a raised motif?', 'a' => 'A flush motif lies in the bottom three layers (0.6 mm) beside the plate and is printed against the bed: the face of the medal is smooth, the motif level with the plate. The printer switches between two spools in the same layers, so we print it in one plate on a printer with a spool changer. A raised motif stands 0.6 mm out of the plate, and the printer changes filament once, at the height where the motif starts.'],
-        ['q' => 'What colours do the places have?', 'a' => '1st place gold PLA Silk, 2nd place silver PLA Silk, 3rd place bronze (metallic when we have it loaded, otherwise copper PLA Silk). The medal and the chain are in the metal colour, the number and the rim red. When ordering you choose from the spools loaded in the printers right now.'],
-        ['q' => 'How long a chain do I need?', 'a' => 'For a child 60 to 70 cm will do, that is 28 to 32 links; for an adult 80 to 90 cm, that is 36 to 40 links. The chain goes over the head, it has no clasp.'],
-        ['q' => 'How do the links join?', 'a' => 'Each link is an oval of 30 × 18 mm with a round 4 mm bar and a gap in the middle of a long side. The gap is a little under half a millimetre narrower than the link, so the neighbour snaps in. Underneath, the link stands on a narrow flat and the rounding starts at 45°, so it prints without supports.'],
-        ['q' => 'Does it all fit one bed?', 'a' => 'Yes. A 60 mm medal with forty links takes 195 × 176 mm, and even a 120 mm medal with forty links fits a bed of 220 × 220 mm. If you ask for more links than fit, the tool prints as many as fit and says so.'],
-        ['q' => 'Is the chain safe for small children?', 'a' => 'It is made of hard plastic and does not open by itself when pulled, so it is not for the necks of children under three nor for climbing frames without supervision. For the youngest put the medal on a ribbon: set the number of links to zero.'],
+        ['q' => 'What is the difference between a flush and a raised motif?', 'a' => 'A flush motif lies in the bottom three layers (0.6 mm) next to the plate and prints against the bed: the face of the medal is smooth and the motif is level with the plate. The printer alternates two spools in the same layers, so we print it on one bed on a printer with a changer. A raised motif stands 0.6 mm above the plate and the printer changes the filament once at the height where the motif begins.'],
+        ['q' => 'Which colours do the places have?', 'a' => '1st place gold PLA Silk, 2nd place silver PLA Silk, 3rd place bronze (metallic when we have it loaded, otherwise copper PLA Silk). The medal and the chain are in the metal colour, the numeral and the rim red. At the order you pick from the spools in the printers right now.'],
+        ['q' => 'How long a chain do I need?', 'a' => 'For a child 60 to 70 cm, that is 28 to 32 links; for an adult 80 to 90 cm, that is 36 to 40 links. The chain goes over the head, it has no clasp.'],
+        ['q' => 'How do the links join?', 'a' => 'Every link is a 30 × 18 mm oval with a round 4 mm section and a gap in the middle of the long side. The gap is just under half a millimetre narrower than the link, so the neighbour snaps into it. At the bottom the link has a narrow flat it lies on, and the rounding starts at 45°, so it prints without supports.'],
+        ['q' => 'Does it fit one bed?', 'a' => 'Yes. A 60 mm medal with forty links takes 195 × 177 mm, and even a 120 mm medal with forty links fits a 220 × 220 mm bed. If you want more links than fit, the tool prints as many as fit and says so.'],
+        ['q' => 'Is the chain safe for small children?', 'a' => 'It is hard plastic and does not open by itself when pulled, so it does not belong round the neck of a child under three or on climbing frames without supervision. For the smallest put the medal on a ribbon: set the number of links to zero.'],
     ],
     'examples' => [
-        '1st place: a round 60 mm gold medal with a red one and rim level with the plate, and a chain of 40 links.',
-        '2nd place: a 60 mm silver shield with a red two and 40 links.',
-        '3rd place: a 60 mm bronze rosette with a scalloped edge, a red three and 40 links.',
+        '1st place: a round gold 60 mm medal with a red numeral 1 and a rim flush with the plate and a chain of 40 links: 41 g, 1 h 42 min, 130 CZK.',
+        '2nd place: a silver 60 mm shield with a red 2 and 40 links.',
+        '3rd place: a bronze rosette with a scalloped edge, 60 mm, a red 3 and 40 links.',
     ],
 ];

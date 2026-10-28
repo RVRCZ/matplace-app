@@ -384,4 +384,37 @@ return [
             ['t' => 'A gift with a logo', 'text' => 'A logo from an SVG as a silhouette on a circle in the company colour, up to four colours in one print.'],
         ],
     ],
+
+    // batch B (docs/AP.md §9): medal, vase (the box has its blocks from AH.md §11)
+    'medallion' => [
+        'order' => [
+            ['q' => 'What does a set of medals for a race cost?', 'farm' => true, 'a' => 'A 60 mm medal with a chain of 40 links costs 130 CZK (PLA+, without delivery, calculation of 22 October 2026). For 1st to 3rd place you make three designs, each with its own calculation, and enter the number of pieces of one place there; you see the price of the whole set before you order anything.'],
+            ['q' => 'How do I hang the medal without the chain?', 'a' => 'Set the number of links to zero: the medal has an eyelet at the top with a 6 mm hole that takes a ribbon up to 15 mm or a cord. The chain of links prints only when you want it.'],
+            ['q' => 'How long do printing and delivery take?', 'farm' => true, 'a' => 'A 60 mm medal with a chain prints in 1 h 42 min, so a set for three places keeps a printer busy for half a day. We dispatch on the day the print ends, on working days, and Packeta usually delivers within 1 to 2 working days in the Czech Republic (to a pickup point :cz_point); for a race order at least a week ahead.'],
+            ['q' => 'How do I print the medal at home?', 'a' => 'A flush motif alternates two spools in the same layers, which needs a printer with a changer (AMS, MMU, ACE). Without a changer choose the raised motif: the project has one filament change at the height of the motif. The chain prints flat without supports; in PLA Silk it looks metallic.'],
+            ['q' => 'Can I put a club logo or a name on the medal?', 'a' => 'Yes. Instead of the numeral you type a name in two lines of 16 characters, or upload a picture, of which a one-colour silhouette remains; you pick the plate shape from seven. Enlarge a logo with fine detail with the motif at 60 to 70 % of the diameter.'],
+            ['q' => 'Do I need an account?', 'a' => 'Not for the design or the download. You need one only when you have the medals printed by us; that is paid from credit topped up by card.'],
+        ],
+        'who' => [
+            ['t' => 'A children’s race or tournament', 'text' => 'A set for 1st to 3rd place with chains of 28 to 32 links for children, every medal 130 CZK.'],
+            ['t' => 'A school contest or a kids’ day', 'text' => 'A 60 mm medal with a name or a picture on a ribbon, without a chain, for every participant.'],
+            ['t' => 'A company tournament', 'text' => 'An 80 mm shield or rosette with the company logo and a chain of 40 links, gold PLA Silk.'],
+        ],
+    ],
+
+    'vase' => [
+        'order' => [
+            ['q' => 'How much does a vase cost from you?', 'farm' => true, 'a' => 'A smooth 160 mm vase 190 CZK, a 180 mm spiral one 280 CZK, a ribbed 120 mm pot cover 260 CZK (PLA+, without delivery, calculation of 18 October 2026). The calculation shows the price of your vase before you order anything; grams and minutes decide, for spirals mainly the minutes.'],
+            ['q' => 'Which filament for a vase?', 'a' => 'For spiral and ribbed vases glossy PLA Silk, on which the ribs play with the light; for smooth ones a matte filament that hides the layers. For a pot cover, which gets wet, choose PETG. You pick the colour from the spools we have in stock right now.'],
+            ['q' => 'How long do printing and delivery take?', 'farm' => true, 'a' => 'A smooth 160 mm vase prints in under 2 hours, a 180 mm spiral one in 5 hours. We dispatch on the day the print ends, on working days, and Packeta usually delivers within 1 to 2 working days in the Czech Republic (to a pickup point :cz_point).'],
+            ['q' => 'How do I print the vase at home?', 'a' => 'Upright, without supports; the downloaded project has the wall and the bottom as designed. The STL is a solid body, so you can switch your slicer to vase mode with a single wall, which prints faster and quieter but holds water worse. Print tall vases with a brim so that they do not come off the bed.'],
+            ['q' => 'How do I measure a pot for a cover?', 'a' => 'Measure the outer diameter of the pot at the top rim and its height, add 5 to 10 mm of play to the diameter and enter it as the top diameter of the cover; the bottom diameter a little smaller to follow the shape of the pot. The saucer is computed by itself.'],
+            ['q' => 'Do I need an account?', 'a' => 'Not for the design or the download. You need one only when you have the vase printed by us; that is paid from credit topped up by card.'],
+        ],
+        'who' => [
+            ['t' => 'Dried flowers for the table', 'text' => 'A 180 mm spiral vase with a narrow neck in PLA Silk; for dried flowers it need not hold water.'],
+            ['t' => 'A pot cover for the flat', 'text' => 'A ribbed 120 mm cover with drainage and a saucer in PETG, the diameter of the pot plus 5 mm.'],
+            ['t' => 'A set of three vases', 'text' => 'Smooth vases of 120, 160 and 200 mm in the same shape and one colour for a shelf or as a gift.'],
+        ],
+    ],
 ];

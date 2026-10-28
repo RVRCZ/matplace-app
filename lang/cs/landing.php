@@ -385,4 +385,37 @@ return [
             ['t' => 'Dárek s logem', 'text' => 'Logo z SVG jako silueta na kruhu v barvě firmy, až čtyři barvy v jednom tisku.'],
         ],
     ],
+
+    // dávka B (docs/AP.md §9): medaile, váza (krabička má bloky z AH.md §11)
+    'medallion' => [
+        'order' => [
+            ['q' => 'Kolik stojí sada medailí pro závod?', 'farm' => true, 'a' => 'Medaile 60 mm s řetězem ze 40 článků stojí 130 Kč (PLA+, bez dopravy, kalkulace z 22. 10. 2026). Pro 1. až 3. místo uděláte tři návrhy, každý má vlastní kalkulaci, a počet kusů jednoho místa zadáte v ní; cenu celé sady vidíte dřív, než cokoli objednáte.'],
+            ['q' => 'Jak medaili pověsit bez řetězu?', 'a' => 'Nastavte počet článků na nulu: medaile má nahoře očko s otvorem 6 mm, kterým projde stužka do 15 mm nebo šňůrka. Řetěz z článků se tiskne jen tehdy, když ho chcete.'],
+            ['q' => 'Jak dlouho trvá tisk a doručení?', 'farm' => true, 'a' => 'Medaile 60 mm s řetězem se tiskne 1 h 42 min, sada pro tři místa tedy zabere tiskárnu na půl dne. Odesíláme v den, kdy tisk skončí, v pracovní dny, a Zásilkovna v Česku obvykle doručí do 1 až 2 pracovních dnů (na výdejní místo :cz_point); na závod objednejte aspoň týden předem.'],
+            ['q' => 'Jak medaili tisknout doma?', 'a' => 'Zarovnaný motiv střídá dvě cívky v týchž vrstvách, na to je potřeba tiskárna s měničem (AMS, MMU, ACE). Bez měniče zvolte vystouplý motiv: projekt má jednu výměnu filamentu ve výšce motivu. Řetěz se tiskne naplocho bez podpěr; z PLA Silk vypadá kovově.'],
+            ['q' => 'Můžu na medaili dát logo klubu nebo jméno?', 'a' => 'Ano. Místo číslice napíšete jméno do dvou řádků po 16 znacích, nebo nahrajete obrázek, ze kterého zůstane silueta v jedné barvě; tvar destičky vyberete ze sedmi. Logo s drobnými detaily zvětšete motivem na 60 až 70 % průměru.'],
+            ['q' => 'Potřebuji účet?', 'a' => 'Na návrh a stažení ne. Účet potřebujete, až když si medaile necháte vytisknout u nás; platí se z kreditu dobitého kartou.'],
+        ],
+        'who' => [
+            ['t' => 'Dětský závod a turnaj', 'text' => 'Sada pro 1. až 3. místo s řetězy 28 až 32 článků pro děti, každá medaile 130 Kč.'],
+            ['t' => 'Školní soutěž a dětský den', 'text' => 'Medaile 60 mm se jménem nebo obrázkem na stužce, bez řetězu, pro každého účastníka.'],
+            ['t' => 'Firemní turnaj', 'text' => 'Štít nebo rozeta 80 mm s logem firmy a řetězem 40 článků, zlatá PLA Silk.'],
+        ],
+    ],
+
+    'vase' => [
+        'order' => [
+            ['q' => 'Kolik stojí váza u vás?', 'farm' => true, 'a' => 'Hladká váza 160 mm 190 Kč, spirálová 180 mm 280 Kč, žebrovaný obal na květináč 120 mm 260 Kč (PLA+, bez dopravy, kalkulace z 18. 10. 2026). Cenu vaší vázy ukáže kalkulace dřív, než cokoli objednáte; rozhodují gramy a minuty, u spirál hlavně minuty.'],
+            ['q' => 'Jaký filament na vázu?', 'a' => 'Na spirálové a žebrované vázy lesklé PLA Silk, na kterém žebra hrají světlem; na hladké matný filament, který skryje vrstvy. Obal na květináč, který bývá mokrý, zvolte z PETG. Barvu vyberete z cívek, které máme právě skladem.'],
+            ['q' => 'Jak dlouho trvá tisk a doručení?', 'farm' => true, 'a' => 'Hladká váza 160 mm se tiskne necelé 2 hodiny, spirálová 180 mm 5 hodin. Odesíláme v den, kdy tisk skončí, v pracovní dny, a Zásilkovna v Česku obvykle doručí do 1 až 2 pracovních dnů (na výdejní místo :cz_point).'],
+            ['q' => 'Jak vázu tisknout doma?', 'a' => 'Nastojato, bez podpěr; stažený projekt má stěnu a dno podle návrhu. STL je plné těleso, takže ho můžete ve sliceru přepnout do vázového režimu jednou stěnou, tisk je pak rychlejší a tišší, ale hůř drží vodu. Vysoké vázy tiskněte s límcem, aby se od podložky neodlepily.'],
+            ['q' => 'Jak změřit květináč pro obal?', 'a' => 'Změřte vnější průměr květináče u horního okraje a jeho výšku, k průměru přidejte 5 až 10 mm na vůli a zadejte ho jako horní průměr obalu; spodní průměr o něco menší podle tvaru květináče. Podmiska se dopočítá sama.'],
+            ['q' => 'Potřebuji účet?', 'a' => 'Na návrh a stažení ne. Účet potřebujete, až když si vázu necháte vytisknout u nás; platí se z kreditu dobitého kartou.'],
+        ],
+        'who' => [
+            ['t' => 'Sušené květiny na stůl', 'text' => 'Spirálová váza 180 mm s úzkým hrdlem z PLA Silk, na sušené květiny nemusí držet vodu.'],
+            ['t' => 'Obal na květináč do bytu', 'text' => 'Žebrovaný obal 120 mm s drenáží a podmiskou z PETG, průměr podle květináče plus 5 mm.'],
+            ['t' => 'Sada tří váz', 'text' => 'Hladké vázy 120, 160 a 200 mm stejného tvaru v jedné barvě na poličku nebo jako dárek.'],
+        ],
+    ],
 ];

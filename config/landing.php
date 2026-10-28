@@ -35,5 +35,8 @@ return [
         'phone_stand' => ['related' => ['holder', 'cable_holder', 'box'], 'blog' => ['stojanek-na-telefon-na-miru', 'cena-3d-tisku-z-modelu']],
         'sign' => ['related' => ['nameplate', 'keychain', 'name_letter'], 'blog' => ['cedulka-jmenovka-a-klicenka-se-jmenem', 'jmenovky-na-darky-a-vykrajovatka-vanocni-dilna']],
         'keychain' => ['related' => ['charm', 'sign', 'nameplate'], 'blog' => ['klicenka-a-privesek-z-obrazku', 'cedulka-jmenovka-a-klicenka-se-jmenem']],
+        // batch B (docs/AP.md §9); the box keeps its entry above
+        'medallion' => ['related' => ['badge', 'sign', 'keychain'], 'blog' => ['co-lide-tisknou-nejcasteji-cisla-z-farmy', 'cedulka-jmenovka-a-klicenka-se-jmenem']],
+        'vase' => ['related' => ['holder', 'organizer', 'hollow'], 'blog' => ['vaza-a-obal-na-kvetinac-na-miru', 'pla-vs-petg-vs-asa-jaky-material-vybrat']],
     ],
 ];

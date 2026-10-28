@@ -1,12 +1,14 @@
 <?php
 
+// Stránka pro dotaz „medaile na míru 3d tisk“ (docs/AP.md §9). 'heading' = H1 stránky, 'h1' = nadpis obsahu pod nástrojem.
 return [
-    'title' => 'Medaile pro vítěze s řetězem: 1., 2. a 3. místo',
-    'description' => 'Zlatá, stříbrná nebo bronzová medaile pro vítěze s červenou číslicí v rovině s plackou a řetězem ze 40 článků. Vytiskneme ji, nebo model stáhnete.',
-    'h1' => 'Medaile pro vítěze s řetězem: zlatá, stříbrná a bronzová',
+    'title' => 'Medaile na míru k 3D tisku: zlatá, stříbrná, bronzová',
+    'heading' => 'Medaile na míru k 3D tisku s řetězem',
+    'description' => 'Zlatá, stříbrná nebo bronzová medaile pro 1., 2. a 3. místo s číslicí nebo jménem a řetězem ze 40 článků. Vytiskneme ji, nebo model stáhnete zdarma.',
+    'h1' => 'Jak medaile vzniká, co se dá změnit a kolik stojí s řetězem',
     'intro' => [
-        'Nástroj vytvoří medaili pro vítěze dětského závodu, turnaje, školní soutěže nebo dětského dne. Jedním klepnutím zvolíte 1., 2. nebo 3. místo: zlatou, stříbrnou nebo bronzovou medaili a řetěz s červenou číslicí a lemem. Číslo, jméno do dvou řádků po 16 znacích nebo vlastní obrázek můžete změnit, stejně jako barvy a velikost motivu. Destička má sedm tvarů: kruh, hvězdu, šestiúhelník, osmiúhelník, štít, rozetu s vroubkovaným okrajem a srdce, široká je 40 až 120 mm, výchozí 60 mm.',
-        'Motiv je ve výchozím stavu zarovnaný: leží v rovině s plackou, tiskne se k podložce, a proto vyjde hladký jako placka. Dvě barvy jsou v týchž vrstvách vedle sebe, tiskne je tiskárna s měničem cívek v jedné podložce. Druhá možnost je vystouplý motiv, který vystupuje 0,6 mm a mění barvu po výšce. Lem 2 mm v barvě motivu lze vypnout. Vedle medaile se vytiskne řetěz: výchozích 40 článků s kulatým průřezem 4 mm, které do sebe zacvaknete. Čtyřicet článků dá řetěz kolem 88 cm a s medailí 60 mm se vejdou na jednu podložku 220 × 220 mm.',
+        'Nástroj vytvoří medaili pro vítěze dětského závodu, turnaje, školní soutěže nebo dětského dne. Jedním klepnutím zvolíte 1., 2. nebo 3. místo: zlatou, stříbrnou nebo bronzovou medaili a řetěz s červenou číslicí a lemem. Číslo, jméno do dvou řádků po 16 znacích nebo vlastní obrázek můžete změnit, stejně jako barvy a velikost motivu. Destička má sedm tvarů: kruh, hvězdu, šestiúhelník, osmiúhelník, štít, rozetu s vroubkovaným okrajem a srdce, široká je 40 až 120 mm, výchozí 60 mm. Motiv leží ve výchozím stavu v rovině s plackou a tiskne se k podložce, takže líc je hladký; druhá možnost je motiv vystouplý o 0,6 mm. Vedle medaile se vytiskne řetěz: výchozích 40 článků s kulatým průřezem 4 mm, které do sebe zacvaknete, dohromady kolem 88 cm.',
+        'Příklad z kalkulace na produkci (22. 10. 2026, PLA+): zlatá kulatá medaile 60 mm s červenou jedničkou v rovině s plackou a řetězem ze 40 článků zabere na podložce 195 × 177 mm, má 41 g, tiskne se 1 h 42 min a stojí u nás 130 Kč bez dopravy (kalkulace /c/naze69mzmy0h). Je to náš nejčastěji objednávaný nástroj: za 90 dní 31 kalkulací a 9 zaplacených zakázek, většinou sady pro závody. Zarovnaný motiv tiskne tiskárna s měničem cívek v jedné podložce, vystouplý zvládne každá tiskárna jednou výměnou filamentu; projekt pro slicer i STL stáhnete zdarma a bez registrace.',
     ],
     'steps' => [
         ['name' => 'Zvolte místo', 'text' => '1. místo, 2. místo, nebo 3. místo: zlatá, stříbrná nebo bronzová medaile a řetěz, červená číslice a lem. Číslo, jméno, obrázek i barvy dál měníte.'],
@@ -19,11 +21,11 @@ return [
         ['q' => 'Jaké barvy mají jednotlivá místa?', 'a' => '1. místo zlatá PLA Silk, 2. místo stříbrná PLA Silk, 3. místo bronzová (metalická, když ji máme založenou, jinak měděná PLA Silk). Medaile i řetěz jsou v kovové barvě, číslice a lem červené. Při objednávce vybíráte z cívek, které jsou právě v tiskárnách.'],
         ['q' => 'Jak dlouhý řetěz potřebuju?', 'a' => 'Pro dítě stačí 60 až 70 cm, tedy 28 až 32 článků; pro dospělého 80 až 90 cm, tedy 36 až 40 článků. Řetěz se přetahuje přes hlavu, nemá zapínání.'],
         ['q' => 'Jak se články spojují?', 'a' => 'Každý článek je ovál 30 × 18 mm s kulatým průřezem 4 mm a mezerou uprostřed delší strany. Mezera je o necelý půlmilimetr užší než článek, takže soused do ní zacvakne. Dole má článek úzkou plošku, na které leží, a zaoblení začíná pod úhlem 45°, takže se tiskne bez podpěr.'],
-        ['q' => 'Vejde se to na jednu podložku?', 'a' => 'Ano. Medaile 60 mm se čtyřiceti články zabere 195 × 176 mm, i medaile 120 mm se čtyřiceti články se vejde na podložku 220 × 220 mm. Kdybyste chtěli víc článků, než se vejde, nástroj vytiskne tolik, kolik se vejde, a řekne to.'],
+        ['q' => 'Vejde se to na jednu podložku?', 'a' => 'Ano. Medaile 60 mm se čtyřiceti články zabere 195 × 177 mm, i medaile 120 mm se čtyřiceti články se vejde na podložku 220 × 220 mm. Kdybyste chtěli víc článků, než se vejde, nástroj vytiskne tolik, kolik se vejde, a řekne to.'],
         ['q' => 'Je řetěz bezpečný pro malé děti?', 'a' => 'Je z tvrdého plastu a při tahu se sám nerozepne, proto nepatří na krk dětem do tří let ani bez dozoru na prolézačky. Pro nejmenší dejte medaili na stužku: počet článků nastavte na nulu.'],
     ],
     'examples' => [
-        '1. místo: zlatá kulatá medaile 60 mm s červenou jedničkou a lemem v rovině s plackou a řetězem ze 40 článků.',
+        '1. místo: zlatá kulatá medaile 60 mm s červenou jedničkou a lemem v rovině s plackou a řetězem ze 40 článků: 41 g, 1 h 42 min, 130 Kč.',
         '2. místo: stříbrný štít 60 mm s červenou dvojkou a 40 články.',
         '3. místo: bronzová rozeta s vroubkovaným okrajem 60 mm, červená trojka a 40 článků.',
     ],
