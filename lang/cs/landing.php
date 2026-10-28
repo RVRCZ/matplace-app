@@ -470,7 +470,7 @@ return [
 
     'lightbox' => [
         'order' => [
-            ['q' => 'Kolik stojí díly u vás?', 'farm' => true, 'a' => 'Nápis OPEN 180 mm, čtyři díly, stojí 180 Kč v jedné barvě (PLA, bez dopravy, kalkulace z 28. 10. 2026). Difuzor v bílé si objednáte jako druhou zakázku z jeho vlastního STL, nebo ho vytisknete doma; cenu vidíte dřív, než cokoli objednáte.'],
+            ['q' => 'Kolik stojí díly u vás?', 'farm' => true, 'a' => 'Nápis OPEN 180 mm, čtyři díly, stojí 180 Kč (PLA, bez dopravy, kalkulace z 28. 10. 2026). Barvy dílů vyberete při objednávce v jedné zakázce, tmavé tělo a bílý difuzor; cenu vidíte dřív, než cokoli objednáte.'],
             ['q' => 'Co k nápisu koupit?', 'a' => 'LED pásek na 5 V široký 8 nebo 10 mm v délce, kterou nástroj vypíše pod náhledem, USB kabel s napájením (stačí nabíječka telefonu) a oboustrannou pásku nebo lepidlo. Pásek s dálkovým ovladačem volte do rozměru 18 × 8 mm.'],
             ['q' => 'Jak dlouho trvá tisk a doručení?', 'farm' => true, 'a' => 'Čtyři díly nápisu 180 mm se tisknou 2 h 17 min. Odesíláme v den, kdy tisk skončí, v pracovní dny, a Zásilkovna v Česku obvykle doručí do 1 až 2 pracovních dnů (na výdejní místo :cz_point).'],
             ['q' => 'Jak nápis tisknout doma?', 'a' => 'Díly se tisknou naplocho; stažený projekt má nastavení z kalkulace. Tělo, masku a zadní kryt z tmavého PLA nebo PETG, difuzor z bílého nebo průsvitného PLA; masku s můstky uvnitř písmen tiskněte pomaleji, aby můstky drželi.'],
