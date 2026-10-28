@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Support\BlogEmbeds;
 use App\Support\Locales;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
@@ -74,7 +75,12 @@ class Post extends Model
     {
         $body = (string) ($this->body[$locale ?? app()->getLocale()] ?? '');
 
-        return $this->format === self::FORMAT_HTML ? $body : Str::markdown($body, ['html_input' => 'strip', 'allow_unsafe_links' => false]);
+        if ($this->format === self::FORMAT_HTML) {
+            return $body;
+        }
+
+        // the lines [video: …] and [calc: …] become a player and a card (App\Support\BlogEmbeds); raw HTML stays stripped
+        return BlogEmbeds::render($body, fn (string $markdown) => Str::markdown($markdown, ['html_input' => 'strip', 'allow_unsafe_links' => false]));
     }
 
     public function coverUrl(): ?string

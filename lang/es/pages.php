@@ -524,4 +524,27 @@ return [
             ],
         ],
     ],
+
+    // la página de entrada local «Impresión 3D Praga» (docs/AP.md §8): solo lo que es cierto hoy (la granja imprime en Praga, Packeta, sin recogida)
+    'praha' => [
+        'title' => 'Impresión 3D en Praga por encargo desde nuestra granja',
+        'h1' => 'Impresión 3D en Praga por encargo',
+        'description' => 'Impresión 3D por encargo desde nuestra granja en Praga: suba un modelo y vea el precio al instante, o cree uno gratis. Envío con Packeta por la UE.',
+        'lead' => 'Imprimimos en nuestra propia granja en Praga y respondemos del resultado. Suba un STL, 3MF, OBJ o STEP y vea el precio y el tiempo de impresión al instante, sin registro. Si no tiene modelo, créelo gratis en el navegador: a partir de una foto, un nombre, una imagen o las medidas de un cajón.',
+        'sections' => [
+            ['h' => 'Qué imprimimos en Praga', 'p' => ['Los pedidos los imprime nuestra propia granja de impresión en Praga en PLA, PETG, ASA y TPU, con capas de 0,2 mm de serie en una cama de 250 × 250 mm; un modelo mayor se divide en piezas con pasadores. Lo que más imprimimos son bustos y figuras a partir de una foto, litofanías, placas QR, organizadores de cajón, mapas 3D de ciudades y regalos con nombre. Abra cualquier herramienta, el modelo está listo en un minuto y no se paga nada hasta que encarga.'], 'tools' => ['figure', 'relief', 'qr', 'organizer', 'map', 'gingerbread', 'nameplate', 'cutter']],
+            ['h' => 'Cuánto cuesta la impresión 3D', 'p' => ['El precio sale del material y del tiempo de impresión y lo ve antes de encargar, IVA incluido; el pedido mínimo es de 99 CZK. Ejemplos de nuestros cálculos reales:'], 'prices' => true, 'li' => ['Indique el número de unidades en el cálculo y vea al instante el precio de toda la serie.', 'En modelos grandes el cálculo muestra primero un rango y, tras el laminador, el precio exacto; el pedido se hace siempre con el exacto.']],
+            ['h' => 'Envío en Praga y Chequia', 'p' => ['Enviamos la impresión terminada el mismo día en que sale de la impresora, en días laborables, con Packeta a un punto de recogida o un buzón de paquetes (:cz_point) o a domicilio (:cz_home). Praga tiene cientos de puntos de recogida y buzones y el paquete suele llegar al día laborable siguiente. La recogida en la granja todavía no se ofrece.'], 'li' => ['A Eslovaquia desde :sk_point, a otros países de la UE desde :eu_point.', 'En cuanto entregamos el paquete, llega un correo con el enlace de seguimiento.']],
+            ['h' => 'Cómo encargar', 'li' => ['Suba un modelo a la calculadora en https://matplace.com, o créelo en una herramienta en https://matplace.com/tools; todavía no se paga nada.', 'Ve al instante el precio con IVA, el tiempo de impresión y una vista 3D, sin registrarse.', 'En el pedido elige el material, un color de las bobinas que tenemos en stock, el número de unidades y el envío; paga con tarjeta solo al final.']],
+            ['h' => 'Quién imprime', 'p' => ['matplace s.r.o., CIF 22499008, Rybná 716/24, 110 00 Praga 1. Los pedidos los imprime nuestra propia granja de impresión en Praga; no los pasamos a nadie. Para empresas imprimimos series pequeñas con factura con IVA, véase https://matplace.com/business. Consultas: info@matplace.com.']],
+        ],
+        'items' => [
+            ['q' => '¿Puedo recoger la impresión en persona en Praga?', 'a' => 'Todavía no. Enviamos con Packeta a un punto de recogida o un buzón de paquetes; en Praga el más cercano suele estar a unos minutos y el paquete llega allí al día laborable siguiente al envío. Cuando abramos la recogida, será otra opción en el pedido.'],
+            ['q' => '¿Cuándo recibo la impresión?', 'a' => 'Ve el tiempo de impresión de cada modelo de antemano; la impresión empieza en cuanto hay una impresora libre. Enviamos el mismo día en que termina, en días laborables, y Packeta suele entregar en 1 a 2 días laborables en Chequia. Lo que termina el fin de semana sale el lunes.'],
+            ['q' => '¿Necesito un modelo propio?', 'a' => 'No. Suba un modelo (STL, 3MF, OBJ, STEP) o créelo gratis en el navegador: un busto a partir de una foto, una litofanía, una placa QR, un organizador a la medida de su cajón, un mapa 3D de una ciudad o un regalo con nombre. También puede descargar el modelo e imprimirlo en casa.'],
+            ['q' => '¿Con qué materiales imprimen?', 'a' => 'PLA, PETG, ASA y TPU; la comparación de materiales del cálculo dice cuál conviene a su modelo. El color lo elige entre las bobinas cargadas ahora mismo en las impresoras.'],
+            ['q' => '¿Imprimen también para empresas?', 'a' => 'Sí, series pequeñas de placas QR, logotipos, placas con nombre y llaveros con factura con IVA; indique el número de unidades en el cálculo y vea al instante el precio de la serie. Para cientos de unidades escriba a info@matplace.com.'],
+            ['q' => '¿Y si la impresión no me gusta o tiene un defecto?', 'a' => 'Antes de encargar ve la vista 3D, las medidas, el tiempo de impresión y el precio. La impresión se hace por encargo, así que no se puede devolver sin motivo en 14 días; un defecto (grietas, capas que faltan, un tamaño distinto del encargado) se reclama según el procedimiento de reclamaciones.'],
+        ],
+    ],
 ];

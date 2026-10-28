@@ -524,4 +524,27 @@ return [
             ],
         ],
     ],
+
+    // the local entry page "3D tisk Praha" (docs/AP.md §8): only what is true today (the farm prints in Prague, Packeta, no pickup yet)
+    'praha' => [
+        'title' => '3D tisk Praha: tisk na zakázku z vlastní farmy, cena hned',
+        'h1' => '3D tisk v Praze na zakázku',
+        'description' => '3D tisk na zakázku z tiskové farmy v Praze: nahrajete model a cenu vidíte hned, nebo ho vytvoříte zdarma v prohlížeči. Zásilkovnou po Česku do 2 dnů.',
+        'lead' => 'Tiskneme na vlastní farmě v Praze a za výsledek odpovídáme my. Nahrajete STL, 3MF, OBJ nebo STEP a cenu i dobu tisku vidíte hned, bez registrace. Kdo model nemá, vytvoří ho zdarma v prohlížeči: z fotky, ze jména, z obrázku nebo z rozměrů zásuvky.',
+        'sections' => [
+            ['h' => 'Co v Praze tiskneme', 'p' => ['Zakázky tiskne naše vlastní tisková farma v Praze z PLA, PETG, ASA a TPU, standardně vrstvou 0,2 mm na podložku 250 × 250 mm; větší model rozdělíme na díly s kolíky. Nejčastěji tiskneme busty a figurky z fotky, litofanie, QR cedulky, organizéry do šuplíku, 3D mapy měst a dárky se jménem. Každý nástroj otevřete, model vznikne za minutu a nic se neplatí, dokud neobjednáte.'], 'tools' => ['figure', 'relief', 'qr', 'organizer', 'map', 'gingerbread', 'nameplate', 'cutter']],
+            ['h' => 'Kolik stojí 3D tisk', 'p' => ['Cena se počítá z materiálu a doby tisku a vidíte ji před objednáním, včetně DPH; nejnižší cena zakázky je 99 Kč. Příklady z našich skutečných kalkulací:'], 'prices' => true, 'li' => ['Počet kusů zadáte v kalkulaci a hned vidíte cenu celé série.', 'U velkých modelů ukáže kalkulace nejdřív rozpětí a po řezu sliceru přesnou cenu; objednává se vždy z přesné.']],
+            ['h' => 'Doručení po Praze a Česku', 'p' => ['Hotový výtisk odesíláme v den dotisknutí, v pracovní dny, Zásilkovnou na výdejní místo nebo do boxu (:cz_point) nebo domů (:cz_home). V Praze jsou výdejních míst a boxů stovky a zásilka tam obvykle dorazí další pracovní den. Osobní odběr na farmě zatím nenabízíme.'], 'li' => ['Na Slovensko od :sk_point, do dalších zemí EU od :eu_point.', 'Jakmile balík předáme, přijde e-mail s odkazem na sledování zásilky.']],
+            ['h' => 'Jak objednat', 'li' => ['Nahrajte model do kalkulace na https://matplace.com, nebo ho vytvořte v některém z nástrojů na https://matplace.com/tools; zatím nic neplatíte.', 'Hned vidíte cenu včetně DPH, dobu tisku a 3D náhled, bez registrace.', 'V objednávce vyberete materiál, barvu z cívek, které máme právě skladem, počet kusů a doručení; zaplatíte kartou až na konci.']],
+            ['h' => 'Kdo tiskne', 'p' => ['matplace s.r.o., IČO 22499008, Rybná 716/24, 110 00 Praha 1. Zakázky tiskne naše vlastní tisková farma v Praze, nikomu je nepředáváme. Firmám tiskneme malé série s dokladem s DPH, viz https://matplace.com/business. Dotazy: info@matplace.com.']],
+        ],
+        'items' => [
+            ['q' => 'Můžu si výtisk vyzvednout osobně v Praze?', 'a' => 'Zatím ne. Posíláme Zásilkovnou na výdejní místo nebo do boxu; v Praze bývá nejbližší pár minut od vás a zásilka tam obvykle dorazí další pracovní den po odeslání. Až osobní odběr otevřeme, bude v objednávce jako další volba.'],
+            ['q' => 'Jak rychle výtisk dostanu?', 'a' => 'Dobu tisku vidíte u každého modelu předem; tisk začne, jakmile je tiskárna volná. Odesíláme v den dotisknutí, v pracovní dny, a Zásilkovna v Česku obvykle doručí do 1 až 2 pracovních dnů. Co se dotiskne o víkendu, odejde v pondělí.'],
+            ['q' => 'Potřebuji vlastní model?', 'a' => 'Ne. Model nahrajete (STL, 3MF, OBJ, STEP), nebo ho vytvoříte zdarma v prohlížeči: bustu z fotky, litofanii, QR cedulku, organizér podle rozměrů zásuvky, 3D mapu města nebo dárek se jménem. Model si můžete i stáhnout a vytisknout doma.'],
+            ['q' => 'Z jakého materiálu tisknete?', 'a' => 'Z PLA, PETG, ASA a TPU; co se pro váš model hodí, ukáže porovnání materiálů v kalkulaci. Barvu vyberete z cívek, které máme právě založené v tiskárnách.'],
+            ['q' => 'Tisknete i pro firmy?', 'a' => 'Ano, malé série QR cedulek, log, jmenovek a klíčenek s dokladem s DPH; počet kusů zadáte v kalkulaci a cenu série vidíte hned. Na stovky kusů napište na info@matplace.com.'],
+            ['q' => 'Co když se mi výtisk nelíbí nebo je vadný?', 'a' => 'Před objednáním vidíte 3D náhled, rozměry, dobu tisku i cenu. Výtisk vyrábíme na zakázku, proto ho nejde bez důvodu vrátit do 14 dnů; vadu (praskliny, chybějící vrstvy, jiný rozměr, než jste objednali) reklamujete podle reklamačního řádu.'],
+        ],
+    ],
 ];

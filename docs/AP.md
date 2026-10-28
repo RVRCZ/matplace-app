@@ -387,8 +387,88 @@ a name_letter → 2, gcode → 5, nameplate a topper → 4).
   u 65 ze 400; kvalita standard 390, fine 10; výplň 15 % u 391;
 - výsledná cena: medián 140 Kč, čtvrtiny 120 a 240 Kč, nejvíc 1 750 Kč, 12 % kalkulací na minimu 99 Kč.
 
-### 7.4 Co potřebuji od řídící (článek 6)
+### 7.4 Co je hotové (27. 10. 2026)
 
-Export z produkce (tinker, jen počty, žádná osobní data): kalkulace za posledních 90 dní podle původu souboru
-(`model_files.origin` upload / tool / generation a `origin_ref` = druh nástroje), zaplacené zakázky podle druhu
-nástroje a materiálu, medián gramů a doby tisku zaplacených zakázek, podíl dvoubarevných. Snippet pošlu ve zprávě.
+- **Vložky**: `app/Support/BlogEmbeds.php` (řádek `[video: id|latest]` a `[calc: kód]` → zástupné slovo před
+  Markdownem, výměna odstavce za šablonu po něm; `\s*$` na konci vzoru by snědlo prázdný řádek a slepilo slovo
+  s dalším odstavcem, proto jen mezery), `Post::html()` ho volá, šablony `blog/_video.blade.php` (tmavý rámeček
+  s názvem, nocookie až po kliknutí jako `calculator/_trust`) a `blog/_calc.blade.php` (karta: soubor, rozměry,
+  gramy, doba, cena v Kč z uložených cen, odkaz; bez hotové kalkulace jen odkaz). `tests/Feature/BlogEmbedsTest.php`
+  (3 testy: video nic → rámeček, kalkulace odkaz → karta, cizí HTML zůstává odstraněné).
+- **Články 1 až 5** v `resources/blog/cs/` s `published_at` 3., 6., 10., 13. a 17. 11. 2026 07:00 UTC; každý 650 až
+  750 slov, místo pro fotku, `[video: latest]`, `[calc: …]` (1, 2, 4), blok Co dál. `config/tools.php` `article`:
+  svg_to_stl → 1, gingerbread a name_letter → 2, nameplate a topper → 4, gcode → 5; `config/landing.php` má nové
+  slugy v „Kam dál“ (ukážou se až po vydání). Článek 6 čeká na export (§7.4).
+- Ověřeno: `BlogEmbedsTest|BlogSyncTest` 12 testů OK; lokální `blog:sync` článků 1, 3 a 4 vykreslí 694/743/654 slov
+  bez zástupných slov, s odkazy na kalkulace (lokální databáze kalkulace nemá, na produkci budou karty), bez iframe.
+- Po nasazení: `php artisan blog:sync` na serveru (články vzniknou jako koncepty s budoucím datem a vyjdou samy);
+  `[video: latest]` tam ukáže poslední zveřejněné video farmy.
+
+### 7.5 Článek 6 z exportu řídící (28. 10. 2026)
+
+Řídící dodala `docs/data/co-lide-tisknou-2026-10-27.json` (main 60983f3; jen souhrnné počty; `origin_ref`
+generovaných modelů je náhodný token a do článku nepatří). Článek `co-lide-tisknou-nejcasteji-cisla-z-farmy`
+(20. 11.): 498 kalkulací za 90 dní ve 40 nejčastějších zdrojích (nahrané 191 = 38 %, nástroje 234 = 47 %, generované
+73 = 15 %), pořadí nástrojů (cedulka 33, medaile 31, QR 28, stojánek 17, litofanie 14 = `lithophane`, krabička 13…),
+105 zaplacených zakázek (nahrané 50, nástroje 43, generované 12; medaile 9, stojánek 7, QR 7, víčko 4…), materiály
+PLA 68 + PLA+ 33 = 96 %, PETG 3, ASA 1; `PublicStats`: 67 předaných, 61 za 30 dní, medián 0,5 dne od zaplacení
+k předání, 33 videí. Video litofanie `2GqbDiH_mGg`; v článku o jmenovkách video cedulky `upvCotgDNwo` (obě z řídící).
+Součty nástrojů a generovaných jsem sečetla z exportu; jiná čísla v článku nejsou.
+
+Videa zveřejněná (řídící 28. 10.): 2GqbDiH_mGg litofanie 22. 10., upvCotgDNwo cedulka 19. 10., Fd72RTnqYDE medaile
+15. 10., NDmJZIuyWvM QR 14. 10., auh4D7fI06Q váza 22. 10. Perníček ani ozdoba natočené nejsou.
+
+Poznámka řídící: moje kalkulace na produkci (UA `matplace-n1-seo`) se počítaly jako návštěvník; skript teď posílá
+cookie `mp_test=1` (`Track::TEST_COOKIE`).
+
+## 8. Vstupní stránka „3D tisk Praha“ a Google Business Profile (28. 10. 2026)
+
+Roman (přes řídící 28. 10.): město farmy je Praha (sídlo Rybná 716/24, Praha 1, v Organization JSON‑LD od session 3).
+
+- `/3d-tisk-praha` (`PageController::PAGES` `'praha' => '3d-tisk-praha'`, route `pages.praha`, stejná adresa ve
+  třech jazycích jako u `/business`), texty `lang/{cs,en,es}/pages.php` `praha`: title do 60, description do 155,
+  H1 „3D tisk v Praze na zakázku“, úvod, oddíly Co v Praze tiskneme (karty 8 nástrojů), Kolik stojí (příklady
+  z `site.example_items`), Doručení po Praze a Česku (Zásilkovna :cz_point / :cz_home, boxy, **osobní odběr zatím
+  nenabízíme**), Jak objednat, Kdo tiskne (firma, IČO, adresa, odkaz na /business), 6 otázek (FAQPage). Jen pravda
+  z webu: tiskneme v Praze, PLA/PETG/ASA/TPU, podložka 250 mm, 99 Kč minimum, doklad s DPH; žádná otevírací doba,
+  žádný odběr, žádný telefon. Canonical a hreflang dává layout, sitemapa bere `PAGES` sama.
+- `tests/Feature/PraguePageTest.php`: tři jazyky, délky, H1, karty nástrojů, FAQPage, hreflang, canonical, bez
+  noindex, doplněné ceny dopravy, věta o odběru, ceny v Kč a v eurech, sitemapa.
+- `docs/data/google-business.md`: typ profilu (firma s oblastí působení, adresa skrytá, dokud není odběr), název
+  jen `matplace` (pravidla Googlu), kategorie, popis 651 znaků, odkazy s utm, otevírací doba a telefon na rozhodnutí
+  Romana, služby s cenami z kalkulací, atributy, fotky jen skutečné, příspěvky 1× za 2 týdny.
+
+## 9. Dalších 10 nástrojů (plán 28. 10. 2026)
+
+Řídící 28. 10.: kandidáti phone_stand, box, holder, sign, nameplate (hotový v §6), keychain, vase, stamp, logo,
+lightbox, medallion, puzzle. Fotky výtisků dává na stránky session 3 automaticky (`PublicStats::latestPhotos`), v textech
+je neřeším. K hledanosti (odhad, Search Console stále není) přibyla dvě vlastní čísla z exportu §7.5: kalkulace za
+90 dní a zaplacené zakázky.
+
+| # | nástroj | hlavní dotaz cs | hlavní dotaz en | odhad cs / en | kalkulací / zakázek | dávka |
+|---|---|---|---|---|---|---|
+| 1 | `phone_stand` | stojánek na telefon 3d tisk | phone stand 3d print custom | střední / vysoký | 17 / 7 | A |
+| 2 | `sign` | cedulka se jménem 3d tisk | 3d printed name sign | střední / vysoký | 33 / 3 | A |
+| 3 | `keychain` | klíčenka se jménem 3d tisk | custom keychain 3d print | střední / vysoký | (charm 6) / 2 | A |
+| 4 | `box` | krabička na míru 3d tisk | custom box generator 3d print | střední / střední | 13 / 1 | B |
+| 5 | `medallion` | medaile na míru 3d tisk | custom medal 3d print | střední / střední | 31 / 9 | B |
+| 6 | `vase` | váza 3d tisk | 3d printed vase generator | střední / vysoký | 11 / 3 | B |
+| 7 | `logo` | logo 3d tisk | 3d printed logo sign | střední / vysoký | 4 / 0 | C |
+| 8 | `holder` | držák na zeď na míru 3d tisk | custom wall mount 3d print | nízký / střední | 11 / 1 | C |
+| 9 | `stamp` | razítko na míru 3d tisk | custom stamp 3d print | nízký / střední | 0 / 0 | C |
+| 10 | `lightbox` | světelný nápis 3d tisk | lightbox sign 3d print | nízký / střední | 0 / 0 | C |
+
+Náhradník: `puzzle` („puzzle z fotky 3d tisk“ nízký, en „3d printed puzzle generator“ střední), `cap` (víčko:
+8 kalkulací a 4 zakázky, ale hledanost „víčko na míru“ nízká).
+
+Pořadí: podle hledanosti a podle toho, co lidé opravdu počítají a objednávají (stojánek a medaile jsou nejobjednávanější
+nástroje, cedulka nejpočítanější). Dávky po třech až čtyřech jako dosud, po každé push a zpráva. Čísla, která už máme:
+stojánek klín 80 mm 120 Kč a A‑rám 170 Kč, váza hladká 190 Kč / spirálová 280 Kč / obal 260 Kč, cedulka klíčenka
+99 Kč a „Novákovi 12“ 99 Kč, krabička 99/110 Kč, držák 100/99/99 Kč, klíčenka z obrázku 99 Kč (AK.md §5.5 až §5.7),
+medaile zkušební `/c/naze69mzmy0h` (P.md §8d). Logo, razítko a světelný nápis spočítám na produkci (s `mp_test=1`).
+
+## 10. Komunitní příspěvky (28. 10. 2026)
+
+`docs/data/komunita-prispevky.md`: šest odpovědí cs + en (oprava STL, SVG do STL, G‑kód zpět, vydutit, rozdělit,
+litofanie) jako odpověď pod dotaz, s hranicemi nástroje a jedním odkazem s `utm_source` (facebook / reddit /
+printables), bez ceny tisku u nás. Roman je posílá sám.
