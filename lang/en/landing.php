@@ -530,4 +530,68 @@ return [
             ['t' => 'An office desk', 'text' => 'Four bins in an outer 240 × 120 mm tray for pens, clips and cables; the tray keeps the set together.'],
         ],
     ],
+    // custom cap, plug or cover (docs/AP.md §12, batch E)
+    'cap' => [
+        'order' => [
+            ['q' => 'How much does a cap cost from you?', 'farm' => true, 'a' => 'A cap for a PET bottle costs 99 CZK, the lowest order price, a push-on lid for a 70 mm jar 99 CZK (PLA, without delivery, calculation of 28 October 2026). Several pieces of the same cap go in as the quantity and the price per piece falls.'],
+            ['q' => 'What if I do not know the pitch of the thread?', 'a' => 'Measure the length of ten threads and divide it by ten, or try a preset: PET bottles have 2.7 mm, metric threads the pitch of the M6 to M30 series. For an unknown thread print one piece before ordering more.'],
+            ['q' => 'How long do printing and delivery take?', 'farm' => true, 'a' => 'The PET bottle cap prints in 22 minutes, the jar lid in 39 minutes. We ship on the day the print finishes, on working days, and Packeta in Czechia usually delivers within 1 to 2 working days (to a pick-up point :cz_point).'],
+            ['q' => 'What if the cap does not fit?', 'a' => 'Check that you entered the real size without clearance; the tool adds the clearance. If the part goes on stiffly, add 0.1 mm of clearance, if it is loose, take some off, and order the new piece from the same design.'],
+            ['q' => 'Will the cap last outdoors and in heat?', 'a' => 'For a garden tank, a barrel or a car choose ASA or PETG; PLA softens in the sun and above 55 °C and the thread lets go. Indoors PLA is enough.'],
+            ['q' => 'Do I need an account?', 'a' => 'Not for the design or the download. You need one only when you have the cap printed by us; that is paid from credit topped up by card.'],
+        ],
+        'who' => [
+            ['t' => 'A lost cap of a bottle or a canister', 'text' => 'A screw cap for a 28 mm PET bottle, or your own thread by the measured diameter and pitch, with a sealing lip.'],
+            ['t' => 'End caps for profiles and tubes', 'text' => 'Plugs for furniture tubes and caps for aluminium profiles by the inside size, five or ten at a time.'],
+            ['t' => 'A lid for a jar or a canister', 'text' => 'A push-on lid for a jar with a 70 mm neck with a bed for a liner, from PETG for the pantry.'],
+        ],
+    ],
+    // coaster with a picture (docs/AP.md §12, batch E)
+    'coaster' => [
+        'order' => [
+            ['q' => 'How much does a coaster cost from you?', 'farm' => true, 'a' => 'A round 100 mm coaster costs 99 CZK, the lowest order price, a set of four 170 CZK (PLA, without delivery, calculation of 28 October 2026). The price grows with the thickness and the number of pieces; you see it before you order anything.'],
+            ['q' => 'Which shape and size should I choose?', 'a' => 'For a glass or a mug a circle of 90 to 100 mm is enough, for a pint glass a square of 100 to 110 mm; hexagons fit side by side as a set. A thickness of 4 mm is plenty, 6 mm looks more solid.'],
+            ['q' => 'How long do printing and delivery take?', 'farm' => true, 'a' => 'One coaster prints in 40 minutes, a set of four proportionally longer. We ship on the day the print finishes, on working days, and Packeta in Czechia usually delivers within 1 to 2 working days (to a pick-up point :cz_point).'],
+            ['q' => 'How do I clean the coaster?', 'a' => 'Wipe it with a damp cloth or rinse it in lukewarm water; not in the dishwasher, PLA would warp at 60 °C. The colours are plastic, they neither wash off nor fade.'],
+            ['q' => 'Does it suit a company gift with a logo?', 'a' => 'Yes. Upload the logo as an SVG in one to four colours, pick the shape and the quantity; the price per piece falls with the count. Different motifs in one set are different designs, each ordered on its own.'],
+            ['q' => 'Do I need an account?', 'a' => 'Not for the design or the download. You need one only when you have the coasters printed by us; that is paid from credit topped up by card.'],
+        ],
+        'who' => [
+            ['t' => 'A set for the table or a café', 'text' => 'Four to six 100 mm coasters with the same motif and grooves underneath, PLA.'],
+            ['t' => 'A gift with a photo', 'text' => 'A round coaster with a photo over the whole face, 6 to 8 colours, a bevelled edge.'],
+            ['t' => 'A company logo', 'text' => 'A square coaster with the logo from an SVG in two colours, 20 pieces for the meeting room.'],
+        ],
+    ],
+    // fridge magnet (docs/AP.md §12, batch E)
+    'magnet' => [
+        'order' => [
+            ['q' => 'How much does a magnet cost from you?', 'farm' => true, 'a' => 'The 60 mm paw with a pocket for the magnet costs 99 CZK, the lowest order price (PLA, without delivery, calculation of 28 October 2026). Several pieces of the same design go in as the quantity and the price per piece falls; the magnet is not in the price.'],
+            ['q' => 'Where do I buy the magnets?', 'a' => 'Neodymium disc magnets of Ø 10 × 2 or Ø 12 × 3 mm are sold by hardware stores and online shops in tens; one is enough for a piece up to 60 mm, for 100 mm pick a bigger one such as Ø 20 × 3 mm. Enter the size of the magnet you really have.'],
+            ['q' => 'How long do printing and delivery take?', 'farm' => true, 'a' => 'A 60 mm magnet prints in 14 minutes. We ship on the day the print finishes, on working days, and Packeta in Czechia usually delivers within 1 to 2 working days (to a pick-up point :cz_point).'],
+            ['q' => 'Will it hold paper on the fridge?', 'a' => 'A neodymium Ø 10 × 2 mm magnet in a 60 mm piece holds a few sheets of paper; for a thicker bundle choose Ø 12 × 3 or Ø 15 × 3 mm. On stainless doors without an iron layer a magnet does not hold, test them with an ordinary magnet.'],
+            ['q' => 'Does it suit a gift or a company giveaway?', 'a' => 'Yes: a child’s photo for grandma, a company logo for customers or wedding magnets for the guests; the same design in 20 pieces comes cheaper per piece. Different photos are different designs.'],
+            ['q' => 'Do I need an account?', 'a' => 'Not for the design or the download. You need one only when you have the magnets printed by us; that is paid from credit topped up by card.'],
+        ],
+        'who' => [
+            ['t' => 'A photo on the fridge', 'text' => 'An 80 mm rectangle with a photo over the whole face, 6 to 8 colours, a Ø 12 × 3 mm magnet glued in.'],
+            ['t' => 'Wedding or company magnets', 'text' => 'A logo or names in two colours, 50 mm, 20 to 50 pieces of the same design.'],
+            ['t' => 'A child’s drawing', 'text' => 'A photographed drawing as a magnet following its outline, 60 mm, 4 colours.'],
+        ],
+    ],
+    // earrings from a picture (docs/AP.md §12, batch E)
+    'earrings' => [
+        'order' => [
+            ['q' => 'How much do earrings cost from you?', 'farm' => true, 'a' => 'A pair of 28 mm hearts costs 99 CZK, the lowest order price (PLA, without delivery, calculation of 28 October 2026). Several pairs of the same design go in as the quantity and the price per pair falls; hooks are not in the price.'],
+            ['q' => 'Which hooks and rings should I buy?', 'a' => 'Fish hooks or studs of surgical steel and 4 to 5 mm jump rings from a craft shop. Open the ring sideways with two pliers, thread it through the eyelet and close it; set the eyelet to 2 mm.'],
+            ['q' => 'How long do printing and delivery take?', 'farm' => true, 'a' => 'A pair of earrings prints in 6 minutes. We ship on the day the print finishes, on working days, and Packeta in Czechia usually delivers within 1 to 2 working days (to a pick-up point :cz_point).'],
+            ['q' => 'Does the plastic touch the ear?', 'a' => 'No, only the hook or the stud is in the ear; the plastic part hangs below it. Choose hooks of surgical steel, titanium or silver. PLA contains no nickel.'],
+            ['q' => 'Does it suit a gift or a small series for a market?', 'a' => 'Yes. Enter the same design in ten pairs and the price per pair falls; for the next series just change the colours or the picture. Simple silhouettes in two colours sell well at markets.'],
+            ['q' => 'Do I need an account?', 'a' => 'Not for the design or the download. You need one only when you have the earrings printed by us; that is paid from credit topped up by card.'],
+        ],
+        'who' => [
+            ['t' => 'A birthday gift', 'text' => 'A pair of hearts or stars 28 to 32 mm in two colours, surgical steel hooks bought separately.'],
+            ['t' => 'Initials or a name', 'text' => 'A short text instead of a picture, 25 mm, mirroring off so the text reads.'],
+            ['t' => 'A small series for a market', 'text' => 'Ten pairs of the same silhouette, every pair in another combination of colours from our spools.'],
+        ],
+    ],
 ];

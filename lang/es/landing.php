@@ -530,4 +530,68 @@ return [
             ['t' => 'La mesa de la oficina', 'text' => 'Cuatro bandejas en una bandeja exterior de 240 × 120 mm para bolígrafos, clips y cables; la bandeja mantiene el juego unido.'],
         ],
     ],
+    // tapa, tapón o cubierta a medida (docs/AP.md §12, lote E)
+    'cap' => [
+        'order' => [
+            ['q' => '¿Cuánto cuesta una tapa con ustedes?', 'farm' => true, 'a' => 'Una tapa para botella PET cuesta 99 CZK, el pedido mínimo; una tapa a presión para un tarro de 70 mm, 99 CZK (PLA, sin envío, cálculo del 28 de octubre de 2026). Varias unidades de la misma tapa se indican como cantidad y el precio por pieza baja.'],
+            ['q' => '¿Y si no conozco el paso de la rosca?', 'a' => 'Mida la longitud de diez filetes y divídala entre diez, o pruebe un preajuste: las botellas PET tienen 2,7 mm; las roscas métricas, el paso de la serie M6 a M30. Con una rosca desconocida imprima una unidad antes de encargar más.'],
+            ['q' => '¿Cuánto tardan la impresión y el envío?', 'farm' => true, 'a' => 'La tapa de botella PET se imprime en 22 minutos; la tapa del tarro, en 39 minutos. Enviamos el día en que termina la impresión, en días laborables, y Packeta en Chequia suele entregar en 1 o 2 días laborables (a un punto de recogida :cz_point).'],
+            ['q' => '¿Y si la tapa no encaja?', 'a' => 'Compruebe que indicó la medida real sin holgura; la holgura la añade la herramienta. Si la pieza entra dura, añada 0,1 mm de holgura; si queda floja, quítelos, y encargue la nueva pieza desde el mismo diseño.'],
+            ['q' => '¿Aguantará la tapa en el exterior y con calor?', 'a' => 'Para un depósito de jardín, un bidón o el coche elija ASA o PETG; el PLA se ablanda al sol y por encima de 55 °C y la rosca cede. En interior basta el PLA.'],
+            ['q' => '¿Necesito una cuenta?', 'a' => 'Para el diseño y la descarga, no. Solo la necesita cuando nos encarga la tapa impresa; se paga con crédito recargado con tarjeta.'],
+        ],
+        'who' => [
+            ['t' => 'La tapa perdida de una botella o un bidón', 'text' => 'Una tapa de rosca para botella PET de 28 mm, o su propia rosca según el diámetro y el paso medidos, con labio de estanqueidad.'],
+            ['t' => 'Cubiertas de perfiles y tubos', 'text' => 'Tapones para tubos de muebles y cubiertas de perfiles de aluminio según la medida interior, de cinco en cinco o de diez en diez.'],
+            ['t' => 'Una tapa para un tarro o un bote', 'text' => 'Una tapa a presión para un tarro con cuello de 70 mm con lecho para una junta, en PETG para la despensa.'],
+        ],
+    ],
+    // posavasos con imagen (docs/AP.md §12, lote E)
+    'coaster' => [
+        'order' => [
+            ['q' => '¿Cuánto cuesta un posavasos con ustedes?', 'farm' => true, 'a' => 'Un posavasos redondo de 100 mm cuesta 99 CZK, el pedido mínimo; un juego de cuatro, 170 CZK (PLA, sin envío, cálculo del 28 de octubre de 2026). El precio crece con el grosor y el número de piezas; lo ve antes de encargar nada.'],
+            ['q' => '¿Qué forma y tamaño elijo?', 'a' => 'Para un vaso o una taza basta un círculo de 90 a 100 mm; para una jarra, un cuadrado de 100 a 110 mm; los hexágonos encajan uno junto a otro como juego. Un grosor de 4 mm es suficiente; 6 mm parece más sólido.'],
+            ['q' => '¿Cuánto tardan la impresión y el envío?', 'farm' => true, 'a' => 'Un posavasos se imprime en 40 minutos; un juego de cuatro, proporcionalmente más. Enviamos el día en que termina la impresión, en días laborables, y Packeta en Chequia suele entregar en 1 o 2 días laborables (a un punto de recogida :cz_point).'],
+            ['q' => '¿Cómo limpio el posavasos?', 'a' => 'Pásele un paño húmedo o enjuáguelo con agua tibia; no en el lavavajillas, el PLA se deformaría a 60 °C. Los colores son plástico, no se lavan ni se destiñen.'],
+            ['q' => '¿Sirve como regalo de empresa con logotipo?', 'a' => 'Sí. Suba el logotipo como SVG en uno a cuatro colores, elija la forma y la cantidad; el precio por pieza baja con el número. Motivos distintos en un juego son diseños distintos, cada uno se encarga aparte.'],
+            ['q' => '¿Necesito una cuenta?', 'a' => 'Para el diseño y la descarga, no. Solo la necesita cuando nos encarga los posavasos impresos; se paga con crédito recargado con tarjeta.'],
+        ],
+        'who' => [
+            ['t' => 'Un juego para la mesa o una cafetería', 'text' => 'De cuatro a seis posavasos de 100 mm con el mismo motivo y ranuras por debajo, PLA.'],
+            ['t' => 'Un regalo con foto', 'text' => 'Un posavasos redondo con una foto en toda la cara, 6 a 8 colores, borde biselado.'],
+            ['t' => 'El logotipo de la empresa', 'text' => 'Un posavasos cuadrado con el logotipo de un SVG en dos colores, 20 unidades para la sala de reuniones.'],
+        ],
+    ],
+    // imán de nevera (docs/AP.md §12, lote E)
+    'magnet' => [
+        'order' => [
+            ['q' => '¿Cuánto cuesta un imán con ustedes?', 'farm' => true, 'a' => 'La huella de 60 mm con hueco para el imán cuesta 99 CZK, el pedido mínimo (PLA, sin envío, cálculo del 28 de octubre de 2026). Varias unidades del mismo diseño se indican como cantidad y el precio por pieza baja; el imán no va en el precio.'],
+            ['q' => '¿Dónde compro los imanes?', 'a' => 'Los imanes de disco de neodimio de Ø 10 × 2 o Ø 12 × 3 mm se venden en ferreterías y tiendas en línea por decenas; para una pieza de hasta 60 mm basta uno; para 100 mm elija uno mayor, como Ø 20 × 3 mm. Indique la medida del imán que de verdad tiene.'],
+            ['q' => '¿Cuánto tardan la impresión y el envío?', 'farm' => true, 'a' => 'Un imán de 60 mm se imprime en 14 minutos. Enviamos el día en que termina la impresión, en días laborables, y Packeta en Chequia suele entregar en 1 o 2 días laborables (a un punto de recogida :cz_point).'],
+            ['q' => '¿Sujetará papel en la nevera?', 'a' => 'Un neodimio de Ø 10 × 2 mm en una pieza de 60 mm sujeta unas hojas de papel; para un fajo más grueso elija Ø 12 × 3 o Ø 15 × 3 mm. En puertas de acero inoxidable sin capa de hierro un imán no se sujeta; pruébelas con un imán corriente.'],
+            ['q' => '¿Sirve como regalo o detalle de empresa?', 'a' => 'Sí: la foto de un niño para la abuela, el logotipo de la empresa para los clientes o imanes de boda para los invitados; el mismo diseño en 20 unidades sale más barato por pieza. Fotos distintas son diseños distintos.'],
+            ['q' => '¿Necesito una cuenta?', 'a' => 'Para el diseño y la descarga, no. Solo la necesita cuando nos encarga los imanes impresos; se paga con crédito recargado con tarjeta.'],
+        ],
+        'who' => [
+            ['t' => 'Una foto en la nevera', 'text' => 'Un rectángulo de 80 mm con una foto en toda la cara, 6 a 8 colores, imán de Ø 12 × 3 mm pegado.'],
+            ['t' => 'Imanes de boda o de empresa', 'text' => 'Un logotipo o nombres en dos colores, 50 mm, de 20 a 50 unidades del mismo diseño.'],
+            ['t' => 'El dibujo de un niño', 'text' => 'Un dibujo fotografiado como imán que sigue su contorno, 60 mm, 4 colores.'],
+        ],
+    ],
+    // pendientes a partir de una imagen (docs/AP.md §12, lote E)
+    'earrings' => [
+        'order' => [
+            ['q' => '¿Cuánto cuestan los pendientes con ustedes?', 'farm' => true, 'a' => 'Un par de corazones de 28 mm cuesta 99 CZK, el pedido mínimo (PLA, sin envío, cálculo del 28 de octubre de 2026). Varios pares del mismo diseño se indican como cantidad y el precio por par baja; los ganchos no van en el precio.'],
+            ['q' => '¿Qué ganchos y anillas compro?', 'a' => 'Ganchos de pesca o pernos de acero quirúrgico y anillas de 4 a 5 mm de una mercería. Abra la anilla de lado con dos alicates, pásela por el ojal y ciérrela; ajuste el ojal a 2 mm.'],
+            ['q' => '¿Cuánto tardan la impresión y el envío?', 'farm' => true, 'a' => 'Un par de pendientes se imprime en 6 minutos. Enviamos el día en que termina la impresión, en días laborables, y Packeta en Chequia suele entregar en 1 o 2 días laborables (a un punto de recogida :cz_point).'],
+            ['q' => '¿El plástico toca la oreja?', 'a' => 'No, en la oreja solo va el gancho o el perno; la parte de plástico cuelga debajo. Elija ganchos de acero quirúrgico, titanio o plata. El PLA no contiene níquel.'],
+            ['q' => '¿Sirve como regalo o para una pequeña serie para un mercadillo?', 'a' => 'Sí. Indique el mismo diseño en diez pares y el precio por par baja; para la siguiente serie basta cambiar los colores o la imagen. En los mercadillos funcionan las siluetas sencillas en dos colores.'],
+            ['q' => '¿Necesito una cuenta?', 'a' => 'Para el diseño y la descarga, no. Solo la necesita cuando nos encarga los pendientes impresos; se paga con crédito recargado con tarjeta.'],
+        ],
+        'who' => [
+            ['t' => 'Un regalo de cumpleaños', 'text' => 'Un par de corazones o estrellas de 28 a 32 mm en dos colores, ganchos de acero quirúrgico aparte.'],
+            ['t' => 'Iniciales o un nombre', 'text' => 'Un texto corto en lugar de una imagen, 25 mm, sin espejo para que el texto se lea.'],
+            ['t' => 'Una pequeña serie para un mercadillo', 'text' => 'Diez pares de la misma silueta, cada par en otra combinación de colores de nuestras bobinas.'],
+        ],
+    ],
 ];
