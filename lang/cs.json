@@ -1945,5 +1945,7 @@
     "farm.order.bar.pay_card_rest": "Doplatit kartou :amount",
     "farm.order.bar.pick_color": "Vyberte barvu.",
     "farm.order.bar.total": "Celkem k zaplacení",
-    "farm.order.bar.total_estimate": "Celkem asi, dopravu upřesní dopravce"
+    "farm.order.bar.total_estimate": "Celkem asi, dopravu upřesní dopravce",
+    "farm.order.bar.email": "Vyplňte platný e-mail pro potvrzení zakázky.",
+    "farm.order.bar.terms": "Potvrďte souhlas s podmínkami tiskové farmy."
 }

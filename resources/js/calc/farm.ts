@@ -6,7 +6,7 @@
  *   bootFarmDashboard  /admin/farm: buttons post over fetch, the answer is a short toast, cards redraw in place
  */
 import { icon } from '../site/icon';
-import { flash, focusCalm, revealIfHidden } from '../site/sticky';
+import { flash, revealIfHidden } from '../site/sticky';
 import { BufferGeometry, Float32BufferAttribute } from 'three';
 import { Viewer, FacePaint, cutAtHeight, deep } from './viewer';
 import { loadGeometryFromUrl } from './loaders';
@@ -462,9 +462,9 @@ export function bootFarmOrder(): void {
         const missing = deliveryMissing();
         if (missing) return { el: deliveryField(), text: missing };
         if (total() === null) return { el: null, text: '' };   // the delivery's price is on its way
-        // the e-mail of a guest, the terms
+        // the e-mail of a guest, the terms: in the page's words (the browser's own are in the browser's language)
         const bad = $('farm-pay')?.querySelector<HTMLInputElement>(':invalid');
-        return bad ? { el: bad, text: bad.validationMessage } : null;
+        return bad ? { el: bad, text: bad.id === 'farm-email' ? tr('farm.order.bar.email') : bad.id === 'farm-terms' ? tr('farm.order.bar.terms') : bad.validationMessage } : null;
     };
     // what keeps the order from being paid, said under the pay button and in the bar at the bottom ('' = nothing);
     // `hinting` = the words came from a press of the button and follow the choices until nothing is missing
@@ -1051,7 +1051,12 @@ export function bootFarmOrder(): void {
         say(b.text, true);
         const field = b.el && (b.el.matches('input, select, textarea, button') ? b.el : b.el.querySelector<HTMLElement>('button:not(.hidden), input:not([type=hidden]), select, textarea'));
         // the words make the bar taller: the field is brought into sight once the page knows the bar's new height
-        requestAnimationFrame(() => requestAnimationFrame(() => { if (field) focusCalm(field); else revealIfHidden(b.el); }));
+        // a box to tick comes with its sentence
+        requestAnimationFrame(() => requestAnimationFrame(() => {
+            if (!field) { revealIfHidden(b.el); return; }
+            field.focus({ preventScroll: true });
+            revealIfHidden(field.closest('label') ?? field);
+        }));
         return true;
     };
     payBtn?.addEventListener('click', (e) => { if (payBtn.getAttribute('aria-disabled') === 'true') { e.preventDefault(); guide(); } });
