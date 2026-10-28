@@ -5,7 +5,7 @@
     $tz = config('youtube.publish_timezone', 'Europe/Prague');
     $when = fn ($t) => ['Ne', 'Po', 'Út', 'St', 'Čt', 'Pá', 'So'][$t->dayOfWeek].' '.$t->format('j. n. H:i');
     $viewNames = ['top' => 'shora', 'left' => 'zleva', 'right' => 'zprava', 'phone' => 'z mobilu'];
-    $kindNames = ['short' => 'Short (čtverec)', 'wide' => 'Klasické video 16:9', 'weekly' => 'Týdenní sestřih', 'howto' => 'Instruktážní video'];
+    $kindNames = ['short' => 'Short (čtverec)', 'wide' => 'Klasické video 16:9', 'weekly' => 'Týdenní sestřih', 'howto' => 'Instruktážní video', 'price' => 'Short „Kolik stojí 3D tisk?“', 'monthly' => 'Měsíční video o farmě'];
 @endphp
 
 @section('content')
@@ -136,6 +136,10 @@
             @endif
         @elseif($group->first()->kind === 'howto')
             <p class="text-xs text-slate-500">Instruktážní video {{ $group->first()->meta['name'] ?? '' }} · sestaveno {{ $group->first()->updated_at?->timezone($tz)->format('j. n. Y H:i') }} (php artisan farm:howto-video)</p>
+        @elseif($group->first()->kind === 'price')
+            <p class="text-xs text-slate-500">Seriál „Kolik stojí 3D tisk?“ · {{ count($group->first()->meta['orders'] ?? []) }} kusů s cenou · sestaveno {{ $group->first()->updated_at?->timezone($tz)->format('j. n. Y H:i') }} (php artisan youtube:price-short)</p>
+        @elseif($group->first()->kind === 'monthly')
+            <p class="text-xs text-slate-500">Měsíc {{ $group->first()->meta['key'] ?? '' }} · {{ count($group->first()->meta['orders'] ?? []) }} tisků · sestaveno {{ $group->first()->updated_at?->timezone($tz)->format('j. n. Y H:i') }} (php artisan farm:monthly-video)</p>
         @else
             <p class="text-xs text-slate-500">Týden {{ $group->first()->meta['week'] ?? '' }} · {{ count($group->first()->meta['orders'] ?? []) }} tisků · sestaveno {{ $group->first()->updated_at?->timezone($tz)->format('j. n. Y H:i') }}</p>
         @endif

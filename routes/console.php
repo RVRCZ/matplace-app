@@ -10,6 +10,8 @@ Schedule::command('youtube:stats')->hourlyAt(20);   // numbers, and scheduled vi
 Schedule::command('social:videos')->everyFiveMinutes()->withoutOverlapping();   // approved videos to the Facebook page / Instagram at their slot
 // "Tento týden na farmě": the week's prints in one video, waiting for the admin in /admin/youtube (never published by itself)
 Schedule::command('farm:weekly-video')->weeklyOn(0, '18:00')->timezone('Europe/Prague')->withoutOverlapping()->runInBackground();
+// "Jak funguje naše 3D tisková farma": the month that ended, between the steps of an order, waiting for the admin too (docs/AL.md §13.7)
+Schedule::command('farm:monthly-video')->monthlyOn(1, '19:00')->timezone('Europe/Prague')->withoutOverlapping()->runInBackground();
 Schedule::command('matplace:sitemap')->dailyAt('04:40');
 Schedule::command('searchconsole:pull --days=3')->dailyAt('05:20');   // Search Console finishes a day two to three days later (docs/AN.md §14)
 // events older than 13 months (pages fetched by robots: 30 days) are folded into a daily summary and deleted

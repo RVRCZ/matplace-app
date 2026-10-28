@@ -75,4 +75,38 @@ return [
         'title' => 'Esta semana en la granja – :dates',
         'description' => ":cta\nLo que imprimió esta semana (:dates) nuestra granja de impresión 3D: :count impresiones en time-lapse. Cada pieza tiene un capítulo con un enlace a la herramienta en la que se creó.\n\nPublicamos los vídeos con el consentimiento de nuestros clientes.",
     ],
+
+    // el Short "¿Cuánto cuesta la impresión 3D?" (youtube:price-short, docs/AL.md §13.7)
+    'price' => [
+        'card' => '¿Cuánto cuesta la impresión 3D?',
+        'things' => '{1} :n cosa con su precio|[2,*] :n cosas con sus precios',
+        'pieces' => '{1} :n pieza|[2,*] :n piezas',
+        'title' => '¿Cuánto cuesta la impresión 3D? :things',
+        'ask' => '¿Qué valdría la pena imprimir para usted? Cuéntenoslo en un comentario.',
+        'line' => ':name – :price – :url',
+        'description' => ":cta\n:pieces de nuestra granja de impresión 3D y lo que costaron. El precio siempre sale del modelo: su tamaño, el material y el tiempo de impresión. El suyo lo sabe en un minuto, sin registro.\n\nEn el vídeo:",
+        'hashtags' => '#Shorts #impresion3d #granja3d #cuantocuesta #precio',
+    ],
+
+    'monthly' => [
+        'card' => 'Cómo funciona nuestra granja de impresión 3D',
+        'intro_chapter' => 'Introducción',
+        'title' => 'Cómo funciona una granja de impresión 3D: del modelo al paquete (:month)',
+        'ask' => '¿Qué mandaría imprimir? Cuéntenoslo en un comentario.',
+        'steps' => [
+            ['title' => '1. Suba un modelo o una foto', 'sub' => 'STL, 3MF, OBJ – o una foto para una figura y herramientas a medida'],
+            ['title' => '2. El precio al momento', 'sub' => 'Laminamos el modelo y ve el precio en un minuto, sin cuenta'],
+            ['title' => '3. Impresión en la granja', 'sub' => 'Impresoras Anycubic Kobra, PLA, PETG y más'],
+            ['title' => '4. Foto de la pieza terminada', 'sub' => 'Cada impresión se fotografía en la caja de fotos'],
+            ['title' => '5. Envío', 'sub' => 'Punto de recogida o recogida en persona'],
+        ],
+        'numbers' => [
+            'recent' => '{1} Últimos 30 días: :n impresión|[2,*] Últimos 30 días: :n impresiones',
+            'printed' => '{1} Impreso hasta hoy: :n pieza|[2,*] Impreso hasta hoy: :n piezas',
+            'days' => '{0} Del pago a la entrega: el mismo día|{1} Del pago a la entrega: :d día|[2,*] Del pago a la entrega: :d días',
+            'videos' => '{1} :n vídeo en nuestro canal|[2,*] :n vídeos en nuestro canal',
+        ],
+        'description' => ":cta\n¿Cómo funciona una granja de impresión 3D y cómo saber el precio de una impresión 3D? Este vídeo sigue un pedido de principio a fin (:month): la subida de un modelo o una foto, el laminado y el precio en un minuto, la impresión, la foto de la pieza terminada y el envío, con time-lapses de nuestras impresiones entre medias.\n\nNuestras cifras: :numbers\n\nCapítulos:",
+        'hashtags' => '#impresion3d #granja3d #comofunciona #precioimpresion3d',
+    ],
 ];
