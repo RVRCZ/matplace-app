@@ -115,6 +115,7 @@ function millions(file: FileInfo | null | undefined): string | null {
  * larger than the plate (docs/AN.md §17.2): the farm prints it by parts, the server says so in the estimate.
  */
 function setBigOnly(file: FileInfo | null | undefined, calc?: CalcInfo | null): void {
+    if (calc) renderColors(calc.file ?? file ?? null, calc);   // an estimate only: the two prices come with it (rough)
     if ((calc as { rough?: { by_parts?: boolean } } | null | undefined)?.rough?.by_parts) { setStatus('calc.status.by_parts', false); return; }
     const n = millions(file);
     setStatus(n ? 'calc.status.big_only_n' : 'calc.status.big_only', false);
@@ -400,6 +401,7 @@ function renderBreakdown(bds: { profile: string; label?: string | null; printer_
 let flashNext = false;
 
 function renderPrecise(c: CalcInfo): void {
+    renderColors(c.file ?? state.file, c);   // every way a done calculation arrives (created done, polled, restored)
     if (!c.slicer || !c.prices) return;
     if (flashNext) { flashNext = false; flash(document.getElementById('price-card')); }
     renderCompare({ grams: c.slicer.grams, minutes: c.slicer.minutes }, true);
@@ -463,7 +465,6 @@ function poll(token: string): void {
             if (c.status === 'done') {
                 setStatus(marketplace() ? 'calc.status.done' : 'calc.status.done_facts', false);
                 renderPrecise(c);
-                renderColors(c.file, c);
                 enableDownload(c.file);
                 if (!state.geometry && c.file?.stl_url) await showServerStl(c.file.stl_url);
                 return;

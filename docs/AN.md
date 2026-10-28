@@ -646,6 +646,9 @@ Moje část:
   PrusaSlicer). Pojem „namalované barvy“ v slovníku AH.md §9.4.
 - Test `PaintedColorsPageTest` (místa v kalkulaci, texty ve 3 jazycích a v JSON kalkulace, odstavec nástroje).
 
-Zbývá po API session 2: ověřit na želvě (`turtlescutieone2.3mf` ze scratchpadu) zeleno žlutý náhled, „2 namalované barvy
-(a 2 drobné, sloučené)“ a dvě ceny v headless Chrome; dnes bez dat ze serveru ověřeno jen to, že bez `groups` a `colors`
-se nic nemění.
+**Přejímka na želvě (28. 10. večer)**: místní větev s API session 2 (`539547ff`) a touto větví, místní databáze s migrací,
+nahrání `turtlescutieone2.3mf` v headless Chrome (1366 i 390): náhled zeleno žlutý (`docs/img/painted/turtle-calc-*.webp`),
+tečky `#80FF80` a `#FFFF00`, „Soubor má 2 namalované barvy (a 2 drobné, sloučené)“, „Barevně od 190 Kč · Jednobarevně
+120 Kč“ (falešný slicer; session 2 hlásí s Orcou 79/210), „Vytisknout barevně“ v kartě i v liště telefonu, „Vytisknout
+jednobarevně“ pod ním. Nález a oprava (b6a72a91): kalkulace vrácená hned hotová (stejný soubor a nastavení) přeskočila
+dvě ceny; `renderColors` je teď v `renderPrecise` a v `setBigOnly`, takže je dostane každá cesta.
