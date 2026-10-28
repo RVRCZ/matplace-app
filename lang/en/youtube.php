@@ -35,7 +35,7 @@ return [
         'hashtags' => '#3dtisk #3dtiskarna #dárek',
         'title_plain' => ':name – :time of printing',
         'title_unnamed' => 'What grows in :time of 3D printing',
-        'description' => ":cta\nTime-lapse of a print from our 3D print farm; the finished piece and its price are at the end.\n\nMaterial: :material :color\nPrinter: :printer\nPrint time: :time\n\nPublished with the customer's consent.",
+        'description' => ":cta\nTime-lapse of a print from our 3D print farm; the finished piece and its price are at the end.\n\nMaterial: :material :color\nPrint time: :time\n\nPublished with the customer's consent.",
     ],
 
     'hook' => [
@@ -59,6 +59,15 @@ return [
         'vase' => '#váza', 'sign' => '#cedulka', 'nameplate' => '#jmenovka', 'medallion' => '#medaile', 'phone_stand' => '#stojánek', 'cap' => '#oprava', 'holder' => '#držák',
         'cable_holder' => '#držák', 'ornament' => '#vánoce', 'gingerbread' => '#vánoce', 'cookie' => '#vykrajovátko', 'topper' => '#dort', 'stamp' => '#razítko', 'logo' => '#logo',
         'text' => '#nápis', 'map' => '#mapa', 'default' => '#3dprinting',
+    ],
+
+    'mail' => [
+        'subject' => 'The video of your print :number is on YouTube',
+        'title' => 'Your video is out',
+        'body' => 'The time-lapse of the print ":name" is published on our channel. Thank you for letting us show it.',
+        'watch' => 'Watch on YouTube',
+        'share' => 'If you like it, pass it on: every share helps a small farm more than an advert.',
+        'next' => 'Have the next model printed here: :url',
     ],
 
     'weekly' => [

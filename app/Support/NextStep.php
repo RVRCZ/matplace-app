@@ -17,8 +17,21 @@ final class NextStep
 
     public const DOWNLOAD = 'download';
 
+    public const MODES = [self::INQUIRY, self::FARM, self::DOWNLOAD];
+
+    /** The mode a request names instead of the visitor's own (the calculator's cached JSON, ConfigController::calc); null = the visitor's. */
+    private static ?string $forced = null;
+
+    public static function force(?string $mode): void
+    {
+        self::$forced = $mode !== null && in_array($mode, self::MODES, true) ? $mode : null;
+    }
+
     public static function mode(): string
     {
+        if (self::$forced !== null) {
+            return self::$forced;
+        }
         if (config('features.marketplace')) {
             return self::INQUIRY;
         }

@@ -16,7 +16,7 @@ return [
     'no_orders' => 'Todavía no hay nada.',
     'credit_balance' => 'Crédito',
     'top_up' => 'Recargar crédito',
-    'slices_left' => 'Hoy puede calcular :n modelos más.',
+    'slices_left' => '{0} Hoy ya no puede calcular otro modelo.|{1} Hoy puede calcular :n modelo más.|[2,*] Hoy puede calcular :n modelos más.',
 
     'start' => [
         'model' => 'Modelo',
@@ -208,6 +208,7 @@ return [
         'photos_full' => 'Esta prueba ya tiene :max fotos. Borre alguna.',
         'photo_heic' => 'El servidor no puede leer fotos HEIC. Envíela como JPEG.',
         'photo_unreadable' => 'El archivo no se puede leer como foto.',
+        'photo_dark' => 'La foto está negra o es de un solo color (la cámara no captó nada). Tómela de nuevo.',
         'closed' => 'La granja no acepta pedidos nuevos ahora mismo. Inténtelo más tarde.',
         'not_ready' => 'El modelo aún no está listo para imprimir: se está procesando o no se pudo convertir. Inténtelo en un momento o suba un STL.',
         'too_big' => 'El archivo supera los :max MB.',

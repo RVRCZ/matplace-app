@@ -4,6 +4,9 @@
     $ours = $model->isEnriched() && trim((string) (((array) $model->description)[app()->getLocale()] ?? '')) !== '';
     $original = $ours ? $model->original() : null;
     $quote = $quote ?? ['available' => false];
+    $sliced = $sliced ?? null;
+    // a sale is offered only where the licence allows it: the order goes through the calculation's own page (/c/<token>)
+    $sellable = $sliced && ! $model->license_restricted && $model->sliceCalculation;
     $dur = fn (int $m) => $m >= 60 ? intdiv($m, 60).' h '.($m % 60).' min' : $m.' min';
     $images = $model->imageUrls();
     $sourceName = __('models.source.'.(\Illuminate\Support\Facades\Lang::has('models.source.'.$model->source) ? $model->source : 'other'));
@@ -27,6 +30,7 @@
 
 @push('head')
 <x-jsonld :data="$thing" />
+@if($sellable)<x-jsonld :data="\App\Support\Schema::product($model->title, $thing['description'] ?? null, $images, route('catalog.show', $model->slug), array_column($sliced['rows'], 'total'), $sliced['currency'])" />@endif
 <x-jsonld :data="\App\Support\Schema::breadcrumbs(array_values(array_filter([['matplace', route('home')], [__('models.inspiration.title'), route('catalog.index')], $category ? [$category->label(), route('catalog.category', $category->slug)] : null, [$model->title, route('catalog.show', $model->slug)]])))" />
 @endpush
 
@@ -81,6 +85,30 @@
                 <p class="mt-3 text-sm">{{ __('models.inspiration.author_here') }} <a href="{{ $author->publicUrl() }}" class="text-action-dark underline">{{ $author->display_name }}</a></p>
             @endif
 
+            {{-- the print time and the price in three materials from the slice of the model's own file (catalog:slice, docs/AN.md §13) --}}
+            @if($sliced)
+                <section id="model-calc" class="card mt-4 p-4" data-sliced>
+                    <h2 class="font-bold">{{ __('models.inspiration.calc_title') }}</h2>
+                    <p class="mt-1 text-sm text-slate-700">{{ __('models.inspiration.calc_lead', ['infill' => 15, 'grams' => round((float) $model->slice_grams)]) }}</p>
+                    <table class="mt-3 w-full text-sm">
+                        <thead><tr class="text-left text-xs uppercase text-muted"><th class="py-1 pr-2 font-normal">{{ __('models.inspiration.calc_material') }}</th><th class="py-1 pr-2 font-normal">{{ __('models.inspiration.calc_time') }}</th><th class="py-1 text-right font-normal">{{ __('models.inspiration.calc_price') }}</th></tr></thead>
+                        <tbody>
+                            @foreach($sliced['rows'] as $row)
+                                <tr class="border-t border-line" data-material="{{ $row['code'] }}">
+                                    <td class="py-1.5 pr-2"><span class="font-semibold text-ink">{{ $row['label'] }}</span> <span class="text-muted">{{ $row['code'] }}</span></td>
+                                    <td class="py-1.5 pr-2">{{ $dur((int) $row['minutes']) }}</td>
+                                    <td class="py-1.5 text-right font-semibold text-ink">{{ $row['total_text'] }}</td>
+                                </tr>
+                            @endforeach
+                        </tbody>
+                    </table>
+                    <p class="mt-2 text-xs text-muted">{{ __('models.inspiration.calc_note', ['date' => $model->sliced_at->format(app()->getLocale() === 'cs' ? 'j. n. Y' : 'j M Y')]) }}</p>
+                    @if($sellable)
+                        <a href="{{ url('/c/'.$model->sliceCalculation->token) }}" class="btn-primary mt-3" rel="nofollow" data-calc-open>{{ __('models.inspiration.calc_open') }}</a>
+                    @endif
+                </section>
+            @endif
+
             <dl class="mt-4 space-y-2 text-sm">
                 @if($model->hasWebLink())
                     <div><dt class="text-muted">{{ __('models.facts.origin') }}</dt><dd><a href="{{ $model->external_url }}" rel="nofollow noopener" target="_blank" class="font-semibold underline">{{ __('models.inspiration.open_at', ['source' => $sourceName]) }} ↗</a></dd></div>
@@ -90,7 +118,7 @@
                 @if($model->max_mm)
                     <div><dt class="text-muted">{{ __('models.inspiration.size') }}</dt><dd class="font-semibold">{{ __('models.inspiration.size_value', ['mm' => $model->max_mm]) }}</dd></div>
                 @endif
-                @if($model->est_grams && $model->est_minutes)
+                @if($model->est_grams && $model->est_minutes && ! $sliced)
                     <div><dt class="text-muted">{{ __('models.inspiration.estimate') }}</dt><dd class="font-semibold">{{ __('models.inspiration.estimate_value', ['grams' => $model->est_grams, 'time' => $dur((int) $model->est_minutes)]) }}</dd></div>
                 @endif
                 @if($quote['available'])

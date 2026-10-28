@@ -1342,3 +1342,199 @@ nasazení (frames + fotka z fotoboxu).
 ### 13.4.4 Ověření dávky 2
 
 `YouTubeVideosTest|FarmVideosCutTest|PrintPhotosTest|RembgBackgroundRemoverTest|SocialVideosTest|FarmHowtoVideoTest|FarmAdminNotifyTest|FarmPagesTest` = 58 testů, 1 825 asercí, zelené (2 přeskočené bez `FFMPEG_BIN`); `FarmVideosCutTest` s `FFMPEG_BIN` = 7 testů včetně skutečného renderu; pint prošel. Upravené testy: rozsah Shortu 15 až 25 s, délka a rozměry 1080×1920, háček, adresa a otázka v textech, fotka o 0,4 s kratší; hashtagy, komentář s cenou a `utm_content` ve Facebook/Instagram odkazech; 16:9 pár jen s `youtube.wide_uploads`.
+
+## 13.5 Dávka 3: tabulka titulků, přejmenování, playlisty, texty pro Studio, e‑mail zákazníkovi
+
+### 13.5.1 Tabulka titulků a `youtube:retitle` (úkol 4)
+
+- **`App\Domain\YouTube\ChannelCurator`** (nic nevolá YouTube, dokud se neřekne `--apply`): `rows()` = každé naše video
+  na YouTube (sloupce `id; druh; zakazka; nastroj; zverejneno; dnesni_titulek; zhlednuti; novy_titulek; novy_popis;
+  playlist; duplikat; navrh`), nejsledovanější první; `novy_titulek`/`novy_popis` z šablon dávky 2 (s `utm_content`
+  videa), `playlist` podle nástroje, `duplikat` = `ano` u 16:9 dvojčete Shortu (`navrh` = unlisted) nebo `stejný titul`
+  u shodných názvů; s `--api` přibudou i videa nahraná ručně (uploads playlist kanálu, 2–3 jednotky kvóty) s prázdnými
+  návrhy. `writeCsv`/`readCsv` středníkový CSS jako ostatní tabulky v `docs/data` (víceřádkový popis v uvozovkách, BOM
+  z tabulkového editoru se ořízne).
+- **`php artisan youtube:titles [--out=…] [--api]`** → `docs/data/youtube-titles-<rok>-<měsíc>.csv`.
+- **`php artisan youtube:retitle <csv> [--apply] [--unlist]`**: bez `--apply` jen vypíše plán („1 to rename, 1 to
+  unlist“); s `--apply` `videos.update part=snippet` (50 jednotek na video; `YouTubeClient::retitle`), popis se posílá
+  s `utm_content` a uloží se i k našemu řádku; `--unlist` přepne řádky s `navrh = unlisted` na unlisted
+  (`setPrivacy`, `meta.unlisted_at`). Idempotentní: druhý běh téže tabulky nic nemění.
+- **`docs/data/youtube-titles-2026-10.csv`** je předvyplněná pro 13 videí známých z auditu (návrhy titulků a playlistů,
+  bez `id`); zbylých 20 řádků a `id` doplní `youtube:titles --api` na produkci (řídící), pak schválí Roman, pak
+  `--apply`. Sedm horizontálních duplikátů najde tabulka sama (`duplikat = ano`); o `unlisted` rozhodne Roman.
+
+### 13.5.2 Playlisty přes API (úkol 5)
+
+`config/youtube.php` `playlists`: „Figurky z fotky“ (figure, pet, relief, papel), „Dárky se jménem“ (sign, nameplate,
+medallion, ornament, topper, name_cup, name_letter, charm, text, logo, stamp, gifts, personalize), „Pro domácnost“ (box,
+organizer, vase, phone_stand, cap, holder, cable_holder, tray, hair_tie, candle_stand, modular, gingerbread, cookie,
+qr, map, beads, notes, lightbox, stencil, cutter), „Jak to funguje“ (druhy howto a weekly). Vlastní soubor zákazníka do
+žádné (Roman ručně). `php artisan youtube:playlists` = plán z DB a z uložených id (`storage/app/youtube/playlists.json`,
+žádné volání); `--apply` = `playlists.list` (co už na kanálu je), `playlists.insert` pro chybějící, `playlistItems.insert`
+pro každé veřejné video, které v seznamu ještě není (`meta.playlist`); 50 jednotek na zápis.
+
+### 13.5.3 Texty pro Studio (úkol 6)
+
+`docs/data/youtube-kanal-texty.md`: popis kanálu česky s klíčovými slovy (anglický řádek na konci), odkazy do „O kanálu“
+(web a nástroje s UTM `channel`, Instagram, Facebook, e‑mail pro firmy – adresy k ověření Romanem), banner (text do
+bezpečné oblasti + tři složené fotky z fotoboxu), trailer (zkrácené video fotka → model → výtisk, 30–40 s, sestřih
+připravím po schválení přes `farm:howto-video`), doporučené video, pořadí sekcí, komunita.
+
+### 13.5.4 E‑mail zákazníkovi „vaše video“ (úkol 7)
+
+`App\Mail\FarmVideoPublished` (`mail.farm_video_published`, texty `youtube.mail.*` cs/en/es): předmět „Video vašeho
+tisku F26‑000123 je na YouTube“, tlačítko Přehrát, prosba o sdílení, odkaz na nástroj s `utm_source=email`,
+`utm_campaign=video_short`, `utm_content=<videoId>` (měření kliknutí v GA/statistice jako u videí). Posílá
+`FarmVideos::tellCustomer` po zveřejnění (`publish` naostro i `refreshStats`, když video zveřejní YouTube v naplánovaný
+čas nebo ručně Studio): jen Short/16:9 zakázky se souhlasem `video_consent`, účet s e‑mailem a `notify_email`, jednou na
+zakázku (`meta.customer_mailed_at`; dvojče 16:9 už nepíše), týdenní sestřih a návody nikomu.
+
+### 13.5.5 Ověření dávky 3
+
+`tests/Feature/YouTubeChannelTest.php` (4 testy: tabulka s návrhy, dvojčaty, stejnými tituly a ručními uploady + CSV tam a zpět; retitle jako dry run, pak `--apply` a `--unlist` proti falešnému Googlu; playlisty plán → `--apply` → znovu nic; e‑mail zákazníkovi jednou, s odkazy, ne bez souhlasu, ne při vypnutých mailech). Sada `YouTubeVideosTest|FarmVideosCutTest|YouTubeChannelTest|SocialVideosTest|FarmHowtoVideoTest|FarmAdminNotifyTest|PrintPhotosTest|AuditRestTest|RembgBackgroundRemoverTest` = 54 testů, 1 054 asercí, zelené (2 přeskočené bez `FFMPEG_BIN`); pint prošel. Žádné volání YouTube API naostro; žádná migrace, žádný build.
+
+## 13.6 Dávka 4: fotka z foto‑boxu u videa, zpětné zpracování, zbytky z auditu
+
+Roman: „fotky nahrávám k videím, je potřeba je upravit a dát jim pozadí, fotím jen ve fotoboxu.“ Cesta, kterou používá,
+je `/admin/youtube` → „foto‑box“ (`/admin/farm/photobox?order=…`) → `POST /admin/farm/orders/{order}/photos`
+(`FarmTestPhotoController::store`, `TestPhotos::add`), která dosud jen přestavěla videa s neupravenou fotkou
+(`AddFinishPhotoToVideo`). Model u2net je od 27. 10. na serveru (`/opt/matplace-py/u2net/…`, symlink na
+`U2NET_HOME/u2net.onnx`), takže výřez už jde i tam.
+
+### 13.6.1 Fotka z foto‑boxu u zakázky zákazníka jde přes `ComposePrintPhoto`
+
+- `FarmTestPhotoController::store`: u zakázky, která není test, se po uložení fotek vybere ta, kterou video končí
+  (`TestPhotos::finishFile` = zleva, jinak zprava, z mobilu, shora; nejnovější daného druhu), a zařadí se `ComposePrintPhoto($order, <soubor na
+  farm disku>)` – stejná práce jako u nahrání na stránce zakázky (§13.1): výřez rembg, podklad `studio`, varianty
+  `web`/`short`/`square` + WebP na public disku `prints/<token>/`, `photo_path` + `photo_meta` u zakázky, pak
+  `AddFinishPhotoToVideo` (když má zakázka časosběr). Hláška „Uloženo N fotek. Fotka do videa se připravuje (pozadí,
+  podklad); videa se pak přestaví.“; JSON navíc `composing`.
+- **Kdy se nic nedělá:** přibude‑li další pohled stejného kusu (shora k už hotovému bočnímu), fotka do videa se nemění
+  a videa se nepřestavují (dřív se přestavěla po každém nahrání, i se stejnou fotkou). Rozhoduje `photo_meta.source`
+  (nové pole, soubor na farm disku, ze kterého složená fotka vznikla – `PrintPhotos::attach(..., $sourceRel)`,
+  `ComposePrintPhoto` ho předává) a `photo_meta.cut`: složená fotka z jiného souboru nebo s pozadím (model chyběl)
+  → složit znovu; z téhož souboru a vyříznutá → nic.
+- **Smazání fotky** (`destroy`): byla‑li zdrojem složené fotky, složí se znovu z další v pořadí; není‑li žádná, složená
+  fotka se odstraní (`PrintPhotos::remove`) a videa se přestaví bez ní. Složená fotka z jiného souboru (nahrání na
+  stránce zakázky, starší bez `source`) zůstává, videa se nemění.
+- `/admin/youtube` u čekajících videí říká „Na konci videí: upravená fotka výtisku (pozadí odstraněno, podklad studio)“
+  s náhledem složené fotky; bez ní jako dřív „fotka N (zleva) z foto‑boxu, zatím s pozadím“. Foto‑box má větu navíc, co
+  se s fotkou zákazníkovy zakázky stane.
+
+### 13.6.2 `farm:photo --redo-videos` – zpětné zpracování už nahraných fotek
+
+```
+php artisan farm:photo --redo-videos            # plán, nic nemění
+php artisan farm:photo --redo-videos --apply    # složí a přestaví videa
+php artisan farm:photo --redo-videos --all      # i zakázky, které už vyříznutou fotku mají (jiný podklad, novější rembg)
+```
+
+Projde zakázky zákazníků (ne testy) s fotkou z foto‑boxu; sloupce `order · photo · today (none/fitted/cut) · videos to
+replace · plan/result`. Výchozí výběr = bez složené fotky (`none`) nebo složené s pozadím (`fitted`, model chyběl);
+`cut` zůstává (`kept`), s `--all` se bere taky. Zdroj = `photo_meta.source`, když ještě existuje, jinak dnešní fotka do
+videa. `--apply` skládá synchronně (rembg pár sekund na fotku, výpis `cut (73 % piece)`), videa přes
+`AddFinishPhotoToVideo` ve frontě: nahrané a naplánované kopie na YouTube se nahradí, **zveřejněná videa zůstávají**
+(nahradí je tlačítko v `/admin/youtube`). Bez dostupného rembg `--apply` odmítne („a redo would only fit the photos
+again“). `--bg=` platí i tady.
+
+### 13.6.3 Zbytky z auditu
+
+- `farm.slices_left` je `trans_choice` (cs `{0}|{1}|[2,4]|[5,*]`, en/es `{0}|{1}|[2,*]`): „Dnes můžete spočítat ještě
+  1 model / 3 modely / 7 modelů.“, nula = „Dnes už další model spočítat nemůžete.“ (`farm/start.blade.php`).
+- `farm/order.blade.php`: `#farm-short` má `href` na `farm.orders.short` zakázky a `#farm-topup` na `account.credit`
+  s `back=<token>` už ze serveru (skript je dál přepisuje: `short_url`, `&need=`); na stránce zakázky žádné `href="#"`.
+
+### 13.6.4 Popis videa bez řádku „Tiskárna“ (doplněk Romana 27. 10.)
+
+`youtube.video.description` cs/en/es: zůstává Materiál a Doba tisku, řádek s tiskárnou pryč; `FarmVideos::facts` už
+tiskárnu nenačítá. Platí pro nová videa i pro `youtube:titles` (tabulka); u už zapsané tabulky
+`docs/data/youtube-titles-2026-10.csv` řádek odebere řídící před `retitle`. E‑mail zákazníkovi tiskárnu neuváděl.
+
+### 13.6.5 Ověření dávky 4
+
+`PrintPhotosTest` 6 testů / 118 asercí (nový `test_the_photo_box_photo_of_a_customer_print_is_composed_for_its_videos_and_older_ones_can_be_redone`: foto‑box → složená fotka se `source`, další pohled nic, smazání → další v pořadí / bez fotky, `--redo-videos` plán, `--all`, `--apply`), `FarmTestPhotosTest` (testovací tisky beze změny), `FarmSalesPathTest` (odkazy bez `href="#"`, plurál ve třech jazycích + stránka `/farm`), `YouTubeChannelTest` (popis bez „Tiskárna“), `YouTubeVideosTest` – vše zelené 27. 10. 2026, pint čistý; bez změny TS žádný build (`scripts/check_order_timeline.mjs` ok). S pravým rembg na serveru nic z toho vyzkoušeno nebylo: řídící spustí `farm:photo --redo-videos` (plán), pak `--apply`, a Roman nahraje další fotku ve foto‑boxu.
+
+### 13.6.6 Po prvním ostrém běhu: prázdný výřez a stín pod kusem
+
+`farm:photo --redo-videos --apply` na produkci 27. 10. (řídící, skutečný rembg): 13 složených fotek, podíl kusu
+46–86 %, QR cedulka F26‑000064 výborná. Dvě chyby:
+
+- **F26‑000097 „cut (0 % piece)“** – rembg v záběru shora nic nenašel, výřez byl prázdný a u zakázky i na konci videa
+  skončil holý podklad se stínem. Práh: podíl kusu pod **3 %** (`PrintPhotos::MIN_COVERAGE`) nebo nad **98 %**
+  (`MAX_COVERAGE`, rembg nechal celou fotku) = selhání výřezu → fotka se jen napasuje (`cut=false`), důvod jde do
+  `photo_meta.cut_error` („empty: the remover found no piece (0.4 % of the photo)“), změřený podíl zůstává v
+  `coverage`. `PrintPhotos::cutState(meta)` = `cut` / `empty` (vyříznuto před prahem, prázdné) / `fitted` (rembg
+  nebyl) / `uncut` (rembg to zkusil a nenašel). Foto‑box pro `uncut` další pohled nezkouší znovu; `--redo-videos`
+  bere `none`, `fitted` a `empty`, `cut` i `uncut` nechává (`--all` bere vše). Nové **`--ids=F26-000097[,…]`** vezme
+  jen jmenované zakázky bez ohledu na stav (neznámé číslo ohlásí). Stránka zakázky píše „výřez prázdný – přepočítat
+  (farm:photo --redo-videos --apply --ids=…)“ resp. „pozadí ponecháno (výřez nic nenašel: …)“.
+- **F26‑000079 pes „levituje“ ~40 px** nad stínem. Příčina v `photo_compose.py`: rembg nechává pod kusem vlastní stín
+  fotky jako slabý lem (alpha 10–60); ořez podle alpha > 8 ho bral za součást kusu, takže „noha“ (spodek masky)
+  a dotykový stín ležely o lem níž. Teď: `solid_box` = maska s alpha > 128, kus stojí spodní hranou **pevné** masky
+  na stojné čáře, lem pod ní se odřízne (náš stín ho nahradí), dotyková elipsa má střed těsně pod touto hranou
+  (−0,6/+1,4 ry, ry = 4 % výšky) a šířku 1,16× pevné masky, žádný pevný offset. Ověřeno na syntetickém výřezu se
+  40px lemem (`scratchpad/halo-before.jpg` – levituje, `halo-after.jpg`/`halo-after-short.jpg` – stojí); skutečné
+  výřezy z fotoboxu, co mám lokálně, lem nemají (pevná = slabá maska), takže psa potvrdí až přepočet na produkci:
+  `farm:photo --redo-videos --apply --ids=F26-000097,F26-000079`.
+
+Testy: `PrintPhotosTest` 7 / 146 (nový `test_a_cut_that_keeps_nothing_or_everything_is_a_failed_cut_and_the_photo_is_fitted`:
+prázdná a „celá“ maska → napasováno + `cut_error`, foto‑box to nezkouší znovu, legacy `empty` → redo plán → `--apply
+--ids` → `uncut` → dál `kept`, neznámé id), `FarmTestPhotosTest` – zelené; `FakeBackgroundRemover::$coverage` pro
+prázdnou masku.
+
+### 13.6.7 Po `youtube:retitle --apply --unlist` na produkci: smazaná videa a playlisty jen pro veřejná
+
+Roman řekl „spusť“; řídící 27. 10.: přejmenováno 31, unlisted 5, selhaly 3 – dvě z nich (0JeE3tnyJ9M, i3nD7iyqjRA,
+F26‑000086, 0 zhlédnutí) YouTube nezná („video cannot be found“), nejspíš smazaná v Studiu. Playlisty nespuštěny: plán
+dál zařazoval tři právě skryté duplikáty.
+
+- **Stav `missing`** (`FarmVideo::STATUS_MISSING`, 7 znaků do `status` varchar(12)): `YouTubeError::isMissing()`
+  (`videoNotFound`/`notFound`/404) → `ChannelCurator::apply` označí řádek `missing` s důvodem v `error` místo
+  „failed“; výpis příkazu „renamed N, unlisted N, failed N, missing on YouTube N“ + řádek za každé. `rows()`
+  (`youtube:titles`), `plan()`, `refreshStats` i playlisty takové video vynechávají; `/admin/youtube` ho ukáže mezi
+  vyřízenými jako „Na YouTube už není (smazané video)“. `refreshStats` navíc označí `missing` veřejné video, které
+  `videos.list` vynechá (soukromé ne – to může být jen neviditelné jinému účtu; prázdná odpověď pro všechny se nebere).
+- **Unlist jen jednou:** `plan()` nedává do `unlist` video, které má `meta.unlisted_at`; `--unlist` ukládá i
+  `meta.privacy = unlisted`; tabulka u takového dvojčete píše `duplikat = ano (unlisted)` a `navrh` prázdný.
+- **Playlisty jen pro veřejná videa:** `playlistPlan` bere z DB jen `published` bez `meta.unlisted_at` a s
+  `meta.privacy` public/neznámé; s `--apply` navíc jeden `videos.list` (1 jednotka na 50) pro všechny kandidáty –
+  neveřejné (Roman ručně v Studiu) vynechá a uloží `meta.privacy`, neznámé označí `missing`. `refreshStats` ukládá
+  `meta.privacy` při každém běhu. Nové **`--skip=id1,id2`** vynechá jmenovaná videa ručně (plán i `--apply`).
+- Třetí selhání z běhu řídící neznám (nebylo jmenováno); jiný důvod než 404 zůstává „failed“ a vypíše se.
+
+Testy: `YouTubeChannelTest` (retitle: smazané video → `missing`, mimo tabulku, na admin stránce; druhý běh téže tabulky
+nic neposílá; playlisty: skrytý duplikát, unlisted podle YouTube a smazané video mimo, `--skip`, jeden `videos.list`),
+`FarmStatusColumnsTest` (nový stav se vejde) – zelené.
+
+### 13.6.8 Po přepočtu 097/079: černá fotka a stín přes pásmo dotyku
+
+Řídící po `--ids=F26-000097,F26-000079` (27. 10.): zdroj 097 je **celá černá fotka** 3840×2160 (kamera nezachytila;
+`photo_tool.py stats` → mean 0,0, std 0,0), takže výřez byl právem prázdný a „napasování“ dalo černý obrázek. Pes 079
+levitoval dál, ačkoli výřez je čistý (572×653, pevná maska 14–638, lem žádný).
+
+- **Černá / jednobarevná fotka není fotka** (`PrintPhotos::DARK_MEAN` 8, `DARK_STD` 2 z 255; `isDark`):
+  `photo_tool.py normalize` vrací `mean`/`std`, nový `photo_tool.py stats <in> -` totéž pro libovolný soubor.
+  - Příjem foto‑boxu (`TestPhotos::add`): černá fotka se smaže a odmítne (`farm.refuse.photo_dark` cs/en/es „Fotka je
+    černá nebo jednobarevná (kamera nezachytila). Vyfoťte ji znovu.“), zakázka si zapíše `test_params.dark_photo_at`;
+    další dobrá fotka záznam smaže. Ostatní kamery téhož záběru projdou normálně (každá fotka zvlášť).
+  - `PrintPhotos::render` (stránka zakázky, `farm:photo`, redo): před výřezem `stats`, černá → `EngineException
+    dark: …`; `ComposePrintPhoto` u zakázky bez fotky uloží `photo_meta.error` a stránka zakázky píše „Poslední fotka
+    se nepoužila: …“.
+  - `farm:photo --redo-videos --apply` (i s `--ids`): černý zdroj → složená fotka pryč (`photo_path` null), černá
+    fotka z foto‑boxu pryč (`TestPhotos::dropDark`, `dark_photo_at`), videa se přestaví bez ní; řádek „removed – black
+    photo (the camera did not capture): shoot it again“. `/admin/youtube` u takové zakázky: „Fotka z foto‑boxu byla
+    černá (kamera nezachytila), vyfoťte ji znovu ve foto‑boxu.“
+- **Stín přes pásmo dotyku** (`photo_compose.py ground_band`): příčina levitace nebyl lem ani offset – kus je focen
+  šikmo, takže vzdálenější tlapka končí v obraze o ~20 px výš než bližší; stín kreslený jen od nejnižšího bodu nechal
+  vzdálenější tlapku viset. Teď se pro každý sloupec vezme nejnižší pevný řádek masky; sloupce, jejichž dno leží do 8 %
+  výšky nad nejnižším bodem, jsou „pásmo dotyku“ (tlapky, ne břicho); elipsa má výšku poloviny hloubky pásma + 2,5 %
+  výšky kusu, střed uprostřed pásma (o 0,2 ry níž), šířku 1,2× rozpětí dotykových sloupců (min. 60 % šířky kusu),
+  rozostření 2 % šířky. Horní okraj tak překrývá vzdálenější tlapku, spodní leží pod bližší. Plochý kus (stojánek):
+  pásmo = i tam šikmý spodek, výsledek sedí. Ověřeno na výřezu psa ze serveru (`scratchpad/dog-final.jpg`, 3:2 i 9:16)
+  a na stojánku; sloupcový průchod maskou je ~450 ořezů, milisekundy.
+- Po nasazení: `php artisan farm:photo --redo-videos --apply --ids=F26-000097,F26-000079` (097 se vyčistí, 079 se
+  složí znovu).
+
+Testy: `PrintPhotosTest` (nový test: černá fotka → `dark:` výjimka, odmítnutí ve foto‑boxu + `dark_photo_at` + smazání
+po dobré fotce, nahrání na stránce zakázky → `photo_meta.error` + text, legacy 097 → redo vyčistí složenou i foto‑box,
+video se přestaví), `FarmTestPhotosTest` – zelené.

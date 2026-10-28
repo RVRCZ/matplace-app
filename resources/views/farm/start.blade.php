@@ -84,7 +84,7 @@
         <p class="mt-3 text-xs text-slate-500">{{ __('farm.start.next_hint') }}</p>
 
         <button id="farm-continue" type="submit" class="mt-4 inline-flex w-full items-center justify-center gap-2 rounded-xl bg-action px-4 py-3 font-semibold text-white disabled:opacity-50" @disabled(! $file)>{{ __('farm.start.continue') }}<x-icon name="arrow-right" class="h-4 w-4" /></button>
-        @if($slicesLeft !== null)<p class="mt-2 text-xs text-slate-500">{{ __('farm.slices_left', ['n' => $slicesLeft]) }}</p>@endif
+        @if($slicesLeft !== null)<p class="mt-2 text-xs text-slate-500">{{ trans_choice('farm.slices_left', $slicesLeft, ['n' => $slicesLeft]) }}</p>@endif
     </form>
 </div>
 @endsection

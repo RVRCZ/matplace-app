@@ -35,7 +35,7 @@ return [
         'hashtags' => '#3dtisk #3dtiskarna #dárek',
         'title_plain' => ':name – :time tisku',
         'title_unnamed' => 'Co vyroste za :time 3D tisku',
-        'description' => ":cta\nČasosběr tisku z naší 3D tiskové farmy; hotový kus a cenu vidíte na konci.\n\nMateriál: :material :color\nTiskárna: :printer\nDoba tisku: :time\n\nVideo zveřejňujeme se souhlasem zákazníka.",
+        'description' => ":cta\nČasosběr tisku z naší 3D tiskové farmy; hotový kus a cenu vidíte na konci.\n\nMateriál: :material :color\nDoba tisku: :time\n\nVideo zveřejňujeme se souhlasem zákazníka.",
     ],
 
     // the first second of a Short: what the viewer is about to see, by the tool that made the model (the hook)
@@ -62,6 +62,15 @@ return [
         'vase' => '#váza', 'sign' => '#cedulka', 'nameplate' => '#jmenovka', 'medallion' => '#medaile', 'phone_stand' => '#stojánek', 'cap' => '#oprava', 'holder' => '#držák',
         'cable_holder' => '#držák', 'ornament' => '#vánoce', 'gingerbread' => '#vánoce', 'cookie' => '#vykrajovátko', 'topper' => '#dort', 'stamp' => '#razítko', 'logo' => '#logo',
         'text' => '#nápis', 'map' => '#mapa', 'default' => '#3dprinting',
+    ],
+
+    'mail' => [
+        'subject' => 'Video vašeho tisku :number je na YouTube',
+        'title' => 'Vaše video je venku',
+        'body' => 'Časosběr tisku „:name“ je zveřejněný na našem kanálu. Děkujeme, že jste ho dovolili ukázat.',
+        'watch' => 'Přehrát na YouTube',
+        'share' => 'Když se vám líbí, pošlete ho dál: každé sdílení pomáhá malé farmě víc než reklama.',
+        'next' => 'Další model si můžete nechat vytisknout tady: :url',
     ],
 
     'weekly' => [

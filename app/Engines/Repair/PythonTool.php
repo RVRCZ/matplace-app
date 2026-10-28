@@ -27,7 +27,7 @@ final class PythonTool implements ScriptRunner
     /** @return array<string,mixed> */
     public function run(array $args): array
     {
-        $r = Process::timeout($this->config['timeout'])
+        $r = Process::timeout($this->config['timeout'])->env(self::switches())
             ->run(array_merge([$this->config['bin'], base_path('engines/python/mesh_tool.py')], $args));
         $json = json_decode(trim($r->output()), true);
         if (! is_array($json)) {
@@ -44,13 +44,33 @@ final class PythonTool implements ScriptRunner
      */
     public function runScript(string $script, array $args, int $timeout = 90): array
     {
-        $r = Process::timeout($timeout)->run(array_merge([$this->config['bin'], base_path('engines/python/'.$script)], $args));
+        $r = Process::timeout($timeout)->env(self::switches())->run(array_merge([$this->config['bin'], base_path('engines/python/'.$script)], $args));
         $json = json_decode(trim($r->output()), true);
         if (! is_array($json)) {
             throw new EngineException($script.' returned no JSON: '.mb_substr($r->output().$r->errorOutput(), -500));
         }
 
         return $json;
+    }
+
+    /**
+     * The switches the scripts read from their environment (PAPEL_REMBG=off in PapelPortraitTest), handed over by name:
+     * Symfony's Process gives a child only the variables the process started with ($_SERVER), so a putenv() made later,
+     * as a test does, would never reach Python and the test would follow whatever this machine has installed.
+     *
+     * @return array<string, string>
+     */
+    private static function switches(): array
+    {
+        $out = [];
+        foreach (['PAPEL_REMBG'] as $name) {
+            $value = getenv($name);
+            if ($value !== false) {
+                $out[$name] = (string) $value;
+            }
+        }
+
+        return $out;
     }
 
     private function probe(): array

@@ -48,6 +48,16 @@ return [
     // time-lapse twice split the views and looked like spam, YouTube audit of 27 Oct 2026); on = upload both as before
     'wide_uploads' => (bool) env('YOUTUBE_WIDE_UPLOADS', false),
 
+    // The channel's playlists (youtube:playlists, docs/AL.md §13.5), mirroring the tools of the site: the name, what it
+    // says, and the tools whose prints belong in it (`tools`, FarmVideos::toolKind) or the kinds of video (`kinds`). A
+    // customer's own file belongs to none: Roman sorts those by hand in Studio.
+    'playlists' => [
+        'Figurky z fotky' => ['tools' => ['figure', 'pet', 'relief', 'papel'], 'description' => 'Busty, figurky a reliéfy z jedné fotky, vytištěné na naší 3D farmě. Vlastní si uděláte na matplace.com/tools/figure.'],
+        'Dárky se jménem' => ['tools' => ['sign', 'nameplate', 'medallion', 'ornament', 'topper', 'name_cup', 'name_letter', 'charm', 'text', 'logo', 'stamp', 'gifts', 'personalize'], 'description' => 'Cedulky, medaile, ozdoby a zápichy se jménem: dárek, který nikdo jiný nemá. Vlastní si uděláte na matplace.com/tools.'],
+        'Pro domácnost' => ['tools' => ['box', 'organizer', 'vase', 'phone_stand', 'cap', 'holder', 'cable_holder', 'tray', 'hair_tie', 'candle_stand', 'modular', 'gingerbread', 'cookie', 'qr', 'map', 'beads', 'notes', 'lightbox', 'stencil', 'cutter'], 'description' => 'Krabičky, organizéry, vázy, stojánky, víčka a držáky přesně na míru, vytištěné u nás. Zadáte rozměr, my tiskneme.'],
+        'Jak to funguje' => ['kinds' => ['howto', 'weekly'], 'tools' => [], 'description' => 'Jak se u nás tiskne: od souboru nebo fotky přes cenu po hotový kus, a co se na farmě dělo tento týden.'],
+    ],
+
     // quota ran out (about 6 uploads a day by default): try again after this many minutes
     'retry_after_minutes' => 360,
 

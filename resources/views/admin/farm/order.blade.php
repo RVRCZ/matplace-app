@@ -101,10 +101,11 @@
             <h2 class="font-bold">Fotka výtisku</h2>
             @if($order->photoUrl())
                 <a href="{{ $order->photoUrl() }}" target="_blank" rel="noopener"><img src="{{ $order->photoUrl() }}" alt="fotka výtisku" class="mt-2 w-full rounded-xl border border-slate-200"></a>
-                <p class="mt-1 text-xs text-slate-500">podklad {{ $order->photo_meta['bg'] ?? '—' }} · {{ ($order->photo_meta['cut'] ?? false) ? 'pozadí odstraněno' : 'pozadí ponecháno (rembg není k dispozici)' }}
+                <p class="mt-1 text-xs text-slate-500">podklad {{ $order->photo_meta['bg'] ?? '—' }} · {{ match (\App\Domain\Farm\PrintPhotos::cutState((array) $order->photo_meta)) { 'cut' => 'pozadí odstraněno', 'uncut' => 'pozadí ponecháno (výřez nic nenašel: '.($order->photo_meta['cut_error'] ?? '').')', 'empty' => 'výřez prázdný – přepočítat (farm:photo --redo-videos --apply --ids='.$order->number.')', default => 'pozadí ponecháno (rembg nebyl k dispozici)' } }}
                     @if($order->photoUrl('short')) · <a class="underline" href="{{ $order->photoUrl('short') }}" target="_blank" rel="noopener">9:16</a>@endif
                     @if($order->photoUrl('cutout')) · <a class="underline" href="{{ $order->photoUrl('cutout') }}" target="_blank" rel="noopener">výřez PNG</a>@endif</p>
             @else
+                @if($order->photo_meta['error'] ?? null)<p class="mt-1 text-xs text-red-700">Poslední fotka se nepoužila: {{ $order->photo_meta['error'] }}</p>@endif
                 <p class="mt-1 text-xs text-slate-600">Zatím žádná. Fotka z fotoboxu nebo z telefonu; pozadí se odstraní a kus se položí na podklad ve velikostech pro web, Short a konec videa.</p>
             @endif
             <form method="post" action="{{ route('admin.farm.orders.print_photo', $order) }}" enctype="multipart/form-data" class="mt-2 flex flex-wrap items-center gap-2">@csrf

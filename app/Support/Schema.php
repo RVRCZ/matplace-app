@@ -36,12 +36,33 @@ final class Schema
         return $thing ? (string) json_encode(['@context' => 'https://schema.org'] + $thing, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_HEX_TAG | JSON_HEX_AMP) : null;
     }
 
-    public static function organization(): array
+    /**
+     * Who runs the site: the short form on the home page; the full one ($full, the about and contact pages) adds the legal
+     * name, the registered office and the company number from config/seo.php `organization`, the facts the contact page
+     * prints (docs/AN.md §12.4). LocalBusiness with opening hours waits for a pickup in person with hours (Roman decides).
+     */
+    public static function organization(bool $full = false): array
     {
-        return [
+        $data = [
             '@type' => 'Organization', '@id' => url('/').'#organization', 'name' => 'matplace', 'url' => url('/'),
             'logo' => url('/img/logo.png'),
             'sameAs' => array_values(array_filter([config('youtube.channel_url'), config('seo.same_as.facebook'), config('seo.same_as.instagram')])),
+        ];
+        $org = (array) config('seo.organization', []);
+        if (! $full || $org === []) {
+            return $data;
+        }
+
+        return $data + [
+            'legalName' => $org['legal_name'] ?? null,
+            'email' => $org['email'] ?? null,
+            'address' => empty($org['street']) ? null : [
+                '@type' => 'PostalAddress', 'streetAddress' => $org['street'], 'addressLocality' => $org['locality'] ?? null,
+                'postalCode' => $org['postal_code'] ?? null, 'addressCountry' => $org['country'] ?? null,
+            ],
+            // the company number (IČO): schema.org has no field of its own for it
+            'identifier' => empty($org['ico']) ? null : ['@type' => 'PropertyValue', 'propertyID' => 'IČO', 'value' => (string) $org['ico']],
+            'vatID' => $org['vat_id'] ?? null,
         ];
     }
 
@@ -113,6 +134,26 @@ final class Schema
         return [
             '@type' => 'ItemList', 'name' => $name, 'description' => $description, 'numberOfItems' => count($items),
             'itemListElement' => array_values(array_map(fn (array $i, int $n) => ['@type' => 'ListItem', 'position' => $n + 1, 'name' => $i['name'], 'url' => $i['url'], 'image' => $i['image'] ?? null], $items, array_keys($items))),
+        ];
+    }
+
+    /**
+     * A thing we sell a print of: an inspiration model with a slice of its own file (docs/AN.md §13). The offers are the
+     * price of one piece in each material as one AggregateOffer in the visitor's currency, sold by us; only where the
+     * licence allows a sale – elsewhere the page stays a CreativeWork alone.
+     *
+     * @param  list<string>  $images
+     * @param  list<float>  $prices  one per material, in $currency
+     */
+    public static function product(string $name, ?string $description, array $images, string $url, array $prices, string $currency): array
+    {
+        return [
+            '@type' => 'Product', 'name' => $name, 'description' => $description, 'image' => $images, 'url' => $url,
+            'offers' => $prices ? [
+                '@type' => 'AggregateOffer', 'priceCurrency' => $currency, 'lowPrice' => round(min($prices), 2), 'highPrice' => round(max($prices), 2), 'offerCount' => count($prices),
+                'availability' => 'https://schema.org/InStock', 'itemCondition' => 'https://schema.org/NewCondition', 'url' => $url,
+                'seller' => ['@id' => url('/').'#organization'],
+            ] : null,
         ];
     }
 

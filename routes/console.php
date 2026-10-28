@@ -11,6 +11,7 @@ Schedule::command('social:videos')->everyFiveMinutes()->withoutOverlapping();   
 // "Tento týden na farmě": the week's prints in one video, waiting for the admin in /admin/youtube (never published by itself)
 Schedule::command('farm:weekly-video')->weeklyOn(0, '18:00')->timezone('Europe/Prague')->withoutOverlapping()->runInBackground();
 Schedule::command('matplace:sitemap')->dailyAt('04:40');
+Schedule::command('searchconsole:pull --days=3')->dailyAt('05:20');   // Search Console finishes a day two to three days later (docs/AN.md §14)
 // events older than 13 months (pages fetched by robots: 30 days) are folded into a daily summary and deleted
 Schedule::command('matplace:events-rollup')->dailyAt('03:50');
 // one machine passing for many people: out of the people (docs/O.md "Vlny"). Only visits counted as people's are judged

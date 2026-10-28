@@ -28,6 +28,9 @@ return [
      */
     'index_requires' => array_values(array_filter(explode(',', (string) env('CATALOG_INDEX_REQUIRES', 'enriched,price,file')))),
 
+    // the materials an inspiration page prices one piece in, from the slice of the model's own file (catalog:slice, docs/AN.md §13)
+    'value_materials' => ['PLA', 'PETG', 'ASA'],
+
     // catalog:enrich – how many of the most visited models by default, and how much of the source's text Gemini reads
     'enrich' => ['top' => 300, 'max_source_chars' => 3000],
 

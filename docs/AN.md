@@ -190,7 +190,68 @@ Zadání `docs/prompts/audit-web-2.md` (úkoly 1 až 6 kvalita, 7 až 11 návšt
   Roman export dodá.
 - Tamtéž tabulka **vložené kalkulačky**: hosty, kde se rám načetl, za 30 dní (`ToolUse::embeds`).
 
-### 12.4 (vyhrazeno: úkoly 1 až 6 níže)
+### 12.4 Opravy kvality z auditu (úkoly 1 až 6) a fotky v bloku důvěry
+
+- **Plurály a jazyk (úkol 1).** Věty s počtem přes `trans_choice` (cs 1 / 2 až 4 / 5+, en a es 1 / jiné), texty v
+  `lang/src/plurals.json`: blok důvěry `calc.trust.printed`, `calc.trust.days`, `calc.trust.videos` (`_trust.blade.php`);
+  medián předání se zaokrouhluje nahoru a čte se „obvykle do jednoho dne“ / „do 4 dnů“ („within“), ne „1 days“; limit
+  busty a mazlíčka `figure.limits` (figure.blade.php, pet.blade.php, 4 místa); `calc.days` v kalkulaci (`plural()` v
+  calculator.ts vybírá tvar podle posledního čísla rozsahu, „2–4 dny“, „5–7 dní“; text cestuje v JSON s tvary
+  oddělenými `|`). **Hlavní stránka:** `home.benefit.free_tools` tiskne `calculator/home.blade.php` (řídící), proto jen
+  připraven klíč `home.benefit.free_tools_n` ve třech jazycích; řádek 44 stačí změnit na
+  `$b === 'free_tools' ? trans_choice('home.benefit.free_tools_n', $n = (int) config('ai.daily_limits.generate_guest'), ['n' => $n]) : __('home.benefit.'.$b, [...])`
+  a starý klíč smazat (dnes na /en/ „3 model a day“). Titulek videa z farmy (`FarmVideo.title`, česky z DB) jen na cs;
+  en a es dostanou „A print from our farm: <nástroj>“ (nástroj přes `order.modelFile`, když model vznikl nástrojem),
+  jinak „A print from our farm“. Projito `lang/*.json` i `lang/*/*.php`: zbývá `farm.slices_left` („ještě :n modelů“,
+  lang/*/farm.php, session 2) a `printer.public.lead` („do :n dní“, tržiště, vypnuto). Test
+  `test_sentences_with_numbers_follow_the_count_in_three_languages` (/, /en, /es s 1 a 3).
+- **`href="#"` (úkol 2).** „Upravit tvar a rozměry“ vede na `/tools` (skript přepíše na nástroj souboru; lišta je do té
+  doby skrytá), „Jen samotný model (.stl)“ a odkaz v dialogu výběru tiskárny jsou `<a>` bez `href`, dokud skript nezná
+  soubor (`download.ts` nastaví, `printer_pick.ts` nastaví nebo odebere). Na stránkách nástrojů žádné další; dva
+  zůstávají na stránce zakázky (`farm/order.blade.php` `#farm-short`, `#farm-topup`, session 2). Test: žádné `href="#"`
+  na /, /tools/qr, /tools/box.
+- **Obrázky (úkol 3).** Karty „Náš výběr“ na /tools: první dvě `loading="eager"`, ostatní `lazy`; `fetchpriority="high"`
+  u nich není, má ho logo v hlavičce (jedno na stránku). `tools/picture` má nový parametr `priority` (výchozí = `eager`,
+  stránky nástrojů tedy beze změny), `card_row` ho propouští. Řádek karty má 96 px, při 3× DPR 288 px: 480w stačí,
+  400w by ušetřilo jen pár kB na kartu, nedělám. Test `test_the_first_two_picks_of_the_tools_page_load_at_once`.
+- **Inline konfigurace (úkol 4).** `MP_CONFIG` a `MP_I18N` (konstanty kalkulace + 205 textů skriptů) už v HTML nejsou:
+  `GET /api/calc-config?l=<jazyk>&m=<další krok>&v=<hash obsahu>` (`ConfigController::calc`, `App\Support\CalculatorTexts`,
+  `NextStep::force`) vrací `{config, i18n}` s `Cache-Control: public, max-age=86400`; verze v adrese se mění s obsahem
+  (i s dopravní nápovědou podle měny), takže se nikdy nečte zastaralá kopie a dva návštěvníci nesdílí jednu. Stránka
+  nese jen `window.MP_CONFIG_URL` a `<link rel="modulepreload">` na chunk kalkulace; `app.ts` stáhne JSON (při chybě
+  jednou zopakuje, pak ukáže `#mp-config-error` a kalkulaci nabootuje bez cen) a teprve potom chunk importuje (ten čte
+  globály při načtení modulu). Stránky check, mold a repair si své texty vkládají dál samy. Měření lokálně (dev server
+  8013, `/` cs): HTML 120 423 B → 96 953 B (gzip 28 958 → 21 241), inline skripty 30 549 B → 6 832 B (8 skriptů);
+  JSON 23 840 B (gzip 7 821), první návštěva o jeden požadavek navíc souběžně s chunkem, další den z cache. Na produkci
+  (128 kB) čekej ~104 kB. Ověřeno v headless Chrome, že JSON dorazí a kalkulace nabootuje (`review_round2.mjs --then`).
+  **3D prohlížeč líně až po souboru (posudek, nedělám):** po vykreslení se hned stahuje chunk `boot` 256 kB (gzip 81 kB)
+  + `BufferGeometryUtils` 544 kB (gzip 137 kB) + `viewer` 48 kB + `loaders` 34 kB. Rozdělit na „před souborem“ (nahrání,
+  odhad, formulář, ~80 kB) a „po souboru“ (three.js, prohlížeč, parsery) je 1 až 2 dny práce: dynamické importy v
+  calculator.ts, mini prohlížeče karet a stránky nástrojů ho potřebují hned, `check_bundle` a `check_preview_colors`
+  upravit. Úspora ~600 kB přenosu (gzip ~230 kB) pro návštěvníka, který soubor nenahraje; na LCP vliv nemá (chunk se
+  stahuje až po vykreslení), šetří data, baterii a práci hlavního vlákna. Doporučení: až po změření INP na telefonu.
+- **Strukturovaná data (úkol 5).** `/about` a `/contact`: `Organization` v plné podobě (`Schema::organization(true)`):
+  `legalName` matplace s.r.o., `address` (PostalAddress Rybná 716/24, Praha 1, 110 00, CZ), `identifier` IČO 22499008
+  jako `PropertyValue`, `email`, logo, `sameAs` (YouTube a sítě z `config/seo.php`); údaje v `config/seo.php`
+  `organization` (DIČ přes `SEO_VAT_ID`, zatím prázdné = vynecháno). Hlavní stránka nese krátkou podobu jako dřív.
+  `/materials`: `ItemList` materiálů (název, kotva karty, popis = lead stránky). `LocalBusiness` až s osobním odběrem
+  a hodinami (Roman, D17). Test `test_about_contact_and_materials_carry_structured_data` čte JSON-LD ze stránek.
+- **Rozcestník výš (úkol 6, posudek, nedělám).** „Kam dál“ (`landing.titles.next`: podobné nástroje + ke čtení) je část
+  `next` partialu `tools/_landing`, vkládaná z `tools/_content` na konci obsahu každé stránky s nástrojem včetně hlavní
+  (layout `app.blade.php` za `@yield('content')`, po bannerech). Na hlavní stránce leží za kalkulací, příklady a FAQ,
+  hluboko pod ohybem; návštěvník bez souboru k němu nedojde. Jedna řádka odkazů hned pod blokem nástrojů by byla buď
+  duplicita (+1 až 2 kB HTML, proti zadání) nebo přesun v `home.blade.php` (řídící). Pod dlaždicemi nástrojů nemá
+  „Podobné nástroje“ smysl (dlaždice jsou nástroje); smysl má „Ke čtení“ (3 články) – doporučuji řídící zvážit v
+  `home.blade.php`. `#search-section` beze změny.
+- **Fotky v bloku důvěry (dohoda se session 2).** `PublicStats::latestPhotos(4)` (jen když metoda existuje): mřížka
+  čtyř fotek, WebP přes `<picture>`, `loading="lazy"`, alt „Výtisk z farmy matplace: <nástroj | model zákazníka>“
+  (nástroj přes `config/tools.php`, titulek v jazyce stránky). Bez fotek se nic nevykreslí.
+- **Testy po dávkách B a C (opraveno 27. 10. večer, větev `fix/tests-after-calc-config`):** šest testů četlo texty
+  kalkulace z HTML nebo hledalo holé `<link rel="alternate"` (RSS je také alternate). Pomocník `TestCase::calcConfig()`
+  stáhne JSON z `window.MP_CONFIG_URL` a vrátí `config` + `i18n` (CustomColorTest, MarketplaceSwitchTest, ToolsFlowTest ×2);
+  LocaleUrlTest hledá `<link rel="alternate" hreflang=`. PapelPortraitTest padal jinak: `putenv('PAPEL_REMBG=off')` se do
+  Pythonu nedostal (Symfony Process dává potomkovi jen proměnné z `$_SERVER` při startu), takže test sledoval, co má
+  stroj nainstalované; `PythonTool::switches()` předává `PAPEL_REMBG` jménem.
 
 ### 12.5 Návraty: e-mail s výsledkem a RSS (úkol 10)
 
@@ -206,3 +267,147 @@ Zadání `docs/prompts/audit-web-2.md` (úkoly 1 až 6 kvalita, 7 až 11 návšt
   ověření tiskem (`verified` je jediné datum, které nástroj má; bez něj se v kanálu neobjeví, dnes 6 nástrojů), 50
   položek, `Cache-Control` 10 min, `<link rel="alternate" type="application/rss+xml">` v hlavičce každé stránky a odkaz
   „RSS“ v patičce. Nové nástroje bez data ověření by potřebovaly klíč `since` v `config/tools.php` (doporučení).
+
+### 12.6 Katalog Inspirace: dvě cesty k rozhodnutí (úkol 11, nic neprovedeno)
+
+Stav: 8 592 modelů, 375 indexovaných (`CATALOG_INDEX_REQUIRES=enriched,price,file`: obohacený text, cena a soubor;
+`CatalogModel::isIndexable`, sitemap i `noindex,follow` to respektují). Cena dnes (`ModelPricing::quoteCatalog`): z karty
+autora, když je rozřezaná (`basis` card), jinak z `est_minutes`/`est_grams` starého webu v nejlevnějším nahraném druhu
+(`basis` estimate). Počty po druzích neznám (produkční DB nečtu); řídící je zjistí jedním dotazem:
+`CatalogModel::shown()->where('file_available', true)->count()` a `->whereNotNull('model_file_id')->count()`.
+
+**(a) Hodnota navíc na detailu**: cena ve třech materiálech a doba tisku z kalkulace souboru (jen `file_available`),
+`Product` + `Offer`.
+- Co: příkaz `catalog:slice [--limit=N] [--indexed]` rozřeže soubor modelu (`CalculationService::sliceNow`, mimo špičku,
+  fronta farmy má přednost) a uloží minuty, gramy a datum do nových sloupců (`slice_minutes`, `slice_grams`, `sliced_at`);
+  detail ukáže tabulku PLA / PETG / ASA (ceny `PriceCalculator` s ceníkem farmy, `FarmPricingProfile`, měna návštěvníka)
+  a dobu tisku; JSON-LD `Product` (`name`, `image` ze zdroje, `description`) s `offers` jako `AggregateOffer`
+  (`lowPrice`/`highPrice`, `priceCurrency`, `availability` InStock) – Google u Offer vyžaduje cenu a měnu, obojí máme.
+- Práce: jedna session, 6 až 8 h (migrace, příkaz, výpočet cen z hotových tříd, blok v `inspiration/show`,
+  `Schema::product()`, testy s falešným slicerem). Stroj: řez 20 až 90 s na model (docs/M.md), 375 souborů ≈ 3 až 9 h
+  fronty; celý katalog se souborem řádově dny, po dávkách v noci.
+- Riziko: licence modelů (CC BY-NC a podobně) – `Offer` na tisk cizího NC modelu je nabídka prodeje. Doporučení:
+  `offers` jen u modelů, jejichž licence prodej dovoluje (sloupec licence je třeba doplnit při obohacení), u ostatních
+  `Product` bez `offers` a cena jen v textu stránky. Přínos: rich results s cenou u 375 stran; CTR před a po je vidět
+  v importu Search Console (§12.3) po 4 týdnech.
+
+**(b) Přepínač: indexovat jen modely s kalkulací**, ostatní `noindex`.
+- Co: nový požadavek `calculation` do `CatalogModel::INDEX_NEEDS` (splněn, když `quoteCatalog()['basis'] === 'card'`
+  nebo po (a) `sliced_at` není null), `CATALOG_INDEX_REQUIRES=enriched,calculation,file`; sitemap a `noindex` už jdou přes
+  `isIndexable()`, mění se jen podmínka.
+- Práce: 2 h včetně testu. Dopad: bez (a) klesne index z 375 na počet rozřezaných karet autorů (odhadem jednotky až
+  desítky) a ztratí se dnešní dlouhý ocas; s (a) zůstane 375, jen s přesnější cenou.
+- Doporučení: (b) samostatně ne. Nejdřív (a) na 375 indexovaných, po 4 týdnech srovnat CTR ze Search Console a pak
+  zvažovat rozšíření indexu o další obohacené modely se souborem, ne zúžení. Roman rozhodne, bez jeho slova se nic
+  z toho nedělá.
+
+## 13. Katalog Inspirace: cena ve třech materiálech a doba tisku z řezu souboru (větev `feature/catalog-value`, 27. 10. 2026)
+
+Roman rozhodl variantu (a) z §12.6; (b) se nedělá. Nic z toho neběželo na produkci: řezání spustí řídící po nasazení.
+
+### 13.1 Co je kde
+
+- **`php artisan catalog:slice`** (`App\Console\Commands\SliceCatalog`): rozřeže soubor modelu v tomto procesu (žádná fronta,
+  `SliceCalculation::dispatchSync`) s výchozími parametry kalkulace (`PLA`, standard, výplň 15 %, 1 ks) a zapíše do
+  `catalog_models` sloupce `slice_minutes`, `slice_grams`, `slice_material`, `sliced_at`, `slice_error` (120 znaků) a
+  `slice_calculation_id` (FK na `calculations`, při smazání null; migrace `2026_10_27_200000`, šířky proti MariaDB:
+  minuty unsigned int, gramy decimal(8,1)). Kalkulace vznikne přes `CalculationService::create(..., sliceNow: false)`,
+  patří nikomu (bez session i uživatele), hotový řez stejného souboru a nastavení se znovu použije, takže opakovaný běh
+  nad modelem nic nestojí. `--limit` (výchozí 50), `--sleep` sekund mezi modely (výchozí 10), `--ids`, `--indexed` (jen
+  indexovatelné), `--force` (znovu přes výsledek i chybu), `--dry-run` (vypíše kandidáty a počty, nic neřeže).
+  **Pořadí:** nejdřív indexovatelné modely (`scopeIndexable`, dnes 375), pak ostatní se souborem; v obou podle
+  návštěvnosti. Limit se bere z tohoto pořadí, takže `--limit=50` po nocích projde nejdřív indexované.
+  **Řezat lze jen model, jehož soubor držíme (`model_file_id`)**: `file_available` samo žádný soubor nenese (importér ho
+  nastavuje false, LocalCatalogSearch ho jen čte), příkaz vypíše, kolik takových modelů je. Chybějící nebo nehotový
+  soubor = `slice_error` (`file_missing`, `file_not_ready: …`, `file_missing_on_disk`) a běh jde dál; návratový kód
+  FAILURE jen když nic neprošlo.
+- **Model (`CatalogModel`)**: `hasSlice()`, relace `sliceCalculation()` a `modelFile()`; řez platí jako „cena“ pro
+  index (`scopeIndexReady` i `indexGaps`), takže obohacený model se souborem je po řezu indexovatelný i bez čísel starého webu.
+- **Ceny (`ModelPricing::sliced`)**: jeden kus v materiálech `config('catalog.value_materials')` = PLA, PETG, ASA: gramy
+  podle hustot (`config/materials.php`), minuty podle rychlosti materiálu (`props.time`) – stejně jako porovnání
+  materiálů v kalkulačce (`renderCompare`); ceník farmy pro daný materiál přes `FarmPricingProfile::profile($code)`
+  (druh toho materiálu, když je nahraný, jinak nejlevnější druh se štítkem „nejlevnější druh u nás“) a `PriceEngine::price`
+  (časový faktor tiskárny → zobrazená doba tisku je doba na farmě). Měna návštěvníka (`Currency::current()`).
+  `quoteCatalog` bere řez hned za kartou autora (`basis` slice), před odhadem starého webu.
+- **Stránka `/model/{slug}`**: blok `#model-calc` pod CTA: tabulka materiál / doba tisku / cena za kus, poznámka
+  s datem řezu a textem, že barvu, materiál a počet kusů vybere objednávka; řádek „Odhad tisku“ (čísla starého webu) se
+  po řezu skryje. **Objednat** (`models.inspiration.calc_open`) vede na stránku kalkulace `/c/<token>` – tam je model
+  načtený, kalkulačka a cesta na farmu; jen když licence prodej dovoluje (`license_restricted` false). U nekomerční
+  licence zůstává tabulka (co by to stálo) i původní text „vytiskněte si ho pro sebe“, bez odkazu.
+- **JSON-LD**: `Schema::product()` = `Product` (název, popis, obrázky, url) s `offers` jako `AggregateOffer`
+  (`lowPrice`/`highPrice` ze tří materiálů, `priceCurrency` podle návštěvníka, `offerCount` 3, `availability` InStock,
+  `itemCondition` New, `seller` = naše Organization), jen u prodejných modelů; `CreativeWork` zůstává na všech.
+- **Admin `/admin/catalog`**: ve sloupci obohacení „řez 27. 10.“ (title: minuty a gramy) nebo „řez selhal“ (title: chyba).
+- Texty `models.inspiration.calc_*` v `lang/*/models.php` (cs/en/es). Test `tests/Feature/CatalogValueTest` (pořadí,
+  zápis, chyby, dry-run, stránka, tři materiály, Product/Offer v Kč i €, nekomerční licence bez Offer).
+
+### 13.2 Jak to spustit na produkci (řídící)
+
+1. Nasadit (migrace přidá sloupce), `php artisan catalog:slice --dry-run` – vypíše počty: kolik modelů má soubor, kolik má
+   jen `file_available`, kolik je indexovatelných a kolik kandidátů.
+2. V noci `php artisan catalog:slice --limit=60 --sleep=15` (Orca 20–90 s na model, s pauzou ≈ 1 model/min → hodina na
+   běh); opakovat, dokud `Candidates` neklesne na 0. Indexované jdou první. Řezy jdou týmž slicerem jako objednávky
+   (`CachedSlicer` → Orca), proto `--sleep`: fronta farmy má mít volno.
+3. Zkontrolovat pár stránek (`/model/<slug>` s `#model-calc`, Rich Results Test na `Product`), `/admin/catalog` ukazuje „řez“.
+4. Chyby `slice_error` v adminu; `--force --ids=…` po opravě souboru.
+
+### 13.3 Co zůstává
+
+- Počty modelů se souborem na produkci neznám (DB nečtu); jestli jich je málo, cena ve třech materiálech se objeví jen
+  u nich – `file_available` bez souboru by chtělo import souborů (odkud?), to je rozhodnutí Romana.
+- Licence: `Offer` jen kde `license_restricted` false (CC0, CC BY, CC BY-SA, free_commercial); u CC BY zůstává povinnost
+  uvést autora – objednávka ji píše do poznámky (`attribution()`), stránka ji říká.
+- Google může u `Product` hlásit chybějící `review`/`aggregateRating` jako doporučení; recenze nemáme, nevymýšlíme.
+- Stránka kalkulace `/c/<token>` z katalogu: kalkulace patří nikomu; pokud by se někdy kalkulace promazávaly, FK dá null
+  a stránka ukáže tabulku bez tlačítka (`$sellable` to hlídá).
+
+## 14. Search Console natrvalo přes API (větev `feature/search-console-api`, 27. 10. 2026)
+
+Roman: čísla ze Search Console bez ručního exportu. Brief `docs/prompts/search-console-api.md`. Nic nevolalo Google
+naostro: účet připojí Roman v adminu, první stažení pak spustí tlačítko nebo noc.
+
+### 14.1 Co je kde
+
+- **Připojení** (`App\Domain\Stats\SearchConsoleClient`, podle `YouTubeClient`, bez SDK): stejný OAuth klient jako YouTube
+  (`config/seo.php` `search_console.client_id/secret` = `SEARCH_CONSOLE_CLIENT_ID` nebo `YOUTUBE_CLIENT_ID`), rozsah jen
+  `webmasters.readonly`, `access_type=offline` + `prompt=consent` (vždy refresh token), callback přesně
+  `route('admin.search_console.callback')` = `https://matplace.com/admin/search-console/callback`. Po výměně kódu se
+  přečte `sites.list`; vlastnost se vybere sama, když je jediná nebo je to `sc-domain:<host>` / `APP_URL/`, jinak ji
+  vybere admin. Tokeny šifrované v `search_console_accounts` (`SearchConsoleAccount`, jeden řádek), odpojení = revoke.
+- **Admin `/admin/search-console`** (`Admin\SearchConsoleController`, chip „Search Console“ ve statistikách, sekce
+  Statistiky v admin navigaci): stav (.env, připojeno, vlastnost), výběr vlastnosti, „Stáhnout teď“, „Odpojit“, poslední
+  stažení a chyba, posledních 14 dní z databáze. Bez připojení vypíše, co má Roman kliknout v Google Cloud.
+- **Data** `search_console_rows` (migrace `2026_10_27_210000`): den, stránka (1000), dotaz (500, null = součet stránky),
+  země (ISO alpha-3 malými, `cze`), kliknutí, zobrazení, CTR, pozice; unikát `row_key` = sha1(den|stránka|dotaz|země),
+  protože MariaDB neuindexuje stránku vedle dotazu; index (den, země). Řádky bez dotazu jsou součty stránek (Search
+  Console v řádcích s dotazem anonymní dotazy vynechává, oba druhy se nikdy nesečtou na stejné číslo).
+- **Stahování** (`SearchConsolePull`, příkaz `searchconsole:pull [--days=3] [--since=YYYY-MM-DD]`): po dnech dva dotazy
+  `searchanalytics.query` (`page,country` a `page,query,country`), `rowLimit` 25 000 a `startRow` dokud odpověď není
+  kratší, `type=web`; upsert po 500 (idempotentní: stejný den podruhé = přepis). První běh účtu bez `--since` jde
+  16 měsíců zpět (tolik API drží, `first_pull_months`), `--since` dřív se zkrátí na to. 429 = jedna pauza
+  (`retry_seconds` 60) a opakování; `invalid_grant`/401 zapíše `last_error` a řekne „připojte znovu“. Rozvrh
+  `routes/console.php` denně 5:20 `--days=3` (Search Console má 2 až 3 dny zpoždění). Kvóta: 2 dotazy na den dat,
+  16 měsíců ≈ 1 000 dotazů + stránkování, hluboko pod limitem.
+- **Čtení** (`App\Domain\Stats\SearchConsole::current(od, do, země)`): z databáze, když má řádky (`source` api: součty
+  stránek se počítají, dotazy jen pojmenují top 5), jinak nejnovější CSV v `docs/data` jako dřív (`source` csv).
+  Stejný tvar pro oba zdroje (společný `aggregate`), navíc `by_locale` (jazyk podle prefixu adresy) u každého nástroje.
+  `/admin/stats/tools` bere období podle zvolených týdnů (4/12/26), řádek „Data ze Search Console (API) od … do …“,
+  filtr země (všechny / Česko / ostatní), rozpad zobrazení po jazycích pod číslem nástroje; vzhled jinak stejný.
+- Test `tests/Feature/SearchConsoleApiTest` (6 testů, falešný Google): připojení a callback, výběr vlastnosti, jen admin,
+  stahování po dnech a stránkách odpovědi (429 jednou), upsert dvakrát = stejné počty, první běh 16 měsíců, odmítnutý
+  grant, statistiky z DB s filtrem země i z CSV.
+
+### 14.2 Co klikne Roman (podle briefu)
+
+Google Cloud, projekt s YouTube: zapnout „Google Search Console API“; do OAuth klienta přidat redirect URI
+`https://matplace.com/admin/search-console/callback`; na obrazovce souhlasu (režim testování) rozsah
+`webmasters.readonly` a svůj účet mezi testovacími uživateli. Účet musí být vlastník nebo uživatel vlastnosti
+matplace.com. Pak `/admin/search-console` → Připojit → (vybrat vlastnost) → Stáhnout teď (první běh 16 měsíců, pár
+minut) – nebo nechat noci.
+
+### 14.3 Co zůstává
+
+- Země v CSV nejsou: filtr se ukazuje jen u dat z API.
+- Stránka `/model/<slug>` v Search Console: řádky má, do nástrojů se nepočítá (spadá do „ostatní stránky“, top 20);
+  pro katalog (§13) by stálo za to přidat součet „inspirace“ – malá úprava `SearchConsole::aggregate`.
+- Výmaz starých řádků neděláme (16 měsíců × stovky řádků denně = statisíce řádků, v pořádku).

@@ -70,6 +70,20 @@ function leadRange(days: number[]): string {
     return lo === hi ? String(lo) : `${lo}–${hi}`;
 }
 
+/**
+ * A text with the forms trans_choice uses on the server ("{1} :n den|[2,4] :n dny|[5,*] :n dní", lang/*.json): the form
+ * for n, so "2–4 dny" and "5–7 dní" read right when n is the range's last number.
+ */
+function plural(key: string, n: number, r: Record<string, string | number>): string {
+    const forms = (i18n[key] ?? key).split('|').map((f) => f.trim());
+    const form = forms.find((f) => {
+        const one = /^\{(\d+)\}/.exec(f); if (one) return Number(one[1]) === n;
+        const range = /^\[(\d+),(\d+|\*)\]/.exec(f);
+        return range ? n >= Number(range[1]) && (range[2] === '*' || n <= Number(range[2])) : false;
+    }) ?? forms[forms.length - 1];
+    return Object.entries(r).reduce((s, [a, b]) => s.replace(`:${a}`, String(b)), form.replace(/^(\{\d+\}|\[\d+,(?:\d+|\*)\])\s*/, ''));
+}
+
 /** A calculation that failed because the file is no model we can read says so: "Recalculate" would not help (docs/AH.md §9). */
 const failedKey = (c: { error?: string | null; file?: { status?: string; error?: string | null } | null } | null): string => (c?.file?.error === 'too_many_triangles' ? 'calc.status.too_many_triangles' : (c?.error === 'file_processing_failed' || c?.file?.status === 'failed' ? 'calc.status.not_model' : 'calc.status.failed'));
 
@@ -242,7 +256,7 @@ function renderRough(): void {
     $('price-main').textContent = lo === hi ? fmt.format(lo) : `${fmt.format(lo)} – ${fmt.format(hi)}`;
     $('price-sub').textContent = [q > 1 ? `${t('calc.price.per_piece')} ≈ ${fmt.format(Math.round(lo / q))} – ${fmt.format(Math.round(hi / q))}` : '', t('calc.price.shape_hint')].filter(Boolean).join(' · ');
     const leads = bds.map((b) => b.lead_time_days);
-    $('stat-lead').textContent = t('calc.days', { n: leadRange(leads) });
+    $('stat-lead').textContent = plural('calc.days', Math.max(...leads), { n: leadRange(leads) });
     renderBreakdown(bds.map((b) => ({ ...b, label: t(`calc.profile.${b.profile}`) })), true);
     if (!material(state.params.material).sliceable) $('price-sub').textContent = t('calc.est_only');
 }
@@ -413,7 +427,7 @@ function renderPrecise(c: CalcInfo): void {
     const tLo = Math.min(c.slicer.minutes, ...mins) * q; const tHi = Math.max(c.slicer.minutes, ...mins) * q;
     $('stat-time').textContent = tHi > tLo * 1.05 ? `${minutesText(tLo)} – ${minutesText(tHi)}` : minutesText(tLo);
     const leads = c.prices.map((p) => p.lead_time_days);
-    $('stat-lead').textContent = t('calc.days', { n: leadRange(leads) });
+    $('stat-lead').textContent = plural('calc.days', Math.max(...leads), { n: leadRange(leads) });
     $('dims-badge').textContent = `${fmt.format(c.slicer.dims.x)} × ${fmt.format(c.slicer.dims.y)} × ${fmt.format(c.slicer.dims.z)} mm`;
     renderBreakdown(c.prices.map((p) => ({ ...p, label: ownProfileId && (p as { printer_profile_id?: number | null }).printer_profile_id === ownProfileId ? t('calc.profile.mine') : (p.label ?? t(`calc.profile.${p.profile}`)) })), false);
     renderCheck(document.getElementById('model-check'), c.file?.check);

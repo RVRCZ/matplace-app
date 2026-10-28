@@ -79,7 +79,7 @@
                     <td class="px-3 py-2 text-xs">{{ $m->license ?: '—' }}<span class="block {{ $m->license_restricted ? 'text-slate-500' : 'text-ok' }}">{{ $m->license_restricted ? 'jen pro sebe' : 'i na prodej' }}</span></td>
                     <td class="px-3 py-2 text-xs uppercase">{{ implode(' ', $m->locales()) }}</td>
                     <td class="px-3 py-2">{{ $m->view_count }}</td>
-                    <td class="px-3 py-2 text-xs">{{ $m->enriched_at?->format('j. n. Y') ?? '—' }}@if($m->enriched_price_czk)<span class="block text-slate-500">{{ round($m->enriched_price_czk) }} Kč</span>@endif</td>
+                    <td class="px-3 py-2 text-xs">{{ $m->enriched_at?->format('j. n. Y') ?? '—' }}@if($m->enriched_price_czk)<span class="block text-slate-500">{{ round($m->enriched_price_czk) }} Kč</span>@endif @if($m->sliced_at)<span class="block text-ok" title="řez souboru {{ $m->sliced_at->format('j. n. Y') }}: {{ $m->slice_minutes }} min, {{ $m->slice_grams }} g">řez {{ $m->sliced_at->format('j. n.') }}</span>@elseif($m->slice_error)<span class="block text-amber-700" title="{{ $m->slice_error }}">řez selhal</span>@endif</td>
                     <td class="px-3 py-2 text-xs">@if(! $gaps)<span class="font-semibold text-ok">ano</span>@else<span class="text-slate-500">ne</span><span class="block text-slate-400">chybí: {{ implode(', ', array_map(fn ($g) => ['enriched' => 'text', 'price' => 'cena', 'file' => 'soubor', 'hidden' => 'skrytý'][$g] ?? $g, $gaps)) }}</span>@endif</td>
                     <td class="px-3 py-2 text-right">
                         <form method="post" action="{{ route('admin.catalog.toggle', $m->id) }}">@csrf<button class="text-xs underline">{{ $m->getAttribute('visible') ? 'skrýt' : 'zobrazit' }}</button></form>

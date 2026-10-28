@@ -1,0 +1,338 @@
+{
+    "exported": "2026-10-27",
+    "note": "aggregate counts only, no personal data; origin_ref of generated models is a random token",
+    "calc_90d_by_origin": [
+        {
+            "origin": "upload",
+            "origin_ref": null,
+            "n": 191
+        },
+        {
+            "origin": "tool",
+            "origin_ref": "sign",
+            "n": 33
+        },
+        {
+            "origin": "tool",
+            "origin_ref": "medallion",
+            "n": 31
+        },
+        {
+            "origin": "tool",
+            "origin_ref": "qr",
+            "n": 28
+        },
+        {
+            "origin": "generated",
+            "origin_ref": "qaena70xhtr0",
+            "n": 21
+        },
+        {
+            "origin": "tool",
+            "origin_ref": "phone_stand",
+            "n": 17
+        },
+        {
+            "origin": "tool",
+            "origin_ref": "lithophane",
+            "n": 14
+        },
+        {
+            "origin": "tool",
+            "origin_ref": "box",
+            "n": 13
+        },
+        {
+            "origin": "generated",
+            "origin_ref": "tbmsmesjth7z",
+            "n": 12
+        },
+        {
+            "origin": "tool",
+            "origin_ref": "vase",
+            "n": 11
+        },
+        {
+            "origin": "tool",
+            "origin_ref": "holder",
+            "n": 11
+        },
+        {
+            "origin": "generated",
+            "origin_ref": "lidz4inoblgf",
+            "n": 10
+        },
+        {
+            "origin": "tool",
+            "origin_ref": "organizer",
+            "n": 9
+        },
+        {
+            "origin": "tool",
+            "origin_ref": "notes",
+            "n": 9
+        },
+        {
+            "origin": "tool",
+            "origin_ref": "cap",
+            "n": 8
+        },
+        {
+            "origin": "tool",
+            "origin_ref": "cutter",
+            "n": 7
+        },
+        {
+            "origin": "tool",
+            "origin_ref": "charm",
+            "n": 6
+        },
+        {
+            "origin": "tool",
+            "origin_ref": "mold",
+            "n": 5
+        },
+        {
+            "origin": "generated",
+            "origin_ref": "vequtkrbuhku",
+            "n": 5
+        },
+        {
+            "origin": "generated",
+            "origin_ref": "bhbtgvbstrpf",
+            "n": 4
+        },
+        {
+            "origin": "generated",
+            "origin_ref": "6mywufuldizz",
+            "n": 4
+        },
+        {
+            "origin": "tool",
+            "origin_ref": "cable_holder",
+            "n": 4
+        },
+        {
+            "origin": "tool",
+            "origin_ref": "compose",
+            "n": 4
+        },
+        {
+            "origin": "tool",
+            "origin_ref": "logo",
+            "n": 4
+        },
+        {
+            "origin": "tool",
+            "origin_ref": "relief",
+            "n": 4
+        },
+        {
+            "origin": "tool",
+            "origin_ref": "map",
+            "n": 4
+        },
+        {
+            "origin": "generated",
+            "origin_ref": "zryxtf2i2bf1",
+            "n": 3
+        },
+        {
+            "origin": "tool",
+            "origin_ref": "hollow",
+            "n": 3
+        },
+        {
+            "origin": "generated",
+            "origin_ref": "9r39nevuocax",
+            "n": 3
+        },
+        {
+            "origin": "tool",
+            "origin_ref": "gingerbread",
+            "n": 3
+        },
+        {
+            "origin": "generated",
+            "origin_ref": "nzrzpbtiypsk",
+            "n": 3
+        },
+        {
+            "origin": "generated",
+            "origin_ref": "posx1zp899rg",
+            "n": 2
+        },
+        {
+            "origin": "generated",
+            "origin_ref": "6hnsrngtql3e",
+            "n": 2
+        },
+        {
+            "origin": "tool",
+            "origin_ref": "repaired",
+            "n": 2
+        },
+        {
+            "origin": "generated",
+            "origin_ref": "r2o7l7qm5bhk",
+            "n": 2
+        },
+        {
+            "origin": "tool",
+            "origin_ref": "ornament",
+            "n": 2
+        },
+        {
+            "origin": "generated",
+            "origin_ref": "cy62b7wcy5l9",
+            "n": 1
+        },
+        {
+            "origin": "tool",
+            "origin_ref": "modular",
+            "n": 1
+        },
+        {
+            "origin": "generated",
+            "origin_ref": "zjqwijzymbed",
+            "n": 1
+        },
+        {
+            "origin": "tool",
+            "origin_ref": "papel",
+            "n": 1
+        }
+    ],
+    "paid_orders_by_origin": [
+        {
+            "origin": "upload",
+            "origin_ref": null,
+            "n": 50
+        },
+        {
+            "origin": "tool",
+            "origin_ref": "medallion",
+            "n": 9
+        },
+        {
+            "origin": "tool",
+            "origin_ref": "phone_stand",
+            "n": 7
+        },
+        {
+            "origin": "tool",
+            "origin_ref": "qr",
+            "n": 7
+        },
+        {
+            "origin": "tool",
+            "origin_ref": "cap",
+            "n": 4
+        },
+        {
+            "origin": "tool",
+            "origin_ref": "vase",
+            "n": 3
+        },
+        {
+            "origin": "tool",
+            "origin_ref": "sign",
+            "n": 3
+        },
+        {
+            "origin": "tool",
+            "origin_ref": "lithophane",
+            "n": 3
+        },
+        {
+            "origin": "generated",
+            "origin_ref": "dhencxmy44aq",
+            "n": 3
+        },
+        {
+            "origin": "generated",
+            "origin_ref": "qaena70xhtr0",
+            "n": 3
+        },
+        {
+            "origin": "tool",
+            "origin_ref": "charm",
+            "n": 2
+        },
+        {
+            "origin": "tool",
+            "origin_ref": "cable_holder",
+            "n": 2
+        },
+        {
+            "origin": "tool",
+            "origin_ref": "holder",
+            "n": 1
+        },
+        {
+            "origin": "tool",
+            "origin_ref": "notes",
+            "n": 1
+        },
+        {
+            "origin": "generated",
+            "origin_ref": "ewmlvm40165g",
+            "n": 1
+        },
+        {
+            "origin": "generated",
+            "origin_ref": "cy62b7wcy5l9",
+            "n": 1
+        },
+        {
+            "origin": "generated",
+            "origin_ref": "nfh27qyc0mt6",
+            "n": 1
+        },
+        {
+            "origin": "generated",
+            "origin_ref": "our2edhrrone",
+            "n": 1
+        },
+        {
+            "origin": "generated",
+            "origin_ref": "zryxtf2i2bf1",
+            "n": 1
+        },
+        {
+            "origin": "tool",
+            "origin_ref": "box",
+            "n": 1
+        },
+        {
+            "origin": "generated",
+            "origin_ref": "jyrmffhj0bsz",
+            "n": 1
+        }
+    ],
+    "paid_orders_by_material": [
+        {
+            "code": "PLA",
+            "n": 68
+        },
+        {
+            "code": "PLA+",
+            "n": 33
+        },
+        {
+            "code": "PETG",
+            "n": 3
+        },
+        {
+            "code": "ASA",
+            "n": 1
+        }
+    ],
+    "paid_total": 105,
+    "public": {
+        "printed": 67,
+        "handed_over_days_median": 0.5,
+        "last_30_days_printed": 61,
+        "videos_published": 33
+    }
+}

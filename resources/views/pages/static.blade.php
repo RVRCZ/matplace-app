@@ -13,6 +13,8 @@
 
 @push('head')
 @if(! empty($page['items']))<x-jsonld :data="\App\Support\Schema::faq($page['items'])" />@endif
+{{-- who runs the site, in full (legal name, office, company number): the pages that say so (docs/AN.md §12.4) --}}
+@if(in_array($key, ['about', 'contact'], true))<x-jsonld :data="\App\Support\Schema::organization(true)" />@endif
 @endpush
 
 @section('content')

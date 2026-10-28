@@ -10,10 +10,14 @@ use App\Engines\Contracts\ModelGenerator;
 use App\Engines\Converter\ConverterChain;
 use App\Engines\DTO\SliceParams;
 use App\Http\Controllers\Controller;
+use App\Support\CalculatorTexts;
+use App\Support\Locales;
+use App\Support\NextStep;
 use App\Support\ShippingHint;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
 
-/** Constants the browser needs for the instant estimate and the form (also inlined into the page). */
+/** Constants the browser needs for the instant estimate and the form (the calculator's pages fetch them, with their texts, as one cached JSON: calc()). */
 class ConfigController extends Controller
 {
     /**
@@ -80,5 +84,26 @@ class ConfigController extends Controller
     public function show(MaterialCatalog $materials, ConverterChain $converters): JsonResponse
     {
         return response()->json(self::payload($materials, $converters, true));
+    }
+
+    /**
+     * GET /api/calc-config?l=&m=&v=: the calculator's constants and the texts its scripts say, in one language (l) and in
+     * the wording of one next step (m), as one JSON the browser keeps for a day; the version in the address (v, a hash of
+     * the content, CalculatorTexts::url) changes whenever the content does, so a stale copy is never read (docs/AN.md §12.4).
+     */
+    public function calc(Request $request, MaterialCatalog $materials, ConverterChain $converters): JsonResponse
+    {
+        $locale = (string) $request->query('l', app()->getLocale());
+        $mode = (string) $request->query('m', NextStep::mode());
+        abort_unless(Locales::supported($locale) && in_array($mode, NextStep::MODES, true), 404);
+        app()->setLocale($locale);
+        NextStep::force($mode);
+        try {
+            $payload = CalculatorTexts::payload(self::payload($materials, $converters));
+        } finally {
+            NextStep::force(null);
+        }
+
+        return response()->json($payload)->setPublic()->setMaxAge(CalculatorTexts::MAX_AGE);
     }
 }

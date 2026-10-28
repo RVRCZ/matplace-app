@@ -193,6 +193,99 @@ class YouTubeClient
         return (string) $r->json('id');
     }
 
+    /** A new title and description, the privacy as it is (videos.update part=snippet, 50 units): the retitle of the channel. */
+    public function retitle(string $id, string $title, string $description): void
+    {
+        $r = $this->api()->put(self::API.'/videos?part=snippet', ['id' => $id, 'snippet' => $this->snippet($title, $description)]);
+        if (! $r->successful()) {
+            throw YouTubeError::from($r, 'Retitle');
+        }
+    }
+
+    /** public | unlisted | private, nothing else changed (videos.update part=status, 50 units). */
+    public function setPrivacy(string $id, string $privacy): void
+    {
+        $r = $this->api()->put(self::API.'/videos?part=status', ['id' => $id, 'status' => $this->status($privacy, null)]);
+        if (! $r->successful()) {
+            throw YouTubeError::from($r, 'Privacy');
+        }
+    }
+
+    /**
+     * Every video of the channel (its uploads playlist), newest first: the ones made by hand too. 1 unit for the
+     * channel, 1 per 50 videos.
+     *
+     * @return list<array{id: string, title: string, published_at: string, privacy: string}>
+     */
+    public function uploads(): array
+    {
+        $ch = $this->api()->get(self::API.'/channels', ['part' => 'contentDetails', 'mine' => 'true']);
+        if (! $ch->successful()) {
+            throw YouTubeError::from($ch, 'Channel');
+        }
+        $playlist = (string) $ch->json('items.0.contentDetails.relatedPlaylists.uploads');
+        if ($playlist === '') {
+            return [];
+        }
+        $out = [];
+        $page = null;
+        do {
+            $r = $this->api()->get(self::API.'/playlistItems', array_filter(['part' => 'snippet,status', 'playlistId' => $playlist, 'maxResults' => 50, 'pageToken' => $page]));
+            if (! $r->successful()) {
+                throw YouTubeError::from($r, 'Uploads');
+            }
+            foreach ((array) $r->json('items') as $item) {
+                $out[] = ['id' => (string) ($item['snippet']['resourceId']['videoId'] ?? ''), 'title' => (string) ($item['snippet']['title'] ?? ''),
+                    'published_at' => (string) ($item['snippet']['publishedAt'] ?? ''), 'privacy' => (string) ($item['status']['privacyStatus'] ?? '')];
+            }
+            $page = $r->json('nextPageToken');
+        } while ($page);
+
+        return $out;
+    }
+
+    /**
+     * The channel's own playlists (1 unit).
+     *
+     * @return array<string, string> id => title
+     */
+    public function playlists(): array
+    {
+        $r = $this->api()->get(self::API.'/playlists', ['part' => 'snippet', 'mine' => 'true', 'maxResults' => 50]);
+        if (! $r->successful()) {
+            throw YouTubeError::from($r, 'Playlists');
+        }
+        $out = [];
+        foreach ((array) $r->json('items') as $item) {
+            $out[(string) $item['id']] = (string) ($item['snippet']['title'] ?? '');
+        }
+
+        return $out;
+    }
+
+    /** A public playlist (playlists.insert, 50 units); returns its id. */
+    public function createPlaylist(string $title, string $description = ''): string
+    {
+        $r = $this->api()->post(self::API.'/playlists?part=snippet,status', [
+            'snippet' => ['title' => mb_substr($title, 0, 150), 'description' => mb_substr($description, 0, 5000), 'defaultLanguage' => config('youtube.language')],
+            'status' => ['privacyStatus' => 'public'],
+        ]);
+        if (! $r->successful() || ! $r->json('id')) {
+            throw YouTubeError::from($r, 'Playlist');
+        }
+
+        return (string) $r->json('id');
+    }
+
+    /** The video at the end of the playlist (playlistItems.insert, 50 units). */
+    public function addToPlaylist(string $playlistId, string $videoId): void
+    {
+        $r = $this->api()->post(self::API.'/playlistItems?part=snippet', ['snippet' => ['playlistId' => $playlistId, 'resourceId' => ['kind' => 'youtube#video', 'videoId' => $videoId]]]);
+        if (! $r->successful()) {
+            throw YouTubeError::from($r, 'Playlist item');
+        }
+    }
+
     /** Remove the video from YouTube; a video that is already gone counts as removed. */
     public function delete(string $id): void
     {

@@ -550,7 +550,7 @@ class ToolPageTest extends TestCase
             }
             $this->assertStringContainsString('id="figure-drop"', $page, $url);
             $this->assertStringContainsString(e(__('photo.add')), $page, $url);
-            $limits = strpos($page, e(__('figure.limits', ['n' => 1, 'm' => 3])));
+            $limits = strpos($page, e(trans_choice('figure.limits', 1, ['n' => 1, 'm' => 3])));
             $this->assertNotFalse($limits, $url);
             $this->assertLessThan(strpos($page, 'id="figure-submit"'), $limits, "{$url}: the limit and the time come before the button");
             $this->assertStringNotContainsString('otevírám kalkulaci', $page, $url);
@@ -738,7 +738,7 @@ class ToolPageTest extends TestCase
             $this->assertStringNotContainsString('name="consent"', $d, $url);
             $this->assertStringContainsString(e(__($consent)), $d, $url);
             // the limit and the time beside the one orange Create, which waits for the front photo
-            $this->assertStringContainsString(e(__('figure.limits', ['n' => 1, 'm' => 3])), $d, $url);
+            $this->assertStringContainsString(e(trans_choice('figure.limits', 1, ['n' => 1, 'm' => 3])), $d, $url);
             $this->assertStringContainsString('2 až 4 minuty', $d, $url);
             $this->assertMatchesRegularExpression('/<button type="button" id="figure-create" class="btn-primary[^"]*" disabled>/', $d);
             $this->assertStringContainsString(e(__($submit)), $d, $url);

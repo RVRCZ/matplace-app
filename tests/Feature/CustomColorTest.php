@@ -163,8 +163,10 @@ class CustomColorTest extends TestCase
         $this->assertSame('07_PLA+_modry', $calc->json('calculation.file.nearest.0.spool.code'));
         $this->assertSame('07_PLA+_modry', $this->getJson('/api/calculations/'.$calc->json('calculation.token'))->assertOk()->json('calculation.file.nearest.0.spool.code'));
         $this->assertFalse($nearest[0]['spool']['loaded'], 'nothing is loaded in a machine yet: the whole catalogue answers');
-        // the calculator's page carries the words of that line
-        $this->get('/')->assertOk()->assertSee('"farm.calc_nearest"', false)->assertSee('"farm.calc_nearest_out"', false);
+        // the calculator's texts carry the words of that line (one cached JSON, docs/AN.md §12.4)
+        $i18n = $this->calcConfig()['i18n'];
+        $this->assertArrayHasKey('farm.calc_nearest', $i18n);
+        $this->assertArrayHasKey('farm.calc_nearest_out', $i18n);
 
         // a spool code of a design stored before still passes and keeps the look of its spool
         $old = $this->postJson('/api/tools/param', ['kind' => 'sign', 'params' => $params + ['part_colors' => ['text' => '05_PLA+_cerveny']]])->assertCreated();

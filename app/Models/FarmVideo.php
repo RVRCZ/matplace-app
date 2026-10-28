@@ -13,6 +13,8 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  *   scheduled: on YouTube, private until `scheduled_at` when YouTube makes it public (the stats run notices)
  *   uploaded: on YouTube but private (YouTube kept it so, or an older copy); the admin publishes it from there
  *   any state → withdrawn (the customer took the consent back; the YouTube copy is deleted)
+ *   uploaded/scheduled/published → missing (YouTube no longer knows the video, deleted in Studio: the titles table,
+ *                                  the stats and the playlists leave it out; 27 Oct 2026, F26-000086)
  */
 class FarmVideo extends Model
 {
@@ -35,6 +37,8 @@ class FarmVideo extends Model
     public const STATUS_WITHDRAWN = 'withdrawn';
 
     public const STATUS_FAILED = 'failed';
+
+    public const STATUS_MISSING = 'missing';
 
     /** The square Short (Reels and the Facebook page take it too) */
     public const KIND_SHORT = 'short';

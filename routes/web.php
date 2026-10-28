@@ -11,6 +11,7 @@ use App\Http\Controllers\Admin\FarmOrderController;
 use App\Http\Controllers\Admin\FarmTestPhotoController;
 use App\Http\Controllers\Admin\FarmTuningController;
 use App\Http\Controllers\Admin\MetaController as AdminMetaController;
+use App\Http\Controllers\Admin\SearchConsoleController;
 use App\Http\Controllers\Admin\StatsController as AdminStatsController;
 use App\Http\Controllers\Admin\ToolController as AdminToolController;
 use App\Http\Controllers\Admin\UserController as AdminUserController;
@@ -358,6 +359,8 @@ Route::get('/social/videos/{video}.mp4', [SocialVideoController::class, 'show'])
 // so a minute of live previews (90/min) would lock the create button (20/min) with "Too Many Attempts".
 Route::prefix('api')->name('api.')->group(function () {
     Route::get('config', [ConfigController::class, 'show'])->name('config');
+    // the calculator's constants and texts for one language and next step, cached for a day by the version in the address (docs/AN.md §12.4)
+    Route::get('calc-config', [ConfigController::class, 'calc'])->name('calc_config');
     Route::post('uploads', [UploadController::class, 'store'])->middleware('throttle:uploads')->name('uploads.store');
     Route::get('files/{modelFile}', [UploadController::class, 'show'])->name('files.show');
     Route::get('files/{modelFile}/model.stl', [ModelFileController::class, 'stl'])->middleware('file:stl')->name('files.stl');
@@ -592,4 +595,15 @@ Route::middleware(['auth', 'role:admin'])->prefix('admin/youtube')->name('admin.
     Route::post('/videos/{video}/share/{platform}/retry', [$yt, 'shareRetry'])->name('share_retry');
     Route::post('/stats', [$yt, 'stats'])->name('stats');
     Route::post('/showcase', [$yt, 'showcase'])->name('showcase');
+});
+
+// ── Admin: Search Console through the API (the callback URI is registered in Google Cloud, keep it; docs/AN.md §14) ──
+Route::middleware(['auth', 'role:admin'])->prefix('admin/search-console')->name('admin.search_console.')->group(function () {
+    $sc = SearchConsoleController::class;
+    Route::get('/', [$sc, 'index'])->name('index');
+    Route::post('/connect', [$sc, 'connect'])->name('connect');
+    Route::get('/callback', [$sc, 'callback'])->name('callback');
+    Route::post('/disconnect', [$sc, 'disconnect'])->name('disconnect');
+    Route::post('/site', [$sc, 'site'])->name('site');
+    Route::post('/pull', [$sc, 'pull'])->name('pull');
 });

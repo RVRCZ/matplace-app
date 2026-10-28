@@ -16,7 +16,7 @@ return [
     'no_orders' => 'Zatím tu nic není.',
     'credit_balance' => 'Kredit',
     'top_up' => 'Dobít kredit',
-    'slices_left' => 'Dnes můžete spočítat ještě :n modelů.',
+    'slices_left' => '{0} Dnes už další model spočítat nemůžete.|{1} Dnes můžete spočítat ještě :n model.|[2,4] Dnes můžete spočítat ještě :n modely.|[5,*] Dnes můžete spočítat ještě :n modelů.',
 
     'start' => [
         'model' => 'Model',
@@ -208,6 +208,7 @@ return [
         'photos_full' => 'U testu je už :max fotek. Nějakou smažte.',
         'photo_heic' => 'Fotka ve formátu HEIC se na serveru nedá přečíst. Pošlete ji jako JPEG.',
         'photo_unreadable' => 'Soubor se nedá přečíst jako fotka.',
+        'photo_dark' => 'Fotka je černá nebo jednobarevná (kamera nezachytila). Vyfoťte ji znovu.',
         'closed' => 'Farma teď nepřijímá nové zakázky. Zkuste to prosím později.',
         'not_ready' => 'Model ještě není připravený k tisku: buď se zpracovává, nebo se ho nepodařilo převést. Zkuste to za chvíli, případně nahrajte STL.',
         'too_big' => 'Soubor je větší než :max MB.',

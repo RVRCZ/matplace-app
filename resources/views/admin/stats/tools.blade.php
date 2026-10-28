@@ -15,6 +15,7 @@
     <a href="{{ route('admin.ai.index') }}" class="chip">AI aktivita</a>
     <a href="{{ route('admin.stats.speed') }}" class="chip">Rychlost</a>
     <a href="{{ route('admin.stats.tools') }}" class="chip chip-on">Nástroje týdně</a>
+    <a href=\"{{ route('admin.search_console.index') }}\" class=\"chip\">Search Console</a>
 </nav>
 
 <h2 class="mt-3 font-bold">Unikátní návštěvníci, kteří použili aspoň jeden nástroj</h2>
@@ -32,10 +33,13 @@
 </div>
 
 <h2 class="mt-6 font-bold">Podle nástroje: poslední čtyři týdny a Search Console</h2>
-@if($console)
-    <p class="mt-1 text-xs text-slate-500">Search Console: {{ $console['file'] }} ({{ $console['rows'] }} řádků, celkem {{ number_format($console['total']['impressions'], 0, ',', ' ') }} zobrazení a {{ number_format($console['total']['clicks'], 0, ',', ' ') }} kliknutí). Stránky nástrojů ve všech jazycích jsou sečtené k nástroji; zobrazení → kliknutí → použití.</p>
+@if($console && ($console['source'] ?? 'csv') === 'api')
+    <p class="mt-1 text-xs text-slate-500" data-console-source="api">Data ze Search Console (API) {{ $console['from'] !== '' ? 'od '.\Carbon\Carbon::parse($console['from'])->format('j. n. Y') : '' }}{{ $console['until'] !== '' ? ' do '.\Carbon\Carbon::parse($console['until'])->format('j. n. Y') : ', pro toto období nic' }}: {{ number_format($console['rows'], 0, ',', ' ') }} stránek, celkem {{ number_format($console['total']['impressions'], 0, ',', ' ') }} zobrazení a {{ number_format($console['total']['clicks'], 0, ',', ' ') }} kliknutí. Stahuje se denně, 2 až 3 dny zpoždění · <a href="{{ route('admin.search_console.index') }}" class="underline">účet a stažení</a></p>
+    <div class="mt-1 flex flex-wrap gap-1 text-sm" aria-label="Země">@foreach(['all' => 'všechny země', 'cz' => 'Česko', 'other' => 'ostatní země'] as $c => $name)<a href="{{ route('admin.stats.tools', ['weeks' => $weeks, 'country' => $c]) }}" class="chip {{ $country === $c ? 'chip-on' : '' }}">{{ $name }}</a>@endforeach</div>
+@elseif($console)
+    <p class="mt-1 text-xs text-slate-500" data-console-source="csv">Search Console: {{ $console['file'] }} ({{ $console['rows'] }} řádků, celkem {{ number_format($console['total']['impressions'], 0, ',', ' ') }} zobrazení a {{ number_format($console['total']['clicks'], 0, ',', ' ') }} kliknutí; CSV záloha, bez období a zemí) · <a href="{{ route('admin.search_console.index') }}" class="underline">připojit přes API</a></p>
 @else
-    <p class="mt-1 text-xs text-slate-500">Export Search Console zatím není: uložte ho jako <code>{{ \App\Domain\Stats\SearchConsole::dir() }}/search-console-&lt;datum&gt;.csv</code> (stránky, nebo stránky s dotazy; sloupce Page/Query/Clicks/Impressions/Position, česky i anglicky) a tahle tabulka ukáže zobrazení a kliknutí vedle použití.</p>
+    <p class="mt-1 text-xs text-slate-500">Search Console zatím není: <a href="{{ route('admin.search_console.index') }}" class="underline">připojit přes API</a>, nebo uložte export jako <code>{{ \App\Domain\Stats\SearchConsole::dir() }}/search-console-&lt;datum&gt;.csv</code> (stránky, nebo stránky s dotazy; sloupce Page/Query/Clicks/Impressions/Position, česky i anglicky).</p>
 @endif
 @php $toolKeys = array_values(array_unique(array_merge(array_keys($use['tools']), $console ? array_keys($console['tools']) : []))); @endphp
 <div class="mt-2 overflow-x-auto rounded-2xl border border-slate-200 bg-white">
@@ -47,14 +51,14 @@
                 <tr>
                     <td class="px-3 py-2 font-semibold">{{ \Illuminate\Support\Facades\Lang::has('tools.'.$key.'.title') ? __('tools.'.$key.'.title') : $key }}</td>
                     @foreach($recent as $from)<td class="px-3 py-2 text-right">{{ $use['tools'][$key][$from] ?? 0 }}</td>@endforeach
-                    <td class="px-3 py-2 text-right">{{ $c ? number_format($c['impressions'], 0, ',', ' ') : '–' }}</td>
+                    <td class="px-3 py-2 text-right">{{ $c ? number_format($c['impressions'], 0, ',', ' ') : '–' }}@if($c && count($c['by_locale'] ?? []) > 1)<span class="block text-xs font-normal text-slate-500">@foreach($c['by_locale'] as $l => $n){{ $l }} {{ number_format($n['impressions'], 0, ',', ' ') }}@if(! $loop->last) · @endif @endforeach</span>@endif</td>
                     <td class="px-3 py-2 text-right">{{ $c ? number_format($c['clicks'], 0, ',', ' ') : '–' }}</td>
                     <td class="px-3 py-2 text-right">{{ $c ? $pct($c['clicks'], $c['impressions']) : '–' }}</td>
                     <td class="px-3 py-2 text-right">{{ $c && $c['position'] !== null ? str_replace('.', ',', (string) $c['position']) : '–' }}</td>
                     <td class="px-3 py-2 text-xs text-slate-600">{{ $c ? implode(' · ', array_map(fn ($q) => $q['query'].' ('.$q['clicks'].'/'.$q['impressions'].')', $c['queries'])) : '' }}</td>
                 </tr>
             @empty
-                <tr><td colspan="{{ 6 + count($recent) }}" class="px-3 py-4 text-center text-slate-500">Zatím nikdo nástroj nepoužil a export Search Console není.</td></tr>
+                <tr><td colspan="{{ 6 + count($recent) }}" class="px-3 py-4 text-center text-slate-500">Zatím nikdo nástroj nepoužil a Search Console nic nemá.</td></tr>
             @endforelse
         </tbody>
     </table>
