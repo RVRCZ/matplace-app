@@ -84,6 +84,7 @@ return [
         'title' => '¿Cuánto cuesta la impresión 3D? :things',
         'ask' => '¿Qué valdría la pena imprimir para usted? Cuéntenoslo en un comentario.',
         'line' => ':name – :price – :url',
+        'own_file' => 'Modelo propio del cliente',
         'description' => ":cta\n:pieces de nuestra granja de impresión 3D y lo que costaron. El precio siempre sale del modelo: su tamaño, el material y el tiempo de impresión. El suyo lo sabe en un minuto, sin registro.\n\nEn el vídeo:",
         'hashtags' => '#Shorts #impresion3d #granja3d #cuantocuesta #precio',
     ],

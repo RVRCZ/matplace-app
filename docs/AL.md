@@ -1617,3 +1617,19 @@ Na produkci stačí `php artisan youtube:price-short --n=5 --dry-run` (plán) a 
 `php artisan farm:monthly-video --month=2026-10 --dry-run`. Nic z toho nebylo zkoušeno se skutečnými videi z farmy –
 první ostrý běh ukáže, jak sedí `-sseof -5.7` u starších čtvercových Shortů (jiné časování závěru; vteřina pak může
 padnout do držené desky, ne do růstu).
+
+### 13.7.5 Po nasazení: bez názvů souborů na kartě ceny
+
+Řídící 28. 10.: sloučeno (main 61c48774) a nasazeno (server cb0cd4f7); dry‑run na produkci: 9 kusů s fotkou a cenou ze
+4 nástrojů, vybráno 5 (váza 419, QR 199, Cat 779, stojánek 289, drak 499), 28,2 s; měsíc 22 vstupů, 3:35, kapitoly
+sedí; ostrý render obou běžel na serveru. Připomínka: u kusů z vlastních souborů šel na kartu ceny surový název
+(„Cat“, „Mystical Chine Dragon V EYE“).
+
+`SeriesCutter::pieceName`: nástroj → titulek nástroje jako dřív; **vlastní soubor → titulek, který admin dal videu**
+(nejnovější Short/16:9 zakázky, zveřejněný přednostně, bez odvolaných/odmítnutých/chybějících; část před
+„ – 1 h 33 min tisku“, tedy po `youtube:retitle` to, co Roman schválil), **jinak „Vlastní model zákazníka · PLA Silk
+měděná“** – název souboru se na kartu nedostane nikdy. Totéž jméno jde do seznamu v popisu. Texty
+`youtube.price.own_file` cs/en/es. Větev `feature/youtube-series-names` z main 528ef812; test v `YouTubeSeriesTest`
+(video s titulkem „Kočka z vlastního souboru – 6 h 33 min tisku“ → karta „Kočka z vlastního souboru“; bez videa →
+„Vlastní model zákazníka“, nikde „Cat“). Měsíční video a týdenní sestřih nechávají jméno v rohu jako dosud
+(`cardFacts`), to je jméno modelu, ne karta ceny; změnit lze stejně, řekne‑li Roman.
