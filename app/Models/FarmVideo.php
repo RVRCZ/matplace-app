@@ -7,7 +7,8 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 /**
- * A print video on YouTube: the Short or the 16:9 of one farm order, or the weekly cut (no order). Moves only through App\Domain\YouTube\FarmVideos:
+ * A print video on YouTube: the Short or the 16:9 of one farm order, or a cut of many (the weekly cut, the price Short, the
+ * monthly video: no order, `path` and `meta.orders`), or a how-to video. Moves only through App\Domain\YouTube\FarmVideos:
  *
  *   pending (waits for an admin, nothing on YouTube yet) → queued (approved) → uploading → scheduled → published | rejected
  *   scheduled: on YouTube, private until `scheduled_at` when YouTube makes it public (the stats run notices)
@@ -52,7 +53,16 @@ class FarmVideo extends Model
     /** A how-to video cut from a screen recording (farm:howto-video), no order (path, meta: name, variant wide|short) */
     public const KIND_HOWTO = 'howto';
 
-    public const KINDS = [self::KIND_SHORT, self::KIND_WIDE, self::KIND_WEEKLY, self::KIND_HOWTO];
+    /** The Short "Kolik stojí 3D tisk?": n photographed prints with their prices (youtube:price-short), meta: key, orders */
+    public const KIND_PRICE = 'price';
+
+    /** "Jak funguje naše 3D tisková farma": the month's prints between the steps (farm:monthly-video), meta: key = YYYY-MM, orders */
+    public const KIND_MONTHLY = 'monthly';
+
+    public const KINDS = [self::KIND_SHORT, self::KIND_WIDE, self::KIND_WEEKLY, self::KIND_HOWTO, self::KIND_PRICE, self::KIND_MONTHLY];
+
+    /** The kinds cut from many prints: no order of their own, the orders in them in meta.orders (every customer must still agree). */
+    public const OF_MANY = [self::KIND_WEEKLY, self::KIND_PRICE, self::KIND_MONTHLY];
 
     protected $fillable = ['farm_order_id', 'kind', 'path', 'meta', 'status', 'youtube_id', 'title', 'description', 'error', 'uploaded_at', 'published_at', 'decided_by', 'decided_at', 'approved_at', 'scheduled_at', 'share', 'views', 'likes', 'comments', 'stats_at', 'score', 'music'];
 

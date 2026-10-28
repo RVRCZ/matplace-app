@@ -32,9 +32,9 @@ final class VideoSharer
             return 0;
         }
         // only Shorts (a print's, a how-to video's vertical one): the 16:9 stays on YouTube (one video per print on the page and Instagram)
-        $videos = FarmVideo::with('order')->whereIn('kind', [FarmVideo::KIND_SHORT, FarmVideo::KIND_HOWTO])->whereNotNull('share')->where(fn ($q) => $q->where('status', FarmVideo::STATUS_PUBLISHED)
+        $videos = FarmVideo::with('order')->whereIn('kind', [FarmVideo::KIND_SHORT, FarmVideo::KIND_HOWTO, FarmVideo::KIND_PRICE])->whereNotNull('share')->where(fn ($q) => $q->where('status', FarmVideo::STATUS_PUBLISHED)
             ->orWhere(fn ($q) => $q->where('status', FarmVideo::STATUS_SCHEDULED)->where('scheduled_at', '<=', now())))->get()
-            ->filter(fn (FarmVideo $v) => $v->kind === FarmVideo::KIND_SHORT || ($v->meta['variant'] ?? null) === 'short');
+            ->filter(fn (FarmVideo $v) => in_array($v->kind, [FarmVideo::KIND_SHORT, FarmVideo::KIND_PRICE], true) || ($v->meta['variant'] ?? null) === 'short');
         $n = 0;
         foreach ($videos as $video) {
             $n += $this->share($video);

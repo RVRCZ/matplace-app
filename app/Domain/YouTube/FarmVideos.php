@@ -129,13 +129,33 @@ class FarmVideos
         return $video;
     }
 
-    /** Every customer in it still agrees: the order's consent, for the weekly cut every order in it; a how-to video is ours. */
+    /**
+     * The price Short and the monthly video (SeriesCutter) wait for the admin like the others; one per key (the day's
+     * Short, the month). Built again, a row not on YouTube yet takes the new file and texts; one already there stays.
+     *
+     * @param  array{key: string, orders: list<int>}  $meta
+     */
+    public function queueCollection(string $kind, array $meta, string $path, string $title, string $description, ?string $music): FarmVideo
+    {
+        $video = FarmVideo::where('kind', $kind)->get()->first(fn (FarmVideo $v) => ($v->meta['key'] ?? null) === $meta['key'])
+            ?? new FarmVideo(['kind' => $kind, 'status' => FarmVideo::STATUS_PENDING]);
+        if ($video->youtube_id) {
+            return $video;
+        }
+        $video->fill(['path' => $path, 'title' => $title, 'description' => $description, 'music' => $music, 'meta' => $meta,
+            'status' => FarmVideo::STATUS_PENDING, 'error' => null, 'approved_at' => null])->save();
+        $this->tellAdmin($video, null);
+
+        return $video;
+    }
+
+    /** Every customer in it still agrees: the order's consent, for a cut of many every order in it; a how-to video is ours. */
     public function consented(FarmVideo $video): bool
     {
         if ($video->kind === FarmVideo::KIND_HOWTO) {
             return true;
         }
-        if ($video->kind === FarmVideo::KIND_WEEKLY) {
+        if (in_array($video->kind, FarmVideo::OF_MANY, true)) {
             $ids = (array) ($video->meta['orders'] ?? []);
 
             return FarmOrder::whereIn('id', $ids)->where('video_consent', true)->count() === count($ids);
@@ -147,7 +167,7 @@ class FarmVideos
     /** May go up: the file is there and everybody in it agrees. */
     private function allowed(FarmVideo $video): bool
     {
-        if (in_array($video->kind, [FarmVideo::KIND_WEEKLY, FarmVideo::KIND_HOWTO], true)) {
+        if (in_array($video->kind, [...FarmVideo::OF_MANY, FarmVideo::KIND_HOWTO], true)) {
             return $video->path && Storage::disk(config('farm.disk'))->exists($video->path) && $this->consented($video);
         }
 
@@ -363,9 +383,13 @@ class FarmVideos
             }
             $video->update(['status' => FarmVideo::STATUS_WITHDRAWN, 'youtube_id' => null, 'published_at' => null]);
         }
-        FarmVideo::where('kind', FarmVideo::KIND_WEEKLY)->whereNotIn('status', [FarmVideo::STATUS_WITHDRAWN, FarmVideo::STATUS_REJECTED])->get()
+        FarmVideo::whereIn('kind', FarmVideo::OF_MANY)->whereNotIn('status', [FarmVideo::STATUS_WITHDRAWN, FarmVideo::STATUS_REJECTED])->get()
             ->filter(fn (FarmVideo $v) => in_array($order->id, (array) ($v->meta['orders'] ?? []), true))
-            ->each(fn (FarmVideo $v) => $v->update(['error' => 'Zákazník zakázky '.$order->number.' odvolal souhlas: sestavte týden znovu (php artisan farm:weekly-video --week='.($v->meta['week'] ?? '?').') nebo video stáhněte.']));
+            ->each(fn (FarmVideo $v) => $v->update(['error' => 'Zákazník zakázky '.$order->number.' odvolal souhlas: sestavte video znovu ('.match ($v->kind) {
+                FarmVideo::KIND_WEEKLY => 'php artisan farm:weekly-video --week='.($v->meta['week'] ?? '?'),
+                FarmVideo::KIND_MONTHLY => 'php artisan farm:monthly-video --month='.($v->meta['key'] ?? '?'),
+                default => 'php artisan youtube:price-short',
+            }.') nebo video stáhněte.']));
     }
 
     /** The farm admin hears that a video waits in /admin/youtube (farm setting admin_email; empty = nobody). */
@@ -375,7 +399,12 @@ class FarmVideos
         if ($to === '') {
             return;
         }
-        $what = $order ? 'Časosběr zakázky '.$order->number : ($video->kind === FarmVideo::KIND_HOWTO ? 'Instruktážní video '.($video->meta['name'] ?? '') : 'Týdenní sestřih '.($video->meta['week'] ?? ''));
+        $what = $order ? 'Časosběr zakázky '.$order->number : match ($video->kind) {
+            FarmVideo::KIND_HOWTO => 'Instruktážní video '.($video->meta['name'] ?? ''),
+            FarmVideo::KIND_PRICE => 'Short „Kolik stojí 3D tisk?“ '.($video->meta['key'] ?? ''),
+            FarmVideo::KIND_MONTHLY => 'Měsíční video o farmě '.($video->meta['key'] ?? ''),
+            default => 'Týdenní sestřih '.($video->meta['week'] ?? ''),
+        };
         try {
             Mail::to($to)->queue(new FarmAdminAlert('Video ke schválení: '.($order->number ?? $video->title), [
                 $video->youtube_id
@@ -538,7 +567,7 @@ class FarmVideos
     public function pathOf(FarmVideo $video): string
     {
         return match ($video->kind) {
-            FarmVideo::KIND_WEEKLY, FarmVideo::KIND_HOWTO => (string) $video->path,
+            FarmVideo::KIND_WEEKLY, FarmVideo::KIND_HOWTO, FarmVideo::KIND_PRICE, FarmVideo::KIND_MONTHLY => (string) $video->path,
             FarmVideo::KIND_WIDE => (string) $video->order?->timelapse_wide_path,
             default => $video->order ? $this->file($video->order) : '',
         };
@@ -587,7 +616,13 @@ class FarmVideos
     {
         $kind = $video->kind ?? FarmVideo::KIND_SHORT;
 
-        return $this->link($kind === FarmVideo::KIND_WEEKLY ? null : $video->order, $kind, $source, $kind === FarmVideo::KIND_HOWTO ? ($video->meta['link'] ?? null) : null, $video->youtube_id ?: null);
+        $target = match ($kind) {
+            FarmVideo::KIND_HOWTO => $video->meta['link'] ?? null,
+            FarmVideo::KIND_PRICE => rtrim((string) config('app.url'), '/').'/tools',   // the Short of prices sends people to the tools
+            default => null,
+        };
+
+        return $this->link(in_array($kind, FarmVideo::OF_MANY, true) ? null : $video->order, $kind, $source, $target, $video->youtube_id ?: null);
     }
 
     /**
