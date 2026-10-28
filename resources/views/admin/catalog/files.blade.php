@@ -42,11 +42,12 @@
     <p class="mt-1 text-xs text-slate-500">Stav zpracování a řezu; „Rozřezat znovu“ dá řez do fronty (asi minutu), noční <code>catalog:slice</code> bere modely bez řezu sám.</p>
     <div class="mt-3 overflow-x-auto">
         <table class="w-full text-left text-sm">
-            <thead class="bg-slate-50 text-xs uppercase text-slate-500"><tr><th class="px-3 py-2">Model</th><th class="px-3 py-2">Soubor</th><th class="px-3 py-2">Řez</th><th class="px-3 py-2"></th></tr></thead>
+            <thead class="bg-slate-50 text-xs uppercase text-slate-500"><tr><th class="px-3 py-2">Model</th><th class="px-3 py-2 text-right">Zobrazení SC</th><th class="px-3 py-2">Soubor</th><th class="px-3 py-2">Řez</th><th class="px-3 py-2"></th></tr></thead>
             <tbody class="divide-y divide-slate-100">
                 @forelse($withFile as $m)
                     <tr data-file-model="{{ $m->id }}">
                         <td class="px-3 py-2"><a href="{{ route('admin.catalog.edit', $m->id) }}" class="font-semibold underline">{{ $m->title }}</a>@if($m->slug)<span class="block text-xs text-slate-500"><a href="{{ route('catalog.show', $m->slug) }}" target="_blank" class="underline">/model/{{ $m->slug }}</a></span>@endif</td>
+                        <td class="px-3 py-2 text-right" data-shown>{{ isset($shown[$m->slug]) ? number_format($shown[$m->slug], 0, ',', ' ') : '–' }}</td>
                         <td class="px-3 py-2 text-xs">{{ $m->modelFile?->original_name ?? '—' }}<span class="block text-slate-500">{{ $fileState[$m->modelFile?->status ?? ''] ?? ($m->modelFile?->status ?? 'chybí') }}@if($m->modelFile?->error) · {{ $m->modelFile->error }}@endif</span></td>
                         <td class="px-3 py-2 text-xs">
                             @if($m->sliced_at)<span class="font-semibold text-ok">{{ $m->sliced_at->format('j. n. Y') }}</span><span class="block text-slate-500">{{ $dur((int) $m->slice_minutes) }}, {{ $m->slice_grams }} g{{ $m->sliceCalculation ? ' · ' : '' }}@if($m->sliceCalculation)<a href="{{ url('/c/'.$m->sliceCalculation->token) }}" target="_blank" class="underline">kalkulace</a>@endif</span>
@@ -61,7 +62,7 @@
                         </td>
                     </tr>
                 @empty
-                    <tr><td colspan="4" class="px-3 py-4 text-center text-slate-500">Zatím žádný model nemá soubor.</td></tr>
+                    <tr><td colspan="5" class="px-3 py-4 text-center text-slate-500">Zatím žádný model nemá soubor.</td></tr>
                 @endforelse
             </tbody>
         </table>

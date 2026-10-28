@@ -161,7 +161,7 @@ class CatalogController extends Controller
         }
 
         return view('admin.catalog.files', [
-            'top' => $top, 'hasConsole' => $shown !== [], 'consoleDays' => $days, 'formats' => $converters->inputFormats(),
+            'top' => $top, 'hasConsole' => $shown !== [], 'consoleDays' => $days, 'formats' => $converters->inputFormats(), 'shown' => $shown,
             'withFile' => CatalogModel::shown()->whereNotNull('model_file_id')->with(['modelFile', 'sliceCalculation'])->orderByDesc('updated_at')->limit(100)->get(),
         ]);
     }
