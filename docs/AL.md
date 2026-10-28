@@ -1675,3 +1675,105 @@ zakázka fotku; zákaznické: držení 3 + díky 5 + fotka 3). Pod `SEGMENT_MIN`
 Test v `YouTubeSeriesTest` s částečným mockem `duration` (18,8 s → mimo; 30 s 16:9 → 20,5 s růstu; 15 s 16:9 → okno
 „from 1.5 s, 6 s“; žádný „window past the end“). Po nasazení stačí `farm:monthly-video --month=2026-10 --check-inputs
 --dry-run` a pak sestavit znovu (přestavba vezme nový soubor, dokud video není na YouTube).
+
+## 14. Import 3MF s namalovanými barvami (TODO #50, 28. 10. 2026)
+
+Zadání `docs/prompts/import-3mf-barvy.md`, větev `feature/import-3mf-colors` z main 78f4e203. Roman: želva
+`turtlescutieone2.3mf` (Anycubic Slicer Next) je ve slicerech dvoubarevná, u nás celá modrá. Session 3 dělá náhled a
+kalkulaci (`feature/calc-3mf-colors`), tvar dat dohodnutý zprávou před kódem.
+
+### 14.1 Rozbor při nahrání
+
+`ProcessModelFile` u každého `.3mf` po převodu spustí `App\Domain\Files\PaintedColors::analyse` →
+`colors_tool.py upload <3mf> <model.stl> {merge_below, max_colors}` (fáze `colors_s` v `timings`; chyba rozboru
+nahrání nikdy neshodí, uloží `status: failed`). Výsledek ve sloupci `model_files.colors` (migrace
+`2026_10_28_200000`), null u souboru bez barev nebo s jedinou:
+
+```
+{v, status: done|failed, count, merged, too_many, colors: [{hex, share 0..1, merged, into?, extruder, sources}],
+ groups: [{hex, from, to}]|null, layers: {"2": n, …}, height, split_triangles, ms, parts?: {ok, ms, warnings, error}}
+```
+
+- **Sloučení drobných barev** (`plan_merge`, společné pro rozbor i díly): barva pod `engines.colors.merge_below`
+  (1 % plochy; zadání říkalo 0,5 %, ale pak by želvě zůstala bílá 0,8 % a přejímka chce „2 barvy a 2 drobné“) a za
+  4 největšími (`max`, `too_many`) přejde na barvu svého tělesa (největší ponechaná barva na tom tělese), `into` =
+  kam šla většina její plochy.
+- **Náhled bez druhého souboru**: má‑li soubor ≥ 2 tištěné barvy a STL z našeho převodníku je tatáž síť (počet a bbox),
+  `model.stl` se přepíše stejnými trojúhelníky seřazenými po tištěné barvě a `groups` jsou souvislé rozsahy od 0
+  (sloučená barva je ve skupině barvy svého tělesa: náhled = tisk). Jinak `groups` null.
+- `layers`: v kolika 0,2mm vrstvách se potkávají 2, 3, 4 barvy (pro odhad výměn).
+- API `GET /api/files/{uuid}` a `calculation.file`: `colors` (hex, share, merged, into), `groups`, `colors_info`
+  {count, merged, too_many, status}; null bez barev.
+
+Želva: 4 barvy (zelená 77,7 %, žlutá 21,4 %, bílá 0,8 % a černá 0,1 % sloučené do zelené), `groups` zelená
+0–242 911, žlutá 242 911–317 686, 71 ze 106 vrstev se dvěma barvami; rozbor 6,1 s, celé nahrání 12,7 s.
+
+### 14.2 Chyba sloučení žluté
+
+Nástroj barev dělal vložku (malovaná plocha zahloubená 1,2 mm) z **celé** barvy jednoho tělesa najednou. Žlutá na
+krunýři je 19 ostrůvků, tři z nich mají „motýlkový“ vrchol (okraj ostrůvku se dotkne sám sebe), vložka pak není
+uzavřená ani po `solidify` a celá žlutá zůstala v zelené základně (`inlay_failed`). Teď `_patches`: vložka po
+ostrůvcích, trojúhelníky u motýlkového vrcholu zůstanou barvě tělesa (pár trojúhelníků). Želva: 4 díly, žádné
+varování, 10 s. Fixture `tests/fixtures/painted-two-bodies.3mf` (2 400 trojúhelníků, generátor
+`painted-two-bodies.py` vedle): zelená kostka s žlutým háčkem, který se sám dotkne rohem, bílá tečka 0,1 %, červená
+kostka; starý kód žlutou ztratí, nový ji má.
+
+### 14.3 Zakázka
+
+- `OrderService::designParts`: namalovaný upload → `color_1…n` po tištěných barvách (`PaintedColors::partNames`);
+  výsledek `/tools/colors` už také po dílech (vynechání z 8. 10., ba70ae81, pocházelo z doby bez jedné podložky).
+  `partLabel` „Barva 2“ (`edit.colors.part.color`).
+- `partStl`: díly namalovaného uploadu se udělají jednou při přípravě zakázky (`PaintedColors::ensureParts` =
+  rozdělovač barev se stejným sloučením a `in_place`, ~10 s želva) do `files/<uuid>/parts`; díly `/tools/colors`
+  (rozdělovač je klade do počátku kvůli stažení) se při tisku vrátí na místo podle `tool_params.pieces[].bbox`.
+- `OrderController::preselect`: barva dílu z `PaintedColors::partHex` → stávající logika zapne tisk po dílech a ke
+  každému dílu vybere nejbližší cívku téhož stroje (Lab, `nearestSet`). POST `colors: painted|one` (`one` = jednobarevně),
+  nese ho i start stránka (`CARRIED`); kalkulace posílá `data-colors` z `#cta-farm` (farm.ts).
+
+### 14.4 Jak farma řeže: čísla (místní Orca 2.4 beta, profily farmy, S1)
+
+| | výsledek |
+|---|---|
+| (a) naše díly jako samostatné objekty (`ThreeMfWriter`) | **řez odmítnut** („found slicing or export error“): Orca řeže každý objekt zvlášť a žlutá vložka na zakřiveném krunýři sama visí ve vzduchu, kontrola podpor řez zastaví; `--no-check` nepomůže; s podporami projde (74 výměn, 3 h 32 min), ale žlutá dostane 2,5 g vlastních podpor, které by rostly skrz zelené tělo → nepoužitelné |
+| (a') díly jako části jednoho objektu (Bambu projekt) | Orca 2.4 při načtení spadne (0xC0000005) |
+| (b) původní namalovaný 3MF, 4 filamenty | projde: 6,3 s, 100 výměn, 4 h 17 min, 16,2 g |
+| **(b) přebarvený na 2 filamenty** (`colors_tool.py repaint`) | **projde: 4,5 s, 69 výměn, 3 h 10 min, 15,0 g, T0/T1** |
+
+Rozhodnutí podle čísel: **namalovaný soubor jde Orce jako on sám** (`PaintedColors::project` v `prepareOnePlate`
+místo 3MF z dílů; `timings.one_plate_project = painted`), díly zůstávají pro kontrolu, náhled podložky a záznam.
+`repaint`: strom `paint_color` přečten a zapsán znovu (zpáteční kódování ověřeno na všech 317 686 trojúhelnících),
+stavy přemapované na filamenty zakázky (sloučené na barvu tělesa), extrudery v `model_settings.config` také, build
+item zvětšen a posunut jako díly na podložce; z projektu pryč vlastní G‑code, výšky vrstev, nastavení filamentů a
+matice proplachu (Orca ji spočítá z barev cívek: 166/477 mm³), per‑filament pole oříznuta na naše filamenty.
+`project_settings.config` zůstat musí, bez něj Orca 2.4 spadne. Barva z `basematerials` (bez extruderu) nebo
+neúspěch → 3MF z dílů jako dosud. Otevřené hrany dílů (2 u žluté po zápisu do STL) u namalovaného souboru zakázku
+nezastaví (řeže se originál).
+
+**Přejímka na skutečné Orce** (`ThreeMfColorsTest::test_the_turtle_slices_on_one_plate_with_the_real_orca`, běží jen
+s `ORCA_LOCAL` a `TURTLE_3MF`): nahrání 12,7 s → zakázka po barvách, cívky zelená + žlutá z jednoho stroje (S1 s
+agentem), řez na jednu podložku 25–28 s celkem (díly ~10 s, repaint 3,3 s, Orca 7,2 s), `filament_grams` 7,5 + 4,3 g,
+69 výměn, 181 min, cena 200 Kč, hlavička `; matplace filaments T0=0 T1=3`. Prusa `mmu_segmentation` Orca nečte
+(nezkoušeno, Prusa soubor nemáme): ten půjde přes díly (a) a u vložek na zakřiveném povrchu skončí jako želva v (a).
+
+### 14.5 Cena v kalkulaci
+
+`calculation.colors: {one, multi, count, changes}` (done i rough): `one` = první cena jak je, `multi` = cena za gramy
+a minuty + výměny (`PaintedColors::extra`: výměn = Σ (barev ve vrstvě − 1) z `layers`, přepočteno na výšku vrstvy
+kvality a měřítko; `engines.colors.change_minutes` 2,2 min, `flush_mm3` 30, `tower_g` 0,5 – změřeno na želvě: 69
+výměn přidalo 155 min a 2,9 g, proplach jde do výplně). Kusy na jedné podložce si výměny dělí. Želva: jednobarevně
+79 Kč (26 min, 8,9 g), barevně 210 Kč (odhad 71 výměn), skutečný řez zakázky 200 Kč.
+
+### 14.6 Omezení a co zůstává
+
+- Víc než 4 barvy: 4 největší, zbytek na barvu tělesa (`too_many`). Soubor bez barev, s jednou, s nečitelným
+  `paint_color` (= barva tělesa): beze změny, žádná 500 (test).
+- Bez měniče cívek (ruční tiskárna, kusy > 1, díly se nevejdou) jde zakázka po dílech: u vložek na zakřiveném povrchu
+  (želva) Orca žlutý díl sám neodřeže (viz 14.4 a; ověřen jen řez samotného dílu, ne celá zakázka po dílech) → zakázka nejspíš selže s důvodem řezu.
+  Lepší by bylo v tom případě nabídnout jen „jednobarevně“ – rozhodne Roman.
+- Kusy > 1 namalovaného souboru: po dílech (limit `prepareOnePlate`, AL.md §10.7).
+- Nic nevytištěno; první tisk ukáže skutečné výměny ACE (Orca počítá ~2,2 min na výměnu).
+
+Testy: `ThreeMfColorsTest` (rozbor, seřazené STL a `groups`, sloučení, soubory bez barev a s nečitelnou barvou, dvě
+ceny, zakázka po barvách s nejbližšími cívkami na jedné podložce a díly na místě, `colors=one`; skutečná Orca volitelně),
+`ModelEditTest`, `FarmOnePlateTest`, `FarmOrderColorsTest`, `FarmOrderFlowTest`, `StickyLayoutTest`, `ToolPageTest`,
+`CalculationFlowTest`, `ToolsFlowTest`, `StandPartsFarmTest`, `GcodeModelTest`; pint, tsc, build.

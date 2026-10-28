@@ -34,13 +34,14 @@ class ModelFile extends Model
 
     protected $fillable = [
         'uuid', 'owner_user_id', 'anonymous_session_id', 'original_name', 'ext', 'mime', 'size_bytes', 'sha256',
-        'storage_path', 'stl_path', 'preview_path', 'bbox', 'volume_mm3', 'area_mm2', 'triangles', 'mesh_report',
+        'storage_path', 'stl_path', 'preview_path', 'bbox', 'volume_mm3', 'area_mm2', 'triangles', 'mesh_report', 'colors',
         'origin', 'origin_ref', 'tool_params', 'status', 'error', 'timings',
     ];
 
     protected $casts = ['tool_params' => 'array', 'timings' => 'array',
         'bbox' => 'array',
         'mesh_report' => 'array',
+        'colors' => 'array',     // the colours an uploaded 3MF is painted in (App\Domain\Files\PaintedColors), null for anything else
         'deleted_at' => 'datetime',
         'volume_mm3' => 'float',
         'area_mm2' => 'float',

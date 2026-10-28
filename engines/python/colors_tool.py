@@ -3,6 +3,8 @@
 Colour Splitter: a coloured 3MF → one part per colour (the `colors` command of edit_tool.py lands here).
 
   colors_tool.py analyse <in.3mf>                                  what colours the file holds (edit_tool.py analyse hands over)
+  colors_tool.py repaint <in.3mf> <out.3mf> <json|@file>           the painted 3MF mapped onto the order's filaments for Orca (AL.md 14)
+  colors_tool.py upload <in.3mf> <model.stl> [json]                 an upload's colours, its STL ordered by colour + groups (AL.md 14)
   colors_tool.py pack <out.3mf> <in.stl> <json|@file>               parts of one STL as a 3MF with a colour each (cards, tests);
                                                                     json: {"parts": [{"name", "tris": [from, to], "hex"}]}
 
@@ -138,6 +140,166 @@ def _paint_state(s):
     if not counts:
         return 0, split[0]
     return max(counts.items(), key=lambda kv: kv[1])[0], split[0]
+
+
+def _paint_tree(s):
+    """A painted triangle's string as its tree: ('leaf', state) or ('split', sides, special, [children]); None when unreadable."""
+    bits = []
+    for ch in reversed(s.strip()):
+        try:
+            n = int(ch, 16)
+        except ValueError:
+            return None
+        bits.extend(((n >> i) & 1) for i in range(4))
+    pos = [0]
+
+    def read(k):
+        v = 0
+        for i in range(k):
+            if pos[0] < len(bits):
+                v |= bits[pos[0]] << i
+            pos[0] += 1
+        return v
+
+    def node(depth):
+        if depth > 12:
+            raise ValueError("deep")
+        sides = read(2)
+        if sides == 0:
+            st = read(2)
+            if st == 3:
+                st = 3 + read(4)
+            return ("leaf", st)
+        special = read(2)
+        return ("split", sides, special, [node(depth + 1) for _ in range(sides + 1)])
+
+    try:
+        return node(0)
+    except ValueError:
+        return None
+
+
+def _paint_string(tree):
+    """The tree back as the slicers write it (the inverse of _paint_tree)."""
+    bits = []
+
+    def write(k, v):
+        bits.extend(((v >> i) & 1) for i in range(k))
+
+    def node(t):
+        if t[0] == "leaf":
+            write(2, 0)
+            if t[1] < 3:
+                write(2, t[1])
+            else:
+                write(2, 3)
+                write(4, t[1] - 3)
+            return
+        write(2, t[1])
+        write(2, t[2])
+        for c in t[3]:
+            node(c)
+
+    node(tree)
+    while len(bits) % 4:
+        bits.append(0)
+    nibbles = [sum(bits[i + k] << k for k in range(4)) for i in range(0, len(bits), 4)]
+    return "".join("%X" % n for n in reversed(nibbles))
+
+
+def _remap_tree(t, f):
+    if t[0] == "leaf":
+        return ("leaf", f(t[1]))
+    kids = [_remap_tree(c, f) for c in t[3]]
+    if all(k[0] == "leaf" for k in kids) and len({k[1] for k in kids}) == 1:
+        return ("leaf", kids[0][1])   # every piece the same colour now: one leaf, as the slicer would write it
+    return ("split", t[1], t[2], kids)
+
+
+DROP_KEYS = set((os.environ.get("REPAINT_DROP") or "flush_volumes_matrix").split(","))
+
+
+def repaint(src, dst, p):
+    """
+    The painted 3MF as the farm slices it (docs/AL.md 14): every filament the file names mapped to the order's filament
+    (`map`: old extruder -> new, 1-based; a merged colour onto its body's), the object and part extruders too, the
+    build placed by `scale` and `move` (mm) on our plate, and the project's own settings left out (its printer, its
+    flush volumes, its layer heights and G-code): the farm's profiles decide. Orca then paints the layers itself.
+    """
+    mapping = {int(k): int(v) for k, v in (p.get("map") or {}).items()}
+    scale = float(p.get("scale", 1.0) or 1.0)
+    move = [float(v) for v in (p.get("move") or [0, 0, 0])]
+    unknown = mapping.get(0)
+    keep_project = bool(p.get("keep_project"))
+
+    def f(st):
+        if st == 0:
+            return 0                      # the body's own colour: its object or part extruder says which
+        return mapping.get(st, unknown or 1)
+
+    zin = zipfile.ZipFile(src)
+    changed = [0, 0]
+    drop = re.compile(r"^metadata/(project_settings\.config|filament_settings_\d+\.config|slice_info\.config|layer_heights_profile\.txt|custom_gcode_per_layer\.xml|plate_\d+\.(gcode|json)|.*\.gcode.*)$", re.I)
+    with zipfile.ZipFile(dst, "w", zipfile.ZIP_DEFLATED) as zout:
+        for info in zin.infolist():
+            name = info.filename
+            if drop.match(name) and not (keep_project and name.lower() == "metadata/project_settings.config"):
+                continue
+            data = zin.read(name)
+            low = name.lower()
+            if low.endswith(".model"):
+                text = data.decode("utf-8", "replace")
+
+                def paint(m):
+                    t = _paint_tree(m.group(2))
+                    changed[1] += 1
+                    if t is None:
+                        return ""
+                    new = _remap_tree(t, f)
+                    if new[0] == "leaf" and new[1] == 0:
+                        return ""
+                    changed[0] += 1
+                    return m.group(1) + '="' + _paint_string(new) + '"'
+
+                text = re.sub(r'(paint_color|slic3rpe:mmu_segmentation)="([^"]*)"', paint, text)
+                if low == "3d/3dmodel.model":
+                    def item(m):
+                        tag = m.group(0)
+                        tf = _transform(re.search(r'transform="([^"]*)"', tag).group(1)) if 'transform="' in tag else [1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0]
+                        tf = [v * scale for v in tf]
+                        for k in range(3):
+                            tf[9 + k] += move[k]
+                        val = " ".join("%.9g" % v for v in tf)
+                        return re.sub(r'\stransform="[^"]*"', "", tag).replace("<item", '<item transform="%s"' % val, 1)
+                    text = re.sub(r"<item\b[^>]*>", item, text)
+                data = text.encode("utf-8")
+            elif low == "metadata/project_settings.config":
+                # Orca 2.4 does not open a Bambu project without its settings (it crashes): kept, but cut to our filaments
+                # (every per-filament list takes the entry of the old filament mapped first onto each new one) and without
+                # what the farm's profiles decide (the purge matrix, the printer, the process, the plate's G-code)
+                try:
+                    cfg = json.loads(data.decode("utf-8", "replace"))
+                except ValueError:
+                    cfg = {}
+                n_old = len(cfg.get("filament_colour") or []) or max(mapping or {1: 1})
+                n_new = max(mapping.values()) if mapping else 1
+                pick = [next((e for e in sorted(mapping) if mapping[e] == k), k) for k in range(1, n_new + 1)]
+                keep = {}
+                for key, val in cfg.items():
+                    if key in DROP_KEYS:
+                        continue
+                    if isinstance(val, list) and n_old > 1 and len(val) == n_old:
+                        val = [val[min(len(val), e) - 1] for e in pick]
+                    keep[key] = val
+                data = json.dumps(keep).encode("utf-8")
+            elif low == "metadata/model_settings.config":
+                text = data.decode("utf-8", "replace")
+                text = re.sub(r'(<metadata key="extruder" value=")(\d+)(")', lambda m: m.group(1) + str(mapping.get(int(m.group(2)), unknown or int(m.group(2)))) + m.group(3), text)
+                # the plate's own record of what was sliced on it: Orca slices again on our plate
+                text = re.sub(r"<plate>.*?</plate>", "", text, flags=re.S)
+                data = text.encode("utf-8")
+            zout.writestr(info, data)
+    out({"ok": True, "out": dst, "painted": changed[0], "read": changed[1]})
 
 
 class Model:
@@ -361,6 +523,132 @@ def describe(m, keys, colors, sources):
             for k in np.argsort(-areas) if counts[k] > 0]
 
 
+def plan_merge(m, keys, found, merge_below=0.0, max_colors=MAX_COLORS):
+    """
+    Which colours print and which join the body they sit on: a colour under `merge_below` per cent of the area, and
+    beyond the `max_colors` largest, takes the colour of its body (the largest kept colour on that body, else the largest
+    kept colour of all). Returns the printed colour key of every face, the kept colours (largest first) and, per merged
+    colour, the kept colour most of its area went into.
+    """
+    import numpy as np
+    import trimesh
+    kept = [c for c in found if c["share"] >= merge_below][:max_colors] or found[:1]
+    keep = {c["key"] for c in kept}
+    pk = keys.copy()
+    into = {}
+    if len(keep) == len(found):
+        return pk, kept, into
+    labels = trimesh.graph.connected_component_labels(m.face_adjacency, node_count=len(m.faces))
+    areas = m.area_faces
+    gone_area = {}
+    for body in np.unique(labels):
+        fi = np.flatnonzero(labels == body)
+        bk = keys[fi]
+        present = [int(k) for k in np.unique(bk) if int(k) in keep]
+        own = max(present, key=lambda k: areas[fi[bk == k]].sum()) if present else kept[0]["key"]
+        for k in np.unique(bk):
+            k = int(k)
+            if k in keep:
+                continue
+            sel = fi[bk == k]
+            pk[sel] = own
+            gone_area.setdefault(k, {}).setdefault(own, 0.0)
+            gone_area[k][own] += float(areas[sel].sum())
+    for k, by in gone_area.items():
+        into[k] = max(by.items(), key=lambda kv: kv[1])[0]
+    return pk, kept, into
+
+
+def _read_stl_head(path):
+    """Triangles and bounding box of a binary STL, None when it is not one."""
+    import numpy as np
+    try:
+        size = os.path.getsize(path)
+        with open(path, "rb") as fh:
+            fh.seek(80)
+            n = int(np.frombuffer(fh.read(4), dtype="<u4")[0])
+        if size != 84 + 50 * n:
+            return None
+        rec = np.fromfile(path, dtype=[("n", "<f4", 3), ("v", "<f4", (3, 3)), ("a", "<u2")], offset=84, count=n)
+        v = rec["v"].reshape(-1, 3)
+        return n, v.min(axis=0), v.max(axis=0)
+    except (OSError, ValueError, IndexError):
+        return None
+
+
+def upload(src, stl, p):
+    """
+    A 3MF just uploaded (ProcessModelFile, docs/AL.md §14): which colours it is painted in and how the farm would print
+    them. Colours under `merge_below` per cent (and beyond the `max_colors` largest) join their body's colour. With two
+    printed colours or more, the converted STL `stl` is written again with the same triangles ordered by printed colour,
+    so the viewer paints the ranges in `groups` (when the converter's STL is not the same mesh - another unit, another
+    count - it is left as it is and `groups` is null). `layers` says in how many 0.2 mm layers 2, 3, 4 colours meet: the
+    calculator's estimate of the colour changes.
+    """
+    import numpy as np
+    merge_below = float(p.get("merge_below", 1.0))
+    max_colors = int(p.get("max_colors", 4))
+    model = read_3mf(src)
+    tri, keys, names, sources = gather(model)
+    m = as_mesh(tri)
+    found = describe(m, keys, names, sources)
+    base = {"ok": True, "triangles": int(len(tri)), "split_triangles": int(model.split), "found": len(found)}
+    if len(found) < 2:
+        out(dict(base, has_colors=False, colors=[{"hex": c["hex"], "share": round(c["share"] / 100.0, 4), "merged": False} for c in found], groups=None, count=len(found)))
+    pk, kept, into = plan_merge(m, keys, found, merge_below, max_colors)
+    kept_keys = {c["key"] for c in kept}
+    hexes = {c["key"]: c["hex"] for c in found}
+    colors_ = []
+    for c in found:
+        e = {"hex": c["hex"], "share": round(c["share"] / 100.0, 4), "merged": c["key"] not in kept_keys, "extruder": c["extruder"], "sources": c["sources"]}
+        if c["key"] in into:
+            e["into"] = hexes[into[c["key"]]]
+        colors_.append(e)
+    rank = np.full(max(hexes) + 1, len(kept), dtype=np.int64)
+    for i, c in enumerate(kept):
+        rank[c["key"]] = i
+    r = rank[pk]
+    order = np.argsort(r, kind="stable")
+    counts = np.bincount(r, minlength=len(kept))[: len(kept)]
+    groups, at = [], 0
+    for i, c in enumerate(kept):
+        n = int(counts[i])
+        if n:
+            groups.append({"hex": c["hex"], "from": at, "to": at + n})
+            at += n
+    # how many colours meet in each 0.2 mm layer: the colour changes a one-plate print needs
+    z = tri[:, :, 2]
+    lo_z, hi_z = float(z.min()), float(z.max())
+    nl = max(1, int(np.ceil((hi_z - lo_z) / 0.2)))
+    present = np.zeros((len(kept), nl), dtype=bool)
+    zmin = np.clip(((z.min(axis=1) - lo_z) / 0.2).astype(np.int64), 0, nl - 1)
+    zmax = np.clip(((z.max(axis=1) - lo_z) / 0.2).astype(np.int64), 0, nl - 1)
+    for i in range(len(kept)):
+        sel = r == i
+        if not sel.any():
+            continue
+        diff = np.zeros(nl + 1, dtype=np.int64)
+        np.add.at(diff, zmin[sel], 1)
+        np.add.at(diff, zmax[sel] + 1, -1)
+        present[i] = np.cumsum(diff)[:nl] > 0
+    per_layer = present.sum(axis=0)
+    layers = {str(k): int((per_layer == k).sum()) for k in range(2, len(kept) + 1)}
+    written = False
+    head = _read_stl_head(stl) if len(kept) > 1 else None
+    if head is not None:
+        n, lo, hi = head
+        tlo, thi = tri.reshape(-1, 3).min(axis=0), tri.reshape(-1, 3).max(axis=0)
+        if n == len(tri) and float(np.abs(lo - tlo).max()) < 0.05 and float(np.abs(hi - thi).max()) < 0.05:
+            from art_tool import write_stl
+            tmp = stl + ".colors.tmp"
+            write_stl(tmp, np.asarray(tri[order], dtype=np.float32))
+            os.replace(tmp, stl)
+            written = True
+    out(dict(base, has_colors=len(kept) > 1, colors=colors_, count=len(kept), merged=len(found) - len(kept),
+             too_many=len([c for c in found if c["share"] >= merge_below]) > max_colors, groups=groups if written else None,
+             layers=layers, height=round(hi_z - lo_z, 2)))
+
+
 def analyse(src, p):
     import numpy as np
     if not str(src).lower().endswith(".3mf"):
@@ -416,8 +704,55 @@ def _inlay(m, fidx, normals, depth):
     return inlay
 
 
-def _write(dst, parts, parts_dir):
-    """Every part as its own STL and all of them in place as one; the list of parts with their triangle ranges."""
+def _patches(m, fidx):
+    """
+    The faces fidx split into patches joined by edges, each without bow-tie vertices (a vertex where the patch's rim
+    touches itself: the inlay would pinch there and not close). The faces at such a vertex stay with the body's own
+    colour, a few triangles at most. One inlay per patch, so one patch that will not close never takes the whole colour
+    with it (28 Oct 2026: the turtle's yellow, 19 patches, 3 with a bow-tie, all lost in the green base).
+    """
+    import numpy as np
+    import trimesh
+    fidx = np.asarray(fidx, dtype=np.int64)
+    if not len(fidx):
+        return []
+    sub = trimesh.Trimesh(vertices=m.vertices, faces=m.faces[fidx], process=False)
+    labels = trimesh.graph.connected_component_labels(sub.face_adjacency, node_count=len(fidx))
+    out_ = []
+    for lab in np.unique(labels):
+        part = fidx[labels == lab]
+        for _ in range(4):
+            F = m.faces[part]
+            edges = np.sort(F[:, [[0, 1], [1, 2], [2, 0]]].reshape(-1, 2), axis=1)
+            _, first, counts = np.unique(edges, axis=0, return_index=True, return_counts=True)
+            rim = edges[first[counts == 1]]
+            if not len(rim):
+                break
+            deg = np.bincount(rim.ravel())
+            bow = np.flatnonzero(deg > 2)
+            if not len(bow):
+                break
+            keep = ~np.isin(F, bow).any(axis=1)
+            part = part[keep]
+            if not len(part):
+                break
+        if len(part):
+            # dropping faces may have cut the patch in two: each piece on its own
+            if len(part) > 1:
+                piece = trimesh.Trimesh(vertices=m.vertices, faces=m.faces[part], process=False)
+                sub_labels = trimesh.graph.connected_component_labels(piece.face_adjacency, node_count=len(part))
+                out_.extend(part[sub_labels == sl] for sl in np.unique(sub_labels))
+            else:
+                out_.append(part)
+    return out_
+
+
+def _write(dst, parts, parts_dir, in_place=False):
+    """
+    Every part as its own STL (set at the origin, or `in_place` where it sits in the design: the farm prints them
+    together on one plate and keeps their places, docs/AL.md 14) and all of them in place as one; the list of parts
+    with their triangle ranges.
+    """
     import numpy as np
     from art_tool import write_stl
     listed, chunks, at = [], [], 0
@@ -432,7 +767,7 @@ def _write(dst, parts, parts_dir):
         chunks.append(t)
         at += len(t)
         if parts_dir:
-            write_stl(os.path.join(parts_dir, name + ".stl"), t - np.array([lo[0], lo[1], lo[2]], dtype=np.float32))
+            write_stl(os.path.join(parts_dir, name + ".stl"), t if in_place else t - np.array([lo[0], lo[1], lo[2]], dtype=np.float32))
     tri = np.concatenate(chunks) if chunks else np.zeros((0, 3, 3), dtype=np.float32)
     write_stl(dst, tri)
     return listed, tri
@@ -454,6 +789,13 @@ def colors(src, dst, p, parts_dir, stage=lambda d, n: None):
     if len(found) < 2:
         raise Invalid("no_colors")
     notes = {"depth": depth, "split_triangles": int(model.split), "warnings": [], "shells": 0, "inlays": 0, "bases": 0, "triangles_in": int(len(tri))}
+    if p.get("merge_below") is not None or p.get("max_colors") is not None:
+        # an uploaded 3MF printed by the farm (docs/AL.md §14): the small colours join their body, as the upload's analysis said
+        keys, found, into = plan_merge(m, keys, found, float(p.get("merge_below") or 0.0), int(p.get("max_colors") or MAX_COLORS))
+        notes["merged"] = len(into)
+        if len(found) < 2:
+            raise Invalid("no_colors")
+        notes["stable_names"] = True
     if len(found) > MAX_COLORS:
         # a file with more colours than any printer has spools: the small ones join the largest
         keep = {c["key"] for c in found[:MAX_COLORS]}
@@ -487,15 +829,22 @@ def colors(src, dst, p, parts_dir, stage=lambda d, n: None):
             k = int(k)
             if k == own:
                 continue
-            inlay = _inlay(m, fi[bk == k], normals, depth)
-            if inlay is None:
-                if "inlay_failed" not in notes["warnings"]:
-                    notes["warnings"].append("inlay_failed")
+            pieces = []
+            for patch in _patches(m, fi[bk == k]):
+                inlay = _inlay(m, patch, normals, depth)
+                if inlay is None:
+                    notes["patches_failed"] = notes.get("patches_failed", 0) + 1
+                    if "inlay_failed" not in notes["warnings"]:
+                        notes["warnings"].append("inlay_failed")
+                    continue
+                pieces.append(inlay)
+            if not pieces:
                 continue
+            inlay = trimesh.util.concatenate(pieces) if len(pieces) > 1 else pieces[0]
             by_color[k].append(inlay)
             kinds[k].add("inlay")
-            inlays.append(inlay)
-            notes["inlays"] += 1
+            inlays.extend(pieces)
+            notes["inlays"] += len(pieces)
         base = sub(fi)
         if inlays and closed:
             try:
@@ -519,14 +868,15 @@ def colors(src, dst, p, parts_dir, stage=lambda d, n: None):
         meshes = by_color[c["key"]]
         if not meshes:
             continue
-        name = "color_%d" % (len(parts) + 1)
+        # the farm's parts keep the name the upload's analysis gave them (colour rank), even when one came out empty
+        name = "color_%d" % ((i if notes.get("stable_names") else len(parts)) + 1)
         whole = trimesh.util.concatenate(meshes) if len(meshes) > 1 else meshes[0]
         parts.append((name, whole))
         report.append({"part": name, "name": c["name"], "hex": c["hex"], "extruder": c["extruder"], "sources": c["sources"], "triangles": int(len(whole.faces)), "share": c["share"],
                        "kind": "mixed" if len(kinds[c["key"]]) > 1 else (next(iter(kinds[c["key"]])) if kinds[c["key"]] else "shell"), "bodies": len(meshes)})
     if not parts:
         raise Invalid("empty_result")
-    listed, tri = _write(dst, parts, parts_dir)
+    listed, tri = _write(dst, parts, parts_dir, bool(p.get("in_place")))
     stage(dst, "done")
     notes["colors"] = report
     notes["parts"] = [name for name, _ in parts]
@@ -575,6 +925,15 @@ def main(argv):
     try:
         if len(argv) >= 3 and argv[1] == "analyse":
             analyse(argv[2], {})
+        if len(argv) >= 5 and argv[1] == "repaint":
+            raw = argv[4]
+            if raw.startswith("@"):
+                with open(raw[1:], encoding="utf-8") as fh:
+                    raw = fh.read()
+            repaint(argv[2], argv[3], json.loads(raw or "{}"))
+        if len(argv) >= 4 and argv[1] == "upload":
+            raw = argv[4] if len(argv) > 4 else "{}"
+            upload(argv[2], argv[3], json.loads(raw or "{}"))
         if len(argv) >= 5 and argv[1] == "pack":
             raw = argv[4]
             if raw.startswith("@"):

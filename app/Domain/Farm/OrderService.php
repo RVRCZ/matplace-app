@@ -2,10 +2,12 @@
 
 namespace App\Domain\Farm;
 
+use App\Domain\Files\PaintedColors;
 use App\Domain\Tools\ArtGenerator;
 use App\Domain\Tools\ModelEditor;
 use App\Domain\Tools\ParametricGenerator;
 use App\Engines\DTO\Dimensions;
+use App\Engines\Mesh\StlFile;
 use App\Jobs\PrepareFarmOrder;
 use App\Models\AnonymousSession;
 use App\Models\Calculation;
@@ -423,7 +425,8 @@ final class OrderService
     public static function designParts(ModelFile $file): array
     {
         if ($file->origin !== 'tool') {
-            return [];
+            // a 3MF painted in two colours or more: a part per printed colour (docs/AL.md §14)
+            return PaintedColors::partNames($file);
         }
         $kind = (string) $file->origin_ref;
         if (isset(ParametricGenerator::FIELDS[$kind])) {
@@ -431,7 +434,10 @@ final class OrderService
             // the design says its colours must print together on one plate (a medal with its motif flush: body + colours)
             $parts = in_array($kind, self::ASSEMBLED, true) || $file->onePlateRequired() ? ParametricGenerator::partsOf($kind, (array) $file->tool_params) : [];
         } else {
-            $parts = $kind === 'colors' ? [] : ModelEditor::partsOf($file);
+            // the colour splitter's parts too (left out on 8 Oct 2026, ba70ae81, when parts printed only one plate each and
+            // an inlay came out as a loose 1.2 mm shell): since one plate takes several filaments (docs/AL.md §10) they print
+            // in place together; on a machine without a spool changer they still print one by one (docs/AL.md §14)
+            $parts = ModelEditor::partsOf($file);
         }
 
         return array_values(array_diff($parts, ['all']));
@@ -447,6 +453,9 @@ final class OrderService
     {
         $kind = (string) $file?->origin_ref;
         $n = preg_match('/_([0-9]{1,2})$/', $part, $m) ? $m[1] : null;
+        if ($file && $file->origin !== 'tool' && in_array($part, PaintedColors::partNames($file), true)) {
+            return __('edit.colors.part.color', ['n' => $n]);   // a painted upload's parts: "Barva 2" as on /tools/colors
+        }
         $stem = $n !== null ? substr($part, 0, -strlen($n) - 1) : $part;
         if (str_starts_with($part, 'bin_')) {
             return __('param.part.bin', ['s' => str_replace('x', ' × ', substr($part, 4))]);
@@ -484,9 +493,27 @@ final class OrderService
 
             return ['path' => $built['path'], 'temp' => true];
         }
+        // a painted upload: its parts made once, in place, when the order is first prepared (about 10 s for the turtle)
+        if ($file->origin !== 'tool' && ! app(PaintedColors::class)->ensureParts($file)) {
+            return null;
+        }
         $path = dirname(Storage::disk(ModelFile::DISK)->path($file->storage_path)).'/parts/'.$part.'.stl';
+        if (! is_file($path)) {
+            return null;
+        }
+        // the colour splitter of /tools/colors sets every part at the origin (a download prints on its own): moved back to
+        // where it sits in the design, so the parts keep their places on one plate (pieces[].bbox, the tool's own report)
+        if ($file->origin === 'tool' && $file->origin_ref === 'colors') {
+            $piece = collect((array) ($file->tool_params['pieces'] ?? []))->firstWhere('name', $part);
+            if (is_array($piece['bbox'] ?? null) && count($piece['bbox']) >= 3) {
+                $moved = sys_get_temp_dir().'/mp_part_'.Str::random(10).'.stl';
+                StlFile::translate($path, $moved, [(float) $piece['bbox'][0], (float) $piece['bbox'][1], (float) $piece['bbox'][2]]);
 
-        return is_file($path) ? ['path' => $path, 'temp' => false] : null;
+                return ['path' => $moved, 'temp' => true];
+            }
+        }
+
+        return ['path' => $path, 'temp' => false];
     }
 
     /**

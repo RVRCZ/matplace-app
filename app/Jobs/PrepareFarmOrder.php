@@ -12,6 +12,7 @@ use App\Domain\Farm\PrintSettings;
 use App\Domain\Farm\TestPrintService;
 use App\Domain\Farm\TimelapseGcode;
 use App\Domain\Farm\TowerGcode;
+use App\Domain\Files\PaintedColors;
 use App\Engines\Contracts\PrintPreparer;
 use App\Engines\Contracts\Slicer;
 use App\Engines\DTO\Dimensions;
@@ -645,6 +646,18 @@ class PrepareFarmOrder implements ShouldQueue
         // the origin; it is moved back to where the plate has it, so the parts keep their places against each other.
         $rules = ['min_model_mm' => (float) $settings->get('min_model_mm'), 'bed_margin_mm' => (float) $settings->get('bed_margin_mm')];
         $raw = Dimensions::fromArray((array) $file->bbox);
+        // a painted 3MF is sliced as itself (PaintedColors::project): its parts are the plate's preview and record, and an
+        // open edge or two from writing the inlays as STL (the turtle's yellow, 28 Oct 2026) is no reason to refuse it
+        $paintedFile = $file->origin !== 'tool' && PaintedColors::printed($file) !== [];
+        $judge = function ($mesh) use ($bed, $rules, $paintedFile): array {
+            $verdict = ModelValidator::judge($mesh, $bed, $rules);
+            if ($paintedFile && ! $verdict['ok']) {
+                $verdict['errors'] = array_values(array_filter($verdict['errors'], fn ($e) => ($e['code'] ?? null) !== 'not_watertight'));
+                $verdict['ok'] = $verdict['errors'] === [];
+            }
+
+            return $verdict;
+        };
         $meshes = [];
         foreach ($paths as $i => $rel) {
             $placed = $disk->path($rel);
@@ -657,7 +670,7 @@ class PrepareFarmOrder implements ShouldQueue
             StlFile::translate($prepared, $placed, [($wasLo[0] + $wasHi[0] - $nowLo[0] - $nowHi[0]) / 2, ($wasLo[1] + $wasHi[1] - $nowLo[1] - $nowHi[1]) / 2, $wasLo[2] - $nowLo[2]]);
             @unlink($prepared);
             $volumes[$i] = $partMesh->volumeMm3;
-            $verdict = ModelValidator::judge($partMesh, $bed, $rules);
+            $verdict = $judge($partMesh);
             if (! $verdict['ok']) {
                 $order->check = $verdict + ['part' => (string) $skeleton[$i]['part'], 'mesh' => $partMesh->toArray(), 'unit_guess' => ModelValidator::guessUnit($raw, $bed), 'raw_dims' => $raw->toArray(), 'piece_dims' => $partMesh->bbox->toArray(), 'max_copies' => 1];
                 $order->save();
@@ -689,7 +702,7 @@ class PrepareFarmOrder implements ShouldQueue
             engine: $all->first()->engine,
             footprint: $all->first()->footprint,
         );
-        $verdict = ModelValidator::judge($mesh, $bed, $rules);
+        $verdict = $judge($mesh);
         $order->check = $verdict + ['mesh' => $mesh->toArray(), 'unit_guess' => ModelValidator::guessUnit($raw, $bed), 'raw_dims' => $raw->toArray(), 'piece_dims' => $mesh->bbox->toArray(), 'max_copies' => 1];
         $order->orientation = $mesh->orientation;
         $order->print_stl_path = $printRel;
@@ -733,7 +746,18 @@ class PrepareFarmOrder implements ShouldQueue
                 }
             }
         }
-        ThreeMfWriter::write($disk->path($projectRel), array_map(fn ($i, $p) => ['name' => (string) $p['part'], 'stl' => $disk->path($slicePaths[$i]), 'extruder' => $filamentOf[$i] + 1, 'process' => $i > 0 ? $inlay : []], array_keys($skeleton), $skeleton));
+        // a painted 3MF goes to Orca as itself, its colours mapped onto the parts' filaments (exact painting, no inlays; the
+        // inlays of a painted curved surface are refused as objects of their own, docs/AL.md §14); the parts' 3MF otherwise
+        $partFilament = [];
+        foreach ($skeleton as $i => $p) {
+            $partFilament[(string) $p['part']] = $filamentOf[$i] + 1;
+        }
+        $painted = $file->origin !== 'tool' && PaintedColors::printed($file) !== []
+            && $clock->measure('repaint', fn () => app(PaintedColors::class)->project($file, $disk->path($projectRel), $scale, $move, $partFilament));
+        $clock->note('one_plate_project', $painted ? 'painted' : 'parts');
+        if (! $painted) {
+            ThreeMfWriter::write($disk->path($projectRel), array_map(fn ($i, $p) => ['name' => (string) $p['part'], 'stl' => $disk->path($slicePaths[$i]), 'extruder' => $filamentOf[$i] + 1, 'process' => $i > 0 ? $inlay : []], array_keys($skeleton), $skeleton));
+        }
         foreach ($slicePaths as $i => $rel) {
             if ($rel !== $paths[$i]) {
                 @unlink($disk->path($rel));   // the 3MF holds the thinned geometry now

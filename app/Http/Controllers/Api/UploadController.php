@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api;
 
 use App\Domain\Calculation\BigModel;
 use App\Domain\Farm\Palette;
+use App\Domain\Files\PaintedColors;
 use App\Domain\Tools\MapBuilder;
 use App\Domain\Tools\ModelCheck;
 use App\Domain\Tools\ModelEditor;
@@ -161,6 +162,11 @@ class UploadController extends Controller
             // a map made here: its notes (the scale, the data's date) and, while it is built, the phase it is in
             'map' => MapBuilder::report($f),
             'parts' => self::partsOf($f),
+            // a 3MF painted in colours (docs/AL.md §14): the colours by area (share 0..1, small ones merged into their body),
+            // the preview's triangle ranges by colour on stl_url, the counts; null without colours
+            'colors' => ($painted = PaintedColors::describe($f))['colors'] ?? null,
+            'groups' => $painted['groups'] ?? null,
+            'colors_info' => $painted['info'] ?? null,
             // lets the tool page reopen this design ("edit" from the calculator)
             'tool' => self::toolOf($f),
             // the design is drawn in free colours: which of our spools each one would be printed from (shown beside "print it with us")

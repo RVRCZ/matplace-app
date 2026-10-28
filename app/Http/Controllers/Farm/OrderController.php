@@ -18,6 +18,7 @@ use App\Domain\Farm\PlateLayout;
 use App\Domain\Farm\PrintSettings;
 use App\Domain\Farm\Shipping;
 use App\Domain\Farm\Wallet;
+use App\Domain\Files\PaintedColors;
 use App\Domain\Social\SocialPublisher;
 use App\Domain\Tools\ArtGenerator;
 use App\Domain\YouTube\FarmVideos;
@@ -59,7 +60,7 @@ class OrderController extends Controller
     /** What rides from the start page to the order (a repeated print, a refused order), under the names the store takes. */
     private const CARRIED = ['quality' => 'quality', 'strength' => 'strength', 'supports' => 'supports', 'copies' => 'copies', 'scale' => 'scale',
         'color' => 'color', 'second' => 'second_color', 'second_color' => 'second_color', 'change' => 'change_color', 'change_color' => 'change_color',
-        'by_parts' => 'by_parts', 'part' => 'part_color', 'part_color' => 'part_color'];
+        'by_parts' => 'by_parts', 'part' => 'part_color', 'part_color' => 'part_color', 'colors' => 'colors'];
 
     /**
      * The entrance for whatever does not come from the calculator with a signed-in customer: an own upload, a
@@ -187,7 +188,7 @@ class OrderController extends Controller
         $machine = collect(collect($colors)->firstWhere('id', $preselect)['seconds'] ?? [])->pluck('id')->push($preselect);
         $changePick = array_map(fn ($i) => ($want = (int) ($wantedChanges[$i] ?? 0)) && $machine->contains($want) ? $want : 0, array_keys($changes));
         // by parts: ticked on from the start when the design names different colours for its parts or is a picture of stacked plates
-        $partHex = array_map(fn ($part) => ($file->tool_params['part_colors'][$part]['hex'] ?? null) ?: null, array_combine($parts, $parts) ?: []);
+        $partHex = array_map(fn ($part) => (($file->tool_params['part_colors'][$part]['hex'] ?? null) ?: PaintedColors::partHex($file, $part)) ?: null, array_combine($parts, $parts) ?: []);
         // … or must print its colours together on one plate (a medal with its motif flush): by parts from the start, so the order reaches the one-plate slice
         $byParts = ($wish['by_parts'] ?? null) !== null ? (bool) $wish['by_parts'] : (count($parts) >= 2 && ($file->kind() === ArtGenerator::KIND || $file->onePlateRequired() || count(array_unique(array_filter($partHex))) >= 2));
         // a design in one colour chosen freely on its page (a blue box): the spool nearest to that colour; designs that
@@ -319,6 +320,8 @@ class OrderController extends Controller
             'by_parts' => ['nullable', 'boolean'],
             'part_color' => ['nullable', 'array', 'max:16'],
             'part_color.*' => ['nullable', 'integer'],
+            // a painted 3MF (docs/AL.md §14): its colours (by parts, a spool per colour; the default) or one colour
+            'colors' => ['nullable', 'in:painted,one'],
             'supports' => ['nullable', 'in:auto,off'],
             'designer_model' => ['nullable', 'integer'],
             'catalog_model' => ['nullable', 'integer'],
@@ -352,7 +355,7 @@ class OrderController extends Controller
         $pick = $this->preselect($file, $quality, $from['material'] ?? null, [
             'color' => $data['color'] ?? null,
             'changes' => $data['change_color'] ?? (isset($data['second_color']) ? [$data['second_color']] : null),
-            'by_parts' => $request->has('by_parts') ? $request->boolean('by_parts') : null,
+            'by_parts' => $request->has('by_parts') ? $request->boolean('by_parts') : (($data['colors'] ?? null) === 'one' ? false : null),
             'parts' => $data['part_color'] ?? null,
         ]);
 
