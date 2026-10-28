@@ -335,4 +335,53 @@ return [
             ['t' => 'Boda: iniciales para la mesa', 'text' => 'Dos letras de 150 mm con los nombres de los novios, de 10 mm de grosor para que se sostengan solas en la mesa nupcial.'],
         ],
     ],
+
+    // las siguientes 10 herramientas, lote A (docs/AP.md §9): soporte, placa, llavero
+    'phone_stand' => [
+        'order' => [
+            ['q' => '¿Cuánto cuesta un soporte con ustedes y cuánto tarda en imprimirse?', 'farm' => true, 'a' => 'La cuña baja de 80 mm se imprime en 1 h 8 min y cuesta 120 CZK; el caballete con repisa de 75 mm, en 1 h 45 min por 170 CZK (PLA+, sin envío, cálculo del 18 de octubre de 2026). El cálculo muestra el precio de su soporte antes de encargar nada.'],
+            ['q' => '¿Cómo mido el móvil?', 'a' => 'Mida el grosor con la funda en el punto más grueso, incluido el anillo para el dedo si la funda lo tiene; la herramienta admite de 7 a 20 mm y añade sola la holgura. Mida el ancho por encima de la funda; en los tipos de mesa decide el ancho del respaldo.'],
+            ['q' => '¿Cuánto tarda el envío?', 'farm' => true, 'a' => 'Enviamos el mismo día en que termina la impresión, en días laborables, y Packeta suele entregar en 1 a 2 días laborables en Chequia (a un punto de recogida :cz_point, a domicilio :cz_home).'],
+            ['q' => '¿Cómo imprimo el soporte en casa?', 'a' => 'El proyecto descargado para OrcaSlicer, Bambu Studio o PrusaSlicer lleva la orientación y los ajustes del cálculo; basta elegir su impresora; un STL lo orienta usted. Para la mesa basta PLA con relleno del 15 %; un filamento mate disimula las capas.'],
+            ['q' => '¿Aguanta el soporte en el coche al sol?', 'a' => 'La pinza del coche y un soporte para el salpicadero imprímalos en PETG: el PLA tras el cristal se ablanda hacia los 55 °C y la pinza cede. Para la mesa o la pared basta el PLA.'],
+            ['q' => '¿Necesito una cuenta?', 'a' => 'Para el diseño y la descarga, no. Solo la necesita cuando nos encarga el soporte impreso; se paga con crédito recargado con tarjeta.'],
+        ],
+        'who' => [
+            ['t' => 'Para el escritorio', 'text' => 'Un caballete con repisa a 65° con recorte para el cable: el móvil se carga y queda a la vista para llamadas y avisos.'],
+            ['t' => 'Para recetas en la cocina', 'text' => 'Una cuña baja o un caballete ancho de hasta 260 mm para una tableta, a 60°, para leer la pantalla desde la encimera.'],
+            ['t' => 'Para el coche', 'text' => 'Una pinza para la rejilla de ventilación según el grosor de la lama, de 1 a 4 mm, en PETG, con recorte para el cable.'],
+        ],
+    ],
+
+    'sign' => [
+        'order' => [
+            ['q' => '¿Cuánto cuestan las placas con ustedes?', 'farm' => true, 'a' => 'Un llavero con nombre, 99 CZK, y diez iguales, 99 CZK en total; un letrero de puerta de 173 × 69 mm, 99 CZK (PLA+, sin envío, cálculo del 18 de octubre de 2026). Una placa mayor o más nombres se calculan por gramos y minutos; ve el precio antes de encargar nada.'],
+            ['q' => '¿Qué forma y tipografía elegir para una puerta?', 'a' => 'Para la puerta de un piso o una oficina, una tipografía sin serifa o con serifa con letras de al menos 15 mm y un marco, para que la placa se lea desde el pasillo; deje las manuscritas para nombres y llaveros. Las letras en relieve en un segundo color se leen mejor que las rebajadas.'],
+            ['q' => '¿Cuánto tardan la impresión y el envío?', 'farm' => true, 'a' => 'Un llavero se imprime en 5 minutos; un letrero de puerta, en 46 minutos. Enviamos el mismo día en que termina la impresión, en días laborables, y Packeta suele entregar en 1 a 2 días laborables en Chequia (a un punto de recogida :cz_point).'],
+            ['q' => '¿Cómo imprimo la placa en casa en dos colores?', 'a' => 'En plano, sin soportes. El proyecto descargado lleva una pausa a la altura en que empiezan las letras: la impresora se detiene, cambia la bobina y la impresión sigue; una impresora con AMS, MMU o ACE cambia el color sola. En la versión de dos colores también descarga la placa y las letras por separado.'],
+            ['q' => '¿Aguanta la placa en el exterior?', 'a' => 'Para un piso y puertas interiores basta el PLA. Para una puerta exterior o una valla elija ASA, que soporta sol y helada; el PETG aguanta a la sombra. El material se elige en la comparación de materiales del cálculo.'],
+            ['q' => '¿Necesito una cuenta?', 'a' => 'Para el diseño y la descarga, no. Solo la necesita cuando nos encarga las placas impresas; se paga con crédito recargado con tarjeta.'],
+        ],
+        'who' => [
+            ['t' => 'Etiquetas para una clase o un equipo', 'text' => 'Llaveros con nombres de 46 × 22 mm: diez unidades por 99 CZK, cada nombre su propio diseño con la misma composición.'],
+            ['t' => 'Letrero para la puerta del piso o la oficina', 'text' => '«Novákovi 12» con letras en relieve y marco, 173 × 69 mm, pegado con cinta de doble cara.'],
+            ['t' => 'Un nombre para la habitación infantil', 'text' => 'Solo el nombre en manuscrita sin placa, con argolla para una cinta, o sin ella para la puerta.'],
+        ],
+    ],
+
+    'keychain' => [
+        'order' => [
+            ['q' => '¿Cuánto cuestan los llaveros con ustedes?', 'farm' => true, 'a' => 'Un hueso de 70 mm con nombre en dos colores cuesta 99 CZK, que es el pedido mínimo; diez iguales, 100 CZK, es decir, 10 CZK cada uno (PLA, sin envío, cálculo del 28 de octubre de 2026). Los colores se eligen al hacer el pedido entre las bobinas que tenemos en stock.'],
+            ['q' => '¿Cómo hago llaveros con distintos nombres para un equipo?', 'a' => 'El diseño se queda en la página: cambie el nombre, mantenga la forma y la imagen y continúe al cálculo con cada nombre por separado; el número de unidades de un nombre lo indica ahí. Todos los llaveros se imprimen juntos en una misma cama.'],
+            ['q' => '¿Cuánto tardan la impresión y el envío?', 'farm' => true, 'a' => 'Un llavero se imprime en 10 minutos. Enviamos el mismo día en que termina la impresión, en días laborables, y Packeta suele entregar en 1 a 2 días laborables en Chequia (a un punto de recogida :cz_point).'],
+            ['q' => '¿Cómo imprimo el llavero en casa en varios colores?', 'a' => 'En plano, sin soportes. El proyecto descargado lleva un cambio de filamento a la altura de cada capa; con una boquilla cambia la bobina en la pausa, y una impresora con AMS, MMU o ACE lo hace sola. El STL es un solo cuerpo para imprimir en un color.'],
+            ['q' => '¿Sirve como regalo de empresa con logotipo?', 'a' => 'Sí. Suba el logotipo como SVG y queda una silueta de un color sobre una forma en el color de la empresa; un logotipo de varios colores lo procesa el formulario rápido. Diez llaveros salen por 100 CZK; el cálculo muestra el precio de una serie mayor.'],
+            ['q' => '¿Necesito una cuenta?', 'a' => 'Para el diseño y la descarga, no. Solo la necesita cuando nos encarga los llaveros impresos; se paga con crédito recargado con tarjeta.'],
+        ],
+        'who' => [
+            ['t' => 'Llaveros para un equipo o una boda', 'text' => 'Una composición, distintos nombres, diez unidades por 100 CZK; para una boda, un corazón con los nombres y la fecha.'],
+            ['t' => 'Etiqueta para mochila y llaves', 'text' => 'Una etiqueta de 80 mm en PETG con el nombre y el teléfono en dos líneas, argolla de 5 mm para un mosquetón.'],
+            ['t' => 'Un regalo con logotipo', 'text' => 'Un logotipo de un SVG como silueta sobre un círculo en el color de la empresa, hasta cuatro colores en una impresión.'],
+        ],
+    ],
 ];

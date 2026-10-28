@@ -336,4 +336,53 @@ return [
             ['t' => 'Svatba: iniciály na stůl', 'text' => 'Dvě písmena 150 mm se jmény novomanželů, tloušťka 10 mm, aby stála sama na svatebním stole.'],
         ],
     ],
+
+    // dalších 10 nástrojů, dávka A (docs/AP.md §9): stojánek, cedulka, klíčenka
+    'phone_stand' => [
+        'order' => [
+            ['q' => 'Kolik stojí stojánek u vás a jak dlouho se tiskne?', 'farm' => true, 'a' => 'Nízký klín 80 mm se tiskne 1 h 8 min a stojí 120 Kč, A‑rám s poličkou 75 mm 1 h 45 min a 170 Kč (PLA+, bez dopravy, kalkulace z 18. 10. 2026). Cenu vašeho stojánku ukáže kalkulace dřív, než cokoli objednáte.'],
+            ['q' => 'Jak změřit telefon?', 'a' => 'Tloušťku změřte i s obalem v nejsilnějším místě, u obalu s držákem na prst včetně něj; nástroj bere 7 až 20 mm a rezervu přidá sám. Šířku změřte přes obal; u stolních typů rozhoduje, jak široká bude opěrka.'],
+            ['q' => 'Jak dlouho trvá doručení?', 'farm' => true, 'a' => 'Odesíláme v den, kdy tisk skončí, v pracovní dny, a Zásilkovna v Česku obvykle doručí do 1 až 2 pracovních dnů (na výdejní místo :cz_point, domů :cz_home).'],
+            ['q' => 'Jak stojánek tisknout doma?', 'a' => 'Stažený projekt pro OrcaSlicer, Bambu Studio nebo PrusaSlicer má orientaci i nastavení z kalkulace, stačí vybrat tiskárnu; STL si natočíte sami. Na stůl stačí PLA s výplní 15 %, matný filament skryje vrstvy.'],
+            ['q' => 'Vydrží stojánek v autě na slunci?', 'a' => 'Klip do auta a stojánek na palubní desku tiskněte z PETG: PLA za sklem měkne už kolem 55 °C a klip povolí. Na stůl a na zeď PLA stačí.'],
+            ['q' => 'Potřebuji účet?', 'a' => 'Na návrh a stažení ne. Účet potřebujete, až když si stojánek necháte vytisknout u nás; platí se z kreditu dobitého kartou.'],
+        ],
+        'who' => [
+            ['t' => 'Na pracovní stůl', 'text' => 'A‑rám s poličkou, sklon 65°, výřez na kabel: telefon nabíjí a je vidět na hovory i upozornění.'],
+            ['t' => 'Do kuchyně na recepty', 'text' => 'Nízký klín nebo široký A‑rám do 260 mm pro tablet, sklon 60°, aby šel displej číst od desky.'],
+            ['t' => 'Do auta', 'text' => 'Klip na mřížku ventilace podle tloušťky lamely 1 až 4 mm, z PETG, s výřezem na kabel.'],
+        ],
+    ],
+
+    'sign' => [
+        'order' => [
+            ['q' => 'Kolik stojí cedulky u vás?', 'farm' => true, 'a' => 'Klíčenka se jménem 99 Kč a deset stejných dohromady 99 Kč, cedulka na dveře 173 × 69 mm 99 Kč (PLA+, bez dopravy, kalkulace z 18. 10. 2026). Větší cedulka nebo víc jmen se počítá z gramů a minut; cenu vidíte dřív, než cokoli objednáte.'],
+            ['q' => 'Jaký tvar a písmo zvolit na dveře?', 'a' => 'Na dveře bytu nebo kanceláře bezpatkové nebo patkové písmo s výškou aspoň 15 mm a rámeček, aby se cedulka četla z chodby; psaná písma nechte na jména a klíčenky. Vystouplé písmo druhou barvou je čitelnější než zapuštěné.'],
+            ['q' => 'Jak dlouho trvá tisk a doručení?', 'farm' => true, 'a' => 'Klíčenka se tiskne 5 minut, cedulka na dveře 46 minut. Odesíláme v den, kdy tisk skončí, v pracovní dny, a Zásilkovna v Česku obvykle doručí do 1 až 2 pracovních dnů (na výdejní místo :cz_point).'],
+            ['q' => 'Jak cedulku tisknout doma ve dvou barvách?', 'a' => 'Naplocho, bez podpěr. Stažený projekt má pauzu ve výšce, kde písmo začíná: tiskárna se zastaví, vyměníte cívku a tisk pokračuje; tiskárna s AMS, MMU nebo ACE barvu vymění sama. U dvoubarevné varianty stáhnete desku a písmo i zvlášť.'],
+            ['q' => 'Vydrží cedulka venku?', 'a' => 'Do bytu a na vnitřní dveře stačí PLA. Na venkovní dveře nebo plot zvolte ASA, které snáší slunce a mráz; PETG vydrží ve stínu. Materiál vyberete v kalkulaci v porovnání materiálů.'],
+            ['q' => 'Potřebuji účet?', 'a' => 'Na návrh a stažení ne. Účet potřebujete, až když si cedulky necháte vytisknout u nás; platí se z kreditu dobitého kartou.'],
+        ],
+        'who' => [
+            ['t' => 'Jmenovky pro třídu a tým', 'text' => 'Klíčenky se jmény 46 × 22 mm: deset kusů za 99 Kč, každé jméno vlastní návrh se stejným rozložením.'],
+            ['t' => 'Cedulka na dveře bytu a kanceláře', 'text' => '„Novákovi 12“ s vystouplým písmem a rámečkem, 173 × 69 mm, přilepená oboustrannou páskou.'],
+            ['t' => 'Jméno na dětský pokoj', 'text' => 'Jen jméno psacím písmem bez destičky, s očkem na stužku, nebo bez něj na dveře.'],
+        ],
+    ],
+
+    'keychain' => [
+        'order' => [
+            ['q' => 'Kolik stojí klíčenky u vás?', 'farm' => true, 'a' => 'Kost 70 mm se jménem ve dvou barvách stojí 99 Kč, což je nejnižší cena zakázky, deset stejných 100 Kč, tedy 10 Kč za kus (PLA, bez dopravy, kalkulace z 28. 10. 2026). Barvy vyberete při objednávce z cívek, které máme skladem.'],
+            ['q' => 'Jak udělat klíčenky s různými jmény pro tým?', 'a' => 'Návrh zůstává na stránce: přepíšete jméno, necháte tvar a obrázek a pokračujete do kalkulace pro každé jméno zvlášť; počet kusů jednoho jména zadáte v ní. Všechny klíčenky se tisknou vedle sebe na jedné podložce.'],
+            ['q' => 'Jak dlouho trvá tisk a doručení?', 'farm' => true, 'a' => 'Klíčenka se tiskne 10 minut. Odesíláme v den, kdy tisk skončí, v pracovní dny, a Zásilkovna v Česku obvykle doručí do 1 až 2 pracovních dnů (na výdejní místo :cz_point).'],
+            ['q' => 'Jak klíčenku tisknout doma ve více barvách?', 'a' => 'Naplocho, bez podpěr. Stažený projekt má výměnu filamentu ve výšce každé vrstvy; s jednou tryskou vyměníte cívku při pauze, tiskárna s AMS, MMU nebo ACE to udělá sama. STL je jedno těleso pro tisk jednou barvou.'],
+            ['q' => 'Hodí se jako firemní dárek s logem?', 'a' => 'Ano. Logo nahrajete jako SVG a zůstane z něj silueta v jedné barvě na tvaru v barvě firmy; vícebarevné logo zpracuje rychlý formulář. Deset klíčenek vyjde na 100 Kč, cenu větší série ukáže kalkulace.'],
+            ['q' => 'Potřebuji účet?', 'a' => 'Na návrh a stažení ne. Účet potřebujete, až když si klíčenky necháte vytisknout u nás; platí se z kreditu dobitého kartou.'],
+        ],
+        'who' => [
+            ['t' => 'Klíčenky pro tým nebo svatbu', 'text' => 'Jedno rozložení, různá jména, deset kusů za 100 Kč; na svatbu srdce se jmény a datem.'],
+            ['t' => 'Visačka na batoh a klíče', 'text' => 'Štítek 80 mm z PETG se jménem a telefonem ve dvou řádcích, očko 5 mm na karabinu.'],
+            ['t' => 'Dárek s logem', 'text' => 'Logo z SVG jako silueta na kruhu v barvě firmy, až čtyři barvy v jednom tisku.'],
+        ],
+    ],
 ];

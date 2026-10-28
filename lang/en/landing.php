@@ -335,4 +335,53 @@ return [
             ['t' => 'A wedding: initials for the table', 'text' => 'Two 150 mm letters with the names of the newlyweds, 10 mm thick so that they stand by themselves on the wedding table.'],
         ],
     ],
+
+    // the next 10 tools, batch A (docs/AP.md §9): phone stand, sign, keychain
+    'phone_stand' => [
+        'order' => [
+            ['q' => 'How much does a stand cost from you and how long does it print?', 'farm' => true, 'a' => 'The low 80 mm wedge prints in 1 h 8 min and costs 120 CZK, the 75 mm A-frame with a shelf in 1 h 45 min for 170 CZK (PLA+, without delivery, calculation of 18 October 2026). The calculation shows the price of your stand before you order anything.'],
+            ['q' => 'How do I measure the phone?', 'a' => 'Measure the thickness with the case at the thickest point, including a finger grip if the case has one; the tool takes 7 to 20 mm and adds play by itself. Measure the width across the case; for desk types it decides how wide the backrest is.'],
+            ['q' => 'How long does delivery take?', 'farm' => true, 'a' => 'We dispatch on the day the print ends, on working days, and Packeta usually delivers within 1 to 2 working days in the Czech Republic (to a pickup point :cz_point, to your door :cz_home).'],
+            ['q' => 'How do I print the stand at home?', 'a' => 'The downloaded project for OrcaSlicer, Bambu Studio or PrusaSlicer carries the orientation and the settings of the calculation, just pick your printer; an STL you orient yourself. For a desk PLA with 15 % infill is enough, a matte filament hides the layers.'],
+            ['q' => 'Does the stand survive a car in the sun?', 'a' => 'Print the car clip and a dashboard stand from PETG: PLA behind glass softens at around 55 °C and the clip lets go. For a desk or a wall PLA is enough.'],
+            ['q' => 'Do I need an account?', 'a' => 'Not for the design or the download. You need one only when you have the stand printed by us; that is paid from credit topped up by card.'],
+        ],
+        'who' => [
+            ['t' => 'For the desk', 'text' => 'An A-frame with a shelf at 65° with a cable cut-out: the phone charges and stays in view for calls and notifications.'],
+            ['t' => 'For recipes in the kitchen', 'text' => 'A low wedge or a wide A-frame up to 260 mm for a tablet, at 60° so that the screen reads from the counter.'],
+            ['t' => 'For the car', 'text' => 'A clip for the air vent by the slat thickness of 1 to 4 mm, from PETG, with a cable cut-out.'],
+        ],
+    ],
+
+    'sign' => [
+        'order' => [
+            ['q' => 'How much do signs cost from you?', 'farm' => true, 'a' => 'A keyring with a name 99 CZK and ten of the same 99 CZK together, a 173 × 69 mm door sign 99 CZK (PLA+, without delivery, calculation of 18 October 2026). A bigger sign or more names is priced by grams and minutes; you see the price before you order anything.'],
+            ['q' => 'Which shape and typeface for a door?', 'a' => 'For the door of a flat or an office a sans or serif typeface with letters at least 15 mm high and a frame, so that the sign reads from the corridor; keep scripts for names and keyrings. Raised letters in a second colour read better than recessed ones.'],
+            ['q' => 'How long do printing and delivery take?', 'farm' => true, 'a' => 'A keyring prints in 5 minutes, a door sign in 46 minutes. We dispatch on the day the print ends, on working days, and Packeta usually delivers within 1 to 2 working days in the Czech Republic (to a pickup point :cz_point).'],
+            ['q' => 'How do I print the sign at home in two colours?', 'a' => 'Flat, without supports. The downloaded project carries a pause at the height where the letters begin: the printer stops, you swap the spool and the print goes on; a printer with AMS, MMU or ACE changes the colour by itself. In the two-colour version you also download the plate and the letters separately.'],
+            ['q' => 'Will the sign last outdoors?', 'a' => 'For a flat and inner doors PLA is enough. For an outer door or a fence choose ASA, which takes sun and frost; PETG lasts in the shade. You pick the material in the material comparison of the calculation.'],
+            ['q' => 'Do I need an account?', 'a' => 'Not for the design or the download. You need one only when you have the signs printed by us; that is paid from credit topped up by card.'],
+        ],
+        'who' => [
+            ['t' => 'Name tags for a class or a team', 'text' => '46 × 22 mm keyrings with names: ten pieces for 99 CZK, every name its own design with the same layout.'],
+            ['t' => 'A door sign for a flat or an office', 'text' => '"Novákovi 12" with raised letters and a frame, 173 × 69 mm, stuck on with double-sided tape.'],
+            ['t' => 'A name for a child’s room', 'text' => 'Just the name in a script without a plate, with an eyelet for a ribbon, or without one for the door.'],
+        ],
+    ],
+
+    'keychain' => [
+        'order' => [
+            ['q' => 'How much do keychains cost from you?', 'farm' => true, 'a' => 'A 70 mm bone with a name in two colours costs 99 CZK, which is the minimum order, ten of the same 100 CZK, that is 10 CZK each (PLA, without delivery, calculation of 28 October 2026). You pick the colours at the order from the spools we have in stock.'],
+            ['q' => 'How do I make keychains with different names for a team?', 'a' => 'The design stays on the page: rewrite the name, keep the shape and the picture and continue to the calculation for each name separately; the number of pieces of one name you enter there. All the keychains print side by side on one plate.'],
+            ['q' => 'How long do printing and delivery take?', 'farm' => true, 'a' => 'A keychain prints in 10 minutes. We dispatch on the day the print ends, on working days, and Packeta usually delivers within 1 to 2 working days in the Czech Republic (to a pickup point :cz_point).'],
+            ['q' => 'How do I print the keychain at home in several colours?', 'a' => 'Flat, without supports. The downloaded project carries a filament change at the height of every layer; with one nozzle you swap the spool at the pause, a printer with AMS, MMU or ACE does it by itself. The STL is one body for a single-colour print.'],
+            ['q' => 'Does it work as a company gift with a logo?', 'a' => 'Yes. Upload the logo as an SVG and a one-colour silhouette of it remains on a shape in the company colour; a multi-colour logo is handled by the quick form. Ten keychains come to 100 CZK, the calculation shows the price of a bigger batch.'],
+            ['q' => 'Do I need an account?', 'a' => 'Not for the design or the download. You need one only when you have the keychains printed by us; that is paid from credit topped up by card.'],
+        ],
+        'who' => [
+            ['t' => 'Keychains for a team or a wedding', 'text' => 'One layout, different names, ten pieces for 100 CZK; for a wedding a heart with the names and the date.'],
+            ['t' => 'A tag for a backpack and keys', 'text' => 'An 80 mm tag of PETG with the name and a phone number in two lines, a 5 mm eyelet for a carabiner.'],
+            ['t' => 'A gift with a logo', 'text' => 'A logo from an SVG as a silhouette on a circle in the company colour, up to four colours in one print.'],
+        ],
+    ],
 ];

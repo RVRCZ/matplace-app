@@ -31,5 +31,9 @@ return [
         'nameplate' => ['related' => ['sign', 'keychain', 'gingerbread'], 'blog' => ['jmenovky-na-darky-a-vykrajovatka-vanocni-dilna', 'cedulka-jmenovka-a-klicenka-se-jmenem', 'klicenka-a-privesek-z-obrazku']],
         'topper' => ['related' => ['name_letter', 'nameplate', 'cutter'], 'blog' => ['jmenovky-na-darky-a-vykrajovatka-vanocni-dilna', 'cedulka-jmenovka-a-klicenka-se-jmenem', 'vykrajovatko-na-cukrovi-podle-vlastniho-tvaru']],
         'name_letter' => ['related' => ['nameplate', 'topper', 'text'], 'blog' => ['vanocni-ozdoby-se-jmenem-z-3d-tiskarny', 'cedulka-jmenovka-a-klicenka-se-jmenem', 'vanocni-ozdoba-z-obrazku']],
+        // the next 10 tools, batch A (docs/AP.md §9)
+        'phone_stand' => ['related' => ['holder', 'cable_holder', 'box'], 'blog' => ['stojanek-na-telefon-na-miru', 'cena-3d-tisku-z-modelu']],
+        'sign' => ['related' => ['nameplate', 'keychain', 'name_letter'], 'blog' => ['cedulka-jmenovka-a-klicenka-se-jmenem', 'jmenovky-na-darky-a-vykrajovatka-vanocni-dilna']],
+        'keychain' => ['related' => ['charm', 'sign', 'nameplate'], 'blog' => ['klicenka-a-privesek-z-obrazku', 'cedulka-jmenovka-a-klicenka-se-jmenem']],
     ],
 ];
