@@ -384,4 +384,37 @@ return [
             ['t' => 'Un regalo con logotipo', 'text' => 'Un logotipo de un SVG como silueta sobre un círculo en el color de la empresa, hasta cuatro colores en una impresión.'],
         ],
     ],
+
+    // lote B (docs/AP.md §9): medalla, jarrón (la caja tiene sus bloques de AH.md §11)
+    'medallion' => [
+        'order' => [
+            ['q' => '¿Cuánto cuesta un juego de medallas para una carrera?', 'farm' => true, 'a' => 'Una medalla de 60 mm con cadena de 40 eslabones cuesta 130 CZK (PLA+, sin envío, cálculo del 22 de octubre de 2026). Para el 1.º al 3.º puesto hace tres diseños, cada uno con su propio cálculo, e indica ahí el número de unidades de cada puesto; ve el precio de todo el juego antes de encargar nada.'],
+            ['q' => '¿Cómo cuelgo la medalla sin la cadena?', 'a' => 'Ajuste el número de eslabones a cero: la medalla tiene arriba una argolla con agujero de 6 mm por la que pasa una cinta de hasta 15 mm o un cordón. La cadena de eslabones solo se imprime si la quiere.'],
+            ['q' => '¿Cuánto tardan la impresión y el envío?', 'farm' => true, 'a' => 'Una medalla de 60 mm con cadena se imprime en 1 h 42 min, así que un juego para tres puestos ocupa una impresora medio día. Enviamos el mismo día en que termina la impresión, en días laborables, y Packeta suele entregar en 1 a 2 días laborables en Chequia (a un punto de recogida :cz_point); para una carrera encargue al menos con una semana de antelación.'],
+            ['q' => '¿Cómo imprimo la medalla en casa?', 'a' => 'El motivo a ras alterna dos bobinas en las mismas capas, y eso requiere una impresora con cambiador (AMS, MMU, ACE). Sin cambiador elija el motivo en relieve: el proyecto lleva un cambio de filamento a la altura del motivo. La cadena se imprime en plano sin soportes; en PLA Silk parece metálica.'],
+            ['q' => '¿Puedo poner el logotipo del club o un nombre en la medalla?', 'a' => 'Sí. En lugar del número escribe un nombre en dos líneas de 16 caracteres, o sube una imagen, de la que queda una silueta de un color; la forma de la placa se elige entre siete. Un logotipo con detalles finos agrándelo con el motivo al 60 o 70 % del diámetro.'],
+            ['q' => '¿Necesito una cuenta?', 'a' => 'Para el diseño y la descarga, no. Solo la necesita cuando nos encarga las medallas impresas; se paga con crédito recargado con tarjeta.'],
+        ],
+        'who' => [
+            ['t' => 'Carrera infantil y torneo', 'text' => 'Un juego para el 1.º al 3.º puesto con cadenas de 28 a 32 eslabones para niños, cada medalla 130 CZK.'],
+            ['t' => 'Concurso escolar y día del niño', 'text' => 'Una medalla de 60 mm con nombre o imagen en una cinta, sin cadena, para cada participante.'],
+            ['t' => 'Torneo de empresa', 'text' => 'Un escudo o una roseta de 80 mm con el logotipo de la empresa y cadena de 40 eslabones, oro PLA Silk.'],
+        ],
+    ],
+
+    'vase' => [
+        'order' => [
+            ['q' => '¿Cuánto cuesta un jarrón con ustedes?', 'farm' => true, 'a' => 'Un jarrón liso de 160 mm, 190 CZK; uno en espiral de 180 mm, 280 CZK; una funda de maceta acanalada de 120 mm, 260 CZK (PLA+, sin envío, cálculo del 18 de octubre de 2026). El cálculo muestra el precio de su jarrón antes de encargar nada; deciden los gramos y los minutos, en las espirales sobre todo los minutos.'],
+            ['q' => '¿Qué filamento para un jarrón?', 'a' => 'Para jarrones en espiral y acanalados, PLA Silk brillante, en el que los nervios juegan con la luz; para los lisos, un filamento mate que disimule las capas. La funda de maceta, que se moja, elíjala en PETG. El color se elige entre las bobinas que tenemos en stock ahora mismo.'],
+            ['q' => '¿Cuánto tardan la impresión y el envío?', 'farm' => true, 'a' => 'Un jarrón liso de 160 mm se imprime en menos de 2 horas; uno en espiral de 180 mm, en 5 horas. Enviamos el mismo día en que termina la impresión, en días laborables, y Packeta suele entregar en 1 a 2 días laborables en Chequia (a un punto de recogida :cz_point).'],
+            ['q' => '¿Cómo imprimo el jarrón en casa?', 'a' => 'De pie, sin soportes; el proyecto descargado lleva la pared y el fondo según el diseño. El STL es un cuerpo macizo, así que puede pasar el laminador a modo jarrón con una sola pared, que imprime más rápido y silencioso pero retiene peor el agua. Los jarrones altos imprímalos con borde de adherencia para que no se despeguen de la cama.'],
+            ['q' => '¿Cómo mido una maceta para la funda?', 'a' => 'Mida el diámetro exterior de la maceta en el borde superior y su altura, añada de 5 a 10 mm de holgura al diámetro e indíquelo como diámetro superior de la funda; el diámetro inferior, algo menor según la forma de la maceta. El plato se calcula solo.'],
+            ['q' => '¿Necesito una cuenta?', 'a' => 'Para el diseño y la descarga, no. Solo la necesita cuando nos encarga el jarrón impreso; se paga con crédito recargado con tarjeta.'],
+        ],
+        'who' => [
+            ['t' => 'Flores secas para la mesa', 'text' => 'Un jarrón en espiral de 180 mm con cuello estrecho en PLA Silk; para flores secas no necesita retener agua.'],
+            ['t' => 'Funda de maceta para el piso', 'text' => 'Una funda acanalada de 120 mm con drenaje y plato en PETG, el diámetro de la maceta más 5 mm.'],
+            ['t' => 'Un juego de tres jarrones', 'text' => 'Jarrones lisos de 120, 160 y 200 mm con la misma forma y un solo color para una estantería o como regalo.'],
+        ],
+    ],
 ];

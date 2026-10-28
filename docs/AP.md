@@ -483,6 +483,26 @@ medaile zkušební `/c/naze69mzmy0h` (P.md §8d). Logo, razítko a světelný n�
   `pint` čistý; title 51 až 60, description 138 až 152; JSON‑LD HowTo + FAQPage 10 otázek na 9 stránkách; snímky
   `docs/img/seo-n1/{phone-stand,sign,keychain}-{390,1280}-cs-1.webp` bez posunu a chyb.
 
+### 9.2 Dávka B: krabička, medaile, váza (28. 10. 2026)
+
+- `lang/{cs,en,es}/tools_seo/{box,medallion,vase}.php`: title a heading na dotaz („Krabička na míru k 3D tisku“,
+  „Medaile na míru k 3D tisku s řetězem“, „Váza na 3D tisk podle vašich rozměrů“; en „Custom box to 3D print, sized to
+  what goes inside“, „Custom medal with a chain to 3D print“, „3D printed vase to your own size“), description do
+  155, druhý odstavec s čísly, 6 otázek (nové: krabička na Arduino, proč spirála stojí víc, vázový režim).
+- Krabička má bloky z AH.md §11 (6 otázek), proto její časté otázky bloky neopakují; medaile a váza dostaly nové
+  bloky v `lang/{cs,en,es}/landing.php` + `config/landing.php`; `LandingPagesTest::PAGES` 22 stránek (landing 25).
+- Čísla: krabička 80 × 50 × 30 mm 28 g, 34 min, 99 Kč (`/c/nku29wz4vieb`), s víčkem a výřezem 41 g, 51 min, 110 Kč
+  (AK.md §5.5, AH.md §11); medaile 60 mm s řetězem 40 článků 195 × 177 mm, 40,8 g, 1 h 42 min, 130 Kč
+  (`/c/naze69mzmy0h`, P.md §8d, přečteno z produkce 28. 10.); váza hladká 160 mm 76 g, 1 h 57 min, 190 Kč, spirálová
+  180 mm 80 g, 5 h 7 min, 280 Kč, obal 120 mm 99 g, 3 h 45 min, 260 Kč (AK.md §5.6). „Nejčastěji objednávaný“
+  (medaile 9 zakázek, 31 kalkulací) a „13 krabiček za 90 dní“ z §7.5.
+- Ověření: `LandingPagesTest|SeoTest|ToolsCatalogTest` (+CatalogSeoTest) **21 testů, 7 186 assertions, OK**; `pint`
+  čistý; title 53 až 60, description 145 až 154; JSON‑LD HowTo + FAQPage 10 otázek na 9 stránkách; snímky
+  `docs/img/seo-n1/{box,medallion,vase}-{390,1280}-cs-1.webp` bez posunu a chyb.
+
+Řídící 28. 10.: 7d00604b a ecc8a530 sloučeny (main 61c48774) a nasazeny (server cb0cd4f7); `blog:sync` na produkci
+naplánoval 6 článků (3. až 20. 11.), sitemapa obnovena, `/3d-tisk-praha` cs/en 200. Další merge main až po dávce C.
+
 ## 10. Komunitní příspěvky (28. 10. 2026)
 
 `docs/data/komunita-prispevky.md`: šest odpovědí cs + en (oprava STL, SVG do STL, G‑kód zpět, vydutit, rozdělit,
