@@ -29,6 +29,8 @@
 <div class="mt-3 flex gap-1 text-sm">@foreach(\App\Domain\Stats\Funnel::PERIODS as $d)<a href="{{ $link(['days' => $d]) }}" class="chip {{ $stats['days'] === $d ? 'chip-on' : '' }}">{{ $d }} dní</a>@endforeach</div>
 
 @include('admin.stats.overview')
+{{-- "print again" on the order page and in My prints (docs/AL.md §15) --}}
+<p class="mt-3 text-sm text-slate-600">Zakázky přes Opakovat tisk za {{ $stats['days'] }} dní: <strong>{{ $stats['repeats']['made'] }}</strong>, zaplacené {{ $stats['repeats']['paid'] }}.</p>
 
 <div class="mt-3 flex flex-wrap items-center gap-x-5 gap-y-2 text-sm">
     <form method="get" class="flex flex-wrap items-center gap-2">

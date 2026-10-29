@@ -418,6 +418,14 @@ class FarmOrder extends Model
         return in_array($this->status, self::STATUSES_COMMITTED, true);
     }
 
+    /** "Print again" (docs/AL.md §15): from the payment on, while it prints, once done, and after a failure or a cancel. */
+    public const REPEATABLE = [self::STATUS_PAID, self::STATUS_QUEUED, self::STATUS_PRINTING, self::STATUS_DONE, self::STATUS_HANDED_OVER, self::STATUS_FAILED, self::STATUS_CANCELLED];
+
+    public function repeatable(): bool
+    {
+        return $this->kind === self::KIND_PRINT && $this->model_file_id !== null && in_array($this->status, self::REPEATABLE, true);
+    }
+
     /** The customer may still walk away and get the held credit back. */
     /** Before it starts for free; a running print too, paid for as far as it got (OrderFlow::onStopped). */
     public function cancellableByCustomer(): bool

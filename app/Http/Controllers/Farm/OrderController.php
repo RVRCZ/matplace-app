@@ -37,10 +37,12 @@ use App\Support\Countries;
 use App\Support\Currency;
 use App\Support\Money;
 use App\Support\Track;
+use Illuminate\Contracts\Cache\LockTimeoutException;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Arr;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Lang;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\RateLimiter;
@@ -264,18 +266,97 @@ class OrderController extends Controller
     }
 
     /** "Print again": the start page with this order's model, settings and colours; a colour no longer loaded is replaced on the order page. */
+    /**
+     * The old address of "print again" (a link that went to the start page with the settings): a GET makes nothing,
+     * it opens the order, whose button makes the new one (again).
+     */
     public function repeat(Request $request, FarmOrder $order): RedirectResponse
     {
         $this->authorizeOrder($request, $order);
 
-        return redirect()->route('farm.start', array_filter([
-            'file' => $order->modelFile?->uuid, 'quality' => $order->quality, 'strength' => $order->strength, 'copies' => $order->copies,
-            'supports' => $order->supports === 'off' ? 'off' : null,
-            'scale' => abs((float) $order->scale - 1) > 0.0005 ? (float) $order->scale : null, 'color' => $order->farm_color_id, 'second' => $order->second_color_id,
-            'change' => array_column($order->colorSlots(), 'color_id') ?: null,
-            'by_parts' => $order->isByParts() ? 1 : null,
-            'part' => $order->isByParts() ? array_filter(array_column($order->partPlates(), 'color_id', 'part')) : null,
-        ]));
+        return redirect()->route('farm.orders.show', $order);
+    }
+
+    /**
+     * "Print again" (docs/AL.md §15): a new order of the same file and settings straight away, on its page with the
+     * colours to choose – the old ones ticked while they are loaded. Copies, quality, strength, supports, size and
+     * unit, the advanced numbers, the parts and their colours (a painted 3MF's too), the second colour and the
+     * changes, the note; not the delivery (the customer picks it again, the prices may have moved). A double click or
+     * a second tab within a minute opens the order the first one made instead of making another.
+     */
+    public function again(Request $request, FarmOrder $order): RedirectResponse|JsonResponse
+    {
+        $this->authorizeOrder($request, $order);
+        if ($guest = $this->guestBlocked($request)) {
+            return $guest;
+        }
+        abort_unless($order->repeatable() && $order->modelFile, 404);
+        $refuse = fn (string $error, string $text) => $request->expectsJson() ? response()->json(['error' => $error, 'message' => $text], 422) : back()->with('error', $text);
+        $who = $request->user() ? 'u'.$request->user()->id : 's'.($this->session($request)?->id ?? '-');
+        $key = 'farm-repeat:'.$order->id.':'.$who;
+
+        try {
+            $made = Cache::lock($key.':lock', 30)->block(20, function () use ($request, $order, $key) {
+                $before = Cache::get($key);
+                $fresh = $before ? FarmOrder::find((int) $before) : null;
+                if ($fresh && $fresh->paid_at === null && $fresh->status !== FarmOrder::STATUS_CANCELLED) {
+                    return [$fresh, null];
+                }
+                if ($limit = $this->guestLimit($request)) {
+                    return [null, $limit];
+                }
+                [$new, $missing] = $this->repeatOf($request, $order);
+                Cache::put($key, $new->id, 60);
+                Track::event('order_created', $new->designerModel ?? $new->modelFile, array_filter(['order' => $new->id, 'kind' => 'repeat', 'from' => $order->id,
+                    'tool' => $new->modelFile?->origin === 'tool' ? $new->modelFile->kind() : null]));
+
+                return [$new, $missing ? 'missing' : 'made'];
+            });
+        } catch (FarmRefusal $e) {
+            return $refuse($e->reason, $e->text());
+        } catch (LockTimeoutException) {
+            return $refuse('busy', __('farm.order.repeat_busy'));
+        }
+        [$new, $said] = $made;
+        if (! $new) {
+            return $request->expectsJson() ? response()->json(['error' => 'guest_limit', 'message' => $said], 429) : back()->with('error', $said);
+        }
+        if ($said) {
+            $request->session()->flash('farm.repeated', __($said === 'missing' ? 'farm.order.repeat_missing' : 'farm.order.repeat_made'));
+        }
+
+        return $request->expectsJson()
+            ? response()->json(['url' => route('farm.orders.show', $new)], 201)
+            : redirect()->route('farm.orders.show', $new);
+    }
+
+    /**
+     * The new order of "print again" and whether a colour of the old one is not loaded any more (the page then has
+     * none ticked for it, the customer picks).
+     *
+     * @return array{0: FarmOrder, 1: bool}
+     */
+    private function repeatOf(Request $request, FarmOrder $order): array
+    {
+        $file = $order->modelFile;
+        $card = $order->designer_model_id ? DesignerModel::find($order->designer_model_id) : null;
+        abort_if($order->designer_model_id && ! $card?->isPrintable(), 404);
+        $parts = $order->isByParts() ? array_column($order->partPlates(), 'color_id', 'part') : [];
+        $changes = array_column($order->colorSlots(), 'color_id') ?: ($order->second_color_id ? [$order->second_color_id] : []);
+        $pick = $this->preselect($file, (string) $order->quality, $order->material?->code, [
+            'color' => $order->farm_color_id, 'changes' => $changes ?: null, 'by_parts' => $order->isByParts(), 'parts' => $parts ?: null,
+        ]);
+        $unit = collect(ModelValidator::UNITS)->search(fn ($v) => abs($v - (float) ($order->unit_scale ?: 1)) < 1e-6) ?: null;
+        $new = $this->orders->create($request->user(), $file, (string) $order->quality, (string) $order->strength, $unit, (int) $order->copies, (float) ($order->scale ?: 1),
+            $pick['color'], (string) $order->supports, null, $card, $order->catalog_model_id ? CatalogModel::shown()->find($order->catalog_model_id) : null,
+            $pick['changes'] ?: null, $pick['by_parts'] ? $pick['parts'] : null, $order->material?->code, null, $request->user() ? null : $this->session($request),
+            ['print_settings' => $order->print_settings ?: null, 'note' => $order->note]);
+        // a colour asked for that did not make it to the new order: not loaded now (or not with the others on one machine)
+        $missing = ($order->farm_color_id && $new->farm_color_id !== $order->farm_color_id)
+            || array_values(array_filter($changes)) !== array_values(array_filter(array_column($new->colorSlots(), 'color_id')))
+            || ($parts && array_map('intval', array_filter($parts)) !== array_map('intval', array_filter(array_column($new->partPlates(), 'color_id', 'part'))));
+
+        return [$new, $missing];
     }
 
     /** "My prints" (/account/orders): every order of the account, optionally only those in one state. */
@@ -327,15 +408,8 @@ class OrderController extends Controller
             'designer_model' => ['nullable', 'integer'],
             'catalog_model' => ['nullable', 'integer'],
         ]);
-        // a guest: so many orders from one address an hour (a robot clearing its cookie gets a new session, not a new address)
-        if (! $request->user()) {
-            $key = 'farm-guest-order:'.$request->ip();
-            if (RateLimiter::tooManyAttempts($key, max(1, (int) config('farm.guest.orders_per_hour_ip', 10)))) {
-                $text = __('farm.refuse.guest_limit', ['minutes' => (int) ceil(RateLimiter::availableIn($key) / 60)]);
-
-                return $request->expectsJson() ? response()->json(['error' => 'guest_limit', 'message' => $text], 429) : back()->withInput()->with('error', $text);
-            }
-            RateLimiter::hit($key, 3600);
+        if ($text = $this->guestLimit($request)) {
+            return $request->expectsJson() ? response()->json(['error' => 'guest_limit', 'message' => $text], 429) : back()->withInput()->with('error', $text);
         }
         $card = isset($data['designer_model']) ? DesignerModel::with('profile')->find((int) $data['designer_model']) : null;
         $calc = isset($data['calc']) && ! $card ? Calculation::with('modelFile')->where('token', $data['calc'])->first() : null;
@@ -832,6 +906,8 @@ class OrderController extends Controller
             // a painted 3MF in its colours: one plate too, but its copies share it (the tool's designs go one piece at a time)
             'painted_colors' => $painted,
             // a painted 3MF that could not print in colour: the page offers it in one colour (by parts off, recalculated)
+            // "print again" makes a new order from this one (again): from the payment on
+            'repeatable' => $order->repeatable(),
             'offer_one_color' => $painted && $order->status === FarmOrder::STATUS_FAILED && ! $order->number && $order->error === 'painted_one_plate',
             // how many separately printed parts the design has: two or more, and the order page offers "print them apart"
             'part_count' => $choosing && $order->modelFile ? count(OrderService::designParts($order->modelFile)) : 0,
@@ -1055,6 +1131,24 @@ class OrderController extends Controller
         $session = $request->attributes->get('anon_session');
 
         return $session instanceof AnonymousSession && $session->exists ? $session : null;
+    }
+
+    /**
+     * A guest: so many orders from one address an hour (a robot clearing its cookie gets a new session, not a new
+     * address). The refusal's text, or null when this order may be made (and is counted).
+     */
+    private function guestLimit(Request $request): ?string
+    {
+        if ($request->user()) {
+            return null;
+        }
+        $key = 'farm-guest-order:'.$request->ip();
+        if (RateLimiter::tooManyAttempts($key, max(1, (int) config('farm.guest.orders_per_hour_ip', 10)))) {
+            return __('farm.refuse.guest_limit', ['minutes' => (int) ceil(RateLimiter::availableIn($key) / 60)]);
+        }
+        RateLimiter::hit($key, 3600);
+
+        return null;
     }
 
     /** A guest while the farm is not offered to guests (`farm.public` off): the login first, as before. */

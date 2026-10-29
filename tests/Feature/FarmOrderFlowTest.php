@@ -7,6 +7,7 @@ use App\Domain\Farm\Dispatcher;
 use App\Domain\Farm\FarmSettings;
 use App\Domain\Farm\OrderService;
 use App\Domain\Farm\Wallet;
+use App\Domain\Stats\Funnel;
 use App\Domain\Tools\ParametricGenerator;
 use App\Engines\Mesh\StlFile;
 use App\Mail\FarmAdminAlert;
@@ -81,6 +82,14 @@ class FarmOrderFlowTest extends TestCase
         return $this->actingAs($this->user)->postJson("/farm/orders/{$order->token}/pay", $over + [
             'slot' => $color['slot'], 'delivery' => 'pickup', 'terms' => true, 'expected_total' => $color['total'],
         ]);
+    }
+
+    /** "Print again" (docs/AL.md §15): the new order the button makes. */
+    private function again(FarmOrder $order, ?User $who = null): FarmOrder
+    {
+        $r = $this->actingAs($who ?? $this->user)->postJson("/farm/orders/{$order->token}/repeat")->assertCreated();
+
+        return FarmOrder::where('token', basename($r->json('url')))->firstOrFail();
     }
 
     private function agentPrinter(): array
@@ -416,8 +425,13 @@ class FarmOrderFlowTest extends TestCase
             $this->pay($again, ['slot' => $main['slot'], 'change_slots' => [$foreign->id, $free[1]->id]])->assertStatus(422);
         }
 
-        // "print again" carries the colours over; a change left "the same" is no change, the colour before goes on
-        $this->actingAs($this->user)->get("/farm/orders/{$order->token}/repeat")->assertRedirect();
+        // "print again" carries the colours over: the old address opens the order, the button makes the new one
+        $this->actingAs($this->user)->get("/farm/orders/{$order->token}/repeat")->assertRedirect(route('farm.orders.show', $order));
+        $copy = $this->again($order->refresh());
+        $this->assertSame(FarmOrder::STATUS_SLICED, $copy->status);
+        $this->assertSame($order->farm_color_id, $copy->farm_color_id);
+        $this->assertSame(array_column($order->colorSlots(), 'color_id'), array_column($copy->colorSlots(), 'color_id'));
+        // a change left "the same" is no change, the colour before goes on
         $back = $this->actingAs($this->user)->postJson('/farm/orders', ['file' => $uuid, 'color' => $white->id, 'change_color' => [$red->id, 0]])->assertCreated();
         $one = FarmOrder::where('token', basename($back->json('url')))->firstOrFail();
         $this->assertSame([['slot' => (int) $free[0]->slot, 'z' => 3.0]], $one->colorChanges());
@@ -474,8 +488,8 @@ class FarmOrderFlowTest extends TestCase
         $this->actingAs($this->user)->postJson("/farm/orders/{$order->token}/reslice", ['quality' => 'standard', 'strength' => 'standard'])->assertOk()->assertJsonPath('supports_mode', 'off');
         $this->actingAs($this->user)->postJson("/farm/orders/{$order->token}/reslice", ['quality' => 'standard', 'strength' => 'standard', 'supports' => 'auto'])->assertOk()->assertJsonPath('supports_mode', 'auto');
         $this->assertNotSame('0', $order->refresh()->slice_params['overrides']['process']['enable_support'] ?? null);
-        $this->actingAs($this->user)->get('/farm/orders/'.$order->token.'/repeat')->assertRedirect();
-        // "print again" hands "no supports" over to the order it makes
+        // the old address of "print again" opens the order; the start page still takes "no supports" from an address
+        $this->actingAs($this->user)->get('/farm/orders/'.$order->token.'/repeat')->assertRedirect(route('farm.orders.show', $order));
         $this->actingAs($this->user)->get('/farm?supports=off')->assertOk()->assertSee('name="supports" value="off"', false);
     }
 
@@ -587,14 +601,18 @@ class FarmOrderFlowTest extends TestCase
         $fromCalc = $this->startOrder($this->user, 'calc='.$calc);
         $this->assertSame([3, 1.5], [$fromCalc->copies, (float) $fromCalc->scale]);
 
-        // "print again": the start page with the order's settings; the order starts in the colour when it is still loaded
-        $again = $this->actingAs($this->user)->get("/farm/orders/{$chosen->token}/repeat")->assertRedirect();
-        $target = (string) $again->headers->get('Location');
-        $this->assertStringContainsString('file='.$chosen->modelFile->uuid, $target);
-        $this->assertStringContainsString('color='.$blue->id, $target);
-        $this->assertSame($blue->id, $this->startOrder($this->user, (string) parse_url($target, PHP_URL_QUERY))->farm_color_id);
+        // "print again" of a printed order: a new order at once, in the colour when it is still loaded, at the same size
+        $chosen->forceFill(['status' => FarmOrder::STATUS_DONE, 'paid_at' => now()])->save();
+        $copy = $this->again($chosen);
+        $this->assertSame([$blue->id, $max->id], [$copy->farm_color_id, $copy->farm_printer_id]);
+        $this->assertSame($chosen->model_file_id, $copy->model_file_id);
         $max->slots()->where('slot', 0)->update(['enabled' => false]);                     // the spool is gone: the order starts without it, nothing breaks
-        $this->assertNotSame($blue->id, $this->startOrder($this->user, (string) parse_url($target, PHP_URL_QUERY))->farm_color_id);
+        $this->travel(2)->minutes();                                                       // past the minute that holds a double click
+        $this->actingAs($this->user)->post("/farm/orders/{$chosen->token}/repeat")->assertRedirect();
+        $gone = FarmOrder::latest('id')->firstOrFail();
+        $this->assertNotSame($copy->id, $gone->id);
+        $this->assertNotSame($blue->id, $gone->farm_color_id);
+        $this->actingAs($this->user)->get("/farm/orders/{$gone->token}")->assertOk()->assertSee(__('farm.order.repeat_missing'));
 
         // resizing on the order page is a preset like the others: sliced again at the new size
         $this->actingAs($this->user)->postJson("/farm/orders/{$half->token}/reslice", ['quality' => 'standard', 'strength' => 'standard', 'scale' => 2])->assertOk()->assertJsonPath('scale', 2);
@@ -862,6 +880,61 @@ T2 ; slot chosen by matplace farm
         Mail::assertQueued(FarmAdminAlert::class, fn ($m) => str_contains($m->subjectLine, 'farm.admin.mail.offline') || str_contains($m->subjectLine, $printer->name));
     }
 
+    public function test_print_again_of_a_running_order_makes_a_new_order_with_the_same_settings_at_once(): void
+    {
+        $order = $this->order(20.0, ['copies' => 3, 'scale' => 1.5, 'quality' => 'fine', 'strength' => 'high', 'supports' => 'off']);
+        $order->forceFill(['print_settings' => ['infill' => 40, 'walls' => 4]])->save();
+        // before the payment there is nothing to repeat: the order is still being chosen
+        $this->assertFalse($this->actingAs($this->user)->getJson("/farm/orders/{$order->token}/status")->json('repeatable'));
+        $this->actingAs($this->user)->postJson("/farm/orders/{$order->token}/repeat")->assertNotFound();
+        $this->credit(2000);
+        $this->pay($order)->assertOk();
+        // the note comes with the payment
+        $order->refresh()->forceFill(['status' => FarmOrder::STATUS_PRINTING, 'delivery' => 'packeta_home', 'shipping_address' => ['name' => 'Jana', 'street' => 'Dlouhá 1', 'city' => 'Praha', 'zip' => '11000', 'country' => 'CZ'], 'note' => 'Prosím bez okraje.'])->save();
+        $this->assertTrue($this->actingAs($this->user)->getJson("/farm/orders/{$order->token}/status")->json('repeatable'));
+        $this->actingAs($this->user)->get("/farm/orders/{$order->token}")->assertOk()->assertSee(route('farm.orders.again', $order), false);
+
+        $r = $this->actingAs($this->user)->post("/farm/orders/{$order->token}/repeat");
+        $copy = FarmOrder::latest('id')->firstOrFail();
+        $r->assertRedirect(route('farm.orders.show', $copy));
+        $this->assertNotSame($order->id, $copy->id);
+        $this->assertSame(FarmOrder::STATUS_SLICED, $copy->status, (string) $copy->error);
+        $this->assertSame([3, 'fine', 'high', 'off', $order->farm_color_id], [$copy->copies, $copy->quality, $copy->strength, $copy->supports, $copy->farm_color_id]);
+        $this->assertEqualsWithDelta(1.5, (float) $copy->scale, 0.001);
+        $this->assertSame(['infill' => 40, 'walls' => 4], $copy->print_settings);
+        $this->assertSame('Prosím bez okraje.', $copy->note);
+        $this->assertSame(['pickup', null], [$copy->delivery, $copy->shipping_address], 'the delivery is chosen again');
+        $this->assertNull($copy->paid_at);
+        $this->assertSame(FarmOrder::STATUS_PRINTING, $order->refresh()->status, 'the running order goes on');
+        $this->actingAs($this->user)->get("/farm/orders/{$copy->token}")->assertOk()->assertSee(__('farm.order.repeat_made'));
+
+        // a double click, a second tab: the order the first press made, not another one
+        $twice = $this->again($order);
+        $this->assertSame($copy->id, $twice->id);
+        $this->assertSame(2, FarmOrder::count());
+        // "My prints": the same button at the running order, none at the new one still being chosen
+        $this->actingAs($this->user)->get('/account/orders')->assertOk()
+            ->assertSee(route('farm.orders.again', $order), false)->assertDontSee(route('farm.orders.again', $copy), false);
+        // the statistics count it
+        $this->assertSame(['made' => 1, 'paid' => 0], app(Funnel::class)->repeats(30));
+    }
+
+    public function test_print_again_counts_towards_the_daily_limit_and_is_mine_alone(): void
+    {
+        $order = $this->order();
+        $order->forceFill(['status' => FarmOrder::STATUS_DONE, 'paid_at' => now()])->save();
+        $this->actingAs(User::factory()->create())->postJson("/farm/orders/{$order->token}/repeat")->assertNotFound();
+        app(FarmSettings::class)->set('daily_slices_per_user', 1);
+        $this->actingAs($this->user)->postJson("/farm/orders/{$order->token}/repeat")->assertStatus(422)->assertJsonPath('error', 'daily_limit');
+        $this->actingAs($this->user)->post("/farm/orders/{$order->token}/repeat")->assertRedirect()->assertSessionHas('error');
+        $this->assertSame(1, FarmOrder::count());
+        // an admin repeats any order as a customer would: the new order is the admin's
+        $admin = User::factory()->create();
+        $admin->setRole(User::ROLE_ADMIN, true);
+        $copy = $this->again($order, $admin);
+        $this->assertSame($admin->id, $copy->user_id);
+    }
+
     public function test_daily_limit_stops_further_slicing(): void
     {
         app(FarmSettings::class)->set('daily_slices_per_user', 1);
@@ -995,11 +1068,11 @@ T2 ; slot chosen by matplace farm
         }
 
         // "print again" keeps the parts and their colours
-        $location = $this->actingAs($this->user)->get("/farm/orders/{$order->token}/repeat")->assertRedirect()->headers->get('Location');
-        $this->assertStringContainsString('by_parts=1', $location);
-        $again = $this->startOrder($this->user, (string) parse_url($location, PHP_URL_QUERY));
+        $again = $this->again($order->refresh());
         $this->assertTrue($again->isByParts());
-        $this->assertSame($red->id, self::picked($again, 'part_color[lid]'));
+        $this->assertSame(FarmOrder::STATUS_SLICED, $again->status);
+        $this->assertSame(array_column($order->partPlates(), 'color_id', 'part'), array_column($again->partPlates(), 'color_id', 'part'));
+        $this->assertSame($red->id, (int) array_column($again->partPlates(), 'color_id', 'part')['lid']);
 
         // on the order page the customer prints the parts together again, and apart once more: sliced again each time
         $this->actingAs($this->user)->postJson("/farm/orders/{$again->token}/reslice", ['quality' => 'standard', 'strength' => 'standard', 'by_parts' => false])->assertOk()->assertJsonPath('by_parts', false)->assertJsonPath('part_count', 2);

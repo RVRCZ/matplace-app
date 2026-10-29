@@ -63,7 +63,7 @@ return [
 
     'order' => [
         'repeat' => 'Repetir impresión',
-        'repeat_hint' => 'El mismo modelo y ajustes; elija un color entre los cargados ahora. El color original queda preseleccionado si está disponible.',
+        'repeat_hint' => 'Un pedido nuevo con el mismo modelo y ajustes. Puede cambiar los colores y el número de piezas; los colores originales quedan preseleccionados si están disponibles.',
         'printer' => 'Impresora: :name, placa :bed',
         'title' => 'Impresión de :name',
         'dims' => 'Dimensiones',

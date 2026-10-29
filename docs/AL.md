@@ -1867,3 +1867,55 @@ jednom kuse … Nastavte 1 ks“:
   ne ve filtru.
 - Náhled dílu 12 ks (`parts/color_1.stl`, 17,6 MB): beze změny. Díl drží všech 12 kopií; levná cesta je, aby náhled
   nesl jednu kopii a prohlížeč ji kreslil podle `copies_grid` vícekrát (1/12 dat), decimace kopií stála 89 s.
+
+## 15. Opakovat tisk: rovnou nová zakázka, i u běžící zakázky (TODO #53, 29. 10. 2026, feature/order-repeat)
+
+Zadání `docs/prompts/opakovat-tisk.md` (Roman u F26‑000108: 12 ks po dílech, čtyři barvy, tiskne se).
+
+### 15.1 Co dělá tlačítko
+
+- „Opakovat tisk“ je u zakázky od zaplacení dál: paid, queued, printing, done, handed_over, failed, cancelled
+  (`FarmOrder::REPEATABLE`, `repeatable()`; stav stránky `repeatable`). Na stránce zakázky a v „Moje tisky“
+  (`account/_order.blade.php`, i v přehledu účtu) jako „Opakovat“.
+- `POST /farm/orders/{order}/repeat` (`OrderController::again`) založí novou zakázku rovnou a otevře její stránku.
+  Řádek nahoře řekne „Nová zakázka se stejným modelem a nastavením…“, nebo že některá z původních barev teď není
+  k mání (`farm.order.repeat_made` / `repeat_missing`).
+- Přenáší se: soubor, kusy, kvalita, pevnost, podpěry, měřítko a jednotky (z `unit_scale`), pokročilé nastavení
+  (`print_settings`), tisk po dílech s barvami dílů (namalovaný 3MF stejně, jeho díly jsou barvy, AL.md §14), druhá
+  barva a změny po výšce, materiál, poznámka, karta designéra (jen dokud je tisknutelná, jinak 404 jako u nové
+  zakázky) a inspirace. Barvy jdou přes stejné `preselect` jako startovní stránka: původní barva se předvybere,
+  když je založená a s ostatními v jednom stroji, jinak žádná a zákazník vybírá.
+- Nepřenáší se doručení a adresa: zákazník je vybere při placení znovu (ceny dopravy se mohly změnit). Účet má
+  adresu a výdejní místo předvyplněné z profilu jako u každé zakázky; host zadává znovu.
+- Řez: nová zakázka jde přes `PrepareFarmOrder` jako každá; `CachedSlicer` (klíč = síť + parametry + profily)
+  vrátí hotový G‑kód, když sedí. Na stránce se nečeká déle než u nové zakázky. V testech je slicer falešný,
+  zásah mezipaměti tu ověřený není.
+- `GET …/repeat` (stará adresa, dřív start s parametry) nic nezakládá a otevře původní zakázku s tlačítkem: GET
+  nemá měnit stav (předčítání odkazů, roboti, obnovení stránky).
+
+### 15.2 Dvojklik
+
+Zvoleno: POST + zámek + minuta paměti. `Cache::lock('farm-repeat:{zakázka}:{u|s+id}')` drží druhý souběžný
+požadavek, dokud první nezaloží zakázku; id nové zakázky leží 60 s v cache pod stejným klíčem a druhý stisk
+(dvojklik, druhá karta, znovu odeslaný formulář) otevře tu, dokud není zaplacená nebo zrušená. Na stránce formulář
+druhé odeslání nepustí (`data-sent`). Throttle 10/min (`farm_repeat`). Podepsaný jednorázový odkaz by potřeboval
+úložiště použitých podpisů a stejně by neřešil dvě karty; sloupec „opakováno z“ by potřeboval migraci.
+
+### 15.3 Host, admin, limity, měření
+
+- Host: `authorizeOrder` jako u ostatních akcí (vlastník, relace hosta, admin); nová zakázka patří relaci hosta.
+  Hodinový limit hosta na adresu (`guestLimit`, sdílený se `store`) a denní limit řezů (`assertDailyLimit` v
+  `create`) platí jako u nové zakázky; odmítnutí vrací důvod (`daily_limit`, `guest_limit`).
+- Admin opakuje jako zákazník: nová zakázka je jeho.
+- Měření: `order_created` s `kind: repeat` a `from` (id původní zakázky); `/admin/stats` (Cesty návštěvníků) pod
+  přehledem: „Zakázky přes Opakovat tisk za N dní: X, zaplacené Y“ (`Funnel::repeats`). Adminovy zakázky se
+  neměří (Track vynechává obsluhu).
+
+### 15.4 Ověřeno
+
+PHPUnit: `FarmOrderFlowTest` (běžící zakázka: stejné nastavení, poznámka, `print_settings`, bez doručení, původní
+běží dál, dvojklik = jedna zakázka, „Moje tisky“, statistika; před zaplacením 404; cizí 404; denní limit 422 i
+přesměrování s chybou; admin; hotová zakázka v barvě, která je k mání, a bez ní s větou o chybějící barvě; obrázek se
+dvěma změnami; krabička po dílech), `FarmGuestCheckoutTest` (host po zaplacení kartou, stejná relace),
+`ThreeMfColorsTest` (namalovaná želva ve 2 ks: po dílech, jedna podložka, tři barvy). Stránku v prohlížeči jsem
+neprocházel.

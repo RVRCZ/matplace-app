@@ -1959,5 +1959,9 @@
     "farm.order.one_color": "Print in one colour",
     "farm.order.painted_plate": "The file's colours print as a whole on a printer that changes spools, so only such printers' spools are on offer. Several pieces print side by side on one plate; what does not fit goes on the next one.",
     "farm.order.painted_copies": "Several pieces print side by side on one plate; what does not fit goes on the next one.",
-    "param.preset.golf": "Golfer"
+    "param.preset.golf": "Golfer",
+    "farm.order.repeat_short": "Repeat",
+    "farm.order.repeat_made": "A new order with the same model and settings. You can change the colours, the number of pieces and the settings, then pay.",
+    "farm.order.repeat_missing": "A new order with the same model and settings. One of the original colours is not available right now, please pick another.",
+    "farm.order.repeat_busy": "The new order is being made right now, please try again in a moment."
 }

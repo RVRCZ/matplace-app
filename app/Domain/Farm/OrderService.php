@@ -45,7 +45,7 @@ final class OrderService
      *
      * @throws FarmRefusal with a code the UI translates: not_ready, too_big, daily_limit, no_printer
      */
-    public function create(?User $user, ModelFile $file, string $quality = 'standard', string $strength = 'standard', ?string $unit = null, int $copies = 1, float $scale = 1.0, ?int $colorId = null, string $supports = 'auto', ?int $secondColorId = null, ?DesignerModel $card = null, ?CatalogModel $inspiration = null, ?array $changeColorIds = null, ?array $partColorIds = null, ?string $materialCode = null, ?Calculation $calculation = null, ?AnonymousSession $session = null): FarmOrder
+    public function create(?User $user, ModelFile $file, string $quality = 'standard', string $strength = 'standard', ?string $unit = null, int $copies = 1, float $scale = 1.0, ?int $colorId = null, string $supports = 'auto', ?int $secondColorId = null, ?DesignerModel $card = null, ?CatalogModel $inspiration = null, ?array $changeColorIds = null, ?array $partColorIds = null, ?string $materialCode = null, ?Calculation $calculation = null, ?AnonymousSession $session = null, array $carry = []): FarmOrder
     {
         $scale = max(0.25, min((float) config('pricing.max_scale', 4), $scale));
         if (! FarmGate::open($user)) {
@@ -112,7 +112,7 @@ final class OrderService
 
         // the order and its first event together: one that cannot write its history is not made at all (orders 218–221,
         // 25 Oct 2026: the event column was too narrow for the new state and the orders stayed without a history)
-        $order = DB::transaction(fn () => tap(FarmOrder::create([
+        $order = DB::transaction(fn () => tap(FarmOrder::create(array_merge([
             'token' => Str::random(32),
             'user_id' => $user?->id,
             'anonymous_session_id' => $user ? null : $session->id,
@@ -142,7 +142,8 @@ final class OrderService
             'designer_model_id' => $card?->id,
             'catalog_model_id' => $inspiration?->id,
             'note' => $inspiration?->attribution(),
-        ]), fn (FarmOrder $order) => $order->events()->create(['to' => $order->status, 'actor' => 'user', 'actor_id' => $user?->id,
+            // a repeated print (docs/AL.md §15): the advanced numbers and the note of the order it repeats
+        ], array_intersect_key($carry, array_flip(['print_settings', 'note'])))), fn (FarmOrder $order) => $order->events()->create(['to' => $order->status, 'actor' => 'user', 'actor_id' => $user?->id,
             'note' => $big['big'] ? 'big model ('.($big['reason'] === 'slice_time' ? 'calculation sliced in '.round((float) $big['slice_s']).' s' : number_format($big['triangles'] / 1e6, 1, '.', '').' M triangles').'): the slice waits for the choices' : null])));
         // after the commit: a worker that picks the job up before the row is there would find no order and give up
         if (! $big['big']) {

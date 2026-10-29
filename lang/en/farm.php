@@ -63,7 +63,7 @@ return [
 
     'order' => [
         'repeat' => 'Print again',
-        'repeat_hint' => 'The same model and settings; pick a colour from those loaded right now. The original colour is preselected when it is available.',
+        'repeat_hint' => 'A new order with the same model and settings. You can change the colours and the number of pieces; the original colours are preselected when they are available.',
         'printer' => 'Printer: :name, plate :bed',
         'title' => 'Print of :name',
         'dims' => 'Dimensions',

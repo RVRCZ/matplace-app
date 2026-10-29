@@ -47,6 +47,10 @@
             @endif
         </div>
     </div>
+    @if(session('farm.repeated'))
+        {{-- made by "print again": what came over, and whether a colour of the old order is not loaded any more --}}
+        <p class="mt-2 rounded-lg bg-action-soft px-3 py-2 text-sm text-action-dark" role="status">{{ session('farm.repeated') }}</p>
+    @endif
 
     <div class="mt-4 grid gap-4 lg:grid-cols-[1.2fr_1fr] lg:items-start">
         {{-- the left column: the model and the price. While the customer chooses (data-choosing and .stick-stage, set by
@@ -349,7 +353,12 @@
 
             <div class="flex flex-wrap gap-2">
                 <button id="farm-cancel" type="button" class="btn-quiet hidden text-sm">{{ __('farm.order.cancel') }}</button>
-                <a id="farm-repeat" href="{{ route('farm.orders.repeat', $order) }}" class="btn-secondary hidden text-sm" title="{{ __('farm.order.repeat_hint') }}">{{ __('farm.order.repeat') }}</a>
+                {{-- "print again" makes the new order at once (OrderController::again); a second press is held back here and on the server --}}
+                <form id="farm-repeat" method="post" action="{{ route('farm.orders.again', $order) }}" class="{{ $order->repeatable() ? '' : 'hidden' }}"
+                      onsubmit="if (this.dataset.sent) return false; this.dataset.sent = '1'; this.querySelector('button').setAttribute('aria-busy', 'true');">
+                    @csrf
+                    <button class="btn-secondary text-sm" title="{{ __('farm.order.repeat_hint') }}">{{ __('farm.order.repeat') }}</button>
+                </form>
                 <a href="{{ route('farm.start') }}" class="btn-quiet text-sm">{{ __('farm.order.new') }}</a>
             </div>
         </div>

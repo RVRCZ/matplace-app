@@ -281,6 +281,8 @@ $pages = function () {
     Route::post('/farm/orders', [OrderController::class, 'store'])->middleware('throttle:20,1,farm_order')->name('farm.orders.store');
     Route::get('/farm/orders/{order}', [OrderController::class, 'show'])->name('farm.orders.show');
     Route::get('/farm/orders/{order}/repeat', [OrderController::class, 'repeat'])->name('farm.orders.repeat');
+    // "print again": a new order of the same file and settings (docs/AL.md §15)
+    Route::post('/farm/orders/{order}/repeat', [OrderController::class, 'again'])->middleware('throttle:10,1,farm_repeat')->name('farm.orders.again');
     Route::get('/farm/orders/{order}/status', [OrderController::class, 'status'])->name('farm.orders.status');
     Route::post('/farm/orders/{order}/reslice', [OrderController::class, 'reslice'])->middleware('throttle:20,1,farm_reslice')->name('farm.orders.reslice');
     Route::post('/farm/orders/{order}/quote', [OrderController::class, 'quote'])->middleware('throttle:120,1,farm_quote')->name('farm.orders.quote');
