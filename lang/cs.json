@@ -1958,5 +1958,6 @@
     "calc.colors.price_same": "Barevně i jednobarevně stejně: :price",
     "farm.order.one_color": "Vytisknout jednobarevně",
     "farm.order.painted_plate": "Barvy souboru se tisknou vcelku na tiskárně s měničem cívek, proto nabízíme jen cívky takových tiskáren. Víc kusů se tiskne vedle sebe na jedné podložce, co se nevejde, jde na další.",
-    "farm.order.painted_copies": "Víc kusů se tiskne vedle sebe na jedné podložce, co se nevejde, jde na další."
+    "farm.order.painted_copies": "Víc kusů se tiskne vedle sebe na jedné podložce, co se nevejde, jde na další.",
+    "param.preset.golf": "Golfista"
 }

@@ -1958,5 +1958,6 @@
     "calc.colors.price_same": "Mismo precio en color y en un color: :price",
     "farm.order.one_color": "Imprimir en un solo color",
     "farm.order.painted_plate": "Los colores del archivo se imprimen enteros en una impresora que cambia bobinas, por eso solo ofrecemos bobinas de esas impresoras. Varias piezas se imprimen juntas en una placa; las que no caben van en la siguiente.",
-    "farm.order.painted_copies": "Varias piezas se imprimen juntas en una placa; las que no caben van en la siguiente."
+    "farm.order.painted_copies": "Varias piezas se imprimen juntas en una placa; las que no caben van en la siguiente.",
+    "param.preset.golf": "Golfista"
 }

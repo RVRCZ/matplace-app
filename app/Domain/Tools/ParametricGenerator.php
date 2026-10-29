@@ -455,6 +455,9 @@ final class ParametricGenerator
     /** a medal's number and rim: red Silk, else red PLA+, a built-in red without a farm (Roman, 19 Oct 2026) */
     private const MEDAL_MOTIF = ['44_PLA_Silk_cervena_Silk_Red', '05_PLA+_cerveny', 'name:silk red', 'red'];
 
+    /** the coaster's rim and motif: black PLA+, any black spool, a built-in black without a farm */
+    private const COASTER_DARK = ['01_PLA+_cerny', 'name:černá', 'black'];
+
     private const SHAPE_WHEN = ['bg_strength' => ['remove_bg', ['on']], 'eye_pos' => ['eyelet', ['on']], 'eye_hole' => ['eyelet', ['on']], 'eye_wall' => ['eyelet', ['on']], 'relief' => ['flush', ['off']]];
 
     public const PRESETS = [
@@ -464,6 +467,14 @@ final class ParametricGenerator
             'place1' => ['line1' => '1', 'typeface' => 'archivo', 'part_colors' => ['body' => ['39_PLA_Silk_zlata_Silk_Gold', 'name:silk gold', 'yellow'], 'color_1' => self::MEDAL_MOTIF]],
             'place2' => ['line1' => '2', 'typeface' => 'archivo', 'part_colors' => ['body' => ['43_PLA_Silk_stribrna_Silk_Silver', 'name:silk silver', 'grey'], 'color_1' => self::MEDAL_MOTIF]],
             'place3' => ['line1' => '3', 'typeface' => 'archivo', 'part_colors' => ['body' => ['name:marrakech', 'name:marrákeš', '40_PLA_Silk_medena_Silk_Copper', 'name:silk copper', 'orange'], 'color_1' => self::MEDAL_MOTIF]],
+        ],
+        // the coaster opens as a finished thing (Roman, 29 Oct 2026): a golfer flush in a beige disc with a black rim,
+        // grooves below, printed face down. A visitor sees a product first and changes what they want; the other
+        // tools get such a start one by one
+        'coaster' => [
+            'golf' => ['artwork' => 'lib:sport/golfer', 'body' => 'circle', 'width' => 100, 'thickness' => 4, 'frame' => 2, 'colors_n' => 4,
+                'remove_bg' => true, 'grooves' => true, 'flush' => true, 'rim' => true, 'bevel' => false,
+                'part_colors' => ['body' => ['13_PLA+_bezovy', 'PLA+_Beige', 'name:béžová', 'white'], 'rim' => self::COASTER_DARK, 'color_1' => self::COASTER_DARK]],
         ],
         // compositions to start from; colours are named, each becomes the farm's nearest spool. The last four are the
         // products of the forms (nameplate, key ring, ornament, big letter), for a visitor who wants to lay them out by hand
