@@ -1844,3 +1844,26 @@ Přejímka na místní Orce 2.4 beta (`ThreeMfColorsTest::test_twelve_turtles_�
 Testy: `ThreeMfColorsTest` (4 kusy = 2 × 4 položky projektu v mřížce 2 × 2, 7 kusů na malé podložce = 6 + 1 se
 zbytkem, ruční stroj → `painted_one_plate` s důvodem, nabídka a přepnutí na jednobarevně, kalkulace výměny na
 podložku), Orca přejímka volitelně (`ORCA_LOCAL`, `TURTLE_3MF`).
+
+### 14.9 Texty stránky u více kusů, nabídka cívek, náhled (29. 10. 2026, fix/painted-copies-texts)
+
+Na produkci prošlo 12 i 13 želv (zakázky CrchUrse…, tGJpKmB4…; Orca 2.4 na serveru vzala 12 instancí, 4 × 3, 570 min,
+69 výměn; 13 ks „12 + 1“, 751 min). Stránka zakázky ale u 12 ks psala starou větu nástrojových návrhů „tiskne se po
+jednom kuse … Nastavte 1 ks“:
+
+- stav zakázky nese `painted_colors` (namalovaný 3MF barevně); `farm.ts` pak místo `one_plate_required` píše
+  `farm.order.painted_plate` (vcelku na tiskárně s měničem, jen cívky takových tiskáren, víc kusů vedle sebe, zbytek
+  na další podložku) a `one_plate_copies` / `one_plate_single` zůstávají jen návrhům z nástrojů
+  (`ModelFile::onePlateRequired`, ty opravdu jdou po jednom kuse). Pod počtem kusů: „Na podložku se vejde až N ks“
+  (+ „na :p podložkách“), před řezem `farm.order.painted_copies`.
+- `check.max_copies` u namalovaného souboru v 1 ks byl 1 („vejde se až 1 ks“): teď kolik se vejde
+  (`PlateLayout::towerGrid` s věží), i když se objednal jeden kus.
+- texty `one_plate_needed` (chyba, odmítnutí, mail) se týkají jen nástrojových návrhů, namalovaný soubor má svůj
+  `painted_one_plate`: beze změny.
+- Nabídka cívek: filtr na stroje s měničem už byl (`availableColors($order, $required)`, `second`, `machines`:
+  `isAgentDriven()`). Test `test_one_painted_piece_…` k tomu přidává ruční stroj se zelenou: jeho cívka se nenabídne
+  (bez filtru by se nabídla, ověřeno vypnutím filtru). Cívky K14, U22, B33 z produkce tedy patří strojům v režimu
+  agenta se 4 sloty, tedy pro farmu „s měničem“; jestli některý měnič nemá, je chyba v jeho záznamu (režim / sloty),
+  ne ve filtru.
+- Náhled dílu 12 ks (`parts/color_1.stl`, 17,6 MB): beze změny. Díl drží všech 12 kopií; levná cesta je, aby náhled
+  nesl jednu kopii a prohlížeč ji kreslil podle `copies_grid` vícekrát (1/12 dat), decimace kopií stála 89 s.

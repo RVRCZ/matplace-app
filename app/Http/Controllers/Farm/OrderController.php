@@ -829,6 +829,8 @@ class OrderController extends Controller
             'filament_changes' => (int) ($order->slice_result['changes'] ?? 0),
             // the design's colours share a layer: one plate on a machine with a changer, one piece, or nothing (docs/AL.md §10.8)
             'one_plate_required' => $required,
+            // a painted 3MF in its colours: one plate too, but its copies share it (the tool's designs go one piece at a time)
+            'painted_colors' => $painted,
             // a painted 3MF that could not print in colour: the page offers it in one colour (by parts off, recalculated)
             'offer_one_color' => $painted && $order->status === FarmOrder::STATUS_FAILED && ! $order->number && $order->error === 'painted_one_plate',
             // how many separately printed parts the design has: two or more, and the order page offers "print them apart"

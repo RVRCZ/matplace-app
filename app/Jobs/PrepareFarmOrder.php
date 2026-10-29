@@ -683,6 +683,8 @@ class PrepareFarmOrder implements ShouldQueue
         // several copies: as many full plates as they need, the last one with the rest, every plate a grid that leaves
         // the tower its band (PlateLayout::towerGrid, the calculator counts the plates the same way)
         $plan = (int) $order->copies > 1 && is_finite($lo[0]) ? self::copiesPlan($size, $bed, $margin / 2, count($index), (int) $order->copies) : null;
+        // a painted 3MF ordered once may take more copies later: the page says how many fit a plate (a tool's design: one)
+        $maxCopies = $plan ? $plan['max'] : ($paintedFile && is_finite($lo[0]) ? max(1, PlateLayout::towerGrid(new Dimensions($size[0], $size[1], $size[2]), $bed, $margin / 2, count($index))['max']) : 1);
         if (! is_finite($lo[0]) || ((int) $order->copies > 1 && ! $plan) || $size[0] > $usable->x || $size[1] > $usable->y || $size[2] > $usable->z) {
             foreach ($paths as $rel) {
                 @unlink($disk->path($rel).'.raw');
@@ -791,7 +793,7 @@ class PrepareFarmOrder implements ShouldQueue
         // warning for a file with parts, UploadController::describe)
         $verdict = self::withoutWarnings($judge($mesh), $paintedFile ? self::PAINTED_WARNINGS : ['multiple_shells']);
         $order->check = $verdict + ['mesh' => $mesh->toArray(), 'unit_guess' => ModelValidator::guessUnit($raw, $bed), 'raw_dims' => $raw->toArray(),
-            'piece_dims' => $plan ? ['x' => round($size[0], 2), 'y' => round($size[1], 2), 'z' => round($size[2], 2)] : $mesh->bbox->toArray(), 'max_copies' => $plan ? $plan['max'] : 1];
+            'piece_dims' => $plan ? ['x' => round($size[0], 2), 'y' => round($size[1], 2), 'z' => round($size[2], 2)] : $mesh->bbox->toArray(), 'max_copies' => $maxCopies];
         $order->orientation = $mesh->orientation;
         $order->print_stl_path = $printRel;
         $order->save();
@@ -923,7 +925,7 @@ class PrepareFarmOrder implements ShouldQueue
                 'stl_path' => $paths[$i], 'grams' => isset($result->filamentGrams[$n]) ? round($sum((float) $result->filamentGrams[$n], isset($restResult?->filamentGrams[$n]) ? (float) $restResult->filamentGrams[$n] : null), 1) : null,
                 'minutes' => $i === 0 ? (int) round($sum($result->minutes, $restResult?->minutes)) : null];
         }
-        $order->check = ['max_copies' => $plan ? $plan['max'] : 1] + (array) $order->check;
+        $order->check = ['max_copies' => $maxCopies] + (array) $order->check;
         $order->fill([
             'plates' => $platesCount, 'plates_done' => 0, 'plate_copies' => $per, 'rest_copies' => $restResult ? $plan['rest'] : null, 'rest_gcode_path' => $restRel,
             'part_plates' => $plates,

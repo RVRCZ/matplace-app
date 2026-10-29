@@ -1,3 +1,5 @@
 {
-    "farm.order.one_color": ["Vytisknout jednobarevně", "Print in one colour", "Imprimir en un solo color"]
+    "farm.order.one_color": ["Vytisknout jednobarevně", "Print in one colour", "Imprimir en un solo color"],
+    "farm.order.painted_plate": ["Barvy souboru se tisknou vcelku na tiskárně s měničem cívek, proto nabízíme jen cívky takových tiskáren. Víc kusů se tiskne vedle sebe na jedné podložce, co se nevejde, jde na další.", "The file's colours print as a whole on a printer that changes spools, so only such printers' spools are on offer. Several pieces print side by side on one plate; what does not fit goes on the next one.", "Los colores del archivo se imprimen enteros en una impresora que cambia bobinas, por eso solo ofrecemos bobinas de esas impresoras. Varias piezas se imprimen juntas en una placa; las que no caben van en la siguiente."],
+    "farm.order.painted_copies": ["Víc kusů se tiskne vedle sebe na jedné podložce, co se nevejde, jde na další.", "Several pieces print side by side on one plate; what does not fit goes on the next one.", "Varias piezas se imprimen juntas en una placa; las que no caben van en la siguiente."]
 }
