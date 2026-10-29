@@ -458,6 +458,9 @@ final class ParametricGenerator
     /** the coaster's rim and motif: black PLA+, any black spool, a built-in black without a farm */
     private const COASTER_DARK = ['01_PLA+_cerny', 'name:černá', 'black'];
 
+    /** the box and its lid: Silk copper, any copper spool, a built-in brown without a farm */
+    private const BOX_COPPER = ['40_PLA_Silk_medena_Silk_Copper', 'name:měděná', 'brown'];
+
     private const SHAPE_WHEN = ['bg_strength' => ['remove_bg', ['on']], 'eye_pos' => ['eyelet', ['on']], 'eye_hole' => ['eyelet', ['on']], 'eye_wall' => ['eyelet', ['on']], 'relief' => ['flush', ['off']]];
 
     public const PRESETS = [
@@ -475,6 +478,10 @@ final class ParametricGenerator
             'golf' => ['artwork' => 'lib:sport/golfer', 'body' => 'circle', 'width' => 100, 'thickness' => 4, 'frame' => 2, 'colors_n' => 4,
                 'remove_bg' => true, 'grooves' => true, 'flush' => true, 'rim' => true, 'bevel' => false,
                 'part_colors' => ['body' => ['13_PLA+_bezovy', 'PLA+_Beige', 'name:béžová', 'white'], 'rim' => self::COASTER_DARK, 'color_1' => self::COASTER_DARK]],
+        ],
+        // the box opens with its lid on, both parts copper (Roman, 29 Oct 2026): the sizes are the fields' own defaults
+        'box' => [
+            'lidded' => ['lid' => true, 'cable_slot' => false, 'part_colors' => ['body' => self::BOX_COPPER, 'lid' => self::BOX_COPPER]],
         ],
         // compositions to start from; colours are named, each becomes the farm's nearest spool. The last four are the
         // products of the forms (nameplate, key ring, ornament, big letter), for a visitor who wants to lay them out by hand
