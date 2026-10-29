@@ -48,6 +48,7 @@ final class ParametricGenerator
     public const PLACE = ['sign' => ['ring_at' => 'size'], 'qr' => ['hidden' => 'input'], 'papel' => self::PAPEL_PLACE, 'shape' => [
         'bg_strength' => 'input', 'smooth' => 'input', 'contrast' => 'input', 'brightness' => 'input', 'saturation' => 'input', 'remove_bg' => 'input',
         'colors_n' => 'colors', 'relief' => 'colors', 'flush' => 'colors', 'rim' => 'colors', 'body' => 'size', 'mount' => 'size', 'disc' => 'size', 'floor' => 'size', 'inside' => 'size',
+        'straw_d' => 'input',      // the straw is what the topper is for: its size right under the picture and the name, not among the sizes
     ]];
 
     /** kind → a step of the tool page that only this tool has → the step it comes after (its name: param.<kind>.step.<id>) */
@@ -303,7 +304,8 @@ final class ParametricGenerator
         'medallion' => ['motif' => ['flush', 'raised'], 'body' => ['circle', 'star', 'hex', 'shield', 'octagon', 'rosette', 'heart'], 'typeface' => ['sans', 'serif', 'mono', 'script']],
         'photo_organizer' => ['body' => ['image', 'circle'], 'inside' => ['grid', 'holes', 'open']],
         'bag_charm' => ['body' => ['image', 'circle', 'rect'], 'typeface' => ['sans', 'serif', 'mono', 'script']],
-        'straw' => ['body' => ['image', 'circle'], 'typeface' => ['sans', 'serif', 'mono', 'script']],
+        // the straw's size by its kind (thin, common, bubble tea), its number for any other; the name across the clip or along the straw
+        'straw' => ['body' => ['image', 'circle'], 'straw_size' => ['custom', 's6', 's8', 's12'], 'text_dir' => ['across', 'along'], 'typeface' => ['sans', 'serif', 'mono', 'script']],
         'opener' => ['body' => ['image', 'circle', 'rect'], 'typeface' => ['sans', 'serif', 'mono', 'script']],
         'phone_stand' => ['style' => ['plate', 'wave', 'desk', 'wedge', 'wall', 'car', 'ribbed', 'flatpack', 'ribbon', 'silhouette'], 'cutout' => ['none', 'window', 'shape'], 'pattern' => ['circles', 'hearts', 'squares', 'honeycomb']],
         'vase' => ['purpose' => ['vase', 'pot'], 'profile' => ['neck', 'belly', 'cone', 'tulip'], 'style' => ['twist', 'ribs', 'smooth'], 'flute_shape' => ['sharp', 'round']],
@@ -358,7 +360,7 @@ final class ParametricGenerator
     public const MAIN = [
         'name_cup' => ['width', 'height'], 'beads' => ['size', 'hole'],
         'charm' => ['width', 'thickness', 'frame', 'eye_pos', 'eye_hole'], 'keychain' => ['width', 'thickness', 'frame', 'eye_pos', 'eye_hole'], 'earrings' => ['width', 'thickness', 'frame', 'eye_pos', 'eye_hole'], 'ornament' => ['width', 'thickness', 'frame', 'eye_pos', 'eye_hole'],
-        'magnet' => ['width', 'thickness', 'frame', 'mag_d', 'mag_h'], 'coaster' => ['width', 'thickness', 'frame'], 'gingerbread' => ['width', 'thickness', 'eye_pos', 'eye_hole'], 'name_letter' => ['height', 'thickness'], 'cookie' => ['width', 'thickness', 'frame'], 'topper' => ['width', 'text_size', 'text_y', 'spike', 'spikes'], 'tray' => ['width', 'height', 'frame'], 'badge' => ['width', 'thickness', 'frame', 'mag_d'], 'medallion' => ['width', 'motif_size', 'depth', 'thickness', 'frame', 'links'], 'photo_organizer' => ['width', 'height', 'cell', 'hole_d'], 'bag_charm' => ['width', 'thickness', 'bag_hole', 'bag_wall'], 'straw' => ['width', 'thickness', 'straw_d', 'eye_pos'], 'opener' => ['width', 'thickness', 'eye_pos'],
+        'magnet' => ['width', 'thickness', 'frame', 'mag_d', 'mag_h'], 'coaster' => ['width', 'thickness', 'frame'], 'gingerbread' => ['width', 'thickness', 'eye_pos', 'eye_hole'], 'name_letter' => ['height', 'thickness'], 'cookie' => ['width', 'thickness', 'frame'], 'topper' => ['width', 'text_size', 'text_y', 'spike', 'spikes'], 'tray' => ['width', 'height', 'frame'], 'badge' => ['width', 'thickness', 'frame', 'mag_d'], 'medallion' => ['width', 'motif_size', 'depth', 'thickness', 'frame', 'links'], 'photo_organizer' => ['width', 'height', 'cell', 'hole_d'], 'bag_charm' => ['width', 'thickness', 'bag_hole', 'bag_wall'], 'straw' => ['width', 'thickness', 'eye_pos'], 'opener' => ['width', 'thickness', 'eye_pos'],
         'organizer' => ['width', 'depth', 'height', 'rows', 'cols', 'radius'], 'box' => ['inner_w', 'inner_d', 'inner_h', 'radius'], 'phone_stand' => ['width', 'device', 'angle', 'back', 'depth', 'vent', 'thickness', 'radius', 'cutout_size', 'rib_pitch', 'band', 'across'],
         'cable_holder' => ['count', 'cable', 'depth'], 'modular' => ['inner_w', 'inner_d', 'height', 'cols', 'rows', 'radius'], 'vase' => ['height', 'top_d', 'bottom_d', 'waists', 'waist_at', 'ribs', 'flute', 'twist'], 'sign' => ['text_height', 'thickness', 'relief', 'radius'], 'logo' => ['width', 'thickness', 'base_h'], 'stamp' => ['width', 'relief'], 'qr' => ['size'], 'stencil' => ['width', 'margin'], 'papel' => ['width', 'height', 'base', 'relief', 'thickness'], 'notes' => ['width', 'pad', 'depth', 'thickness'], 'hair_tie' => ['width', 'post_h', 'post_d', 'thickness'], 'candle_stand' => ['width', 'jar_d', 'thickness'], 'insert' => ['depth', 'gap', 'margin'], 'compose' => ['thickness', 'step'], 'lightbox' => ['width', 'depth'], 'cutter' => ['width', 'height', 'wall', 'flange'], 'holder' => ['obj_w', 'obj_d', 'height', 'hook_h', 'bend', 'edge'], 'cap' => ['size_a', 'size_b', 'outer', 'height', 'pitch', 'mouth', 'edge'],
     ];
@@ -404,7 +406,8 @@ final class ParametricGenerator
         'cookie' => self::HANG_WHEN + self::SHAPE_WHEN, 'name_letter' => self::HANG_WHEN + self::SHAPE_WHEN,
         'medallion' => ['bg_strength' => ['remove_bg', ['on']], 'relief' => ['motif', ['raised']], 'depth' => ['motif', ['flush']]], 'bag_charm' => self::SHAPE_WHEN,
         // the clip and the tongue are always there: their place on the outline is not hidden behind a flag
-        'straw' => ['bg_strength' => ['remove_bg', ['on']], 'relief' => ['flush', ['off']]], 'opener' => ['bg_strength' => ['remove_bg', ['on']], 'relief' => ['flush', ['off']]],
+        // along the straw the clip runs the whole side that touches it: there is no place on the outline to drag it to
+        'straw' => ['bg_strength' => ['remove_bg', ['on']], 'relief' => ['flush', ['off']], 'eye_pos' => ['text_dir', ['across']]], 'opener' => ['bg_strength' => ['remove_bg', ['on']], 'relief' => ['flush', ['off']]],
         // one colour and no picture in the floor: what belongs to the picture's colours never shows ("none" is no value of the choice)
         'photo_organizer' => ['cell' => ['inside', ['grid']], 'hole_d' => ['inside', ['holes']], 'frame' => ['inside', ['none']], 'relief' => ['inside', ['none']], 'colors_n' => ['inside', ['none']]] + self::SHAPE_WHEN,
         'badge' => self::SHAPE_WHEN + ['mag_d' => ['mount', ['glue']], 'mag_h' => ['mount', ['glue']]],
@@ -439,6 +442,8 @@ final class ParametricGenerator
         // the discs sold everywhere: diameter × height
         'magnet' => ['disc' => ['d6x2' => ['mag_d' => 6, 'mag_h' => 2], 'd8x3' => ['mag_d' => 8, 'mag_h' => 3], 'd10x2' => ['mag_d' => 10, 'mag_h' => 2], 'd12x3' => ['mag_d' => 12, 'mag_h' => 3],
             'd15x3' => ['mag_d' => 15, 'mag_h' => 3], 'd20x3' => ['mag_d' => 20, 'mag_h' => 3]]],
+        // drinking straws by their outer diameter: a thin one, the common one, a bubble tea straw
+        'straw' => ['straw_size' => ['s6' => ['straw_d' => 6], 's8' => ['straw_d' => 8], 's12' => ['straw_d' => 12]]],
         'cap' => ['thread' => [
             'pet28' => ['size_a' => 27.4, 'pitch' => 2.7],
             'm6' => ['size_a' => 6, 'pitch' => 1], 'm8' => ['size_a' => 8, 'pitch' => 1.25], 'm10' => ['size_a' => 10, 'pitch' => 1.5], 'm12' => ['size_a' => 12, 'pitch' => 1.75],
@@ -457,6 +462,11 @@ final class ParametricGenerator
 
     /** the coaster's rim and motif: black PLA+, any black spool, a built-in black without a farm */
     private const COASTER_DARK = ['01_PLA+_cerny', 'name:černá', 'black'];
+
+    /** the straw topper: a red plate, any red spool, a built-in red without a farm; its letters white */
+    private const STRAW_PLATE = ['05_PLA+_cerveny', 'name:červená', 'red'];
+
+    private const STRAW_LETTERS = ['02_PLA+_bily', 'name:bílá', 'white'];
 
     /** the box and its lid: Silk copper, any copper spool, a built-in brown without a farm */
     private const BOX_COPPER = ['40_PLA_Silk_medena_Silk_Copper', 'name:měděná', 'brown'];
@@ -482,6 +492,13 @@ final class ParametricGenerator
         // the box opens with its lid on, both parts copper (Roman, 29 Oct 2026): the sizes are the fields' own defaults
         'box' => [
             'lidded' => ['lid' => true, 'cable_slot' => false, 'part_colors' => ['body' => self::BOX_COPPER, 'lid' => self::BOX_COPPER]],
+        ],
+        // the straw topper opens as a name along a common straw (Roman, 29 Oct 2026): white letters on a red plate, the
+        // clip along the whole name. A short name: twelve letters still print, three show what it is at once
+        'straw' => [
+            'ela' => ['line1' => 'Ela', 'line2' => '', 'body' => 'image', 'text_dir' => 'along', 'straw_size' => 's8', 'straw_d' => 8, 'typeface' => 'sans',
+                'width' => 40, 'thickness' => 3, 'frame' => 1.5, 'flush' => false, 'rim' => false,
+                'part_colors' => ['body' => self::STRAW_PLATE, 'color_1' => self::STRAW_LETTERS]],
         ],
         // compositions to start from; colours are named, each becomes the farm's nearest spool. The last four are the
         // products of the forms (nameplate, key ring, ornament, big letter), for a visitor who wants to lay them out by hand

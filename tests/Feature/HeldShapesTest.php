@@ -68,6 +68,49 @@ class HeldShapesTest extends TestCase
         }
     }
 
+    public function test_a_name_along_the_straw_is_held_by_a_clip_along_it(): void
+    {
+        $name = ['line1' => 'Ela', 'width' => 40, 'thickness' => 3, 'straw_d' => 8];
+        $across = $this->meta('straw', $name + ['text_dir' => 'across']);
+        $along = $this->meta('straw', $name + ['text_dir' => 'along']);
+        // across: the name runs sideways and the clip holds it at one point, 14 mm long, dragged along the outline
+        $this->assertEquals(['length' => 14, 'along' => false], $across['notes']['clip']);
+        $this->assertArrayHasKey('outline', $across['notes']);
+        // along: the name is turned to run up the straw, and the clip runs its whole length (its baseline touches the straw)
+        $this->assertGreaterThan($across['bbox']['y'] + 10, $along['bbox']['y']);
+        $this->assertLessThan($across['bbox']['x'] - 10, $along['bbox']['x']);
+        $this->assertTrue($along['notes']['clip']['along']);
+        $this->assertEqualsWithDelta($along['bbox']['y'], $along['notes']['clip']['length'], 0.5);
+        $this->assertArrayNotHasKey('outline', $along['notes']);       // nothing to drag: the clip is where the straw is
+        // the same tube round the straw, only longer: as high, 0.4 mm of play and walls of 1.6 mm
+        $this->assertEqualsWithDelta($across['bbox']['z'], $along['bbox']['z'], 0.05);
+        $this->assertGreaterThan($across['volume_mm3'], $along['volume_mm3']);
+        // the tab under the clip ties the letters: the page has nothing to say about pieces joined by a bridge
+        $this->assertNotContains('pieces_tied', (array) ($along['notes']['warnings'] ?? []));
+        // a round plate touches the straw only on its arc: the clip runs as far as the plate does, and never under 14 mm
+        $round = $this->meta('straw', ['artwork' => 'lib:colour/smiling-star', 'body' => 'circle', 'width' => 35, 'straw_d' => 8, 'text_dir' => 'along']);
+        $this->assertGreaterThan(14, $round['notes']['clip']['length']);
+        $this->assertLessThan(35, $round['notes']['clip']['length']);
+    }
+
+    public function test_the_page_opens_with_a_name_along_a_common_straw_and_asks_for_the_straw_first(): void
+    {
+        $preset = ParametricGenerator::PRESETS['straw']['ela'];
+        $this->assertSame(['along', 's8', 8], [$preset['text_dir'], $preset['straw_size'], $preset['straw_d']]);
+        $html = $this->get('/tools/straw-topper')->assertOk()->assertSee('preset: "ela"', false)->getContent();
+        // the straw's kinds right under the name, its number under them, both before the sizes; the clip's place only across
+        $name = strpos($html, 'data-text="line1"');
+        $chips = strpos($html, 'data-choice="straw_size" value="s12"');
+        $field = strpos($html, 'data-param="straw_d"');
+        $this->assertTrue($name < $chips && $chips < $field && $field < strpos($html, 'data-param="width"'), 'name, straw kinds, diameter, sizes');
+        $this->assertSame(1, substr_count($html, 'data-param="straw_d"'));
+        $this->assertStringContainsString('data-when="text_dir=across" data-field="eye_pos"', $html);
+        // a kind of straw writes its diameter, whatever the form sent; a number of its own keeps the kind "other"
+        $this->assertEquals(12, ParametricGenerator::clean('straw', ['straw_size' => 's12', 'straw_d' => 8])['straw_d']);
+        $this->assertSame(9.5, ParametricGenerator::clean('straw', ['straw_d' => 9.5])['straw_d']);
+        $this->assertSame('across', ParametricGenerator::clean('straw', [])['text_dir']);      // a design from before the choice keeps its clip
+    }
+
     public function test_a_can_opener_has_a_tongue_that_thins_to_its_tip(): void
     {
         $paw = ['artwork' => 'lib:colour/paw-badge', 'width' => 55, 'thickness' => 4, 'body' => 'circle'];

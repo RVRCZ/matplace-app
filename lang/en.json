@@ -1960,5 +1960,18 @@
     "farm.order.painted_plate": "The file's colours print as a whole on a printer that changes spools, so only such printers' spools are on offer. Several pieces print side by side on one plate; what does not fit goes on the next one.",
     "farm.order.painted_copies": "Several pieces print side by side on one plate; what does not fit goes on the next one.",
     "param.preset.golf": "Golfer",
-    "param.preset.lidded": "Box with a lid"
+    "param.preset.lidded": "Box with a lid",
+    "param.preset.ela": "Ela along the straw",
+    "param.c.straw.straw_size": "Straw",
+    "param.o.straw.custom": "Other diameter",
+    "param.o.straw.s6": "6 mm thin",
+    "param.o.straw.s8": "8 mm common",
+    "param.o.straw.s12": "12 mm bubble tea",
+    "param.straw.straw_d.hint": "The outer diameter, measured with a caliper or a ruler.",
+    "param.c.straw.text_dir": "Topper on the straw",
+    "param.o.straw.along": "Along the straw",
+    "param.o.straw.across": "Across",
+    "param.f.straw.width": "Size of the topper",
+    "param.straw.width.hint": "The length of the name; of a picture, its width.",
+    "param.straw.tip": "It prints flat, face up, the clip with its open side up. Enter the outer diameter of your straw; the clip has 0.4 mm of play. A topper along the straw is held by a clip all the way it touches the straw. Across, the clip sits at one point and you drag its grip in the preview along the outline."
 }

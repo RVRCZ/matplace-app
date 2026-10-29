@@ -25,6 +25,8 @@ colours, and a shallow pocket in the back for the reel's sticky dot.
 
 The straw topper carries a clip for a drinking straw on its outline, the opener a tongue that lifts the tab of a can;
 both sit where the visitor drags them, like the eyelet. Neither is in the catalogue until one of each was printed.
+A straw topper may also lie along the straw (`text_dir` "along"): its name is turned to run up the straw, and the clip
+runs the whole side that touches it instead of 14 mm at one point (docs/P.md, "Brčko: text podél").
 
 The bag_charm is glued on a bag with holes: a pocket in its back takes the pin that comes through the hole from inside.
 
@@ -51,6 +53,8 @@ LIMITS = {
 BODIES = {"charm": ("image", "circle", "rect"), "keychain": ("rect", "image", "circle"), "earrings": ("image", "circle"), "ornament": ("image", "circle", "star"),
           "magnet": ("image", "circle", "rect"), "coaster": ("circle", "square", "hex"), "gingerbread": ("image",), "name_letter": ("image",), "cookie": ("image", "circle"), "topper": ("image",), "tray": ("image", "circle"), "badge": ("image", "circle", "rect"), "medallion": ("circle", "star", "hex", "shield", "octagon", "rosette", "heart"), "photo_organizer": ("image", "circle"), "bag_charm": ("image", "circle", "rect"), "straw": ("image", "circle"), "opener": ("image", "circle", "rect")}
 MOUNTS = ("glue", "press", "through", "none")
+TEXT_DIRS = ("across", "along")    # a straw topper: its name across the clip, or along the straw with the clip along it
+CLIP_MIN = 14.0              # the clip of a straw topper at one point of its outline; along the straw it is never shorter
 INLAY = 0.6                 # how deep inlaid colours go: three layers, nothing of the plate shows through
 GAP = 6.0                   # between the two earrings on the bed
 
@@ -399,14 +403,15 @@ def _placed(M, solid, px, py, nx, ny, box):
     return placed, M.CrossSection([corners], M.FillRule.NonZero)
 
 
-def _clip(M, px, py, nx, ny, d):
+def _clip(M, px, py, nx, ny, d, length=14.0):
     """
     A clip for a drinking straw: a tube open on top for a little over half the straw's width, lying on the bed beside
     the shape. The straw snaps in from the face and runs past the shape, so the top of the straw stays free to drink from.
+    `length` along the straw: 14 mm at one point of the outline, the whole side that touches the straw along it.
     Returns (the clip, its footprint, the tab of the plate it stands on).
     """
     C = M.CrossSection
-    r_in, wall, length = d / 2 + 0.2, 1.6, 14.0
+    r_in, wall = d / 2 + 0.2, 1.6
     r_out = r_in + wall
     ring = C.circle(r_out, 72) - C.circle(r_in, 72) - C.square([0.6 * d, r_out + 1]).translate([-0.3 * d, 0])
     # sunk half a millimetre into the bed and cut flat there, so it lies on a strip and not on a line; it bites into the edge of the shape
@@ -466,6 +471,9 @@ def build(M, Invalid, p, product):
     if not cookie and not art_path and not lines:
         raise Invalid("no_text")
     is_text = not art_path and not cookie
+    if product == "straw" and p.get("text_dir", "across") not in TEXT_DIRS:
+        raise Invalid("bad_choice", "text_dir")
+    along = product == "straw" and p.get("text_dir", "across") == "along"
     edge = max(frame, 1.0) if (rim or (is_text and body_kind == "image")) else frame      # a rim needs a body to stand on, letters a body to hold them
     geometric = body_kind not in ("image", "rect")
     if dish:
@@ -475,6 +483,7 @@ def build(M, Invalid, p, product):
 
     # ── the picture: its colours bottom to top, in the place they will have on the body ─────────────────────────
     shape2d, inner_r = (None, 0.0)
+    loose = False
     if geometric:
         shape2d, inner_r = _shape(M, body_kind, width)
         inner_r -= edge
@@ -498,6 +507,11 @@ def build(M, Invalid, p, product):
             reach = min(2 * (inner_r - 1.0), width * n("motif_size", 55) / 100.0) if medal else 2 * (inner_r - 1.0)      # a medal's number: a share of its width
             k = (reach / math.hypot(w0, h0)) if geometric else art_w / w0
             art = S.fit(art, width_mm=w0 * k)
+            if along:
+                # a quarter turn to the left: the name reads up the straw, from the glass to the mouth, and its baseline,
+                # the straightest edge a word has, lies against the straw on the right
+                art = art.rotate(90)
+                art = S.fit(art, width_mm=S.size(art)[0])
             pal = options["palette"]
             first = options["assign"].get("1")
             # letters dark on a light plate; a medal the other way round, its number shines on a dark plate
@@ -545,9 +559,12 @@ def build(M, Invalid, p, product):
     else:
         grown = sil.offset(edge, J, 2.0, 24) if edge > 0 else sil
         body2d = _filled(M, grown.simplify(0.02), 4.0)
-        body2d, links = S.joined(M, body2d, max(edge, 0.6), max(2.0, min(aw, ah) * 0.06))
-        if links:
-            warn.append("pieces_tied")
+        # along the straw the tab under the clip ties the letters on their baseline: what it leaves loose is joined after it
+        loose = along
+        if not loose:
+            body2d, links = S.joined(M, body2d, max(edge, 0.6), max(2.0, min(aw, ah) * 0.06))
+            if links:
+                warn.append("pieces_tied")
     if (is_text or cookie or info.get("caption")) and info.get("missing_chars"):
         warn.append("missing_chars")
     if info.get("ignored_outlines"):
@@ -631,11 +648,27 @@ def build(M, Invalid, p, product):
         # not a ring but a clip or a tongue sits on the outline, where the visitor drags it
         travel = S.dense(S.outer_ring(body2d))
         px, py, nx, ny = S.along(travel, n("eye_pos", 0) / 100.0)
-        if product == "straw":
+        if product == "straw" and along:
+            # along the straw: on the right, as far as the plate comes within the tab's 4 mm of it (a name: its whole
+            # baseline), never shorter than the clip at one point. The tab under it ties every letter to the clip
+            bx0, by0, bx1, by1 = body2d.bounds()
+            touch = body2d ^ C.square([4.0, by1 - by0 + 2]).translate([bx1 - 4.0, by0 - 1])
+            ty0, ty1 = touch.bounds()[1], touch.bounds()[3]
+            length = max(CLIP_MIN, ty1 - ty0)
+            grip, reach2d, tab = _clip(M, bx1, (ty0 + ty1) / 2, 1.0, 0.0, n("straw_d", 8), length)
+            body2d = body2d + tab
+            if loose:
+                body2d, links = S.joined(M, body2d, max(edge, 0.6), max(2.0, min(aw, ah) * 0.06))
+                if links:
+                    warn.append("pieces_tied")
+            px, py = bx1, (ty0 + ty1) / 2
+            notes["clip"] = {"length": round(length, 1), "along": True}
+        elif product == "straw":
             # the clip stands upright beside the picture whatever way the outline runs there: a straw is held upright
             mid = (body2d.bounds()[0] + body2d.bounds()[2]) / 2
             grip, reach2d, tab = _clip(M, px, py, 1.0 if px >= mid else -1.0, 0.0, n("straw_d", 8))
             body2d = body2d + tab
+            notes["clip"] = {"length": CLIP_MIN, "along": False}
         else:
             grip, reach2d = _tongue(M, px, py, nx, ny, t)
         notes["eyelet"] = {"x": round(px, 2), "y": round(py, 2), "hole": 0}
@@ -942,7 +975,7 @@ def build(M, Invalid, p, product):
         # first one where eye_pos is 0, so a point's place in the list is the share of the way round. A medal's eyelet
         # sits on its axis and is not dragged: without the outline the page shows no grip (in the preview of a medal
         # turned face up the grip stood where the eyelet is printed, a red dot among the links)
-        if not medal:
+        if not medal and not along:
             notes["outline"] = [[round(c - o, 1) for c, o in zip(S.along(travel, i / 120.0)[:2], (x0, y0))] for i in range(120)]
         notes["eyelet"]["x"], notes["eyelet"]["y"] = round(notes["eyelet"]["x"] - x0, 2), round(notes["eyelet"]["y"] - y0, 2)
         notes["eyelet"]["z"] = round(t, 2)

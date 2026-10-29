@@ -905,3 +905,89 @@ Kde se žehlí (součet drah `;TYPE:Ironing` podle výšky, kolo 5):
 - jestli vršek článku s ploškou drží,
 - jestli jde článek s přesahem 3,6 mm zacvaknout rukou bez prasknutí,
 - jak vypadá žehlený rub medaile.
+
+## 9. Brčko: text podél, klipy po délce, průměr (29. 10. 2026, session G)
+
+Zadání `docs/prompts/brcko-text-podel.md` (TODO #55), větev `feature/straw-along`. Roman u `/tools/straw-topper`:
+když se místo obrázku zadá jméno, chce volbu orientace; startovací návrh podél brčka tak, aby se ho dotýkal a držel;
+průměr brčka nenašel.
+
+### Co se změnilo
+
+- **Volba „Ozdoba na brčku“: Napříč / Podél brčka** (`text_dir` = `across` | `along`, v `CHOICES['straw']`).
+  Napříč je dnešní stav a první hodnota, takže návrh uložený před touto volbou se otevře, jak byl.
+  Volba je vidět i u obrázku: stránka nemá podmínku „je zadaný text“ a podél brčka dává smysl i obrázku (viz níž).
+- **Podél brčka se jméno otočí o čtvrt otáčky doleva** (`shape_kinds.build`, větev `is_text`). Čte se zdola nahoru,
+  od sklenice k puse, jako hřbet knihy v češtině a španělštině. Hlavní důvod je ale tvar: k brčku vpravo přiléhá
+  účaří, nejrovnější hrana slova (písmena na něm stojí, nahoře se střídají vysoká a nízká). Ozdoba se tak brčka
+  dotýká po celé délce jména. Obrázek se neotáčí, má svůj vlastní „nahoře“.
+- **Klip po délce, ne dva klipy**: podél brčka stojí klip vpravo a běží tak daleko, kam destička sahá do 4 mm od
+  brčka (pás pod klipem, `tab`), nejméně 14 mm (`CLIP_MIN`). U jména je to celá jeho délka (Ela 40 mm → klip 40 mm),
+  u kulaté destičky jen oblouk (35 mm kruh → klip 24 mm). Profil je stejný jako dosud: vůle 0,4 mm, stěna 1,6 mm,
+  otevřený nahoře na 60 % průměru, zapuštěný 0,5 mm do podložky. Proč jeden dlouhý:
+  - destička je s trubkou spojená po celé délce, ne krkem 14 mm, takže se na brčku nepootočí ani neohne;
+  - pás pod klipem spojí i písmena, která se nedotýkají (Ela bez něj potřebovala můstky a stránka hlásila „spojili
+    jsme je můstkem“). Podél brčka se proto můstky dělají až po pásu a jen pro to, co zůstane volné;
+  - převis je stejný jako u krátkého klipu, delší trubka ho nezhorší;
+  - brčko se dá do dlouhého klipu i nasunout z konce, ne jen zacvaknout.
+
+  Úchyt polohy klipu (`eye_pos`) se podél brčka schová (`WHEN`): klip je tam, kde je brčko. Model proto neposílá
+  `outline` a náhled úchyt neukazuje. `notes.clip` = `{length, along}` říká délku klipu.
+- **Průměr brčka nahoře**: v první části hned pod jménem chipy **Jiný průměr · 6 mm tenké · 8 mm běžné · 12 mm
+  bubble tea** (`straw_size`, zapisují `straw_d` přes `FILLS` jako magnety), pod nimi posuvník 5–14 mm s nápovědou
+  „Vnější průměr, změřte ho posuvkou nebo pravítkem.“ Ručně zadané číslo vrátí chip na „Jiný průměr“. V Rozměrech
+  pole už není. `param.blade.php`: pole, které píše volba první části, stojí pod ní (`$filledBy`), jinak by mezi
+  chipy a posuvníkem bylo jméno.
+- **Výchozí návrh** `PRESETS['straw']['ela']` a `->defaults('preset', 'ela')` na route: „Ela“ podél brčka, 8 mm,
+  šířka 40 mm, tloušťka 3, okraj 1,5, písmena vystouplá. Barvy: destička červené PLA+ (`05_PLA+_cerveny`, jinak
+  jakákoli červená cívka, bez farmy vestavěná červená), písmena bílé PLA+ (`02_PLA+_bily`). Otevře se bez upozornění.
+- Texty: `lang/src/straw_along.json`. Tip stránky říká vnější průměr a vůli 0,4 mm. Pole šířky se jmenuje „Velikost
+  ozdoby“ s nápovědou „Délka jména, u obrázku jeho šířka.“ Staré `straw.tip` a `f.straw.width` jsou z
+  `lang/*/param.php` pryč, aby text nebyl na dvou místech.
+
+![Výchozí návrh: Ela podél brčka, klip po celé délce](img/straw-along.png)
+![Telefon: chipy brčka, průměr, směr](img/straw-along-390.png)
+
+### Ověřeno
+
+- `HeldShapesTest` (5 testů): `test_a_name_along_the_straw_is_held_by_a_clip_along_it`:
+  - napříč klip 14 mm s `outline`;
+  - podél model delší v ose brčka a užší napříč, klip dlouhý jako model, bez `outline`;
+  - stejná výška klipu, bez `pieces_tied`;
+  - kruh podél: klip mezi 14 a 35 mm.
+
+  `test_the_page_opens_with_a_name_along_a_common_straw_and_asks_for_the_straw_first`:
+  - předvolba na stránce;
+  - pořadí jméno → chipy → průměr → rozměry, pole jen jednou;
+  - `eye_pos` jen napříč;
+  - `clean()` s `s12` dá 12 mm, bez volby `across`.
+- `ToolPageTest` (předvolba `ela` se staví bez upozornění), `ParametricToolsTest`, `ToolVisibilityTest`: 43 testů
+  zelené. pint, tsc, build.
+- Stránka lokálně jako admin (1280 a 390 px):
+  - otevře se s Ela podél, 8 mm, úchyt klipu schovaný, bez upozornění a bez vodorovného posunu;
+  - chip 12 mm zapíše 12;
+  - Napříč ukáže polohu klipu.
+- **Řez** (AnycubicSlicerNext 2.0.0.3 CLI, `machine.json` + `process_standard.json` + `filament_pla.json`, orientačně):
+  Ela podél, 8 mm: **4,0 g, 12 min**. Bez podpěr a slicer neoznačil žádnou převislou stěnu (`;TYPE:Overhang wall` 0,
+  `;TYPE:Support` 0, 3 vnitřní mosty).
+
+### Co čeká na tisk (Roman)
+
+Zkušební kalkulace: po nasazení otevřít jako admin `https://matplace.com/tools/straw-topper` (otevře se výchozí
+návrh), **Spočítat cenu a možnosti tisku**. Odkaz `/c/…` vznikne až na produkci, místně ho nejde udělat.
+Při zkoušce sledovat:
+
+1. Jestli brčko 8 mm do klipu zacvakne shora bez prasknutí okrajů, nebo jde jen nasunout z konce. Po délce 40 mm je
+   zacvaknutí tužší než u 14 mm.
+2. Jestli ozdoba na brčku drží a neotáčí se kolem něj, ani když se brčkem míchá.
+3. Horní okraje trubky (převis bez podpěr): hladké, nebo s převislými vlákny. Uvnitř nesmí zůstat nic, co brčko
+   odírá.
+4. Vůle 0,4 mm: jde ozdoba posunout po brčku nahoru a dolů, ale sama nesjede?
+5. Jestli se jméno čte zdola nahoru dobře, nebo by bylo lepší obráceně (shora dolů je jedna změna znaménka
+   v `art.rotate(90)`).
+6. Nástroj zůstává mimo katalog (`available => false`), dokud tohle neprojde.
+
+**Známé drobnosti**:
+- Táhlo šířky v náhledu leží na ose x. Podél brčka šířka znamená délku jména (osa y), takže tah táhlem změní ozdobu
+  v jiném směru, než se táhne. Velikost se mění úměrně, takže nic neselže.
+- Volba Napříč / Podél se ukazuje i u obrázku, protože stránka neumí podmínku „je zadaný text“.

@@ -1960,5 +1960,18 @@
     "farm.order.painted_plate": "Los colores del archivo se imprimen enteros en una impresora que cambia bobinas, por eso solo ofrecemos bobinas de esas impresoras. Varias piezas se imprimen juntas en una placa; las que no caben van en la siguiente.",
     "farm.order.painted_copies": "Varias piezas se imprimen juntas en una placa; las que no caben van en la siguiente.",
     "param.preset.golf": "Golfista",
-    "param.preset.lidded": "Caja con tapa"
+    "param.preset.lidded": "Caja con tapa",
+    "param.preset.ela": "Ela a lo largo de la pajita",
+    "param.c.straw.straw_size": "Pajita",
+    "param.o.straw.custom": "Otro diámetro",
+    "param.o.straw.s6": "6 mm fina",
+    "param.o.straw.s8": "8 mm normal",
+    "param.o.straw.s12": "12 mm bubble tea",
+    "param.straw.straw_d.hint": "El diámetro exterior, medido con un calibre o una regla.",
+    "param.c.straw.text_dir": "Adorno en la pajita",
+    "param.o.straw.along": "A lo largo de la pajita",
+    "param.o.straw.across": "De través",
+    "param.f.straw.width": "Tamaño del adorno",
+    "param.straw.width.hint": "La longitud del nombre; en una imagen, su ancho.",
+    "param.straw.tip": "Se imprime en plano, con la cara hacia arriba y el clip con su lado abierto hacia arriba. Indique el diámetro exterior de su pajita; el clip tiene 0,4 mm de holgura. Un adorno a lo largo de la pajita queda sujeto por un clip en todo el tramo que la toca. De través, el clip va en un punto y su tirador se arrastra por el contorno en la vista previa."
 }
