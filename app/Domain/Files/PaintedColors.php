@@ -75,6 +75,12 @@ final class PaintedColors
         return array_values(array_column(array_filter((array) $c['colors'], fn ($x) => is_array($x) && empty($x['merged'])), 'hex'));
     }
 
+    /** An upload (not a tool's design) painted in two printed colours or more: the farm prints it on one plate or not in colour. */
+    public static function painted(?ModelFile $file): bool
+    {
+        return $file !== null && $file->origin !== 'tool' && self::printed($file) !== [];
+    }
+
     /** The parts of a painted upload the farm prints: color_1… one per printed colour. */
     public static function partNames(ModelFile $file): array
     {
@@ -138,12 +144,15 @@ final class PaintedColors
      * moved as the parts were on the plate, the project's purge matrix left to Orca (it computes one from the spools'
      * colours). Orca paints every layer exactly, no inlays: the turtle's yellow on its curved shell sliced as parts was
      * refused (the inlay hangs in the air on its own, the support check stops the slice), the painted file was not.
-     * False when it cannot be done (a colour from base materials has no extruder to map): the parts are sliced instead.
+     * `$copies`: where every piece of the plate goes, as offsets from the first one (mm): the same object placed again.
+     * False when it cannot be done (a colour from base materials has no extruder to map): the order then cannot print
+     * in colour (PrepareFarmOrder says why and offers one colour).
      *
      * @param  array<string, int>  $partFilament
      * @param  array{0: float, 1: float, 2: float}  $move
+     * @param  list<array{0: float, 1: float, 2: float}>  $copies
      */
-    public function project(ModelFile $file, string $out, float $scale, array $move, array $partFilament): bool
+    public function project(ModelFile $file, string $out, float $scale, array $move, array $partFilament, array $copies = [[0.0, 0.0, 0.0]]): bool
     {
         $c = $file->colors;
         $printed = self::printed($file);
@@ -167,6 +176,7 @@ final class PaintedColors
         try {
             $r = $this->python->runScript('colors_tool.py', ['repaint', $file->absolutePath(), $out, (string) json_encode([
                 'map' => $map, 'scale' => $scale, 'move' => array_values($move), 'keep_project' => true,
+                'copies' => array_map(fn ($c) => array_map('floatval', array_values($c)), array_values($copies)),
             ])], (int) config('engines.colors.timeout', 180));
         } catch (\Throwable $e) {
             $r = ['ok' => false, 'error' => $e->getMessage()];

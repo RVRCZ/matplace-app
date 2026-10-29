@@ -4,7 +4,10 @@ namespace App\Http\Controllers\Api;
 
 use App\Domain\Calculation\CalculationService;
 use App\Domain\Calculation\PricingSource;
+use App\Domain\Farm\FarmSettings;
+use App\Domain\Farm\PlateLayout;
 use App\Domain\Files\PaintedColors;
+use App\Engines\DTO\Dimensions;
 use App\Http\Controllers\Controller;
 use App\Models\Calculation;
 use App\Models\ModelFile;
@@ -114,11 +117,16 @@ class CalculationController extends Controller
         $grams = (float) ($done ? ($c->slicer['grams'] ?? 0) : ($rough['grams'] ?? 0));
         $minutes = (int) ($done ? ($c->slicer['minutes'] ?? 0) : ($rough['minutes'] ?? 0));
         $quantity = max(1, (int) ($c->params['quantity'] ?? 1));
-        // the copies share the plate and its changes: per piece, the tower and the changes divided among them
+        // the copies share a plate and its changes (the changes go by layers, not by pieces); more copies than a plate
+        // holds take more plates, every one with its changes – the plates counted as the farm lays them
+        // (PlateLayout::towerGrid: the pieces as they lie, the prime tower's band), docs/AL.md §14.8
+        $piece = Dimensions::fromArray((array) $file->bbox)->scaled(max(0.01, (float) ($c->params['scale'] ?? 1)));
+        $max = PlateLayout::towerGrid($piece, Dimensions::fromArray((array) config('pricing.bed_mm')), (float) app(FarmSettings::class)->get('bed_margin_mm'), (int) $extra['count'])['max'];
+        $plates = $max > 0 ? (int) ceil($quantity / $max) : $quantity;
         $profiles = app(PricingSource::class)->fromContext($c->pricing_context ?? ($done ? null : ['farm' => true]), $material);
-        $multi = app(CalculationService::class)->pricesFor($grams + $extra['grams'] / $quantity, $minutes + (int) ceil($extra['minutes'] / $quantity), $quantity, $profiles);
+        $multi = app(CalculationService::class)->pricesFor($grams + $extra['grams'] * $plates / $quantity, $minutes + (int) ceil($extra['minutes'] * $plates / $quantity), $quantity, $profiles);
 
-        return ['one' => (float) $list[0]['total'], 'multi' => (float) ($multi[0]['total'] ?? $list[0]['total']), 'count' => $extra['count'], 'changes' => $extra['changes']];
+        return ['one' => (float) $list[0]['total'], 'multi' => (float) ($multi[0]['total'] ?? $list[0]['total']), 'count' => $extra['count'], 'changes' => $extra['changes'] * $plates, 'plates' => $plates];
     }
 
     public static function describe(Calculation $c): array

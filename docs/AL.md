@@ -1800,3 +1800,47 @@ místní Orca. Cena 100 Kč, kalkulace „Barevně od 99 Kč · Jednobarevně 99
   (díly jsou návrh, nahrání to u souborů s díly vynechává také). Chyby (rozměr, podložka) zůstávají.
 
 Testy: `ThreeMfColorsTest` (zakázka bez těch dvou hlášek, minimum kalkulace = minimum zakázky).
+
+### 14.8 Namalovaný soubor ve více kusech (29. 10. 2026)
+
+Roman 29. 10. ráno: zákazník nastavil v kalkulaci 12 ks želvy („vejde se až 12 ks“), klikl Vytisknout barevně a
+zakázka skončila „Nepodařilo se“. Na produkci (zakázka hosta, nic netištěno): `one_plate_skipped: copies` → po
+dílech, každý díl 12× na vlastní podložku (4 077 000 trojúhelníků), Orca žlutou vložku sama nenařízla, po 125 s
+`slicing_failed`, stránka bez důvodu a bez nabídky.
+
+- **Kusy na jedné podložce.** Namalovaný soubor s `copies > 1` jde také na jednu podložku: v projektu pro Orcu je
+  přebarvený objekt N× (build item na každý kus, `colors_tool.py repaint` s `copies` = posuny kusů). Orca řeže objekt
+  jednou a tiskne jeho instance, výměny jsou po vrstvách, takže na podložce zůstává jejich počet bez ohledu na kusy.
+  Mřížka `PlateLayout::towerGrid`: kusy jak leží (bez otočení, objekt se jen posune), mezera 5 mm, pruh pro věž
+  pod sadou nebo vlevo (stejná pravidla jako `towerSpot`). Víc kusů, než se vejde: plné podložky + poslední se
+  zbytkem, vlastní mřížka, vlastní projekt `plate-rest.3mf`, vlastní řez `rest.gcode` (jako jednobarevný tisk více
+  kusů). Díly v `part_plates` drží kopie celé plné podložky pro náhled, `copies` = kusů na podložku.
+- **Každá podložka startuje ze cívky prvního dílu** (`FarmOrder::plateSpool`), `plateLayout()` jedné podložky dílů je
+  rozpis kusů (dřív počítal kusy po dílech, `[1, 1]` → podíl gramů 1/2 u jedné podložky).
+- **Když barevně nejde** (ruční tiskárna, cívky ze dvou strojů, víc barev než cívek, jedna cívka pro obě barvy,
+  nevejde se, slicer selže, barvy bez extruderu): zakázka po dílech **nejede vůbec**, skončí `painted_one_plate`
+  s důvodem (`error_detail` = důvod přeskočení, text `farm.painted_reason.*`) a stránka zakázky ukáže tlačítko
+  „Vytisknout jednobarevně“ (`offer_one_color`; klik vypne tisk po dílech a přepočítá). Platba barevné zakázky
+  na stroji bez měniče se odmítne (`FarmRefusal painted_one_plate`), stránka nabízí barvy jen ze strojů s agentem.
+  Rozhodnutí bodu (1) z §14.6 tím padá.
+- **Kalkulace**: `colors.plates` (podložky podle `towerGrid` na `pricing.bed_mm`), `colors.changes` = výměny jedné
+  podložky × podložky, příplatek „barevně“ za výměny jednou na podložku (dřív jednou na celou zakázku, tedy pro 13 ks
+  málo).
+- **Rychlost**: díly namalovaného projektu se už neztenčují (Orca je nedostane, 89 s u 12 želv) a `OrcaSlicer`
+  neztenčuje síť vedle projektu (dává jen rozměr). 12 želv: 153 s → 62 s.
+
+Přejímka na místní Orce 2.4 beta (`ThreeMfColorsTest::test_twelve_turtles_…`, S1 250 × 250, profily farmy):
+
+| | 12 ks | 13 ks |
+|---|---|---|
+| podložky | 1 (mřížka 4 × 3, věž pod ní) | 2: 12 + 1 |
+| výměny na podložce | 69 | 69 + 69 |
+| čas | 570 min (9 h 30 min) | 570 + 181 = 751 min |
+| filament | 90,1 + 51,8 g = 141,9 g | 153,7 g |
+| cena zakázky (místní ceník) | 690 Kč | 850 Kč |
+| kalkulace jednobarevně / barevně | 510 / 650 Kč (71 výměn, 1 podložka) | 550 / 830 Kč (142 výměn, 2 podložky) |
+| příprava zakázky | 62 s (díly 1. zakázky ~10 s, příprava 4,7 s, kopie 6,9 s, repaint 3,3 s, Orca 15,5 s) | 71 s (+ druhý řez 11,4 s) |
+
+Testy: `ThreeMfColorsTest` (4 kusy = 2 × 4 položky projektu v mřížce 2 × 2, 7 kusů na malé podložce = 6 + 1 se
+zbytkem, ruční stroj → `painted_one_plate` s důvodem, nabídka a přepnutí na jednobarevně, kalkulace výměny na
+podložku), Orca přejímka volitelně (`ORCA_LOCAL`, `TURTLE_3MF`).

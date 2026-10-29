@@ -24,6 +24,7 @@ import json
 import os
 import re
 import sys
+import uuid
 import zipfile
 import xml.etree.ElementTree as ET
 
@@ -225,10 +226,13 @@ def repaint(src, dst, p):
     (`map`: old extruder -> new, 1-based; a merged colour onto its body's), the object and part extruders too, the
     build placed by `scale` and `move` (mm) on our plate, and the project's own settings left out (its printer, its
     flush volumes, its layer heights and G-code): the farm's profiles decide. Orca then paints the layers itself.
+    `copies`: offsets [dx, dy, dz] (mm, after `move`) of every piece on the plate; each build item is written once per
+    offset, the same object placed again (Orca slices an object once and prints its instances).
     """
     mapping = {int(k): int(v) for k, v in (p.get("map") or {}).items()}
     scale = float(p.get("scale", 1.0) or 1.0)
     move = [float(v) for v in (p.get("move") or [0, 0, 0])]
+    copies = [[float(v) for v in (list(c) + [0, 0, 0])[:3]] for c in (p.get("copies") or [[0, 0, 0]])]
     unknown = mapping.get(0)
     keep_project = bool(p.get("keep_project"))
 
@@ -269,8 +273,15 @@ def repaint(src, dst, p):
                         tf = [v * scale for v in tf]
                         for k in range(3):
                             tf[9 + k] += move[k]
-                        val = " ".join("%.9g" % v for v in tf)
-                        return re.sub(r'\stransform="[^"]*"', "", tag).replace("<item", '<item transform="%s"' % val, 1)
+                        bare = re.sub(r'\stransform="[^"]*"', "", tag)
+                        tags = []
+                        for i, c in enumerate(copies):
+                            t = list(tf)
+                            for k in range(3):
+                                t[9 + k] += c[k]
+                            one = bare if i == 0 else re.sub(r'(p:UUID=")[^"]*(")', lambda u: u.group(1) + str(uuid.uuid4()) + u.group(2), bare)
+                            tags.append(one.replace("<item", '<item transform="%s"' % " ".join("%.9g" % v for v in t), 1))
+                        return "\n  ".join(tags)
                     text = re.sub(r"<item\b[^>]*>", item, text)
                 data = text.encode("utf-8")
             elif low == "metadata/project_settings.config":

@@ -2,6 +2,7 @@
 
 namespace App\Domain\Farm;
 
+use App\Domain\Files\PaintedColors;
 use App\Domain\YouTube\FarmVideos;
 use App\Engines\Shipping\ShippingCarrier;
 use App\Engines\Shipping\ShippingFailed;
@@ -95,6 +96,10 @@ final class OrderFlow
         // a design whose colours share a layer prints on one plate of a machine with a changer, one piece at a time, or not at all
         if ($order->modelFile?->onePlateRequired() && (! $offer['printer']->isAgentDriven() || (int) $order->copies !== 1)) {
             throw new FarmRefusal('one_plate_needed');
+        }
+        // a painted 3MF in its colours prints on one plate of a machine with a changer (any number of copies), never by parts
+        if ($order->isByParts() && PaintedColors::painted($order->modelFile) && ! $offer['printer']->isAgentDriven()) {
+            throw new FarmRefusal('painted_one_plate');
         }
 
         // the spools of the changes, one per change of the design (bottom to top): the chosen spool itself or another one

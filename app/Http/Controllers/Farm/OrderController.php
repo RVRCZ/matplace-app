@@ -41,6 +41,7 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Arr;
+use Illuminate\Support\Facades\Lang;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\Facades\Storage;
@@ -751,7 +752,9 @@ class OrderController extends Controller
         $job = $order->latestJob();
         $check = (array) $order->check;
         // a design that must print on one plate takes only machines that change spools (an operator feeds one at a time)
-        $required = (bool) $order->modelFile?->onePlateRequired();
+        // so does a painted 3MF in its colours (docs/AL.md §14.8)
+        $painted = $order->isByParts() && PaintedColors::painted($order->modelFile);
+        $required = (bool) $order->modelFile?->onePlateRequired() || $painted;
         $sliced = $order->status === FarmOrder::STATUS_SLICED;
         // the colours are on offer once the price is known – and before any slice for a big model, which is sliced for
         // the colour the customer confirms (awaiting_choices) and again when the choices change while it runs (docs/AL.md §11)
@@ -826,6 +829,8 @@ class OrderController extends Controller
             'filament_changes' => (int) ($order->slice_result['changes'] ?? 0),
             // the design's colours share a layer: one plate on a machine with a changer, one piece, or nothing (docs/AL.md §10.8)
             'one_plate_required' => $required,
+            // a painted 3MF that could not print in colour: the page offers it in one colour (by parts off, recalculated)
+            'offer_one_color' => $painted && $order->status === FarmOrder::STATUS_FAILED && ! $order->number && $order->error === 'painted_one_plate',
             // how many separately printed parts the design has: two or more, and the order page offers "print them apart"
             'part_count' => $choosing && $order->modelFile ? count(OrderService::designParts($order->modelFile)) : 0,
             'max_colors' => FarmOrder::MAX_COLORS,
@@ -995,6 +1000,11 @@ class OrderController extends Controller
     private function errorDataFor(FarmOrder $order, array $check): array
     {
         $data = $this->errorData($check, (string) $order->error);
+        if ($order->error === 'painted_one_plate') {
+            // why the colours could not go on one plate: the slicer's own words stay in the order's record
+            $why = 'farm.painted_reason.'.$order->error_detail;
+            $data['reason'] = __(Lang::has($why) ? $why : 'farm.painted_reason.other');
+        }
         if (isset($data['part'])) {
             $data['part'] = OrderService::partLabel($order->modelFile, (string) $data['part']);
         }

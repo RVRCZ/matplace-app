@@ -85,6 +85,8 @@
                 <p id="farm-number" class="mt-1 hidden text-xs text-slate-500"></p>
                 <p id="farm-printer" class="mt-1 hidden text-xs text-slate-500"></p>
                 <p id="farm-error" class="mt-2 hidden rounded-lg bg-red-50 px-3 py-2 text-sm text-red-800"></p>
+                {{-- a painted 3MF that cannot print in colour: the same model in one colour, recalculated (docs/AL.md §14.8) --}}
+                <button id="farm-one-color" type="button" class="btn-secondary mt-2 hidden w-full text-sm">{{ __('farm.order.one_color') }}</button>
                 {{-- money the bank has given back to the card for this order (CardRefunds) --}}
                 <p id="farm-refunded" class="mt-2 hidden rounded-lg bg-emerald-50 px-3 py-2 text-sm text-emerald-900" aria-live="polite"></p>
                 <ul id="farm-warnings" class="mt-2 space-y-1 text-sm text-amber-700"></ul>

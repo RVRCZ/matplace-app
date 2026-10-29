@@ -468,7 +468,8 @@ class FarmOrder extends Model
     public function plateSpool(?int $plate = null): ?FarmPrinterSlot
     {
         if ($this->isByParts() && $plate !== null) {
-            $id = (int) ($this->partPlates()[$plate - 1]['slot_id'] ?? 0);
+            // one plate of several filaments: every plate (of several copies) starts from the first part's spool
+            $id = (int) ($this->partPlates()[$this->onePlate() ? 0 : $plate - 1]['slot_id'] ?? 0);
             $slot = $id ? FarmPrinterSlot::with('color')->find($id) : null;
             if ($slot && (int) $slot->farm_printer_id === (int) $this->farm_printer_id) {
                 return $slot;
@@ -530,7 +531,8 @@ class FarmOrder extends Model
     /** Pieces on each plate, first to last: [4, 4, 1] for 9 pieces when four fit. */
     public function plateLayout(): array
     {
-        if ($this->isByParts() && $this->partPlates()) {
+        // by parts, a plate per part; the parts on one plate are plates of pieces like any other order (a painted 3MF's copies)
+        if ($this->isByParts() && $this->partPlates() && ! $this->onePlate()) {
             return array_map(fn ($p) => (int) ($p['copies'] ?? $this->copies), $this->partPlates());
         }
         if ($this->plates <= 1) {
