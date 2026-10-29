@@ -684,3 +684,73 @@ hotová hned. Cestu „vytvořená hotová“ pokrývá `takeFile` podle kódu, 
 (želva: obě na minimu ceníku), místo „Barevně od X · Jednobarevně X“ je jeden řádek `calc.colors.price_same`
 „Barevně i jednobarevně stejně: 120 Kč“ (cs/en/es; `turtle-same-price-390.webp`, ověřeno přepsáním odpovědi v toku
 `painted-same`). Zaokrouhlení samo je session 2 (`feature/painted-price`).
+
+## 20. Kalkulace drží barvy z nástroje a pravý sloupec roluje v okně s rámečkem (větev `feature/calc-colors-panel`, 29. 10. 2026)
+
+Zadání `docs/prompts/kalkulace-barvy-panel.md` (Roman u krabičky, TODO #54). Stránku zakázky jsem neměnil.
+
+### 20.1 Barvy z předchozí stránky
+
+Příčina: kalkulace barvila díly nástroje jen ve dvou případech. Buď tělesa podle `parts_bbox` (`partsByColour`), a to
+jen při dvou různých barvách, nebo deska s textem po výšce (`twoColorRegions`). Krabička s víčkem v jedné mědi tak zůstala
+ve výchozí modré. Medaile a podtácek jsou ploché, proto je viewer stínoval po výšce (tyrkysová).
+
+Teď v `showServerStl` (každé načtení serverového STL), když nezabral ani jeden z obou dřívějších případů:
+- **Jedna barva** (všechny `tool_params.part_colors` stejné): celý model v ní (`painted.ts toolPaint` → `paintPieces`
+  s jedním kusem). Funguje i pro soubory vytvořené dřív, třeba Romanovu krabičku.
+- **Uložené kusy** (`tool_params.pieces` s rozsahy trojúhelníků přes tento soubor: obraz z filamentu, upravený model):
+  každý kus v barvě svého dílu, když rozsahy pokryjí soubor přesně.
+- **Více barev v jednom tělese** (medaile s motivem zapuštěným v ploše, podtácek s lemem). Uložené STL je jedno sjednocené
+  těleso a jeho díly v něm nejdou rozlišit; sestavení s kusy má jiný počet trojúhelníků (medaile 229 068 proti 226 616).
+  Proto nový `GET /api/tools/param/{file}/pieces` (`ToolsApiController::paramPieces`, middleware `file`, throttle 30/min)
+  vrátí stejný tvar sestavený jako na stránce nástroje (`build(..., pieces: true)`) a hlavičku
+  `X-Pieces: [{name, tris}]`. Uloží se jednou vedle souboru (`pieces.stl`, `pieces.json`), další dotaz jde z disku.
+  `file.tool.pieces_url` je jen u parametrických návrhů s ≥ 2 různými barvami dílů a bez uložených kusů. Kalkulace mezitím
+  ukáže celý model v barvě těla, potom načte kusy a vymění model se stejnou kamerou (`keepView`). Nekryjí-li rozsahy STL,
+  zůstane tělo (`data-painted="mismatch"`). Načtení zkusí 3× s odstupem. Čísla (velikost, cena) zůstávají z uloženého modelu.
+- `#viewer[data-painted]` platí i tady: `colors` (obarveno), `loading`, `mismatch`, `failed`. STL bez nástroje marker nemá.
+- `viewer.ts afterGeometry` maže barvy kusů předchozího modelu (`pieceColors` zůstávaly a mohly obarvit další soubor).
+
+Ověřeno (headless Chrome, `scripts/review_round2.mjs --flows=colors-box,colors-medallion,colors-coaster,colors-stl`, celá
+cesta stránka nástroje → „Spočítat cenu“ → `/c/<kód>`, 1366, 1280 a 390 px; místní farma bez měděné cívky, proto řádek
+„U nás vytiskneme“ ukazuje bílou):
+
+| model | `data-painted` | náhled |
+|---|---|---|
+| krabička s víčkem (předvolba lidded, měď 2×) | colors | obě části měděné (`box-calc-1280/390.webp`) |
+| medaile 1. místo (zlatá + červená, zapuštěná) | colors | zlatá, zespodu červená „1“ a lem (`medal-calc-below-1280.webp`, nový krok harnessu `drag`) |
+| podtácek golf (béžová, černý lem a golfista) | colors | béžový kotouč, černý lem i golfista (`coaster-calc-1280/390.webp`) |
+| STL z disku (kostka) | – | výchozí modrá jako dřív (`stl-calc-1280.webp`) |
+
+Snímky jsou v `docs/img/tool-colors/`.
+
+### 20.2 Pravý sloupec jako okno s rámečkem
+
+- Od lg: mřížka `#calc-grid.stick-fit` vyplní okno pod hlavičkou (`--fit-top` měří `fitWindow` při prvním `showResult`).
+  Viewer `#calc-stage` vyplní levou stranu (`lg:h-full`, plátno `lg:h-full` místo `70vh`). Pravý sloupec `#calc-panel` je
+  `stick-scroll` s rámečkem `lg:rounded-2xl lg:border lg:border-slate-200`. Karta ceny s „Objednat tisk“ drží nahoře okna
+  (`lg:sticky lg:top-0`), volby rolují pod ní. Telefon beze změny (`max-lg:contents`, lišta `action-bar`).
+- Panel stránky nástroje `#tool-panel` má stejný rámeček (`box-tool-1280.webp`).
+- Skok po „Přepočítat“: čísla, která přijdou nad tlačítko (karta ceny −16 px, seznam profilů +48 px), posunula tlačítko
+  v panelu o 32 px. Chromovo vlastní ukotvení (`overflow-anchor: auto` na panelu) si vzalo za kotvu sticky kartu
+  ceny a posun zhoršilo na 48 px, proto zůstává vypnuté. Místo něj `sticky.ts holdOnResize(box, skip)`: zapamatuje si
+  ovládací prvek, na který se v panelu naposledy klepnulo nebo na který přešel fokus (mimo kartu ceny), a když obsah nad
+  ním změní výšku (ResizeObserver na dětech panelu), posune panel o tolik, aby prvek zůstal na místě.
+- Měření (`--flows=jumps-panel`, nový krok `press` je skutečný klik myši přes CDP; `click` volá jen `el.click()` bez
+  pointer událostí; počty kusů se píšou, když je pole vidět):
+
+| šířka | okno | viewer | karta ceny | Přepočítat (před → po výpočtu) |
+|---|---|---|---|---|
+| 1366 × 768 | 0 → 0 | 66 → 66 | 66 → 66 | 691 → 691 |
+| 1280 × 800 | 0 → 0 | 66 → 66 | 66 → 66 | 723 → 723 |
+| 390 (`jumps-calc`) | stránka | – | – | 366 → 366 |
+
+  Stránka nástroje (`jumps-tool`, 1366): okno 0 → 0, náhled 65 → 65 při přepínání kroků, jako v §18.2.
+- Snímky `panel-scrolled-1280.webp` (panel dole, karta ceny a viewer stojí) a `box-calc-390.webp`.
+
+### 20.3 Testy
+
+`CalcToolColorsTest` (nový: medaile dá kusy jednou a pak je bere z disku, rozsahy pokryjí vrácené STL; měděná krabička
+`pieces_url` nemá, dvoubarevná ano; nahraný soubor 404), `StickyLayoutTest` (mřížka, panel s rámečkem, karta ceny první
+v panelu, viewer na výšku mřížky, rámeček panelu nástroje), `PaintedColorsPageTest`, `CalculationFlowTest`, `ToolPageTest`
+a celá sada; pint, tsc, build.

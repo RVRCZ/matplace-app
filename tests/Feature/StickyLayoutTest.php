@@ -8,7 +8,7 @@ use Tests\TestCase;
 /**
  * The layouts without jumps (Roman, 28 Oct 2026, docs/prompts/rozlozeni-bez-skoku.md, docs/AN.md §18): on the tool
  * page the options scroll inside their column and the preview with the way on stays; on the calculation the price card
- * with "print it with us" stays at the top of its column; on a phone the main action sits in a bar fixed to the bottom
+ * with "print it with us" stays at the top of its column, which scrolls inside a faint frame (docs/AN.md §20); on a phone the main action sits in a bar fixed to the bottom
  * that mirrors the page's own button. The scrolling itself is checked in headless Chrome (scripts/review_round2.mjs
  * flows jumps-tool and jumps-calc), here the markup the scripts hang on.
  */
@@ -23,6 +23,7 @@ final class StickyLayoutTest extends TestCase
         $this->assertStringContainsString('stick-fit', $m[1], 'the grid fills the window under the header');
         $this->assertSame(1, preg_match('/<div id="tool-panel"[^>]*class="([^"]*)"/', $html, $m));
         $this->assertStringContainsString('stick-scroll', $m[1], 'the options scroll inside their column');
+        $this->assertStringContainsString('lg:rounded-2xl lg:border lg:border-slate-200', $m[1], 'in a faint frame, so it shows that it scrolls (docs/AN.md §20)');
         $this->assertSame(1, preg_match('/<div id="tool-stage"[^>]*class="([^"]*)"/', $html, $m));
         $this->assertStringNotContainsString('lg:sticky', $m[1], 'the stage fills the grid\'s height instead of sticking past it');
         $this->assertStringContainsString('lg:h-full', $m[1]);
@@ -43,14 +44,22 @@ final class StickyLayoutTest extends TestCase
         config(['farm.enabled' => true, 'farm.public' => true, 'features.marketplace' => false]);   // the farm alone, as on the site
         $html = (string) $this->get('/', ['Accept-Language' => 'cs'])->assertOk()->getContent();
         $this->assertSame(1, preg_match('/<div id="price-card" class="([^"]*)"/', $html, $m));
-        $this->assertStringContainsString('stick-top', $m[1]);
+        $this->assertStringContainsString('lg:sticky lg:top-0', $m[1], 'at the top of the scrolling column');
         $this->assertStringContainsString('max-lg:order-first', $m[1], 'on a phone the price still comes first');
+        // from lg the grid fills the window, the viewer stands and the column with the price and the settings scrolls in a faint frame (docs/AN.md §20)
+        $this->assertSame(1, preg_match('/<div id="calc-grid" class="([^"]*)"/', $html, $m));
+        $this->assertStringContainsString('stick-fit', $m[1]);
+        $this->assertSame(1, preg_match('/<div id="calc-panel" class="([^"]*)"/', $html, $m));
+        foreach (['stick-scroll', 'max-lg:contents', 'lg:rounded-2xl', 'lg:border', 'lg:border-slate-200'] as $piece) {
+            $this->assertStringContainsString($piece, $m[1], $piece);
+        }
+        $this->assertLessThan(strpos($html, 'id="price-card"'), strpos($html, 'id="calc-panel"'), 'the price card is the first thing in the column');
         // the way on moved into the price card: before the size and the materials, which scroll under it
         $card = strpos($html, 'id="price-card"');
         $this->assertLessThan(strpos($html, 'id="size-x"'), strpos($html, 'id="cta-farm"'));
         $this->assertGreaterThan($card, strpos($html, 'id="cta-farm"'));
         $this->assertLessThan(strpos($html, 'id="materials"'), strpos($html, 'id="size-x"'), 'the size block still comes before the material');
-        $this->assertSame(1, preg_match('/<div class="stick-top[^"]*"[^>]*>\s*<div class="relative">\s*<canvas id="viewer"/s', $html), 'the viewer stays on the screen');
+        $this->assertSame(1, preg_match('/<div id="calc-stage" class="[^"]*lg:h-full[^"]*">\s*<div class="relative lg:min-h-0 lg:flex-1">\s*<canvas id="viewer" class="[^"]*lg:h-full/s', $html), 'the viewer fills its side of the grid and stays on the screen');
         // the bar for a phone mirrors the farm's button and the orientation price; hidden until a result shows
         $this->assertSame(1, preg_match('/<div[^>]*data-action-bar[^>]*>/', $html, $bar));
         foreach (['id="calc-bar"', 'lg:hidden', 'hidden="hidden"', 'data-for="cta-farm"', 'data-price-from="price-orient-amount"', 'data-sub-from="price-main"'] as $piece) {

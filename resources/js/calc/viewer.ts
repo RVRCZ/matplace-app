@@ -289,6 +289,9 @@ export class Viewer {
         if (this.highlight) { this.highlight.geometry.dispose(); this.highlight = null; }
         this.selected = -1;
         this.pieces = [];
+        // the colours belonged to the pieces of the model before (a copper box, then a plain upload)
+        this.pieceColors.clear();
+        this.pieceLooks.clear();
         this.basePos = null;
         this.baseCol = null;
         this.baseMaterial = this.mesh ? (this.mesh.material as Material) : null;

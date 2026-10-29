@@ -9,6 +9,7 @@ use App\Domain\Tools\MapBuilder;
 use App\Domain\Tools\ModelCheck;
 use App\Domain\Tools\ModelEditor;
 use App\Domain\Tools\MoldGenerator;
+use App\Domain\Tools\ParametricGenerator;
 use App\Engines\Converter\ConverterChain;
 use App\Http\Controllers\Controller;
 use App\Jobs\ProcessModelFile;
@@ -128,7 +129,12 @@ class UploadController extends Controller
             return null;
         }
 
-        return ['kind' => $f->origin_ref, 'params' => $f->tool_params, 'url' => route($route, ['from' => $f->uuid])];
+        // parts in different colours that lie in one body (a medal's motif flush in it, a coaster's rim): the calculation's
+        // preview asks for the pieces once and paints each in its part's colour (a design with stored pieces has them already)
+        $hexes = array_unique(array_filter(array_map(fn ($c) => is_array($c) && preg_match('/^#[0-9a-f]{6}$/i', (string) ($c['hex'] ?? '')) ? strtolower($c['hex']) : null, (array) ($f->tool_params['part_colors'] ?? []))));
+        $pieces = count($hexes) >= 2 && isset(ParametricGenerator::FIELDS[$f->origin_ref]) && empty($f->tool_params['pieces']) ? route('api.tools.param.pieces', $f->uuid) : null;
+
+        return ['kind' => $f->origin_ref, 'params' => $f->tool_params, 'url' => route($route, ['from' => $f->uuid]), 'pieces_url' => $pieces];
     }
 
     public static function describe(ModelFile $f): array

@@ -12,6 +12,8 @@ use App\Models\ModelFile;
 use App\Support\PreviewMeta;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\File;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\Rule;
 use Symfony\Component\HttpFoundation\BinaryFileResponse;
 
@@ -148,6 +150,28 @@ class ToolsApiController extends Controller
         }
 
         return response()->download($built['path'], pathinfo($modelFile->original_name, PATHINFO_FILENAME).'-'.$part.'.stl', ['Content-Type' => 'model/stl'])->deleteFileAfterSend(true);
+    }
+
+    /**
+     * GET /api/tools/param/{modelFile}/pieces → the design's model with its triangles grouped by piece, and X-Pieces:
+     * [{name, tris: [from, to)}]. The stored model is one body (a medal's motif lies flush in it), so the calculation
+     * cannot tell its parts apart; this is the same shape built once more as the tool page shows it, kept beside the file.
+     */
+    public function paramPieces(ModelFile $modelFile, ParametricGenerator $tools): BinaryFileResponse
+    {
+        abort_unless($modelFile->origin === 'tool' && isset(ParametricGenerator::FIELDS[$modelFile->origin_ref]) && is_array($modelFile->tool_params), 404);
+        $disk = Storage::disk(ModelFile::DISK);
+        $stl = $modelFile->dir().'/pieces.stl';
+        $list = $modelFile->dir().'/pieces.json';
+        if (! $disk->exists($stl) || ! $disk->exists($list)) {
+            $built = $tools->build($modelFile->origin_ref, $modelFile->tool_params, 'all', 'print', true);
+            $pieces = array_map(fn ($p) => ['name' => (string) $p['name'], 'tris' => array_map('intval', (array) $p['tris'])], (array) ($built['meta']['parts'] ?? []));
+            File::ensureDirectoryExists(dirname($disk->path($stl)));
+            File::move($built['path'], $disk->path($stl));
+            $disk->put($list, (string) json_encode($pieces));
+        }
+
+        return response()->file($disk->path($stl), ['Content-Type' => 'model/stl', 'X-Pieces' => (string) $disk->get($list), 'Cache-Control' => 'private, max-age=86400']);
     }
 
     /** POST /api/tools/relief (multipart: photo + options) → lithophane, relief plaque or lamp; the photo is not stored */

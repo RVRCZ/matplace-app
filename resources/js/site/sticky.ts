@@ -108,6 +108,35 @@ export function fitWindow(el: HTMLElement | null): void {
     window.addEventListener('resize', set);
 }
 
+/**
+ * A scrolling box (from lg) whose content changes height above the control just used: the numbers that arrive after
+ * "Přepočítat" grew the calculation's column by 32 px and moved the button under the cursor (docs/AN.md §20). The box
+ * keeps that control where it was on the screen. Chrome's own anchoring picked the sticky card at the box's top and
+ * made it worse (48 px), so it stays off (.stick-scroll) and this does the one thing needed. `skip`: a part of the box
+ * that stays put anyway (a sticky card), whose controls are no anchor.
+ */
+export function holdOnResize(box: HTMLElement | null, skip: string | null = null): void {
+    if (!box) return;
+    let anchor: HTMLElement | null = null;
+    let top = 0;
+    const scrolls = () => box.scrollHeight > box.clientHeight && getComputedStyle(box).overflowY !== 'visible';
+    // the control under the pointer, or reached by the keyboard
+    const take = (e: Event) => {
+        const el = (e.target as HTMLElement | null)?.closest?.<HTMLElement>('button, input, select, textarea, a, summary, label') ?? null;
+        anchor = el && !(skip && el.closest(skip)) ? el : null;
+        if (anchor) top = anchor.getBoundingClientRect().top;
+    };
+    box.addEventListener('pointerdown', take, true);
+    box.addEventListener('focusin', take);
+    box.addEventListener('scroll', () => { if (anchor) top = anchor.getBoundingClientRect().top; }, { passive: true });
+    const watch = new ResizeObserver(() => {
+        if (!anchor?.isConnected || !scrolls()) return;
+        const moved = anchor.getBoundingClientRect().top - top;
+        if (Math.abs(moved) >= 1) box.scrollTop += moved;
+    });
+    [...box.children].forEach((child) => watch.observe(child));
+}
+
 export function mountActionBars(): void {
     document.querySelectorAll<HTMLElement>('[data-action-bar]').forEach(mountActionBar);
 }
