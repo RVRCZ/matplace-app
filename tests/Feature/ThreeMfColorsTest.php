@@ -163,11 +163,16 @@ final class ThreeMfColorsTest extends TestCase
     }
 
     /** @return array{0: FarmColor, 1: FarmColor, 2: FarmColor} green, red and yellow spools of the S1 run by an agent (it changes spools) */
-    private function spools(): array
+    private function spools(bool $agent = true): array
     {
-        [$agent] = FarmAgent::issue('test agent');
         $s1 = FarmPrinter::where('key', 'kobra-s1-01')->firstOrFail();
-        $s1->update(['mode' => FarmPrinter::MODE_AGENT, 'farm_agent_id' => $agent->id, 'last_seen_at' => now(), 'state' => FarmPrinter::STATE_IDLE]);
+        if ($agent) {
+            [$runner] = FarmAgent::issue('test agent');
+            $s1->update(['mode' => FarmPrinter::MODE_AGENT, 'farm_agent_id' => $runner->id, 'last_seen_at' => now(), 'state' => FarmPrinter::STATE_IDLE]);
+        } else {
+            $s1->update(['mode' => FarmPrinter::MODE_MANUAL, 'farm_agent_id' => null]);
+            // the other machines of the seed must not offer themselves either: only the manual S1 holds the colours
+        }
         $loaded = $s1->slots()->whereNotNull('farm_color_id')->firstOrFail();
         $pla = FarmColor::findOrFail($loaded->farm_color_id)->farm_material_id;
         $free = $s1->slots()->whereNull('farm_color_id')->orderBy('slot')->get();
@@ -215,6 +220,102 @@ final class ThreeMfColorsTest extends TestCase
         $this->assertFalse($one->isByParts());
     }
 
+    public function test_copies_of_a_painted_3mf_print_on_one_plate_as_the_painted_project_placed_again(): void
+    {
+        [$green, $red, $yellow] = $this->spools();
+        $f = $this->upload();
+        $r = $this->actingAs($this->user)->postJson('/farm/orders', ['file' => $f['uuid'], 'copies' => 4])->assertCreated();
+        $order = FarmOrder::where('token', basename($r->json('url')))->firstOrFail();
+        $this->assertSame(FarmOrder::STATUS_SLICED, $order->status, (string) $order->error.' '.json_encode($order->timings));
+        $this->assertTrue($order->onePlate(), json_encode($order->timings));
+        $this->assertSame('painted', $order->timings['one_plate_project'] ?? null);
+        $this->assertSame([1, 4, null], [$order->plates, $order->plate_copies, $order->rest_copies]);
+        $this->assertSame([4], $order->plateLayout());
+        $this->assertSame([2, 2], $order->slice_params['copies_grid']['grid']);
+        // the project holds the painted objects (the fixture's two cubes) four times each, every copy where the grid has it
+        $model = $this->zipEntry(Storage::disk('farm')->path($order->dir().'/plate.3mf'), '3D/3dmodel.model');
+        $this->assertSame(2 * 4, preg_match_all('/<item\b/', $model));
+        preg_match_all('/<item transform="([^"]+)"/', $model, $m);
+        $xs = array_map(fn ($t) => round((float) explode(' ', $t)[9], 1), $m[1]);
+        $this->assertEqualsWithDelta($xs[0] + 45 + 5, $xs[1], 0.6, 'the second copy one piece and a gap to the right: '.json_encode($xs));
+        // the preview's parts hold the four copies, and the order's spools are the parts' as for one piece
+        $this->assertSame([$green->id, $red->id, $yellow->id], array_map('intval', array_column($order->partPlates(), 'color_id')));
+        $this->assertSame([4, 4, 4], array_column($order->partPlates(), 'copies'));
+        $this->assertGreaterThanOrEqual(4, $order->check['max_copies']);
+    }
+
+    public function test_more_copies_than_a_plate_holds_take_more_plates_with_the_rest_on_its_own(): void
+    {
+        $this->spools();
+        // a small plate: two by three pieces leave the tower its band (PlateLayout::towerGrid)
+        FarmPrinter::where('key', 'kobra-s1-01')->update(['bed_x' => 120, 'bed_y' => 120]);
+        $f = $this->upload();
+        $r = $this->actingAs($this->user)->postJson('/farm/orders', ['file' => $f['uuid'], 'copies' => 7])->assertCreated();
+        $order = FarmOrder::where('token', basename($r->json('url')))->firstOrFail();
+        $this->assertSame(FarmOrder::STATUS_SLICED, $order->status, (string) $order->error.' '.json_encode($order->timings));
+        $this->assertTrue($order->onePlate());
+        $this->assertSame([2, 6, 1], [$order->plates, $order->plate_copies, $order->rest_copies]);
+        $this->assertSame([6, 1], $order->plateLayout());
+        $this->assertNotNull($order->rest_gcode_path);
+        $this->assertFileExists(Storage::disk('farm')->path($order->rest_gcode_path));
+        $this->assertSame(2, preg_match_all('/<item\b/', $this->zipEntry(Storage::disk('farm')->path($order->dir().'/plate-rest.3mf'), '3D/3dmodel.model')));
+        // the second plate prints its own G-code from the first part's spool, as the first one does
+        $this->assertSame($order->absoluteGcodePath(2), Storage::disk('farm')->path($order->rest_gcode_path));
+        $this->assertSame($order->plateSpool(1)?->id, $order->plateSpool(2)?->id);
+        $this->assertGreaterThan((float) $order->slice_result['rest']['grams'], (float) $order->est_grams);
+    }
+
+    public function test_a_painted_3mf_that_cannot_print_in_colour_says_why_and_offers_one_colour(): void
+    {
+        // the colours sit in a machine without a changer: by parts the inlays would be refused, so the order stops
+        $this->spools(agent: false);
+        FarmPrinter::where('key', '!=', 'kobra-s1-01')->update(['enabled' => false]);
+        $f = $this->upload();
+        $r = $this->actingAs($this->user)->postJson('/farm/orders', ['file' => $f['uuid'], 'copies' => 3])->assertCreated();
+        $order = FarmOrder::where('token', basename($r->json('url')))->firstOrFail();
+        $this->assertTrue($order->isByParts());
+        $this->assertSame(FarmOrder::STATUS_FAILED, $order->status);
+        $this->assertSame('painted_one_plate', $order->error);
+        $this->assertSame('manual', $order->error_detail);
+        $state = $this->actingAs($this->user)->getJson(route('farm.orders.status', $order))->assertOk()->json();
+        $this->assertTrue($state['offer_one_color']);
+        $this->assertStringContainsString(__('farm.painted_reason.manual'), (string) $state['error_text']);
+
+        // "Print in one colour": the same order, by parts off, recalculated – one piece of one colour as before
+        $this->actingAs($this->user)->postJson(route('farm.orders.reslice', $order), ['quality' => $order->quality, 'strength' => $order->strength, 'by_parts' => false])->assertOk();
+        $order->refresh();
+        $this->assertFalse($order->isByParts());
+        $this->assertSame(FarmOrder::STATUS_SLICED, $order->status, (string) $order->error);
+        $this->assertFalse($this->actingAs($this->user)->getJson(route('farm.orders.status', $order))->json('offer_one_color'));
+    }
+
+    public function test_the_calculator_counts_the_colour_changes_once_per_plate(): void
+    {
+        $f = $this->upload();
+        $price = function (int $quantity) use ($f): array {
+            $c = $this->actingAs($this->user)->postJson('/api/calculations', ['file' => $f['uuid'], 'material' => 'PLA', 'quality' => 'standard', 'quantity' => $quantity])->json('calculation');
+
+            return $this->getJson('/api/calculations/'.$c['token'])->assertOk()->json('calculation.colors');
+        };
+        $one = $price(1);
+        $many = $price(40);
+        $this->assertSame(1, $one['plates']);
+        $this->assertSame(1, $many['plates'], '40 pieces of 45 × 20 mm fit one plate with the tower');
+        $this->assertSame($one['changes'], $many['changes'], 'the changes go by layers, not by pieces');
+        $this->assertSame(2, $price(60)['plates']);
+        $this->assertSame(2 * $one['changes'], $price(60)['changes']);
+    }
+
+    private function zipEntry(string $zip, string $name): string
+    {
+        $z = new \ZipArchive;
+        $this->assertTrue($z->open($zip) === true, $zip);
+        $data = (string) $z->getFromName($name);
+        $z->close();
+
+        return $data;
+    }
+
     /**
      * The acceptance of docs/prompts/import-3mf-barvy.md on this machine, with the real OrcaSlicer 2.4 (ORCA_LOCAL = its
      * orca-slicer.exe, TURTLE_3MF = Roman's turtle): the order of the turtle prints its green and yellow on one plate from
@@ -259,6 +360,52 @@ final class ThreeMfColorsTest extends TestCase
                 'changes' => $order->slice_result['changes'] ?? null, 'minutes' => $order->est_minutes, 'grams_total' => $order->est_grams, 'price' => $order->price_total,
                 'head' => $head, 'timings' => $order->timings], JSON_PRETTY_PRINT));
             copy(Storage::disk('farm')->path($order->dir().'/plate.3mf'), $dir.'/turtle-plate.3mf');
+        }
+    }
+
+    /**
+     * The acceptance of the copies (docs/AL.md §14.8) with the real OrcaSlicer 2.4: 12 turtles on one plate of the S1
+     * (a 4 × 3 grid above the tower), two filaments, the changes of one plate; 13 turtles on two plates. Skipped
+     * without ORCA_LOCAL and TURTLE_3MF; FARM_VIDEO_SAMPLES gets the numbers.
+     */
+    public function test_twelve_turtles_slice_on_one_plate_and_thirteen_on_two_with_the_real_orca(): void
+    {
+        $exe = (string) env('ORCA_LOCAL', '');
+        $turtle = (string) env('TURTLE_3MF', '');
+        if ($exe === '' || ! is_file($exe) || $turtle === '' || ! is_file($turtle)) {
+            $this->markTestSkipped('ORCA_LOCAL and TURTLE_3MF not set: the real slice runs on Roman\'s PC only');
+        }
+        config(['engines.slicer' => 'orca', 'engines.orca.bin' => $exe, 'engines.orca.xvfb' => false, 'engines.orca.cache' => false,
+            'engines.orca.work_dir' => sys_get_temp_dir().'/mp_orca_'.uniqid(), 'engines.orca.timeout' => 900]);
+        $this->app->forgetInstance(Slicer::class);
+        [$green, $red, $yellow] = $this->spools();
+        $path = sys_get_temp_dir().'/mp_turtle_'.uniqid().'.3mf';
+        copy($turtle, $path);
+        $f = $this->actingAs($this->user)->postJson('/api/uploads', ['file' => new UploadedFile($path, 'turtlescutieone2.3mf', null, null, true)])->assertCreated()->json('file');
+        $numbers = [];
+        foreach ([12, 13] as $copies) {
+            $t = microtime(true);
+            $r = $this->actingAs($this->user)->postJson('/farm/orders', ['file' => $f['uuid'], 'copies' => $copies])->assertCreated();
+            $order = FarmOrder::where('token', basename($r->json('url')))->firstOrFail();
+            $prepare = round(microtime(true) - $t, 1);
+            $this->assertSame(FarmOrder::STATUS_SLICED, $order->status, (string) $order->error.' '.$order->error_detail.' '.json_encode($order->timings));
+            $this->assertTrue($order->onePlate(), json_encode($order->timings));
+            $this->assertSame('painted', $order->timings['one_plate_project'] ?? null);
+            $this->assertCount(2, (array) $order->slice_result['filament_grams']);
+            $this->assertSame($copies === 12 ? [12] : [12, 1], $order->plateLayout());
+            $this->assertSame([4, 3], $order->slice_params['copies_grid']['grid']);
+            $c = $this->actingAs($this->user)->postJson('/api/calculations', ['file' => $f['uuid'], 'material' => 'PLA', 'quality' => 'standard', 'quantity' => $copies])->json('calculation');
+            $calc = $this->getJson('/api/calculations/'.$c['token'])->json('calculation');
+            $numbers[$copies] = ['order_s' => $prepare, 'plates' => $order->plates, 'layout' => $order->plateLayout(), 'grid' => $order->slice_params['copies_grid'],
+                'changes' => $order->slice_result['changes'] ?? null, 'rest_changes' => $order->slice_result['rest']['changes'] ?? null,
+                'plate_minutes' => $order->slice_result['minutes'] ?? null, 'rest_minutes' => $order->slice_result['rest']['minutes'] ?? null,
+                'minutes' => $order->est_minutes, 'grams' => $order->est_grams, 'filament_grams' => $order->slice_result['filament_grams'], 'price' => $order->price_total,
+                'calc_colors' => $calc['colors'], 'calc_status' => $calc['status'], 'timings' => $order->timings];
+        }
+        $this->assertSame(2, $numbers[13]['plates']);
+        $dir = (string) env('FARM_VIDEO_SAMPLES', '');
+        if ($dir !== '' && is_dir($dir)) {
+            file_put_contents($dir.'/turtle-copies.json', json_encode($numbers, JSON_PRETTY_PRINT));
         }
     }
 }

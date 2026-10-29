@@ -45,7 +45,7 @@ interface FarmState {
     big?: boolean; choosing?: boolean; slice_minutes?: number | null; slice_run?: number; estimate?: EstimateCfg | null;
     quality: string; strength: string; copies: number; max_copies: number | null; plates: number; plates_done: number; plate_layout: number[]; plate_now: number | null;
     scale: number; raw_bbox: { x: number; y: number; z: number } | null; slot: number | null; printer: { name: string; bed: string } | null;
-    unit: string; unit_guess: { unit: string; confident: boolean } | null; second_slot?: number | null; changes?: Change[]; max_colors?: number; by_parts?: boolean; parts?: Part[]; part_count?: number; one_plate?: boolean; filament_changes?: number; one_plate_required?: boolean;
+    unit: string; unit_guess: { unit: string; confident: boolean } | null; second_slot?: number | null; changes?: Change[]; max_colors?: number; by_parts?: boolean; parts?: Part[]; part_count?: number; one_plate?: boolean; filament_changes?: number; one_plate_required?: boolean; offer_one_color?: boolean;
     settings?: Record<string, number> | null; admin_overrides?: Record<string, string> | null;
     dims: { x: number; y: number; z: number } | null; warnings: string[]; orientation_changed: boolean; supports: boolean; supports_mode: string; color_change_mm: number | null; second_color: { name: string; hex: string } | null;
     minutes: number | null; grams: number | null; meters: number | null; price: Price | null; total: number | null; currency: string;
@@ -731,6 +731,7 @@ export function bootFarmOrder(): void {
         const num = $('farm-number')!; num.textContent = s.number ? [s.number, (s.spools ?? []).map(spoolLine).join(', ') || s.color?.name || ''].filter(Boolean).join(' · ') : ''; show(num, !!s.number);
         const pr = $('farm-printer'); if (pr) { pr.textContent = s.printer ? tr('farm.order.printer', { name: s.printer.name, bed: s.printer.bed }) : ''; show(pr, !!s.printer); }
         const err = $('farm-error')!; err.textContent = s.error_text ?? ''; show(err, s.status === 'failed' && !!s.error_text);
+        show($('farm-one-color'), !!s.offer_one_color);
         const refunded = $('farm-refunded'); if (refunded) { refunded.textContent = s.refunded ? tr('farm.order.refunded', { amount: money(s.refunded) }) : ''; show(refunded, !!s.refunded); }
         $('farm-warnings')!.innerHTML = s.warnings.map((w) => `<li class="flex items-start gap-1.5">${icon('triangle-alert', 'mt-0.5 h-4 w-4')}<span>${esc(w)}</span></li>`).join('');
         $('farm-dims')!.textContent = s.dims ? `${s.dims.x.toFixed(1)} × ${s.dims.y.toFixed(1)} × ${s.dims.z.toFixed(1)} mm` : '';
@@ -760,7 +761,7 @@ export function bootFarmOrder(): void {
             const copiesLine = $('farm-copies-line');
             if (copiesLine) {
                 // "9 pieces on 2 plates (5 + 4), printed one after another" when one plate is not enough
-                copiesLine.textContent = s.plates > 1 && !s.by_parts ? tr('farm.copies.plates', { n: s.copies, p: s.plates, layout: (s.plate_layout ?? []).join(' + ') }) : s.copies > 1 ? tr('farm.copies.note', { n: s.copies }) : '';
+                copiesLine.textContent = s.plates > 1 && (!s.by_parts || s.one_plate) ? tr('farm.copies.plates', { n: s.copies, p: s.plates, layout: (s.plate_layout ?? []).join(' + ') }) : s.copies > 1 ? tr('farm.copies.note', { n: s.copies }) : '';
                 show(copiesLine, s.copies > 1);
             }
             $('farm-time')!.textContent = duration(s.minutes!);
@@ -1012,6 +1013,8 @@ export function bootFarmOrder(): void {
     }));
     $('farm-unit')?.addEventListener('change', (e) => { wanted.unit = (e.target as HTMLSelectElement).value; render(); });
     $('farm-copies')?.addEventListener('input', (e) => { const v = Number((e.target as HTMLInputElement).value); wanted.copies = Math.max(1, Math.min(64, Math.round(v) || 1)); render(); });
+    // a painted 3MF that cannot print in colour: the same order in one colour, recalculated like any other change
+    $('farm-one-color')?.addEventListener('click', () => { wanted.by_parts = false; ($('farm-presets') as HTMLFormElement | null)?.requestSubmit(); });
     $('farm-presets')?.addEventListener('submit', async (e) => {
         e.preventDefault();
         // a slice of a small model is running: the choices made now are taken when it is done. A big model's slice is

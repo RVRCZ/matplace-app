@@ -194,7 +194,21 @@ return [
         'print_cancelled' => 'Tisk byl zastaven. Kredit jsme vám vrátili.',
         'operator' => 'Zakázku zastavila obsluha. Kredit jsme vám vrátili.',
         'one_plate_needed' => 'Tento návrh má dvě barvy v jedné vrstvě, proto se tiskne jen vcelku na tiskárně s měničem cívek. Zvolte cívky z jedné tiskárny s měničem (ACE nebo Rack) a jeden kus, nebo jednobarevné provedení. Kredit jsme vám vrátili.',
+        'painted_one_plate' => 'Barevně se tento model tiskne jen celý na jedné podložce tiskárny s měničem cívek a tady to nejde: :reason. Můžete ho vytisknout jednobarevně.',
         'parts_machine' => 'Cívky dílů nejsou v tiskárně, pro kterou se zakázka počítala. Vyberte je prosím na stránce zakázky znovu.',
+    ],
+
+    // why a painted 3MF could not print in colour (PrepareFarmOrder::prepareOnePlate's skip reasons, docs/AL.md §14.8)
+    'painted_reason' => [
+        'manual' => 'vybraná tiskárna nemá měnič cívek',
+        'two_machines' => 'barvy jsou z cívek dvou různých tiskáren',
+        'filaments' => 'barev je víc, než má tiskárna cívek',
+        'one_spool' => 'obě barvy jsou ze stejné cívky',
+        'fit' => 'kusy se i s čisticí věží nevejdou na podložku',
+        'slicer' => 'slicer barevný tisk nepřipravil',
+        'no_gcode' => 'slicer barevný tisk nepřipravil',
+        'project' => 'barvy souboru se nepodařilo převést na cívky',
+        'other' => 'barevný tisk se nepodařilo připravit',
     ],
 
     'warn' => [
@@ -225,6 +239,7 @@ return [
         'color_gone' => 'Tahle barva už v tiskárně není. Vyberte prosím jinou.',
         'one_machine' => 'Cívky pro díly musí být z jedné tiskárny – té, kde je hlavní barva. Vyberte je prosím znovu.',
         'one_plate_needed' => 'Tento návrh má dvě barvy v jedné vrstvě: tiskne se jen vcelku na tiskárně s měničem cívek a po jednom kuse. Zvolte cívky takové tiskárny a 1 ks, nebo jednobarevné provedení.',
+        'painted_one_plate' => 'Namalovaný model se barevně tiskne jen na tiskárně s měničem cívek. Zvolte barvy z takové tiskárny, nebo jednobarevné provedení.',
         'too_many_colors' => 'Jeden tisk může mít nejvýš :n barvy, tolik cívek má tiskárna založených najednou. Nechte některou barvu stejnou jako předchozí, nebo barvy v návrhu slučte.',
         'too_many_triangles' => 'Model má přes :max milionů trojúhelníků, to naše tiskárny nespočítají. Zmenšete počet trojúhelníků v programu (Blender: Decimate, Meshmixer: Reduce) a nahrajte ho znovu.',
         'filament_low' => 'Na téhle cívce už není dost materiálu. Vyberte prosím jinou barvu.',
@@ -426,6 +441,7 @@ return [
             'estimated' => '(odhad)',
             'reason' => ['print_failed' => 'tiskárna nahlásila selhání tisku', 'print_cancelled' => 'tisk byl na tiskárně zastaven', 'operator' => 'zastavila obsluha', 'slicing_failed' => 'nepodařilo se připravit G‑kód',
                 'one_plate_needed' => 'návrh má dvě barvy v jedné vrstvě a nešel na jednu podložku (ruční tiskárna, víc kusů, cívky ze dvou strojů, nevešel se, nebo slicer selhal)',
+                'painted_one_plate' => 'namalovaný 3MF nešel barevně na jednu podložku (ruční tiskárna, cívky ze dvou strojů, víc barev než cívek, nevešel se, nebo slicer selhal)',
                 'parts_machine' => 'cívky dílů jsou z jiného stroje než hlavní barva a ten stroj jejich barvy nemá'],
             'line_customer' => 'Zákazník: :who',
             'line_model' => 'Model: :name',

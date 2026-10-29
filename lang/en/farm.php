@@ -194,7 +194,21 @@ return [
         'print_cancelled' => 'The print was stopped. Your credit has been returned.',
         'operator' => 'The operator stopped the order. Your credit has been returned.',
         'one_plate_needed' => 'This design has two colours in one layer, so it prints only as a whole on a printer that changes spools. Pick the spools of one such printer (ACE or Rack) and one piece, or a one-colour version. Your credit has been returned.',
+        'painted_one_plate' => 'In colour this model prints only as a whole, on one plate of a printer that changes spools, and that is not possible here: :reason. You can print it in one colour.',
         'parts_machine' => 'The spools of the parts are not in the printer the order was computed for. Please pick them again on the order page.',
+    ],
+
+    // why a painted 3MF could not print in colour (PrepareFarmOrder::prepareOnePlate's skip reasons, docs/AL.md §14.8)
+    'painted_reason' => [
+        'manual' => 'the chosen printer has no spool changer',
+        'two_machines' => 'the colours come from spools of two different printers',
+        'filaments' => 'there are more colours than the printer has spools',
+        'one_spool' => 'both colours come from the same spool',
+        'fit' => 'the pieces and the purge tower do not fit the plate',
+        'slicer' => 'the slicer could not prepare the colour print',
+        'no_gcode' => 'the slicer could not prepare the colour print',
+        'project' => 'the file\'s colours could not be mapped onto the spools',
+        'other' => 'the colour print could not be prepared',
     ],
 
     'warn' => [
@@ -225,6 +239,7 @@ return [
         'color_gone' => 'This colour is no longer in the printer. Please pick another one.',
         'one_machine' => 'The spools of the parts must come from one printer – the one holding the main colour. Please pick them again.',
         'one_plate_needed' => 'This design has two colours in one layer: it prints only as a whole on a printer that changes spools, one piece at a time. Pick the spools of such a printer and 1 piece, or a one-colour version.',
+        'painted_one_plate' => 'A painted model prints in colour only on a printer that changes spools. Pick colours from such a printer, or a one-colour version.',
         'too_many_colors' => 'One print can have at most :n colours, that is how many spools a machine holds at once. Keep one colour the same as the one before, or merge colours in the design.',
         'too_many_triangles' => 'The model has over :max million triangles, more than our printers can work out. Reduce the triangles in a program (Blender: Decimate, Meshmixer: Reduce) and upload it again.',
         'filament_low' => 'There is not enough filament left on this spool. Please pick another colour.',
@@ -426,6 +441,7 @@ return [
             'estimated' => '(estimate)',
             'reason' => ['print_failed' => 'the printer reported a failed print', 'print_cancelled' => 'the print was stopped on the printer', 'operator' => 'stopped by the operator', 'slicing_failed' => 'the G-code could not be prepared',
                 'one_plate_needed' => 'the design has two colours in one layer and could not go on one plate (manual printer, several copies, spools of two machines, did not fit, or the slicer failed)',
+                'painted_one_plate' => 'painted 3MF could not go on one plate in colour (manual printer, spools of two machines, more colours than spools, did not fit, or the slicer failed)',
                 'parts_machine' => 'the parts\' spools sit in another machine than the first colour and that machine lacks their colours'],
             'line_customer' => 'Customer: :who',
             'line_model' => 'Model: :name',

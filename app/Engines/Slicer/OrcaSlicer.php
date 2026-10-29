@@ -205,7 +205,8 @@ final class OrcaSlicer implements Slicer
         // a mesh of millions of triangles is thinned first (MeshDecimator, docs/AL.md §10.11): the slicer and the scaling
         // below work on the thinned copy, the file given stays as it is
         $decimator = app(MeshDecimator::class);
-        if ($decimator->wants($meshPath)) {
+        // a project is sliced as it is (its parts were thinned when it was written): the mesh beside it only gives the size
+        if (! $params->project && $decimator->wants($meshPath)) {
             $thin = $work.'/thin.stl';
             // the limits follow the layer of this slice: the farm names it in its process overrides, the calculator's
             // quality has the one of its process profile (config pricing.rough.quality_layer_mm, the same ladder)

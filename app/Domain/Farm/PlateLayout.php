@@ -5,6 +5,7 @@ namespace App\Domain\Farm;
 use App\Engines\DTO\Dimensions;
 use App\Engines\DTO\PreparedMesh;
 use App\Engines\Mesh\StlFile;
+use App\Jobs\PrepareFarmOrder;
 
 /**
  * Several copies of one prepared piece on one plate. A piece whose shadow fills most of its rectangle (boxes,
@@ -71,6 +72,46 @@ final class PlateLayout
         $best = $plain['cols'] * $plain['rows'] >= $turned['cols'] * $turned['rows'] ? $plain : $turned;
 
         return ['max' => $best['cols'] * $best['rows']] + $best;
+    }
+
+    /**
+     * The grid of a painted 3MF's copies on a plate that changes filaments (docs/AL.md §14.8): the pieces as they lie
+     * (no turn: the project's object is placed again, not rotated), a gap between them, and the prime tower's band below
+     * the set or left of it, as PrepareFarmOrder::towerSpot then finds it. `copies` given: the most square grid that holds
+     * them (or all that fit). The calculator asks the same, so its plates are the farm's.
+     *
+     * @return array{max: int, cols: int, rows: int}
+     */
+    public static function towerGrid(Dimensions $piece, Dimensions $bed, float $edge, int $filaments, ?int $copies = null, float $gap = self::GAP_MM): array
+    {
+        $t = PrepareFarmOrder::TOWER;
+        $needY = $t['depth_per_filament'] * max(1, $filaments - 1) + 2 * $t['brim'] + $t['gap'];
+        $needX = $t['width'] + 2 * $t['brim'] + $t['gap'];
+        $best = ['max' => 0, 'cols' => 0, 'rows' => 0];
+        if ($piece->x <= 0 || $piece->y <= 0 || $piece->z > $bed->z) {
+            return $best;
+        }
+        $along = fn (float $size, float $room) => max(0, (int) floor(($room + $gap) / ($size + $gap)));
+        $ux = $bed->x - 2 * $edge;
+        $uy = $bed->y - 2 * $edge;
+        foreach ([[$ux, $uy - $needY], [$ux - $needX, $uy]] as [$roomX, $roomY]) {
+            $cols = $along($piece->x, $roomX);
+            $rows = $along($piece->y, $roomY);
+            if ($cols * $rows > $best['max']) {
+                $best = ['max' => $cols * $rows, 'cols' => $cols, 'rows' => $rows];
+            }
+        }
+        if ($copies !== null && $best['max'] > 0) {
+            $n = max(1, min($copies, $best['max']));
+            $cols = min($best['cols'], max(1, (int) ceil(sqrt($n))));
+            while ($cols < $best['cols'] && (int) ceil($n / $cols) > $best['rows']) {
+                $cols++;
+            }
+            $best['cols'] = $cols;
+            $best['rows'] = (int) ceil($n / $cols);
+        }
+
+        return $best;
     }
 
     /**

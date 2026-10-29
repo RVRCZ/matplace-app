@@ -1955,5 +1955,6 @@
     "calc.colors.price_multi": "En color desde :price",
     "calc.colors.order": "Imprimir en color",
     "calc.colors.order_one": "Imprimir en un color",
-    "calc.colors.price_same": "Mismo precio en color y en un color: :price"
+    "calc.colors.price_same": "Mismo precio en color y en un color: :price",
+    "farm.order.one_color": "Imprimir en un solo color"
 }

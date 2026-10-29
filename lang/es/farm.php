@@ -194,7 +194,21 @@ return [
         'print_cancelled' => 'La impresión se detuvo. Le hemos devuelto el crédito.',
         'operator' => 'El operador detuvo el pedido. Le hemos devuelto el crédito.',
         'one_plate_needed' => 'Este diseño tiene dos colores en una misma capa, por eso solo se imprime entero en una impresora que cambia bobinas. Elija bobinas de una impresora así (ACE o Rack) y una unidad, o la versión de un solo color. Le hemos devuelto el crédito.',
+        'painted_one_plate' => 'En color este modelo solo se imprime entero, en una placa de una impresora que cambia bobinas, y aquí no es posible: :reason. Puede imprimirlo en un solo color.',
         'parts_machine' => 'Las bobinas de las piezas no están en la impresora para la que se calculó el pedido. Elíjalas de nuevo en la página del pedido.',
+    ],
+
+    // why a painted 3MF could not print in colour (PrepareFarmOrder::prepareOnePlate's skip reasons, docs/AL.md §14.8)
+    'painted_reason' => [
+        'manual' => 'la impresora elegida no tiene cambiador de bobinas',
+        'two_machines' => 'los colores vienen de bobinas de dos impresoras distintas',
+        'filaments' => 'hay más colores que bobinas en la impresora',
+        'one_spool' => 'los dos colores vienen de la misma bobina',
+        'fit' => 'las piezas y la torre de purga no caben en la placa',
+        'slicer' => 'el laminador no pudo preparar la impresión en color',
+        'no_gcode' => 'el laminador no pudo preparar la impresión en color',
+        'project' => 'los colores del archivo no se pudieron asignar a las bobinas',
+        'other' => 'no se pudo preparar la impresión en color',
     ],
 
     'warn' => [
@@ -225,6 +239,7 @@ return [
         'color_gone' => 'Este color ya no está en la impresora. Elija otro.',
         'one_machine' => 'Las bobinas de las piezas deben ser de una sola impresora, la que tiene el color principal. Elíjalas de nuevo.',
         'one_plate_needed' => 'Este diseño tiene dos colores en una misma capa: solo se imprime entero en una impresora que cambia bobinas, de una en una. Elija bobinas de esa impresora y 1 unidad, o la versión de un solo color.',
+        'painted_one_plate' => 'Un modelo pintado se imprime en color solo en una impresora que cambia bobinas. Elija colores de esa impresora, o la versión de un solo color.',
         'too_many_colors' => 'Una impresión puede tener como máximo :n colores, tantas bobinas tiene cargadas una máquina a la vez. Deje algún color igual que el anterior, o una colores en el diseño.',
         'too_many_triangles' => 'El modelo tiene más de :max millones de triángulos, más de lo que nuestras impresoras pueden calcular. Reduzca los triángulos en un programa (Blender: Decimate, Meshmixer: Reduce) y súbalo de nuevo.',
         'filament_low' => 'No queda suficiente material en esta bobina. Elija otro color.',
@@ -426,6 +441,7 @@ return [
             'estimated' => '(estimación)',
             'reason' => ['print_failed' => 'la impresora informó de un fallo de impresión', 'print_cancelled' => 'la impresión se detuvo en la impresora', 'operator' => 'detenida por el operador', 'slicing_failed' => 'no se pudo preparar el G-code',
                 'one_plate_needed' => 'el diseño tiene dos colores en una capa y no cupo en una sola placa (impresora manual, varias unidades, bobinas de dos máquinas, no cabía o falló el laminador)',
+                'painted_one_plate' => 'el 3MF pintado no cupo en color en una sola placa (impresora manual, bobinas de dos máquinas, más colores que bobinas, no cabía o falló el laminador)',
                 'parts_machine' => 'las bobinas de las piezas están en otra máquina que el color principal y esa máquina no tiene sus colores'],
             'line_customer' => 'Cliente: :who',
             'line_model' => 'Modelo: :name',
