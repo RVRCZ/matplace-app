@@ -145,7 +145,7 @@ $pages = function () {
     Route::get('/tools/modular-organizer', [ToolsController::class, 'param'])->defaults('kind', 'modular')->name('tools.modular');
     Route::get('/tools/box', [ToolsController::class, 'param'])->defaults('kind', 'box')->defaults('preset', 'lidded')->name('tools.box');
     Route::get('/tools/phone-stand', [ToolsController::class, 'param'])->defaults('kind', 'phone_stand')->name('tools.phone_stand');
-    Route::get('/tools/vase', [ToolsController::class, 'param'])->defaults('kind', 'vase')->name('tools.vase');
+    Route::get('/tools/vase', [ToolsController::class, 'param'])->defaults('kind', 'vase')->defaults('preset', 'pot')->name('tools.vase');
     Route::get('/tools/compose', [ToolsController::class, 'param'])->defaults('kind', 'compose')->defaults('preset', 'cloud')->name('tools.compose');
     // the nameplate and the key ring open the composer with their product; `form` is the quick form the address used to be
     // (kind, or kind:preset): it stays there under ?form=1 and for a design that was made with it
