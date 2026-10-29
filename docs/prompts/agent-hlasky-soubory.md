@@ -1,6 +1,6 @@
 # Agent 0.2.9: hlášky z tiskáren, uvolnění podložky na displeji, soubory na disku tiskáren (session 4)
 
-Zadal Roman 29. 10. 2026 večer po zakázce F26‑000108 na Farm B #3. Řídící session: `conceprt19092026-91`.
+Zadal Roman 29. 10. 2026 večer po zakázce F26‑000108 na Farm B #3; části A, B, C potvrdil a přidal mazání souborů a úklid disku (C4). Řídící session: `conceprt19092026-91`.
 Čti nejdřív `docs/AM.md` (celý ovladač, zkoušky na tiskárnách, instalace agenta na PC farmy) a `docs/prompts/koordinator.md` (pravidla).
 
 ## 1. Co se stalo a co víme
@@ -41,6 +41,7 @@ Zjisti u obou firmware, co displej po dotištění ukazuje a co se dá číst: K
 1. Nové příkazy agenta: `files` (seznam souborů na tiskárně: jméno, velikost, datum) a `fetch` (stažení jednoho souboru na server). Moonraker: `/server/files/list?root=gcodes` a `/server/files/gcodes/<jméno>`. LAN Kobra X: zjisti, jak Slicer Next nebo aplikace čte seznam místních souborů; když protokol nic nedává, napiš to a Kobra X zůstane bez.
 2. Server: nový koncový bod pro agenta, který přijme soubor (token agenta jako dnes), uloží ho do `storage/app/farm/printers/{id}/files/`, limit velikosti 300 MB, jeden soubor naráz. Jméno souboru validuj, žádná cesta mimo složku.
 3. Admin, stránka tiskárny: blok „Soubory na tiskárně“ s tlačítkem „Načíst seznam“ (výsledek příkazu uložený u tiskárny, s časem), řádky se jménem, velikostí a datem, u každého „Stáhnout na server“ a po stažení odkaz ke stažení do PC. Výroba modelu z G‑kódu (TODO #42, `/tools/gcode-model`) sem patří později, teď jen poznámka u souboru.
+4. Mazání a úklid (Roman 29. 10.: „případně soubory smazat a uklidit disk na tiskárnách“): příkaz agenta `delete` (Moonraker `DELETE /server/files/gcodes/<jméno>`; LAN Kobra X zjisti, co protokol dovolí). V adminu u každého souboru „Smazat z tiskárny“ a nad seznamem „Uklidit disk“: smaže všechny naše soubory `matplace-*.gcode`, které nepatří běžící úloze ani úloze ve frontě, po potvrzení a se shrnutím, co se smazalo a kolik místa se uvolnilo. Cizí soubory (ne naše) jen jednotlivě, nikdy hromadně. Soubor právě tištěné úlohy se smazat nesmí, ani když o to admin požádá. Seznam ukazuj s volným místem na disku, pokud ho firmware dává (`/server/files/roots`, `/machine/system_info` nebo jiné).
 
 ## 3. Kdo a kde
 
@@ -50,7 +51,7 @@ Zjisti u obou firmware, co displej po dotištění ukazuje a co se dá číst: K
 
 ## 4. Ověření
 
-- Testy agenta (`agent/tests`, pytest) s falešným Moonrakerem a LAN hlášením: pauza s hláškou i bez ní, resume s timeoutem a změnou stavu, prázdný slot před startem, seznam a stažení souboru.
+- Testy agenta (`agent/tests`, pytest) s falešným Moonrakerem a LAN hlášením: pauza s hláškou i bez ní, resume s timeoutem a změnou stavu, prázdný slot před startem, seznam, stažení a smazání souboru, úklid disku (soubor běžící úlohy zůstane).
 - PHPUnit: mail `paused` a přepínač, historie hlášek, `bed_clear` z agenta, koncový bod souborů (velikost, jméno, token).
 - Na skutečné tiskárně jen na Romanovo „proveď zkoušku“ (PC farem instaluje Roman, AM.md §5): pauza při zavádění filamentu na S1, potvrzení na displeji, seznam souborů. Co bez tiskárny neověříš, napiš do AM.md jako neověřené.
 
