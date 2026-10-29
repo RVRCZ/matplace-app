@@ -5,6 +5,7 @@ namespace App\Domain\Stats;
 use App\Models\AnonymousSession;
 use App\Models\DesignerProfile;
 use App\Models\Event;
+use App\Models\FarmOrder;
 
 /**
  * What visitors do, read from our own `events` (first-party, no consent needed). Three ways through the site, each
@@ -126,7 +127,22 @@ final class Funnel
             'days' => $days, 'sessions' => count($sessions), 'paths' => $paths,
             'by_source' => $breakdown('source'), 'by_locale' => $breakdown('locale'),
             'tools' => $tools, 'designers' => $this->designers($days), 'audit' => $this->audit($sessions),
+            'repeats' => $this->repeats($days),
         ];
+    }
+
+    /**
+     * Orders made by "print again" (OrderController::again, docs/AL.md §15) and how many of them were paid; the
+     * admin's own are not tracked.
+     *
+     * @return array{made: int, paid: int}
+     */
+    public function repeats(int $days): array
+    {
+        $ids = Event::where('type', 'order_created')->where('created_at', '>=', now()->subDays($days))->get(['meta'])
+            ->filter(fn (Event $e) => (($e->meta['kind'] ?? null) === 'repeat'))->map(fn (Event $e) => (int) ($e->meta['order'] ?? 0))->filter()->unique();
+
+        return ['made' => $ids->count(), 'paid' => $ids->isEmpty() ? 0 : FarmOrder::whereIn('id', $ids->all())->whereNotNull('paid_at')->count()];
     }
 
     /**

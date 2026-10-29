@@ -63,7 +63,7 @@ return [
 
     'order' => [
         'repeat' => 'Opakovat tisk',
-        'repeat_hint' => 'Stejný model a nastavení; barvu vyberete z těch, které jsou právě založené. Původní barva je předvybraná, pokud je k mání.',
+        'repeat_hint' => 'Nová zakázka se stejným modelem a nastavením. Barvy i počet kusů můžete změnit, původní barvy jsou předvybrané, pokud jsou k mání.',
         'printer' => 'Tiskárna: :name, podložka :bed',
         'title' => 'Tisk :name',
         'dims' => 'Rozměry',

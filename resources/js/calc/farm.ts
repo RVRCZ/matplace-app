@@ -45,7 +45,7 @@ interface FarmState {
     big?: boolean; choosing?: boolean; slice_minutes?: number | null; slice_run?: number; estimate?: EstimateCfg | null;
     quality: string; strength: string; copies: number; max_copies: number | null; plates: number; plates_done: number; plate_layout: number[]; plate_now: number | null;
     scale: number; raw_bbox: { x: number; y: number; z: number } | null; slot: number | null; printer: { name: string; bed: string } | null;
-    unit: string; unit_guess: { unit: string; confident: boolean } | null; second_slot?: number | null; changes?: Change[]; max_colors?: number; by_parts?: boolean; parts?: Part[]; part_count?: number; one_plate?: boolean; filament_changes?: number; one_plate_required?: boolean; painted_colors?: boolean; offer_one_color?: boolean;
+    unit: string; unit_guess: { unit: string; confident: boolean } | null; second_slot?: number | null; changes?: Change[]; max_colors?: number; by_parts?: boolean; parts?: Part[]; part_count?: number; one_plate?: boolean; filament_changes?: number; one_plate_required?: boolean; painted_colors?: boolean; offer_one_color?: boolean; repeatable?: boolean;
     settings?: Record<string, number> | null; admin_overrides?: Record<string, string> | null;
     dims: { x: number; y: number; z: number } | null; warnings: string[]; orientation_changed: boolean; supports: boolean; supports_mode: string; color_change_mm: number | null; second_color: { name: string; hex: string } | null;
     minutes: number | null; grams: number | null; meters: number | null; price: Price | null; total: number | null; currency: string;
@@ -957,8 +957,8 @@ export function bootFarmOrder(): void {
             show(dest, dest.innerHTML !== '');
         }
         show($('farm-cancel'), s.can_cancel);
-        // once the print is over (or fell through) the same model can be ordered again with today's colours
-        show($('farm-repeat'), ['done', 'handed_over', 'cancelled', 'failed'].includes(s.status));
+        // from the payment on the same model can be ordered again with today's colours: a new order, straight away
+        show($('farm-repeat'), !!s.repeatable);
 
         // the model in the colour that will print it; once paid, the chosen colour
         if (!s.choosing) viewer.setColor(s.color?.hex ?? null, s.color?.finish ?? null);

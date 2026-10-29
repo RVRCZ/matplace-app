@@ -146,6 +146,19 @@ class FarmGuestCheckoutTest extends TestCase
         $this->postJson('/webhooks/payments/fake', ['ref' => $payment->gateway_ref, 'paid' => true], ['X-Fake-Signature' => 'fake'])->assertOk();
     }
 
+    /** "Print again" (docs/AL.md §15) without signing in: the new order belongs to the same session, as the first one did. */
+    public function test_a_guest_prints_again_from_the_paid_order_in_the_same_session(): void
+    {
+        [$order] = $this->paidGuestOrder();
+        $r = $this->asGuest()->postJson("/farm/orders/{$order->token}/repeat")->assertCreated();
+        $copy = FarmOrder::where('token', basename($r->json('url')))->firstOrFail();
+        $this->assertNull($copy->user_id);
+        $this->assertSame($this->session->id, $copy->anonymous_session_id);
+        $this->assertSame(FarmOrder::STATUS_SLICED, $copy->status, (string) $copy->error);
+        $this->asGuest()->getJson("/farm/orders/{$copy->token}/status")->assertOk()->assertJsonPath('repeatable', false);
+        $this->stranger()->postJson("/farm/orders/{$order->token}/repeat")->assertNotFound();
+    }
+
     public function test_a_guest_orders_pays_by_card_and_the_payment_makes_the_account(): void
     {
         $order = $this->guestOrder();

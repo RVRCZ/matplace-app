@@ -270,6 +270,22 @@ final class ThreeMfColorsTest extends TestCase
         }
     }
 
+    public function test_print_again_of_a_painted_3mf_keeps_its_colours_on_one_plate(): void
+    {
+        [$green, $red, $yellow] = $this->spools();
+        $f = $this->upload();
+        $r = $this->actingAs($this->user)->postJson('/farm/orders', ['file' => $f['uuid'], 'copies' => 2])->assertCreated();
+        $order = FarmOrder::where('token', basename($r->json('url')))->firstOrFail();
+        $order->forceFill(['status' => FarmOrder::STATUS_DONE, 'paid_at' => now()])->save();
+        $r = $this->actingAs($this->user)->postJson("/farm/orders/{$order->token}/repeat")->assertCreated();
+        $copy = FarmOrder::where('token', basename($r->json('url')))->firstOrFail();
+        $this->assertSame(FarmOrder::STATUS_SLICED, $copy->status, (string) $copy->error.' '.json_encode($copy->timings));
+        $this->assertTrue($copy->isByParts());
+        $this->assertTrue($copy->onePlate(), json_encode($copy->timings));
+        $this->assertSame(2, $copy->copies);
+        $this->assertSame([$green->id, $red->id, $yellow->id], array_map('intval', array_column($copy->partPlates(), 'color_id')));
+    }
+
     public function test_more_copies_than_a_plate_holds_take_more_plates_with_the_rest_on_its_own(): void
     {
         $this->spools();

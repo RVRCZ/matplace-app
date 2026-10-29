@@ -1960,5 +1960,9 @@
     "farm.order.painted_plate": "Barvy souboru se tisknou vcelku na tiskárně s měničem cívek, proto nabízíme jen cívky takových tiskáren. Víc kusů se tiskne vedle sebe na jedné podložce, co se nevejde, jde na další.",
     "farm.order.painted_copies": "Víc kusů se tiskne vedle sebe na jedné podložce, co se nevejde, jde na další.",
     "param.preset.golf": "Golfista",
-    "param.preset.lidded": "Krabička s víčkem"
+    "param.preset.lidded": "Krabička s víčkem",
+    "farm.order.repeat_short": "Opakovat",
+    "farm.order.repeat_made": "Nová zakázka se stejným modelem a nastavením. Barvy, počet kusů i nastavení můžete změnit a pak zaplatit.",
+    "farm.order.repeat_missing": "Nová zakázka se stejným modelem a nastavením. Některá z původních barev teď není k mání, vyberte prosím jinou.",
+    "farm.order.repeat_busy": "Novou zakázku právě zakládáme, zkuste to prosím za chvíli znovu."
 }

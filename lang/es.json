@@ -1960,5 +1960,9 @@
     "farm.order.painted_plate": "Los colores del archivo se imprimen enteros en una impresora que cambia bobinas, por eso solo ofrecemos bobinas de esas impresoras. Varias piezas se imprimen juntas en una placa; las que no caben van en la siguiente.",
     "farm.order.painted_copies": "Varias piezas se imprimen juntas en una placa; las que no caben van en la siguiente.",
     "param.preset.golf": "Golfista",
-    "param.preset.lidded": "Caja con tapa"
+    "param.preset.lidded": "Caja con tapa",
+    "farm.order.repeat_short": "Repetir",
+    "farm.order.repeat_made": "Un pedido nuevo con el mismo modelo y ajustes. Puede cambiar los colores, el número de piezas y los ajustes, y después pagar.",
+    "farm.order.repeat_missing": "Un pedido nuevo con el mismo modelo y ajustes. Uno de los colores originales no está disponible ahora, elija otro, por favor.",
+    "farm.order.repeat_busy": "Estamos creando el pedido nuevo, inténtelo de nuevo en un momento."
 }

@@ -1,0 +1,6 @@
+{
+    "farm.order.repeat_short": ["Opakovat", "Repeat", "Repetir"],
+    "farm.order.repeat_made": ["Nová zakázka se stejným modelem a nastavením. Barvy, počet kusů i nastavení můžete změnit a pak zaplatit.", "A new order with the same model and settings. You can change the colours, the number of pieces and the settings, then pay.", "Un pedido nuevo con el mismo modelo y ajustes. Puede cambiar los colores, el número de piezas y los ajustes, y después pagar."],
+    "farm.order.repeat_missing": ["Nová zakázka se stejným modelem a nastavením. Některá z původních barev teď není k mání, vyberte prosím jinou.", "A new order with the same model and settings. One of the original colours is not available right now, please pick another.", "Un pedido nuevo con el mismo modelo y ajustes. Uno de los colores originales no está disponible ahora, elija otro, por favor."],
+    "farm.order.repeat_busy": ["Novou zakázku právě zakládáme, zkuste to prosím za chvíli znovu.", "The new order is being made right now, please try again in a moment.", "Estamos creando el pedido nuevo, inténtelo de nuevo en un momento."]
+}
