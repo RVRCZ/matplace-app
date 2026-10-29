@@ -652,3 +652,35 @@ tečky `#80FF80` a `#FFFF00`, „Soubor má 2 namalované barvy (a 2 drobné, sl
 120 Kč“ (falešný slicer; session 2 hlásí s Orcou 79/210), „Vytisknout barevně“ v kartě i v liště telefonu, „Vytisknout
 jednobarevně“ pod ním. Nález a oprava (b6a72a91): kalkulace vrácená hned hotová (stejný soubor a nastavení) přeskočila
 dvě ceny; `renderColors` je teď v `renderPrecise` a v `setBigOnly`, takže je dostane každá cesta.
+
+### 19.1 Modrý náhled po druhém nahrání a jedna cena, když jsou obě stejné (větev `fix/painted-preview-repeat`, 29. 10. 2026)
+
+**Nález řídící na produkci (28. 10.)**: želva nahraná podruhé měla po přesném výpočtu náhled celý modrý, řádek barev
+a dvě ceny přitom byly. **Příčina**: `showPainted` si soubor označil jako obarvený (`paintedFor`) ještě před načtením
+seřazeného STL. Když to jediné načtení selhalo (síť, zaneprázdněný server), náhled zůstal z prohlížečovy kopie
+(modrý) a žádná další odpověď už načtení nezopakovala; po přesném výpočtu se kalkulace přestane ptát. Druhá díra
+stejného druhu: kalkulace vrácená hned hotová (`requestPrecise`, `requestRough`) soubor vůbec nepřevzala, takže barvy
+z ní dostal jen řádek s cenami (b6a72a91), náhled ne.
+
+**Oprava** (`resources/js/calc/calculator.ts`):
+- `takeFile(c.file)` převezme soubor z každé odpovědi kalkulace (poll, vytvořená hotová, odhad) a zavolá `showPainted`.
+- `showPainted` označí soubor až po načtení; nepovedené načtení zkusí znovu samo (4 pokusy, 1,5 / 3 / 4,5 s), dokud je
+  soubor zobrazený. Souběžné odpovědi ho nenačtou dvakrát (`paintingFor`).
+- Plátno náhledu nese `data-painted`: `loading`, `colors`, `mismatch` (běhy nesedí na STL), `failed` (ani 4. pokus).
+  Kontrola zvenku (headless Chrome, konzole) tak nemusí soudit barvu z obrázku.
+
+**Ověření** (místně, fronta přes databázi a worker jako na produkci, falešný slicer, `scripts/review_round2.mjs
+--flows=painted-twice,painted-503,painted-same --file=<želva>`):
+
+| průchod | starý kód | oprava |
+|---|---|---|
+| želva dvakrát za sebou | barevně, barevně | barevně, barevně (`painted=colors`) |
+| první `model.stl` odpoví 503 | **modrá**, řádek barev a ceny ano (`turtle-stl503-before-1366.webp`) | barevně (`turtle-stl503-after-1366.webp`) |
+
+Místně se modrý náhled bez simulované chyby neukázal: zpracování želvy tu trvá 15 s, takže kalkulace nikdy nepřijde
+hotová hned. Cestu „vytvořená hotová“ pokrývá `takeFile` podle kódu, ne pokusem.
+
+**Jedna cena** (zpráva řídící 29. 10.): když `calculation.colors.one` a `multi` vyjdou po zaokrouhlení na stejný text
+(želva: obě na minimu ceníku), místo „Barevně od X · Jednobarevně X“ je jeden řádek `calc.colors.price_same`
+„Barevně i jednobarevně stejně: 120 Kč“ (cs/en/es; `turtle-same-price-390.webp`, ověřeno přepsáním odpovědi v toku
+`painted-same`). Zaokrouhlení samo je session 2 (`feature/painted-price`).

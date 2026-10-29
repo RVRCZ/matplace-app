@@ -1954,5 +1954,6 @@
     "calc.colors.price_one": "Jednobarevně :price",
     "calc.colors.price_multi": "Barevně od :price",
     "calc.colors.order": "Vytisknout barevně",
-    "calc.colors.order_one": "Vytisknout jednobarevně"
+    "calc.colors.order_one": "Vytisknout jednobarevně",
+    "calc.colors.price_same": "Barevně i jednobarevně stejně: :price"
 }

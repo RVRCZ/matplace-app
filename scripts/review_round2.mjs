@@ -97,6 +97,10 @@ const ORDER = /Objednat tisk|Vytisknout u nás|Chci to vyrobit|Order the print|P
  */
 const JUMP_TOOL = "(() => { const r = (id) => Math.round(document.getElementById(id)?.getBoundingClientRect().top ?? -1); return { y: window.scrollY, panel: document.getElementById('tool-panel').scrollTop, nav: r('tool-nav'), stage: r('tool-stage'), hash: location.hash }; })()";
 const JUMP_CALC = "(() => { const r = (id) => Math.round(document.getElementById(id)?.getBoundingClientRect().top ?? -1); return { y: window.scrollY, recalc: r('cta-recalc'), price: r('price-card'), viewer: r('viewer'), bar: document.getElementById('calc-bar') ? getComputedStyle(document.getElementById('calc-bar')).display : 'no bar' }; })()";
+const PAINTED = arg('file', null);
+const PAINTED_STATE = "[document.getElementById('status')?.textContent, document.getElementById('calc-colors-line')?.textContent, document.getElementById('calc-colors-prices')?.textContent, 'painted=' + (document.getElementById('viewer')?.dataset.painted ?? '-'), location.pathname].map((x) => (x || '').trim()).join(' | ')";
+const STL_503_ONCE = "(() => { const f = window.fetch; let n = 0; window.fetch = (u, o) => (String(u).includes('model.stl') && n++ < 1 ? Promise.resolve(new Response('', { status: 503 })) : f(u, o)); return 'the first model.stl answers 503'; })()";
+const COLORS_SAME = "(() => { const f = window.fetch; window.fetch = async (u, o) => { const r = await f(u, o); if (!String(u).includes('/api/calculations')) return r; const j = await r.clone().json().catch(() => null); if (!j?.calculation?.colors) return r; j.calculation.colors.multi = j.calculation.colors.one; return new Response(JSON.stringify(j), { status: r.status, headers: { 'Content-Type': 'application/json' } }); }; return 'colors.multi = colors.one in every calculation'; })()";
 const FLOWS = {
     'file-price': [['go', '/'], ['file', '#file-input', FIXTURES.cube], ['wait', 25000], ['shot'], ['nav'], ['clickText', ORDER], ['wait', 5000], ['shot']],
     'tool-price': [['go', '/tools/qr'], ['wait', 6000], ['shot'], ['nav'], ['click', '#tool-go'], ['wait', 20000], ['shot'], ['nav'], ['clickText', ORDER], ['wait', 5000], ['shot']],
@@ -123,6 +127,16 @@ const FLOWS = {
         ['read', "document.getElementById('tool-panel').scrollTo({ top: 36 }); 'panel scrolled back by script'"], ['wait', 800], ['read', JUMP_TOOL],
         ['read', "document.querySelector('#tool-nav [data-nav]').focus(); 'first step focused by script'"], ['wait', 800], ['read', JUMP_TOOL],
         ['read', "document.querySelector('#tool-nav [data-nav]:last-child').focus(); 'last step focused by script'"], ['wait', 800], ['read', JUMP_TOOL]],
+    // a 3MF with colours painted in a slicer (--file=<path>), uploaded twice in a row as the coordinator checked it on production
+    // (28 Oct 2026): the preview must be in the painted colours both times, during and after the exact calculation (docs/AN.md §19);
+    // the facts carry the viewer's data-painted (colors | mismatch | failed | loading)
+    ...(PAINTED ? { 'painted-twice': [1, 2].flatMap(() => [['go', '/'], ['file', '#file-input', PAINTED], ['wait', 4000], ['read', PAINTED_STATE], ['shot'],
+        ['wait', 45000], ['read', PAINTED_STATE], ['shot']]),
+        // the same, with the first fetch of the preview STL answered 503 (a busy server): the preview must still end up painted
+        'painted-503': [['go', '/'], ['read', STL_503_ONCE], ['file', '#file-input', PAINTED], ['wait', 4000], ['read', PAINTED_STATE],
+            ['wait', 45000], ['read', PAINTED_STATE], ['shot']],
+        // the price in colour made equal to the one-colour price in the calculation's answers: one line, one price
+        'painted-same': [['go', '/'], ['read', COLORS_SAME], ['file', '#file-input', PAINTED], ['wait', 45000], ['read', PAINTED_STATE], ['shot']] } : {}),
     'photo-limit': [['go', '/tools/relief'], ['wait', 3000], ['file', '#relief-photo', FIXTURES.big], ['wait', 1000], ['click', '#relief-form button.btn-ink'], ['wait', 4000], ['shot']],
 };
 

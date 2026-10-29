@@ -165,7 +165,10 @@ class ParametricToolsTest extends TestCase
         $this->assertNotContains('multiple_shells', $r->json('file.issues') ?? []);
         $this->get('/api/tools/param/'.$file->uuid.'/bin_2x2.stl')->assertOk();
         $this->getJson('/api/tools/param/'.$file->uuid.'/bin_9x9.stl')->assertNotFound();    // no such bin in this layout
-        $this->postJson('/api/calculations', ['file' => $file->uuid, 'material' => 'PLA'])->assertCreated()->assertJsonPath('calculation.status', 'done');
+        // the bins of a 300 mm drawer do not fit one plate: the calculation keeps the estimate and says the set is printed by
+        // parts (docs/AN.md §17.2), nothing is sliced as one piece
+        $this->postJson('/api/calculations', ['file' => $file->uuid, 'material' => 'PLA'])->assertCreated()
+            ->assertJsonPath('calculation.status', 'rough')->assertJsonPath('calculation.rough.by_parts', true);
         foreach (['cs', 'en', 'es'] as $lang) {
             $this->get($this->localized('/tools/modular-organizer', $lang))->assertOk();
         }

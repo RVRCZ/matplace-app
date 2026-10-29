@@ -16,6 +16,7 @@
     ],
     "calc.colors.price_one": ["Jednobarevně :price", "In one colour :price", "En un color :price"],
     "calc.colors.price_multi": ["Barevně od :price", "In colour from :price", "En color desde :price"],
+    "calc.colors.price_same": ["Barevně i jednobarevně stejně: :price", "Same price in colour and in one colour: :price", "Mismo precio en color y en un color: :price"],
     "calc.colors.order": ["Vytisknout barevně", "Print in colour", "Imprimir en color"],
     "calc.colors.order_one": ["Vytisknout jednobarevně", "Print in one colour", "Imprimir en un color"]
 }
