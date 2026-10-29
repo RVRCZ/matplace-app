@@ -549,7 +549,8 @@ final class ParametricGenerator
         ],
         'holder' => [
             'remote' => ['style' => 'cradle', 'obj_w' => 50, 'obj_d' => 22, 'height' => 70],
-            'bottle' => ['style' => 'pocket', 'obj_w' => 75, 'obj_d' => 75, 'height' => 90, 'radius' => 12],
+            // the page opens with this one (Roman, 29 Oct 2026): a bottle in a cradle, hung on a screw in the wall
+            'bottle' => ['style' => 'cradle', 'holes' => 'keyhole', 'obj_w' => 75, 'obj_d' => 75, 'height' => 90, 'radius' => 12],
             'headphones' => ['style' => 'hook', 'obj_w' => 35, 'obj_d' => 45, 'hook_h' => 25, 'bend' => 15],
             'broom' => ['style' => 'clip', 'obj_w' => 24, 'height' => 25],
         ],

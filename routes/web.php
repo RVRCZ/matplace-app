@@ -162,7 +162,7 @@ $pages = function () {
     Route::get('/tools/illuminated-sign', [ToolsController::class, 'param'])->defaults('kind', 'lightbox')->name('tools.lightbox');
     Route::get('/tools/qr', [ToolsController::class, 'param'])->defaults('kind', 'qr')->name('tools.qr');
     Route::get('/tools/cable-holder', [ToolsController::class, 'param'])->defaults('kind', 'cable_holder')->name('tools.cable_holder');
-    Route::get('/tools/holder', [ToolsController::class, 'param'])->defaults('kind', 'holder')->name('tools.holder');
+    Route::get('/tools/holder', [ToolsController::class, 'param'])->defaults('kind', 'holder')->defaults('preset', 'bottle')->name('tools.holder');
     Route::get('/tools/cap', [ToolsController::class, 'param'])->defaults('kind', 'cap')->name('tools.cap');
     Route::get('/tools/cookie-cutter', [ToolsController::class, 'param'])->defaults('kind', 'cutter')->name('tools.cutter');
     // a picture or a name in the colours of filaments: one builder, every product its own page
