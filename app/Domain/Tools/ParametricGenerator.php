@@ -525,8 +525,10 @@ final class ParametricGenerator
             'spiral' => ['style' => 'twist', 'profile' => 'neck', 'height' => 180, 'top_d' => 62, 'bottom_d' => 54, 'ribs' => 18, 'flute' => 18, 'twist' => 200],
             'ribs' => ['style' => 'ribs', 'profile' => 'neck', 'height' => 170, 'top_d' => 70, 'bottom_d' => 60, 'ribs' => 18, 'flute' => 16],
             'smooth' => ['style' => 'smooth', 'profile' => 'neck', 'height' => 160, 'top_d' => 70, 'bottom_d' => 58],
-            // the page opens with this one (Roman, 29 Oct 2026): a twisted cone with round flutes, drainage and saucer on
-            'pot' => ['purpose' => 'pot', 'style' => 'twist', 'profile' => 'cone', 'flute_shape' => 'round', 'height' => 80, 'top_d' => 90, 'bottom_d' => 60, 'ribs' => 16, 'flute' => 10, 'twist' => 200],
+            // the page opens with this one (Roman, 29 Oct 2026): a twisted cone with round flutes, drainage and saucer on.
+            // Roman set 200°, which leans the flutes 65° off vertical and the page warns (steep_twist, creative_kinds.py);
+            // 120° leans them 52° and opens clean (ToolPageTest: no warning before the visitor changed anything)
+            'pot' => ['purpose' => 'pot', 'style' => 'twist', 'profile' => 'cone', 'flute_shape' => 'round', 'height' => 80, 'top_d' => 90, 'bottom_d' => 60, 'ribs' => 16, 'flute' => 10, 'twist' => 120],
         ],
         // gifts with a text: the same sign tool, four starting points (the landing page /gifts links to them)
         'sign' => [
