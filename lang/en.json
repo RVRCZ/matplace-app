@@ -1956,5 +1956,7 @@
     "calc.colors.order": "Print in colour",
     "calc.colors.order_one": "Print in one colour",
     "calc.colors.price_same": "Same price in colour and in one colour: :price",
-    "farm.order.one_color": "Print in one colour"
+    "farm.order.one_color": "Print in one colour",
+    "farm.order.painted_plate": "The file's colours print as a whole on a printer that changes spools, so only such printers' spools are on offer. Several pieces print side by side on one plate; what does not fit goes on the next one.",
+    "farm.order.painted_copies": "Several pieces print side by side on one plate; what does not fit goes on the next one."
 }

@@ -45,7 +45,7 @@ interface FarmState {
     big?: boolean; choosing?: boolean; slice_minutes?: number | null; slice_run?: number; estimate?: EstimateCfg | null;
     quality: string; strength: string; copies: number; max_copies: number | null; plates: number; plates_done: number; plate_layout: number[]; plate_now: number | null;
     scale: number; raw_bbox: { x: number; y: number; z: number } | null; slot: number | null; printer: { name: string; bed: string } | null;
-    unit: string; unit_guess: { unit: string; confident: boolean } | null; second_slot?: number | null; changes?: Change[]; max_colors?: number; by_parts?: boolean; parts?: Part[]; part_count?: number; one_plate?: boolean; filament_changes?: number; one_plate_required?: boolean; offer_one_color?: boolean;
+    unit: string; unit_guess: { unit: string; confident: boolean } | null; second_slot?: number | null; changes?: Change[]; max_colors?: number; by_parts?: boolean; parts?: Part[]; part_count?: number; one_plate?: boolean; filament_changes?: number; one_plate_required?: boolean; painted_colors?: boolean; offer_one_color?: boolean;
     settings?: Record<string, number> | null; admin_overrides?: Record<string, string> | null;
     dims: { x: number; y: number; z: number } | null; warnings: string[]; orientation_changed: boolean; supports: boolean; supports_mode: string; color_change_mm: number | null; second_color: { name: string; hex: string } | null;
     minutes: number | null; grams: number | null; meters: number | null; price: Price | null; total: number | null; currency: string;
@@ -557,8 +557,9 @@ export function bootFarmOrder(): void {
             if (heading0) heading0.textContent = tr('farm.order.parts_title');
             if (hint0) hint0.textContent = (noMachine() ? `${tr('farm.order.colors_no_machine')} ` : '')
                 + (state.one_plate ? tr('farm.order.parts_one_plate', { n: String(state.filament_changes ?? 0) }) : tr('farm.order.parts_hint', { max: String(state.max_colors ?? 4) }))
-                + (state.one_plate_required ? ` ${tr('farm.order.one_plate_required')}` : '') + (machines.length > 1 ? ` ${tr('farm.order.parts_one_machine')}` : '')
-                + (state.one_plate_required && (state.copies ?? 1) > 1 ? ` ${tr('farm.order.one_plate_copies')}` : '');
+                + (state.one_plate_required ? ` ${tr(state.painted_colors ? 'farm.order.painted_plate' : 'farm.order.one_plate_required')}` : '') + (machines.length > 1 ? ` ${tr('farm.order.parts_one_machine')}` : '')
+                // a painted 3MF's copies share the plate (docs/AL.md §14.8): one piece at a time is the tool's designs alone
+                + (state.one_plate_required && !state.painted_colors && (state.copies ?? 1) > 1 ? ` ${tr('farm.order.one_plate_copies')}` : '');
             if (list0 && any) {
                 const tile = (part: string, s: Spool | null, name: string, kind: string, swatch: string, code: string | null | undefined): string => {
                     const on = s === null ? (partColours[part] ?? null) === null : partColours[part] === s.color_id;
@@ -797,7 +798,9 @@ export function bootFarmOrder(): void {
         if (copiesNote) {
             const more = s.max_copies && wanted.copies > s.max_copies ? ` ${tr('farm.copies.more_plates', { p: Math.ceil(wanted.copies / s.max_copies) })}` : '';
             // a design that must print on one plate goes one piece at a time: said here before the price is asked for
-            copiesNote.textContent = s.one_plate_required ? tr(wanted.copies > 1 ? 'farm.order.one_plate_copies' : 'farm.order.one_plate_single') : (s.max_copies ? tr('farm.copies.max', { n: s.max_copies }) + more : '');
+            // a painted 3MF's copies share the plate: how many fit, or before the slice that the rest goes on the next one
+            copiesNote.textContent = s.one_plate_required && !s.painted_colors ? tr(wanted.copies > 1 ? 'farm.order.one_plate_copies' : 'farm.order.one_plate_single')
+                : s.max_copies ? tr('farm.copies.max', { n: s.max_copies }) + more : s.painted_colors ? tr('farm.order.painted_copies') : '';
             show(copiesNote, !!s.max_copies || !!s.one_plate_required);
         }
         const note = $('farm-unit-note')!;

@@ -244,6 +244,32 @@ final class ThreeMfColorsTest extends TestCase
         $this->assertGreaterThanOrEqual(4, $order->check['max_copies']);
     }
 
+    public function test_one_painted_piece_tells_how_many_fit_a_plate_and_offers_the_spools_of_changers_alone(): void
+    {
+        [$green] = $this->spools();
+        // a manual machine holds the green too (K14, U22 on production): its spool is no use to a painted order
+        $other = FarmPrinter::where('key', '!=', 'kobra-s1-01')->where('enabled', true)->orderBy('id')->firstOrFail();
+        $other->update(['mode' => FarmPrinter::MODE_MANUAL, 'farm_agent_id' => null]);
+        $other->slots()->orderBy('slot')->firstOrFail()->update(['farm_color_id' => $green->id, 'remaining_g' => 800, 'enabled' => true]);
+        $f = $this->upload();
+        $r = $this->actingAs($this->user)->postJson('/farm/orders', ['file' => $f['uuid']])->assertCreated();
+        $order = FarmOrder::where('token', basename($r->json('url')))->firstOrFail();
+        $this->assertTrue($order->onePlate(), json_encode($order->timings));
+        $state = $this->actingAs($this->user)->getJson(route('farm.orders.status', $order))->assertOk()->json();
+        // the page says the copies share the plate (not "one piece at a time", which is the tool's designs)
+        $this->assertTrue($state['one_plate_required']);
+        $this->assertTrue($state['painted_colors']);
+        $this->assertGreaterThan(1, (int) $state['max_copies'], 'one piece ordered: how many would fit, not 1');
+        // only the machines that change spools are on offer, the manual ones of the seed hold colours too
+        $manual = FarmPrinter::where('mode', FarmPrinter::MODE_MANUAL)->whereHas('slots', fn ($q) => $q->whereNotNull('farm_color_id'))->get()->map->shortCode()->all();
+        $this->assertContains($other->shortCode(), $manual);
+        $codes = collect($state['colors'])->flatMap(fn ($c) => array_merge((array) $c['codes'], array_column((array) $c['second'], 'code'), array_column((array) $c['machines'], 'code')))->filter()->unique()->values()->all();
+        $this->assertNotEmpty($codes);
+        foreach ($codes as $code) {
+            $this->assertNotContains(substr($code, 0, -1), $manual, 'a spool of a manual machine on offer: '.$code);
+        }
+    }
+
     public function test_more_copies_than_a_plate_holds_take_more_plates_with_the_rest_on_its_own(): void
     {
         $this->spools();
