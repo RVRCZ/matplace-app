@@ -1964,5 +1964,18 @@
     "farm.order.repeat_short": "Repeat",
     "farm.order.repeat_made": "A new order with the same model and settings. You can change the colours, the number of pieces and the settings, then pay.",
     "farm.order.repeat_missing": "A new order with the same model and settings. One of the original colours is not available right now, please pick another.",
-    "farm.order.repeat_busy": "The new order is being made right now, please try again in a moment."
+    "farm.order.repeat_busy": "The new order is being made right now, please try again in a moment.",
+    "param.preset.ela": "Ela along the straw",
+    "param.c.straw.straw_size": "Straw",
+    "param.o.straw.custom": "Other diameter",
+    "param.o.straw.s6": "6 mm thin",
+    "param.o.straw.s8": "8 mm common",
+    "param.o.straw.s12": "12 mm bubble tea",
+    "param.straw.straw_d.hint": "The outer diameter, measured with a caliper or a ruler.",
+    "param.c.straw.text_dir": "Topper on the straw",
+    "param.o.straw.along": "Along the straw",
+    "param.o.straw.across": "Across",
+    "param.f.straw.width": "Size of the topper",
+    "param.straw.width.hint": "The length of the name; of a picture, its width.",
+    "param.straw.tip": "It prints flat, face up, the clip with its open side up. Enter the outer diameter of your straw; the clip has 0.4 mm of play. A topper along the straw is held by a clip all the way it touches the straw. Across, the clip sits at one point and you drag its grip in the preview along the outline."
 }

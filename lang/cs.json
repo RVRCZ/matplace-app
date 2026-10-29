@@ -1964,5 +1964,18 @@
     "farm.order.repeat_short": "Opakovat",
     "farm.order.repeat_made": "Nová zakázka se stejným modelem a nastavením. Barvy, počet kusů i nastavení můžete změnit a pak zaplatit.",
     "farm.order.repeat_missing": "Nová zakázka se stejným modelem a nastavením. Některá z původních barev teď není k mání, vyberte prosím jinou.",
-    "farm.order.repeat_busy": "Novou zakázku právě zakládáme, zkuste to prosím za chvíli znovu."
+    "farm.order.repeat_busy": "Novou zakázku právě zakládáme, zkuste to prosím za chvíli znovu.",
+    "param.preset.ela": "Ela podél brčka",
+    "param.c.straw.straw_size": "Brčko",
+    "param.o.straw.custom": "Jiný průměr",
+    "param.o.straw.s6": "6 mm tenké",
+    "param.o.straw.s8": "8 mm běžné",
+    "param.o.straw.s12": "12 mm bubble tea",
+    "param.straw.straw_d.hint": "Vnější průměr, změřte ho posuvkou nebo pravítkem.",
+    "param.c.straw.text_dir": "Ozdoba na brčku",
+    "param.o.straw.along": "Podél brčka",
+    "param.o.straw.across": "Napříč",
+    "param.f.straw.width": "Velikost ozdoby",
+    "param.straw.width.hint": "Délka jména, u obrázku jeho šířka.",
+    "param.straw.tip": "Tiskne se naplocho, lícem nahoru, klip otevřenou stranou vzhůru. Zadejte vnější průměr brčka, klip má vůli 0,4 mm. Ozdobu podél brčka drží klip po celé délce, kterou se brčka dotýká. Napříč je klip v jednom místě a jeho úchyt v náhledu přetáhnete po obrysu."
 }

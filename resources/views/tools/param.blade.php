@@ -79,6 +79,9 @@
     $warnAt = ['stand_cutout_small' => 'input', 'stand_cutout_fine' => 'input', 'stand_silhouette_thin' => 'input', 'stand_silhouette_low' => 'size', 'portrait_fine' => 'input', 'portrait_whole' => 'input', 'cup_narrow' => 'input', 'thin_lines' => 'input', 'outlines_ignored' => 'input', 'missing_chars' => 'input', 'separate_pieces' => 'input', 'floating_pieces' => 'input', 'pieces_tied' => 'input', 'letters_tied' => 'input', 'qr_one_color' => 'colors', 'qr_low_contrast' => 'colors', 'qr_inverted' => 'colors'];
     $folded = \App\Domain\Tools\ParametricGenerator::FOLDED;
     $fieldsAt = fn (string $section) => collect($fields)->filter(fn ($f, $k) => $at($k, 'size') === $section);
+    // the numbers a choice of the first step writes (a straw's diameter by its kind) stand right under that choice
+    $filledBy = fn (string $choice) => collect($fieldsAt('input'))->filter(fn ($f, $k) => collect($fills[$choice] ?? [])->contains(fn ($v) => array_key_exists($k, $v)));
+    $filled = collect($fills)->keys()->filter(fn ($c) => $at($c, 'input') === 'input')->flatMap(fn ($c) => $filledBy($c)->keys())->all();
     $flagsAt = fn (string $section) => collect($flags)->filter(fn ($flag) => $at($flag, 'size') === $section);
     // "describe what it should look like": the tools that have a designer (config/tools.php `design`), for who may use it
     $design = \App\Domain\Tools\DesignAgent::opensFor(auth()->user(), $tool ?? $kind);
@@ -173,7 +176,7 @@
             @endforeach
             <div class="grid gap-3">
                 @foreach($fieldsAt('input') as $key => $f)
-                    @continue(in_array($key, $folded, true))
+                    @continue(in_array($key, $folded, true) || in_array($key, $filled, true))
                     @include('tools._num', ['key' => $key, 'f' => $f, 'label' => $label($key), 'unit' => $unit($key), 'when' => $whenOf($key)])
                 @endforeach
             </div>
@@ -308,6 +311,9 @@
                         </label>
                     @endforeach
                 </div>
+                @foreach($filledBy($key) as $field => $f)
+                    <div class="mt-3">@include('tools._num', ['key' => $field, 'f' => $f, 'label' => $label($field), 'unit' => $unit($field), 'when' => $whenOf($field)])</div>
+                @endforeach
             </fieldset>
         @endforeach
         @if($design)

@@ -1,0 +1,15 @@
+{
+    "param.preset.ela": ["Ela podél brčka", "Ela along the straw", "Ela a lo largo de la pajita"],
+    "param.c.straw.straw_size": ["Brčko", "Straw", "Pajita"],
+    "param.o.straw.custom": ["Jiný průměr", "Other diameter", "Otro diámetro"],
+    "param.o.straw.s6": ["6 mm tenké", "6 mm thin", "6 mm fina"],
+    "param.o.straw.s8": ["8 mm běžné", "8 mm common", "8 mm normal"],
+    "param.o.straw.s12": ["12 mm bubble tea", "12 mm bubble tea", "12 mm bubble tea"],
+    "param.straw.straw_d.hint": ["Vnější průměr, změřte ho posuvkou nebo pravítkem.", "The outer diameter, measured with a caliper or a ruler.", "El diámetro exterior, medido con un calibre o una regla."],
+    "param.c.straw.text_dir": ["Ozdoba na brčku", "Topper on the straw", "Adorno en la pajita"],
+    "param.o.straw.along": ["Podél brčka", "Along the straw", "A lo largo de la pajita"],
+    "param.o.straw.across": ["Napříč", "Across", "De través"],
+    "param.f.straw.width": ["Velikost ozdoby", "Size of the topper", "Tamaño del adorno"],
+    "param.straw.width.hint": ["Délka jména, u obrázku jeho šířka.", "The length of the name; of a picture, its width.", "La longitud del nombre; en una imagen, su ancho."],
+    "param.straw.tip": ["Tiskne se naplocho, lícem nahoru, klip otevřenou stranou vzhůru. Zadejte vnější průměr brčka, klip má vůli 0,4 mm. Ozdobu podél brčka drží klip po celé délce, kterou se brčka dotýká. Napříč je klip v jednom místě a jeho úchyt v náhledu přetáhnete po obrysu.", "It prints flat, face up, the clip with its open side up. Enter the outer diameter of your straw; the clip has 0.4 mm of play. A topper along the straw is held by a clip all the way it touches the straw. Across, the clip sits at one point and you drag its grip in the preview along the outline.", "Se imprime en plano, con la cara hacia arriba y el clip con su lado abierto hacia arriba. Indique el diámetro exterior de su pajita; el clip tiene 0,4 mm de holgura. Un adorno a lo largo de la pajita queda sujeto por un clip en todo el tramo que la toca. De través, el clip va en un punto y su tirador se arrastra por el contorno en la vista previa."]
+}
