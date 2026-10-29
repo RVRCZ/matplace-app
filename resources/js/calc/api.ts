@@ -18,7 +18,7 @@ export interface FileInfo {
     /** a map made here (/tools/map): its notes, the regions the viewer paints by, and while it is built, the phase */
     map?: Record<string, unknown> | null;
     mold?: { parts?: number; pieces?: number; fill?: boolean; added_ml?: number; undercut_before_pct?: number; cast_url?: string; cast_flags_url?: string; type?: string; axis: string; angle_deg?: number | null; undercut_pct: number; verdict?: string; box: number[]; resin_ml: number; silicone_ml?: number; mold_cm3: number; wall: number; warnings: string[]; keys?: number; variant?: string; cast_ml?: number; core_ml?: number; vents?: number; funnel_at?: string; keys_type?: string; silicone_box_ml?: number; saving_pct?: number } | null;
-    tool?: { kind: string; params: Record<string, unknown>; url: string } | null;
+    tool?: { kind: string; params: Record<string, unknown>; url: string; pieces_url?: string | null } | null;   // pieces_url: a design whose coloured parts lie in one body (ToolsApiController::paramPieces)
     nearest?: { hex: string; spool: { code: string; name: string; hex: string; material: string; finish: string; photo: string | null; in_stock: boolean } }[];
     /** colours painted in a slicer (session 2's analysis on upload, docs/AN.md §19): the runs of the preview STL's triangles by colour */
     groups?: { hex: string; from: number; to: number }[] | null;

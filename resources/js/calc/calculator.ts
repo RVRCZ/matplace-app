@@ -1,9 +1,10 @@
-import { flash, revealIfHidden } from '../site/sticky';
+import { fitWindow, flash, holdOnResize, revealIfHidden } from '../site/sticky';
 import { icon } from '../site/icon';
 import { BufferGeometry, Float32BufferAttribute } from 'three';
+import { STLLoader } from 'three/examples/jsm/loaders/STLLoader.js';
 import { moldReport } from './mold';
 import { Viewer, twoColorRegions, Piece } from './viewer';
-import { paintGroups, colorDots } from './painted';
+import { paintGroups, paintPieces, piecesFromHeader, toolColors, toolPaint, colorDots } from './painted';
 import { loadGeometry, loadGeometryFromUrl, extensionOf, BROWSER_FORMATS } from './loaders';
 import ParseWorker from './parse.worker?worker';
 import type { ParseReply } from './parse.worker';
@@ -492,13 +493,16 @@ async function showServerStl(url: string): Promise<boolean> {
         state.geometry = geom;
         state.geo = stats(geom);
         const parts = partsByColour(geom, state.file?.tool?.params);
-        viewer?.setGeometry(geom, state.params.scale, state.file?.kind ?? null, parts ? null : twoColorRegions(state.file?.tool?.params));
+        const regions = parts ? null : twoColorRegions(state.file?.tool?.params);
+        viewer?.setGeometry(geom, state.params.scale, state.file?.kind ?? null, regions);
         // colours painted in a slicer: the server's STL has its triangles sorted by colour, the runs paint it (docs/AN.md §19);
         // the canvas says how it went (data-painted: colors, or mismatch when the runs do not cover this STL), for a check from outside
         if (viewer && !parts && state.file?.groups?.length) {
             const ok = paintGroups(viewer, state.file.groups, triangleCount(geom));
             if (ok) paintedFor = state.file.uuid;
             markPainted(ok ? 'colors' : 'mismatch');
+        } else if (viewer && !parts && !regions) {
+            paintTool(state.file, triangleCount(geom));
         }
         if (viewer && parts) {
             viewer.setPieces(parts.pieces);
@@ -685,6 +689,8 @@ function recalculate(): void {
 function showResult(): void {
     $('hero').classList.add('hidden');
     $('result').classList.remove('hidden');
+    // from lg the grid fills the window under the header, measured once it shows (the hero above it is gone by now)
+    if (!viewer) { fitWindow(document.getElementById('calc-grid')); holdOnResize(document.getElementById('calc-panel'), '#price-card'); }
     if (!viewer) viewer = new Viewer($('viewer') as HTMLCanvasElement);
     document.getElementById('calc-bar')?.removeAttribute('hidden');   // a phone: the price and the way on at the bottom
     revealIfHidden($('result'), 'start');   // the result replaces the hero at the top: the page moves only when it is not in view (docs/AN.md §18)
@@ -1085,6 +1091,57 @@ async function showPainted(file: FileInfo | null): Promise<void> {
             viewer.keepView(true);
             const loaded = await showServerStl(file.stl_url).finally(() => viewer?.keepView(false));
             if (loaded) { paintedFor = file.uuid; return; }   // painted, or runs that do not fit (data-painted says which): not again
+        }
+        markPainted('failed');
+    } finally {
+        if (paintingFor === file.uuid) paintingFor = null;
+    }
+}
+
+/**
+ * A design made by one of our tools keeps the colours chosen on its page (docs/AN.md §20): the whole model in its one
+ * colour, or its pieces each in its part's colour. A design whose coloured parts lie in one body (a medal's motif flush
+ * in it, a coaster's rim) is first shown in its one-body model, then its pieces come from the server and take its place.
+ * Anything else is shown as it came.
+ */
+function paintTool(file: FileInfo | null, triangles: number): void {
+    if (!viewer) return;
+    const look = toolPaint(file?.tool?.params, triangles);
+    if (look) {
+        paintPieces(viewer, look.pieces, look.colors);
+        markPainted('colors');
+        return;
+    }
+    if (!file?.tool?.pieces_url) return;
+    // until the pieces come: the whole in the colour of its body, not the plate's shading by height
+    paintPieces(viewer, null, [toolColors(file.tool.params).body ?? null]);
+    void showToolPieces(file, file.tool.pieces_url);
+}
+
+/** The pieces of a design in several colours (ToolsApiController::paramPieces), loaded once per file in place of its model. */
+async function showToolPieces(file: FileInfo, url: string): Promise<void> {
+    if (paintingFor === file.uuid) return;
+    paintingFor = file.uuid;
+    markPainted('loading');
+    try {
+        for (let attempt = 0; attempt < 3; attempt++) {
+            if (attempt) await new Promise((r) => window.setTimeout(r, 1500 * attempt));
+            if (state.file?.uuid !== file.uuid || !viewer) return;
+            try {
+                const res = await fetch(url, { credentials: 'same-origin' });
+                if (!res.ok) continue;
+                const geom = new STLLoader().parse(await res.arrayBuffer());
+                const pieces = piecesFromHeader(res.headers.get('X-Pieces'), triangleCount(geom));
+                if (state.file?.uuid !== file.uuid || !viewer) return;
+                const hex = toolColors(file.tool?.params);
+                if (!pieces) { markPainted('mismatch'); return; }
+                // the same shape, its triangles grouped by piece: the visitor's view stays; sizes and prices keep the stored model's numbers
+                viewer.keepView(true);
+                try { viewer.setGeometry(geom, state.params.scale, file.kind ?? null); } finally { viewer.keepView(false); }
+                paintPieces(viewer, pieces, pieces.map((x) => hex[x.name] ?? null));
+                markPainted('colors');
+                return;
+            } catch { /* the network: tried again */ }
         }
         markPainted('failed');
     } finally {

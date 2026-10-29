@@ -48,10 +48,12 @@
 
     {{-- ── Result: viewer + controls + price ─────────────────────────── --}}
     <section id="result" class="hidden">
-        <div class="grid grid-cols-1 gap-4 lg:grid-cols-[1.2fr_1fr]">
-            <div class="stick-top min-w-0 overflow-hidden rounded-2xl border border-slate-200 bg-white">
-                <div class="relative">
-                <canvas id="viewer" class="block h-[45vh] w-full touch-none lg:h-[70vh]"></canvas>
+        {{-- from lg the grid fills the window under the header (stick-fit, --fit-top from calculator.ts showResult): the viewer
+             stands on the left, the column on the right scrolls inside its frame (docs/AN.md §20) --}}
+        <div id="calc-grid" class="stick-fit grid grid-cols-1 gap-4 lg:grid-cols-[1.2fr_1fr] lg:grid-rows-[minmax(0,1fr)]">
+            <div id="calc-stage" class="min-w-0 overflow-hidden rounded-2xl border border-slate-200 bg-white lg:flex lg:h-full lg:flex-col">
+                <div class="relative lg:min-h-0 lg:flex-1">
+                <canvas id="viewer" class="block h-[45vh] w-full touch-none lg:h-full"></canvas>
                 {{-- the page's own heading: the name of the model (audit 10/2026, AH §5 #8: the only h1 of /c/<code> was the hidden slogan);
                      on the home page the slogan stays the one heading --}}
                 @php $badgeTag = $initial ? 'h1' : 'div'; @endphp
@@ -66,10 +68,11 @@
             </div>
 
             {{-- on a phone the price card comes first and the viewer under it (Z.md N11: the price was on the second
-                 screen); the column dissolves into the grid there, so the card can be ordered before the viewer --}}
-            <div class="flex flex-col gap-4 max-lg:contents">
-                {{-- the price with the way on stays at the top of the column from lg (docs/AN.md §18); the settings scroll under it --}}
-                <div id="price-card" class="stick-top min-w-0 rounded-2xl border border-slate-200 bg-white p-4 max-lg:order-first">
+                 screen); the column dissolves into the grid there, so the card can be ordered before the viewer.
+                 From lg the column is one window that scrolls inside a faint frame, so it shows that it scrolls (Roman, 29 Oct 2026) --}}
+            <div id="calc-panel" class="stick-scroll flex flex-col gap-4 max-lg:contents lg:rounded-2xl lg:border lg:border-slate-200 lg:pb-3 lg:pl-3">
+                {{-- the price with the way on stays at the top of the window from lg (docs/AN.md §18, §20); the settings scroll under it --}}
+                <div id="price-card" class="min-w-0 rounded-2xl border border-slate-200 bg-white p-4 max-lg:order-first lg:sticky lg:top-0 lg:z-10 lg:mt-3">
                     <div class="flex items-center justify-between gap-2 text-sm">
                         <span id="status" class="font-medium text-slate-600">{{ __('calc.status.reading') }}</span>
                         <span id="status-spinner" class="h-4 w-4 animate-spin rounded-full border-2 border-action border-t-transparent"></span>

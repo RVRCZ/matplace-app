@@ -101,6 +101,10 @@ const PAINTED = arg('file', null);
 const PAINTED_STATE = "[document.getElementById('status')?.textContent, document.getElementById('calc-colors-line')?.textContent, document.getElementById('calc-colors-prices')?.textContent, 'painted=' + (document.getElementById('viewer')?.dataset.painted ?? '-'), location.pathname].map((x) => (x || '').trim()).join(' | ')";
 const STL_503_ONCE = "(() => { const f = window.fetch; let n = 0; window.fetch = (u, o) => (String(u).includes('model.stl') && n++ < 1 ? Promise.resolve(new Response('', { status: 503 })) : f(u, o)); return 'the first model.stl answers 503'; })()";
 const COLORS_SAME = "(() => { const f = window.fetch; window.fetch = async (u, o) => { const r = await f(u, o); if (!String(u).includes('/api/calculations')) return r; const j = await r.clone().json().catch(() => null); if (!j?.calculation?.colors) return r; j.calculation.colors.multi = j.calculation.colors.one; return new Response(JSON.stringify(j), { status: r.status, headers: { 'Content-Type': 'application/json' } }); }; return 'colors.multi = colors.one in every calculation'; })()";
+// the calculation of a tool's design keeps its colours (docs/AN.md §20): the viewer's data-painted, the pieces it shows,
+// and where the price card, the viewer and the panel are on the screen
+const TOOL_COLORS = "[location.pathname, 'painted=' + (document.getElementById('viewer')?.dataset.painted ?? '-'), document.getElementById('status')?.textContent, document.getElementById('dims-badge')?.textContent].map((x) => (x || '').trim()).join(' | ')";
+const JUMP_PANEL = "(() => { const r = (id) => Math.round(document.getElementById(id)?.getBoundingClientRect().top ?? -1); const p = document.getElementById('calc-panel'); return { y: window.scrollY, panel: p?.scrollTop, panelH: p?.clientHeight, panelScroll: p?.scrollHeight, price: r('price-card'), viewer: r('viewer'), recalc: r('cta-recalc'), frame: p ? getComputedStyle(p).borderTopWidth + ' ' + getComputedStyle(p).borderTopColor : '-' }; })()";
 const FLOWS = {
     'file-price': [['go', '/'], ['file', '#file-input', FIXTURES.cube], ['wait', 25000], ['shot'], ['nav'], ['clickText', ORDER], ['wait', 5000], ['shot']],
     'tool-price': [['go', '/tools/qr'], ['wait', 6000], ['shot'], ['nav'], ['click', '#tool-go'], ['wait', 20000], ['shot'], ['nav'], ['clickText', ORDER], ['wait', 5000], ['shot']],
@@ -119,6 +123,16 @@ const FLOWS = {
     // anchoring changes it when content above grows, without moving anything visible); the steps switch inside the panel
     'jumps-tool': [['go', '/tools/box'], ['wait', 5000], ['read', JUMP_TOOL], ['click', '#tool-nav [data-nav]:last-child'], ['wait', 1500], ['read', JUMP_TOOL],
         ['click', '#tool-nav [data-nav]:first-child'], ['wait', 1500], ['read', JUMP_TOOL], ['shot']],
+    ...Object.fromEntries(['box', 'medallion', 'coaster'].map((t) => [`colors-${t}`, [['go', `/tools/${t}`], ['wait', 7000], ['shot'], ['nav'], ['click', '#tool-go'], ['wait', 25000], ['read', TOOL_COLORS], ['shot'],
+        // turned over: a medal prints face down, its number lies on the side the first view does not show
+        ['drag', '#viewer', [0, -320]], ['wait', 800], ['shot']]])),
+    'colors-stl': [['go', '/'], ['file', '#file-input', FIXTURES.cube], ['wait', 20000], ['read', TOOL_COLORS], ['shot']],
+    // the right column of the calculation scrolls inside its frame from lg: the panel moves, the price card, the viewer and the window stay
+    // (the pieces are typed while their field is in view, as a person does: typing focuses the field, and a focused field is brought into view)
+    'jumps-panel': [['go', '/'], ['file', '#file-input', FIXTURES.cube], ['wait', 20000], ['read', JUMP_PANEL], ['shot'], ['type', '#quantity', '3'], ['wait', 600], ['read', JUMP_PANEL],
+        ['read', "document.getElementById('cta-recalc').scrollIntoView({ block: 'nearest' }); 'the button brought into the panel, as a person scrolls to it'"], ['wait', 800], ['read', JUMP_PANEL],
+        ['press', '#cta-recalc'], ['wait', 1500], ['read', JUMP_PANEL], ['wait', 10000], ['read', JUMP_PANEL], ['shot'],
+        ['read', "document.getElementById('calc-panel').scrollTo({ top: 99999 }); 'panel scrolled to its end'"], ['wait', 800], ['read', JUMP_PANEL], ['shot']],
     'jumps-calc': [['go', '/'], ['file', '#file-input', FIXTURES.cube], ['wait', 20000], ['type', '#quantity', '3'], ['wait', 600],
         ['read', "document.getElementById('cta-recalc').scrollIntoView({ block: 'center' }); 'the button brought on the screen, as a person has it before the click'"], ['wait', 800],
         ['read', JUMP_CALC], ['click', '#cta-recalc'], ['wait', 1500], ['read', JUMP_CALC], ['wait', 10000], ['read', JUMP_CALC], ['shot']],
@@ -339,6 +353,23 @@ async function walk(flow, width, lang, port) {
             else if (what === 'nav') navigation = once('Page.loadEventFired', 30000);
             else if (what === 'reload') { const loaded = once('Page.loadEventFired'); await cdp('Page.reload', {}); await loaded; await sleep(1500); }
             else if (what === 'read') steps.push({ step: 'read', value: await evaluate(cdp, a) });
+            else if (what === 'press') {
+                // a real mouse click in the middle of an element on the screen (pointer events, focus), not el.click()
+                const at = await evaluate(cdp, `(() => { const r = document.querySelector(${JSON.stringify(a)})?.getBoundingClientRect(); return r ? [r.left + r.width / 2, r.top + r.height / 2] : null; })()`);
+                if (!at) { steps.push({ step: `press ${a}`, missing: true }); continue; }
+                await cdp('Input.dispatchMouseEvent', { type: 'mousePressed', x: at[0], y: at[1], button: 'left', clickCount: 1 });
+                await cdp('Input.dispatchMouseEvent', { type: 'mouseReleased', x: at[0], y: at[1], button: 'left', clickCount: 1 });
+                steps.push({ step: `press ${a}`, at });
+            } else if (what === 'drag') {
+                // a real mouse drag across the middle of an element (the viewer turned round): a = selector, b = [dx, dy] in px
+                const at = await evaluate(cdp, `(() => { const r = document.querySelector(${JSON.stringify(a)})?.getBoundingClientRect(); return r ? [r.left + r.width / 2, r.top + r.height / 2] : null; })()`);
+                if (!at) { steps.push({ step: `drag ${a}`, missing: true }); continue; }
+                const [x, y] = at; const [dx, dy] = b;
+                await cdp('Input.dispatchMouseEvent', { type: 'mousePressed', x, y, button: 'left', clickCount: 1 });
+                for (let i = 1; i <= 10; i++) { await cdp('Input.dispatchMouseEvent', { type: 'mouseMoved', x: x + (dx * i) / 10, y: y + (dy * i) / 10, button: 'left', buttons: 1 }); await sleep(30); }
+                await cdp('Input.dispatchMouseEvent', { type: 'mouseReleased', x: x + dx, y: y + dy, button: 'left', clickCount: 1 });
+                steps.push({ step: `drag ${a}`, by: b });
+            }
             else if (what === 'wait') { if (navigation) { await navigation; navigation = null; await sleep(1500); } await sleep(a); }
             else if (what === 'file') {
                 const { root } = await cdp('DOM.getDocument', { depth: 0 });

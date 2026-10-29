@@ -70,7 +70,8 @@
     </header>
 
     {{-- ── the panel ── --}}
-    <div id="tool-panel" class="stick-scroll order-3 min-w-0 lg:col-start-1 lg:row-start-2 lg:self-stretch">
+    {{-- from lg the panel scrolls inside a faint frame, so it shows that it scrolls (Roman, 29 Oct 2026, docs/AN.md §20) --}}
+    <div id="tool-panel" class="stick-scroll order-3 min-w-0 lg:col-start-1 lg:row-start-2 lg:self-stretch lg:rounded-2xl lg:border lg:border-slate-200 lg:pb-3 lg:pl-3">
         @unless($available)
             <div class="note-warn text-sm lg:mt-4">{{ $unavailable ?? __('sign.unavailable') }}</div>
         @else

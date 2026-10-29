@@ -411,6 +411,8 @@ Route::prefix('api')->name('api.')->group(function () {
     Route::get('artwork/library/{category}/{slug}.svg', [ArtworkController::class, 'item'])->where(['category' => '[a-z-]+', 'slug' => '[a-z0-9-]+'])->name('artwork.item');
     Route::get('artwork/mine', [ArtworkController::class, 'mine'])->name('artwork.mine');
     Route::get('artwork/file/{id}', [ArtworkController::class, 'file'])->where('id', '[0-9a-f-]{36}')->name('artwork.file');
+    // a design in several colours whose parts lie in one body (a medal, a coaster): its pieces for the calculation's preview
+    Route::get('tools/param/{modelFile}/pieces', [ToolsApiController::class, 'paramPieces'])->middleware(['file', 'throttle:30,1,pieces'])->name('tools.param.pieces');
     Route::get('tools/param/{modelFile}/{part}.stl', [ToolsApiController::class, 'paramPart'])->middleware(['file', 'throttle:30,1,part'])->name('tools.param.part');
     Route::post('tools/relief', [ToolsApiController::class, 'relief'])->middleware('throttle:12,1,relief')->name('tools.relief');
     // filament art and the editing of a model file (session 3)
