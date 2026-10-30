@@ -7,6 +7,7 @@ use App\Models\FarmCommand;
 use App\Models\FarmOrder;
 use App\Models\FarmPrinter;
 use App\Models\FarmPrintJob;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Log;
 
 /**
@@ -32,7 +33,10 @@ final class AgentService
 
     private const PRINTER_STATES = [FarmPrinter::STATE_IDLE, FarmPrinter::STATE_PRINTING, FarmPrinter::STATE_PAUSED, FarmPrinter::STATE_ERROR, FarmPrinter::STATE_UNKNOWN];
 
-    public function __construct(private readonly OrderFlow $flow, private readonly Dispatcher $dispatcher, private readonly FarmSettings $settings) {}
+    /** What the "paused" mail says when the printer gave no reason (the Kobra S1's screen only offers resume or stop). */
+    public const NO_REASON = 'tiskárna důvod neposlala';
+
+    public function __construct(private readonly OrderFlow $flow, private readonly Dispatcher $dispatcher, private readonly FarmSettings $settings, private readonly PrinterFiles $files) {}
 
     /**
      * @param  array<int, array<string,mixed>>  $reports  one per printer: key, state, telemetry, job
@@ -50,13 +54,18 @@ final class AgentService
             }
             $state = in_array($report['state'] ?? null, self::PRINTER_STATES, true) ? $report['state'] : FarmPrinter::STATE_UNKNOWN;
             $reachable = ($report['state'] ?? null) !== 'offline';
+            $telemetry = is_array($report['telemetry'] ?? null) ? $report['telemetry'] : null;
             $printer->update([
                 'state' => $reachable ? $state : FarmPrinter::STATE_UNKNOWN,
-                'telemetry' => is_array($report['telemetry'] ?? null) ? $this->slim($report['telemetry']) : $printer->telemetry,
+                'telemetry' => $telemetry !== null ? $this->slim($telemetry) : $printer->telemetry,
                 // the agent is alive but cannot reach the printer: the printer itself is not "seen"
                 'last_seen_at' => $reachable ? now() : $printer->last_seen_at,
                 'offline_notified_at' => $reachable ? null : $printer->offline_notified_at,
             ]);
+            if ($reachable && $telemetry !== null) {
+                $this->printerMessage($printer, $telemetry);
+                $this->plateConfirmed($printer, $telemetry);
+            }
             if (is_array($report['job'] ?? null)) {
                 $this->jobReport($printer, $report['job']);
             }
@@ -68,6 +77,43 @@ final class AgentService
         }
 
         return $this->takeCommands($printers->pluck('id')->all());
+    }
+
+    /**
+     * What the printer has to say right now, kept with its time even outside a print (the screen's text, the ACE's
+     * complaint, the reason of a pause). The agent repeats it in every report, so the words are stored when they
+     * change; an empty report does not wipe the last ones, the time says how old they are (docs/AM.md §10).
+     */
+    private function printerMessage(FarmPrinter $printer, array $telemetry): void
+    {
+        $text = mb_substr(trim((string) ($telemetry['message'] ?? '')), 0, 300);
+        if ($text !== '' && $text !== (string) $printer->message) {
+            $printer->update(['message' => $text, 'message_at' => now()]);
+        }
+    }
+
+    /**
+     * The operator confirmed the finished print at the printer (agent: telemetry.bed_cleared_at, the unix time of the
+     * moment; on a Kobra S1 with Rinkhals the reset of the finished job, docs/AM.md §10): the plate counts as clear and
+     * the queue goes on, exactly as the button in the admin does. Only forward in time (the agent repeats the moment
+     * for a minute), only without a job on the machine, only fresh.
+     */
+    private function plateConfirmed(FarmPrinter $printer, array $telemetry): void
+    {
+        $at = (int) ($telemetry['bed_cleared_at'] ?? 0);
+        if ($at <= 0 || $printer->bed_clear || $at < now()->subHours(6)->timestamp || ($printer->bed_cleared_at !== null && $at <= $printer->bed_cleared_at->timestamp)) {
+            return;
+        }
+        if ($printer->activeJob()) {
+            return;
+        }
+        $printer->update(['bed_clear' => true, 'bed_cleared_at' => Carbon::createFromTimestamp($at)]);
+    }
+
+    /** The printer's file list (or the result of a delete / cleanup, with the fresh list) the agent sent. */
+    public function filesReport(FarmPrinter $printer, array $data): void
+    {
+        $this->files->store($printer, $data);
     }
 
     /** @param array<string,mixed> $r id, status, progress, print_duration, filament_used, message */
@@ -86,6 +132,11 @@ final class AgentService
             'telemetry' => is_array($r['telemetry'] ?? null) ? $this->slim($r['telemetry']) : $job->telemetry,
             'reported_at' => now(),
         ]);
+        // the printer's words stay with the job (the newest with its time, the last 20 as history) even after a later
+        // report without them: the reason of B3's pause was lost that way (F26-000108, 29 Oct 2026)
+        if (isset($r['message'])) {
+            $job->noteMessage((string) $r['message']);
+        }
         $order = $job->order;
 
         switch ($status) {
@@ -94,6 +145,7 @@ final class AgentService
                 $job->status = $status === 'paused' ? FarmPrintJob::STATUS_PAUSED : FarmPrintJob::STATUS_PRINTING;
                 $job->started_at ??= now();
                 // pauses are counted: the fallback duration of a print the printer gave no numbers for leaves them out
+                $newPause = $status === 'paused' && $job->paused_at === null;
                 if ($status === 'paused') {
                     $job->paused_at ??= now();
                 } else {
@@ -102,6 +154,10 @@ final class AgentService
                 $job->save();
                 if ($order->status === FarmOrder::STATUS_QUEUED) {
                     $this->flow->move($order, FarmOrder::STATUS_PRINTING, 'agent');
+                }
+                if ($newPause) {
+                    // one mail per pause (the next report of the same pause says nothing new; a pause after a resume is news again)
+                    $this->adminPaused($job, $order, $printer);
                 }
                 break;
 
@@ -148,6 +204,20 @@ final class AgentService
             default:
                 $job->save();
         }
+    }
+
+    /** The printer paused the print by itself (or somebody did at the printer): the operator hears once, with the reason when there is one. */
+    private function adminPaused(FarmPrintJob $job, FarmOrder $order, FarmPrinter $printer): void
+    {
+        $reason = trim((string) $job->message);
+        $where = $printer->name.($order->plates > 1 ? ', '.__('farm.admin.mail.line_plate', ['n' => $job->plate, 'of' => $order->plates], 'cs') : '').', '
+            .__('farm.admin.mail.line_progress', ['percent' => round((float) $job->progress)], 'cs');
+        $this->flow->alertAdmin(__('farm.admin.mail.paused', ['number' => $order->number, 'printer' => $printer->name], 'cs'), $order, [
+            ...$this->flow->orderLines($order),
+            __('farm.admin.mail.line_where', ['where' => $where], 'cs'),
+            $reason !== '' && $reason !== self::ERROR_PENDING ? __('farm.admin.mail.line_pause_reason', ['message' => $reason], 'cs') : __('farm.admin.mail.line_pause_none', ['none' => self::NO_REASON], 'cs'),
+            __('farm.admin.mail.line_next_paused', [], 'cs'),
+        ], 'paused');
     }
 
     /** The agent finished (or could not do) a command. */
@@ -318,13 +388,13 @@ final class AgentService
         $this->flow->recordActuals($order, $seconds ? (int) ceil($seconds / 60) : null, $grams > 0 ? round($grams, 1) : null, 'agent', $doneJobs->contains(fn (FarmPrintJob $j) => $j->stats_estimated));
     }
 
-    /** Telemetry is shown, not analysed: keep a small flat structure whatever the agent sends. */
+    /** Telemetry is shown, not analysed: keep a small flat structure whatever the agent sends (the printer's message may be a long line). */
     private function slim(array $t): array
     {
         $out = [];
         foreach (array_slice($t, 0, 24, true) as $k => $v) {
             if (is_scalar($v) || $v === null) {
-                $out[mb_substr((string) $k, 0, 40)] = is_string($v) ? mb_substr($v, 0, 120) : $v;
+                $out[mb_substr((string) $k, 0, 40)] = is_string($v) ? mb_substr($v, 0, $k === 'message' ? 300 : 120) : $v;
             }
         }
 

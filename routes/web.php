@@ -7,6 +7,7 @@ use App\Http\Controllers\Admin\CollectionController as AdminCollectionController
 use App\Http\Controllers\Admin\ContentController as AdminContentController;
 use App\Http\Controllers\Admin\EmailController as AdminEmailController;
 use App\Http\Controllers\Admin\FarmCatalogController;
+use App\Http\Controllers\Admin\FarmFileController;
 use App\Http\Controllers\Admin\FarmOrderController;
 use App\Http\Controllers\Admin\FarmTestPhotoController;
 use App\Http\Controllers\Admin\FarmTuningController;
@@ -458,6 +459,15 @@ Route::middleware(['auth', 'role:admin'])->prefix('admin/farm')->name('admin.far
     Route::post('/printers/{printer}/bed', [$orders, 'bed'])->name('printers.bed');
     Route::post('/printers/{printer}/command', [$orders, 'command'])->name('printers.command');
     Route::get('/printers/{printer}/snapshot', [$orders, 'printerSnapshot'])->name('printers.snapshot');
+
+    // the files on a printer's disk: list, one up to the server, delete, tidy (docs/AM.md §10)
+    $files = FarmFileController::class;
+    Route::post('/printers/{printer}/files/list', [$files, 'list'])->name('printers.files.list');
+    Route::post('/printers/{printer}/files/fetch', [$files, 'fetch'])->name('printers.files.fetch');
+    Route::post('/printers/{printer}/files/delete', [$files, 'delete'])->name('printers.files.delete');
+    Route::post('/printers/{printer}/files/cleanup', [$files, 'cleanup'])->name('printers.files.cleanup');
+    Route::post('/printers/{printer}/files/forget', [$files, 'forget'])->name('printers.files.forget');
+    Route::get('/printers/{printer}/files/{name}', [$files, 'download'])->where('name', '[^/]+')->name('printers.files.download');
 
     Route::get('/printers', [$catalog, 'printers'])->name('printers');
     Route::get('/printers/new', [$catalog, 'editPrinter'])->name('printers.new');

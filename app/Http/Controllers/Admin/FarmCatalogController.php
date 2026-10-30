@@ -4,6 +4,8 @@ namespace App\Http\Controllers\Admin;
 
 use App\Domain\Farm\ColorCatalog;
 use App\Domain\Farm\FarmSettings;
+use App\Domain\Farm\OrderFlow;
+use App\Domain\Farm\PrinterFiles;
 use App\Domain\Farm\ProfileLibrary;
 use App\Domain\Farm\Wallet;
 use App\Http\Controllers\Controller;
@@ -36,7 +38,11 @@ class FarmCatalogController extends Controller
 
     public function editPrinter(?FarmPrinter $printer = null): View
     {
+        $files = app(PrinterFiles::class);
+
         return view('admin.farm.printer_edit', [
+            // the printer's disk (docs/AM.md §10): the agent's last list, the copies on the server, what must stay, what the commands said
+            'files' => $printer && $printer->isAgentDriven() ? ['listing' => $files->listing($printer), 'fetched' => $files->fetched($printer), 'keep' => $files->keep($printer), 'commands' => $files->commands($printer)] : null,
             'printer' => $printer ?? new FarmPrinter(['mode' => FarmPrinter::MODE_MANUAL, 'bed_x' => 250, 'bed_y' => 250, 'bed_z' => 250, 'nozzle_mm' => 0.4, 'time_factor' => 1, 'weight_factor' => 1, 'enabled' => true, 'machine_profile' => 'machine.json', 'process_profiles' => ['draft' => 'process_draft.json', 'standard' => 'process_standard.json', 'fine' => 'process_fine.json']]),
             'agents' => FarmAgent::whereNull('revoked_at')->orderBy('name')->get(),
             'colors' => FarmColor::with('material')->where('enabled', true)->get()->sortBy(fn ($c) => [$c->material->sort, $c->sort])->values(),
@@ -488,7 +494,7 @@ class FarmCatalogController extends Controller
         $data['farm_open'] = $request->boolean('farm_open');
         $data['farm_public'] = $request->boolean('farm_public');
         // which events the operator is mailed about (OrderFlow::alertAdmin); a box left empty switches that kind off
-        foreach (['paid', 'printing', 'done', 'problem'] as $kind) {
+        foreach (OrderFlow::ADMIN_KINDS as $kind) {
             $data['notify_'.$kind] = $request->boolean('notify_'.$kind);
         }
         $data['delivery_modes'] = array_values(array_intersect(['packeta_point', 'packeta_home', 'pickup'], (array) $request->input('delivery_modes', []))) ?: ['packeta_point', 'packeta_home'];

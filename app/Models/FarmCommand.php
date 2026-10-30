@@ -24,6 +24,17 @@ class FarmCommand extends Model
     /** clears the "error" a failed print leaves behind (Klipper keeps it until told otherwise); needs no job, moves and heats nothing */
     public const TYPE_RESET = 'reset';
 
+    /** the printer's storage (docs/AM.md §10): the list of its files to the server; payloads: fetch {name}, delete {name}, cleanup {keep: [names]} */
+    public const TYPE_FILES = 'files';
+
+    public const TYPE_FETCH = 'fetch';
+
+    public const TYPE_DELETE = 'delete';
+
+    public const TYPE_CLEANUP = 'cleanup';
+
+    public const FILE_TYPES = [self::TYPE_FILES, self::TYPE_FETCH, self::TYPE_DELETE, self::TYPE_CLEANUP];
+
     protected $fillable = ['farm_printer_id', 'farm_print_job_id', 'type', 'payload', 'status', 'result', 'created_by', 'sent_at', 'finished_at'];
 
     protected $casts = ['payload' => 'array', 'sent_at' => 'datetime', 'finished_at' => 'datetime'];

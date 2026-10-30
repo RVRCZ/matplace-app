@@ -47,7 +47,15 @@
             </div>
 
             @if($t)
-                <p class="mt-2 text-xs text-slate-600">@foreach(collect($t)->except($dryerKeys) as $k => $v){{ $k }}: <strong>{{ is_float($v) ? round($v, 1) : $v }}</strong>@if(! $loop->last) · @endif @endforeach</p>
+                <p class="mt-2 text-xs text-slate-600">@foreach(collect($t)->except([...$dryerKeys, 'message', 'bed_cleared_at']) as $k => $v){{ $k }}: <strong>{{ is_float($v) ? round($v, 1) : $v }}</strong>@if(! $loop->last) · @endif @endforeach</p>
+            @endif
+            @if($p->message)
+                {{-- what the printer said last, with its time: the reason of a pause, the screen's text, the ACE's complaint (agent 0.2.9) --}}
+                <p class="mt-1 rounded-lg {{ ($t['message'] ?? '') === $p->message ? 'bg-amber-50 text-amber-900' : 'bg-slate-50 text-slate-600' }} px-2 py-1 text-xs" data-printer-message><span class="font-semibold">{{ __('farm.admin.message') }}</span> {{ $p->message_at?->format('j. n. H:i') }}: {{ $p->message }}</p>
+            @endif
+            @if($row['command'])
+                @php $c = $row['command']; @endphp
+                <p class="mt-1 text-xs text-slate-500" data-last-command>{{ __('farm.admin.last_command') }}: {{ __('farm.admin.command_type.'.$c->type) }} · {{ __('farm.admin.command_status.'.$c->status) }} {{ ($c->finished_at ?? $c->created_at)->format('H:i') }}@if($c->result) · {{ $c->result }}@endif</p>
             @endif
             @if($p->snapshot_path)
                 <img src="{{ route('admin.farm.printers.snapshot', $p) }}?t={{ $p->snapshot_at?->timestamp }}" alt="{{ __('farm.order.camera') }}" class="mt-2 w-full rounded-xl border border-slate-200">
@@ -58,7 +66,7 @@
             <form method="post" action="{{ route('admin.farm.printers.bed', $p) }}" data-ajax class="mt-3 rounded-xl {{ $p->bed_clear ? 'bg-ok-soft' : 'bg-slate-100' }} p-3">
                 @csrf
                 <div class="flex flex-wrap items-center justify-between gap-2">
-                    <span class="text-sm font-semibold">{{ $p->bed_clear ? '✓ '.__('farm.admin.bed_clear') : __('farm.admin.bed_busy') }}</span>
+                    <span class="text-sm font-semibold">{{ $p->bed_clear ? '✓ '.__('farm.admin.bed_clear') : __('farm.admin.bed_busy') }}@if($p->bed_clear && $p->bed_cleared_at) <span class="font-normal text-xs text-slate-500">{{ $p->bed_cleared_at->format('j. n. H:i') }}</span>@endif</span>
                     @if($p->bed_clear)
                         <button name="clear" value="0" class="btn-quiet text-sm">{{ __('farm.admin.bed_busy_do') }}</button>
                     @else
@@ -115,6 +123,12 @@
                     {{-- which spools the job takes: farm, printer, slot ("U33"); a badge when one is fed straight from the holder --}}
                     @if($spools = $job->order->spoolText())<div class="mt-0.5 text-xs text-slate-600">{{ $spools }}@if($job->order->manualOnly()) <span class="rounded-full bg-amber-100 px-2 py-0.5 font-semibold text-amber-800" data-manual-only>{{ __('farm.admin.manual_only_badge') }}</span>@endif</div>@endif
                     <div class="mt-1 text-xs text-slate-600">{{ $job->status }} · {{ round($job->progress) }} % @if($job->message)· {{ $job->message }}@endif</div>
+                    @if($history = array_slice($job->messageHistory(), 0, 3))
+                        {{-- the printer's last words about this job, newest first; the whole history is on the order's page --}}
+                        <ul class="mt-1 space-y-0.5 text-xs text-slate-600" data-job-messages>
+                            @foreach($history as $m)<li><span class="text-slate-400">{{ \Illuminate\Support\Carbon::parse($m['t'])->format('H:i:s') }}</span> {{ $m['m'] }}</li>@endforeach
+                        </ul>
+                    @endif
                     <div class="mt-1 h-2 overflow-hidden rounded-full bg-slate-200"><div class="h-full bg-action" style="width: {{ min(100, $job->progress) }}%"></div></div>
                     @if($p->isAgentDriven())
                         <form method="post" action="{{ route('admin.farm.printers.command', $p) }}" data-ajax class="mt-2 flex flex-wrap gap-2">

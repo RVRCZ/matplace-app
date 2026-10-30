@@ -15,6 +15,8 @@ Route::prefix('api/agent')->name('agent.')->middleware(['farm.agent', 'throttle:
     Route::post('commands/{command}/result', [AgentController::class, 'commandResult'])->name('commands.result');
     Route::get('jobs/{job}/gcode', [AgentController::class, 'gcode'])->name('jobs.gcode');
     Route::post('printers/{key}/snapshot', [AgentController::class, 'snapshot'])->name('printers.snapshot');
+    Route::post('printers/{key}/files', [AgentController::class, 'files'])->name('printers.files');
+    Route::post('printers/{key}/files/upload', [AgentController::class, 'uploadFile'])->name('printers.files.upload');
 });
 
 Route::post('webhooks/payments/{name}', [CreditController::class, 'webhook'])->middleware('throttle:120,1')->name('webhooks.payments');

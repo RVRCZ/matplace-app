@@ -39,7 +39,7 @@ final class OrderFlow
     ];
 
     /** The kinds of mail the operator can switch off one by one in the farm's settings (`notify_<kind>`). */
-    public const ADMIN_KINDS = ['paid', 'printing', 'done', 'problem'];
+    public const ADMIN_KINDS = ['paid', 'printing', 'done', 'problem', 'paused'];
 
     /** A camera picture bigger than this is shrunk before it rides along with the "done" mail, or left out. */
     public const SNAPSHOT_MAX_BYTES = 300 * 1024;
