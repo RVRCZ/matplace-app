@@ -22,6 +22,12 @@ class FakeMoonraker:
     def __init__(self):
         self.print_stats = {"state": "standby", "filename": "", "message": ""}
         self.webhooks = {"state": "ready", "state_message": "Printer is ready"}
+        self.display = {"message": ""}
+        self.filament_hub = None        # the Rinkhals filament_hub object, None = no ACE
+        self.gcode_store = []           # [{"message", "time", "type"}] as /server/gcode_store returns them
+        self.files = {}                 # name -> (size, modified) in the gcodes root
+        self.disk = {"total": 6228017152, "used": 2943553536, "free": 2967470080}
+        self.deleted = []
         self.start_delay = 0.0          # seconds print/start sleeps before it answers
         self.start_answers = True       # False: print/start never answers (the test moves the state itself)
         self.knows_reset = True         # False: GoKlipper, SDCARD_RESET_FILE is an unknown command
@@ -39,6 +45,13 @@ class FakeMoonraker:
         app.router.add_post("/printer/gcode/script", self.script)
         app.router.add_post("/printer/firmware_restart", self.firmware_restart)
         app.router.add_post("/printer/print/cancel", self.cancel)
+        app.router.add_post("/printer/print/pause", self.pause)
+        app.router.add_post("/printer/print/resume", self.resume)
+        app.router.add_get("/server/gcode_store", self.store)
+        app.router.add_get("/server/files/directory", self.directory)
+        app.router.add_get("/server/files/gcodes/{name}", self.file_get)
+        app.router.add_delete("/server/files/gcodes/{name}", self.file_delete)
+        self.pause_answers = True       # False: print/pause and print/resume never answer (Rinkhals feeding filament)
         self.runner = web.AppRunner(app, shutdown_timeout=0.1)   # a start handler asleep "for ever" must not hold the test
         await self.runner.setup()
         site = web.TCPSite(self.runner, "127.0.0.1", 0)
@@ -51,11 +64,49 @@ class FakeMoonraker:
         await self.runner.cleanup()
 
     async def query(self, request):
-        return web.json_response({"result": {"status": {
+        status = {
             "print_stats": dict(self.print_stats), "virtual_sdcard": {"progress": 0.0},
             "extruder": {"temperature": 25.0, "target": 0.0}, "heater_bed": {"temperature": 24.0, "target": 0.0},
-            "webhooks": dict(self.webhooks),
-        }}})
+            "webhooks": dict(self.webhooks), "display_status": dict(self.display),
+        }
+        if self.filament_hub is not None:
+            status["filament_hub"] = self.filament_hub
+        return web.json_response({"result": {"status": status}})
+
+    async def pause(self, request):
+        if not self.pause_answers:
+            self.print_stats.update(state="paused")
+            await asyncio.sleep(3600)
+        self.print_stats.update(state="paused")
+        return web.json_response({"result": "ok"})
+
+    async def resume(self, request):
+        if not self.pause_answers:
+            self.print_stats.update(state="printing")
+            await asyncio.sleep(3600)
+        self.print_stats.update(state="printing")
+        return web.json_response({"result": "ok"})
+
+    async def store(self, request):
+        return web.json_response({"result": {"gcode_store": list(self.gcode_store)}})
+
+    async def directory(self, request):
+        files = [{"filename": n, "size": size, "modified": modified, "permissions": "rw"} for n, (size, modified) in self.files.items()]
+        return web.json_response({"result": {"dirs": [], "files": files, "disk_usage": dict(self.disk), "root_info": {"name": "gcodes", "permissions": "rw"}}})
+
+    async def file_get(self, request):
+        name = request.match_info["name"]
+        if name not in self.files:
+            return web.json_response({"error": {"code": 404, "message": "File does not exist"}}, status=404)
+        return web.Response(body=b"G1 X1\n" * (self.files[name][0] // 6), content_type="application/octet-stream")
+
+    async def file_delete(self, request):
+        name = request.match_info["name"]
+        if name not in self.files:
+            return web.json_response({"error": {"code": 404, "message": "File does not exist"}}, status=404)
+        del self.files[name]
+        self.deleted.append(name)
+        return web.json_response({"result": {"item": {"path": name, "root": "gcodes"}, "action": "delete_file"}})
 
     async def upload(self, request):
         reader = await request.multipart()

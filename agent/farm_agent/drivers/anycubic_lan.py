@@ -13,6 +13,11 @@ through the protocol the Anycubic Slicer Next uses on the local network (client:
   control    MQTT slicer/.../print  action pause | resume | stop
   camera     <urls.rtspUrl> = HTTP-FLV (H.264) on :18088; one frame decoded with PyAV (`pip install av`), else no picture
   light      MQTT web/.../light {"type": 3 (camera light), "status": 0|1, "brightness"} - only with `light: true`
+  messages   project.err_msg / err_msg of the info report, the pause flag's word (pausing, paused, resuming, stopping),
+             the state while it feeds or cuts filament, and the msg + code of the last print/report of the file (a
+             refused start, a failure). The protocol carries no text of the screen's dialogs (docs/AM.md §10).
+  files      MQTT slicer/.../file action listLocal {"path": ""} -> file/report data.file_list; the Kobra X refuses it
+             with code 10112 (18 Oct 2026), so it stays without a file list; no download, no delete in the protocol
 
 Options (config.yaml): ip (required), timeout (seconds a query waits for its report, default 8), start_wait (seconds to
 watch the printer after the start command for the print to begin, default 120), upload_timeout (default 600),
@@ -254,6 +259,8 @@ class AnycubicLanDriver(PrinterDriver):
         # progress report of the running task (its minutes and millimetres)
         self._ended: Optional[dict] = None
         self._last_progress: dict = {}
+        # the last words of a print/report about a file (a refused start's or a failure's msg and code): (file, text)
+        self._said: tuple = ("", "")
         # the last numbers also on disk (the agent's work_dir), so a print that ends after a restart of the agent
         # still gets its minutes and millimetres (docs/AM.md §9)
         self._memory_file = os.path.join(str(options["_work_dir"]), f"{key}.progress.json") if options.get("_work_dir") else None
@@ -331,6 +338,12 @@ class AnycubicLanDriver(PrinterDriver):
     def _heard(self, kind: str, data: dict) -> None:
         """Called in paho's thread for every report: a change of the printer's state wakes the agent at once."""
         details = data.get("data") if isinstance(data.get("data"), dict) else {}
+        if kind == "print" and (data.get("msg") or data.get("code") not in (None, 0, 200)):
+            # what the printer said about the file, for the operator: "device busy (code 10301)", a failure's reason
+            name = _base_name(str(details.get("filename") or self._last_progress.get("filename") or ""))
+            text = " ".join(f"{data.get('msg') or ''} (code {data.get('code')})".split()) if data.get("code") not in (None, 0, 200) else str(data.get("msg") or "")
+            if text.strip():
+                self._said = (name, text.strip())
         if kind == "print" and details.get("filename"):
             name = _base_name(str(details["filename"]))
             ended = {"finished": JOB_DONE, "failed": JOB_FAILED, "stoped": JOB_CANCELLED, "stopped": JOB_CANCELLED}.get(str(data.get("state") or ""))
@@ -508,6 +521,9 @@ class AnycubicLanDriver(PrinterDriver):
         error = d.get("error") or d.get("err_msg") or ""
         if printer_state == ERROR and error:
             telemetry["error"] = " ".join(str(error).split())[:160]
+        message = self._message(d, project, printer_state)
+        if message:
+            telemetry["message"] = message
         job = None
         if project and job_state and project.get("filename"):
             progress = float(project.get("progress") or 0)
@@ -517,9 +533,77 @@ class AnycubicLanDriver(PrinterDriver):
                 progress=100.0 if job_state == JOB_DONE else max(0.0, min(100.0, progress)),
                 print_duration=int(project.get("print_time") or 0) * 60,     # minutes on this firmware
                 filament_used=float(project.get("supplies_usage") or 0),     # millimetres
-                message=str(project.get("err_msg") or ""),
+                # a print that stands still carries everything the printer said; a running one only its own err_msg
+                message=message if job_state in (JOB_PAUSED, JOB_FAILED) else str(project.get("err_msg") or ""),
             )
         return PrinterStatus(printer_state, {k: v for k, v in telemetry.items() if v not in (None, "")}, job)
+
+    # project.pause: 0 printing, 1 paused, 2 pausing, 3 resuming, 4 stopping (kobra_connect.models.PauseState)
+    PAUSE_WORDS = {1: "paused", 2: "pausing", 3: "resuming", 4: "stopping"}
+
+    def _message(self, d: dict, project: Optional[dict], printer_state: str) -> str:
+        """What the printer has to say, in one line (docs/AM.md §10): its err_msg, the pause flag, the feeding or
+        cutting state, and the last print/report msg about this file. The LAN protocol carries no text of the dialogs
+        the screen shows, so a pause the firmware gives no reason for stays without one here too."""
+        parts: list = []
+
+        def add(text) -> None:
+            # the same thing said twice (print_stats and the console, a msg with and without its code) is said once
+            text = " ".join(str(text or "").split())
+            if not text:
+                return
+            for i, known in enumerate(parts):
+                if text in known:
+                    return
+                if known in text:
+                    parts[i] = text
+                    return
+            parts.append(text)
+
+        add(d.get("err_msg") or d.get("error"))
+        if project:
+            add(project.get("err_msg"))
+            if printer_state in (PRINTING, PAUSED):
+                add(self.PAUSE_WORDS.get(int(project.get("pause") or 0)))
+                state = str(project.get("state") or "")
+                if "filament" in state or "cutting" in state:
+                    add(state.replace("_", " "))
+            said_for, said = self._said
+            if said and said_for == _base_name(str(project.get("filename") or "")):
+                add(said)
+        elif self._said[1] and printer_state == ERROR:
+            add(self._said[1])
+        return " · ".join(parts)[:300]
+
+    async def slot_status(self, slot: int) -> Optional[str]:
+        """The box's status of the position (multiColorBox: 5 loaded, 4 ready; other numbers as "status n", which the
+        agent takes as "a spool may be there"); None when the printer does not tell its boxes."""
+        try:
+            spools = await self.spools()
+        except DriverError:
+            return None
+        p = spools.at(int(slot))
+        if not p:
+            return None
+        return {5: "loaded", 4: "ready"}.get(int(p.status), f"status {p.status}")
+
+    async def files(self) -> dict:
+        """The printer's local files as the Slicer Next asks for them (file listLocal). The Kobra X answered 10112 on
+        18 Oct 2026 and keeps its files to itself; another firmware may answer."""
+        report = await self._ask("file", "listLocal", {"path": ""}, web=False)
+        if report.get("state") == "failed" or report.get("code") not in (None, 0, 200):
+            raise DriverError(f"the printer refuses the file list: {report.get('code')} {report.get('msg') or ''}".strip())
+        entries = (report.get("data") or {}).get("file_list") or (report.get("data") or {}).get("records") or []
+        files = []
+        for e in entries:
+            if not isinstance(e, dict):
+                continue
+            name = str(e.get("filename") or e.get("name") or e.get("fileName") or "")
+            if name:
+                files.append({"name": name, "size": int(e.get("fileSize") or e.get("size") or 0),
+                              "modified": int(e.get("createTime") or e.get("modified") or e.get("time") or 0)})
+        files.sort(key=lambda f: f["modified"], reverse=True)
+        return {"files": files, "free": None, "total": None}
 
     async def snapshot(self) -> Optional[bytes]:
         """The latest picture of the printer's camera stream. The stream is kept open while pictures are wanted (a
@@ -629,7 +713,7 @@ class AnycubicLanDriver(PrinterDriver):
         if not url:
             raise DriverError("the printer offers no upload address (urls.fileUploadurl missing in its info)")
         await self._clear_stale()
-        self._ended, self._last_progress = None, {}
+        self._ended, self._last_progress, self._said = None, {}, ("", "")
         self._layer, self._layer_at = None, 0.0
         # What the Slicer Next sends (captured and tried out 18 Oct 2026, docs/AM.md): T<n> in the G-code is a "paint"
         # the printer maps to a spool position by ams_box_mapping. matplace's GcodeSlot wrote the spool position as

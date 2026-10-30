@@ -5,6 +5,7 @@ printer (PrusaLink, SimplyPrint, ...) is one new file in this package and a `dri
 from __future__ import annotations
 
 import abc
+import os
 from dataclasses import dataclass, field
 from typing import Awaitable, Callable, Optional
 
@@ -13,6 +14,13 @@ IDLE, PRINTING, PAUSED, ERROR, OFFLINE = "idle", "printing", "paused", "error", 
 
 # states of the file the printer is (or was last) printing
 JOB_PRINTING, JOB_PAUSED, JOB_DONE, JOB_CANCELLED, JOB_FAILED = "printing", "paused", "done", "cancelled", "failed"
+
+# what a printer says about a spool position with nothing in it (slot_status); any other word means a spool is there
+EMPTY_SLOT_WORDS = ("empty", "runout")
+
+# how long after the operator confirmed the finished print on the printer the telemetry keeps saying so (several
+# reports, so the server cannot miss it)
+PLATE_CONFIRM_SECONDS = 60.0
 
 
 @dataclass
@@ -36,6 +44,14 @@ class DriverError(Exception):
     """The printer refused or could not be reached. The message goes to the operator."""
 
 
+def safe_name(name: str) -> str:
+    """A file name on the printer as the agent accepts it from the server: a plain name, no folder, no way up."""
+    name = str(name or "").strip()
+    if not name or name in (".", "..") or "/" in name or "\\" in name or name != os.path.basename(name) or len(name) > 200:
+        raise DriverError(f"not a plain file name: {name!r}")
+    return name
+
+
 class PrinterDriver(abc.ABC):
     def __init__(self, key: str, options: dict):
         self.key = key
@@ -56,6 +72,43 @@ class PrinterDriver(abc.ABC):
     @abc.abstractmethod
     async def start(self, gcode_path: str, filename: str, slot: int) -> None:
         """Send the file to the printer and start printing it. Raises DriverError when the print did not start."""
+
+    async def slot_status(self, slot: int) -> Optional[str]:
+        """What the printer says about a spool position before a start: a word of its own ("ready", "loaded"; "empty"
+        or "runout" = nothing to print from, EMPTY_SLOT_WORDS), None when the firmware does not tell. Never raises."""
+        return None
+
+    # -- the printer's storage (docs/AM.md §10) --------------------------------------------------------------------
+    async def files(self) -> dict:
+        """What the printer's storage holds: {"files": [{"name", "size", "modified"}, ...] newest first, "free": bytes
+        or None, "total": bytes or None}. Raises DriverError when the printer does not list its files."""
+        raise DriverError("this printer does not list its files")
+
+    async def fetch(self, name: str, target: str) -> int:
+        """Copy one file of the printer's storage to `target` on this machine; returns its size. Raises DriverError."""
+        raise DriverError("this printer does not hand out its files")
+
+    async def delete(self, name: str) -> None:
+        """Remove one file from the printer's storage. Raises DriverError."""
+        raise DriverError("this printer does not delete its files from here")
+
+    # -- the operator confirmed the finished print on the printer ---------------------------------------------------
+    _plate_terminal_seen: bool = False
+    _plate_cleared_at: float = 0.0
+
+    def plate_confirmed(self, terminal: bool, idle: bool, now: float) -> Optional[int]:
+        """The moment the printer went from a finished print (`terminal`: complete, cancelled, error, the file still
+        named) to plain idle (`idle`) without a new print: on a Kobra S1 with Rinkhals that is what the operator's
+        reset of the finished job does (docs/AM.md §10), the display's own OK leaves no trace. Returns the unix time of
+        that moment for PLATE_CONFIRM_SECONDS, so the telemetry carries it in several reports; None otherwise."""
+        if terminal:
+            self._plate_terminal_seen = True
+        elif idle and self._plate_terminal_seen:
+            self._plate_terminal_seen = False
+            self._plate_cleared_at = now
+        if self._plate_cleared_at and now - self._plate_cleared_at <= PLATE_CONFIRM_SECONDS:
+            return int(self._plate_cleared_at)
+        return None
 
     @abc.abstractmethod
     async def pause(self) -> None: ...

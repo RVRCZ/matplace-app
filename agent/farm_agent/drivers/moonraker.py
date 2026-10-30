@@ -10,6 +10,11 @@ Moonraker (Klipper) driver - Anycubic Kobra S1 with the Rinkhals firmware overla
   changes    websocket /websocket, printer.objects.subscribe -> notify_status_update (instant state changes)
   camera     GET  <snapshot_url>                  (Rinkhals: http://<ip>/webcam/?action=snapshot)
 
+  messages   display_status.message (M117), print_stats.message, webhooks.state_message, the filament_hub's slots and
+             hub status, and while paused or in error the last error lines of GET /server/gcode_store (the only place
+             GoKlipper under Rinkhals tells why it stopped: "!! error: ... filament hub feed filament timeout")
+  files      GET  /server/files/directory?path=gcodes (names, sizes, dates, disk_usage) | GET /server/files/gcodes/<name>
+             | DELETE /server/files/gcodes/<name>
   light      POST /machine/device_power/device?device=<light_device>&action=on|off   (Rinkhals: "chamber_light")
   dryer      POST /printer/gcode/script?script=MMU_DRYER_START UNIT=0 DURATION=<min> TEMP=<°C> | MMU_DRYER_STOP UNIT=0
              (Rinkhals mmu_ace component; the live dryer values come back in the `filament_hub` object, `mmu_machine`
@@ -25,17 +30,27 @@ import asyncio
 import json
 import logging
 import os
+import re
 import time
 from typing import Optional
+from urllib.parse import quote
 
 import aiohttp
 
 from .base import (ERROR, IDLE, JOB_CANCELLED, JOB_DONE, JOB_FAILED, JOB_PAUSED, JOB_PRINTING, OFFLINE, PAUSED, PRINTING,
-                   DriverError, JobStatus, PrinterDriver, PrinterStatus)
+                   DriverError, JobStatus, PrinterDriver, PrinterStatus, safe_name)
 
 log = logging.getLogger("farm_agent.moonraker")
 
-OBJECTS = "print_stats&virtual_sdcard&extruder&heater_bed&display_status&ota_filament_hub&filament_hub&mmu_machine&webhooks"
+OBJECTS = "print_stats&virtual_sdcard&extruder&heater_bed&display_status&ota_filament_hub&filament_hub&mmu_machine&mmu&webhooks"
+
+# the console lines worth telling the operator: GoKlipper's own errors ("!! error: typ = WebRequestError, code =
+# 10011710, message = filament hub feed filament timeout") and the spool command before them
+CONSOLE_ERROR = re.compile(r"^(!!|error|Error)")
+CONSOLE_COMMAND = re.compile(r"^(FEED_FILAMENT|UNWIND_FILAMENT|UNWIND_ALL_FILAMENT|T\d\b|M600|PAUSE|RESUME)")
+CONSOLE_LINES = 50
+CONSOLE_CACHE_SECONDS = 20.0
+MESSAGE_LIMIT = 300
 
 # print_stats.state -> (printer state, job state)
 STATES = {
@@ -101,6 +116,16 @@ class MoonrakerDriver(PrinterDriver):
             error = str(hooks.get("state_message") or "")
         if error:
             telemetry["error"] = " ".join(error.split())[:160]
+        # everything the printer has to say, in one line for the operator (docs/AM.md §10): the screen's M117 text,
+        # print_stats.message, a Klipper shutdown, the ACE's hub and slots, and while it stands still the last error
+        # lines of the console. Rinkhals shows the reason of a pause nowhere else: the screen only offers resume or stop.
+        message = await self._message(s, printer_state, stats, hooks)
+        if message:
+            telemetry["message"] = message
+        confirmed = self.plate_confirmed(terminal=stats.get("state") in ("complete", "cancelled", "error") and bool(stats.get("filename")),
+                                         idle=stats.get("state") == "standby", now=time.time())
+        if confirmed:
+            telemetry["bed_cleared_at"] = confirmed
         # Rinkhals (Kobra S1) adds layers and the remaining time; plain Klipper has neither, both are optional
         info = stats.get("info") or {}
         if info.get("total_layer"):
@@ -145,9 +170,92 @@ class MoonrakerDriver(PrinterDriver):
                 progress=100.0 if job_state == JOB_DONE else round(float(progress) * 100, 2),
                 print_duration=int(stats.get("print_duration") or 0),
                 filament_used=float(stats.get("filament_used") or 0),
-                message=str(stats.get("message") or ""),
+                # a print that stands still carries the whole reason, a running one only what print_stats says
+                message=message if job_state in (JOB_PAUSED, JOB_FAILED) else str(stats.get("message") or ""),
             )
         return PrinterStatus(printer_state, {k: v for k, v in telemetry.items() if v is not None}, job)
+
+    async def _message(self, s: dict, printer_state: str, stats: dict, hooks: dict) -> str:
+        parts: list[str] = []
+
+        def add(text) -> None:
+            # the same thing said twice (print_stats and the console, a msg with and without its code) is said once
+            text = " ".join(str(text or "").split())
+            if not text:
+                return
+            for i, known in enumerate(parts):
+                if text in known:
+                    return
+                if known in text:
+                    parts[i] = text
+                    return
+            parts.append(text)
+
+        add((s.get("display_status") or {}).get("message"))
+        add(stats.get("message"))
+        if hooks.get("state") in ("shutdown", "error"):
+            add(hooks.get("state_message"))
+        hubs = (s.get("filament_hub") or {}).get("filament_hubs") or []
+        hub0 = hubs[0] if hubs and isinstance(hubs[0], dict) else {}
+        if hub0.get("status") and hub0["status"] != "ready":
+            add(f"ACE {hub0['status']}")
+        for slot in hub0.get("slots") or []:
+            if isinstance(slot, dict) and str(slot.get("status") or "") not in ("", "ready"):
+                add(f"ACE slot {int(slot.get('index', 0)) + 1} {slot['status']}")
+        ota = s.get("ota_filament_hub") or {}
+        if ota.get("state") and ota["state"] != "standby":
+            add(f"ACE {ota['state']} {ota.get('progress', 0)}%")
+        if printer_state in (PAUSED, ERROR):
+            # what the console said since this print began (total_duration is the time since its start)
+            since = time.time() - float(stats.get("total_duration") or 3600)
+            for line in await self._console_errors(since):
+                add(line)
+        return " · ".join(parts)[:MESSAGE_LIMIT]
+
+    _console_cache: tuple = (0.0, [])
+
+    async def _console_errors(self, since: float) -> list:
+        """The error lines of Moonraker's console store after `since` (unix time), with the spool command before them;
+        at most one request every CONSOLE_CACHE_SECONDS, nothing when the request fails."""
+        at, lines = self._console_cache
+        if time.monotonic() - at < CONSOLE_CACHE_SECONDS:
+            return lines
+        try:
+            store = (await self._get(f"/server/gcode_store?count={CONSOLE_LINES}")).get("result", {}).get("gcode_store") or []
+        except Exception as e:  # noqa: BLE001 - the reason is a courtesy; the state itself is already known
+            log.debug("%s: gcode_store failed: %s", self.key, e)
+            store = []
+        errors, command = [], ""
+        for item in store:
+            if not isinstance(item, dict) or float(item.get("time") or 0) < since:
+                continue
+            text = str(item.get("message") or "").split("\n", 1)[0].strip()
+            if item.get("type") == "command":
+                if CONSOLE_COMMAND.match(text):
+                    command = text
+            elif CONSOLE_ERROR.match(text):
+                errors.append(text.lstrip("! ").strip())
+        out = ([f"last command {command}"] if command and errors else []) + errors[-3:]
+        self._console_cache = (time.monotonic(), out)
+        return out
+
+    async def slot_status(self, slot: int) -> Optional[str]:
+        """The ACE's own word for the slot (Rinkhals filament_hub: "ready", "empty", "runout"), else Happy Hare's gate
+        status from the mmu object (1 available, 0 empty); None when neither says anything."""
+        try:
+            s = (await self._get("/printer/objects/query?filament_hub&mmu"))["result"]["status"]
+        except Exception as e:  # noqa: BLE001 - no answer, no check
+            log.debug("%s: slot status failed: %s", self.key, e)
+            return None
+        hubs = (s.get("filament_hub") or {}).get("filament_hubs") or []
+        hub0 = hubs[0] if hubs and isinstance(hubs[0], dict) else {}
+        for item in hub0.get("slots") or []:
+            if isinstance(item, dict) and int(item.get("index", -1)) == int(slot) and item.get("status"):
+                return str(item["status"])
+        gates = (s.get("mmu") or {}).get("gate_status") or []
+        if 0 <= int(slot) < len(gates):
+            return {1: "ready", 0: "empty"}.get(int(gates[int(slot)]))
+        return None
 
     async def snapshot(self) -> Optional[bytes]:
         if not self.snapshot_url or not self._session:
@@ -193,6 +301,47 @@ class MoonrakerDriver(PrinterDriver):
         # goes up to 55 °C and dries all four spools in the box at once
         script = f"MMU_DRYER_START UNIT=0 DURATION={int(minutes)} TEMP={int(temp)}" if on else "MMU_DRYER_STOP UNIT=0"
         await self._post("/printer/gcode/script", params={"script": script}, timeout=60)
+
+    # -- the printer's storage -------------------------------------------------------------------------------------
+    async def files(self) -> dict:
+        try:
+            result = (await self._get("/server/files/directory?path=gcodes")).get("result") or {}
+        except Exception as e:  # noqa: BLE001
+            raise DriverError(f"file list: {e.__class__.__name__} {e}") from e
+        files = [{"name": str(f.get("filename")), "size": int(f.get("size") or 0), "modified": int(float(f.get("modified") or 0))}
+                 for f in result.get("files") or [] if isinstance(f, dict) and f.get("filename")]
+        files.sort(key=lambda f: f["modified"], reverse=True)
+        usage = result.get("disk_usage") if isinstance(result.get("disk_usage"), dict) else {}
+        return {"files": files, "free": _int(usage.get("free")), "total": _int(usage.get("total"))}
+
+    async def fetch(self, name: str, target: str) -> int:
+        assert self._session
+        name = safe_name(name)
+        os.makedirs(os.path.dirname(target) or ".", exist_ok=True)
+        size = 0
+        try:
+            async with self._session.get(self.url + "/server/files/gcodes/" + quote(name), timeout=aiohttp.ClientTimeout(total=1800)) as r:
+                if r.status >= 400:
+                    raise DriverError(f"file {name}: HTTP {r.status}")
+                with open(target + ".part", "wb") as fh:
+                    async for chunk in r.content.iter_chunked(1 << 16):
+                        fh.write(chunk)
+                        size += len(chunk)
+        except (aiohttp.ClientError, asyncio.TimeoutError, OSError) as e:
+            raise DriverError(f"file {name}: {e.__class__.__name__} {e}") from e
+        os.replace(target + ".part", target)
+        return size
+
+    async def delete(self, name: str) -> None:
+        assert self._session
+        name = safe_name(name)
+        try:
+            async with self._session.delete(self.url + "/server/files/gcodes/" + quote(name), timeout=self.timeout) as r:
+                body = await r.text()
+                if r.status >= 400:
+                    raise DriverError(f"delete {name}: HTTP {r.status} {_error_text(body)}")
+        except (aiohttp.ClientError, asyncio.TimeoutError) as e:
+            raise DriverError(f"delete {name}: {e.__class__.__name__} {e}") from e
 
     # -- acting ------------------------------------------------------------------------------------------------
     async def start(self, gcode_path: str, filename: str, slot: int) -> None:
@@ -311,6 +460,10 @@ class MoonrakerDriver(PrinterDriver):
 
 def _num(v) -> Optional[float]:
     return round(float(v), 1) if isinstance(v, (int, float)) else None
+
+
+def _int(v) -> Optional[int]:
+    return int(v) if isinstance(v, (int, float)) else None
 
 
 def _error_text(body: str) -> str:

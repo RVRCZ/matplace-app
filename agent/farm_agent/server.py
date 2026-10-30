@@ -59,6 +59,18 @@ class Server:
             form.add_field("frame", frame)     # "layer": taken with the head parked after a layer
         await self._json("POST", f"/api/agent/printers/{printer_key}/snapshot", data=form, timeout=60)
 
+    async def files(self, printer_key: str, listing: dict) -> None:
+        """The printer's file list (names, sizes, dates, free space; after a delete also what went) to the server."""
+        await self._json("POST", f"/api/agent/printers/{printer_key}/files", json=listing, timeout=60)
+
+    async def upload_file(self, printer_key: str, path: str, name: str) -> None:
+        """One file fetched from a printer, up to the server's folder of that printer."""
+        with open(path, "rb") as fh:
+            form = aiohttp.FormData()
+            form.add_field("name", name)
+            form.add_field("file", fh, filename=name, content_type="application/octet-stream")
+            await self._json("POST", f"/api/agent/printers/{printer_key}/files/upload", data=form, timeout=1800)
+
     async def download_gcode(self, url: str, target: str) -> str:
         """Stream the G-code to `target`, verify it against the hash the server sent. Returns the sha256."""
         assert self._session

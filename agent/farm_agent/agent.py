@@ -10,6 +10,10 @@ The agent: one process, many printers.
 
 The agent never starts anything by itself. A print starts only on a `start` command, which the server issues only
 after an operator confirmed in the admin that the plate is empty.
+
+Every report carries what the printer has to say (telemetry.message, job.message), every poll again, so a message
+cannot be lost by being sent once (docs/AM.md §10). Commands on the printer's storage: files (the list goes to the
+server), fetch (one file up to the server), delete, cleanup (the farm's own files not in use).
 """
 from __future__ import annotations
 
@@ -17,13 +21,16 @@ import asyncio
 import json
 import logging
 import os
+import re
+import time
 from dataclasses import asdict, dataclass
 from typing import Optional
 
 from . import __version__
 from .config import Config
 from .drivers import DriverError, PrinterDriver, create
-from .drivers.base import JOB_CANCELLED, JOB_DONE, JOB_FAILED, JOB_PAUSED, JOB_PRINTING, OFFLINE
+from .drivers.base import (EMPTY_SLOT_WORDS, JOB_CANCELLED, JOB_DONE, JOB_FAILED, JOB_PAUSED, JOB_PRINTING, OFFLINE, PAUSED, PRINTING,
+                           safe_name)
 from .server import Server, ServerError
 
 log = logging.getLogger("farm_agent")
@@ -31,6 +38,17 @@ log = logging.getLogger("farm_agent")
 # a tracked file the printer does not talk about for this many polls in a row is given up as failed
 LOST_AFTER_POLLS = 8
 ERROR_AFTER_POLLS = 12          # an "error" of our print is believed after this many polls in a row (about a minute at 5 s)
+
+# pause / resume / cancel: a call the printer refused or did not answer is judged by the printer's state for this long
+# (a Kobra S1 with Rinkhals answers print/resume only after it has fed the filament, past the call's limit, and resumes
+# all the same: F26-000108, 29 Oct 2026)
+CONFIRM_WAIT_SECONDS = 60.0
+CONFIRM_POLL_SECONDS = 2.0
+
+# the printer's storage: what a file may weigh to go up to the server, and which files are the farm's own (the agent
+# names every print mp<job>-<server name>, docs/AM.md §10); a cleanup never touches anything else
+FETCH_LIMIT_BYTES = 300 << 20
+OUR_FILES = re.compile(r"^mp\d+-matplace-.*\.gcode(\.3mf)?$")
 
 TIMELAPSE_HEADER = "; matplace timelapse "
 PARK_TOLERANCE_MM = 1.0
@@ -68,6 +86,12 @@ def pick_still(frames: list) -> Optional[bytes]:
         if d < score:
             best, score = i, d
     return frames[best] if best is not None else frames[-1]
+
+
+def _same_file(a: str, b: str) -> bool:
+    """The same file whether or not it carries the Kobra X package suffix (.gcode.3mf is reported as .gcode)."""
+    strip = lambda n: os.path.basename(str(n or "")).removesuffix(".3mf")  # noqa: E731
+    return bool(a) and strip(a) == strip(b)
 
 
 def read_park(path: str) -> Optional[list]:
@@ -304,25 +328,29 @@ class Agent:
         async with w.busy:
             try:
                 kind = cmd["type"]
+                p = cmd.get("payload") or {}
                 if kind == "start":
-                    await self._start(w, cmd)
-                elif kind == "pause":
-                    await w.driver.pause()
-                elif kind == "resume":
-                    await w.driver.resume()
-                elif kind == "cancel":
-                    await w.driver.cancel()
+                    message = await self._start(w, cmd)
+                elif kind in ("pause", "resume", "cancel"):
+                    message = await self._control(w, kind)
                 elif kind == "reset":
                     await w.driver.reset()
                 elif kind == "light":
-                    await w.driver.light(bool((cmd.get("payload") or {}).get("on", True)))
+                    await w.driver.light(bool(p.get("on", True)))
                 elif kind == "dry":
-                    p = cmd.get("payload") or {}
                     await w.driver.dry(bool(p.get("on", True)), int(p.get("temp", 45)), int(p.get("minutes", 240)))
+                elif kind == "files":
+                    message = await self._files(w)
+                elif kind == "fetch":
+                    message = await self._fetch(w, p)
+                elif kind == "delete":
+                    message = await self._delete(w, p)
+                elif kind == "cleanup":
+                    message = await self._cleanup(w, p)
                 else:
                     raise DriverError(f"unknown command '{kind}'")
-                log.info("%s: %s done", w.key, kind)
-            except (DriverError, ServerError, OSError, KeyError) as e:
+                log.info("%s: %s done%s", w.key, kind, f" ({message})" if message else "")
+            except (DriverError, ServerError, OSError, KeyError, ValueError) as e:
                 ok, message = False, str(e)
                 log.error("%s: %s failed: %s", w.key, cmd.get("type"), e)
         try:
@@ -331,20 +359,118 @@ class Agent:
             log.warning("could not report the result of command %s: %s", cmd.get("id"), e)
         self._wake.set()
 
-    async def _start(self, w: PrinterWorker, cmd: dict) -> None:
+    async def _start(self, w: PrinterWorker, cmd: dict) -> str:
+        """Returns a note for the command's result ("" when there is nothing to say)."""
         if w.tracked and not w.tracked.final:
             raise DriverError(f"job {w.tracked.job_id} is still running on this printer")
         payload = cmd["payload"]
         job_id = int(cmd["job_id"])
+        slot = int(payload.get("slot", 0))
+        # every spool position the plate prints from must hold a spool: B3 paused at its first T<n> because the ACE
+        # had nothing to feed, and said so only on its screen (F26-000108, 29 Oct 2026). A printer that does not
+        # report its slots starts as before, and the note says so.
+        notes = []
+        for s in sorted({int(x) for x in (payload.get("filaments") or [slot])}):
+            state = await w.driver.slot_status(s)
+            if state is None:
+                notes.append(f"slot {s + 1} not checked, the printer does not report its slots")
+            elif state.lower() in EMPTY_SLOT_WORDS:
+                raise DriverError(f"slot {s + 1} is {state}: load a spool into it and confirm the plate again")
         # the job id makes the name unique: a re-print of the same order is never mistaken for the finished one
         filename = f"mp{job_id}-" + os.path.basename(str(payload.get("filename") or "print.gcode"))
         local = os.path.join(self.config.work_dir, w.key, filename)
         await self.server.download_gcode(str(payload["gcode_url"]), local)
         await w.driver.light(True)     # the camera wants to see something
-        await w.driver.start(local, filename, int(payload.get("slot", 0)))
+        await w.driver.start(local, filename, slot)
         w.tracked = Tracked(job_id=job_id, filename=filename, park=read_park(local))
         w.parked = False
         self._save_state()
+        return "; ".join(notes)
+
+    async def _control(self, w: PrinterWorker, kind: str) -> str:
+        """pause / resume / cancel. A call the printer refused or left unanswered is not the end of it: the printer's
+        state over the next CONFIRM_WAIT_SECONDS decides (a Kobra S1 under Rinkhals answers print/resume only after it
+        has fed the filament, so the call ran into TimeoutError while the print went on; the admin saw "failed" twice
+        on F26-000108). Returns a note for the command's result."""
+        try:
+            await getattr(w.driver, kind)()
+            return ""
+        except DriverError as e:
+            said = str(e).strip()
+        wanted = {
+            "pause": lambda st: st.state == PAUSED,
+            "resume": lambda st: st.state == PRINTING,
+            "cancel": lambda st: st.state not in (PRINTING, PAUSED) or (st.job is not None and st.job.status == JOB_CANCELLED),
+        }[kind]
+        log.warning("%s: %s said %s, watching the printer's state for %.0f s", w.key, kind, said, CONFIRM_WAIT_SECONDS)
+        started = time.monotonic()
+        while time.monotonic() - started < CONFIRM_WAIT_SECONDS:
+            await asyncio.sleep(CONFIRM_POLL_SECONDS)
+            now = await w.driver.status()
+            if now.state != OFFLINE and wanted(now):
+                took = time.monotonic() - started
+                log.info("%s: %s confirmed by the printer's state after %.0f s", w.key, kind, took)
+                return f"confirmed by the printer's state after {took:.0f} s; the call itself said: {said}"
+        raise DriverError(f"{said}; the printer's state did not change in {CONFIRM_WAIT_SECONDS:.0f} s")
+
+    # -- the printer's storage -------------------------------------------------------------------------------------
+    async def _files(self, w: PrinterWorker, extra: Optional[dict] = None) -> str:
+        """The list of the printer's files (and the disk's free space) to the server."""
+        listing = await w.driver.files()
+        await self.server.files(w.key, {**listing, **(extra or {})})
+        return f"{len(listing.get('files') or [])} files"
+
+    async def _fetch(self, w: PrinterWorker, payload: dict) -> str:
+        """One file of the printer up to the server, through this machine, never bigger than FETCH_LIMIT_BYTES."""
+        name = safe_name(payload.get("name"))
+        listed = next((f for f in (await w.driver.files()).get("files") or [] if f.get("name") == name), None)
+        if listed is None:
+            raise DriverError(f"{name}: the printer has no such file")
+        if int(listed.get("size") or 0) > FETCH_LIMIT_BYTES:
+            raise DriverError(f"{name} has {int(listed['size']) >> 20} MB, the server takes at most {FETCH_LIMIT_BYTES >> 20} MB")
+        local = os.path.join(self.config.work_dir, w.key, "fetched", name)
+        try:
+            size = await w.driver.fetch(name, local)
+            await self.server.upload_file(w.key, local, name)
+        finally:
+            for path in (local, local + ".part"):
+                try:
+                    os.remove(path)
+                except OSError:
+                    pass
+        return f"{size} bytes"
+
+    async def _in_use(self, w: PrinterWorker, name: str) -> bool:
+        """The file of the job this agent runs here, or of whatever the printer prints or pauses right now (a file
+        started on the touchscreen counts too). ".gcode.3mf" and ".gcode" are the same file to a Kobra X."""
+        if w.tracked and not w.tracked.final and _same_file(w.tracked.filename, name):
+            return True
+        now = await w.driver.status()
+        return now.job is not None and now.job.status in (JOB_PRINTING, JOB_PAUSED) and _same_file(now.job.filename, name)
+
+    async def _delete(self, w: PrinterWorker, payload: dict) -> str:
+        name = safe_name(payload.get("name"))
+        if await self._in_use(w, name):
+            raise DriverError(f"{name} is being printed, it stays")
+        size = next((int(f.get("size") or 0) for f in (await w.driver.files()).get("files") or [] if f.get("name") == name), 0)
+        await w.driver.delete(name)
+        await self._files(w, {"deleted": [{"name": name, "size": size}], "freed": size})
+        return f"deleted {name}"
+
+    async def _cleanup(self, w: PrinterWorker, payload: dict) -> str:
+        """The farm's own files that no job needs any more: not the one printing, not the ones the server says to keep
+        (its running and queued jobs). Files that are not the farm's are never touched here."""
+        keep = {safe_name(n) for n in (payload.get("keep") or [])}
+        deleted, freed = [], 0
+        for f in (await w.driver.files()).get("files") or []:
+            name = str(f.get("name") or "")
+            if not OUR_FILES.match(name) or any(_same_file(name, k) for k in keep) or await self._in_use(w, name):
+                continue
+            await w.driver.delete(name)
+            deleted.append({"name": name, "size": int(f.get("size") or 0)})
+            freed += int(f.get("size") or 0)
+        await self._files(w, {"deleted": deleted, "freed": freed})
+        return f"deleted {len(deleted)} files, {freed / (1 << 20):.0f} MB freed"
 
     # -- what survives a restart -----------------------------------------------------------------------------------
     def _forget(self, w: PrinterWorker) -> None:

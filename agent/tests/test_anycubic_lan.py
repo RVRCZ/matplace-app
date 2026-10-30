@@ -103,6 +103,11 @@ class FakeLink:
             return {"type": kind, "action": action, "state": "success", "code": 200, "msg": "done", "data": {"multi_color_box": copy.deepcopy(self.p.boxes)}}
         if (kind, action) == ("light", "query"):
             return {"type": kind, "state": "done", "code": 200, "data": {"lights": [{"type": 3, "status": self.p.light, "brightness": 100 if self.p.light else 0}]}}
+        if (kind, action) == ("file", "listLocal"):
+            # the Kobra X on 18 Oct 2026 (docs/AM.md §2): the local list is refused; another firmware may answer with a list
+            if self.p.file_list is None:
+                return {"type": kind, "action": action, "state": "failed", "code": 10112, "msg": "参数设定失败", "data": None}
+            return {"type": kind, "action": action, "state": "done", "code": 200, "data": {"file_list": copy.deepcopy(self.p.file_list)}}
         return {"type": kind, "state": "done", "code": 200, "data": dict(self.p.info)}
 
     def publish(self, kind, action, data, *, web=False):
@@ -152,6 +157,7 @@ class FakePrinter:
         self.begins = True
         self.busy_starts = 0      # how many starts the printer refuses with 10301 (busy reading the file)
         self.boxes = copy.deepcopy(BOXES)
+        self.file_list = None     # None: listLocal refused (the Kobra X); a list: what file/report would carry
         self.light = 0
         self.links = []
         self.opened = 0

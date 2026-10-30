@@ -24,6 +24,7 @@ class FakeServer:
 
     def __init__(self):
         self.queue, self.reports, self.results, self.snapshots = [], [], [], []
+        self.listings, self.uploads = [], []
         self.down = False
 
     async def open(self): ...
@@ -41,6 +42,15 @@ class FakeServer:
 
     async def snapshot(self, key, jpeg, job_id, frame=None):
         self.snapshots.append((key, len(jpeg), job_id) + ((frame,) if frame else ()))
+
+    async def files(self, key, listing):
+        if self.down:
+            raise ServerError("server unreachable")
+        self.listings.append((key, listing))
+
+    async def upload_file(self, key, path, name):
+        with open(path, "rb") as fh:
+            self.uploads.append((key, name, len(fh.read())))
 
     async def download_gcode(self, url, target):
         os.makedirs(os.path.dirname(target), exist_ok=True)
@@ -88,7 +98,9 @@ class AgentTest(unittest.IsolatedAsyncioTestCase):
         self.server.queue.append(start_cmd())
         await self.rounds(agent, 12)
 
-        self.assertEqual(self.server.results, [(1, True, "")])
+        # the mock does not report its spool positions: the start goes ahead and its result says the slot was not checked
+        self.assertEqual([r[:2] for r in self.server.results], [(1, True)])
+        self.assertIn("slot 1 not checked", self.server.results[0][2])
         statuses = [j["status"] for j in self.server.jobs()]
         self.assertIn("printing", statuses)
         self.assertEqual(statuses[-1], "done")
