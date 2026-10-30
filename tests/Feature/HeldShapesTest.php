@@ -3,6 +3,7 @@
 namespace Tests\Feature;
 
 use App\Domain\Tools\ParametricGenerator;
+use App\Engines\Mesh\StlFile;
 use App\Models\User;
 use App\Support\PreviewMeta;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -34,6 +35,28 @@ class HeldShapesTest extends TestCase
         $r = $this->postJson('/api/tools/param/preview', ['kind' => $kind, 'params' => $params, 'pieces' => true])->assertOk();
 
         return PreviewMeta::whole($r->headers->get('X-Model-Meta'));
+    }
+
+    /**
+     * How far into the straw's way the model reaches: the deepest point (a corner or the middle of a triangle) inside the
+     * circle the straw takes through a clip on the right, 0 when that way is empty. The clip is the model's right edge.
+     */
+    private function intoStraw(array $params, float $d): float
+    {
+        $r = $this->postJson('/api/tools/param/preview', ['kind' => 'straw', 'params' => $params])->assertOk();
+        $triangles = iterator_to_array(StlFile::triangles($r->baseResponse->getFile()->getPathname()), false);
+        $xmax = max(array_map(fn ($t) => max($t[0][0], $t[1][0], $t[2][0]), $triangles));
+        $rIn = $d / 2 + 0.2;
+        $rOut = $rIn + 1.6;
+        $deepest = 0.0;
+        foreach ($triangles as $t) {
+            $mid = [($t[0][0] + $t[1][0] + $t[2][0]) / 3, 0, ($t[0][2] + $t[1][2] + $t[2][2]) / 3];
+            foreach ([$t[0], $t[1], $t[2], $mid] as $v) {
+                $deepest = max($deepest, $rIn - hypot($v[0] - ($xmax - $rOut), $v[2] - ($rOut - 0.5)));
+            }
+        }
+
+        return $deepest;
     }
 
     public function test_a_straw_topper_carries_a_clip_as_wide_as_the_straw_asks(): void
@@ -76,21 +99,30 @@ class HeldShapesTest extends TestCase
         // across: the name runs sideways and the clip holds it at one point, 14 mm long, dragged along the outline
         $this->assertEquals(['length' => 14, 'along' => false], $across['notes']['clip']);
         $this->assertArrayHasKey('outline', $across['notes']);
-        // along: the name is turned to run up the straw, and the clip runs its whole length (its baseline touches the straw)
+        // along: the name is turned to run up the straw, and a clip of 15 mm holds it in the middle of its baseline,
+        // however long the name is (Roman: the clip need not grow with the text)
         $this->assertGreaterThan($across['bbox']['y'] + 10, $along['bbox']['y']);
         $this->assertLessThan($across['bbox']['x'] - 10, $along['bbox']['x']);
-        $this->assertTrue($along['notes']['clip']['along']);
-        $this->assertEqualsWithDelta($along['bbox']['y'], $along['notes']['clip']['length'], 0.5);
+        $this->assertEquals(['length' => 15, 'along' => true], $along['notes']['clip']);
+        $this->assertGreaterThan(15 + 10, $along['bbox']['y']);
         $this->assertArrayNotHasKey('outline', $along['notes']);       // nothing to drag: the clip is where the straw is
-        // the same tube round the straw, only longer: as high, 0.4 mm of play and walls of 1.6 mm
+        // the same tube round the straw: as high, 0.4 mm of play and walls of 1.6 mm
         $this->assertEqualsWithDelta($across['bbox']['z'], $along['bbox']['z'], 0.05);
-        $this->assertGreaterThan($across['volume_mm3'], $along['volume_mm3']);
-        // the tab under the clip ties the letters: the page has nothing to say about pieces joined by a bridge
+        // a strip of the plate along the baseline ties the letters: the page has nothing to say about pieces joined by a bridge
         $this->assertNotContains('pieces_tied', (array) ($along['notes']['warnings'] ?? []));
-        // a round plate touches the straw only on its arc: the clip runs as far as the plate does, and never under 14 mm
+        // a round plate gets the same 15 mm on its arc
         $round = $this->meta('straw', ['artwork' => 'lib:colour/smiling-star', 'body' => 'circle', 'width' => 35, 'straw_d' => 8, 'text_dir' => 'along']);
-        $this->assertGreaterThan(14, $round['notes']['clip']['length']);
-        $this->assertLessThan(35, $round['notes']['clip']['length']);
+        $this->assertEquals(15, $round['notes']['clip']['length']);
+    }
+
+    public function test_nothing_reaches_into_the_straws_way_through_the_clip(): void
+    {
+        // the plate under the clip used to be as thick as the plate and rose 1.9 mm into the tube (Roman, 30 Oct 2026:
+        // "vstupuje hrana do prostoru brčka"); the straw's way is now cut out of the plate and the letters
+        foreach ([6, 8, 12] as $d) {
+            $this->assertLessThan(0.05, $this->intoStraw(['line1' => 'Ela', 'width' => 40, 'thickness' => 3, 'straw_d' => $d, 'text_dir' => 'along'], $d), "Ela along, {$d} mm");
+        }
+        $this->assertLessThan(0.05, $this->intoStraw(['line1' => 'Ela', 'width' => 40, 'thickness' => 4, 'flush' => true, 'straw_d' => 8, 'text_dir' => 'along'], 8), 'thick plate');
     }
 
     public function test_the_page_opens_with_a_name_along_a_common_straw_and_asks_for_the_straw_first(): void

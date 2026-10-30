@@ -991,3 +991,25 @@ Při zkoušce sledovat:
 - Táhlo šířky v náhledu leží na ose x. Podél brčka šířka znamená délku jména (osa y), takže tah táhlem změní ozdobu
   v jiném směru, než se táhne. Velikost se mění úměrně, takže nic neselže.
 - Volba Napříč / Podél se ukazuje i u obrázku, protože stránka neumí podmínku „je zadaný text“.
+
+### 9a. Kolo 2: prázdná trubka, klip 15 mm (30. 10. 2026, session G)
+
+Roman po první kalkulaci (straw-36x40x11.stl, 3 g, 12 min, červená a bílá PLA+ sedí), větev `fix/straw-clip`:
+
+- **„Vstupuje hrana do prostoru brčka“**: pás destičky pod klipem (`tab` v `_clip`) byl tlustý jako destička (3 mm)
+  a sahal až k vnějšímu okraji trubky, takže vystoupil 1,8 mm nad dno otvoru, kudy jde brčko. Chyba byla i u klipu
+  napříč. Teď `_clip` vrací i prostor brčka (válec o poloměru průměr/2 + 0,2 mm, o milimetr delší na každém konci) a
+  `build` ho vyřízne z destičky, písmen i barev, u obou směrů. Dno trubky zůstává 1,1 mm (stěna 1,6 mm zapuštěná
+  0,5 mm do podložky).
+- **Klip pevných 15 mm** (`CLIP_ALONG`) uprostřed strany u brčka, ať je jméno jakkoli dlouhé, a u kulaté destičky
+  také. Písmena dál spojuje pás destičky široký 4 mm po celé délce účaří, ale už jen pod nimi, ne pod brčkem.
+  Napříč zůstává klip 14 mm (`CLIP_MIN`), aby se uložené návrhy nezměnily.
+- Ela podél, 8 mm: 32,5 × 40 × 10,6 mm, 3,0 cm³, bez upozornění.
+
+![Ela podél: klip 15 mm uprostřed, trubka prázdná](img/straw-clip15.png)
+
+Ověřeno: `HeldShapesTest` (6 testů). Nový `test_nothing_reaches_into_the_straws_way_through_the_clip` čte trojúhelníky
+STL a hledá nejhlubší bod uvnitř kruhu brčka (Ela podél 6 / 8 / 12 mm a tlustá destička 4 mm). Bez výřezu našel 1,83 mm,
+s ním nic. `ToolPageTest` (předvolba `ela` bez upozornění).
+
+Ke zkoušce tisku platí body výše, jen bod 1 je teď jako u krátkého klipu: 15 mm se zacvakne stejně jako 14 mm.
