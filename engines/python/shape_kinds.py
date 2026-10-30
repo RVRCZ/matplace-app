@@ -25,8 +25,9 @@ colours, and a shallow pocket in the back for the reel's sticky dot.
 
 The straw topper carries a clip for a drinking straw on its outline, the opener a tongue that lifts the tab of a can;
 both sit where the visitor drags them, like the eyelet. Neither is in the catalogue until one of each was printed.
-A straw topper may also lie along the straw (`text_dir` "along"): its name is turned to run up the straw, and the clip
-runs the whole side that touches it instead of 14 mm at one point (docs/P.md, "Brčko: text podél").
+A straw topper may also lie along the straw (`text_dir` "along"): its name is turned to run up the straw, a clip of
+15 mm sits in the middle of the side that touches it, and a strip of the plate runs that whole side (docs/P.md,
+"Brčko"). Nothing of the plate or the letters reaches into the straw's way through the clip.
 
 The bag_charm is glued on a bag with holes: a pocket in its back takes the pin that comes through the hole from inside.
 
@@ -54,7 +55,8 @@ BODIES = {"charm": ("image", "circle", "rect"), "keychain": ("rect", "image", "c
           "magnet": ("image", "circle", "rect"), "coaster": ("circle", "square", "hex"), "gingerbread": ("image",), "name_letter": ("image",), "cookie": ("image", "circle"), "topper": ("image",), "tray": ("image", "circle"), "badge": ("image", "circle", "rect"), "medallion": ("circle", "star", "hex", "shield", "octagon", "rosette", "heart"), "photo_organizer": ("image", "circle"), "bag_charm": ("image", "circle", "rect"), "straw": ("image", "circle"), "opener": ("image", "circle", "rect")}
 MOUNTS = ("glue", "press", "through", "none")
 TEXT_DIRS = ("across", "along")    # a straw topper: its name across the clip, or along the straw with the clip along it
-CLIP_MIN = 14.0              # the clip of a straw topper at one point of its outline; along the straw it is never shorter
+CLIP_MIN = 14.0              # the clip of a straw topper at one point of its outline
+CLIP_ALONG = 15.0            # along the straw: the same clip, as long whatever the name, in the middle of its side
 INLAY = 0.6                 # how deep inlaid colours go: three layers, nothing of the plate shows through
 GAP = 6.0                   # between the two earrings on the bed
 
@@ -407,8 +409,8 @@ def _clip(M, px, py, nx, ny, d, length=14.0):
     """
     A clip for a drinking straw: a tube open on top for a little over half the straw's width, lying on the bed beside
     the shape. The straw snaps in from the face and runs past the shape, so the top of the straw stays free to drink from.
-    `length` along the straw: 14 mm at one point of the outline, the whole side that touches the straw along it.
-    Returns (the clip, its footprint, the tab of the plate it stands on).
+    `length` along the straw: 14 mm at one point of the outline, 15 mm in the middle of the side along it.
+    Returns (the clip, its footprint, the tab of the plate it stands on, the room the straw takes in it).
     """
     C = M.CrossSection
     r_in, wall = d / 2 + 0.2, 1.6
@@ -419,7 +421,9 @@ def _clip(M, px, py, nx, ny, d, length=14.0):
     solid, foot = _placed(M, ring.extrude(length).translate([0, 0, -length / 2]), px, py, nx, ny, (-0.8, 2 * r_out - 0.8, -length / 2, length / 2))
     # a tab of the plate under the clip and a little way into the shape: the clip holds along its whole length, whatever the outline does there
     tab = _placed(M, M.Manifold.cube([1, 1, 1]), px, py, nx, ny, (-4.0, r_out, -length / 2, length / 2))[1]
-    return solid, foot + tab, tab
+    # the straw's room through the clip and a millimetre past each end: the tab and the letters never reach into it
+    room = C.circle(r_in, 72).translate([r_out - 0.8, r_out - 0.5]).extrude(length + 2).translate([0, 0, -length / 2 - 1])
+    return solid, foot + tab, tab, _placed(M, room, px, py, nx, ny, (0.0, 1.0, 0.0, 1.0))[0]
 
 
 def _tongue(M, px, py, nx, ny, t):
@@ -559,7 +563,7 @@ def build(M, Invalid, p, product):
     else:
         grown = sil.offset(edge, J, 2.0, 24) if edge > 0 else sil
         body2d = _filled(M, grown.simplify(0.02), 4.0)
-        # along the straw the tab under the clip ties the letters on their baseline: what it leaves loose is joined after it
+        # along the straw the strip by the clip ties the letters on their baseline: what it leaves loose is joined after it
         loose = along
         if not loose:
             body2d, links = S.joined(M, body2d, max(edge, 0.6), max(2.0, min(aw, ah) * 0.06))
@@ -643,20 +647,20 @@ def build(M, Invalid, p, product):
             a, b = max(fx0, mid - 0.225 * (fx1 - fx0)), min(fx1, mid + 0.225 * (fx1 - fx0))
         body2d = body2d + C.square([b - a, 7.5 + reach]).translate([a, fy0 - 7.5])
         foot = b - a
-    grip, reach2d = None, None
+    grip, reach2d, bore = None, None, None
     if product in ("straw", "opener"):
         # not a ring but a clip or a tongue sits on the outline, where the visitor drags it
         travel = S.dense(S.outer_ring(body2d))
         px, py, nx, ny = S.along(travel, n("eye_pos", 0) / 100.0)
         if product == "straw" and along:
-            # along the straw: on the right, as far as the plate comes within the tab's 4 mm of it (a name: its whole
-            # baseline), never shorter than the clip at one point. The tab under it ties every letter to the clip
+            # along the straw: on the right, 15 mm in the middle of the side that comes within 4 mm of the straw (a
+            # name: its baseline). A strip as wide as the tab runs that whole side and ties every letter to the clip
             bx0, by0, bx1, by1 = body2d.bounds()
             touch = body2d ^ C.square([4.0, by1 - by0 + 2]).translate([bx1 - 4.0, by0 - 1])
             ty0, ty1 = touch.bounds()[1], touch.bounds()[3]
-            length = max(CLIP_MIN, ty1 - ty0)
-            grip, reach2d, tab = _clip(M, bx1, (ty0 + ty1) / 2, 1.0, 0.0, n("straw_d", 8), length)
-            body2d = body2d + tab
+            length = CLIP_ALONG
+            grip, reach2d, tab, bore = _clip(M, bx1, (ty0 + ty1) / 2, 1.0, 0.0, n("straw_d", 8), length)
+            body2d = body2d + tab + C.square([4.0, ty1 - ty0]).translate([bx1 - 4.0, ty0])
             if loose:
                 body2d, links = S.joined(M, body2d, max(edge, 0.6), max(2.0, min(aw, ah) * 0.06))
                 if links:
@@ -666,7 +670,7 @@ def build(M, Invalid, p, product):
         elif product == "straw":
             # the clip stands upright beside the picture whatever way the outline runs there: a straw is held upright
             mid = (body2d.bounds()[0] + body2d.bounds()[2]) / 2
-            grip, reach2d, tab = _clip(M, px, py, 1.0 if px >= mid else -1.0, 0.0, n("straw_d", 8))
+            grip, reach2d, tab, bore = _clip(M, px, py, 1.0 if px >= mid else -1.0, 0.0, n("straw_d", 8))
             body2d = body2d + tab
             notes["clip"] = {"length": CLIP_MIN, "along": False}
         else:
@@ -819,6 +823,10 @@ def build(M, Invalid, p, product):
     if grip is not None:
         body, whole = body + grip, whole + grip
         solids = [(layer, s - grip) for layer, s in solids]      # where the clip stands, the colours give way to it
+    if bore is not None:
+        # the plate under the clip is as thick as the plate and rose into the tube: the straw's way stays empty
+        body, whole = body - bore, whole - bore
+        solids = [(layer, s - bore) for layer, s in solids]
     beside = None                                            # what lies on the bed next to the product: the plate's width, depth, and its own height
     if chain is not None:
         beside = (chain[1], chain[2], _link_profile(LINK[2])[0])
