@@ -157,6 +157,25 @@ Celý tok od zákazníka po „hotovo“ jde projít se simulovanou tiskárnou:
 5. Zkuste i `fail_at: 40` (selhání → kredit se vrátí, adminovi přijde e‑mail), pauzu / pokračování / zrušení
    z administrace a vypnutí agenta na víc než 2 minuty (tiskárna „offline“, e‑mail adminovi).
 
+## Hlášky z tiskárny, pauza, soubory (agent 0.2.9)
+
+- V každém hlášení agent posílá, co tiskárna říká: `telemetry.message` u tiskárny (i mimo tisk) a `job.message` u úlohy.
+  Kobra S1 s Rinkhals: text displeje (M117), `print_stats.message`, chyba Klipperu, stav měniče ACE a jeho slotů, a při
+  pauze nebo chybě poslední chybové řádky konzole Moonrakeru (`/server/gcode_store`, například
+  `error: typ = WebRequestError, code = 10011710, message = filament hub feed filament timeout`), protože důvod pauzy
+  firmware nikde jinde nedává. Kobra X: `err_msg`, příznak pauzy, zavádění filamentu a `msg` posledního hlášení o souboru.
+- Pauza, pokračování a zrušení z adminu: když tiskárna volání odmítne nebo neodpoví (Rinkhals při pokračování nejdřív
+  zavádí filament a volání vyprší), agent až 60 s čte její stav; změněný stav = příkaz splněn, jinak selhal s textem.
+- Před startem agent ověří stav zvoleného slotu (`filament_hub` u Rinkhals, `multiColorBox` u Kobry X): prázdný slot
+  (`empty`, `runout`) = start odmítnutý s důvodem, obsluha doplní cívku a potvrdí podložku znovu. Tiskárna, která stav
+  slotů nehlásí, startuje jako dřív a výsledek příkazu to řekne.
+- Potvrzení na tiskárně po dotištění: Rinkhals nechává `print_stats.state = complete` i po potvrzení dialogu na
+  displeji, takže agent bere jako „podložka uklizená“ přechod `complete` → `standby` (reset dotištěné úlohy
+  v Mainsailu/Fluiddu na `http://IP:4409`, tlačítko Reset) a pošle `telemetry.bed_cleared_at`.
+- Příkazy k disku tiskárny: `files` (seznam s velikostí, datem a volným místem), `fetch` (jeden soubor do 300 MB na
+  server), `delete` (soubor běžící úlohy se nikdy nesmaže), `cleanup` (smaže jen naše soubory `mp<id>-matplace-*.gcode`,
+  které nepatří běžící úloze ani úlohám, které server řekl nechat). Kobra X seznam odmítá (10112), zůstává bez.
+
 ## Co agent dělá při potížích
 
 | Situace | Chování |
@@ -167,6 +186,8 @@ Celý tok od zákazníka po „hotovo“ jde projít se simulovanou tiskárnou:
 | tiskárna není volná při startu | start se odmítne, zakázka zůstane ve frontě, obsluha dostane e‑mail |
 | stažený G‑code nesouhlasí s kontrolním součtem | start se odmítne |
 | někdo na tiskárně pustí jiný soubor | sledovaná zakázka se po ~40 s ohlásí jako selhaná (nikdy ne jako hotová) |
+| tiskárna sama pozastaví tisk (filament nedorazil do hlavy) | úloha je `paused` s hláškou tiskárny v každém hlášení; obsluze přijde jeden e‑mail; „Pokračovat“ z adminu se potvrdí podle stavu tiskárny |
+| zvolený slot je prázdný | start se odmítne před nahráním, zakázka zůstane ve frontě, obsluha dostane e‑mail „start selhal“ |
 | příkaz `start` nikdo 10 minut nepřevezme | matplace ho stáhne; je potřeba znovu potvrdit volnou podložku |
 
 ## Ověřeno na skutečné Kobra S1 (22. 9. 2026, fw 2.7.2.7, Rinkhals 20260901_01)
@@ -195,7 +216,7 @@ Zbývá vyzkoušet: **pauza / pokračování / zrušení** z administrace a chov
 
 ```bash
 cd agent
-python -m unittest discover -s tests        # 13 testů proti simulované tiskárně a falešnému serveru
+python -m pytest tests                      # 93 testů proti simulované tiskárně, falešnému Moonrakeru, falešné Kobře X a falešnému serveru
 ```
 
 Nový ovladač: třída odvozená z `PrinterDriver` (`drivers/base.py`: `status`, `start`, `pause`, `resume`, `cancel`,

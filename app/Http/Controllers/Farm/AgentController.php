@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Farm;
 use App\Domain\Farm\AgentService;
 use App\Domain\Farm\FarmSettings;
 use App\Domain\Farm\GcodeSlot;
+use App\Domain\Farm\PrinterFiles;
 use App\Domain\Farm\PrintProfile;
 use App\Domain\Farm\TimelapseGcode;
 use App\Http\Controllers\Controller;
@@ -109,6 +110,34 @@ class AgentController extends Controller
         }
 
         return response()->json(['ok' => true]);
+    }
+
+    /** POST /api/agent/printers/{key}/files — the printer's file list (names, sizes, dates, free space; after a delete what went). */
+    public function files(Request $request, string $key): JsonResponse
+    {
+        $request->validate([
+            'files' => ['present', 'array', 'max:3000'], 'files.*.name' => ['required', 'string', 'max:200'],
+            'files.*.size' => ['nullable', 'integer', 'min:0'], 'files.*.modified' => ['nullable', 'integer', 'min:0'],
+            'free' => ['nullable', 'integer', 'min:0'], 'total' => ['nullable', 'integer', 'min:0'],
+            'deleted' => ['nullable', 'array', 'max:500'], 'deleted.*.name' => ['required', 'string', 'max:200'], 'deleted.*.size' => ['nullable', 'integer', 'min:0'],
+            'freed' => ['nullable', 'integer', 'min:0'],
+        ]);
+        $printer = FarmPrinter::where('key', $key)->where('farm_agent_id', $this->agent($request)->id)->firstOrFail();
+        $this->service->filesReport($printer, $request->all());
+
+        return response()->json(['ok' => true]);
+    }
+
+    /** POST /api/agent/printers/{key}/files/upload — one file of the printer, multipart "file" + "name", 300 MB at most. */
+    public function uploadFile(Request $request, string $key, PrinterFiles $files): JsonResponse
+    {
+        $request->validate(['file' => ['required', 'file', 'max:'.(PrinterFiles::MAX_BYTES >> 10)], 'name' => ['required', 'string', 'max:200']]);
+        $printer = FarmPrinter::where('key', $key)->where('farm_agent_id', $this->agent($request)->id)->firstOrFail();
+        $name = PrinterFiles::plain($request->input('name'));
+        abort_if($name === null, 422, 'not a plain file name');
+        $size = $files->save($printer, $request->file('file'), $name);
+
+        return response()->json(['ok' => true, 'name' => $name, 'size' => $size]);
     }
 
     private function agent(Request $request): FarmAgent

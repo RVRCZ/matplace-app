@@ -39,7 +39,7 @@ final class OrderFlow
     ];
 
     /** The kinds of mail the operator can switch off one by one in the farm's settings (`notify_<kind>`). */
-    public const ADMIN_KINDS = ['paid', 'printing', 'done', 'problem'];
+    public const ADMIN_KINDS = ['paid', 'printing', 'done', 'problem', 'paused'];
 
     /** A camera picture bigger than this is shrunk before it rides along with the "done" mail, or left out. */
     public const SNAPSHOT_MAX_BYTES = 300 * 1024;
@@ -446,7 +446,7 @@ final class OrderFlow
      * failure is logged; the farm never stops for it.
      *
      * @param  string[]  $lines
-     * @param  string  $kind  paid | printing | done | problem (ADMIN_KINDS)
+     * @param  string  $kind  paid | printing | done | problem | paused (ADMIN_KINDS)
      * @param  string|null  $attachment  a JPEG to ride along (the camera's last picture)
      */
     public function alertAdmin(string $subject, ?FarmOrder $order = null, array $lines = [], string $kind = 'problem', ?string $attachment = null): void

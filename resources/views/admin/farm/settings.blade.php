@@ -58,7 +58,7 @@
         {{-- what goes to that address: one mail per event of an order (OrderFlow::alertAdmin); problems also cover a printer offline or a start that failed --}}
         <div class="mt-3 flex flex-wrap items-center gap-4 text-sm" id="farm-notify">
             <span class="text-xs font-semibold text-slate-600">E-maily obsluze:</span>
-            @foreach(['paid' => 'zaplaceno (nová zakázka)', 'printing' => 'tiskne se', 'done' => 'dotištěno (se snímkem z kamery)', 'problem' => 'problémy (selhání, zrušení, tiskárna offline)'] as $kind => $label)
+            @foreach(['paid' => 'zaplaceno (nová zakázka)', 'printing' => 'tiskne se', 'done' => 'dotištěno (se snímkem z kamery)', 'problem' => 'problémy (selhání, zrušení, tiskárna offline)', 'paused' => 'pauza tiskárny (s hláškou, jeden e‑mail na pauzu)'] as $kind => $label)
                 <label class="flex items-center gap-2"><input type="checkbox" name="notify_{{ $kind }}" value="1" @checked($settings['notify_'.$kind]) class="h-4 w-4 accent-action"> {{ $label }}</label>
             @endforeach
             <span class="text-xs text-slate-500">Jeden e-mail na událost; bez e-mailu obsluhy nechodí nic.</span>

@@ -48,6 +48,9 @@ class FarmOrderController extends Controller
                 'printer' => $p,
                 'job' => $p->activeJob()?->load('order.modelFile'),
                 'queue' => $queue->map(fn (FarmOrder $o) => ['order' => $o, 'eta' => $this->dispatcher->estimate($o, $this->settings)]),
+                // the last thing the agent was told to do with this machine today, and what came of it (a resume that was
+                // confirmed by the printer's state, a start refused for an empty slot...)
+                'command' => FarmCommand::where('farm_printer_id', $p->id)->where('created_at', '>', now()->subDay())->latest('id')->first(),
             ];
         });
 

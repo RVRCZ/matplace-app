@@ -159,4 +159,8 @@
 
     <button class="btn-primary">Uložit</button>
 </form>
+
+@if($files)
+    @include('admin.farm.partials.files', ['printer' => $printer, 'files' => $files])
+@endif
 @endsection

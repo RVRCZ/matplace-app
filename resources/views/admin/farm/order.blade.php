@@ -50,7 +50,14 @@
                 <h3 class="mt-3 font-semibold">Print jobs</h3>
                 <ul class="mt-1 space-y-1 text-xs text-slate-600">
                     @foreach($order->printJobs as $j)
-                        <li>#{{ $j->id }} · {{ $j->status }} · {{ round($j->progress) }} % · slot {{ $j->slot + 1 }} @if($j->print_duration_s)· {{ $j->stats_estimated ? '≈ ' : '' }}{{ round($j->print_duration_s / 60) }} min @endif @if($j->filament_used_mm)· {{ $j->stats_estimated ? '≈ ' : '' }}{{ round($j->filament_used_mm / 1000, 2) }} m @endif @if($j->stats_estimated)· {{ __('farm.admin.estimated_stats') }} @endif @if($j->message)· {{ $j->message }}@endif</li>
+                        <li>#{{ $j->id }} · {{ $j->status }} · {{ round($j->progress) }} % · slot {{ $j->slot + 1 }} @if($j->print_duration_s)· {{ $j->stats_estimated ? '≈ ' : '' }}{{ round($j->print_duration_s / 60) }} min @endif @if($j->filament_used_mm)· {{ $j->stats_estimated ? '≈ ' : '' }}{{ round($j->filament_used_mm / 1000, 2) }} m @endif @if($j->stats_estimated)· {{ __('farm.admin.estimated_stats') }} @endif @if($j->message)· {{ $j->message }}@endif
+                            @if($j->messages)
+                                {{-- everything the printer said about this job, newest first (the last 20; agent 0.2.9) --}}
+                                <ul class="ml-3 mt-0.5 space-y-0.5 border-l border-slate-200 pl-2" data-job-messages="{{ $j->id }}">
+                                    @foreach($j->messageHistory() as $m)<li><span class="text-slate-400">{{ \Illuminate\Support\Carbon::parse($m['t'])->format('j. n. H:i:s') }}</span> {{ $m['m'] }}</li>@endforeach
+                                </ul>
+                            @endif
+                        </li>
                     @endforeach
                 </ul>
             @endif

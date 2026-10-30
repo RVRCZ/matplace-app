@@ -83,6 +83,7 @@ return [
         'notify_printing' => true,          // an agent's printer began the first plate
         'notify_done' => true,              // the last plate came off, with the camera's last picture
         'notify_problem' => true,           // print failed, cancelled by the customer, start failed, printer offline, error pending, currency
+        'notify_paused' => true,            // the printer paused a print by itself (with its reason, when it gave one); once per pause
 
         // ── product switches (the admin's value wins over .env; see App\Providers\AppServiceProvider) ──
         'marketplace' => (bool) env('FEATURE_MARKETPLACE', false),   // printers' marketplace: price lists, inquiries, quotes

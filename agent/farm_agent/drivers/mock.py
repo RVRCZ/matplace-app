@@ -6,6 +6,11 @@ Options (config.yaml):
   heat_seconds    "heating" before progress starts (default 5)
   fail_at         fail the print at this percentage (optional; e.g. 40)
   filament_mm     filament length reported at 100 % (default 3600)
+  pause_at        the printer pauses by itself at this percentage, once (optional), saying `pause_message`
+  pause_message   what the paused printer says (default ""; a Kobra S1 says nothing on its screen but "resume")
+  resume_timeout  true: resume works, but the call answers "TimeoutError" like a Kobra S1 under Rinkhals (default false)
+  slots           {index: word} what slot_status says ("ready", "empty"...); missing index = the printer does not tell
+  files           {name: size} the printer's storage at the start (default empty); a started print adds its file
 
 A started print heats, runs to 100 % and finishes; pause, resume and cancel behave like on a real printer.
 After a finished print the mock stays idle with the last job reported as done - exactly what Moonraker does.
@@ -18,7 +23,7 @@ import time
 from typing import Optional
 
 from .base import (ERROR, IDLE, JOB_CANCELLED, JOB_DONE, JOB_FAILED, JOB_PAUSED, JOB_PRINTING, PAUSED, PRINTING, DriverError,
-                   JobStatus, PrinterDriver, PrinterStatus)
+                   JobStatus, PrinterDriver, PrinterStatus, safe_name)
 
 # a real 16 x 12 px grey JPEG (the server checks the content, not the file name): enough to exercise the snapshot upload
 _JPEG = base64.b64decode(
@@ -43,6 +48,13 @@ class MockDriver(PrinterDriver):
         self._blips_left = int(options.get("error_blips", 2))
         self._blipped = False
         self.filament_mm = float(options.get("filament_mm", 3600))
+        self.pause_at = options.get("pause_at")
+        self.pause_message = str(options.get("pause_message", ""))
+        self.resume_timeout = bool(options.get("resume_timeout", False))
+        self.slot_words = {int(k): str(v) for k, v in (options.get("slots") or {}).items()}
+        self.files_on_disk = {str(k): int(v) for k, v in (options.get("files") or {}).items()}
+        self.total_bytes = 6_000_000_000
+        self._paused_once = False
         self._file: Optional[str] = None
         self._state = "standby"          # Klipper's words: standby | printing | paused | complete | cancelled | error
         self._printed = 0.0              # seconds of actual printing so far
@@ -58,6 +70,9 @@ class MockDriver(PrinterDriver):
             progress = self._progress()
             if self.fail_at is not None and progress >= float(self.fail_at):
                 self._state, self._message, self._since = "error", "MOCK: simulated failure (heater fault)", None
+            elif self.pause_at is not None and not self._paused_once and progress >= float(self.pause_at):
+                self._paused_once = True
+                self._state, self._message, self._since = "paused", self.pause_message, None
             elif progress >= 100:
                 self._state, self._since = "complete", None
 
@@ -85,6 +100,11 @@ class MockDriver(PrinterDriver):
             "mock": True,
             "light": "on" if self.light_on else "off",
         }
+        if self._message:
+            telemetry["message"] = self._message
+        confirmed = self.plate_confirmed(terminal=self._state in ("complete", "cancelled", "error") and bool(self._file), idle=self._state == "standby", now=time.time())
+        if confirmed:
+            telemetry["bed_cleared_at"] = confirmed
         job = None
         if self._file and self._state != "standby":
             p = self._progress()
@@ -105,6 +125,8 @@ class MockDriver(PrinterDriver):
         if os.path.getsize(gcode_path) == 0:
             raise DriverError("empty G-code file")
         self._file, self._state, self._printed, self._since, self._message = filename, "printing", 0.0, time.monotonic(), ""
+        self._paused_once = False
+        self.files_on_disk[filename] = os.path.getsize(gcode_path)
         await self._changed()
 
     async def pause(self) -> None:
@@ -117,8 +139,34 @@ class MockDriver(PrinterDriver):
     async def resume(self) -> None:
         if self._state != "paused":
             raise DriverError("nothing is paused")
-        self._state, self._since = "printing", time.monotonic()
+        self._state, self._since, self._message = "printing", time.monotonic(), ""
         await self._changed()
+        if self.resume_timeout:
+            raise DriverError("/printer/print/resume: TimeoutError ")
+
+    async def slot_status(self, slot: int) -> Optional[str]:
+        return self.slot_words.get(int(slot))
+
+    async def files(self) -> dict:
+        files = [{"name": n, "size": size, "modified": 1_700_000_000 + i} for i, (n, size) in enumerate(self.files_on_disk.items())]
+        files.sort(key=lambda f: f["modified"], reverse=True)
+        used = sum(self.files_on_disk.values())
+        return {"files": files, "free": self.total_bytes - used, "total": self.total_bytes}
+
+    async def fetch(self, name: str, target: str) -> int:
+        name = safe_name(name)
+        if name not in self.files_on_disk:
+            raise DriverError(f"file {name}: HTTP 404")
+        os.makedirs(os.path.dirname(target) or ".", exist_ok=True)
+        with open(target, "wb") as fh:
+            fh.write(b"G1 X0\n" * (self.files_on_disk[name] // 6) + b"x" * (self.files_on_disk[name] % 6))
+        return self.files_on_disk[name]
+
+    async def delete(self, name: str) -> None:
+        name = safe_name(name)
+        if name not in self.files_on_disk:
+            raise DriverError(f"delete {name}: HTTP 404")
+        del self.files_on_disk[name]
 
     async def cancel(self) -> None:
         self._advance()

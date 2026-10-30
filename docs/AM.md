@@ -465,3 +465,135 @@ agenta z PC farmy nemám (vyžádán); bez něj jsem uzavřela všechny cesty, k
 Testy: pozdní nuly, `last_project`/`info` bez čísel, restart přes work_dir (68). Co přesně se stalo úloze 154, řekne až
 log (restart agenta / spojení v noci; řádek konce úlohy). Pojistku na serveru (done s 0 → rozdíl started/finished,
 spotřeba z řezu) dělá session 2.
+
+## 10. Hlášky z tiskáren, pauza, uklizená podložka, soubory na disku (agent 0.2.9, větev `feature/agent-messages`, 30. 10. 2026)
+
+Zadání `docs/prompts/agent-hlasky-soubory.md` (F26‑000108 na B3: pauza při `T3`, důvod jen na displeji, „Pokračovat“ z adminu
+hlášeno jako selhání). Farma byla nedostupná; čteno jen z Romanových domácích U1 (192.168.8.21) a U2 (192.168.8.23) přes
+Moonraker HTTP, read only, obě ve stavu `complete` po posledních zakázkách. Kobra X (192.168.8.44) na port 18910
+neodpovídala (vypnutá), vše pro ni je ze zdrojů a ze zkoušek z §2 až §8.
+
+### 10a. Co Rinkhals skutečně vystaví (čtení U1/U2 30. 10. 2026)
+
+- **`display_status.message`** (M117): prázdné na obou. **`print_stats.message`**: prázdné. `kobra.py` Rinkhalsu
+  `print_stats.message` nikdy nenastavuje (jen přepisuje stavy `heating/leveling/resonance → printing`, `onpause → paused`);
+  pauzu a pokračování na MQTT nepřekládá, dělá je GoKlipper sám.
+- **`mmu`** (objekt z `mmu_ace.py`): má pole `reason_for_pause`, ale je v kódu natvrdo `""`; `print_state` `unknown`, `action`
+  `Idle`. Nic z toho důvod pauzy nedá.
+- **`filament_hub`** (Rinkhals, ACE Pro): `filament_hubs[0].status` (`ready`), `slots[].status` (`ready`; v kódu `mmu_ace.py`
+  dále `empty`, `runout`), `current_filament` (`""` nebo `"<box>-<index>"`), `temp`, `dryer_status`, `auto_refill`,
+  `filament_present`. Ukázka U1:
+  ```
+  {"filament_hubs":[{"id":0,"status":"ready","temp":37,"slots":[{"index":0,"status":"ready","type":"PLA Silk","color":[137,168,79],"rfid":1,"source":2},
+   {"index":1,"status":"ready","type":"PLA"},{"index":2,"status":"ready","type":"PLA Silk"},{"index":3,"status":"ready","type":"PLA"}]}],"current_filament":"","filament_present":0}
+  ```
+- **`/server/gcode_store`** (konzole Moonrakeru, 1000 posledních řádků): jediné místo, kde GoKlipper říká, proč stojí. U2
+  (zakázka s ASA, říjen 2026):
+  ```
+  {"message":"FEED_FILAMENT ID=0 INDEX=2 LENGTH=80 SPEED=25","type":"command"}
+  {"message":"!! error: typ = WebRequestError, code = 10011715, message = Extruder must heat up first","type":"response"}
+  {"message":"!! error: typ = WebRequestError, code = 10011710, message = filament hub feed filament timeout","type":"response"}
+  {"message":"!! error: typ = WebRequestError, code = 10011711, message = filament hub unwind filament timeout","type":"response"}
+  {"message":"!! error: typ = WebRequestError, code = 10011719, message = Filament is tangled","type":"response"}
+  ```
+  Přesně `10011710` (filament do hlavy nedorazil) je nejpravděpodobnější důvod pauzy B3; `FEED_FILAMENT ID=0 INDEX=3` před ním
+  říká, ze kterého slotu. Ostatní řádky konzole: `leviQ3 auto_zoffset_on_off`, `cancel_request:stopping`,
+  `!! Macro CANCEL_PRINT called recursively`, `SDCARD_RESET_FILE`.
+- **`webhooks.state_message`** při shutdownu Klipperu (jako dřív). **`pause_resume.is_paused`**, `idle_timeout.state`.
+- **Soubory:** `/server/files/directory?path=gcodes` dává `files[] {filename, size, modified}` a **`disk_usage {total, used, free}`**
+  (U1: 358 souborů, 1,9 GB z 6,2 GB; U2: 261 souborů). `/server/files/roots` ukazuje `gcodes` =
+  `/userdata/app/gk/printer_data/gcodes`. Stažení `GET /server/files/gcodes/<jméno>`, smazání `DELETE` tamtéž.
+  `/server/history/list` nese dokončené úlohy s `print_duration`, `filament_used`, `status completed`.
+- **Po dotištění:** `print_stats.state = complete` s názvem souboru zůstává **dny** (U1 od 25. 10., U2 podobně), i když obsluha
+  výtisk dávno sundala a dialog na displeji potvrdila. Dialog „tisk dokončen“ tedy do Moonrakeru nic nezapíše; totéž
+  `idle_timeout.state complete`. Databáze Moonrakeru má jen `gcode_metadata`, `moonraker`, `announcements`.
+
+### 10b. Ovladač `moonraker`
+
+- `telemetry.message` v každém hlášení (i mimo tisk): M117, `print_stats.message`, `webhooks.state_message` při shutdownu,
+  `ACE <status>` když hub není `ready`, `ACE slot N <status>` pro sloty mimo `ready`, `ACE <state> N%` při zavádění, a při
+  **pauze nebo chybě** chybové řádky konzole od začátku tisku (`now − print_stats.total_duration`), s příkazem
+  `FEED_FILAMENT`/`T<n>`/`M600` před nimi: „last command FEED_FILAMENT ID=0 INDEX=3 LENGTH=80 SPEED=25 · error: typ =
+  WebRequestError, code = 10011710, message = filament hub feed filament timeout“. Konzole se čte nejvýš jednou za 20 s,
+  do 300 znaků, stejné věty jednou (hláška s kódem nahradí tu bez kódu). `job.message` = celá hláška u pauzy a chyby,
+  u běžícího tisku jen `print_stats.message` jako dřív.
+- `slot_status(slot)`: `filament_hub.slots[slot].status`, jinak `mmu.gate_status` (1 ready, 0 empty), jinak `None`.
+- `files()`, `fetch()`, `delete()` přes `/server/files/directory`, `/server/files/gcodes/<jméno>`; jména jen holá
+  (`safe_name`: bez lomítek, bez `..`).
+- `bed_cleared_at`: přechod `complete|cancelled|error` (se souborem) → `standby` bez nového tisku = obsluha dotištěnou
+  úlohu resetovala; čas se posílá 60 s v každém hlášení.
+
+### 10c. Ovladač `anycubic_lan` (Kobra X)
+
+- `telemetry.message`: `err_msg`/`error` z `info`, `project.err_msg`, slovo příznaku `pause` (1 paused, 2 pausing, 3 resuming,
+  4 stopping), stav se slovem `filament` nebo `cutting` během výměny, a `msg (code N)` posledního `print/report` k souboru
+  (odmítnutý start 10301, selhání; `kobra.py` zná 10107 „Filament broken. Please load new filament.“). Protokol **nenese
+  text dialogů displeje** ani důvod pauzy; pauza bez důvodu zůstane „paused“.
+- `slot_status(slot)`: `multiColorBox` status 5 → `loaded`, 4 → `ready`, jiné číslo → `status N` (agent odmítá jen
+  `empty`/`runout`, takže Kobra X start nikdy neodmítne na základě odhadu). Neověřeno, co firmware hlásí u prázdné pozice.
+- `files()`: `file listLocal {"path": ""}` (tvar kobra-connect `command_list_files`); Kobra X odmítla 10112 (18. 10.),
+  ovladač vrátí `DriverError` s kódem a admin to vidí jako selhaný příkaz. `fetch`/`delete` protokol nemá. Potvrzení
+  dotištění na displeji: v LAN hlášeních nic známého, ovladač `bed_cleared_at` neposílá.
+
+### 10d. Agent
+
+- `pause`/`resume`/`cancel`: po odmítnutí nebo vypršení volání čte stav až 60 s po 2 s (`CONFIRM_WAIT_SECONDS`); správný
+  stav = `done` s textem „confirmed by the printer's state after N s; the call itself said: …“, jinak `failed` s původní
+  chybou a „the printer's state did not change in 60 s“.
+- Start: pro každý slot z `payload.filaments` (nebo `slot`) `slot_status`; `empty`/`runout` = `DriverError` před stažením
+  G‑kódu (server pošle mail „start selhal“, zakázka ve frontě); `None` = poznámka „slot N not checked, the printer does
+  not report its slots“ ve výsledku příkazu.
+- Příkazy `files` (seznam → `POST /api/agent/printers/{key}/files`), `fetch {name}` (kontrola velikosti podle seznamu,
+  300 MB, stažení do `work/<key>/fetched/`, `POST …/files/upload`, smazání místní kopie), `delete {name}` (nikdy soubor
+  sledované úlohy ani soubor, který tiskárna právě tiskne; `.gcode.3mf` = `.gcode`), `cleanup {keep: […]}` (jen
+  `^mp\d+-matplace-.*\.gcode(\.3mf)?$`, mimo `keep` a běžící; po úklidu pošle čerstvý seznam s `deleted[]` a `freed`).
+- Testy: 93 (`python -m pytest agent/tests`; nové `test_messages_files.py`, `test_moonraker_messages.py`,
+  `test_anycubic_lan_messages.py`; falešný Moonraker má `gcode_store`, `filament_hub`, adresář souborů, tichý resume).
+
+### 10e. Server
+
+- Migrace `2026_10_30_100000_farm_printer_messages_and_files`: `farm_print_jobs.message_at`, `messages` (JSON, posledních
+  20 `{t, m}`, stejná slova za sebou jednou); `farm_printers.message`, `message_at`, `files` (JSON seznam + volné místo +
+  poslední úklid), `files_at`. JSON na úloze místo tabulky: historie je omezená (20), čte se jen s úlohou, nic přes ni
+  nehledá. Šířky stavů beze změny (`files`, `fetch`, `delete`, `cleanup` se vejdou do `type` 10).
+- `AgentService`: `telemetry.message` → `printer.message/message_at` při změně (prázdné hlášení poslední slova nemaže,
+  čas říká stáří; `slim()` pouští `message` do 300 znaků); `job.noteMessage()` při každém hlášení; **mail `paused`**
+  (`notify_paused`, výchozí zapnuto, přepínač v `/admin/farm/settings`) jednou na pauzu (`paused_at` null → nastaveno),
+  řádky Kde + „Hláška tiskárny: …“ nebo „tiskárna důvod neposlala“ + Co dál; druhá pauza po pokračování = nový mail.
+  `bed_cleared_at` z telemetrie → `bed_clear = true` (jen novější než `bed_cleared_at`, ne starší než 6 h, bez aktivní
+  úlohy) a `Dispatcher::kick` v témže syncu spustí frontu.
+- API agenta: `POST /api/agent/printers/{key}/files` (seznam, `deleted`, `freed`), `POST …/files/upload` (multipart `file`
+  + `name`, 300 MB = 307200 kB ve validaci, jméno holé, uloží do `storage/app/farm/printers/{id}/files/<jméno>`).
+- Admin: `/admin/farm` u tiskárny „Hláška tiskárny <čas>: …“ (zvýrazněná, když ji agent hlásí právě teď), poslední příkaz
+  dne s výsledkem, u běžící úlohy poslední 3 hlášky s časem; u zakázky celá historie úloh; stránka tiskárny
+  (`/admin/farm/printers/{id}#files`, `partials/files.blade.php`, `FarmFileController`, `PrinterFiles`): Načíst seznam,
+  Uklidit disk (N), tabulka jméno/velikost/datum s odznaky „náš“ a „běžící úloha“, Stáhnout na server / stáhnout do PC,
+  Smazat z tiskárny (u běžící úlohy tlačítko není a server i agent to odmítnou), souhrn posledního úklidu, výsledky
+  souborových příkazů za 24 h, kopie na serveru s odkazem ke stažení a „smazat kopii ze serveru“.
+- Texty: `lang/{cs,en,es}/farm.php` `admin.message`, `admin.last_command`, `admin.command_status.*`, `admin.command_type.*`,
+  `admin.files.*`, `admin.mail.paused`, `line_pause_reason`, `line_pause_none`, `line_next_paused`.
+- Testy: `tests/Feature/FarmAgentMessagesTest.php` (7): pauza s hláškou = jeden mail + historie + obě stránky, druhá pauza
+  = druhý mail; pauza bez hlášky = „tiskárna důvod neposlala“, přepínač vypne; historie 20; `bed_cleared_at` (staré
+  ignorováno, start v témže syncu, opakování ignorováno, při tisku ignorováno, po dotištění znovu); seznam souborů +
+  příkazy adminu (běžící soubor nikdy do delete, `keep` v cleanup, souhrn úklidu na stránce, ruční tiskárna odmítne);
+  upload (velikost, jméno, token, stažení do PC, smazání kopie); odmítnutý start jako poslední příkaz na nástěnce.
+
+### 10f. Neověřeno (bez tiskárny farmy a bez pauzy k vidění)
+
+- Že při pauze B3 konzole skutečně nese `!! error … 10011710` (odvozeno z U2, kde ty řádky jsou po ručním zavádění).
+- Jak dlouho Rinkhals drží volání `print/resume` a že stav `paused → printing` přijde do 60 s (z F26‑000108 jen „minutu tiskne“).
+- Slova `empty`/`runout` ve `filament_hub.slots[].status` u skutečně prázdné pozice (z kódu `mmu_ace.py`, na U1/U2 vše `ready`).
+- Co displej S1 ukáže po `T3` z prázdného slotu a zda dialog „resume/konec“ něco zapíše do `gcode_store`.
+- Potvrzení dotištění na displeji: ověřeno jen, že `complete` zůstává dny; náhrada (reset dotištěné úlohy v Mainsailu/Fluiddu
+  na telefonu, `http://<IP>:4409`, tlačítko Reset = `SDCARD_RESET_FILE`) nevyzkoušena naživo.
+- Kobra X: `listLocal` jiným tvarem, hlášení při pauze a po potvrzení dialogu, status prázdné pozice v `multiColorBox`.
+- Produkce: `upload_max_filesize`/`post_max_size` PHP a `client_max_body_size` nginx musí pustit 300 MB na
+  `/api/agent/printers/*/files/upload`, jinak `fetch` skončí 413 (dnešní limit webu je 120 MB podle `max_upload_mb`).
+
+### 10g. Instalace 0.2.9 (řídící)
+
+Zip `C:\Users\roman\Desktop\matplace-farm-agent-0.2.9.zip` (18 souborů, bez config.yaml, stavěno `build_agent_zip.py`
+jako 0.2.8). Na PC farmy: zastavit úlohu `matplace-farm-agent`, přehrát složku `farm_agent/` (žádné nové knihovny,
+`requirements.txt` beze změny), spustit úlohu. Server: migrace (`php artisan migrate --force`), `config:clear`
+(`notify_paused`), `view:clear`; bez buildu (žádné TS). Po nasazení v `/admin/farm/settings` zkontrolovat zaškrtnutou
+„pauza tiskárny“ a na stránce tiskárny B3 kliknout „Načíst seznam“.
