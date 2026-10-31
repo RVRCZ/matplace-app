@@ -4,6 +4,7 @@ namespace Tests\Feature;
 
 use App\Domain\Tools\ParametricGenerator;
 use App\Engines\Mesh\StlFile;
+use App\Engines\Repair\PythonTool;
 use App\Models\User;
 use App\Support\PreviewMeta;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -113,6 +114,28 @@ class HeldShapesTest extends TestCase
         // a round plate gets the same 15 mm on its arc
         $round = $this->meta('straw', ['artwork' => 'lib:colour/smiling-star', 'body' => 'circle', 'width' => 35, 'straw_d' => 8, 'text_dir' => 'along']);
         $this->assertEquals(15, $round['notes']['clip']['length']);
+    }
+
+    public function test_a_straw_topper_is_one_closed_body_a_printer_takes(): void
+    {
+        // the room of the straw was cut along the wall of a ready tube: a zero-thin sliver on each of its 72 facets, and flaps
+        // where the plate ended in the plane the tube ends in. The price showed "47 open edges, 73 bodies" and no print
+        // (Roman, 31 Oct 2026). Every picture and name, both ways, on every straw
+        $designs = [['artwork' => 'lib:colour/smiling-star'], ['artwork' => 'lib:colour/happy-ghost'], ['line1' => 'Ela']];
+        foreach ($designs as $design) {
+            foreach (['along', 'across'] as $dir) {
+                foreach ([6, 8, 12] as $d) {
+                    $r = $this->postJson('/api/tools/param/preview', ['kind' => 'straw', 'params' => $design + ['width' => 40, 'thickness' => 3, 'straw_d' => $d, 'text_dir' => $dir]])->assertOk();
+                    // the farm's own check, the one that stopped the print: StlTopology's 1 µm grid does not see a zero-thin sliver
+                    $out = tempnam(sys_get_temp_dir(), 'straw');
+                    $farm = app(PythonTool::class)->runScript('farm_tool.py', ['prepare', $r->baseResponse->getFile()->getPathname(), $out, '1', '250', '250', '250'], 120);
+                    @unlink($out);
+                    $name = json_encode($design)." {$dir} {$d} mm";
+                    $this->assertTrue($farm['was_watertight'] ?? false, "{$name}: {$farm['open_edges_before']} bad edges, {$farm['shells']} bodies");
+                    $this->assertSame(1, $farm['shells'], $name);
+                }
+            }
+        }
     }
 
     public function test_nothing_reaches_into_the_straws_way_through_the_clip(): void
