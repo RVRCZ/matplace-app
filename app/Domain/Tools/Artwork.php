@@ -15,7 +15,7 @@ use Illuminate\Support\Str;
  * Pictures the tools turn into shapes (logo, stamp, stencil, illuminated sign, cookie cutter). Three sources, one
  * reference the form sends along with the numbers:
  *
- *   "lib:<category>/<slug>"  a silhouette of our library (engines/artwork, CC0 / public domain only: SOURCES.md)
+ *   "lib:<category>/<slug>"  a silhouette of our library (engines/artwork, CC0 / public domain and our own logo: SOURCES.md)
  *   "<uuid>"                 an upload of this visitor (storage/app/artwork/<owner>/, kept 30 days: "my pictures")
  *   "file:<uuid>"            the copy stored with a created model (kept with it)
  *   "file:<uuid>:<n>"        the same for a model put together from layers: the picture of its layer n

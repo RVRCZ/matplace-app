@@ -51,13 +51,14 @@ LIMITS = {
     "contrast": (50, 150), "brightness": (50, 150), "saturation": (0, 200), "eye_pos": (0, 100), "eye_hole": (1.5, 8), "eye_wall": (1.2, 4),
     "mag_d": (4, 30), "mag_h": (0.4, 6), "mag_gap": (0, 0.4), "text_size": (30, 150), "text_y": (-60, 60), "spike": (30, 100), "spikes": (1, 2), "links": (0, 80), "depth": (0.4, 1.0), "motif_size": (20, 95), "cell": (20, 80), "hole_d": (8, 40), "bag_hole": (6, 20), "bag_wall": (1, 10), "straw_d": (5, 14),
 }
-BODIES = {"charm": ("image", "circle", "rect"), "keychain": ("rect", "image", "circle"), "earrings": ("image", "circle"), "ornament": ("image", "circle", "star"),
+BODIES = {"charm": ("image", "circle", "oval", "rect", "heart", "hex", "star"), "keychain": ("rect", "image", "circle"), "earrings": ("image", "circle"), "ornament": ("image", "circle", "star"),
           "magnet": ("image", "circle", "rect"), "coaster": ("circle", "square", "hex"), "gingerbread": ("image",), "name_letter": ("image",), "cookie": ("image", "circle"), "topper": ("image",), "tray": ("image", "circle"), "badge": ("image", "circle", "rect"), "medallion": ("circle", "star", "hex", "shield", "octagon", "rosette", "heart"), "photo_organizer": ("image", "circle"), "bag_charm": ("image", "circle", "rect"), "straw": ("image", "circle"), "opener": ("image", "circle", "rect")}
 MOUNTS = ("glue", "press", "through", "none")
 TEXT_DIRS = ("across", "along")    # a straw topper: its name across the clip, or along the straw with the clip along it
 CLIP_MIN = 14.0              # the clip of a straw topper at one point of its outline
 CLIP_ARM = 12.0              # how far the plate may reach out to the clip: longer is ugly and weak
 CLIP_ALONG = 15.0            # along the straw: the same clip, as long whatever the name, in the middle of its side
+OVAL = 0.7                  # an oval's height to its width: a fixed proportion, the name or picture is sized to it
 INLAY = 0.6                 # how deep inlaid colours go: three layers, nothing of the plate shows through
 GAP = 6.0                   # between the two earrings on the bed
 
@@ -102,6 +103,8 @@ def _shape(M, body, D):
     C, J = M.CrossSection, M.JoinType.Round
     if body == "circle":
         return C.circle(D / 2, 160), D / 2
+    if body == "oval":
+        return C.circle(1.0, 160).scale([D / 2, OVAL * D / 2]), OVAL * D / 2
     if body == "hex":
         return C.circle(D / 2, 6).rotate(30), D / 2 * math.cos(math.pi / 6)
     if body == "octagon":
@@ -515,6 +518,8 @@ def build(M, Invalid, p, product):
             w0, h0 = S.size(art)
             reach = min(2 * (inner_r - 1.0), width * n("motif_size", 55) / 100.0) if medal else 2 * (inner_r - 1.0)      # a medal's number: a share of its width
             k = (reach / math.hypot(w0, h0)) if geometric else art_w / w0
+            if body_kind == "oval":                       # a name fills the oval's width, not the circle inside it
+                k = 1.0 / math.hypot(w0 / (width - 2 * edge - 2), h0 / reach)
             art = S.fit(art, width_mm=w0 * k)
             if along:
                 # a quarter turn to the left: the name reads up the straw, from the glass to the mouth, and its baseline,
@@ -534,6 +539,8 @@ def build(M, Invalid, p, product):
                 kept = S.colors(M, art_path, 100.0, probe)[1]["background"] == "kept"
                 # a whole photo fills the body to its edge, a cut-out motif sits inside it
                 options["fit"] = ("cover", 2 * inner_r, 2 * inner_r) if kept else ("circle", min(2 * (inner_r - 1.0), width * n("motif_size", 55) / 100.0) if medal else 2 * (inner_r - 1.0))
+                if body_kind == "oval":
+                    options["fit"] = ("cover", width - 2 * edge, 2 * inner_r) if kept else ("ellipse", width - 2 * edge - 2, 2 * (inner_r - 1.0))
             layers, info = S.colors(M, art_path, art_w, options)
             if product == "badge" and lines:
                 if geometric and info["background"] == "kept":

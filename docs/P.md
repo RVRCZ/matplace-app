@@ -1062,3 +1062,61 @@ neprošel.
 
 Při zkušebním tisku navíc k bodům v §9 sledovat: rameno (nesmí se ohýbat ani při zacvaknutí, když klip stojí s ramenem
 přes 10 mm) a že brčko projde podél celé ozdoby bez dotyku motivu.
+
+## 10. Přívěsek: logo Matplace jako výchozí, víc tvarů podložky, tvary jako ikony (31. 10. 2026, session G)
+
+Zadání `docs/prompts/privesek-matplace.md` (TODO #57), větev `feature/charm-matplace`.
+
+### Logo jako vektor
+
+`engines/artwork/colour/matplace.svg` (22,8 kB, odkaz `lib:colour/matplace`). Vznikl skriptem
+`engines/artwork/colour/_trace_logo.py` z `public/img/logo.png` knihovnou potracer (`pip install potracer pillow numpy
+scipy`): obrázek zvětšený 4×, masky podle tří plochých barev loga (`#2da899`, `#004439`, `#c25941`), lehké rozmazání
+masek, obrysy na Bézierovy křivky. Tmavá vrstva je celé logo, tyrkysová a měděná leží na ní bez mezer.
+
+Past: tmavý okraj přecházející do průhledna prochází barvou nejbližší tyrkysové. Bez zákazu tyrkysové u okraje vznikl
+kolem loga tenký tyrkysový lem a soubor měl 98 kB.
+
+Je to naše logo, ne CC0: `SOURCES.md` to říká a `ArtworkLibraryTest` teď pravidlo „jen CC0“ výslovně doplňuje o
+„our own logo“. V knihovně pro návštěvníky je vidět mezi barevnými (bez příznaku skrytí): vytištěné logo nám nevadí.
+
+### Předvolba
+
+`PRESETS['charm']['matplace']` a `->defaults('preset', 'matplace')`. Výsledek na stránce **61,9 × 34,3 × 5,4 mm**,
+4 barvy (cíl 61,9 × 34,4 × 5,4), podíly barev 50,7 / 46,6 / 2,6 % (Roman 51,1 / 46,4 / 2,5 %).
+
+Odchylky od Romanova nastavení:
+
+- **Očko 42 %, ne 38 %.** Poloha je podíl délky obrysu a vektorový obrys je hladší a kratší než obrys z Romanova PNG. Na
+  38 % by očko stálo nad písmenem e a šířka by vyšla 59,6 mm. Na 42 % stojí vpravo u e jako na jeho snímku a šířka sedí.
+- **Barvy motivu napevno neurčuji.** Jsou to automatické barvy obrázku, stejná cesta a stejné odstíny jako u Romana, takže
+  na produkci vyjdou stejně. Napevno je jen šedý podklad (`12_PLA+_sedy`, `name:šedá`, `grey`), protože ten si Roman
+  zvolil sám (bez něj by podklad vzal barvu nejnižší vrstvy). Filamenty produkce lokálně nemám, ověřit to jde až tam.
+- Stránka nově ukazuje „Začít od předvolby: Logo Matplace“, jako každý nástroj s předvolbou.
+
+![Přívěsek po otevření](img/charm-matplace.png)
+
+### Tvary a ikony
+
+- `BODIES` a `CHOICES` přívěsku: podle obrázku, kruh, **ovál**, obdélník, srdce, šestiúhelník, hvězda. Sourozenci nové tvary
+  nedostali.
+- **Ovál má pevný poměr 0,7** (`OVAL`), ne pole výšky: jedno pole navíc s `WHEN`, táhlem a texty by přineslo jen volbu,
+  kterou u přívěsku nikdo nepostrádá. Jméno i obrázek se do oválu vejdou podle elipsy (`fit: ("ellipse", w, h)`), ne jen do kruhu v něm.
+- Šestiúhelník je špičkou nahoru: šířka pole je jeho výška, široký je 0,87 ×. Je to stejný kód jako u podtácku.
+- Srdce a hvězda berou obrázek do vepsaného kruhu jako medailon, široké logo v nich vyjde malé. Úzké motivy vypadají líp.
+- Čipy: `tools/_choice.blade.php` nahradil tři kopie čipu v `param.blade.php`. Volba `body` s hodnotou v
+  `ParametricGenerator::SHAPE_ICONS` má ikonu `shape-<hodnota>` (`partials/icons.blade.php`) a pod ní název. Text je i v `title` a `aria-label`.
+  Sourozenci mají ikony zadarmo, ostatní volby zůstávají text. Na 390 px dvě řady, na 1280 px tři, nic nepřetéká.
+
+![Čipy na 1280 px](img/charm-shapes-1280.png)
+![Čipy na 390 px](img/charm-shapes-390.png)
+
+### Ověřeno
+
+`CharmShapesTest` (předvolba: rozměry, podíly barev, šedý podklad, farma dá jedno uzavřené těleso; každý tvar s obrázkem i
+jménem: šířka, očko na obrysu ve 3 polohách, jedno těleso; čipy ve třech jazycích, sourozenec bez oválu),
+`ArtworkLibraryTest`, `HeldShapesTest`, `ToolPageTest`, `ParametricToolsTest`, `ShapeToolsTest`. pint, build. Stránka lokálně
+(1280 a 390 px): hodnoty polí po otevření, bez vodorovného posunu, 6 tvarů přes čipy (náhled na 1280 px).
+
+Neověřeno: filamenty na produkci a tisk. Logo má na švech barev pár hran, které farma opravuje sama (§9a.1): model projde,
+kalkulace ale může napsat, že byl opraven.

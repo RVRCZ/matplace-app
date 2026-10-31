@@ -135,9 +135,7 @@
                 <legend class="lbl">{{ $tr('c', $first) }}</legend>
                 <div class="mt-2 flex flex-wrap gap-1.5" role="radiogroup">
                     @foreach($plainChoices[$first] as $i => $o)
-                        <label class="tool-choice">
-                            <input type="radio" name="c-{{ $first }}" data-choice="{{ $first }}" value="{{ $o }}" class="sr-only" @checked($i === 0)>{{ $tr('o', $o) }}
-                        </label>
+                        @include('tools._choice', ['key' => $first])
                     @endforeach
                 </div>
                 @if(\Illuminate\Support\Facades\Lang::has('param.c.'.$kind.'.'.$first.'.hint'))<p class="hint mt-1 !text-xs">{{ __('param.c.'.$kind.'.'.$first.'.hint') }}</p>@endif
@@ -306,9 +304,7 @@
                 <legend class="lbl">{{ $tr('c', $key) }}</legend>
                 <div class="mt-2 flex flex-wrap gap-1.5" role="radiogroup">
                     @foreach($options as $i => $o)
-                        <label class="tool-choice">
-                            <input type="radio" name="c-{{ $key }}" data-choice="{{ $key }}" value="{{ $o }}" class="sr-only" @checked($i === 0)>{{ $tr('o', $o) }}
-                        </label>
+                        @include('tools._choice')
                     @endforeach
                 </div>
                 @foreach($filledBy($key) as $field => $f)
@@ -361,9 +357,7 @@
                 <legend class="lbl">{{ $tr('c', $key) }}</legend>
                 <div class="mt-2 flex flex-wrap gap-1.5" role="radiogroup">
                     @foreach($options as $i => $o)
-                        <label class="tool-choice">
-                            <input type="radio" name="c-{{ $key }}" data-choice="{{ $key }}" value="{{ $o }}" class="sr-only" @checked($i === 0)>{{ $tr('o', $o) }}
-                        </label>
+                        @include('tools._choice')
                     @endforeach
                 </div>
             </fieldset>

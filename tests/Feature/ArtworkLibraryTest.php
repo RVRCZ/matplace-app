@@ -38,8 +38,8 @@ class ArtworkLibraryTest extends TestCase
         foreach ($files as $file) {
             $this->assertArrayHasKey($file, $rows, "{$file}.svg has no row in SOURCES.md: it must not be in the repository");
             [, , $source, $licence] = $rows[$file];
-            $this->assertMatchesRegularExpression('/CC0|public domain/i', $licence, "{$file}: only CC0 or public domain");
-            $this->assertMatchesRegularExpression('#https?://\S+|own drawing#i', $source, "{$file}: the source is a page address or our own drawing");
+            $this->assertMatchesRegularExpression('/CC0|public domain|^our own logo/i', $licence, "{$file}: only CC0, public domain or our own logo");
+            $this->assertMatchesRegularExpression('#https?://\S+|own drawing|own logo#i', $source, "{$file}: the source is a page address or our own drawing");
             $this->assertContains(explode('/', $file)[0], Artwork::CATEGORIES, $file);
         }
         $this->assertSame([], array_values(array_diff(array_keys($rows), $files)), 'SOURCES.md lists pictures that are not there');
