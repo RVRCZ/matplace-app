@@ -410,19 +410,22 @@ def _clip(M, px, py, nx, ny, d, length=14.0):
     A clip for a drinking straw: a tube open on top for a little over half the straw's width, lying on the bed beside
     the shape. The straw snaps in from the face and runs past the shape, so the top of the straw stays free to drink from.
     `length` along the straw: 14 mm at one point of the outline, 15 mm in the middle of the side along it.
-    Returns (the clip, its footprint, the tab of the plate it stands on, the room the straw takes in it).
+    Returns (the clip as a solid round bar, its footprint, the tab of the plate it stands on, what is cut out of it all: the
+    straw's room and the opening on top). One cut makes the inside of the tube: cutting a ready tube again along its own
+    wall left a zero-thin sliver on each of its 72 facets, and the slicer refused the model for them.
     """
     C = M.CrossSection
     r_in, wall = d / 2 + 0.2, 1.6
     r_out = r_in + wall
-    ring = C.circle(r_out, 72) - C.circle(r_in, 72) - C.square([0.6 * d, r_out + 1]).translate([-0.3 * d, 0])
+    axis = [r_out - 0.8, r_out - 0.5]
     # sunk half a millimetre into the bed and cut flat there, so it lies on a strip and not on a line; it bites into the edge of the shape
-    ring = ring.translate([r_out - 0.8, r_out - 0.5]) ^ C.square([4 * r_out, 4 * r_out]).translate([-2 * r_out, 0])
-    solid, foot = _placed(M, ring.extrude(length).translate([0, 0, -length / 2]), px, py, nx, ny, (-0.8, 2 * r_out - 0.8, -length / 2, length / 2))
+    bar = C.circle(r_out, 72).translate(axis) ^ C.square([4 * r_out, 4 * r_out]).translate([-2 * r_out, 0])
+    solid, foot = _placed(M, bar.extrude(length).translate([0, 0, -length / 2]), px, py, nx, ny, (-0.8, 2 * r_out - 0.8, -length / 2, length / 2))
     # a tab of the plate under the clip and a little way into the shape: the clip holds along its whole length, whatever the outline does there
-    tab = _placed(M, M.Manifold.cube([1, 1, 1]), px, py, nx, ny, (-4.0, r_out, -length / 2, length / 2))[1]
+    # (a tenth shorter at each end: ending in the plane the bar ends in, it left flaps without thickness there)
+    tab = _placed(M, M.Manifold.cube([1, 1, 1]), px, py, nx, ny, (-4.0, r_out, -length / 2 + 0.1, length / 2 - 0.1))[1]
     # the straw's room through the clip and a millimetre past each end: the tab and the letters never reach into it
-    room = C.circle(r_in, 72).translate([r_out - 0.8, r_out - 0.5]).extrude(length + 2).translate([0, 0, -length / 2 - 1])
+    room = (C.circle(r_in, 72) + C.square([0.6 * d, r_out + 1]).translate([-0.3 * d, 0])).translate(axis).extrude(length + 2).translate([0, 0, -length / 2 - 1])
     return solid, foot + tab, tab, _placed(M, room, px, py, nx, ny, (0.0, 1.0, 0.0, 1.0))[0]
 
 
@@ -827,6 +830,7 @@ def build(M, Invalid, p, product):
         # the plate under the clip is as thick as the plate and rose into the tube: the straw's way stays empty
         body, whole = body - bore, whole - bore
         solids = [(layer, s - bore) for layer, s in solids]
+        grip = grip - bore                                   # the clip as it is printed: open on top, and that lower
     beside = None                                            # what lies on the bed next to the product: the plate's width, depth, and its own height
     if chain is not None:
         beside = (chain[1], chain[2], _link_profile(LINK[2])[0])

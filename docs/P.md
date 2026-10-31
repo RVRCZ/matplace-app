@@ -1013,3 +1013,19 @@ STL a hledá nejhlubší bod uvnitř kruhu brčka (Ela podél 6 / 8 / 12 mm a tl
 s ním nic. `ToolPageTest` (předvolba `ela` bez upozornění).
 
 Ke zkoušce tisku platí body výše, jen bod 1 je teď jako u krátkého klipu: 15 mm se zacvakne stejně jako 14 mm.
+
+### 9a.1 Oprava: model s klipem nešel vytisknout (31. 10. 2026, session G)
+
+Roman při pokusu o tisk: „Model má díry v povrchu (47 otevřených hran)… skládá se z 73 samostatných těles“. **Chybu
+přineslo kolo 2.** Prostor brčka se vyřezával z hotové trubky po její vlastní vnitřní stěně, takže na každém ze 72
+segmentů kruhu zůstala ploška nulové tloušťky. Farma takový model neopraví (`farm_tool` lokálně: 45 hran, 72 těles,
+`watertight: false`). Test z kola 2 hledal jen to, co zasahuje dovnitř trubky, na vodotěsnost se neptal.
+
+- `_clip` teď vrací plnou tyč a jeden řez (prostor brčka + otvor nahoře), vnitřek trubky tedy vzniká jediným řezem.
+- Pás destičky pod klipem je o 0,1 mm kratší na každém konci. Končil ve stejné rovině jako trubka a dělal tam plošky
+  bez tloušťky.
+- Nový `test_a_straw_topper_is_one_closed_body_a_printer_takes` (obrázky i jméno, oba směry, 6 / 8 / 12 mm).
+
+Lokální mřížka: 336 návrhů brčka, po opravě všechny z knihovny i jméno vodotěsné. Zbývá jiný, starší jev mimo klip: u
+loga 2 až 14 hran sdílených víc než dvěma plochami na švech vrstev barev (je i u přívěsku a magnetky z téhož obrázku).
+Ty `farm_tool` opraví sám (`repaired: true`, jedno těleso), tisk nezastaví. Příčinu jsem neřešil.
