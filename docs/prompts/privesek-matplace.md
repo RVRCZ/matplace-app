@@ -28,3 +28,22 @@ Zadal Roman 31. 10. 2026 večer u `/tools/charm` (nástroj `charm`, rodina `shap
 - Session 1, worktree `C:\matplace-shapes-wt`, větev `feature/charm-matplace` z main (01392c2e nebo novější). Zápis: `docs/P.md` nová kapitola §10 („Přívěsek: logo Matplace jako výchozí“).
 - Texty jen přes lang soubory, `git add` jmenovitě, žádný stash. Nic nenasazuj.
 - Po pushi zpráva řídící session: větev, commit, co je ověřené, snímek. Řídící sloučí; Roman zkontroluje vzhled na produkci po nasazení.
+
+## 5. Doplnění Romana 31. 10. večer: více tvarů podložky a tvary graficky
+
+Roman: „přidat více tvarů podložky například ovál a zobrazit je graficky“. Snímek `docs/img/zadani-charm-tvary.png` (část Rozměry, Tvar = Podle obrázku, Kruh, Obdélník, zakroužkováno).
+
+### Co je dnes
+
+- `BODIES["charm"] = ("image", "circle", "rect")` v `engines/python/shape_kinds.py` (řádek 54) a `CHOICES['charm']['body']` v `ParametricGenerator` (řádek 291). Obrys podle `body` staví funkce téhož souboru kolem řádků 100 až 120: circle, hex, octagon, star, rosette, heart a shield už existují (medailon, ozdoba), rect a square také.
+- Chipy volby jsou jen text: `resources/views/tools/param.blade.php` řádky 139, 310 a 365 (`<input type="radio" data-choice>` + `$tr('o', $o)`), popisky v `lang/*/param.php` jako `o.<hodnota>`.
+
+### Cíl
+
+1. Přívěsek nabídne víc tvarů podložky: podle obrázku, kruh, **ovál** (nový: elipsa; poměr výšky k šířce napevno kolem 0,7, nebo pole `height` viditelné jen u oválu a obdélníku přes `WHEN`, vyber to čitelnější a napiš proč), obdélník se zaoblenými rohy, srdce, šestiúhelník, hvězda (ty engine už umí, jen je pustit přívěsku). Obrázek nebo jméno se do tvaru vejde stejně jako dnes do kruhu, očko po obvodu (`eye_pos`) sedí na obrysu u každého tvaru.
+2. Chipy tvaru **graficky**: každá volba `body` má malou ikonu tvaru (inline SVG přes `x-icon`, názvy `shape-image`, `shape-circle`, `shape-oval`, `shape-rect`, `shape-heart`, `shape-hex`, `shape-star`, …), text zůstane v `title` a `aria-label`; krátký popisek pod ikonou jen když se na 390 px vejde. Mechanismus udělej obecný: volba, pro kterou existuje ikona `shape-<hodnota>`, se vykreslí s ikonou, jinak textem jako dnes. Stejná volba `body` u sourozenců (keychain, ornament, magnet, coaster, bag_charm, straw, medallion) tak dostane ikony zadarmo. Nové tvary přidávej jen přívěsku; sourozencům jen tam, kde to je stejný kód a nic nerozbije.
+3. Předvolba `matplace` z §2 zůstává „podle obrázku“.
+
+### Testy
+
+- `HeldShapesTest` a `ParametricToolsTest`: každý nový tvar přívěsku se postaví s obrázkem i se jménem, očko u oválu a srdce leží na obrysu, nic se nekříží, rozměry odpovídají šířce. Snímek chipů s ikonami do `docs/img/charm-shapes.png` (390 a 1280 px). `ToolPageTest` projde pro všechny druhy, které chipy sdílejí.
