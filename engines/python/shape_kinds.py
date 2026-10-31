@@ -56,6 +56,7 @@ BODIES = {"charm": ("image", "circle", "rect"), "keychain": ("rect", "image", "c
 MOUNTS = ("glue", "press", "through", "none")
 TEXT_DIRS = ("across", "along")    # a straw topper: its name across the clip, or along the straw with the clip along it
 CLIP_MIN = 14.0              # the clip of a straw topper at one point of its outline
+CLIP_ARM = 12.0              # how far the plate may reach out to the clip: longer is ugly and weak
 CLIP_ALONG = 15.0            # along the straw: the same clip, as long whatever the name, in the middle of its side
 INLAY = 0.6                 # how deep inlaid colours go: three layers, nothing of the plate shows through
 GAP = 6.0                   # between the two earrings on the bed
@@ -405,11 +406,12 @@ def _placed(M, solid, px, py, nx, ny, box):
     return placed, M.CrossSection([corners], M.FillRule.NonZero)
 
 
-def _clip(M, px, py, nx, ny, d, length=14.0):
+def _clip(M, px, py, nx, ny, d, length=14.0, arm=0.0):
     """
     A clip for a drinking straw: a tube open on top for a little over half the straw's width, lying on the bed beside
     the shape. The straw snaps in from the face and runs past the shape, so the top of the straw stays free to drink from.
-    `length` along the straw: 14 mm at one point of the outline, 15 mm in the middle of the side along it.
+    `length` along the straw: 14 mm at one point of the outline, 15 mm in the middle of the side along it. `arm`: how far
+    the shape lies back from (px, py) at this height; the tab reaches that far in.
     Returns (the clip as a solid round bar, its footprint, the tab of the plate it stands on, what is cut out of it all: the
     straw's room and the opening on top). One cut makes the inside of the tube: cutting a ready tube again along its own
     wall left a zero-thin sliver on each of its 72 facets, and the slicer refused the model for them.
@@ -423,7 +425,7 @@ def _clip(M, px, py, nx, ny, d, length=14.0):
     solid, foot = _placed(M, bar.extrude(length).translate([0, 0, -length / 2]), px, py, nx, ny, (-0.8, 2 * r_out - 0.8, -length / 2, length / 2))
     # a tab of the plate under the clip and a little way into the shape: the clip holds along its whole length, whatever the outline does there
     # (a tenth shorter at each end: ending in the plane the bar ends in, it left flaps without thickness there)
-    tab = _placed(M, M.Manifold.cube([1, 1, 1]), px, py, nx, ny, (-4.0, r_out, -length / 2 + 0.1, length / 2 - 0.1))[1]
+    tab = _placed(M, M.Manifold.cube([1, 1, 1]), px, py, nx, ny, (-4.0 - arm, r_out, -length / 2 + 0.1, length / 2 - 0.1))[1]
     # the straw's room through the clip and a millimetre past each end: the tab and the letters never reach into it
     room = (C.circle(r_in, 72) + C.square([0.6 * d, r_out + 1]).translate([-0.3 * d, 0])).translate(axis).extrude(length + 2).translate([0, 0, -length / 2 - 1])
     return solid, foot + tab, tab, _placed(M, room, px, py, nx, ny, (0.0, 1.0, 0.0, 1.0))[0]
@@ -671,11 +673,21 @@ def build(M, Invalid, p, product):
             px, py = bx1, (ty0 + ty1) / 2
             notes["clip"] = {"length": round(length, 1), "along": True}
         elif product == "straw":
-            # the clip stands upright beside the picture whatever way the outline runs there: a straw is held upright
-            mid = (body2d.bounds()[0] + body2d.bounds()[2]) / 2
-            grip, reach2d, tab, bore = _clip(M, px, py, 1.0 if px >= mid else -1.0, 0.0, n("straw_d", 8))
+            # the point of the outline says on which side and how high. The straw is long and runs past the whole picture, so
+            # its axis lies beyond the picture's outermost point on that side; an arm of the plate reaches out to the clip
+            bx0, _, bx1, _ = body2d.bounds()
+            right = px >= (bx0 + bx1) / 2
+            beyond = bx1 if right else bx0
+            if abs(beyond - px) > CLIP_ARM:
+                # too far from the straw: the nearest point round the outline from where the arm holds, and the page says why
+                asked = n("eye_pos", 0) / 100.0
+                near = [i / 240.0 for i in range(240) if abs(beyond - S.along(travel, i / 240.0)[0]) <= CLIP_ARM]
+                px, py = S.along(travel, min(near, key=lambda s: min(abs(s - asked), 1 - abs(s - asked))))[:2]
+                warn.append("clip_far")
+            arm = abs(beyond - px)
+            grip, reach2d, tab, bore = _clip(M, beyond, py, 1.0 if right else -1.0, 0.0, n("straw_d", 8), arm=arm)
             body2d = body2d + tab
-            notes["clip"] = {"length": CLIP_MIN, "along": False}
+            notes["clip"] = {"length": CLIP_MIN, "along": False, "arm": round(arm, 1)}
         else:
             grip, reach2d = _tongue(M, px, py, nx, ny, t)
         notes["eyelet"] = {"x": round(px, 2), "y": round(py, 2), "hole": 0}

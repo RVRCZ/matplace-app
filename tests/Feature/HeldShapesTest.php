@@ -98,7 +98,8 @@ class HeldShapesTest extends TestCase
         $across = $this->meta('straw', $name + ['text_dir' => 'across']);
         $along = $this->meta('straw', $name + ['text_dir' => 'along']);
         // across: the name runs sideways and the clip holds it at one point, 14 mm long, dragged along the outline
-        $this->assertEquals(['length' => 14, 'along' => false], $across['notes']['clip']);
+        $this->assertEquals(14, $across['notes']['clip']['length']);
+        $this->assertFalse($across['notes']['clip']['along']);
         $this->assertArrayHasKey('outline', $across['notes']);
         // along: the name is turned to run up the straw, and a clip of 15 mm holds it in the middle of its baseline,
         // however long the name is (Roman: the clip need not grow with the text)
@@ -116,6 +117,48 @@ class HeldShapesTest extends TestCase
         $this->assertEquals(15, $round['notes']['clip']['length']);
     }
 
+    public function test_the_clip_goes_anywhere_round_the_picture_and_the_straw_stays_beside_it(): void
+    {
+        $star = ['artwork' => 'lib:colour/smiling-star', 'body' => 'circle', 'width' => 35, 'thickness' => 3, 'straw_d' => 8];
+        // on the edge of the picture: no arm, the very model from before there was a choice (45.8 x 35 x 10.58, 3642.3 mm3)
+        $edge = $this->meta('straw', $star + ['eye_pos' => 25]);
+        $this->assertEquals(0, $edge['notes']['clip']['arm']);
+        $this->assertEqualsWithDelta(45.8, $edge['bbox']['x'], 0.01);
+        $this->assertEqualsWithDelta(35, $edge['bbox']['y'], 0.01);
+        $this->assertEqualsWithDelta(3642.3, $edge['volume_mm3'], 3642.3 * 0.002);
+
+        // a little above the right edge of the circle: the same side, higher, on an arm, as wide as on the edge: the straw
+        // does not go through the picture, however far round the point lies
+        $up = $this->meta('straw', $star + ['eye_pos' => 12]);
+        $this->assertEqualsWithDelta($edge['bbox']['x'], $up['bbox']['x'], 0.01);
+        $this->assertGreaterThan(5, $up['notes']['clip']['arm']);
+        $this->assertLessThanOrEqual(12.05, $up['notes']['clip']['arm']);
+        $this->assertGreaterThan($edge['volume_mm3'], $up['volume_mm3']);
+        $this->assertGreaterThan($edge['notes']['eyelet']['y'] + 5, $up['notes']['eyelet']['y']);
+        $this->assertNotContains('clip_far', (array) ($up['notes']['warnings'] ?? []));
+        $this->assertLessThan(0.05, $this->intoStraw($star + ['eye_pos' => 12], 8));
+
+        // right on top of a wide picture the arm would be too long: the clip goes to the nearest point where it holds, and the page says so
+        $wide = ['artwork' => 'lib:colour/smiling-star', 'body' => 'circle', 'width' => 60, 'thickness' => 3, 'straw_d' => 8];
+        $far = $this->meta('straw', $wide + ['eye_pos' => 1]);
+        $this->assertContains('clip_far', $far['notes']['warnings']);
+        $this->assertLessThanOrEqual(12.05, $far['notes']['clip']['arm']);
+        $this->assertGreaterThan(10, $far['notes']['clip']['arm']);
+        $this->assertLessThan(0.05, $this->intoStraw($wide + ['eye_pos' => 1], 8));
+
+        // on the left half the clip stands on the left: a mirror of the same model
+        $left = $this->meta('straw', $star + ['eye_pos' => 88]);
+        $this->assertEqualsWithDelta($up['volume_mm3'], $left['volume_mm3'], $up['volume_mm3'] * 0.01);
+        $this->assertEqualsWithDelta($up['bbox']['x'], $left['bbox']['x'], 0.01);
+        $this->assertLessThan($left['bbox']['x'] / 2, $left['notes']['eyelet']['x']);
+
+        // a picture of any outline: wherever the point lies, the model is the picture and the clip beside it, never wider
+        foreach ([10, 20, 30, 40, 60, 70, 80, 90] as $pos) {
+            $design = ['artwork' => 'lib:colour/happy-ghost', 'width' => 40, 'thickness' => 3, 'straw_d' => 8, 'eye_pos' => $pos];
+            $this->assertLessThan(40.0 + 10.8 + 0.05, $this->meta('straw', $design)['bbox']['x'], "{$pos} %");
+        }
+    }
+
     public function test_a_straw_topper_is_one_closed_body_a_printer_takes(): void
     {
         // the room of the straw was cut along the wall of a ready tube: a zero-thin sliver on each of its 72 facets, and flaps
@@ -123,14 +166,14 @@ class HeldShapesTest extends TestCase
         // (Roman, 31 Oct 2026). Every picture and name, both ways, on every straw
         $designs = [['artwork' => 'lib:colour/smiling-star'], ['artwork' => 'lib:colour/happy-ghost'], ['line1' => 'Ela']];
         foreach ($designs as $design) {
-            foreach (['along', 'across'] as $dir) {
+            foreach ([['along', 25], ['across', 25], ['across', 8]] as [$dir, $pos]) {
                 foreach ([6, 8, 12] as $d) {
-                    $r = $this->postJson('/api/tools/param/preview', ['kind' => 'straw', 'params' => $design + ['width' => 40, 'thickness' => 3, 'straw_d' => $d, 'text_dir' => $dir]])->assertOk();
+                    $r = $this->postJson('/api/tools/param/preview', ['kind' => 'straw', 'params' => $design + ['width' => 40, 'thickness' => 3, 'straw_d' => $d, 'text_dir' => $dir, 'eye_pos' => $pos]])->assertOk();
                     // the farm's own check, the one that stopped the print: StlTopology's 1 µm grid does not see a zero-thin sliver
                     $out = tempnam(sys_get_temp_dir(), 'straw');
                     $farm = app(PythonTool::class)->runScript('farm_tool.py', ['prepare', $r->baseResponse->getFile()->getPathname(), $out, '1', '250', '250', '250'], 120);
                     @unlink($out);
-                    $name = json_encode($design)." {$dir} {$d} mm";
+                    $name = json_encode($design)." {$dir} {$pos} % {$d} mm";
                     $this->assertTrue($farm['was_watertight'] ?? false, "{$name}: {$farm['open_edges_before']} bad edges, {$farm['shells']} bodies");
                     $this->assertSame(1, $farm['shells'], $name);
                 }
