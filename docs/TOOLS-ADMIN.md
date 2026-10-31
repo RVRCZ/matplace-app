@@ -55,7 +55,7 @@ Co se **nehlídá** a proč:
 
 ## 3. Cache a sitemapa
 
-Přepínače se čtou jednou za požadavek a drží se v cache minutu (`Cache::remember('tool_flags', 60)`). Uložení přes
+Přepínače se čtou jednou za požadavek a drží se v cache minutu (`Cache::remember('tool_flags_v2', 60)`). Uložení přes
 model `ToolFlag` cache maže, změna v adminu je tedy vidět hned. Řádek zapsaný mimo model (ručně v databázi) se
 projeví do minuty. Když tabulka ještě není (kód je nasazený dřív než migrace), rozhoduje jen config.
 
@@ -87,3 +87,19 @@ pod účtem správce, jinak by je další test našel mezi „mými obrázky“)
 nástrojů jako správce. Dotčené sady po sloučení `main` 718b652: 349 testů zelených.
 
 Neověřeno ručně v prohlížeči na produkci: přepínání na `/admin/tools` proti skutečné cache serveru.
+
+## Nástroj na hlavní straně
+
+Sloupec **„Na hlavní straně“** v `/admin/tools` (`tool_flags.home`, kdo a kdy je ve sloupci „Změnil“; docs/AN.md §21).
+`null` = rozhoduje `config/home.php`, `true`/`false` = rozhodl správce. Uložení řádku kvůli poznámce nebo přepínači
+„veřejný“ posílá políčko tak, jak stojí; to nic nerozhoduje a `null` zůstává.
+
+`ToolVisibility::onHome()`: nástroje z `config('home.tools')`, které správce nevypnul, v tomto pořadí, za nimi ty, které
+zapnul, v pořadí katalogu. Jen veřejné a se stránkou. Hlavní strana ukáže prvních `home.tools_shown` (8).
+
+- Nad tabulkou je počet zapnutých a upozornění, když je jich víc než strop.
+- Na řádku je poznámka, když přepínač nástroj na stránku nedostane: není veřejný, nebo je v pořadí až za stropem.
+- Filtr „Na hlavní straně“ ukáže dlaždice v pořadí stránky.
+
+**Pozor:** `config/home.php` dnes uvádí 13 nástrojů a strop je 8. Nově zapnutý nástroj je proto až čtrnáctý a neukáže se,
+dokud správce nevypne dost jiných (nebo se nezvedne strop).

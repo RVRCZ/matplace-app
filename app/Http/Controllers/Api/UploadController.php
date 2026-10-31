@@ -134,7 +134,7 @@ class UploadController extends Controller
         $hexes = array_unique(array_filter(array_map(fn ($c) => is_array($c) && preg_match('/^#[0-9a-f]{6}$/i', (string) ($c['hex'] ?? '')) ? strtolower($c['hex']) : null, (array) ($f->tool_params['part_colors'] ?? []))));
         $pieces = count($hexes) >= 2 && isset(ParametricGenerator::FIELDS[$f->origin_ref]) && empty($f->tool_params['pieces']) ? route('api.tools.param.pieces', $f->uuid) : null;
 
-        return ['kind' => $f->origin_ref, 'params' => $f->tool_params, 'url' => route($route, ['from' => $f->uuid]), 'pieces_url' => $pieces];
+        return ['kind' => $f->origin_ref, 'family' => ParametricGenerator::FAMILY[$f->origin_ref] ?? null, 'params' => $f->tool_params, 'url' => route($route, ['from' => $f->uuid]), 'pieces_url' => $pieces];
     }
 
     public static function describe(ModelFile $f): array

@@ -279,14 +279,14 @@ export function bootArt(stage: Stage): void {
     };
 
     /** Saves the design as a model file and goes on to the calculator (the exact price, the farm, the project for a slicer). */
-    const save = async (slicer: string | null = null): Promise<void> => {
+    const save = async (download = false): Promise<void> => {
         if (!valid) return;
         stage.busy(true); stage.error(null);
         try {
             const res = await post(cfg.create, { params: params() });
             if (!res.ok) { showError(await errorOf(res)); return; }
             const file = (await res.json()).file as FileInfo;
-            location.href = stage.ordered(`${cfg.home}?open=${file.uuid}${slicer ? `&download=1&slicer=${slicer}` : ''}`);
+            location.href = stage.ordered(`${cfg.home}?open=${file.uuid}${download ? '&download=1' : ''}`);
         } catch {
             showError(t('param.failed'));
         } finally {
@@ -306,8 +306,7 @@ export function bootArt(stage: Stage): void {
     /** The project with colours first, then every plate as its own STL in one archive, then the whole set laid out. */
     const renderDownloads = (): void => {
         const items: MenuItem[] = [
-            { label: stage.t('toolpage.download.orca'), hint: stage.t('toolpage.download.project.hint'), icon: 'file-box', run: () => save('orca') },
-            { label: stage.t('toolpage.download.prusa'), hint: stage.t('toolpage.download.project.hint'), icon: 'file-box', run: () => save('prusaslicer') },
+            { label: stage.t('toolpage.download.project'), hint: stage.t('toolpage.download.project.hint'), icon: 'file-box', run: () => save(true) },
             { label: t('edit.download.plates'), icon: 'package', run: downloadZip },
             { label: stage.t('toolpage.download.whole'), run: downloadWhole },
         ];

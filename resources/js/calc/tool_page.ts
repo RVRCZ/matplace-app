@@ -107,13 +107,18 @@ export class Stage {
         const fold = this.el('tool-view-toggle'); const bar = this.el('tool-viewbar');
         fold.addEventListener('click', () => { const on = !bar.hasAttribute('data-open'); bar.toggleAttribute('data-open', on); fold.setAttribute('aria-expanded', on ? 'true' : 'false'); });
         const views = this.el('tool-views');
+        // the pressed button, and the same cube on the folded bar's button
+        const pressed = (view: string): void => {
+            views.querySelectorAll('[data-view]').forEach((o) => o.setAttribute('aria-pressed', (o as HTMLElement).dataset.view === view ? 'true' : 'false'));
+            fold.querySelector('[data-view-now] use')?.setAttribute('href', `#i-view-${view}`);
+        };
         views.querySelectorAll<HTMLButtonElement>('[data-view]').forEach((b) => b.addEventListener('click', () => {
             this.viewer.setView(b.dataset.view as ViewName);
-            views.querySelectorAll('[data-view]').forEach((o) => o.setAttribute('aria-pressed', o === b ? 'true' : 'false'));
+            pressed(b.dataset.view as string);
         }));
         this.el('tool-fit').addEventListener('click', () => {
             this.viewer.fitView();
-            views.querySelectorAll('[data-view]').forEach((o) => o.setAttribute('aria-pressed', (o as HTMLElement).dataset.view === 'iso' ? 'true' : 'false'));
+            pressed('iso');
         });
         const toggle = (id: string, set: (on: boolean) => void): void => {
             const b = this.el(id);
@@ -302,8 +307,7 @@ export class Stage {
     fileDownloads(file: FileInfo, partLabel: (part: string) => string = (p) => p): void {
         const open = `${this.cfg.home}?open=${file.uuid}&download=1`;
         const items: MenuItem[] = [
-            { label: this.t('toolpage.download.orca'), hint: this.t('toolpage.download.project.hint'), icon: 'file-box', href: `${open}&slicer=orca` },
-            { label: this.t('toolpage.download.prusa'), hint: this.t('toolpage.download.project.hint'), icon: 'file-box', href: `${open}&slicer=prusaslicer` },
+            { label: this.t('toolpage.download.project'), hint: this.t('toolpage.download.project.hint'), icon: 'file-box', href: open },
         ];
         if (file.stl_url) items.push({ label: this.t('toolpage.download.whole'), href: file.stl_url, download: `${file.name.replace(/\.[^.]+$/, '')}.stl` });
         if ((file.parts ?? []).length) {

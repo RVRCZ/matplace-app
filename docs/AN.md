@@ -754,3 +754,59 @@ Snímky jsou v `docs/img/tool-colors/`.
 `pieces_url` nemá, dvoubarevná ano; nahraný soubor 404), `StickyLayoutTest` (mřížka, panel s rámečkem, karta ceny první
 v panelu, viewer na výšku mřížky, rámeček panelu nástroje), `PaintedColorsPageTest`, `CalculationFlowTest`, `ToolPageTest`
 a celá sada; pint, tsc, build.
+
+## 21. Nástroj na hlavní straně z adminu, ikony pohledů, jedna položka projektu (TODO #56)
+
+Zadání `docs/prompts/admin-domu-ikony-pohledu.md`, větev `feature/admin-home-view-icons`, 31. 10. 2026.
+
+### 21.1 A: přepínač „Na hlavní straně“
+
+- Migrace `tool_flags.home` (boolean, nullable), popis pravidel v `docs/TOOLS-ADMIN.md`. `ToolVisibility::onHome()` a
+  `wantsHome()`, hlavní strana čte `onHome()`, `config/home.php` je jen výchozí seznam a strop.
+- Klíč cache je `tool_flags_v2`: tvar hodnoty se změnil a staré položce pod starým klíčem nic nehrozí. Dotaz je
+  `get()`, ne výběr sloupců: kód nasazený před migrací dál čte přepínač „veřejný“, skrytý nástroj se neodkryje.
+- Řádek posílá políčko při každém uložení. Hodnota shodná s tím, co platí teď, nic nezapíše, takže uložení poznámky
+  nezamrazí `null` na `true`.
+- **Otevřené pro Romana:** se 13 nástroji v configu a stropem 8 je nově zapnutý nástroj čtrnáctý a na stránce se neukáže
+  (lokálně ověřeno: krabička „v pořadí je 14.“, po vypnutí QR třináctá). Pořadí je podle zadání; řádek to říká. Volby:
+  zkrátit `home.tools` na 8, zvednout strop, nebo dát ručně zapnuté nástroje dopředu.
+
+### 21.2 B: ikony pohledů
+
+- Vlastní symboly `i-view-iso|top|front|side|bottom` v `partials/icons.blade.php`: krychle s vyplněnou stěnou. Strany
+  odpovídají kameře: v `iso` je `front` (+z) vlevo a `side` (+x) vpravo; `bottom` je krychle viděná zespodu.
+- Tlačítko má `title` a `aria-label` (`toolpage.view.*`), 44 × 44 px na všech šířkách (`.tool-view-btn`), aktivní je tmavé.
+  Tlačítko „Pohled“ na telefonu ukazuje krychli zvoleného pohledu (`data-view-now`), „Přizpůsobit“ ji vrací na `iso`.
+- Figurka (`data-view` jsou tam pole pro fotky) a kalkulace lištu pohledů nemají, nebylo co sjednocovat.
+- Ověřeno `--flows=views-box` na 1280 a 390 px: pět tlačítek 44 × 44, stisk přepne `aria-pressed` i ikonu tlačítka, bez
+  vodorovného posuvu. Snímky `docs/img/views-icons-1280.png`, `views-icons-390.png`.
+
+### 21.3 C: stahování
+
+- Nabídka má jednu položku `toolpage.download.project` s dovětkem o další stránce (`tool_page.ts`, `edit.ts`, `art.ts`,
+  `param.ts`); `slicer=` zmizel z odkazů i z `download.ts`, výrobce předřazuje zapamatovaná tiskárna.
+- `resources/js/calc/parts.ts` `partLabel(part, kind, family, i18n)` používá stránka nástroje i panel kalkulace.
+  `file.tool.family` říká `shape`; rodinu `edit` pozná panel podle seznamu, který už měl. `CalculatorTexts::partNames()`
+  předává všechny názvy dílů z lang souborů, ne ručním seznamem.
+- Nad rámec zadání: panel teď pojmenuje i díly upravovacích nástrojů (`piece_1` → „Díl 1“) a vrstvy skladby („Vrstva 1“).
+- `param.part.body` = „Jen tělo“; krabička dál „Jen krabička“ (`param.part.body.box`, nově i v seznamu `param.blade.php`).
+  `FarmPagesTest` porovnával těla s obecným klíčem, a protože lightbox má vlastní „Jen tělo“, srovnává teď s klíčem krabičky.
+- `download.stl` = „Celý model (STL)“, stejně jako na stránce nástroje.
+- Texty: `lang/src/part_labels_2.json`. `lang_add.py` na celý `param.json` by přepsal 8 novějších překladů, proto jen
+  změněné klíče.
+- Ověřeno v Chrome (`--flows=menu-*`, 1280 a 390 px):
+
+| nástroj | nabídka: díly | kalkulace: díly |
+|---|---|---|
+| krabička | Jen krabička, Jen víčko | Jen krabička · Jen víčko |
+| přívěsek | | Podklad · Barva 1 · Lem |
+| podtácek | Podklad, Barva 1, Lem | Podklad · Barva 1 · Lem |
+| medaile | Medaile a řetěz, Barva 1 | Medaile a řetěz · Barva 1 |
+
+  Přívěsek jsem vyrobil přes API s obrázkem o jedné barvě, takže „Barva 2“ a „Barva 3“ ze snímku Romana se v běhu
+  neobjevily; `partLabel` je sestavuje stejně a `OrderService` je ověřený testem.
+- **Nesoulad se stránkou objednávky:** medaile tam říká „Placka a řetěz“ a „Číslo a lem“ (`param.part.*.medallion`, test
+  `FarmPagesTest`, objednávka 194), nástroj a kalkulace „Medaile a řetěz“ a „Barva 1“. Stránka objednávky patří session 2,
+  neměnil jsem ji. Srovnání `partLabel` s `OrderService::partLabel` přes všechny díly všech generátorů a upravovacích nástrojů (cs): 130 ze 133 stejně; rozdíl je medaile (2) a dílek puzzle, který objednávka ukazuje surově `piece_2` (panel „Díl 2“).
+- Snímky `docs/img/download-one-project-nastroj.png`, `download-one-project-kalkulace.png`.
+

@@ -2,6 +2,8 @@
 
 namespace App\Support;
 
+use Illuminate\Support\Facades\Lang;
+
 /**
  * The texts the calculator's scripts say (resources/js/calc/*.ts read them from window.MP_I18N), in the wording of the
  * step that follows (NextStep). Served with the calculator's constants as one JSON the browser keeps for a day
@@ -38,7 +40,35 @@ final class CalculatorTexts
             $out[$key] = NextStep::text($key, ['max' => $maxUploadMb, 'n' => ':n']);
         }
 
-        return $out;
+        return self::partNames() + $out;
+    }
+
+    /**
+     * The names of the parts of every tool, for the download panel (parts.ts): not listed by hand, a new tool's parts
+     * would read "color_1" again. The keys are those of the tools' own pages.
+     *
+     * @return array<string, string>
+     */
+    private static function partNames(): array
+    {
+        $names = [];
+        foreach ((array) Lang::get('param') as $key => $text) {
+            if (is_string($text) && (str_starts_with($key, 'part.') || str_starts_with($key, 'shape.part.'))) {
+                $names[str_starts_with($key, 'shape.') ? $key : 'param.'.$key] = $text;
+            }
+        }
+        foreach ((array) Lang::get('edit') as $key => $text) {
+            if (is_string($text) && preg_match('/^([a-z_]+\.)?part\./', $key)) {
+                $names['edit.'.$key] = $text;
+            }
+        }
+        foreach (app('translator')->getLoader()->load(app()->getLocale(), '*', '*') as $key => $text) {
+            if (is_string($text) && str_starts_with($key, 'param.part.')) {
+                $names[$key] = $text;   // the JSON file goes before the group, as in __()
+            }
+        }
+
+        return $names;
     }
 
     /**

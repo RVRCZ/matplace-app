@@ -32,7 +32,7 @@
     "param.go.hint": ["V dalším kroku uvidíte ceny skutečných tiskařů a můžete poslat poptávku. Bez registrace.", "Next you will see prices of real printers and can send an inquiry. No sign-up.", "Después verá precios de impresores reales y podrá enviar una solicitud. Sin registro."],
     "param.download": ["Mám tiskárnu, stáhnout model", "I have a printer, download the model", "Tengo impresora, descargar el modelo"],
     "param.part.all": ["Celý model", "Whole model", "Modelo completo"],
-    "param.part.body": ["Jen krabička", "Box only", "Solo la caja"],
+    "param.part.body": ["Jen tělo", "Body only", "Solo el cuerpo"],
     "param.part.lid": ["Jen víčko", "Lid only", "Solo la tapa"],
 
     "param.organizer.lead": ["Změřte zásuvku nebo místo na stole, zvolte počet přihrádek a hned uvidíte výsledek.", "Measure the drawer or the spot on your desk, pick the compartments and see the result at once.", "Mida el cajón o el hueco de la mesa, elija los compartimentos y verá el resultado al instante."],

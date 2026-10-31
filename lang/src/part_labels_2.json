@@ -1,0 +1,12 @@
+{
+    "param.part.body": [
+        "Jen tělo",
+        "Body only",
+        "Solo el cuerpo"
+    ],
+    "download.stl": [
+        "Celý model (STL)",
+        "The whole model (STL)",
+        "El modelo completo (STL)"
+    ]
+}

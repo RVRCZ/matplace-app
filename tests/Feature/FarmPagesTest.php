@@ -65,7 +65,7 @@ class FarmPagesTest extends TestCase
         // picture in colours the plate, the colours, the rim and the icing
         $everything = ['lid' => 1, 'purpose' => 'pot', 'saucer' => 1, 'handle' => 'knob', 'mode' => 'standing', 'style' => 'flatpack', 'treatment' => 'portrait',
             'two_color' => 1, 'stand' => 1, 'tray' => 1, 'bins' => [['w' => 1, 'h' => 2]], 'parts' => ['body', 'stamp', 'rim', 'color_1', 'color_2', 'icing_1', 'layer_1', 'layer_2']];
-        $box = __('param.part.body');
+        $box = __('param.part.body.box');
         foreach (['cs', 'en', 'es'] as $locale) {
             app()->setLocale($locale);
             foreach (array_keys(ParametricGenerator::FIELDS) as $kind) {
@@ -79,7 +79,7 @@ class FarmPagesTest extends TestCase
                     $this->assertNotSame($part, $label, "{$kind} {$part} ({$locale}) has no name");
                     $this->assertDoesNotMatchRegularExpression('/^(param|edit)\./', $label, "{$kind} {$part} ({$locale})");
                     if ($part === 'body' && $kind !== 'box') {
-                        $this->assertNotSame(__('param.part.body', [], $locale), $label, "{$kind}: its body is no box ({$locale})");
+                        $this->assertNotSame(__('param.part.body.box', [], $locale), $label, "{$kind}: its body is no box ({$locale})");
                     }
                 }
             }

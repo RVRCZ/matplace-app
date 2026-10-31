@@ -402,8 +402,7 @@ export function bootEdit(stage: Stage): void {
         renderMap(r);
         const open = `${cfg.home}?open=${file.uuid}&download=1`;
         const items: MenuItem[] = [
-            { label: stage.t('toolpage.download.orca'), hint: stage.t('toolpage.download.project.hint'), icon: 'file-box', href: `${open}&slicer=orca` },
-            { label: stage.t('toolpage.download.prusa'), hint: stage.t('toolpage.download.project.hint'), icon: 'file-box', href: `${open}&slicer=prusaslicer` },
+            { label: stage.t('toolpage.download.project'), hint: stage.t('toolpage.download.project.hint'), icon: 'file-box', href: open },
         ];
         if (file.stl_url) items.push({ label: stage.t('toolpage.download.whole'), href: file.stl_url, download: `${file.name.replace(/\.[^.]+$/, '')}.stl` });
         // a print of colours side by side, read out of G-code: a plain 3MF with an object per colour for the visitor's own slicer
