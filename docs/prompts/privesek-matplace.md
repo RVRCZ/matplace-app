@@ -1,4 +1,4 @@
-# Přívěsek z obrázku: stránka se otevírá s logem Matplace podle Romanova nastavení (session 1)
+# Přívěsek z obrázku: stránka se otevírá s logem Matplace podle Romanova nastavení (session G)
 
 Zadal Roman 31. 10. 2026 večer u `/tools/charm` (nástroj `charm`, rodina `shape`, docs/P.md): „u nástroje přívěsek z vlastního obrázku změnit vstupní stránku nástroje na matplace, s nastavením jak je na obrázku“. Jeho snímky: `docs/img/zadani-charm-matplace-1.png` (celá stránka, Vstup), `-2.png` (Rozměry), `-3.png` (Rozměry a Barvy). Navazuje na TODO #52 (nástroje se otevírají jako hotový výrobek).
 
@@ -25,7 +25,7 @@ Zadal Roman 31. 10. 2026 večer u `/tools/charm` (nástroj `charm`, rodina `shap
 ## 4. Testy a odevzdání
 
 - `ToolPageTest` (každá předvolba se staví), `ParametricToolsTest`, `HeldShapesTest` bez změny výsledků; `vendor/bin/pint --test`; `npx tsc --noEmit -p tsconfig.json` a `npm run build` jen když sáhneš do TS nebo CSS.
-- Session 1, worktree `C:\matplace-shapes-wt`, větev `feature/charm-matplace` z main (01392c2e nebo novější). Zápis: `docs/P.md` nová kapitola §10 („Přívěsek: logo Matplace jako výchozí“).
+- Session G, worktree `C:\matplace-guest-wt`, větev `feature/charm-matplace` z main (730ec0ea nebo novější). Session 1 není otevřená; G zná rodinu `shape` z brčka (P.md §9a), vlastní `PYTHON_BIN` venv a pozor na jména proměnných v dlouhé `build` v shape_kinds.py (`room`). Zápis: `docs/P.md` nová kapitola §10 („Přívěsek: logo Matplace jako výchozí“).
 - Texty jen přes lang soubory, `git add` jmenovitě, žádný stash. Nic nenasazuj.
 - Po pushi zpráva řídící session: větev, commit, co je ověřené, snímek. Řídící sloučí; Roman zkontroluje vzhled na produkci po nasazení.
 
