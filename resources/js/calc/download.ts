@@ -4,6 +4,7 @@
  */
 import { revealIfHidden } from '../site/sticky';
 import { FileInfo } from './api';
+import { partLabel } from './parts';
 
 interface PrinterItem { id: string; model: string; slicer?: string; bed: { x: number; y: number; z: number }; materials: string[] }
 interface VendorGroup { vendor: string; printers: PrinterItem[] }
@@ -87,12 +88,6 @@ export function bootDownload(): void {
             vendorSel.innerHTML = list.map((g) => `<option>${g.vendor}</option>`).join('');
             const mem = remembered();
             if (mem && list.some((g) => g.vendor === mem.vendor)) vendorSel.value = mem.vendor;
-            // a tool page asked for the project of one slicer ("?slicer=prusaslicer"): start at a maker whose printers use it,
-            // unless the remembered printer already does
-            const slicer = new URLSearchParams(location.search).get('slicer');
-            const uses = (g: VendorGroup): boolean => g.printers.some((p) => (p.slicer ?? 'orca') === slicer);
-            const now = list.find((g) => g.vendor === vendorSel.value);
-            if (slicer && !(now && mem && now.printers.some((p) => p.id === mem.id && (p.slicer ?? 'orca') === slicer))) { const first = list.find(uses); if (first) vendorSel.value = first.vendor; }
             vendorSel.onchange = fillModels;
             el<HTMLSelectElement>('dl-model')!.onchange = refresh;
         }
@@ -119,8 +114,10 @@ export function setDownload(file: FileInfo | null, params: () => DownloadParams,
         const i18n = (window as unknown as { MP_I18N?: Record<string, string> }).MP_I18N ?? {};
         parts.classList.toggle('hidden', !(file.parts ?? []).length);
         // the plates of a picture and the pieces of a split model are kept as files beside the design (api/tools/edit); the parts of the generators are rebuilt (api/tools/param)
-        const partsAt = ['filament_art', 'split', 'scale', 'hollow', 'life_size', 'puzzle', 'holder', 'potion', 'flexi_cut', 'colors', 'soap', 'wearable', 'slider'].includes(file.kind ?? '') ? routes().paramPart.replace(/\/param$/, '/edit') : routes().paramPart;
-        parts.innerHTML = (file.parts ?? []).length ? `${i18n['download.parts'] ?? ''}: ` + (file.parts ?? []).map((p) => `<a class="text-action-dark underline" href="${partsAt}/${file.uuid}/${p}.stl">${p.startsWith('bin_') ? (i18n['param.part.bin'] ?? ':s').replace(':s', p.slice(4).replace('x', ' × ')) : (i18n[`param.part.${p}.${file.kind}`] ?? i18n[`param.part.${p}`] ?? p)}</a>`).join(' · ') : '';
+        const edited = ['filament_art', 'split', 'scale', 'hollow', 'life_size', 'puzzle', 'holder', 'potion', 'flexi_cut', 'colors', 'soap', 'wearable', 'slider'].includes(file.kind ?? '');
+        const partsAt = edited ? routes().paramPart.replace(/\/param$/, '/edit') : routes().paramPart;
+        const family = edited ? 'edit' : file.tool?.family === 'shape' ? 'shape' : null;
+        parts.innerHTML = (file.parts ?? []).length ? `${i18n['download.parts'] ?? ''}: ` + (file.parts ?? []).map((p) => `<a class="text-action-dark underline" href="${partsAt}/${file.uuid}/${p}.stl">${partLabel(p, file.kind ?? '', family, i18n)}</a>`).join(' · ') : '';
     }
     refresh();
 }

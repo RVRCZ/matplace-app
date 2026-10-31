@@ -526,6 +526,39 @@ class ToolPageTest extends TestCase
         $this->get('/en/tools/box')->assertOk()->assertSee('id="tool-view-toggle"', false)->assertSee('View');
     }
 
+    /** docs/AN.md §21: a view is a cube with the side it looks at filled; its word stays for the mouse and a screen reader. */
+    public function test_the_views_are_icons_that_keep_their_words_in_title_and_label(): void
+    {
+        foreach (['box', 'charm', 'split'] as $tool) {
+            $html = $this->get('/tools/'.$tool)->assertOk()->getContent();
+            foreach (['iso', 'top', 'front', 'side', 'bottom'] as $view) {
+                $word = e(__('toolpage.view.'.$view));
+                $this->assertMatchesRegularExpression('/<button[^>]*data-view="'.$view.'"[^>]*title="'.preg_quote($word, '/').'"[^>]*aria-label="'.preg_quote($word, '/').'"[^>]*aria-pressed="[a-z]+"[^>]*>\s*<svg[^>]*><use href="#i-view-'.$view.'"\/><\/svg>\s*<\/button>/', $html, "{$tool} {$view}");
+                $this->assertStringContainsString('<symbol id="i-view-'.$view.'"', $html);
+            }
+            $this->assertMatchesRegularExpression('/id="tool-view-toggle".*?data-view-now/s', $html);
+        }
+    }
+
+    /** docs/AN.md §21 C: the printer is picked on the next page, the menu has one project instead of one per slicer. */
+    public function test_the_download_menu_has_one_project_and_no_slicer_in_its_link(): void
+    {
+        foreach (['tool_page', 'edit', 'art', 'param'] as $script) {
+            $source = (string) file_get_contents(resource_path('js/calc/'.$script.'.ts'));
+            $this->assertSame(1, substr_count($source, "t('toolpage.download.project')"), $script);
+            $this->assertStringNotContainsString('slicer=', $source, $script);
+            $this->assertStringNotContainsString('toolpage.download.orca', $source, $script);
+            $this->assertStringNotContainsString('toolpage.download.prusa', $source, $script);
+        }
+        foreach (['cs', 'en', 'es'] as $locale) {
+            foreach (['download.project', 'download.project.hint'] as $key) {
+                $this->assertNotSame('toolpage.'.$key, __('toolpage.'.$key, [], $locale), $locale);
+            }
+            $this->assertSame(__('toolpage.download.whole', [], 'cs'), __('download.stl', [], 'cs'));
+        }
+        $this->assertSame('Projekt pro můj slicer (3MF)', __('toolpage.download.project', [], 'cs'));
+    }
+
     /** docs/AF.md §1, §3 and §7: a tool that starts from a photo shows a printed piece and says the time and the size before the upload. */
     public function test_a_photo_tool_shows_a_printed_piece_and_says_time_and_size_before_the_upload(): void
     {

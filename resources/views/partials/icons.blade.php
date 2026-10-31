@@ -59,4 +59,10 @@
     <symbol id="i-user" viewBox="0 0 24 24"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></symbol>
     <symbol id="i-wrench" viewBox="0 0 24 24"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.106-3.105c.32-.322.863-.22.983.218a6 6 0 0 1-8.259 7.057l-7.91 7.91a1 1 0 0 1-2.999-3l7.91-7.91a6 6 0 0 1 7.057-8.259c.438.12.54.662.219.984z"/></symbol>
     <symbol id="i-x" viewBox="0 0 24 24"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></symbol>
+    {{-- our own, not Lucide: a cube with the side the view looks at filled (the viewer's iso looks at the front on the left, the side on the right) --}}
+    <symbol id="i-view-bottom" viewBox="0 0 24 24"><path fill="currentColor" stroke="none" d="M12 12 20.5 16.5 12 21.5 3.5 16.5Z"/><path stroke-width="1.6" d="M12 2.5 20.5 7.5v9L12 21.5 3.5 16.5v-9Z"/><path stroke-width="1.6" d="M12 2.5V12M3.5 16.5 12 12l8.5 4.5"/></symbol>
+    <symbol id="i-view-front" viewBox="0 0 24 24"><path fill="currentColor" stroke="none" d="M3.5 7.5 12 12v9.5L3.5 16.5Z"/><path stroke-width="1.6" d="M12 2.5 20.5 7.5v9L12 21.5 3.5 16.5v-9Z"/><path stroke-width="1.6" d="M3.5 7.5 12 12l8.5-4.5M12 12v9.5"/></symbol>
+    <symbol id="i-view-iso" viewBox="0 0 24 24"><path fill="currentColor" fill-opacity=".25" stroke="none" d="M12 2.5 20.5 7.5v9L12 21.5 3.5 16.5v-9Z"/><path stroke-width="1.6" d="M12 2.5 20.5 7.5v9L12 21.5 3.5 16.5v-9Z"/><path stroke-width="1.6" d="M3.5 7.5 12 12l8.5-4.5M12 12v9.5"/></symbol>
+    <symbol id="i-view-side" viewBox="0 0 24 24"><path fill="currentColor" stroke="none" d="M20.5 7.5 12 12v9.5l8.5-5Z"/><path stroke-width="1.6" d="M12 2.5 20.5 7.5v9L12 21.5 3.5 16.5v-9Z"/><path stroke-width="1.6" d="M3.5 7.5 12 12l8.5-4.5M12 12v9.5"/></symbol>
+    <symbol id="i-view-top" viewBox="0 0 24 24"><path fill="currentColor" stroke="none" d="M12 2.5 20.5 7.5 12 12 3.5 7.5Z"/><path stroke-width="1.6" d="M12 2.5 20.5 7.5v9L12 21.5 3.5 16.5v-9Z"/><path stroke-width="1.6" d="M3.5 7.5 12 12l8.5-4.5M12 12v9.5"/></symbol>
 </svg>

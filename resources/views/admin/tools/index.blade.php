@@ -13,10 +13,12 @@
     @endforeach
 </div>
 
+<p id="tools-home-note" class="hint mt-3" role="status">{{ $homeNote }}</p>
+
 <div class="card mt-3 overflow-x-auto">
     <table class="w-full text-left text-sm" id="admin-tools">
         <thead class="bg-slate-50 text-xs uppercase text-slate-500"><tr>
-            @foreach(['tool', 'cats', 'verified', 'config', 'public', 'note', 'changed'] as $column)
+            @foreach(['tool', 'cats', 'verified', 'config', 'public', 'home', 'note', 'changed'] as $column)
                 <th class="px-3 py-2">{{ __('tools.admin.col.'.$column) }}</th>
             @endforeach
         </tr></thead>
@@ -46,6 +48,13 @@
                         </label>
                     </td>
                     <td class="px-3 py-2">
+                        <input type="hidden" name="home" value="0" form="{{ $form }}">
+                        <label class="inline-flex items-center gap-2">
+                            <input type="checkbox" name="home" value="1" form="{{ $form }}" @checked($row['home']) class="h-5 w-5 shrink-0 accent-action" aria-label="{{ __('tools.admin.col.home') }}: {{ $row['title'] }}">
+                            <span data-home-hint class="text-xs text-slate-500">{{ $row['home_hint'] }}</span>
+                        </label>
+                    </td>
+                    <td class="px-3 py-2">
                         <div class="flex items-center gap-2">
                             <input type="text" name="note" form="{{ $form }}" value="{{ $flag?->note }}" maxlength="1000" placeholder="{{ __('tools.admin.note.placeholder') }}" aria-label="{{ __('tools.admin.col.note') }}: {{ $row['title'] }}" class="w-56 rounded-lg border border-slate-300 px-2 py-1.5 text-sm">
                             <button form="{{ $form }}" class="rounded-lg border border-slate-300 px-2 py-1.5 text-xs font-semibold text-slate-700 hover:border-ink">{{ __('tools.admin.save') }}</button>
@@ -55,7 +64,7 @@
                     <td class="px-3 py-2 text-xs text-slate-500" data-changed>{{ \App\Http\Controllers\Admin\ToolController::changed($flag) }}</td>
                 </tr>
             @empty
-                <tr><td colspan="7" class="px-3 py-6 text-center text-slate-500">{{ __('tools.admin.none') }}</td></tr>
+                <tr><td colspan="8" class="px-3 py-6 text-center text-slate-500">{{ __('tools.admin.none') }}</td></tr>
             @endforelse
         </tbody>
     </table>
@@ -79,6 +88,8 @@
                 if (!res.ok) throw new Error(String(res.status));
                 const data = await res.json();
                 row.querySelector('[data-state]').textContent = data.listed ? texts.public : texts.hidden;
+                row.querySelector('[data-home-hint]').textContent = data.home_hint;
+                document.getElementById('tools-home-note').textContent = data.home_note;
                 row.querySelector('[data-changed]').textContent = data.changed;
                 result.textContent = texts.saved;
                 result.classList.replace('text-slate-500', 'text-ok');
@@ -89,7 +100,7 @@
             }
         };
         form.addEventListener('submit', (e) => { e.preventDefault(); save(); });
-        row.querySelector('input[type=checkbox]').addEventListener('change', save);
+        row.querySelectorAll('input[type=checkbox]').forEach((box) => box.addEventListener('change', save));
         note.addEventListener('blur', () => { if (note.value !== noteSaved) save(); });
     });
 })();

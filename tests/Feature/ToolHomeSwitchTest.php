@@ -1,0 +1,170 @@
+<?php
+
+namespace Tests\Feature;
+
+use App\Domain\Farm\OrderService;
+use App\Domain\Tools\ParametricGenerator;
+use App\Domain\Tools\ToolVisibility;
+use App\Models\ModelFile;
+use App\Models\ToolFlag;
+use App\Models\User;
+use App\Support\CalculatorTexts;
+use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\Route;
+use Tests\TestCase;
+
+/**
+ * Which tools the home page shows: config/home.php unless the admin decided at /admin/tools (docs/AN.md §21), and the
+ * names of a design's parts in the calculation's download panel.
+ */
+class ToolHomeSwitchTest extends TestCase
+{
+    use RefreshDatabase;
+
+    private function admin(): User
+    {
+        $admin = User::factory()->create(['name' => 'Roman']);
+        $admin->setRole(User::ROLE_ADMIN, true);
+
+        return $admin;
+    }
+
+    /** The switch as the row of the admin's page sends it. */
+    private function save(User $admin, string $tool, bool $home, bool $public = true)
+    {
+        return $this->actingAs($admin)->postJson(route('admin.tools.update', $tool), ['public' => $public ? '1' : '0', 'home' => $home ? '1' : '0'])->assertOk();
+    }
+
+    /** @return list<string> the tools with a card in the home page's section of tools, in order */
+    private function cards(): array
+    {
+        $html = $this->get('/')->assertOk()->getContent();
+        $from = (int) strpos($html, 'id="home-tools"');
+        $section = substr($html, $from, (int) strpos($html, '</section>', $from) - $from);
+        $tools = [];
+        foreach ((array) config('tools') as $key => $tool) {
+            if (Route::has((string) $tool['route']) && ($at = strpos($section, 'href="'.route($tool['route']).'"')) !== false) {
+                $tools[$at] = (string) $key;
+            }
+        }
+        ksort($tools);
+
+        return array_values($tools);
+    }
+
+    public function test_the_switch_is_saved_and_the_home_page_follows_it(): void
+    {
+        $admin = $this->admin();
+        config(['home.tools' => ['qr', 'relief'], 'home.tools_shown' => 8]);
+        $this->assertNotContains('box', config('home.tools'));
+        $this->assertSame(['qr', 'relief'], $this->cards());
+
+        // on: a tool the config does not list comes after those it does
+        $res = $this->save($admin, 'box', true)->assertJson(['tool' => 'box', 'home' => true]);
+        $this->assertTrue(ToolFlag::where('tool', 'box')->value('home'));
+        $this->assertStringContainsString('3', $res->json('home_note'));
+        $this->assertStringContainsString('Roman', $res->json('changed'));
+        $this->assertSame(['qr', 'relief', 'box'], ToolVisibility::onHome());
+        $this->assertSame(['qr', 'relief', 'box'], $this->cards());
+
+        // off: a tool the config lists leaves
+        $this->save($admin, 'qr', false)->assertJson(['tool' => 'qr', 'home' => false]);
+        $this->assertSame(['relief', 'box'], $this->cards());
+    }
+
+    public function test_a_row_saved_for_something_else_leaves_the_config_deciding(): void
+    {
+        $admin = $this->admin();
+        config(['home.tools' => ['qr']]);
+        // the row sends its home box as it stands, ticked for the listed tool and not for the other
+        $this->save($admin, 'qr', true)->assertJson(['home' => null]);
+        $this->save($admin, 'box', false)->assertJson(['home' => null]);
+        $this->assertNull(ToolFlag::where('tool', 'qr')->value('home'));
+        // an older client without the box
+        $this->actingAs($admin)->postJson(route('admin.tools.update', 'qr'), ['public' => '1'])->assertOk()->assertJson(['home' => null]);
+
+        // what the admin decided stays when the row is saved again
+        $this->save($admin, 'qr', false)->assertJson(['home' => false]);
+        $this->save($admin, 'qr', false)->assertJson(['home' => false]);
+        $this->save($admin, 'qr', true)->assertJson(['home' => true]);
+    }
+
+    public function test_a_hidden_tool_stays_off_the_home_page_and_the_row_says_why(): void
+    {
+        $admin = $this->admin();
+        config(['home.tools' => ['qr']]);
+        $res = $this->save($admin, 'box', true, false)->assertJson(['home' => true, 'listed' => false]);
+        $this->assertSame(__('tools.admin.home.hint'), $res->json('home_hint'));
+        $this->assertSame(['qr'], $this->cards());
+        $this->assertStringContainsString(e(__('tools.admin.home.hint')), $this->actingAs($admin)->get('/admin/tools')->assertOk()->getContent());
+    }
+
+    public function test_the_cache_is_cleared_by_a_save(): void
+    {
+        $admin = $this->admin();
+        config(['home.tools' => ['qr']]);
+        $this->assertSame(['qr'], ToolVisibility::onHome());
+        $this->assertTrue(Cache::has(ToolVisibility::CACHE_KEY));
+        $this->save($admin, 'qr', false);
+        $this->assertSame([], ToolVisibility::onHome());
+    }
+
+    public function test_the_admin_sees_the_count_the_limit_and_a_filter_of_the_home_cards(): void
+    {
+        $admin = $this->admin();
+        config(['home.tools' => ['relief', 'qr', 'organizer'], 'home.tools_shown' => 2]);
+        $page = $this->actingAs($admin)->get('/admin/tools')->assertOk()
+            ->assertSee(__('tools.admin.col.home'))
+            ->assertSee(__('tools.admin.home.count', ['n' => 3, 'max' => 2]))
+            ->assertSee(__('tools.admin.home.over', ['max' => 2]))
+            ->assertSee(__('tools.admin.home.beyond', ['at' => 3, 'max' => 2]));
+        $this->assertMatchesRegularExpression('/name="home" value="1"[^>]*checked/', $page->getContent());
+
+        // the filter lists the cards in the order of the home page
+        $rows = $this->actingAs($admin)->get('/admin/tools?show=home')->assertOk()->assertSee(__('tools.admin.filter.home'))->getContent();
+        preg_match_all('/data-tool="([a-z_]+)"/', $rows, $found);
+        $this->assertSame(['relief', 'qr', 'organizer'], $found[1]);
+
+        // over the limit the texts say so; under it they do not
+        config(['home.tools_shown' => 8]);
+        $this->get('/admin/tools')->assertOk()->assertDontSee(__('tools.admin.home.over', ['max' => 8]));
+        $this->assertSame(3, count(ToolVisibility::onHome()));
+    }
+
+    public function test_the_calculation_gets_the_part_names_of_the_tools_pages(): void
+    {
+        // what parts.ts reads for a charm and a box, in every language
+        foreach (['cs', 'en', 'es'] as $locale) {
+            app()->setLocale($locale);
+            $i18n = CalculatorTexts::all(120);
+            foreach (['shape.part.body', 'shape.part.rim', 'shape.part.color', 'shape.part.icing', 'shape.part.body.medallion', 'param.part.body', 'param.part.body.box', 'param.part.lid', 'param.part.post.hair_tie', 'edit.split.part.piece', 'edit.art.part.plate', 'edit.flexi_cut.part.segment'] as $key) {
+                $this->assertArrayHasKey($key, $i18n, "{$locale} {$key}");
+            }
+            $this->assertNotSame($i18n['param.part.body.box'], $i18n['param.part.body'], "{$locale}: the generic word is no box");
+        }
+        app()->setLocale('cs');
+        $i18n = CalculatorTexts::all(120);
+        $this->assertSame(['Podklad', 'Barva :n', 'Jen krabička', 'Jen tělo'], [$i18n['shape.part.body'], $i18n['shape.part.color'], $i18n['param.part.body.box'], $i18n['param.part.body']]);
+        $this->assertSame('Celý model (STL)', __('download.stl'));
+
+        // every tool of a picture in colours can say so to the panel, through its page's route
+        foreach (array_keys(ParametricGenerator::FAMILY) as $kind) {
+            $this->assertTrue(Route::has('tools.'.$kind), $kind);
+        }
+
+        // an order by parts says the same for a charm and a box
+        $charm = new ModelFile(['origin' => 'tool', 'origin_ref' => 'charm']);
+        $this->assertSame(['Podklad', 'Barva 1', 'Barva 3', 'Lem'], array_map(fn ($p) => OrderService::partLabel($charm, $p), ['body', 'color_1', 'color_3', 'rim']));
+        $this->assertSame('Jen krabička', OrderService::partLabel(new ModelFile(['origin' => 'tool', 'origin_ref' => 'box']), 'body'));
+    }
+
+    public function test_a_design_tells_its_family_to_the_calculation(): void
+    {
+        if (! app(ParametricGenerator::class)->available()) {
+            $this->markTestSkipped('Python with manifold3d is not installed.');
+        }
+        $this->assertNull($this->postJson('/api/tools/param', ['kind' => 'box', 'params' => []])->assertCreated()->json('file.tool.family'));
+        $this->assertSame('shape', $this->postJson('/api/tools/param', ['kind' => 'medallion', 'params' => ['line1' => '1']])->assertCreated()->json('file.tool.family'));
+    }
+}

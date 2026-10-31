@@ -132,13 +132,13 @@
                 <div class="pointer-events-none absolute inset-x-3 top-3">
                     {{-- under lg the bar of views folds into one button: on a phone eight buttons over the model read as a tool for experts --}}
                     <div class="tool-bar pointer-events-auto w-fit lg:hidden">
-                        <button type="button" id="tool-view-toggle" class="tool-bar-btn min-h-11 px-3 text-sm" aria-expanded="false" aria-controls="tool-viewbar"><x-icon name="eye" class="h-4 w-4" />{{ __('toolpage.views') }}<x-icon name="chevron-down" class="h-4 w-4" /></button>
+                        <button type="button" id="tool-view-toggle" class="tool-bar-btn min-h-11 px-3 text-sm" aria-expanded="false" aria-controls="tool-viewbar"><x-icon name="view-iso" data-view-now class="h-5 w-5" />{{ __('toolpage.views') }}<x-icon name="chevron-down" class="h-4 w-4" /></button>
                     </div>
                     <div id="tool-viewbar" class="flex flex-wrap items-start justify-between gap-2 max-lg:mt-2">
                         <div class="pointer-events-auto flex flex-col items-start gap-2">
                             <div id="tool-views" class="tool-bar" role="group" aria-label="{{ __('toolpage.views') }}">
                                 @foreach(['iso', 'top', 'front', 'side', 'bottom'] as $v)
-                                    <button type="button" data-view="{{ $v }}" class="tool-bar-btn" @if($v === 'iso') aria-pressed="true" @endif>{{ __('toolpage.view.'.$v) }}</button>
+                                    <button type="button" data-view="{{ $v }}" class="tool-bar-btn tool-view-btn" title="{{ __('toolpage.view.'.$v) }}" aria-label="{{ __('toolpage.view.'.$v) }}" @if($v === 'iso') aria-pressed="true" @else aria-pressed="false" @endif><x-icon :name="'view-'.$v" class="h-5 w-5" /></button>
                                 @endforeach
                             </div>
                             {{-- what the preview shows: the whole set, one part, the imprint of a stamp… (filled by the tool) --}}

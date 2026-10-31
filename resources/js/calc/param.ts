@@ -11,6 +11,7 @@ import { colorOf, spoolCode, paintSwatch, pickColor, recentColors, rememberColor
 import { pickArtwork, uploadArtwork, PickedArtwork } from './artwork';
 import { icon } from '../site/icon';
 import { modelMeta } from './api';
+import { partLabel as sharedPartLabel } from './parts';
 
 interface Cfg {
     kind: string; family: string | null; sample: string | null; preset: string | null; captioned: boolean; preview: string; create: string; home: string; locale: string; artworkUrl: string; files: string; from: string | null;
@@ -205,16 +206,8 @@ export function bootParam(stage: Stage): void {
         return [];
     };
 
-    /** "body" and "stand" mean different things per product: the box, the logo, the sign… */
-    const partLabel = (v: string): string => {
-        if (v.startsWith('bin_')) return t('param.part.bin', { s: v.slice(4).replace('x', ' × ') });
-        if (shape && cfg.i18n[`shape.part.${v}.${cfg.kind}`]) return t(`shape.part.${v}.${cfg.kind}`);
-        if (shape && v.startsWith('icing_')) return t('shape.part.icing', { n: v.slice(6) });
-        if (shape && v.startsWith('color_')) return t('shape.part.color', { n: v.slice(6) });
-        if (shape && (v === 'body' || v === 'rim')) return t(`shape.part.${v}`);
-        const own = `param.part.${v}.${cfg.kind}`;
-        return cfg.i18n[own] ? t(own) : cfg.i18n[`param.part.${v}`] ? t(`param.part.${v}`) : v;
-    };
+    /** "body" and "stand" mean different things per product: parts.ts, the same words as the calculation's download panel */
+    const partLabel = (v: string): string => sharedPartLabel(v, cfg.kind, shape ? 'shape' : null, cfg.i18n);
 
     /** Assembly / single parts / (stamp) the imprint it leaves: buttons over the viewer. */
     const renderViews = (): void => {
@@ -572,8 +565,7 @@ export function bootParam(stage: Stage): void {
     const renderDownloads = (): void => {
         const parts = partsNow();
         const items: MenuItem[] = [
-            { label: stage.t('toolpage.download.orca'), hint: stage.t('toolpage.download.project.hint'), icon: 'file-box', run: () => save(true, 'orca') },
-            { label: stage.t('toolpage.download.prusa'), hint: stage.t('toolpage.download.project.hint'), icon: 'file-box', run: () => save(true, 'prusaslicer') },
+            { label: stage.t('toolpage.download.project'), hint: stage.t('toolpage.download.project.hint'), icon: 'file-box', run: () => save(true) },
         ];
         if (parts.length) items.push({ label: stage.t('toolpage.download.zip'), icon: 'package', run: downloadZip });
         items.push({ label: stage.t('toolpage.download.whole'), run: () => downloadPart('all') });
@@ -1345,7 +1337,7 @@ export function bootParam(stage: Stage): void {
     });
 
     // the design is saved (our own geometry, free) and opens in the calculation; "download" opens the printer picker there
-    const save = async (download: boolean, slicer = ''): Promise<void> => {
+    const save = async (download: boolean): Promise<void> => {
         if (!valid) return;
         const label = stage.el('tool-go-label').textContent ?? '';
         stage.go({ disabled: true, ...(download ? {} : { label: t('param.creating') }) });
@@ -1361,7 +1353,7 @@ export function bootParam(stage: Stage): void {
             const plate = params().plate_color;      // a two-colour design: the plate is "the colour", the second one travels with the design
             const q = new URLSearchParams({
                 ...(note ? { note: note.slice(0, 900) } : {}), open: body.file.uuid, material: stage.material(), quantity: String(stage.quantity()),
-                color: typeof plate === 'string' ? colorName(plate) : ($('param-color') as HTMLInputElement).value, ...(download ? { download: '1' } : {}), ...(slicer ? { slicer } : {}),
+                color: typeof plate === 'string' ? colorName(plate) : ($('param-color') as HTMLInputElement).value, ...(download ? { download: '1' } : {}),
             });
             location.href = `${cfg.home}?${q}`;
         } catch {

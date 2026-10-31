@@ -75,11 +75,11 @@
         @endforeach
     </nav>
 
-    {{-- the tools people use most: config/home.php --}}
+    {{-- the tools people use most: config/home.php and the admin's switches (ToolVisibility::onHome) --}}
     @php
-        $homeTools = collect(config('home.tools'))
+        $homeTools = collect(\App\Domain\Tools\ToolVisibility::onHome())
             ->mapWithKeys(fn ($key) => [$key => config('tools.'.$key)])
-            ->filter(fn ($t, $key) => $t && \App\Domain\Tools\ToolVisibility::isPublic($key) && \Illuminate\Support\Facades\Route::has($t['route']) && (! in_array($key, ['figure', 'pet'], true) || ($config['generator'] ?? false)))
+            ->filter(fn ($t, $key) => ! in_array($key, ['figure', 'pet'], true) || ($config['generator'] ?? false))
             ->take((int) config('home.tools_shown', 8));
     @endphp
     <section class="mt-14" aria-labelledby="home-tools">

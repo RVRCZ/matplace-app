@@ -149,6 +149,8 @@
     .tool-bar { @apply flex overflow-hidden rounded-lg border border-line bg-card/95 shadow-sm; }
     .tool-bar-btn { @apply inline-flex min-h-9 items-center gap-1.5 border-l border-line px-2.5 text-xs font-medium text-ink transition first:border-l-0 hover:bg-slate-100; }
     .tool-bar-btn[aria-pressed='true'] { @apply bg-ink text-white hover:bg-ink; }
+    /* a view is an icon alone, a square a finger can hit */
+    .tool-view-btn { @apply min-h-11 min-w-11 justify-center px-0; }
     .tool-choice { @apply cursor-pointer rounded-lg border border-slate-300 bg-white px-2.5 py-1.5 text-sm font-medium text-ink transition has-[:checked]:border-ink has-[:checked]:bg-ink has-[:checked]:text-white has-[:focus-visible]:outline has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-action; }
     /* the typeface of a text: a tile per face, its name drawn in it; the list scrolls inside its box */
     .font-picker { @apply relative max-h-64 overflow-y-auto rounded-lg border border-line bg-slate-50 p-2; }

@@ -13,15 +13,18 @@ use Illuminate\Support\Facades\Route;
  * off at /admin/tools (table tool_flags; no row = the config alone decides). A tool that is not public is in no list,
  * no sitemap and no link, and its page and API answer 404; an admin still opens it, to try it before it goes out.
  *
+ * The home page shows the tools config/home.php lists, unless the admin switched one off there, and those the admin
+ * switched on (tool_flags.home; null = the config decides).
+ *
  * The switches are read once a request and kept in the cache for a minute; saving one clears both.
  */
 final class ToolVisibility
 {
-    public const CACHE_KEY = 'tool_flags';
+    public const CACHE_KEY = 'tool_flags_v2';
 
     public const CACHE_SECONDS = 60;
 
-    /** @var array<string, bool>|null tool → public, as the admin set it */
+    /** @var array<string, array{public: bool, home: bool|null}>|null tool → its switches, as the admin set them */
     private ?array $flags = null;
 
     /** @var array{kind: array<string, list<string>>, op: array<string, list<string>>}|null */
@@ -29,7 +32,7 @@ final class ToolVisibility
 
     public static function isPublic(string $tool): bool
     {
-        return ! empty(config('tools')[$tool]['available']) && (self::state()->flags()[$tool] ?? true);
+        return ! empty(config('tools')[$tool]['available']) && (self::state()->flags()[$tool]['public'] ?? true);
     }
 
     /** The page and the API of a tool: everybody for a public one, an admin for any. */
@@ -42,6 +45,25 @@ final class ToolVisibility
     public static function listed(): array
     {
         return array_filter((array) config('tools'), fn (string $tool) => self::isPublic($tool), ARRAY_FILTER_USE_KEY);
+    }
+
+    /** The admin's word on a tool's home card, else whether config/home.php lists it. Says nothing about the tool being public. */
+    public static function wantsHome(string $tool): bool
+    {
+        return self::state()->flags()[$tool]['home'] ?? in_array($tool, (array) config('home.tools'), true);
+    }
+
+    /**
+     * The tools on the home page, best first: those of config/home.php in its order, then those the admin added in the
+     * order of the catalogue. Only public ones with a page; `home.tools_shown` is the page's own limit.
+     *
+     * @return list<string>
+     */
+    public static function onHome(): array
+    {
+        $tools = array_values(array_unique([...(array) config('home.tools'), ...array_keys((array) config('tools'))]));
+
+        return array_values(array_filter($tools, fn (string $tool) => self::wantsHome($tool) && self::isPublic($tool) && Route::has((string) config('tools')[$tool]['route'])));
     }
 
     /** The tool whose page a route is (the name with or without the language prefix), null for any other page. */
@@ -96,12 +118,12 @@ final class ToolVisibility
         return app(self::class);
     }
 
-    /** @return array<string, bool> */
+    /** @return array<string, array{public: bool, home: bool|null}> */
     private function flags(): array
     {
         if ($this->flags === null) {
             try {
-                $this->flags = Cache::remember(self::CACHE_KEY, self::CACHE_SECONDS, fn () => ToolFlag::query()->pluck('public', 'tool')->map(fn ($public) => (bool) $public)->all());
+                $this->flags = Cache::remember(self::CACHE_KEY, self::CACHE_SECONDS, fn () => ToolFlag::query()->get()->mapWithKeys(fn (ToolFlag $flag) => [$flag->tool => ['public' => (bool) $flag->public, 'home' => $flag->home]])->all());
             } catch (\Throwable) {
                 $this->flags = [];      // no table yet (the code is here before its migration): the config alone decides
             }

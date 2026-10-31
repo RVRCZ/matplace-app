@@ -105,6 +105,10 @@ const COLORS_SAME = "(() => { const f = window.fetch; window.fetch = async (u, o
 // and where the price card, the viewer and the panel are on the screen
 const TOOL_COLORS = "[location.pathname, 'painted=' + (document.getElementById('viewer')?.dataset.painted ?? '-'), document.getElementById('status')?.textContent, document.getElementById('dims-badge')?.textContent].map((x) => (x || '').trim()).join(' | ')";
 const JUMP_PANEL = "(() => { const r = (id) => Math.round(document.getElementById(id)?.getBoundingClientRect().top ?? -1); const p = document.getElementById('calc-panel'); return { y: window.scrollY, panel: p?.scrollTop, panelH: p?.clientHeight, panelScroll: p?.scrollHeight, price: r('price-card'), viewer: r('viewer'), recalc: r('cta-recalc'), frame: p ? getComputedStyle(p).borderTopWidth + ' ' + getComputedStyle(p).borderTopColor : '-' }; })()";
+const VIEW_BAR = "JSON.stringify([...document.querySelectorAll('#tool-views [data-view]')].map((b) => { const r = b.getBoundingClientRect(); return [b.dataset.view, b.getAttribute('aria-label'), Math.round(r.width), Math.round(r.height), b.getAttribute('aria-pressed'), getComputedStyle(b).backgroundColor]; })) + ' toggle ' + document.querySelector('[data-view-now] use')?.getAttribute('href') + ' scrollW ' + document.documentElement.scrollWidth";
+const TOOL_MENU = "[...document.querySelectorAll('#tool-download-menu > *')].map((r) => r.textContent.trim()).join(' | ')";
+const CALC_PARTS = "[location.pathname, document.getElementById('dl-stl')?.textContent, document.getElementById('dl-parts')?.textContent, document.getElementById('dl-vendor')?.value].join(' | ')";
+const ADMIN_HOME = "[location.pathname, document.getElementById('tools-home-note')?.textContent, document.querySelector('#tool-box [data-home-hint]')?.textContent, document.querySelector('#tool-box [data-result]')?.textContent, 'scrollW ' + document.documentElement.scrollWidth].join(' | ')";
 const FLOWS = {
     'file-price': [['go', '/'], ['file', '#file-input', FIXTURES.cube], ['wait', 25000], ['shot'], ['nav'], ['clickText', ORDER], ['wait', 5000], ['shot']],
     'tool-price': [['go', '/tools/qr'], ['wait', 6000], ['shot'], ['nav'], ['click', '#tool-go'], ['wait', 20000], ['shot'], ['nav'], ['clickText', ORDER], ['wait', 5000], ['shot']],
@@ -126,6 +130,20 @@ const FLOWS = {
     ...Object.fromEntries(['box', 'medallion', 'coaster'].map((t) => [`colors-${t}`, [['go', `/tools/${t}`], ['wait', 7000], ['shot'], ['nav'], ['click', '#tool-go'], ['wait', 25000], ['read', TOOL_COLORS], ['shot'],
         // turned over: a medal prints face down, its number lies on the side the first view does not show
         ['drag', '#viewer', [0, -320]], ['wait', 800], ['shot']]])),
+    ...Object.fromEntries(['box', 'keychain'].map((t) => [`views-${t}`, [['go', `/tools/${t}`], ['wait', 7000], ['read', "document.getElementById('tool-view-toggle').offsetParent && document.getElementById('tool-view-toggle').click(); 'the bar open'"], ['wait', 400], ['read', VIEW_BAR], ['shot'],
+        ['click', '#tool-views [data-view=bottom]'], ['wait', 900], ['read', VIEW_BAR], ['shot'], ['click', '#tool-views [data-view=side]'], ['wait', 900], ['read', VIEW_BAR], ['shot']]])),
+    ...Object.fromEntries(['box', 'keychain', 'medallion', 'coaster'].map((t) => [`menu-${t}`, [['go', `/tools/${t}`], ['wait', 7000], ['read', "document.getElementById('tool-download').disabled ? 'menu off' : (document.getElementById('tool-download').click(), 'menu open')"], ['wait', 300], ['read', TOOL_MENU], ['shot'],
+        ['read', "document.body.click(); 'menu closed'"], ['nav'], ['click', '#tool-go'], ['wait', 25000], ['read', "document.getElementById('cta-download')?.click(); 'panel'"], ['wait', 1500], ['read', CALC_PARTS], ['shot']]])),
+    // the menu's one project: its link opens the calculation with the printer picker, no slicer in the address
+    'menu-project': [['go', '/tools/box'], ['wait', 7000], ['read', "document.getElementById('tool-download').click(); 'menu open'"], ['wait', 300], ['nav'], ['click', '#tool-download-menu [role=menuitem]'], ['wait', 25000], ['read', "location.pathname + location.search + ' | panel ' + !document.getElementById('download-panel').classList.contains('hidden')"], ['read', CALC_PARTS], ['shot']],
+    // an existing design opened as the home page's ?open= does (OPEN=<uuid> made beforehand)
+    'menu-open': [['go', `/?open=${process.env.OPEN ?? ''}&download=1`], ['wait', 20000], ['read', CALC_PARTS], ['shot']],
+    // /admin/tools with a local admin (ADMIN_EMAIL, ADMIN_PASSWORD): the switch, the count, the filter, the home page
+    'admin-home': [['go', '/login'], ['type', 'input[name=email]', process.env.ADMIN_EMAIL ?? ''], ['type', 'input[name=password]', process.env.ADMIN_PASSWORD ?? ''], ['nav'], ['click', 'form[action$="/login"] button'], ['wait', 2000],
+        ['go', '/admin/tools'], ['wait', 1000], ['read', ADMIN_HOME], ['shot'],
+        ['click', '#tool-box input[name=home][type=checkbox]'], ['wait', 1200], ['read', ADMIN_HOME], ['click', '#tool-qr input[name=home][type=checkbox]'], ['wait', 1200], ['read', ADMIN_HOME], ['shot'],
+        ['go', '/admin/tools?show=home'], ['wait', 1000], ['read', "[...document.querySelectorAll('#admin-tools tr[data-tool]')].map((r) => r.dataset.tool).join(',')"], ['shot'],
+        ['go', '/'], ['wait', 1500], ['read', "[...document.querySelectorAll('[aria-labelledby=home-tools] a[data-cats], [aria-labelledby=home-tools] [data-cats] a')].map((a) => new URL(a.href).pathname).join(',')"]],
     'colors-stl': [['go', '/'], ['file', '#file-input', FIXTURES.cube], ['wait', 20000], ['read', TOOL_COLORS], ['shot']],
     // the right column of the calculation scrolls inside its frame from lg: the panel moves, the price card, the viewer and the window stay
     // (the pieces are typed while their field is in view, as a person does: typing focuses the field, and a focused field is brought into view)
