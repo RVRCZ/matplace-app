@@ -47,3 +47,23 @@ Zadal Roman 31. 10. 2026 večer: „v adminu u tools přidat zobrazení toolu na
 - Session 3, worktree `C:\matplace-edit-wt`, větev `feature/admin-home-view-icons` z main (01392c2e nebo novější). Soubory viz výše. Zápis: `docs/AN.md` nová kapitola §21 („Nástroj na hlavní straně z adminu, ikony pohledů“).
 - Texty jen přes lang soubory, `git add` jmenovitě, žádný stash. Nic nenasazuj.
 - Po pushi zpráva řídící session: větev, commit, co je ověřené, snímky. Řídící sloučí a nasadí na Romanovo „nasaď“.
+
+## C. Stahování: jedna položka projektu na stránce nástroje, popisky dílů v kalkulaci
+
+Doplnil Roman 31. 10. 2026 večer u přívěsku: „proč máme stažení modelu na první straně návrhu s výběrem Bambu a Prusa, když to potom přejde na další stránku a tam je další výběr; a název krabička se sem nehodí, to zřejmě zůstalo po prvním toolu“. Snímky `docs/img/zadani-stahovani-nastroj.png` (nabídka na stránce nástroje) a `docs/img/zadani-stahovani-kalkulace.png` (panel v kalkulaci s „Jen krabička · color_1 · color_2 · color_3“).
+
+### 1. Co je dnes
+
+- Nabídka „Stáhnout model“ na stránce nástroje: `resources/js/calc/tool_page.ts` kolem řádku 301 (`toolpage.download.orca`, `toolpage.download.prusa`, pak STL, ZIP, díly). Položky projektu nic nestahují: vedou na `?open=<uuid>&download=1&slicer=orca|prusaslicer`, tedy uloží návrh a otevřou kalkulaci s panelem stahování; `slicer` jen předřadí výrobce v seznamu (`resources/js/calc/download.ts` kolem řádku 90). Totéž mají `resources/js/calc/edit.ts` kolem řádku 406, `art.ts` kolem řádku 310 a `param.ts` kolem řádku 576 (tam přes `save(…, 'prusaslicer')`).
+- Panel v kalkulaci (`download.ts`, blade `resources/views/calculator/index.blade.php`, texty `download.*` v `lang/src/param.json`): výrobce, model, „Stáhnout projekt (.3mf)“, „Jen samotný model (.stl)“, „Jednotlivé díly zvlášť“. Díly popisuje jen obecným klíčem `param.part.<díl>` (`download.ts` kolem řádku 123): `param.part.body` = „Jen krabička“ (zbytek po prvním nástroji, krabičce) a díly bez klíče surově (`color_1`). Stránka nástroje má vlastní popisky (`param.ts` `partLabel`, řádky 209 až 218: `shape.part.*` podle druhu = Podklad, Barva 1, Lem; `param.part.<díl>.<druh>`, pak obecný klíč).
+
+### 2. Cíl
+
+1. Na stránce nástroje (a v editaci, filament artu i `param.ts`) **jedna položka** místo dvou: „Projekt pro můj slicer (3MF)“ s dovětkem „Tiskárnu vyberete na další stránce (OrcaSlicer, Bambu Studio, PrusaSlicer).“ Odkaz bez `slicer=`; předřazení výrobce podle zapamatované tiskárny v `download.ts` zůstává. Klíče `toolpage.download.orca` a `toolpage.download.prusa` nahraď jedním (`toolpage.download.project`); před změnou grep v `tests/` a projet `ToolPageTest|LandingPagesTest|SeoTest` (pravidlo z paměti o změně klíčů).
+2. Kalkulace popisuje díly **stejně jako stránka nástroje**: vyjmi `partLabel` z `param.ts` do sdíleného modulu (třeba `resources/js/calc/parts.ts`) a použij ho v `download.ts` s `file.kind` a s tím, zda jde o tvarový druh (`shape`), aby přívěsek ukázal „Podklad · Barva 1 · Barva 2 · Barva 3“. Krabička dál „Jen krabička“ (klíč `param.part.body.box` už je v `lang/src/order_part_labels.json`); obecný `param.part.body` přepiš na „Jen tělo“ (en „Body only“, es „Solo el cuerpo“) v `lang/src/param.json` a projeď `python scripts/lang_add.py param`. Ověř, že stránka objednávky s díly (`order_part_labels`) ukazuje totéž.
+3. Zkontroluj, že „Celý model (STL)“ na stránce nástroje a „Jen samotný model (.stl)“ v kalkulaci říkají stejnou věc stejnými slovy; sjednoť na „Celý model (STL)“.
+
+### 3. Testy
+
+- `ToolPageTest` (nabídka má jednu položku projektu), test kalkulace na popisky dílů přívěsku a krabičky (`CalculatorPageTest` nebo kam to patří), `npx tsc --noEmit -p tsconfig.json`, `npm run build`, `vendor/bin/pint --test`. Snímky nabídky nástroje a panelu kalkulace po změně do `docs/img/download-one-project-*.png`.
+- Zápis do téže kapitoly `docs/AN.md` §21 (část C).
