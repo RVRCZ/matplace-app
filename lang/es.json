@@ -1977,5 +1977,6 @@
     "param.o.straw.across": "De través",
     "param.f.straw.width": "Tamaño del adorno",
     "param.straw.width.hint": "La longitud del nombre; en una imagen, su ancho.",
-    "param.straw.tip": "Se imprime en plano, con la cara hacia arriba y el clip con su lado abierto hacia arriba. Indique el diámetro exterior de su pajita; el clip tiene 0,4 mm de holgura. Un adorno a lo largo de la pajita queda sujeto por un clip en todo el tramo que la toca. De través, el clip va en un punto y su tirador se arrastra por el contorno en la vista previa."
+    "param.straw.tip": "Se imprime en plano, con la cara hacia arriba y la pinza con el lado abierto hacia arriba. Indique el diámetro exterior de la pajita; la pinza tiene 0,4 mm de holgura. En transversal, el tirador de la vista previa fija la posición de la pinza: la pajita pasa siempre junto a toda la imagen y un brazo la une a ella. A lo largo de la pajita, una pinza de 15 mm va en el centro del nombre.",
+    "param.shape.warn.clip_far": "La pinza puede estar a 12 mm como máximo del borde de la imagen; un brazo más largo sería débil. La hemos movido al lugar más cercano donde aguanta."
 }

@@ -689,7 +689,12 @@ export function bootParam(stage: Stage): void {
         state.appendChild(b);
     };
     const artOpen = document.getElementById('param-artwork-open');
-    if (artOpen) artOpen.onclick = async () => { const picked = await pickArtwork('library', cfg.kind === 'cookie' ? 'cookies' : ''); if (picked) { setArtwork(picked); if (papel) papelPicked(picked); void refresh().then(commit); } };
+    /** A picture has no direction of its own: its straw topper's clip goes where the visitor drags it, and the field for that shows. */
+    const strawPicked = (): void => {
+        const across = form.querySelector<HTMLInputElement>('[data-choice="text_dir"][value="across"]');
+        if (across) { across.checked = true; applyWhen(); }
+    };
+    if (artOpen) artOpen.onclick = async () => { const picked = await pickArtwork('library', cfg.kind === 'cookie' ? 'cookies' : ''); if (picked) { setArtwork(picked); strawPicked(); if (papel) papelPicked(picked); void refresh().then(commit); } };
 
     // ── a photo straight onto the page: the field of the first step, a drop anywhere, a paste from the clipboard ──
     const dropZone = document.getElementById('param-artwork-drop');
@@ -708,6 +713,7 @@ export function bootParam(stage: Stage): void {
                 const picked = await uploadArtwork(file);
                 say('');
                 setArtwork(picked);
+                strawPicked();
                 if (papel) papelPicked(picked);
                 void refresh().then(commit);
             } catch (e) {

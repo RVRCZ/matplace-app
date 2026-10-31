@@ -1029,3 +1029,36 @@ segmentů kruhu zůstala ploška nulové tloušťky. Farma takový model neoprav
 Lokální mřížka: 336 návrhů brčka, po opravě všechny z knihovny i jméno vodotěsné. Zbývá jiný, starší jev mimo klip: u
 loga 2 až 14 hran sdílených víc než dvěma plochami na švech vrstev barev (je i u přívěsku a magnetky z téhož obrázku).
 Ty `farm_tool` opraví sám (`repaired: true`, jedno těleso), tisk nezastaví. Příčinu jsem neřešil.
+
+### 9b. Kolo 3: klip kdekoli po obvodu, osa brčka vždy mimo motiv (31. 10. 2026, session G)
+
+Zadání `docs/prompts/brcko-klip-poloha.md`, větev `feature/straw-clip-pos` (stojí na opravě §9a.1). Roman: „možnost
+zvolit polohu úchytu po obvodu motivu jako u očka, jen by se osa brčka přizpůsobovala tak, aby nezasahovala do motivu“.
+
+- **Bod na obrysu určí stranu a výšku, ne osu brčka.** Dřív klip stál přímo v bodě, takže bod nahoře dal brčko skrz
+  motiv. Teď stojí klip vždy za krajním bodem celé siluety na té straně (`beyond` v `build`), ve výšce bodu.
+- **Vzdálenost osy od motivu je stejná jako dosud:** okraj + průměr/2 + 1,0 mm, tedy mezi brčkem a motivem 1,0 mm. Zadání
+  říká 0,4 mm, ale s tím by se bod na kraji přestal rovnat dnešnímu modelu, což zadání zakazuje. Větší odstup brčku nevadí.
+- **Rameno:** pás destičky (`tab`) sahá od klipu až k bodu obrysu a 4 mm za něj (`arm` v `_clip`), tloušťka destičky, výška klipu.
+  Prostor brčka se z něj vyřízne stejně jako dosud. Bod na kraji = rameno 0 = model jako dřív (rozměry i objem hlídá test).
+- **Mez 12 mm (`CLIP_ARM`): přichycení s hláškou**, ne omezené úseky. Úchyt v náhledu se dá táhnout po celém obrysu,
+  jen klip skočí na nejbližší místo, odkud rameno vyjde (`shape.warn.clip_far`). Omezené úseky by rozbily počítání
+  procent po obvodu (poloha je podíl obrysu) a vypadaly by v náhledu jako nefunkční úchyt.
+- **Pole „Poloha klipu po obvodu“:** `WHEN` je v pořádku. Na Romanově snímku pole nebylo, protože předvolba `ela` nechá
+  „podél“ i po výběru obrázku. `strawPicked` v `param.ts` přepne po výběru obrázku návštěvníkem na „napříč“. Uložený
+  návrh se nepřepíná (jde přes `applyValues`). Volbu „podél“ si může u obrázku nastavit zpět.
+- **Podél brčka beze změny:** klip 15 mm uprostřed, bez úchytu. Není to zadarmo, chtělo by to vlastní dráhu úchytu po
+  jedné straně; další krok, až to Roman bude chtít.
+- `param.straw.tip` zastaral už po kole 2 („klip po celé délce“), přepsán.
+
+![Klip na kraji, bez ramene](img/straw-clip-pos-edge.png)
+![Klip s ramenem a hláškou o 12 mm](img/straw-clip-pos-arm.png)
+
+Ověřeno: `HeldShapesTest` (`test_the_clip_goes_anywhere_round_the_picture_and_the_straw_stays_beside_it`: kraj = stejné
+rozměry a objem jako před kolem 3; 12 % = na boku výš, s ramenem, stejná šířka; trubka prázdná; hláška nad 12 mm; vlevo
+zrcadlo), farm_tool: vodotěsné a jedno těleso i s ramenem. Stránka lokálně jako admin (1280 px) s `public/img/logo.png`:
+po výběru obrázku napříč a pole vidět, 42 / 34 / 15 / 90 %: šířka vždy 50,8 mm, u 15 % hláška. 390 px jsem tentokrát
+neprošel.
+
+Při zkušebním tisku navíc k bodům v §9 sledovat: rameno (nesmí se ohýbat ani při zacvaknutí, když klip stojí s ramenem
+přes 10 mm) a že brčko projde podél celé ozdoby bez dotyku motivu.
