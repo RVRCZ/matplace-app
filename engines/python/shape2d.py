@@ -813,7 +813,7 @@ def _read_colors(path, width_mm, o):
     rows, cols = fg.shape
     # millimetres per cell: as wide as asked, or fitted another way (o["fit"]): inside a box, inside a circle, covering a box
     how = o.get("fit") or ("width", width_mm)
-    mm = {"box": lambda: min(how[1] / cols, how[2] / rows), "circle": lambda: how[1] / math.hypot(cols, rows),
+    mm = {"box": lambda: min(how[1] / cols, how[2] / rows), "circle": lambda: how[1] / math.hypot(cols, rows), "ellipse": lambda: 1.0 / math.hypot(cols / how[1], rows / how[2]),
           "cover": lambda: max(how[1] / cols, how[2] / rows)}.get(how[0], lambda: how[1] / cols)()
     if rows * mm > 400:
         raise ArtworkError("artwork_too_tall")
@@ -927,7 +927,7 @@ def colors(M, path, width_mm, o=None):
     Returns (layers, info). layers bottom to top: {"index", "rgb" (hex of the picture), "code", "hex", "near", "share",
     "own" (the area of this colour alone), "stack" (this colour and everything above it: what lies in its layer when the
     colours are printed one on another)}. All in millimetres, the silhouette's lower-left corner at the origin,
-    width_mm wide, or fitted as o["fit"] says: ("box", w, h) inside a box, ("circle", d) inside a circle, ("cover", w, h)
+    width_mm wide, or fitted as o["fit"] says: ("box", w, h) inside a box, ("circle", d) inside a circle, ("ellipse", w, h) inside an ellipse, ("cover", w, h)
     covering a box. info: silhouette, size, found (how many colours the picture really had), background.
     """
     import numpy as np

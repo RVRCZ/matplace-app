@@ -59,4 +59,16 @@
     <symbol id="i-user" viewBox="0 0 24 24"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></symbol>
     <symbol id="i-wrench" viewBox="0 0 24 24"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.106-3.105c.32-.322.863-.22.983.218a6 6 0 0 1-8.259 7.057l-7.91 7.91a1 1 0 0 1-2.999-3l7.91-7.91a6 6 0 0 1 7.057-8.259c.438.12.54.662.219.984z"/></symbol>
     <symbol id="i-x" viewBox="0 0 24 24"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></symbol>
+    {{-- our own: the plates of the tools, one per value of a `body` choice (ParametricGenerator::SHAPE_ICONS), as the plate lies on the bed --}}
+    <symbol id="i-shape-image" viewBox="0 0 24 24"><path d="M7 4.5c3-2 5 .8 8 0s5.8 1 5 4.8-1.8 4.2-1 6.7-3.2 5.5-6.5 3.7-5.7 1.3-8-1.7-3-4.8-2-7.5 2-3.8 4.5-6z"/></symbol>
+    <symbol id="i-shape-circle" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9.5"/></symbol>
+    <symbol id="i-shape-oval" viewBox="0 0 24 24"><ellipse cx="12" cy="12" rx="10.5" ry="7.3"/></symbol>
+    <symbol id="i-shape-rect" viewBox="0 0 24 24"><rect x="2" y="6" width="20" height="12" rx="3"/></symbol>
+    <symbol id="i-shape-square" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2.5"/></symbol>
+    <symbol id="i-shape-heart" viewBox="0 0 24 24"><path d="M2 9.5a5.5 5.5 0 0 1 9.591-3.676.56.56 0 0 0 .818 0A5.49 5.49 0 0 1 22 9.5c0 2.29-1.5 4-3 5.5l-5.492 5.313a2 2 0 0 1-3 .019L5 15c-1.5-1.5-3-3.2-3-5.5"/></symbol>
+    <symbol id="i-shape-hex" viewBox="0 0 24 24"><path d="M12 2 20.7 7v10L12 22 3.3 17V7z"/></symbol>
+    <symbol id="i-shape-star" viewBox="0 0 24 24"><path d="M12.0 2.1L14.7 8.9L22.0 9.4L16.4 14.0L18.2 21.1L12.0 17.2L5.8 21.1L7.6 14.0L2.0 9.4L9.3 8.9Z"/></symbol>
+    <symbol id="i-shape-octagon" viewBox="0 0 24 24"><path d="M8.3 3h7.4L21 8.3v7.4L15.7 21H8.3L3 15.7V8.3z"/></symbol>
+    <symbol id="i-shape-shield" viewBox="0 0 24 24"><path d="M4 3h16v8.5C20 16.5 16 20 12 22c-4-2-8-5.5-8-10.5z"/></symbol>
+    <symbol id="i-shape-rosette" viewBox="0 0 24 24"><path d="M12.0 3.3A2.3 2.3 0 0 1 16.3 4.5A2.3 2.3 0 0 1 19.5 7.6A2.3 2.3 0 0 1 20.7 12.0A2.3 2.3 0 0 1 19.5 16.3A2.3 2.3 0 0 1 16.3 19.5A2.3 2.3 0 0 1 12.0 20.7A2.3 2.3 0 0 1 7.7 19.5A2.3 2.3 0 0 1 4.5 16.4A2.3 2.3 0 0 1 3.3 12.0A2.3 2.3 0 0 1 4.5 7.6A2.3 2.3 0 0 1 7.6 4.5A2.3 2.3 0 0 1 12.0 3.3"/></symbol>
 </svg>

@@ -1978,5 +1978,9 @@
     "param.f.straw.width": "Size of the topper",
     "param.straw.width.hint": "The length of the name; of a picture, its width.",
     "param.straw.tip": "It prints flat, face up, the clip with its open side up. Enter the outer diameter of the straw, the clip has 0.4 mm of play. Across, the grip in the preview sets where the clip is: the straw always runs beside the whole picture and an arm joins it to the picture. Along the straw, a 15 mm clip sits in the middle of the name.",
-    "param.shape.warn.clip_far": "The clip can stand at most 12 mm from the edge of the picture, a longer arm would be weak. We moved it to the nearest place where it holds."
+    "param.shape.warn.clip_far": "The clip can stand at most 12 mm from the edge of the picture, a longer arm would be weak. We moved it to the nearest place where it holds.",
+    "param.preset.matplace": "Matplace logo",
+    "param.o.shape.oval": "Oval",
+    "artwork.items.matplace": "Matplace logo",
+    "artwork.keywords.matplace": "matplace logo 3d print printer"
 }

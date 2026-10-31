@@ -1978,5 +1978,9 @@
     "param.f.straw.width": "Velikost ozdoby",
     "param.straw.width.hint": "Délka jména, u obrázku jeho šířka.",
     "param.straw.tip": "Tiskne se naplocho, lícem nahoru, klip otevřenou stranou vzhůru. Zadejte vnější průměr brčka, klip má vůli 0,4 mm. Napříč určíte polohu klipu úchytem v náhledu: brčko vede vždy vedle celého obrázku a k obrázku ho spojí rameno. Podél brčka stojí klip 15 mm uprostřed jména.",
-    "param.shape.warn.clip_far": "Klip může stát nejdál 12 mm od okraje obrázku, jinak by rameno bylo slabé. Posunuli jsme ho na nejbližší místo, odkud drží."
+    "param.shape.warn.clip_far": "Klip může stát nejdál 12 mm od okraje obrázku, jinak by rameno bylo slabé. Posunuli jsme ho na nejbližší místo, odkud drží.",
+    "param.preset.matplace": "Logo Matplace",
+    "param.o.shape.oval": "Ovál",
+    "artwork.items.matplace": "Logo Matplace",
+    "artwork.keywords.matplace": "matplace logo 3d tisk tiskarna"
 }

@@ -44,6 +44,9 @@ final class ParametricGenerator
         'border' => 'frame', 'density' => 'frame', 'border_mm' => 'frame', 'scallop' => 'frame', 'scallop_edge' => 'frame', 'string_holes' => 'frame', 'backdrop' => 'frame',
         'portrait_scale' => 'placement', 'portrait_x' => 'placement', 'portrait_y' => 'placement', 'portrait_turn' => 'placement'];
 
+    /** The values of a `body` choice that have an icon `shape-<value>` in partials/icons.blade.php: their chips show it above the text. */
+    public const SHAPE_ICONS = ['image', 'circle', 'oval', 'rect', 'square', 'heart', 'hex', 'star', 'octagon', 'shield', 'rosette'];
+
     /** family → field, flag or choice → the section of the tool page it belongs to (fields and flags: size, choices: input, when not named) */
     public const PLACE = ['sign' => ['ring_at' => 'size'], 'qr' => ['hidden' => 'input'], 'papel' => self::PAPEL_PLACE, 'shape' => [
         'bg_strength' => 'input', 'smooth' => 'input', 'contrast' => 'input', 'brightness' => 'input', 'saturation' => 'input', 'remove_bg' => 'input',
@@ -288,7 +291,7 @@ final class ParametricGenerator
         'papel' => ['treatment' => ['cutout', 'portrait'], 'border' => ['flowers', 'diamonds', 'dots', 'hearts', 'leaves', 'stars', 'folk', 'none'], 'scallop_edge' => ['bottom', 'all'], 'backdrop' => ['plain', 'pattern']],
         'name_cup' => ['typeface' => ['script', 'sans', 'serif', 'mono']],
         'beads' => ['shape' => ['cube', 'ball', 'heart', 'star'], 'style' => ['raised', 'engraved'], 'typeface' => ['sans', 'serif', 'mono']],
-        'charm' => ['body' => ['image', 'circle', 'rect'], 'typeface' => ['sans', 'serif', 'mono', 'script']],
+        'charm' => ['body' => ['image', 'circle', 'oval', 'rect', 'heart', 'hex', 'star'], 'typeface' => ['sans', 'serif', 'mono', 'script']],
         'keychain' => ['body' => ['rect', 'image', 'circle'], 'typeface' => ['sans', 'serif', 'mono', 'script']],
         'earrings' => ['body' => ['image', 'circle'], 'typeface' => ['sans', 'serif', 'mono', 'script']],
         'ornament' => ['body' => ['image', 'circle', 'star'], 'typeface' => ['sans', 'serif', 'mono', 'script']],
@@ -480,6 +483,13 @@ final class ParametricGenerator
             'place1' => ['line1' => '1', 'typeface' => 'archivo', 'part_colors' => ['body' => ['39_PLA_Silk_zlata_Silk_Gold', 'name:silk gold', 'yellow'], 'color_1' => self::MEDAL_MOTIF]],
             'place2' => ['line1' => '2', 'typeface' => 'archivo', 'part_colors' => ['body' => ['43_PLA_Silk_stribrna_Silk_Silver', 'name:silk silver', 'grey'], 'color_1' => self::MEDAL_MOTIF]],
             'place3' => ['line1' => '3', 'typeface' => 'archivo', 'part_colors' => ['body' => ['name:marrakech', 'name:marrákeš', '40_PLA_Silk_medena_Silk_Copper', 'name:silk copper', 'orange'], 'color_1' => self::MEDAL_MOTIF]],
+        ],
+        // the charm opens with our own logo, as Roman set it up (31 Oct 2026): a grey plate following the picture. Its colours
+        // are the automatic ones of the picture. The eyelet: 42 % of this outline is where his 38 % lay on his traced PNG
+        'charm' => [
+            'matplace' => ['artwork' => 'lib:colour/matplace', 'line1' => '', 'line2' => '', 'body' => 'image', 'width' => 55, 'thickness' => 3, 'frame' => 1.7,
+                'eyelet' => true, 'eye_pos' => 42, 'eye_hole' => 4.5, 'remove_bg' => true, 'bg_strength' => 25, 'smooth' => 0.3, 'colors_n' => 4, 'relief' => 0.8,
+                'bevel' => false, 'flush' => false, 'rim' => false, 'part_colors' => ['body' => ['12_PLA+_sedy', 'name:šedá', 'grey']]],
         ],
         // the coaster opens as a finished thing (Roman, 29 Oct 2026): a golfer flush in a beige disc with a black rim,
         // grooves below, printed face down. A visitor sees a product first and changes what they want; the other
