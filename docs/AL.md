@@ -2086,7 +2086,7 @@ Rovný hřbet škrabky je o 0,06 mm výš než ostří, takže se naležato poč
 Sedm výchozích poloh (daná, čtyři otočení o 90°, 180°, 37°) skončí v nové verzi vždy naležato, ve staré vždy nastojato. Časy a podpěry jsou
 z místního AnycubicSlicerNext s profilem `process_standard` a prahem 35°, ne z farmy. Oprava souboru tady model zavřela (0 otevřených hran).
 
-Srovnání staré a nové verze na `Documents\MODELS` jen čtením (soubory do 12 MB bez složek `parts`): 60 z 61 STL a OBJ má stejnou polohu. Soubory 3MF: viz předávací zpráva řídícímu, načítají se pomalu.
+Srovnání staré a nové verze na `Documents\MODELS` jen čtením (soubory do 12 MB bez složek `parts`): 60 z 61 STL a OBJ má stejnou polohu. Ze 16 souborů 3MF jsou porovnané jen 2 (stejná poloha); třetí nedoběhl v žádné verzi do 5 min a dalších 13 jsem zastavil.
 Jediná změna je `mp47-matplace-F26-000026.stl`, a k lepšímu: výška 35 místo 51,8 mm, podpěry 7,5 % místo 25,8 % filamentu, odhad 32 místo 57 min.
 
 Cache připravených modelů: klíč v `CachedPrintPreparer::key()` už obsahoval md5 `farm_tool.py`, takže by změnu poznal i bez další úpravy.
