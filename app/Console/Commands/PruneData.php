@@ -2,6 +2,8 @@
 
 namespace App\Console\Commands;
 
+use App\Domain\Account\ModelLibrary;
+use App\Domain\Farm\OrderFiles;
 use App\Domain\Farm\OrderFlow;
 use App\Domain\Tools\Artwork;
 use App\Jobs\BuildFarmTimelapse;
@@ -9,16 +11,16 @@ use App\Models\FarmOrder;
 use App\Models\GenerationRequest;
 use App\Models\ModelFile;
 use Illuminate\Console\Command;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 
 /**
  * Retention: what nobody claimed does not stay forever.
  *  - identification photos older than 1 day (the description stays, the picture goes),
- *  - anonymous model files + calculations older than N days that no account, inquiry or quote refers to,
+ *  - model files + calculations older than N days that nothing refers to (ModelLibrary::unordered, docs/AL.md §16.5),
  *  - leftover slicer gcode older than 7 days,
  *  - farm orders of big models whose customer never asked for the exact price (awaiting_choices for a week),
- *  - guests' farm orders nobody paid within a week (docs/AO.md).
+ *  - guests' farm orders nobody paid within a week (docs/AO.md),
+ *  - print files of farm orders closed for farm.files_retention_days (docs/AL.md §16).
  */
 class PruneData extends Command
 {
@@ -29,7 +31,6 @@ class PruneData extends Command
     public function handle(): int
     {
         $dry = (bool) $this->option('dry-run');
-        $days = (int) config('uploads.anonymous_retention_days', 30);
         $photos = 0;
         $files = 0;
 
@@ -40,21 +41,26 @@ class PruneData extends Command
             }
         });
 
-        ModelFile::whereNull('owner_user_id')
-            ->where('created_at', '<', now()->subDays($days))
-            ->whereNotIn('id', DB::table('inquiries')->whereNotNull('model_file_id')->select('model_file_id'))
-            ->whereNotIn('id', DB::table('quotes')->whereNotNull('model_file_id')->select('model_file_id'))
-            ->whereNotIn('id', DB::table('catalog_models')->whereNotNull('model_file_id')->select('model_file_id'))
-            // a paid order prints from it (a guest's file is the account's after the payment, this only makes sure): the
-            // order would go with it (model_file_id cascades)
-            ->whereNotIn('id', DB::table('farm_orders')->whereNotNull('paid_at')->select('model_file_id'))
-            ->each(function (ModelFile $f) use (&$files, $dry) {
-                $files++;
-                if (! $dry) {
-                    Storage::disk(ModelFile::DISK)->deleteDirectory($f->dir());
-                    $f->delete(); // calculations cascade
-                }
-            });
+        $models = Storage::disk(ModelFile::DISK);
+        $found = ['account' => 0, 'anonymous' => 0];
+        $sizes = ['account' => 0, 'anonymous' => 0];
+        foreach (app(ModelLibrary::class)->unordered() as $f) {
+            $who = $f->owner_user_id ? 'account' : 'anonymous';
+            $found[$who]++;
+            if ($dry) {
+                $sizes[$who] += array_sum(array_map(fn ($file) => $models->size($file), $models->allFiles($f->dir())));
+
+                continue;
+            }
+            // an order that goes with the file (model_file_id cascades) leaves nobody to clean its folder later
+            FarmOrder::where('model_file_id', $f->id)->get()->each(fn (FarmOrder $o) => Storage::disk(config('farm.disk'))->deleteDirectory($o->dir()));
+            $models->deleteDirectory($f->dir());
+            $f->delete(); // calculations cascade
+        }
+        $files = $found['account'] + $found['anonymous'];
+        $this->line($dry
+            ? sprintf('model files nothing holds: with an account %d (%.2f GB), without %d (%.2f GB)', $found['account'], $sizes['account'] / 1073741824, $found['anonymous'], $sizes['anonymous'] / 1073741824)
+            : sprintf('model files nothing holds removed: with an account %d, without %d', $found['account'], $found['anonymous']));
 
         // raw generator output (tens of MB each) is only a short safety net
         $raws = 0;
@@ -133,6 +139,22 @@ class PruneData extends Command
                 }
             });
         $this->line("unpaid guest orders cancelled: {$guests}");
+
+        $orderFiles = app(OrderFiles::class);
+        $pruned = 0;
+        $bytes = 0;
+        foreach ($orderFiles->closed() as $order) {
+            $size = $orderFiles->prune($order, $dry);
+            if ($size === null) {
+                continue;
+            }
+            $pruned++;
+            $bytes += $size;
+            if ($dry) {
+                $this->line(sprintf('  %s %s: %.1f MB', $order->number ?: $order->token, $order->status, $size / 1048576));
+            }
+        }
+        $this->line(sprintf('farm order files removed: %d orders, %.1f MB', $pruned, $bytes / 1048576));
 
         $this->info(($dry ? '[dry-run] ' : '')."photos={$photos} files={$files} gcodes={$gcodes} temp={$temp}");
 

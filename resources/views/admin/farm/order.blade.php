@@ -18,7 +18,7 @@
         <div class="overflow-hidden rounded-2xl border border-slate-200 bg-white">
             @php
                 // an order by parts: every plate with the colour of its spool (the design's colour while none is chosen)
-                $partViews = collect($order->partPlates())->filter(fn ($p) => ! empty($p['stl_path']))->map(fn ($p) => [
+                $partViews = collect($order->partPlates())->filter(fn ($p) => $order->absolutePartStlPath($p))->map(fn ($p) => [
                     'url' => route('farm.orders.part_model', [$order, $p['part']]),
                     'hex' => \App\Models\FarmPrinterSlot::with('color')->find($p['slot_id'] ?? 0)?->color?->hex ?? ($order->modelFile?->tool_params['part_colors'][$p['part']]['hex'] ?? null),
                 ])->values();
@@ -142,7 +142,11 @@
                     <dt class="text-slate-500">{{ __('farm.order.parts_title') }}</dt><dd>
                         {{-- one plate of several filaments: one file, T<n> per part, the machine changes spools (the header names the slots) --}}
                         @if($order->onePlate())<span class="mr-1 inline-block rounded-full bg-amber-100 px-2 py-0.5 text-xs font-semibold text-amber-800" data-one-plate>jedna podložka · {{ __('farm.order.b_changes') }} {{ (int) ($order->slice_result['changes'] ?? 0) }}× · T{{ implode(' T', array_map(fn ($n, $s) => $n.'→slot '.($s + 1), array_keys($order->filamentSlots()), $order->filamentSlots())) }}</span>@endif
-                        @foreach($partPlates as $i => $p){{ $i ? ' · ' : '' }}<a class="underline" href="{{ route('admin.farm.orders.gcode', [$order, 'plate' => $order->onePlate() ? 1 : $i + 1]) }}">{{ $order->onePlate() ? 'T'.(((int) ($p['extruder'] ?? 1)) - 1) : ($i + 1).'.' }} {{ \App\Domain\Farm\OrderService::partLabel($order->modelFile, (string) $p['part']) }}</a> → {{ $partColors->get($p['color_id'] ?? 0)?->name ?? $order->color?->name ?? '—' }}@if(isset($p['minutes'])) ({{ $p['minutes'] }} min@if(isset($p['grams'])), {{ $p['grams'] }} g@endif)@elseif(isset($p['grams'])) ({{ $p['grams'] }} g)@endif @endforeach</dd>
+                        @foreach($partPlates as $i => $p){{ $i ? ' · ' : '' }}
+                            @php($partName = ($order->onePlate() ? 'T'.(((int) ($p['extruder'] ?? 1)) - 1) : ($i + 1).'.').' '.\App\Domain\Farm\OrderService::partLabel($order->modelFile, (string) $p['part']))
+                            @if($order->absoluteGcodePath($order->onePlate() ? 1 : $i + 1))<a class="underline" href="{{ route('admin.farm.orders.gcode', [$order, 'plate' => $order->onePlate() ? 1 : $i + 1]) }}">{{ $partName }}</a>
+                            @else{{ $partName }}
+                            @endif → {{ $partColors->get($p['color_id'] ?? 0)?->name ?? $order->color?->name ?? '—' }}@if(isset($p['minutes'])) ({{ $p['minutes'] }} min@if(isset($p['grams'])), {{ $p['grams'] }} g@endif)@elseif(isset($p['grams'])) ({{ $p['grams'] }} g)@endif @endforeach</dd>
                 @endif
                 <dt class="text-slate-500">{{ __('farm.quality.label') }} / {{ __('farm.strength.label') }}</dt><dd>{{ $order->quality }} / {{ $order->strength }}</dd>
                 @if($order->copies > 1)<dt class="text-slate-500">{{ __('farm.copies.label') }}</dt><dd>{{ $order->plates > 1 ? __('farm.copies.plates', ['n' => $order->copies, 'p' => $order->plates, 'layout' => implode(' + ', $order->plateLayout())]) : __('farm.copies.note', ['n' => $order->copies]) }}@if($order->plates > 1) · {{ __('farm.copies.plate_of', ['i' => $order->plates_done, 'p' => $order->plates]) }}@endif</dd>@endif
@@ -158,7 +162,13 @@
                 @if($order->terms_accepted_at)<dt class="text-slate-500">Terms</dt><dd>{{ $order->terms_version }} · {{ $order->terms_accepted_at->format('j. n. Y H:i') }} · {{ $order->terms_ip }}</dd>@endif
             </dl>
             @if($eta)<p class="mt-2 text-xs text-slate-600">{{ __('farm.admin.eta', ['start' => $eta['start_in'].' min', 'finish' => $eta['finish_in'].' min']) }}@if($eta['blocked']) · {{ __('farm.order.blocked_'.$eta['blocked']) }}@endif</p>@endif
-            @if($order->gcode_path)<a href="{{ route('admin.farm.orders.gcode', $order) }}" class="btn-secondary mt-3 w-full text-sm">⬇ {{ __('farm.admin.download_gcode') }}</a>@endif
+            @if($order->absoluteGcodePath())<a href="{{ route('admin.farm.orders.gcode', $order) }}" class="btn-secondary mt-3 w-full text-sm">⬇ {{ __('farm.admin.download_gcode') }}</a>@endif
+            @if($order->filesPruned())
+                <p class="mt-3 rounded-lg bg-slate-50 p-3 text-xs text-slate-600" data-files-pruned>{{ __('farm.admin.files_pruned', ['days' => config('farm.files_retention_days')]) }}
+                    @if($order->status === 'failed') {{ __('farm.admin.files_pruned_again') }}
+                    @endif
+                </p>
+            @endif
         </section>
 
         @if($order->status === 'paid' && ! $order->approved_at)

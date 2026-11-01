@@ -2017,5 +2017,11 @@
     "tools.medallion.hint": "Medaile pro vítěze: 1., 2. a 3. místo, s řetězem nebo na stužku, tiskneme ve zlaté, stříbrné a bronzové.",
     "youtube.video.shown_price": "hotový kus a cenu vidíte na konci",
     "youtube.video.shown_plain": "hotový kus vidíte na konci",
-    "farm.order.colors_fix": "Upravit barvy v návrhu"
+    "farm.order.colors_fix": "Upravit barvy v návrhu",
+    "farm.admin.files_pruned": "Soubory pro tisk (G-code, STL) jsou smazané: drží se :days dní po uzavření zakázky.",
+    "farm.admin.files_pruned_again": "Zpět do fronty zakázka bez G-code jít nemůže. „Uložit a naslicovat znovu“ výš ji připraví z původního souboru.",
+    "user.models.retention": "Soubory bez objednávky mažeme po :days dnech.",
+    "calc.gone.title": "Tahle kalkulace už tu není",
+    "calc.gone.text": "Soubory bez objednávky mažeme po :days dnech a kalkulace jde se souborem. Model můžete nahrát znovu.",
+    "calc.gone.cta": "Nahrát model"
 }

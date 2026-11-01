@@ -63,7 +63,7 @@ return [
             'li' => [
                 'Účet – po dobu jeho trvání; po zrušení do 30 dnů smažeme nebo anonymizujeme.',
                 'Zakázky a platby – 5 let od dokončení (účetní a daňové předpisy), doklady podle zákona až 10 let.',
-                'Fotky pro rozpoznání a generování – nejdéle 1 den; anonymně nahrané soubory 30 dní.',
+                'Fotky pro rozpoznání a generování – nejdéle 1 den; nahrané soubory bez objednávky 30 dní.',
                 'Časosběrná videa – u zakázky po dobu trvání účtu; na YouTube do odmítnutí zveřejnění, odvolání souhlasu nebo do našeho smazání.',
                 'Technické záznamy – nejvýše 12 měsíců.',
             ],

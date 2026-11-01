@@ -258,7 +258,7 @@ return [
                 'h' => '4. Files you upload',
                 'p' => [
                     'You are responsible for the files you upload. Upload only models and photos that you made or are allowed to use.',
-                    'Uploaded files are stored privately and used only for the purpose you uploaded them for: working out the price, working in a tool and fulfilling your order. Files uploaded without signing in are deleted after 30 days.',
+                    'Uploaded files are stored privately and used only for the purpose you uploaded them for: working out the price, working in a tool and fulfilling your order. Files without an order are deleted after 30 days, even in your account.',
                 ],
             ],
             [
