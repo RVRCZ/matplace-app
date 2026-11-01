@@ -37,7 +37,7 @@ return [
 
     // Orca props every face flatter than this many degrees from the horizontal, so a higher number means more supports
     // (docs/AL.md §17): above the slicer profile, below a printer's overrides; a test print may only lower it (TuningAdvisor)
-    'support_threshold_angle' => (int) env('FARM_SUPPORT_THRESHOLD_ANGLE', 35),
+    'support_threshold_angle' => (int) env('FARM_SUPPORT_THRESHOLD_ANGLE', 25),
 
     // extra slicer profiles uploaded for new printers/materials; looked up before engines/orca/profiles
     'profiles_dir' => storage_path('app/farm/profiles'),

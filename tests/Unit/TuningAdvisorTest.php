@@ -37,16 +37,17 @@ class TuningAdvisorTest extends TestCase
     public function test_a_test_print_only_lowers_the_support_threshold_of_the_farm(): void
     {
         $threshold = fn (int $clean) => TuningAdvisor::supportSettings(['overhang_ok' => $clean], 'quick')['support_threshold_angle'];
-        $this->assertSame(['25', '30', '35', '35', '35', '35'], array_map($threshold, [70, 65, 60, 50, 30, 0]));
+        $this->assertSame(['15', '20', '25', '25', '25', '25'], array_map($threshold, [80, 75, 70, 60, 30, 0]));
 
         // what the test asked for and the farm did not give is written down for the operator
         $r = TuningAdvisor::advise(['overhang_ok' => 40], $this->candidate, 'quick');
-        $this->assertSame('35', $this->settings($r)['process.support_threshold_angle']);
+        $this->assertSame('25', $this->settings($r)['process.support_threshold_angle']);
         $this->assertStringContainsString('55°', implode(' ', $r['notes']));
         $this->assertStringNotContainsString('práh', implode(' ', TuningAdvisor::advise(['overhang_ok' => 70], $this->candidate, 'quick')['notes']));
 
         config(['farm.support_threshold_angle' => 30]);
         $this->assertSame('30', $threshold(50));
+        $this->assertSame('25', $threshold(70));
     }
 
     public function test_the_cube_is_measured_against_the_edge_of_its_own_test_object(): void

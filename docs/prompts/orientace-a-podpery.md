@@ -1,5 +1,7 @@
 # Orientace: rovná plocha o 0,06 mm výš než ostří se nepočítá jako podložka; práh podpěr 35° (TODO #63, 1. 11. 2026, session G)
 
+> **Rozhodnutí Romana (1. 11. 2026, po měření): práh 25°, ne 35°.** Podpěr má ubýt a vyšší číslo je přidává. Strop v ladění zůstává na farmové hodnotě, migrace snižuje i řádky ladění druhu nad 25, vlastní nastavení cívky nechává; tolerance 0,3 mm / 3° zůstává. Číslo 35 níže je původní zadání; platí `docs/AL.md` §17.
+
 Roman 1. 11. 2026 večer: nahrál škrabku (zakázka `TiW9uMwgXu3l6scQ9r746miw3pjTNNgH`, 136 × 50,9 × 6,9 mm, Farm U #2, 1 h 32 min, 23,5 g), farma ji
 postavila na hranu a Orca přidala stromové podpěry. Naležato by podpěry nebyly. Roman: „zadej a zvedni tvorbu podpěr na 35°“.
 Kopie připraveného modelu (už v postavené poloze, originál nahrání není po ruce): `C:\tmp\scraper-print.stl`. Nic na produkci.

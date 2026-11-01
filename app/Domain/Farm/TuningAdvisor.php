@@ -21,7 +21,7 @@ final class TuningAdvisor
     /** What the shipped profiles say when the candidate does not: the base a delta is applied to. */
     private const BASE = [
         'filament' => ['fan_max_speed' => 100, 'fan_min_speed' => 100, 'overhang_fan_speed' => 100, 'filament_retraction_length' => 0.8, 'filament_flow_ratio' => 0.98, 'pressure_advance' => 0.035, 'slow_down_layer_time' => 8, 'filament_max_volumetric_speed' => 12],
-        'process' => ['support_threshold_angle' => 35, 'max_bridge_length' => 10, 'bridge_speed' => 50, 'outer_wall_speed' => 200, 'top_shell_layers' => 5, 'elefant_foot_compensation' => 0.1, 'xy_contour_compensation' => 0, 'xy_hole_compensation' => 0, 'brim_width' => 5, 'outer_wall_acceleration' => 5000, 'ironing_flow' => '10%', 'ironing_speed' => 30, 'ironing_spacing' => 0.15],
+        'process' => ['support_threshold_angle' => 25, 'max_bridge_length' => 10, 'bridge_speed' => 50, 'outer_wall_speed' => 200, 'top_shell_layers' => 5, 'elefant_foot_compensation' => 0.1, 'xy_contour_compensation' => 0, 'xy_hole_compensation' => 0, 'brim_width' => 5, 'outer_wall_acceleration' => 5000, 'ironing_flow' => '10%', 'ironing_speed' => 30, 'ironing_spacing' => 0.15],
     ];
 
     /** Edge of the dimension cube on each test object (calib_tool.py); the quick one when the object is not known. */
@@ -51,7 +51,7 @@ final class TuningAdvisor
     {
         $out = [];
         if (isset($result['overhang_ok']) && $result['overhang_ok'] !== '') {
-            $out['support_threshold_angle'] = (string) min((int) config('farm.support_threshold_angle', 35), self::thresholdFor((int) $result['overhang_ok']));
+            $out['support_threshold_angle'] = (string) min((int) config('farm.support_threshold_angle', 25), self::thresholdFor((int) $result['overhang_ok']));
         }
         if (in_array($result['bridge'] ?? null, ['ok', 'sag', 'fail'], true)) {
             $out['max_bridge_length'] = (string) ($result['bridge'] === 'ok' ? (self::BRIDGE_MM[$object] ?? self::BRIDGE_MM['quick']) : 10);

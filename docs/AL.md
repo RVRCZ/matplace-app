@@ -2068,7 +2068,7 @@ Jeden průchod v `matplace:prune`, dotaz v `ModelLibrary::unordered()`, lhůta `
 
 **Neověřeno:** běh nad skutečnými soubory (MySQL a produkční disk, místní testy běží na SQLite), stránka v prohlížeči, skutečný slicer (testy mají falešný). Vazba přes `quotes` je v dotazu, ale test ji nezakládá. Zisk prvního běhu místně zjistit nejde.
 
-## 17. Orientace: tolerance podložky a práh podpěr 35° (TODO #63, 1. 11. 2026, feature/orient-base-tolerance)
+## 17. Orientace: tolerance podložky a práh podpěr 25° (TODO #63, 1. 11. 2026, feature/orient-base-tolerance)
 
 Zadání: `docs/prompts/orientace-a-podpery.md`. Roman nahrál škrabku (136 × 50,9 × 6,9 mm), farma ji postavila na hranu a Orca přidala
 stromové podpěry. Naležato žádné nejsou.
@@ -2080,14 +2080,14 @@ Rovný hřbet škrabky je o 0,06 mm výš než ostří, takže se naležato poč
 
 | Škrabka | převis | podložka | výška | podpěry ve sliceru | odhad času |
 |---|---|---|---|---|---|
-| předtím, nastojato | 2 188 mm² | 179 mm² | 50,9 mm | 1 145 mm filamentu, 16,4 % | 1 h 2 min |
+| předtím, nastojato | 2 188 mm² | 179 mm² | 50,9 mm | 1 104 mm filamentu, 15,9 % | 1 h 1 min |
 | nově, naležato | 80,7 mm² | 3 673 mm² | 6,86 mm | 0 | 44 min |
 
 Sedm výchozích poloh (daná, čtyři otočení o 90°, 180°, 37°) skončí v nové verzi vždy naležato, ve staré vždy nastojato. Časy a podpěry jsou
-z místního AnycubicSlicerNext s profilem `process_standard` a prahem 35°, ne z farmy. Oprava souboru tady model zavřela (0 otevřených hran).
+z místního AnycubicSlicerNext s profilem `process_standard` a prahem 25°, ne z farmy. Oprava souboru tady model zavřela (0 otevřených hran).
 
 Srovnání staré a nové verze na `Documents\MODELS` jen čtením (soubory do 12 MB bez složek `parts`): 60 z 61 STL a OBJ má stejnou polohu. Ze 16 souborů 3MF jsou porovnané jen 2 (stejná poloha); třetí nedoběhl v žádné verzi do 5 min a dalších 13 jsem zastavil.
-Jediná změna je `mp47-matplace-F26-000026.stl`, a k lepšímu: výška 35 místo 51,8 mm, podpěry 7,5 % místo 25,8 % filamentu, odhad 32 místo 57 min.
+Jediná změna je `mp47-matplace-F26-000026.stl`, a k lepšímu: výška 35 místo 51,8 mm, podpěry 7,5 % místo 25,8 % filamentu, odhad 32 místo 57 min (slice ještě s prahem 35°, s 25° jsem ho neopakoval).
 
 Cache připravených modelů: klíč v `CachedPrintPreparer::key()` už obsahoval md5 `farm_tool.py`, takže by změnu poznal i bez další úpravy.
 Verze `orient-v2` je tedy navíc; přidal jsem ji, protože ji zadání chce, a `FarmPreparedCacheTest` hlídá, že se starý záznam nepoužije.
@@ -2100,44 +2100,46 @@ Verze `orient-v2` je tedy navíc; přidal jsem ji, protože ji zadání chce, a 
 | nožka 0,25 mm | otočí desku plochou dolů | nechá ji na nožce | jen nožka | most a převisová stěna |
 
 Orca krájí první vrstvu (0,2 mm) v její polovině, takže plocha výš než asi 0,1 mm v ní není. U 0,25 mm jsem to změřil, přesnou hranici ne; trysky 0,2
-mají první vrstvu 0,12 mm a hranici níž. Hodnotu 0,3 mm jsem nechal podle zadání: tvar s nožkou nebo žebrem 0,1 až 0,3 mm pod velkou plochou
+mají první vrstvu 0,12 mm a hranici níž. 0,3 mm a 3° zůstávají i po rozhodnutí z 1. 11. 2026: tvar s nožkou nebo žebrem 0,1 až 0,3 mm pod velkou plochou
 je vzácný a tiskne se bez podpěr. Kdyby vadil, stačí změnit `BED_GAP_MM`; škrabce by stačilo 0,1.
 
-### Práh podpěr 35°
+### Práh podpěr 25°
 
-**Co 35 znamená:** Orca dá podpěru pod každou plochu plošší než 35° od vodorovné roviny. **Vyšší číslo znamená víc podpěr.** Proti dosavadním 30° ze seedu
-tedy 35° podpěry přidává:
+**Rozhodnutí Romana (1. 11. 2026):** 25°, podpěr má ubýt. Zadání původně chtělo 35°, ale měření ukázalo, že vyšší číslo podpěry přidává.
 
-| Model (místní slice, práh) | podpěry |
-|---|---|
-| klín se spodkem 33° od vodorovné, práh 30° | 0 |
-| týž klín, práh 35° | 28,2 % filamentu, čas 40 min místo 25 min |
-| škrabka nastojato, 30° → 35° | 15,9 % → 16,4 % |
-| škrabka naležato, 30° i 35° | 0 |
+**Co 25 znamená:** Orca dá podpěru pod každou plochu plošší než 25° od vodorovné roviny. **Nižší číslo znamená méně podpěr.** Proti dosavadním 30° ze seedu:
 
-Podpěry u škrabky tedy odstranila tolerance podložky, práh na ně skoro nemá vliv.
+| Model (místní slice, práh) | podpěry | odhad času |
+|---|---|---|
+| klín se spodkem 27° od vodorovné, práh 30° | 27,4 % filamentu | 31 min |
+| týž klín, práh 25° | 0 | 21 min |
+| klín se spodkem 33°, práh 30° i 25° | 0 | 25 min |
+| škrabka nastojato, práh 30° i 25° | 15,9 % | 1 h 1 min |
+| škrabka naležato, práh 25° | 0 | 44 min |
 
-- `config('farm.support_threshold_angle')`, výchozí 35, `FARM_SUPPORT_THRESHOLD_ANGLE`. `PrepareFarmOrder::sliceSetup()` ji píše nad profil a pod `process_overrides` tiskárny a řádky ladění.
-- Migrace `2026_11_01_210000_farm_support_threshold_35` nastaví 35 tiskárnám, které klíč mají; původní hodnotu zapíše do logu, `down()` nic nedělá. Seed má 35.
-- `TuningAdvisor::supportSettings()` práh jen snižuje, nikdy nad farmovou hodnotu. Když test chtěl víc, poradce to napíše do poznámek.
+Podpěry u škrabky tedy odstranila tolerance podložky, práh na ně vliv nemá. Plochy mezi 25° a 30° se teď tisknou bez podpěr a mohou se prověsit. Jak moc, ukáže až tisk.
+
+- `config('farm.support_threshold_angle')`, výchozí 25, `FARM_SUPPORT_THRESHOLD_ANGLE`. `PrepareFarmOrder::sliceSetup()` ji píše nad profil a pod `process_overrides` tiskárny a řádky ladění.
+- Migrace `2026_11_01_210000_farm_support_threshold_25` nastaví 25 tiskárnám, které klíč mají, i kdyby měly méně. Řádkům ladění druhu (`farm_printer_materials` bez barvy) s hodnotou nad 25 ji sníží na 25, protože mají přednost před tiskárnou a na vyladěné tiskárně by jinak podpěr neubylo.
+- Řádek s 25 a méně zůstává. Původní hodnoty jdou do logu pod klíčem `farm_support_threshold_25`, `down()` nic nedělá. Snížený řádek dostane novou verzi přes `revise()`, zdroj `manual`, a stará hodnota zůstane v jeho historii; stav řádku se nemění. Seed má 25.
+- `TuningAdvisor::supportSettings()` práh jen snižuje, nikdy nad farmovou hodnotu. Roman strop potvrdil. Když test chtěl víc, poradce to napíše do poznámek.
+- Formulář i posouzení z fotek končí u převisu 70°, z toho vychází 95 − 70 = 25. Test tedy dnes práh pod 25 nikdy nedostane a poradce zapíše vždy 25; nižší hodnota jde jen ručně.
 - `max_bridge_length` zůstává 10 mm. Je to další volba, o které Roman zatím nerozhodl.
 
-**Rozpor v zadání, rozhodne Roman.** Zadání píše, že ladění práh snižuje u tiskárny, která převisy nezvládá. Je to naopak: tiskárna s čistým převisem 70° dostane 25° (méně podpěr),
-tiskárna s čistým převisem jen 45° chce 50° (více podpěr). Strop 35° proto bere podpěry právě tiskárnám, které je potřebují: klín 45° má při prahu 50° podpěry
-na 28 % filamentu, při 35° žádné. Udělal jsem to podle zadání a operátor uvidí poznámku u návrhu. Kdyby se měl strop zrušit, je to jeden `min()` v `supportSettings()`.
-
-**Co 35 nezmění.** Řádky ladění (`farm_printer_materials.overrides.process`) a vlastní nastavení cívky mají přednost před tiskárnou i farmovou hodnotou a migrace na ně nesahá.
-Vyladěná tiskárna tiskne dál se svým prahem, třeba 25° nebo 45°. Kolik takových řádků je na produkci, nevím; zjistí to tento dotaz jen pro čtení:
+**Co migrace nezmění.** Vlastní nastavení cívky má přednost před tiskárnou i řádkem druhu a podle rozhodnutí zůstává: řádek cívky na tiskárně (`farm_printer_materials` s barvou) i `farm_colors.print_overrides`. Řádek cívky přitom začíná kopií řádku druhu, takže může držet třeba 45°, aniž ho kdo ladil. Kolik takových je na produkci, nevím; zjistí to tyto dotazy jen pro čtení (na MariaDB jsem je nespustil):
 
 ```sql
-SELECT id, farm_printer_id, farm_material_id, farm_color_id, status, JSON_EXTRACT(overrides, '$.process.support_threshold_angle') AS threshold
-FROM farm_printer_materials WHERE JSON_EXTRACT(overrides, '$.process.support_threshold_angle') IS NOT NULL;
+SELECT id, farm_printer_id, farm_color_id, status, JSON_EXTRACT(overrides, '$.process.support_threshold_angle') AS threshold
+FROM farm_printer_materials WHERE farm_color_id IS NOT NULL AND JSON_EXTRACT(overrides, '$.process.support_threshold_angle') IS NOT NULL;
+
+SELECT id, name, JSON_EXTRACT(print_overrides, '$.process.support_threshold_angle') AS threshold
+FROM farm_colors WHERE JSON_EXTRACT(print_overrides, '$.process.support_threshold_angle') IS NOT NULL;
 ```
 
 Kalkulačka bez farmy krájí dál s profilem (`process_standard` 30°, `fine` 20°, `draft` 40°), odhad před objednávkou tedy může mít jiné podpěry než farma.
 
 ### Testy a co ověřené není
 
-`FarmOrientationTest` (deska se zkoseným ostřím ze šesti výchozích poloh, díl na nožce 10 a 0,5 mm), `FarmPreparedCacheTest`, `FarmOrderFlowTest` (pořadí vrstev, migrace), `TuningAdvisorTest`.
+`FarmOrientationTest` (deska se zkoseným ostřím ze šesti výchozích poloh, díl na nožce 10 a 0,5 mm), `FarmPreparedCacheTest`, `FarmOrderFlowTest` (pořadí vrstev, migrace tiskáren a řádků ladění), `TuningAdvisorTest`.
 
 Neověřeno: skutečný tisk, slice na farmě a produkční hodnoty tiskárem. Stránku ladění v prohlížeči jsem neotevíral.
