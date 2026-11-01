@@ -407,17 +407,17 @@ final class ParametricGenerator
         // a shape cut out or standing has no plate: what belongs to the plate shows only with it
         'logo' => ['bevel' => ['mode', ['cutout']], 'shape' => ['mode', ['relief', 'height']], 'plate' => ['mode', ['relief', 'height']], 'margin' => ['mode', ['relief', 'height']], 'base_h' => ['mode', ['standing']]],
         'cookie' => self::HANG_WHEN + self::SHAPE_WHEN, 'name_letter' => self::HANG_WHEN + self::SHAPE_WHEN,
-        'medallion' => ['bg_strength' => ['remove_bg', ['on']], 'relief' => ['motif', ['raised']], 'depth' => ['motif', ['flush']]], 'bag_charm' => self::SHAPE_WHEN,
+        'medallion' => ['bg_strength' => ['remove_bg', ['on']], 'relief' => ['motif', ['raised']], 'depth' => ['motif', ['flush']]], 'bag_charm' => self::FLUSH_DOWN_WHEN,
         // the clip and the tongue are always there: their place on the outline is not hidden behind a flag
         // along the straw the clip runs the whole side that touches it: there is no place on the outline to drag it to
         'straw' => ['bg_strength' => ['remove_bg', ['on']], 'relief' => ['flush', ['off']], 'eye_pos' => ['text_dir', ['across']]], 'opener' => ['bg_strength' => ['remove_bg', ['on']], 'relief' => ['flush', ['off']]],
         // one colour and no picture in the floor: what belongs to the picture's colours never shows ("none" is no value of the choice)
         'photo_organizer' => ['cell' => ['inside', ['grid']], 'hole_d' => ['inside', ['holes']], 'frame' => ['inside', ['none']], 'relief' => ['inside', ['none']], 'colors_n' => ['inside', ['none']]] + self::SHAPE_WHEN,
-        'badge' => self::SHAPE_WHEN + ['mag_d' => ['mount', ['glue']], 'mag_h' => ['mount', ['glue']]],
+        'badge' => self::FLUSH_DOWN_WHEN + ['mag_d' => ['mount', ['glue']], 'mag_h' => ['mount', ['glue']]],
         // the step between colours means nothing in a floor ("none" is no value of the choice: the field never shows)
         'tray' => ['relief' => ['floor', ['none']], 'colors_n' => ['floor', ['engraved', 'colors']]] + self::SHAPE_WHEN,
-        'topper' => self::SHAPE_WHEN, 'gingerbread' => self::SHAPE_WHEN, 'charm' => self::SHAPE_WHEN, 'keychain' => self::SHAPE_WHEN, 'earrings' => self::SHAPE_WHEN, 'ornament' => self::SHAPE_WHEN, 'coaster' => self::SHAPE_WHEN,
-        'magnet' => self::SHAPE_WHEN + ['disc' => ['mount', ['glue', 'press', 'through']], 'mag_d' => ['mount', ['glue', 'press', 'through']], 'mag_h' => ['mount', ['glue', 'press']], 'mag_gap' => ['mount', ['glue']]],
+        'topper' => self::SHAPE_WHEN, 'gingerbread' => self::SHAPE_WHEN, 'charm' => self::FLUSH_DOWN_WHEN, 'keychain' => self::FLUSH_DOWN_WHEN, 'earrings' => self::FLUSH_DOWN_WHEN, 'ornament' => self::FLUSH_DOWN_WHEN, 'coaster' => self::FLUSH_DOWN_WHEN,
+        'magnet' => self::FLUSH_DOWN_WHEN + ['disc' => ['mount', ['glue', 'press', 'through']], 'mag_d' => ['mount', ['glue', 'press', 'through']], 'mag_h' => ['mount', ['glue', 'press']], 'mag_gap' => ['mount', ['glue']]],
         'phone_stand' => ['width' => ['style', ['plate', 'wave', 'desk', 'wedge', 'wall', 'car', 'ribbed', 'flatpack', 'ribbon']], 'angle' => ['style', ['plate', 'wave', 'desk', 'wedge', 'ribbed', 'flatpack', 'ribbon', 'silhouette']],
             'back' => ['style', ['plate', 'wave', 'desk', 'ribbed', 'flatpack', 'ribbon', 'silhouette']], 'depth' => ['style', ['wedge']], 'vent' => ['style', ['car']],
             'thickness' => ['style', ['plate', 'wave', 'desk', 'wall', 'car', 'ribbed', 'flatpack', 'silhouette']], 'radius' => ['style', ['plate', 'wave', 'desk', 'wedge', 'wall', 'car']],
@@ -473,6 +473,12 @@ final class ParametricGenerator
 
     /** the box and its lid: Silk copper, any copper spool, a built-in brown without a farm */
     private const BOX_COPPER = ['40_PLA_Silk_medena_Silk_Copper', 'name:měděná', 'brown'];
+
+    /** Flat plates whose flush colours print face down, smooth from the bed (shape_kinds.py FLUSH_DOWN, docs/P.md §11). */
+    public const FLUSH_DOWN = ['charm', 'keychain', 'earrings', 'ornament', 'magnet', 'coaster', 'badge', 'bag_charm'];
+
+    // the edge on the bed cannot be chamfered: with the colours flush a plate has no bevel to offer
+    private const FLUSH_DOWN_WHEN = self::SHAPE_WHEN + ['bevel' => ['flush', ['off']]];
 
     private const SHAPE_WHEN = ['bg_strength' => ['remove_bg', ['on']], 'eye_pos' => ['eyelet', ['on']], 'eye_hole' => ['eyelet', ['on']], 'eye_wall' => ['eyelet', ['on']], 'relief' => ['flush', ['off']]];
 

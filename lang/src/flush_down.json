@@ -1,0 +1,102 @@
+{
+    "param.shape.print.plate": [
+        "Barvy leží vedle sebe v prvních vrstvách, líc se tiskne na podložce. To vytiskne jen tiskárna, která mění filament sama (AMS, MMU, ACE). Bez ní vypněte „Barvy zarovno“: barvy pak půjdou nad sebe.",
+        "The colours lie side by side in the first layers, the face prints on the bed. Only a printer that changes filament by itself (AMS, MMU, ACE) can print that. Without one, turn off \"Colours flush with the surface\": the colours then go one on another.",
+        "Los colores van uno al lado de otro en las primeras capas y la cara se imprime sobre la cama. Eso solo lo imprime una impresora que cambia el filamento sola (AMS, MMU, ACE). Sin ella, desactive «Colores a ras de la superficie»: los colores irán entonces uno sobre otro."
+    ],
+    "param.shape.print.plate.farm": [
+        "Barvy leží vedle sebe v prvních vrstvách, líc se tiskne na podložce. Na farmě to vytiskneme na jedné podložce na tiskárně, která mění filament sama, po jednom kuse. Díly pro vlastní tiskárnu si můžete stáhnout.",
+        "The colours lie side by side in the first layers, the face prints on the bed. The farm prints that on one plate on a printer that changes filament by itself, one piece at a time. You can download the parts for your own printer.",
+        "Los colores van uno al lado de otro en las primeras capas y la cara se imprime sobre la cama. En la granja lo imprimimos en una sola placa, en una impresora que cambia el filamento sola, de una unidad en una. Puede descargar las piezas para su propia impresora."
+    ],
+    "param.shape.print.plate.medallion": [
+        "Motiv leží vedle desky v prvních vrstvách, líc se tiskne na podložce. To vytiskne jen tiskárna, která mění filament sama (AMS, MMU, ACE). Bez ní zvolte vystouplý motiv.",
+        "The motif lies beside the plate in the first layers, the face prints on the bed. Only a printer that changes filament by itself (AMS, MMU, ACE) can print that. Without one, choose the raised motif.",
+        "El motivo va junto a la placa en las primeras capas y la cara se imprime sobre la cama. Eso solo lo imprime una impresora que cambia el filamento sola (AMS, MMU, ACE). Sin ella, elija el motivo en relieve."
+    ],
+    "param.shape.print.plate.medallion.farm": [
+        "Motiv leží vedle desky v prvních vrstvách, líc se tiskne na podložce. Na farmě to vytiskneme na jedné podložce na tiskárně, která mění filament sama, po jednom kuse. Díly pro vlastní tiskárnu si můžete stáhnout.",
+        "The motif lies beside the plate in the first layers, the face prints on the bed. The farm prints that on one plate on a printer that changes filament by itself, one piece at a time. You can download the parts for your own printer.",
+        "El motivo va junto a la placa en las primeras capas y la cara se imprime sobre la cama. En la granja lo imprimimos en una sola placa, en una impresora que cambia el filamento sola, de una unidad en una. Puede descargar las piezas para su propia impresora."
+    ],
+    "param.flag.charm.flush.hint": [
+        "Líc je rovný a hladký od podložky: barvy jsou vložené do podkladu a tiskne se lícem dolů. Vyžaduje tiskárnu, která mění filament sama.",
+        "The face is flat and smooth from the print bed: the colours are inlaid in the base and it prints face down. Needs a printer that changes filament by itself.",
+        "La cara queda plana y lisa desde la cama: los colores van incrustados en la base y se imprime boca abajo. Requiere una impresora que cambie el filamento sola."
+    ],
+    "param.flag.keychain.flush.hint": [
+        "Líc je rovný a hladký od podložky: barvy jsou vložené do podkladu a tiskne se lícem dolů. Vyžaduje tiskárnu, která mění filament sama.",
+        "The face is flat and smooth from the print bed: the colours are inlaid in the base and it prints face down. Needs a printer that changes filament by itself.",
+        "La cara queda plana y lisa desde la cama: los colores van incrustados en la base y se imprime boca abajo. Requiere una impresora que cambie el filamento sola."
+    ],
+    "param.flag.earrings.flush.hint": [
+        "Líc je rovný a hladký od podložky: barvy jsou vložené do podkladu a tiskne se lícem dolů. Vyžaduje tiskárnu, která mění filament sama.",
+        "The face is flat and smooth from the print bed: the colours are inlaid in the base and it prints face down. Needs a printer that changes filament by itself.",
+        "La cara queda plana y lisa desde la cama: los colores van incrustados en la base y se imprime boca abajo. Requiere una impresora que cambie el filamento sola."
+    ],
+    "param.flag.ornament.flush.hint": [
+        "Líc je rovný a hladký od podložky: barvy jsou vložené do podkladu a tiskne se lícem dolů. Vyžaduje tiskárnu, která mění filament sama.",
+        "The face is flat and smooth from the print bed: the colours are inlaid in the base and it prints face down. Needs a printer that changes filament by itself.",
+        "La cara queda plana y lisa desde la cama: los colores van incrustados en la base y se imprime boca abajo. Requiere una impresora que cambie el filamento sola."
+    ],
+    "param.flag.magnet.flush.hint": [
+        "Líc je rovný a hladký od podložky: barvy jsou vložené do podkladu a tiskne se lícem dolů. Vyžaduje tiskárnu, která mění filament sama.",
+        "The face is flat and smooth from the print bed: the colours are inlaid in the base and it prints face down. Needs a printer that changes filament by itself.",
+        "La cara queda plana y lisa desde la cama: los colores van incrustados en la base y se imprime boca abajo. Requiere una impresora que cambie el filamento sola."
+    ],
+    "param.flag.coaster.flush.hint": [
+        "Líc je rovný a hladký od podložky: barvy jsou vložené do podkladu a tiskne se lícem dolů. Vyžaduje tiskárnu, která mění filament sama.",
+        "The face is flat and smooth from the print bed: the colours are inlaid in the base and it prints face down. Needs a printer that changes filament by itself.",
+        "La cara queda plana y lisa desde la cama: los colores van incrustados en la base y se imprime boca abajo. Requiere una impresora que cambie el filamento sola."
+    ],
+    "param.flag.badge.flush.hint": [
+        "Líc je rovný a hladký od podložky: barvy jsou vložené do podkladu a tiskne se lícem dolů. Vyžaduje tiskárnu, která mění filament sama.",
+        "The face is flat and smooth from the print bed: the colours are inlaid in the base and it prints face down. Needs a printer that changes filament by itself.",
+        "La cara queda plana y lisa desde la cama: los colores van incrustados en la base y se imprime boca abajo. Requiere una impresora que cambie el filamento sola."
+    ],
+    "param.flag.bag_charm.flush.hint": [
+        "Líc je rovný a hladký od podložky: barvy jsou vložené do podkladu a tiskne se lícem dolů. Vyžaduje tiskárnu, která mění filament sama.",
+        "The face is flat and smooth from the print bed: the colours are inlaid in the base and it prints face down. Needs a printer that changes filament by itself.",
+        "La cara queda plana y lisa desde la cama: los colores van incrustados en la base y se imprime boca abajo. Requiere una impresora que cambie el filamento sola."
+    ],
+    "param.charm.tip": [
+        "Tiskne se naplocho, lícem nahoru, bez podpěr. Barvy leží jedna na druhé, takže je zvládne i tiskárna s jednou tryskou: stačí vyměnit filament ve výškách, které projekt obsahuje. Se zarovnanými barvami se tiskne lícem dolů, líc je pak hladký od podložky.",
+        "It prints flat, face up, without supports. The colours lie one on another, so a printer with a single nozzle can print it too: just swap the filament at the heights the project contains. With flush colours it prints face down, so the face is smooth from the bed.",
+        "Se imprime en plano, con la cara hacia arriba y sin soportes. Los colores van uno sobre otro, así que también lo imprime una impresora de una sola boquilla: basta cambiar el filamento a las alturas que incluye el proyecto. Con colores a ras se imprime boca abajo y la cara queda lisa desde la cama."
+    ],
+    "param.keychain.tip": [
+        "Tiskne se naplocho, lícem nahoru, bez podpěr. Jméno na podkladu jsou dvě barvy nad sebou: stačí jedna výměna filamentu. Kroužek na klíče není součástí výtisku. Se zarovnanými barvami se tiskne lícem dolů, líc je pak hladký od podložky.",
+        "It prints flat, face up, without supports. A name on a base is two colours, one on the other: one filament change is enough. The key ring is not part of the print. With flush colours it prints face down, so the face is smooth from the bed.",
+        "Se imprime en plano, con la cara hacia arriba y sin soportes. Un nombre sobre una base son dos colores, uno encima del otro: basta un cambio de filamento. La anilla no se incluye en la pieza. Con colores a ras se imprime boca abajo y la cara queda lisa desde la cama."
+    ],
+    "param.ornament.tip": [
+        "Tiskne se naplocho, lícem nahoru, bez podpěr. Ozdoba z PLA je lehká, na větvi drží i na tenké stužce. Se zarovnanými barvami se tiskne lícem dolů, líc je pak hladký od podložky.",
+        "It prints flat, face up, without supports. A PLA ornament is light and hangs on a branch even from a thin ribbon. With flush colours it prints face down, so the face is smooth from the bed.",
+        "Se imprime en plano, con la cara hacia arriba y sin soportes. Un adorno de PLA es ligero y aguanta en la rama incluso con una cinta fina. Con colores a ras se imprime boca abajo y la cara queda lisa desde la cama."
+    ],
+    "param.magnet.tip": [
+        "Tiskne se lícem nahoru, kapsou na magnet dolů, bez podpěr. Magnet vlepte vteřinovým lepidlem, nebo zvolte nalisování. Magnety nejsou součástí výtisku. Se zarovnanými barvami se tiskne lícem dolů a kapsa na magnet je nahoře.",
+        "It prints face up, with the magnet pocket down, without supports. Glue the magnet in with superglue, or choose the press fit. Magnets are not part of the print. With flush colours it prints face down and the magnet pocket is on top.",
+        "Se imprime con la cara hacia arriba y el hueco del imán hacia abajo, sin soportes. Pegue el imán con pegamento instantáneo o elija el encaje a presión. Los imanes no vienen con la impresión. Con colores a ras se imprime boca abajo y el hueco del imán queda arriba."
+    ],
+    "param.badge.tip": [
+        "Tiskne se naplocho, lícem nahoru, bez podpěr. Na držák se lepí: oboustranným lepicím kolečkem, suchým zipem, nebo vteřinovým lepidlem. Držák karty není součástí výtisku. Se zarovnanými barvami se tiskne lícem dolů, líc je pak hladký od podložky.",
+        "It prints flat, face up, without supports. It is glued on the reel: with a double-sided sticky dot, a hook-and-loop dot or superglue. The badge reel itself is not part of the print. With flush colours it prints face down, so the face is smooth from the bed.",
+        "Se imprime en plano, con la cara hacia arriba y sin soportes. Se pega al yoyó con un círculo adhesivo de doble cara, un punto de velcro o pegamento instantáneo. El yoyó no forma parte de la impresión. Con colores a ras se imprime boca abajo y la cara queda lisa desde la cama."
+    ],
+    "param.bag_charm.tip": [
+        "Ozdoba se tiskne lícem nahoru, čep hlavou dolů vedle ní, obojí bez podpěr. Změřte otvor v tašce a tloušťku její stěny; čep je o 0,6 mm tenčí než otvor. Vlepte ho vteřinovým lepidlem. Se zarovnanými barvami se tiskne lícem dolů, líc je pak hladký od podložky.",
+        "The charm prints face up and the pin head down next to it, both without supports. Measure the hole of the bag and the thickness of its wall; the pin is 0.6 mm thinner than the hole. Glue it in with superglue. With flush colours it prints face down, so the face is smooth from the bed.",
+        "El adorno se imprime con la cara hacia arriba y el perno con la cabeza hacia abajo a su lado, ambos sin soportes. Mida el agujero del bolso y el grosor de su pared; el perno es 0,6 mm más fino que el agujero. Péguelo con pegamento instantáneo. Con colores a ras se imprime boca abajo y la cara queda lisa desde la cama."
+    ],
+    "param.shape.print.plate.many": [
+        "Barvy leží vedle sebe v prvních vrstvách a je jich :c. To vytiskne jen tiskárna, která mění filament sama a má :c cívek; jinak snižte počet barev nebo některé slučte.",
+        "The colours lie side by side in the first layers and there are :c of them. Only a printer that changes filament by itself and holds :c spools can print that; otherwise reduce the colours or merge some.",
+        "Los colores van uno al lado de otro en las primeras capas y son :c. Eso solo lo imprime una impresora que cambia el filamento sola y tiene :c bobinas; si no, reduzca los colores o fusione algunos."
+    ],
+    "param.shape.print.plate.many.farm": [
+        "Tenhle návrh má :c různých barev v prvních vrstvách. Na farmě tiskneme nejvýš čtyři v jednom tisku: snižte počet barev, některé slučte, nebo si stáhněte díly pro svou tiskárnu.",
+        "This design has :c different colours in its first layers. The farm prints at most four in one print: reduce the colours, merge some, or download the parts for your own printer.",
+        "Este diseño tiene :c colores distintos en sus primeras capas. La granja imprime como máximo cuatro en una impresión: reduzca los colores, fusione algunos o descargue las piezas para su impresora."
+    ]
+}

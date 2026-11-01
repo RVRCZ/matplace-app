@@ -259,11 +259,18 @@ class ModelFile extends Model
      * A design whose colours share a layer and only make sense printed together (a medal with its motif flush in the
      * first layers: printed by parts the motif would come out as a loose numeral): the farm prints it on one plate
      * with a machine that changes spools, or not at all (PrepareFarmOrder, docs/AL.md §10.8). The tool says so in
-     * `tool_params.one_plate_required`.
+     * `tool_params.one_plate_required`. A plate with flush colours saved before these print face down (docs/P.md §11) does
+     * not have it, yet its parts are built anew from its parameters, face down, and the same rule holds for them: read from
+     * the parameters, because the order pages ask this at every step and running the tool each time would take seconds.
      */
     public function onePlateRequired(): bool
     {
-        return $this->origin === 'tool' && ! empty($this->tool_params['one_plate_required']);
+        if ($this->origin !== 'tool') {
+            return false;
+        }
+
+        return ! empty($this->tool_params['one_plate_required'])
+            || (in_array($this->origin_ref, ParametricGenerator::FLUSH_DOWN, true) && ! empty($this->tool_params['flush']) && ($this->tool_params['multi_material'] ?? true));
     }
 
     /** Organic AI meshes print best with tree supports. */

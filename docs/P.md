@@ -1154,3 +1154,79 @@ nic neodmítla. Neověřeno: pevnost tahem, tisk.
 na stroji (lokální Python ho neměl) by je ale odmítla, takže „farma to opraví“ platí jen s ním, a podle `docs/AL.md` ho
 produkce má. Kalkulace u nich může napsat, že model opravila. Přesah 0,01 mm mezi vrstvami to není (zkoušeno bez něj, stejný
 výsledek), plošky leží ve výšce desky. Příčinu jsem dál nehledal.
+
+## 11. Zarovnané barvy lícem dolů (1. 11. 2026, session G, TODO #58)
+
+Roman u přívěsku s logem: „je lepší při volbě zarovnat všechny barvy tisknout motivem od spoda?“ Zadání
+`docs/prompts/barvy-licem-dolu.md`, větev `feature/flush-face-down`.
+
+**Co se otočilo.** Při `flush` u přívěsku, klíčenky, náušnic, ozdoby, magnetu, podtácku, odznaku a přívěsku na tašku
+(`FLUSH_DOWN` v `shape_kinds.py` a `ParametricGenerator`, test hlídá, že jsou stejné):
+
+- Barvy leží ve spodních 0,6 mm vedle desky, celá destička je zrcadlená podle svého středu a deska má kapsu odspodu. Na rozdíl
+  od medaile se zrcadlí i obrys, očko a lem: obrys přívěsku souměrný není.
+- `parts["use"]` je kus otočený pro náhled, díly jsou v rámu celku (`_shared`), v notes `one_plate_required` a `multi_material`.
+- **Lem** je pás v úrovni líce (z 0 až 0,6, šířka `edge`, mimo očko), v barvě lemu. Nad rubem nic nestojí, model je tak silný
+  jako destička.
+- **Zkosení** stránka při `flush` schová (`FLUSH_DOWN_WHEN`), engine ho ignoruje i u uloženého návrhu.
+- **Na rub, tedy po otočení nahoru,** se stěhují drážky podtácku (z = t − 0,4 až t), kapsa magnetu, odznaku a přívěsku na
+  tašku. Průchozí magnet zůstává průchozí a `magnet_shows` platí dál.
+- **Náušnice:** otočení pár prohodí, proto se při tisku lícem dolů levá a pravá vymění: vlevo je jako dřív ta, která čte správně,
+  vpravo její zrcadlo.
+- **Čep přívěsku na tašku** se v náhledu neotáčí: leží vpravo vedle ozdoby na stejné podlaze jako při tisku.
+- **Úchyt očka:** `notes.outline` a `notes.eyelet` zůstávají v soustavě pohledu, kde je i kus otočený. `notes.magnet` je v soustavě
+  tisku; stránka z něj čte jen průměr a výšku. Úchyt rámečku (`placeFrame`) se týká jen `compose`, který `flush` nemá.
+
+**Co zůstalo.** Vystouplé barvy, medaile, perníček, písmeno, sušenka, zápich, brčko, otvírák a misky. Ověřeno do bajtu: STL z enginu
+v main e0be23c4 a z větve je stejné ve všech 40 variantách: 8 druhů bez `flush` (relief, lem, zkosení) a sušenka, perníček, písmeno,
+zápich, brčko, otvírák, medaile a miska s `flush` i bez něj.
+
+**Dvě vady, které jsem našel při stavbě** (`FlushDownTest`, farm_tool `prepare`, díl po dílu, jak jde jedna podložka):
+
+1. Pás lemu řezaný podél vnější stěny desky nechal plošku na každé fasetě obrysu: 91 až 311 těles a farma tělo odmítla. Stejná chyba
+   jako vývrt brčka (§9a.1). Teď se kapsa pro lem řeže od 1 mm za obrysem (`band_cut`).
+2. Vlásečnice mezi barvami zůstávaly v desce jako stěny bez tloušťky. Kapsa se teď uzavře o 2 × 0,1 mm (`POCKET_CLOSE`), jen u
+   nových druhů; v líci tak může zůstat štěrbina do 0,2 mm. Medaile ani tisk lícem nahoru se nemění.
+
+Po opravě (3 obrázky: logo, golfista, kolo; 8 druhů; bez lemu a s lemem; 48 návrhů): **0 odmítnutých dílů**. Těla: 47 čistých, 1
+opraví trimesh. Lem: 24 z 24 čistých. Barvy: 36 čistých, 44 s opravou trimesh (plochy obrázku se dotýkají v bodě, na main je to
+stejné); pymeshfix nebyl potřeba nikde.
+
+**Řez** (AnycubicSlicerNext 2.0.0.3 CLI, `machine.json`, `process_standard.json` + `ONE_PLATE_PROCESS`, 4× `filament_pla.json`, díly přes
+`ThreeMfWriter`):
+
+| návrh | vrstvy | výměny | filament | čas |
+|---|---|---|---|---|
+| logo 60 mm, tl. 3 mm, `flush`, lícem dolů | 15 | **10** | 3,04 + 1,52 + 1,34 + 0,78 g | 38 min 34 s |
+| totéž lícem nahoru (engine z main) | 15 | **10** | 3,13 + 1,52 + 1,34 + 0,78 g | 38 min 54 s |
+| logo + lem v barvě desky, lícem dolů | 15 | 10 | 3,06 + 1,52 + 1,34 + 0,78 g | 38 min 53 s |
+| podtácek golfista, lem v barvě motivu, lícem dolů | 20 | 4 | 20,07 + 2,15 g | 51 min 40 s |
+
+Pět filamentů na jedné podložce slicer shodí chybou (`0xC0000005`) lícem dolů i lícem nahoru na main, geometrie za to nemůže. Farma
+tiskne nejvýš čtyři a stránka to říká (`shape.print.plate.many`).
+
+**Uložené návrhy.** Změní se všechny s `flush: true` u osmi druhů výše, včetně podtácků z předvolby `golf`. Otevřené znovu se postaví
+lícem dolů, na objednávce jdou jen jednou podložkou. `ModelFile::onePlateRequired()` to čte z druhu, `tool_params.flush` a
+`multi_material`, ne z přepočtu při přípravě zakázky: tu otázku kladou stránka objednávky, `OrderFlow` i stav zakázky při každém
+kroku, tool by běžel sekundy, a díly se stejně staví znovu z parametrů (`OrderService::partStl`), takže odvození a geometrie nemohou
+ujet. Jednobarevný návrh s `flush` (`multi_material: false`) pravidlem neprojde a tiskne se dál jako jeden kus. Soubor celku uložený
+na disku zůstává starý, dokud se návrh znovu neuloží; jedna podložka ho netiskne, jen díly.
+
+**Texty.** `shape.print.plate` (a `.farm`, `.many`, `.medallion`) pro návrhy s `one_plate_required`, `flag.<druh>.flush.hint` a věta v
+tipech šesti druhů. **Odchylka od zadání:** `shape.print.multi.farm` jsem nepřepsal. Dál platí pro návrhy, které jedna podložka
+nebere: vystouplé barvy s lemem jiné barvy, brčko, otvírák, perníček, písmeno, sušenka a zápich s `flush`. Ty farma opravdu tiskne
+jednou barvou, věta o jedné podložce by u nich lhala. Hint `flag.flush.hint` zůstal pro ně ze stejného důvodu. Text říká „díly“, ne
+„projekt“: `project.3mf` je celý model jako jedno těleso bez barev (tak to bylo a je i u medaile), barvy jsou v ZIPu dílů.
+
+![Přívěsek s logem a zarovnanými barvami: náhled otočený lícem nahoru](img/charm-flush-down.png)
+
+![Podtácek golfista lícem dolů: lem v úrovni líce](img/coaster-golf-down.png)
+
+**Co ověří až tisk** (nic z toho se zatím netisklo):
+
+- Drobné ostrůvky barvy v první vrstvě (oranžový detail loga, 2,5 %): jestli se chytí na plech.
+- Rozšíření hranic barev sloní nohou v první vrstvě, štěrbiny do 0,2 mm z uzavření kapsy.
+- Vzhled líce z texturovaného plechu. Roman tiskl zarovnanou medaili na U1; jak líc vyšel, ví on.
+- Kapsa magnetu shora: mezi barvou a kapsou při tl. 3 mm zbývá 0,2 mm desky, při nejmenší tloušťce nezbyde nic (dno jsou jen barvy, 0,6 mm).
+
+**Neověřeno:** tažení úchytu očka myší na otočeném kuse, souhlas úchytu je ověřen čísly a snímkem; barvy skutečných cívek z produkce.
