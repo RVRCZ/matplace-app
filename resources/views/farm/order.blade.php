@@ -176,6 +176,8 @@
                         <input type="checkbox" id="farm-by-parts" class="mt-1 h-4 w-4 accent-action">
                         <span><span id="farm-by-parts-title" class="font-semibold text-slate-700"></span><br><span class="text-xs text-slate-500">{{ __('farm.order.by_parts_hint', ['max' => \App\Models\FarmOrder::MAX_COLORS]) }}</span></span>
                     </label>
+                    {{-- a design of more colours than one print takes: said at once, with the way back to the tool (docs/AL.md §14.10) --}}
+                    <p id="farm-colors-over" class="mt-2 hidden rounded-lg bg-amber-50 p-3 text-sm text-amber-900"></p>
                     <div id="farm-second" class="mt-3 hidden">
                         <div class="text-sm font-semibold text-slate-700">{{ __('farm.order.second_color') }}</div>
                         <p class="text-xs text-slate-600">{{ __('farm.order.second_color_hint') }}</p>

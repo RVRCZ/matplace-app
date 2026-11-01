@@ -118,7 +118,7 @@ class UploadController extends Controller
     }
 
     /** The tool page this design came from; the page reopens with the same settings. Our own geometry, so changing it costs nothing. */
-    private static function toolOf(ModelFile $f): ?array
+    public static function toolOf(ModelFile $f): ?array
     {
         $route = 'tools.'.(in_array($f->origin_ref, ['lithophane', 'relief'], true) ? 'relief' : $f->origin_ref);
         if ($f->origin !== 'tool' || ! is_array($f->tool_params) || ! Route::has($route)) {

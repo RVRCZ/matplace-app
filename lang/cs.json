@@ -2005,5 +2005,6 @@
     "param.shape.print.plate.many": "Barvy leží vedle sebe v prvních vrstvách a je jich :c. To vytiskne jen tiskárna, která mění filament sama a má :c cívek; jinak snižte počet barev nebo některé slučte.",
     "param.shape.print.plate.many.farm": "Tenhle návrh má :c různých barev v prvních vrstvách. Na farmě tiskneme nejvýš čtyři v jednom tisku: snižte počet barev, některé slučte, nebo si stáhněte díly pro svou tiskárnu.",
     "youtube.video.shown_price": "hotový kus a cenu vidíte na konci",
-    "youtube.video.shown_plain": "hotový kus vidíte na konci"
+    "youtube.video.shown_plain": "hotový kus vidíte na konci",
+    "farm.order.colors_fix": "Upravit barvy v návrhu"
 }

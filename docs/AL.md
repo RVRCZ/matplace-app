@@ -634,6 +634,8 @@ GcodeColorChanges, SupportLines, StlFile, MarketplaceSwitch, FarmManualOnlyKinds
 
 ### 10.8 Povinná jedna podložka (`one_plate_required`, TODO #32 §2)
 
+Kalkulace toto pravidlo od 29. 10. do 1. 11. 2026 vypínala přáním `colors=one`, oprava a zacházení s návrhem nad 4 barvy: §14.10.
+
 Větev `feature/one-plate-required` (z `main` 844aac9), 19. 10. 2026. Medaile se zarovnaným motivem (motif = flush,
 session 1) dá do `tool_params` `one_plate_required: true` (+ `multi_material`): po dílech by motiv vyšel jako volná
 jednička, po výšce nejde. Proto:
@@ -1921,6 +1923,30 @@ jednom kuse … Nastavte 1 ks“:
   ne ve filtru.
 - Náhled dílu 12 ks (`parts/color_1.stl`, 17,6 MB): beze změny. Díl drží všech 12 kopií; levná cesta je, aby náhled
   nesl jednu kopii a prohlížeč ji kreslil podle `copies_grid` vícekrát (1/12 dat), decimace kopií stála 89 s.
+
+### 14.10 Kalkulace a návrhy z nástrojů: přání „jednou barvou“ jen u malovaného souboru (1. 11. 2026, TODO #61, fix/calc-colors-wish)
+
+Zadání docs/prompts/kalkulace-jedna-barva.md. Roman: návrh se zarovnanými barvami se v objednávce nabídl jen v jedné barvě. Chyba na produkci od nasazení malovaných 3MF, týká se všech návrhů z nástrojů objednaných přes kalkulaci (medaile, přívěsky, krabička s víkem jiné barvy).
+
+**Příčina:** `renderColors()` v `calculator.ts` dávala tlačítku farmy `data-colors="one"` každému souboru, který není malovaný. `farm.ts` to poslal, `OrderController::store` z toho udělal `by_parts=false` a výchozí pravidlo v `preselect` (§10.8) nenastoupilo.
+
+**Oprava:**
+- **Kalkulace:** `colorsWish()` dá `data-colors` jen souboru s `file.colors`, jinak atribut odstraní. `farm.ts` se měnit nemusel, posílá `colors` jen když atribut je.
+- **Server, zvolená pojistka:** `colors=one` platí jen u `PaintedColors::painted($file)`. U ostatních souborů se ignoruje, takže starý odkaz nebo karta otevřená před nasazením díly nevypne. Výslovné `by_parts` platí dál.
+- **Víc barev než jeden tisk (5 u Romanova přívěsku):** tady by samotná oprava kalkulace uškodila. Dokud tam bylo `colors=one`, díly se nezapnuly a odmítnutí nenastalo. Se zapnutými díly by na stroji s víc než 4 cívkami `spoolsForParts` vyhodil `too_many_colors` už při zakládání: objednávka by nevznikla a zákazník by zůstal v kalkulaci bez cesty k jedné barvě. Proto `preselect` cívky vybrané za zákazníka omezí na `MAX_COLORS` (díly nad limit dostanou hlavní barvu). Barvy, které zákazník vybral sám, se odmítají jako dřív.
+- **Stránka objednávky:** stav nese `colors_over` (návrh z nástroje s víc než 4 různými barvami, tisk po dílech). Pod zaškrtávátkem se hned ukáže věta `farm.refuse.too_many_colors` a odkaz „Upravit barvy v návrhu“ na `tools.<druh>?from=<uuid>`, který návrh znovu otevře (`UploadController::toolOf`, nově veřejná). Není to blokace platby: díly jsou po omezení tisknutelné, zrušení zaškrtnutí vede k jednomu kusu v jedné barvě a hláška zmizí. Počet barev v nástroji zůstává rozhodnutím Romana.
+
+**Beze změny:** malovaná 3MF (dvě ceny a dvě tlačítka), opakování objednávky (posílá své díly výslovně), host.
+
+**Přímé „Vytisknout“ ze stránky nástroje:** samostatná cesta na objednávku neexistuje, nástroj vede přes kalkulaci (`#tool-go`). `colors` se nikde jinde neposílá.
+
+**Ověřeno:**
+- `FarmOnePlateTest`: návrh bez přání i se starým `colors=one` začíná po dílech s barvami podle návrhu; výslovné `by_parts=0` platí; 5 barev na stroji s 5 cívkami založí objednávku s nejvýš 4 barvami a s `colors_over` a odkazem; zrušení zaškrtnutí hlášku odstraní; 5 barev vybraných zákazníkem dostane 422; 4 barvy bez hlášky. Malovaný soubor s `colors=one` hlídá `ThreeMfColorsTest`.
+- Mutace: bez omezení v `preselect` test spadne na 422 místo 201.
+- Prohlížeč místně (`scripts/review_round2.mjs --flows=order-flush`, falešný slicer): stránka přívěsku se zarovnanými barvami, kalkulace (`data-colors` chybí, tlačítko „jednou barvou“ skryté), objednávka: díly zaškrtnuté, barvy dílů vidět, tisk na jedné podložce, „Připraveno k objednání“ (4 i 5 dílů). Snímek docs/img/order-flush-parts.png.
+- Hláška s odkazem: flow `order-page`, snímek docs/img/order-flush-too-many.png. Pátou různou barvu jsem pro snímek dopsal přímo do uloženého návrhu (lem), protože v průchodu nástrojem vyšly jen 4 různé barvy a obrázek se v harnessu nenahrál (přívěsek je výchozí logo).
+
+**Neověřeno:** skutečný slicer Orca (místně falešný, tedy ani 5 dílů na 4 cívky na jedné podložce; `PrepareFarmOrder` díly stejné barvy slučuje do jednoho filamentu podle kódu a testů), Romanův konkrétní přívěsek na produkci.
 
 ## 15. Opakovat tisk: rovnou nová zakázka, i u běžící zakázky (TODO #53, 29. 10. 2026, feature/order-repeat)
 
