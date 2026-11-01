@@ -1045,6 +1045,12 @@ const triangleCount = (g: BufferGeometry): number => (g.index ? g.index.count : 
  * the price in one colour and in colour, and the farm's button turned into "print in colour" with a second one for one colour.
  * Hidden for a file without painted colours. Nothing above it moves: the card grows at its end.
  */
+function colorsWish(farm: HTMLElement, file: FileInfo | null): void {
+    const colors = file?.colors ?? [];
+    if (colors.length) farm.dataset.colors = colors.filter((c) => !c.merged).length >= 2 ? 'painted' : 'one';
+    else delete farm.dataset.colors;
+}
+
 function renderColors(file: FileInfo | null, calc: CalcInfo | null): void {
     const box = document.getElementById('calc-colors');
     if (!box) return;
@@ -1057,7 +1063,8 @@ function renderColors(file: FileInfo | null, calc: CalcInfo | null): void {
     const one = document.getElementById('cta-farm-one');
     if (farm) {
         if (!farm.dataset.label) farm.dataset.label = farm.textContent?.trim() ?? '';
-        farm.dataset.colors = painted ? 'painted' : 'one';
+        // the wish belongs to a painted file alone: any other (a tool's design) leaves its parts to the server's own rule
+        colorsWish(farm, file);
         const label = painted ? t('calc.colors.order') : farm.dataset.label;
         const text = [...farm.childNodes].find((n) => n.nodeType === Node.TEXT_NODE && n.textContent?.trim());
         if (text) text.textContent = ` ${label} `;
@@ -1237,7 +1244,7 @@ export function boot(): void {
         if (!farm) return;
         farm.dataset.colors = 'one';
         farm.click();
-        farm.dataset.colors = (state.file?.colors ?? []).filter((c) => !c.merged).length >= 2 ? 'painted' : 'one';
+        colorsWish(farm, state.file);
     });
     if (initial) { restore(initial); return; }
     const query = new URLSearchParams(location.search);

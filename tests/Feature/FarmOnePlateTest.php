@@ -264,6 +264,103 @@ class FarmOnePlateTest extends TestCase
      * parts on separate plates: by parts from the start, only the spools of machines with a changer, one piece, and
      * when that cannot be, the order stops with a reason instead of printing a loose motif (docs/AL.md §10.8).
      */
+    /** A design of as many colours as asked for, from spools of the machine. */
+    private function designOf(int $colours, bool $onePlate = true): ModelFile
+    {
+        $file = $this->design();
+        $dir = dirname(Storage::disk(ModelFile::DISK)->path($file->storage_path)).'/parts';
+        $hexes = ['#f4f4f0', '#c01818', '#1830c0', '#18a018', '#e0d000', '#101010'];
+        $parts = [];
+        foreach (range(1, $colours) as $i) {
+            MeshFixtures::cubeStl($dir.'/color_'.$i.'.stl', 20.0 - $i);
+            $parts['color_'.$i] = ['hex' => $hexes[$i - 1]];
+        }
+        $file->forceFill(['tool_params' => ['parts' => array_keys($parts), 'part_colors' => $parts, 'one_plate_required' => $onePlate] + $file->tool_params])->save();
+
+        return $file;
+    }
+
+    /** The spools of the machine in the design's colours, the design's first colour first. */
+    private function loadColours(ModelFile $file): void
+    {
+        $this->s1->slots()->where('id', '!=', $this->white->id)->update(['farm_color_id' => null, 'remaining_g' => 0, 'enabled' => false]);
+        foreach (array_values($file->tool_params['part_colors']) as $i => $part) {
+            $color = $i === 0 ? FarmColor::find($this->white->farm_color_id) : FarmColor::where('id', '!=', $this->white->farm_color_id)->whereHas('material', fn ($q) => $q->where('code', 'like', 'PLA%'))->orderBy('id')->skip($i)->firstOrFail();
+            $color->update(['hex' => $part['hex'], 'enabled' => true]);
+            if ($i > 0) {
+                $this->s1->slots()->updateOrCreate(['slot' => 10 + $i], ['farm_color_id' => $color->id, 'remaining_g' => 800, 'enabled' => true]);
+            }
+        }
+    }
+
+    public function test_the_calculator_leaves_the_parts_of_a_tools_design_to_the_servers_rule(): void
+    {
+        $file = $this->designOf(3);
+        $this->loadColours($file);
+        $start = fn (array $with) => FarmOrder::where('token', basename($this->actingAs($this->user)->postJson('/farm/orders', ['file' => $file->uuid] + $with)->assertCreated()->json('url')))->firstOrFail();
+        $picked = fn (FarmOrder $o) => array_map(fn ($p) => strtolower((string) FarmColor::find($p['color_id'])?->hex), $o->partPlates());
+
+        // what the calculator sends now: nothing. By parts, a spool of the machine per colour of the design
+        $order = $start([]);
+        $this->assertTrue($order->isByParts(), 'the wish of a painted file is not sent for a design');
+        $this->assertSame(['#f4f4f0', '#c01818', '#1830c0'], $picked($order));
+
+        // an old link or a tab open since before the fix says colors=one: it does not switch the parts off
+        $old = $start(['colors' => 'one']);
+        $this->assertTrue($old->isByParts());
+        $this->assertSame(['#f4f4f0', '#c01818', '#1830c0'], $picked($old));
+        $state = $this->actingAs($this->user)->getJson("/farm/orders/{$old->token}/status")->assertOk()->json();
+        $this->assertTrue($state['one_plate_required']);
+        $this->assertNull($state['colors_over']);
+        $this->assertCount(3, $state['parts']);
+
+        // the customer's own word still counts
+        $this->assertFalse($start(['by_parts' => 0])->isByParts());
+        $this->assertFalse($start(['by_parts' => 0, 'colors' => 'painted'])->isByParts());
+    }
+
+    public function test_a_design_of_more_colours_than_a_print_takes_opens_and_says_so_with_the_way_back(): void
+    {
+        $file = $this->designOf(5);
+        $this->loadColours($file);
+        $this->assertCount(5, $this->s1->slots()->whereNotNull('farm_color_id')->get(), 'a machine that could feed all five');
+
+        // the order opens (the refusal would leave the customer on the calculation without a way to one colour)
+        $r = $this->actingAs($this->user)->postJson('/farm/orders', ['file' => $file->uuid])->assertCreated();
+        $order = FarmOrder::where('token', basename($r->json('url')))->firstOrFail();
+        $this->assertTrue($order->isByParts());
+        $this->assertLessThanOrEqual(FarmOrder::MAX_COLORS, count(array_unique(array_column($order->partPlates(), 'color_id'))));
+
+        // the page says why at once, with the link to the design
+        $state = $this->actingAs($this->user)->getJson("/farm/orders/{$order->token}/status")->assertOk()->json();
+        $this->assertSame(__('farm.refuse.too_many_colors', ['n' => FarmOrder::MAX_COLORS]), $state['colors_over']['text']);
+        $this->assertSame(__('farm.order.colors_fix'), $state['colors_over']['link']);
+        $this->assertSame(route('tools.'.$file->origin_ref, ['from' => $file->uuid]), $state['colors_over']['url']);
+        $this->actingAs($this->user)->get("/farm/orders/{$order->token}")->assertOk()->assertSee('id="farm-colors-over"', false);
+
+        // one piece in one colour is one tick away, and then there is nothing to say
+        $this->actingAs($this->user)->postJson("/farm/orders/{$order->token}/reslice", ['quality' => $order->quality, 'strength' => $order->strength, 'by_parts' => false])->assertOk();
+        $one = $this->actingAs($this->user)->getJson("/farm/orders/{$order->token}/status")->assertOk()->json();
+        $this->assertFalse($one['by_parts']);
+        $this->assertNull($one['colors_over']);
+        $this->assertSame(5, $one['part_count'], 'the box to tick it back stays');
+
+        // five colours the customer names himself are still refused with the same sentence
+        $slots = $this->s1->slots()->whereNotNull('farm_color_id')->pluck('farm_color_id')->all();
+        $this->actingAs($this->user)->postJson('/farm/orders', ['file' => $file->uuid, 'color' => $slots[0], 'by_parts' => 1, 'part_color' => array_combine(['color_1', 'color_2', 'color_3', 'color_4', 'color_5'], $slots)])
+            ->assertStatus(422)->assertJsonPath('error', 'too_many_colors');
+    }
+
+    public function test_a_design_of_four_colours_says_nothing(): void
+    {
+        $file = $this->designOf(4);
+        $this->loadColours($file);
+        $order = FarmOrder::where('token', basename($this->actingAs($this->user)->postJson('/farm/orders', ['file' => $file->uuid])->assertCreated()->json('url')))->firstOrFail();
+        $this->assertTrue($order->isByParts());
+        $this->assertCount(4, array_unique(array_column($order->partPlates(), 'color_id')));
+        $this->assertNull($this->actingAs($this->user)->getJson("/farm/orders/{$order->token}/status")->assertOk()->json('colors_over'));
+    }
+
     public function test_a_design_that_must_print_on_one_plate_stops_with_a_reason_instead_of_falling_back(): void
     {
         $file = $this->design();

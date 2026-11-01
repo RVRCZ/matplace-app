@@ -23,6 +23,7 @@ use App\Domain\Social\SocialPublisher;
 use App\Domain\Tools\ArtGenerator;
 use App\Domain\YouTube\FarmVideos;
 use App\Engines\Contracts\PaymentGateway;
+use App\Http\Controllers\Api\UploadController;
 use App\Http\Controllers\Controller;
 use App\Models\AnonymousSession;
 use App\Models\Calculation;
@@ -191,7 +192,7 @@ class OrderController extends Controller
         $machine = collect(collect($colors)->firstWhere('id', $preselect)['seconds'] ?? [])->pluck('id')->push($preselect);
         $changePick = array_map(fn ($i) => ($want = (int) ($wantedChanges[$i] ?? 0)) && $machine->contains($want) ? $want : 0, array_keys($changes));
         // by parts: ticked on from the start when the design names different colours for its parts or is a picture of stacked plates
-        $partHex = array_map(fn ($part) => (($file->tool_params['part_colors'][$part]['hex'] ?? null) ?: PaintedColors::partHex($file, $part)) ?: null, array_combine($parts, $parts) ?: []);
+        $partHex = self::partHexes($file, $parts);
         // … or must print its colours together on one plate (a medal with its motif flush): by parts from the start, so the order reaches the one-plate slice
         $byParts = ($wish['by_parts'] ?? null) !== null ? (bool) $wish['by_parts'] : (count($parts) >= 2 && ($file->kind() === ArtGenerator::KIND || $file->onePlateRequired() || count(array_unique(array_filter($partHex))) >= 2));
         // a design in one colour chosen freely on its page (a blue box): the spool nearest to that colour; designs that
@@ -211,12 +212,54 @@ class OrderController extends Controller
             }
         }
         $partPick = [];
+        // the spools picked for the customer stay within what one print takes (a design of 5 colours on a machine of more
+        // spools: the order opens and says so, colours_over); a colour the customer named is refused by OrderService instead
+        $ours = $partWanted && empty($wish['parts']);
+        $used = [(int) $preselect];
         foreach ($parts as $part) {
             $want = (int) ($partWanted[$part] ?? 0);
             $partPick[$part] = $want && $machine->contains($want) && $want !== $preselect ? $want : 0;
+            if ($ours && $partPick[$part] && ! in_array($partPick[$part], $used, true)) {
+                if (count($used) >= FarmOrder::MAX_COLORS) {
+                    $partPick[$part] = 0;
+                } else {
+                    $used[] = $partPick[$part];
+                }
+            }
         }
 
         return ['color' => $preselect, 'changes' => $changePick, 'by_parts' => $byParts && count($parts) >= 2, 'parts' => $partPick];
+    }
+
+    /**
+     * The colour a design names for each of its parts, null when it names none.
+     *
+     * @param  list<string>  $parts
+     * @return array<string, ?string>
+     */
+    private static function partHexes(ModelFile $file, array $parts): array
+    {
+        return array_map(fn ($part) => (($file->tool_params['part_colors'][$part]['hex'] ?? null) ?: PaintedColors::partHex($file, $part)) ?: null, array_combine($parts, $parts) ?: []);
+    }
+
+    /**
+     * A tool's design printed by parts that names more colours than one print takes: what the order page says at once,
+     * with the way back to the colours in the tool (docs/AL.md §14.10). Null otherwise.
+     *
+     * @return array{text: string, link: string, url: ?string}|null
+     */
+    private function colorsOver(FarmOrder $order): ?array
+    {
+        $file = $order->modelFile;
+        if (! $file || $file->origin !== 'tool' || ! $order->isByParts()) {
+            return null;
+        }
+        $hexes = array_map('strtolower', array_filter(self::partHexes($file, array_column($order->partPlates(), 'part'))));
+        if (count(array_unique($hexes)) <= FarmOrder::MAX_COLORS) {
+            return null;
+        }
+
+        return ['text' => __('farm.refuse.too_many_colors', ['n' => FarmOrder::MAX_COLORS]), 'link' => __('farm.order.colors_fix'), 'url' => UploadController::toolOf($file)['url'] ?? null];
     }
 
     /** How far two colours are apart, the way the calculation measures it too (Palette::distance, CIE76 in Lab). */
@@ -430,7 +473,8 @@ class OrderController extends Controller
         $pick = $this->preselect($file, $quality, $from['material'] ?? null, [
             'color' => $data['color'] ?? null,
             'changes' => $data['change_color'] ?? (isset($data['second_color']) ? [$data['second_color']] : null),
-            'by_parts' => $request->has('by_parts') ? $request->boolean('by_parts') : (($data['colors'] ?? null) === 'one' ? false : null),
+            // "in one colour" is a wish of a painted file; on any other it decides nothing (an old link must not switch a design's parts off)
+            'by_parts' => $request->has('by_parts') ? $request->boolean('by_parts') : (($data['colors'] ?? null) === 'one' && PaintedColors::painted($file) ? false : null),
             'parts' => $data['part_color'] ?? null,
         ]);
 
@@ -912,6 +956,7 @@ class OrderController extends Controller
             // how many separately printed parts the design has: two or more, and the order page offers "print them apart"
             'part_count' => $choosing && $order->modelFile ? count(OrderService::designParts($order->modelFile)) : 0,
             'max_colors' => FarmOrder::MAX_COLORS,
+            'colors_over' => $choosing ? $this->colorsOver($order) : null,
             'status' => $order->status,
             'status_text' => $order->statusText(),
             // a big model (docs/AL.md §11): sliced only on the customer's word, the page estimates the price until then

@@ -45,7 +45,7 @@ interface FarmState {
     big?: boolean; choosing?: boolean; slice_minutes?: number | null; slice_run?: number; estimate?: EstimateCfg | null;
     quality: string; strength: string; copies: number; max_copies: number | null; plates: number; plates_done: number; plate_layout: number[]; plate_now: number | null;
     scale: number; raw_bbox: { x: number; y: number; z: number } | null; slot: number | null; printer: { name: string; bed: string } | null;
-    unit: string; unit_guess: { unit: string; confident: boolean } | null; second_slot?: number | null; changes?: Change[]; max_colors?: number; by_parts?: boolean; parts?: Part[]; part_count?: number; one_plate?: boolean; filament_changes?: number; one_plate_required?: boolean; painted_colors?: boolean; offer_one_color?: boolean; repeatable?: boolean;
+    unit: string; unit_guess: { unit: string; confident: boolean } | null; second_slot?: number | null; changes?: Change[]; max_colors?: number; colors_over?: { text: string; link: string; url: string | null } | null; by_parts?: boolean; parts?: Part[]; part_count?: number; one_plate?: boolean; filament_changes?: number; one_plate_required?: boolean; painted_colors?: boolean; offer_one_color?: boolean; repeatable?: boolean;
     settings?: Record<string, number> | null; admin_overrides?: Record<string, string> | null;
     dims: { x: number; y: number; z: number } | null; warnings: string[]; orientation_changed: boolean; supports: boolean; supports_mode: string; color_change_mm: number | null; second_color: { name: string; hex: string } | null;
     minutes: number | null; grams: number | null; meters: number | null; price: Price | null; total: number | null; currency: string;
@@ -815,6 +815,12 @@ export function bootFarmOrder(): void {
             const many = !!s.choosing && (s.part_count ?? 0) >= 2;
             partsBox.classList.toggle('hidden', !many); partsBox.classList.toggle('flex', many);
             ($('farm-by-parts') as HTMLInputElement).checked = wanted.by_parts;
+            const over = $('farm-colors-over');
+            if (over) {
+                const link = s.colors_over?.url ? `<a href="${esc(s.colors_over.url)}" class="font-semibold underline">${esc(s.colors_over.link)}</a>` : '';
+                over.innerHTML = s.colors_over ? `${esc(s.colors_over.text)} ${link}` : '';
+                show(over, !!s.colors_over);
+            }
             $('farm-by-parts-title')!.textContent = tr('farm.order.by_parts', { n: s.part_count ?? 0 });
         }
         const changed = wanted.by_parts !== !!s.by_parts || wanted.quality !== s.quality || wanted.strength !== s.strength || wanted.supports !== (s.supports_mode || 'auto') || wanted.unit !== s.unit || wanted.copies !== (s.copies || 1) || Math.abs(wanted.scale - (s.scale || 1)) > 0.0005 || settingsOf(wanted.settings) !== settingsOf(s.settings);
