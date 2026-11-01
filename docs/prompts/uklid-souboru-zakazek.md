@@ -33,3 +33,14 @@ proto patří do denního `matplace:prune` (routes/console.php, 03:30), první b
 - Větev `feature/order-files-prune` z main 119d28c0 (má #59 i #61). Texty jen přes `lang/src/*.json` + `python scripts/lang_add.py`. JSON po úpravě zkontroluj (`python -c "import json; json.load(open(...))"`). Git add po jménech, bez stash.
 - Nic na produkčním serveru. Žádné mazání souborů mimo test.
 - Docs: nový oddíl v docs/AL.md (§16 Úklid souborů zakázek), řádek TODO #62 doplň po pushi stavem. Po pushi napiš řídícímu (`conceprt19092026-b7`): sha, testy, co se smaže při prvním běhu podle `--dry-run` nejde zjistit lokálně, tak odhad z pravidla.
+
+## Doplnění 1. 11. 2026 večer: modely bez zakázky starší 30 dnů pryč (Roman)
+
+Roman: „modely bez zakázky starší 30 dnů pryč“. Platí pro `models/files` (15 GB, 1525 stl, 10 GB starších 7 dnů), pro soubory anonymní i soubory účtů.
+
+1. Soubor modelu (`ModelFile`) starší 30 dnů (`created_at`, konfigurace `uploads.unordered_retention_days` = 30), na který se nic neváže, se smaže i se složkou (`Storage::disk(ModelFile::DISK)->deleteDirectory($f->dir())`, řádek jako v `PruneData` dnes) a s řádkem v databázi (kalkulace padají kaskádou). „Nic se neváže“ = žádný řádek `farm_orders` v jakémkoli stavu, žádná `inquiries`, `quotes`, `catalog_models`, žádný model návrháře, žádný požadavek generátoru ani další tabulka s `model_file_id`: projdi `grep -rn model_file_id database/migrations app` a každou vazbu zahrň. Soubor s vazbou zůstává bez ohledu na stáří.
+2. Dnešní pravidlo pro anonymní soubory (30 dnů, jen bez majitele) se tím stává podmnožinou; sluč je do jednoho průchodu, ať `matplace:prune` nevypisuje dvě čísla pro totéž.
+3. Důsledky, které musí být vidět: v seznamu souborů účtu věta „Soubory bez objednávky mažeme po 30 dnech“ (lang klíč přes `lang/src`); sdílený odkaz kalkulace (`/c/<token>`) smazaného souboru místo holé 404 řekne, že soubor byl po 30 dnech bez objednávky smazán (stačí, když kalkulace zůstane a soubor chybí, nebo levná stránka 410 s textem; vyber jednodušší a napiš do docs). „Vytisknout znovu“ se netýká, zakázka soubor drží. Návrhy z nástrojů uložené jako `ModelFile` bez zakázky jdou po 30 dnech také pryč; pokud má nástroj vlastní „moje návrhy“, ověř, že seznam neukáže rozbitou položku.
+4. `--dry-run` vypíše počet a GB zvlášť za soubory s účtem a bez účtu; ostrý běh jen počty, ne jména souborů.
+5. Testy: soubor 31 dnů bez vazby (anonymní i s účtem) zmizí včetně složky, soubor 31 dnů se zakázkou v `sliced` zůstane, soubor s katalogovým modelem zůstane, soubor 20 dnů bez vazby zůstane, `--dry-run` nic nemaže.
+6. První běh na produkci dělá řídící: nejdřív `--dry-run`, čísla Romanovi, pak ostrý běh.
