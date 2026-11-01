@@ -2003,5 +2003,7 @@
     "param.badge.tip": "Se imprime en plano, con la cara hacia arriba y sin soportes. Se pega al yoyó con un círculo adhesivo de doble cara, un punto de velcro o pegamento instantáneo. El yoyó no forma parte de la impresión. Con colores a ras se imprime boca abajo y la cara queda lisa desde la cama.",
     "param.bag_charm.tip": "El adorno se imprime con la cara hacia arriba y el perno con la cabeza hacia abajo a su lado, ambos sin soportes. Mida el agujero del bolso y el grosor de su pared; el perno es 0,6 mm más fino que el agujero. Péguelo con pegamento instantáneo. Con colores a ras se imprime boca abajo y la cara queda lisa desde la cama.",
     "param.shape.print.plate.many": "Los colores van uno al lado de otro en las primeras capas y son :c. Eso solo lo imprime una impresora que cambia el filamento sola y tiene :c bobinas; si no, reduzca los colores o fusione algunos.",
-    "param.shape.print.plate.many.farm": "Este diseño tiene :c colores distintos en sus primeras capas. La granja imprime como máximo cuatro en una impresión: reduzca los colores, fusione algunos o descargue las piezas para su impresora."
+    "param.shape.print.plate.many.farm": "Este diseño tiene :c colores distintos en sus primeras capas. La granja imprime como máximo cuatro en una impresión: reduzca los colores, fusione algunos o descargue las piezas para su impresora.",
+    "youtube.video.shown_price": "la pieza terminada y su precio están al final",
+    "youtube.video.shown_plain": "la pieza terminada está al final"
 }

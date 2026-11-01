@@ -43,7 +43,18 @@
             <button class="btn-primary text-sm">{{ $v->status === 'pending' ? 'Nahrát na YouTube a zveřejnit' : 'Zveřejnit na YouTube' }}</button>
         </form>
     @endif
+    @php($rebuild = app(\App\Domain\YouTube\FarmVideos::class)->rebuildState($v))
+    @if($rebuild === 'running')
+        <p class="mt-2 text-xs font-semibold text-action-dark">Staví se znovu, za pár minut obnovte stránku.</p>
+    @elseif($rebuild === 'no_frames' && ! $videoPrices)
+        <p class="mt-2 text-xs text-slate-500">Snímky tisku už jsou smazané (drží se {{ \App\Jobs\BuildFarmTimelapse::KEEP_FRAMES_DAYS }} dní), bez ceny toto video nejde postavit. Pokud cenu ukazuje, zamítněte ho.</p>
+    @elseif($rebuild === 'ready' && ! $videoPrices)
+        <p class="mt-2 text-xs text-slate-500">Ceny ve videích jsou vypnuté. Video postavené dřív může cenu ještě ukazovat, „Postavit znovu“ ji odstraní.</p>
+    @endif
     <div class="mt-2 flex flex-wrap gap-2">
+        @if($rebuild === 'ready')
+            <form method="post" action="{{ route('admin.youtube.rebuild', $v) }}">@csrf<button class="btn-quiet text-sm" title="Postaví Short znovu ze snímků tisku s dnešním nastavením, trvá pár minut">Postavit znovu</button></form>
+        @endif
         @if($v->status === 'uploaded')
             <form method="post" action="{{ route('admin.youtube.replace', $v) }}" onsubmit="return confirm('Smazat soukromou verzi z YouTube a nahrát aktuální video?')">@csrf<button class="btn-quiet text-sm" title="po přestavění videa (php artisan farm:timelapse)">Nahradit novou verzí</button></form>
         @endif

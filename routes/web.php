@@ -614,6 +614,7 @@ Route::middleware(['auth', 'role:admin'])->prefix('admin/youtube')->name('admin.
     Route::post('/videos/{video}/reject', [$yt, 'reject'])->name('reject');
     Route::post('/videos/{video}/retry', [$yt, 'retry'])->name('retry');
     Route::post('/videos/{video}/replace', [$yt, 'replace'])->name('replace');
+    Route::post('/videos/{video}/rebuild', [$yt, 'rebuild'])->name('rebuild');
     Route::post('/videos/{video}/share/{platform}/retry', [$yt, 'shareRetry'])->name('share_retry');
     Route::post('/stats', [$yt, 'stats'])->name('stats');
     Route::post('/showcase', [$yt, 'showcase'])->name('showcase');

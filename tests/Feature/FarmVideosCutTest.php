@@ -2,9 +2,11 @@
 
 namespace Tests\Feature;
 
+use App\Domain\Farm\FarmSettings;
 use App\Domain\YouTube\FarmVideos;
 use App\Domain\YouTube\TimelapseCutter;
 use App\Jobs\BuildFarmTimelapse;
+use App\Jobs\RebuildFarmShort;
 use App\Mail\FarmAdminAlert;
 use App\Models\FarmOrder;
 use App\Models\FarmVideo;
@@ -15,6 +17,7 @@ use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Process\PendingProcess;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Process;
@@ -145,6 +148,119 @@ class FarmVideosCutTest extends TestCase
         $this->assertSame($host.'/tools/figure', $videos->address($order->refresh()));
     }
 
+    public function test_with_the_prices_off_a_short_ends_without_one_and_the_other_cuts_never_had_one(): void
+    {
+        $order = $this->order();
+        $order->forceFill(['price_total' => 1190, 'currency' => 'CZK'])->save();
+        $this->frames($order, 300);
+        $videos = app(FarmVideos::class);
+        $cutter = app(TimelapseCutter::class);
+        $video = FarmVideo::create(['farm_order_id' => $order->id, 'kind' => FarmVideo::KIND_SHORT, 'status' => FarmVideo::STATUS_PENDING, 'title' => 'T', 'youtube_id' => 'vid1']);
+        $priced = fn (array $texts) => array_filter($texts, fn ($t) => str_contains($t, 'Kč'));
+
+        // on, the default: as ever
+        $this->assertTrue(app(FarmSettings::class)->get('video_prices'));
+        $on = $cutter->short($order->refresh());
+        $this->assertMatchesRegularExpression('/^Cena: \d/u', $videos->priceLine($order));
+        $this->assertStringContainsString('short_price.txt', $on->graph);
+        $this->assertStringContainsString('Cena tohoto výtisku: ', $videos->commentText($video));
+        $this->assertStringContainsString('hotový kus a cenu vidíte na konci', $videos->defaultDescription($order));
+
+        // off: no line on the card, the rest of the card where it was; the comment is the call alone; the description says nothing of a price
+        app(FarmSettings::class)->set('video_prices', false);
+        $off = $cutter->short($order);
+        $this->assertSame('', $videos->priceLine($order));
+        $this->assertStringNotContainsString('short_price.txt', $off->graph);
+        foreach (['short_url.txt', 'short_ask.txt'] as $file) {
+            $at = fn (string $graph) => preg_match('/'.preg_quote($file, '/')."':[^,]*(?:,[^,]*)*?:y=([^:]+):/", $graph, $m) ? $m[1] : null;
+            $this->assertNotNull($at($on->graph));
+            $this->assertSame($at($on->graph), $at($off->graph), $file);
+        }
+        $this->assertSame($on->seconds, $off->seconds);
+        $this->assertStringNotContainsString('Kč', $videos->commentText($video));
+        $this->assertStringNotContainsString('Cena', $videos->commentText($video));
+        $this->assertStringContainsString('utm_content=vid1', $videos->commentText($video));
+        $description = $videos->defaultDescription($order);
+        $this->assertStringNotContainsString('cenu', str_replace('hned uvidíte cenu', '', $description));
+        $this->assertStringContainsString('hotový kus vidíte na konci.', $description);
+        $this->assertStringContainsString('Video zveřejňujeme se souhlasem zákazníka.', $description);
+
+        // the other cuts show no amount, whichever way the switch stands
+        $week = $cutter->weekly(collect([$order]), Carbon::parse('2026-10-12', 'Europe/Prague'), Storage::disk('farm')->path('weekly/w.mp4'));
+        foreach ([$cutter->customer($order), $cutter->wide($order), $week] as $cut) {
+            $this->assertSame([], $priced($cut->texts), $cut->kind);
+        }
+        app(FarmSettings::class)->set('video_prices', true);
+        foreach ([$cutter->customer($order), $cutter->wide($order), $cutter->weekly(collect([$order]), Carbon::parse('2026-10-12', 'Europe/Prague'), Storage::disk('farm')->path('weekly/w.mp4'))] as $cut) {
+            $this->assertSame([], $priced($cut->texts), $cut->kind);
+        }
+    }
+
+    public function test_a_waiting_short_is_built_again_without_the_price_and_keeps_the_old_file_when_that_fails(): void
+    {
+        $admin = User::factory()->create();
+        $admin->setRole(User::ROLE_ADMIN, true);
+        $order = $this->order();
+        $disk = Storage::disk('farm');
+        foreach (['timelapse.mp4' => 'customer', 'short.mp4' => 'old'] as $file => $content) {
+            $disk->put($order->dir().'/'.$file, $content);
+        }
+        $order->forceFill(['price_total' => 1190, 'currency' => 'CZK', 'timelapse_short_path' => $order->dir().'/short.mp4'])->save();
+        $this->frames($order, 300);
+        $videos = app(FarmVideos::class);
+        $edited = 'Moje věta. '.$videos->defaultDescription($order);
+        $video = FarmVideo::create(['farm_order_id' => $order->id, 'kind' => FarmVideo::KIND_SHORT, 'status' => FarmVideo::STATUS_PENDING, 'title' => 'T', 'description' => $edited]);
+        $action = route('admin.youtube.rebuild', $video);
+        $this->actingAs($admin)->get('/admin/youtube')->assertOk()->assertSee($action, false)->assertDontSee('Ceny ve videích jsou vypnuté');
+        // only for admins
+        Process::fake();
+        $this->actingAs(User::factory()->create())->post($action)->assertRedirect();
+        Process::assertNothingRan();
+
+        app(FarmSettings::class)->set('video_prices', false);
+        $this->actingAs($admin)->get('/admin/youtube')->assertOk()->assertSee($action, false)->assertSee('„Postavit znovu“ ji odstraní');
+
+        // ffmpeg fails: the file the admin sees stays, the page says so, and it can be pressed again
+        Process::fake(fn () => Process::result(exitCode: 1, errorOutput: 'boom'));
+        $this->actingAs($admin)->post($action)->assertRedirect()->assertSessionHas('status');
+        $this->assertSame('old', $disk->get($order->dir().'/short.mp4'));
+        $this->assertStringContainsString('Postavit znovu se nepovedlo', (string) $video->refresh()->error);
+        $this->assertSame('ready', $videos->rebuildState($video));
+
+        // it works: the new file in place, the customer's video untouched, the waiting text without the price and with the admin's words
+        Process::fake(fn (PendingProcess $p) => file_put_contents(end($p->command), 'new') ? Process::result() : Process::result(exitCode: 1));
+        $this->actingAs($admin)->post($action)->assertRedirect()->assertSessionHas('status');
+        Process::assertRan(fn (PendingProcess $p) => ! str_contains(implode(' ', $p->command), 'short_price.txt') && str_ends_with(end($p->command), 'short.mp4.new.mp4'));
+        $this->assertSame('new', $disk->get($order->dir().'/short.mp4'));
+        $this->assertFalse($disk->exists($order->dir().'/short.mp4.new.mp4'));
+        $this->assertSame('customer', $disk->get($order->dir().'/timelapse.mp4'));
+        $video->refresh();
+        $this->assertSame([FarmVideo::STATUS_PENDING, null], [$video->status, $video->error]);
+        $this->assertStringContainsString('Moje věta. ', (string) $video->description);
+        $this->assertStringContainsString('hotový kus vidíte na konci', (string) $video->description);
+        $this->assertStringNotContainsString('a cenu vidíte', (string) $video->description);
+
+        // while it runs a second press builds nothing
+        Cache::put(RebuildFarmShort::lockKey($video->id), true, 60);
+        $this->assertSame('running', $videos->rebuildState($video));
+        $this->actingAs($admin)->get('/admin/youtube')->assertOk()->assertDontSee($action, false)->assertSee('Staví se znovu');
+        $this->actingAs($admin)->post($action)->assertRedirect()->assertSessionHas('error');
+        Cache::forget(RebuildFarmShort::lockKey($video->id));
+
+        // the frames are gone (14 days): no button, the page says what is left
+        $disk->deleteDirectory($order->dir().'/frames');
+        $this->assertSame('no_frames', $videos->rebuildState($video));
+        $this->actingAs($admin)->get('/admin/youtube')->assertOk()->assertDontSee($action, false)->assertSee('Snímky tisku už jsou smazané');
+        $this->actingAs($admin)->post($action)->assertRedirect()->assertSessionHas('error');
+        $this->assertSame('new', $disk->get($order->dir().'/short.mp4'));
+
+        // a video that is public, or not a Short, has no button at all
+        $video->update(['status' => FarmVideo::STATUS_PUBLISHED]);
+        $this->assertNull($videos->rebuildState($video));
+        $video->update(['status' => FarmVideo::STATUS_PENDING, 'kind' => FarmVideo::KIND_WIDE]);
+        $this->assertNull($videos->rebuildState($video));
+    }
+
     public function test_the_weekly_cut_takes_the_weeks_shareable_prints_with_a_chapter_each_and_waits_for_the_admin(): void
     {
         $this->travelTo(Carbon::parse('2026-10-18 18:00', 'Europe/Prague'));   // Sunday evening: the week 2026-W42 ends
@@ -238,6 +354,31 @@ class FarmVideosCutTest extends TestCase
         $this->assertEqualsWithDelta($report['short']['seconds'] - 0.4, $this->probe($disk->path($order->timelapse_short_path))['seconds'], 0.3);
         $this->assertEqualsWithDelta($report['wide']['seconds'] + 3.0, $this->probe($disk->path($order->timelapse_wide_path))['seconds'], 0.3);
         $this->assertEqualsWithDelta($report['customer']['seconds'] + 3.0, $this->probe($disk->path($order->timelapse_path))['seconds'], 0.3);
+    }
+
+    public function test_a_real_short_built_again_without_the_price_has_the_same_length(): void
+    {
+        $this->ffmpeg();
+        $order = $this->order();
+        $disk = Storage::disk('farm');
+        $order->forceFill(['status' => FarmOrder::STATUS_DONE, 'price_total' => 1190, 'currency' => 'CZK'])->save();
+        $this->frames($order, 200, real: true, layer: true);
+        $disk->put($order->dir().'/photos/left.jpg', $this->picture(200, 'photo'));
+        $order->forceFill(['test_params' => ['photos' => [['file' => $order->dir().'/photos/left.jpg', 'view' => 'left']]]])->save();
+        (new BuildFarmTimelapse($order->id, rebuild: true))->handle();
+        $order->refresh();
+        $with = $this->probe($disk->path($order->timelapse_short_path));
+        $this->samples([], [[$order->timelapse_short_path, $with['seconds'] - 1, 'short-with-price']], $disk);
+        $before = md5_file($disk->path($order->timelapse_short_path));
+
+        app(FarmSettings::class)->set('video_prices', false);
+        $video = FarmVideo::create(['farm_order_id' => $order->id, 'kind' => FarmVideo::KIND_SHORT, 'status' => FarmVideo::STATUS_PENDING, 'title' => 'T']);
+        $this->assertTrue(app(FarmVideos::class)->rebuild($video));
+        $without = $this->probe($disk->path($order->refresh()->timelapse_short_path));
+        $this->assertNotSame($before, md5_file($disk->path($order->timelapse_short_path)));
+        $this->assertEqualsWithDelta($with['seconds'], $without['seconds'], 0.05);
+        $this->assertSame([1080, 1920], [$without['width'], $without['height']]);
+        $this->samples([], [[$order->timelapse_short_path, $without['seconds'] - 1, 'short-no-price']], $disk);
     }
 
     public function test_a_real_weekly_cut_of_three_prints(): void
