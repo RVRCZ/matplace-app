@@ -3,7 +3,7 @@
 // Stránka pro dotaz „medaile na míru 3d tisk“ (docs/AP.md §9). 'heading' = H1 stránky, 'h1' = nadpis obsahu pod nástrojem.
 return [
     'title' => 'Medaile na míru k 3D tisku: zlatá, stříbrná, bronzová',
-    'heading' => 'Medaile na míru k 3D tisku s řetězem',
+    'heading' => 'Medaile na míru k 3D tisku s řetězem nebo na stužku',
     'description' => 'Zlatá, stříbrná nebo bronzová medaile pro 1., 2. a 3. místo s číslicí nebo jménem a řetězem ze 40 článků. Vytiskneme ji, nebo model stáhnete zdarma.',
     'h1' => 'Jak medaile vzniká, co se dá změnit a kolik stojí s řetězem',
     'intro' => [

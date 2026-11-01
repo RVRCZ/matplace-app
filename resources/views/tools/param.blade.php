@@ -16,7 +16,7 @@
     if ($family === 'shape') {
         // the picture in colours: its list of colours, the notes on how it prints, the eyelet
         $i18n += collect(['part.body', 'part.rim', 'part.color', 'colors.share', 'colors.up', 'colors.down', 'colors.merge', 'colors.merge.into', 'colors.split', 'colors.found', 'colors.picture', 'print.one', 'print.swap1', 'print.swap', 'print.many', 'print.multi', 'print.plate', 'print.plate.many',
-            'eyelet.drag', 'eyelet.top', 'each', 'pair', 'part.icing', 'thickened', 'magnet.fact', 'chain.fact', 'pockets.grid', 'pockets.holes', 'pin.fact', 'stand.fact',
+            'eyelet.drag', 'eyelet.top', 'each', 'pair', 'part.icing', 'thickened', 'magnet.fact', 'chain.fact', 'ribbon.fact', 'pockets.grid', 'pockets.holes', 'pin.fact', 'stand.fact',
             // a part may be called by what it is in this tool (the plate of a gingerbread is "the gingerbread")
             ...array_filter(['part.body.'.$kind, 'part.color_1.'.$kind], fn ($k) => \Illuminate\Support\Facades\Lang::has('param.shape.'.$k))])->mapWithKeys(fn ($k) => ['shape.'.$k => \App\Support\NextStep::text(\Illuminate\Support\Facades\Lang::has('param.shape.'.$k.'.'.$kind) ? 'param.shape.'.$k.'.'.$kind : 'param.shape.'.$k)])->all();
     }
@@ -71,7 +71,7 @@
         }
         $sections = $ordered;
     }
-    $first = \App\Domain\Tools\ParametricGenerator::FIRST[$kind] ?? null;      // the choice the first step opens with
+    $firsts = (array) (\App\Domain\Tools\ParametricGenerator::FIRST[$kind] ?? []);      // the choices the first step opens with
     // fields, flags and choices that belong to one choice only: the script hides them for the others
     $whenOf = fn (string $key) => isset($when[$key]) ? 'data-when="'.e($when[$key][0].'='.implode(',', $when[$key][1])).'"' : '';
     // which wall of the model a size moves when it is dragged in the viewer (x width, y depth, z height)
@@ -130,7 +130,7 @@
     {{-- 1 · what it is made from: a preset to start with, the text, the picture, the kind of thing --}}
     @if($hasInput)
     <x-tool-section id="input" :title="$sections['input']">
-        @if($first && isset($plainChoices[$first]))
+        @foreach(array_intersect($firsts, $plainChoices->keys()->all()) as $first)
             {{-- what is made of the picture comes before the picture: the rest of the step depends on it --}}
             <fieldset>
                 <legend class="lbl">{{ $tr('c', $first) }}</legend>
@@ -141,7 +141,7 @@
                 </div>
                 @if(\Illuminate\Support\Facades\Lang::has('param.c.'.$kind.'.'.$first.'.hint'))<p class="hint mt-1 !text-xs">{{ __('param.c.'.$kind.'.'.$first.'.hint') }}</p>@endif
             </fieldset>
-        @endif
+        @endforeach
         @if($presets)
             <fieldset>
                 <legend class="lbl">{{ __('param.presets') }}</legend>
@@ -292,7 +292,7 @@
         @endif
 
         @foreach($plainChoices as $key => $options)
-            @continue($at($key, 'input') !== 'input' || $key === $first)
+            @continue($at($key, 'input') !== 'input' || in_array($key, $firsts, true))
             @if($key === 'typeface' && count($options) > 4)
                 @include('tools._fonts')
                 @continue
@@ -415,7 +415,9 @@
         @endif
 
         @if($fieldsAt('size')->count() > count($main))
-        <details class="text-sm">
+        {{-- when all that is in it belongs to one choice (a medal's eyelet), it folds away with them: no heading over nothing --}}
+        @php($moreWhen = $fieldsAt('size')->keys()->reject(fn ($k) => in_array($k, $main, true))->map(fn ($k) => $whenOf($k))->unique())
+        <details class="text-sm" {!! $moreWhen->count() === 1 ? $moreWhen->first() : '' !!}>
             <summary class="cursor-pointer font-medium text-ink underline decoration-line underline-offset-4">{{ __('param.more') }}</summary>
             <div class="mt-3 grid grid-cols-2 gap-3">
                 @foreach($fieldsAt('size') as $key => $f)

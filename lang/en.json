@@ -1803,7 +1803,7 @@
     "param.flag.medallion.border": "Rim",
     "param.flag.medallion.border.hint": "A 2 mm border round the medal in the motif's colour.",
     "param.medallion.depth.hint": "Only in these layers does the printer switch between two spools; above them it prints in one colour. Changes by the slice: 0.4 mm ≈ 2, 0.6 mm ≈ 4, 0.8 mm ≈ 4, 1.0 mm ≈ 6.",
-    "param.part.body.medallion": "Medal and chain",
+    "param.part.body.medallion": "Medal",
     "param.part.color_1.medallion": "Number and rim",
     "param.part.body.box": "Box only",
     "param.part.layer": "Layer :n",
@@ -2003,5 +2003,16 @@
     "param.badge.tip": "It prints flat, face up, without supports. It is glued on the reel: with a double-sided sticky dot, a hook-and-loop dot or superglue. The badge reel itself is not part of the print. With flush colours it prints face down, so the face is smooth from the bed.",
     "param.bag_charm.tip": "The charm prints face up and the pin head down next to it, both without supports. Measure the hole of the bag and the thickness of its wall; the pin is 0.6 mm thinner than the hole. Glue it in with superglue. With flush colours it prints face down, so the face is smooth from the bed.",
     "param.shape.print.plate.many": "The colours lie side by side in the first layers and there are :c of them. Only a printer that changes filament by itself and holds :c spools can print that; otherwise reduce the colours or merge some.",
-    "param.shape.print.plate.many.farm": "This design has :c different colours in its first layers. The farm prints at most four in one print: reduce the colours, merge some, or download the parts for your own printer."
+    "param.shape.print.plate.many.farm": "This design has :c different colours in its first layers. The farm prints at most four in one print: reduce the colours, merge some, or download the parts for your own printer.",
+    "param.c.medallion.hang": "How it hangs",
+    "param.c.medallion.hang.hint": "Chain: an eyelet and links printed next to the medal. Ribbon: a loop with a slot as wide as your ribbon, no chain is printed.",
+    "param.o.chain": "Chain",
+    "param.o.ribbon": "Ribbon",
+    "param.f.ribbon_w": "Ribbon width",
+    "param.medallion.ribbon_w.hint": "The slot is 1 mm wider. Common medal ribbons are 20, 22 and 25 mm, a cord 10 to 15 mm.",
+    "param.shape.ribbon.fact": "Slot for the ribbon :w × :h mm.",
+    "param.medallion.lead": "A medal for the winners: 1st, 2nd and 3rd place, with a chain or a loop for a ribbon. A gold, silver or bronze medal with a red number and rim, flush with the plate or raised; a chain of links that snap into one another is printed right next to it, the loop has a slot as wide as your ribbon.",
+    "param.medallion.tip": "A flush motif prints face down: two colours in the same layers, one plate on a printer with a spool changer. A raised one prints face up with one change of filament. The links are round; hook them into one another and the first one into the eyelet. A chain of hard plastic is not for the necks of small children without supervision. The loop prints in one piece with the medal; a ribbon up to 1 mm goes through the slot even folded in half.",
+    "tools.medallion.title": "Medal for the winners, on a chain or a ribbon",
+    "tools.medallion.hint": "A medal for the winners: 1st, 2nd and 3rd place, on a chain or a ribbon, printed in gold, silver and bronze."
 }

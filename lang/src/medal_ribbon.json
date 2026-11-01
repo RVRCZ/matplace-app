@@ -1,0 +1,57 @@
+{
+    "param.c.medallion.hang": [
+        "Zavěšení",
+        "How it hangs",
+        "Cómo se cuelga"
+    ],
+    "param.c.medallion.hang.hint": [
+        "Řetěz: očko a články vytištěné vedle medaile. Stužka: poutko se štěrbinou podle šířky stužky, řetěz se netiskne.",
+        "Chain: an eyelet and links printed next to the medal. Ribbon: a loop with a slot as wide as your ribbon, no chain is printed.",
+        "Cadena: una argolla y eslabones impresos junto a la medalla. Cinta: una presilla con una ranura del ancho de su cinta, sin cadena."
+    ],
+    "param.o.chain": [
+        "Řetěz",
+        "Chain",
+        "Cadena"
+    ],
+    "param.o.ribbon": [
+        "Stužka",
+        "Ribbon",
+        "Cinta"
+    ],
+    "param.f.ribbon_w": [
+        "Šířka stužky",
+        "Ribbon width",
+        "Ancho de la cinta"
+    ],
+    "param.medallion.ribbon_w.hint": [
+        "Štěrbina je o 1 mm širší. Běžné stužky na medaile mají 20, 22 a 25 mm, šňůrka 10 až 15 mm.",
+        "The slot is 1 mm wider. Common medal ribbons are 20, 22 and 25 mm, a cord 10 to 15 mm.",
+        "La ranura es 1 mm más ancha. Las cintas habituales para medallas miden 20, 22 y 25 mm, un cordón de 10 a 15 mm."
+    ],
+    "param.shape.ribbon.fact": [
+        "Štěrbina na stužku :w × :h mm.",
+        "Slot for the ribbon :w × :h mm.",
+        "Ranura para la cinta de :w × :h mm."
+    ],
+    "param.medallion.lead": [
+        "Medaile pro vítěze: 1., 2. a 3. místo, s řetězem nebo s poutkem na stužku. Zlatá, stříbrná nebo bronzová medaile s červenou číslicí a lemem, zarovnanými s plackou, nebo vystouplými; řetěz z článků, které do sebe zacvaknete, hned vedle, poutko se štěrbinou podle šířky stužky.",
+        "A medal for the winners: 1st, 2nd and 3rd place, with a chain or a loop for a ribbon. A gold, silver or bronze medal with a red number and rim, flush with the plate or raised; a chain of links that snap into one another is printed right next to it, the loop has a slot as wide as your ribbon.",
+        "Una medalla para los ganadores: 1.º, 2.º y 3.er puesto, con cadena o con una presilla para cinta. Medalla de oro, plata o bronce con número y borde rojos, a ras de la placa o en relieve; al lado se imprime una cadena de eslabones que encajan unos en otros, y la presilla tiene una ranura del ancho de su cinta."
+    ],
+    "param.medallion.tip": [
+        "Zarovnaný motiv se tiskne lícem dolů: dvě barvy v týchž vrstvách, jedna podložka na tiskárně s měničem cívek. Vystouplý lícem nahoru s jednou výměnou filamentu. Články mají kulatý průřez, zaháknete je do sebe a první do očka. Řetěz z tvrdého plastu nepatří na krk malým dětem bez dozoru. Poutko se tiskne s medailí v jednom kuse; stužku do 1 mm provlečete štěrbinou i napůl složenou.",
+        "A flush motif prints face down: two colours in the same layers, one plate on a printer with a spool changer. A raised one prints face up with one change of filament. The links are round; hook them into one another and the first one into the eyelet. A chain of hard plastic is not for the necks of small children without supervision. The loop prints in one piece with the medal; a ribbon up to 1 mm goes through the slot even folded in half.",
+        "El motivo enrasado se imprime boca abajo: dos colores en las mismas capas, una placa en una impresora con cambiador de bobinas. El motivo en relieve, boca arriba con un cambio de filamento. Los eslabones son redondos: engánchelos entre sí y el primero en la argolla. Una cadena de plástico duro no es para el cuello de niños pequeños sin supervisión. La presilla se imprime en una sola pieza con la medalla; una cinta de hasta 1 mm pasa por la ranura incluso doblada por la mitad."
+    ],
+    "tools.medallion.title": [
+        "Medaile pro vítěze s řetězem nebo na stužku",
+        "Medal for the winners, on a chain or a ribbon",
+        "Medalla para los ganadores, con cadena o cinta"
+    ],
+    "tools.medallion.hint": [
+        "Medaile pro vítěze: 1., 2. a 3. místo, s řetězem nebo na stužku, tiskneme ve zlaté, stříbrné a bronzové.",
+        "A medal for the winners: 1st, 2nd and 3rd place, on a chain or a ribbon, printed in gold, silver and bronze.",
+        "Medalla para los ganadores: 1.º, 2.º y 3.er puesto, con cadena o cinta, impresa en oro, plata y bronce."
+    ]
+}

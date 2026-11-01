@@ -84,8 +84,6 @@ return [
     'photo_organizer.title' => 'Organizer in the shape of a picture',
     'photo_organizer.hint' => 'A holder for pencils, make-up or toothbrushes that follows the outline of a picture, with compartments or round holes.',
     'photo_organizer.action' => 'Design an organizer',
-    'medallion.title' => 'Medal for the winners, on a chain',
-    'medallion.hint' => 'A medal for the winners: 1st, 2nd and 3rd place, with a chain, printed in gold, silver and bronze.',
     'medallion.action' => 'Design a medal',
     'text.title' => '3D text that stands',
     'text.hint' => 'Thick letters on a foot: a name, a word or a short message, up to three lines in thirty typefaces.',

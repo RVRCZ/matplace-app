@@ -906,6 +906,39 @@ Kde se žehlí (součet drah `;TYPE:Ironing` podle výšky, kolo 5):
 - jestli jde článek s přesahem 3,6 mm zacvaknout rukou bez prasknutí,
 - jak vypadá žehlený rub medaile.
 
+### 8e. Poutko na stužku (1. 11. 2026, session 3, TODO #59)
+
+Zadání `docs/prompts/medaile-poutko.md`, větev `feature/medal-ribbon`. Roman: „pro medaili by to chtělo i poutko na stužku, ne
+jen očko na řetěz; šíře by měla být volitelná“ (`docs/img/zadani-medaile-poutko.png`).
+
+- Volba `hang` hned za `motif` (`FIRST` je teď seznam): `chain` = očko a řetěz, výchozí, model se nemění (objem a rozměry v testu
+  proti číslům před změnou), `ribbon` = poutko. Předvolby `hang` nenastavují: kdo zvolí stužku a klikne na „2. místo“, zůstane
+  na stužce; uložené návrhy bez `hang` zůstávají s řetězem. Čtvrtou předvolbu jsem nepřidal, není potřeba.
+- Poutko (`_ribbon_loop` v `shape_kinds.py`): štěrbina `ribbon_w` + 1 × 3 mm, rohy zaoblené 0,8 mm, příčka 3 mm, jazýček o 4 mm
+  širší na každé straně, horní rohy 2 mm. Štěrbina začíná 1,5 mm nad obrysem. Ramena: hull spodní hrany jazýčku s pásem uvnitř
+  obrysu, o 3 mm širším na každé straně, kde na to medaile stačí (nejhlouběji 12 mm). Pole `ribbon_w` 10 až 40 mm, výchozí 20,
+  jen u stužky; `eye_hole`, `eye_wall` a `links` jen u řetězu. `notes.ribbon` = `{w, slot, bar, tab, x, y}`.
+- **Odchylka od zadání:** štěrbina stojí nad nejvyšším bodem obrysu **v celé šířce jazýčku**, ne jen na ose. U srdce je na ose
+  zářez a boule po stranách jsou výš; podle osy by štěrbina prořízla boule s motivem a lemem. Jinak to vychází stejně (kruh,
+  šestiúhelník, štít, osmiúhelník, rozeta, hvězda). Rameno u srdce sahá pod zářez, aby nezbylo okénko. Štěrbina se i tak odečítá
+  z vrstev i lemu.
+- Hvězda: špička je užší než jazýček v každé hloubce, ramena se do ní zužují (nálevka). Nejširší stužka na nejmenší medaili:
+  jazýček 49 mm přesahuje medaili 40 mm, model je platný, žádné varování nepřidávám.
+- Název dílu `body`: **neutrální „Medaile“ (en Medal, es Medalla) pro obě varianty.** Menší zásah: jeden text, `parts.ts` ani
+  `OrderService::partLabel` se nemění. Název podle parametrů by znamenal předat parametry do `partLabel` na všech místech volání
+  (stránka nástroje, panel kalkulace, objednávka). Navíc „Medaile a řetěz“ bylo nepravdivé už u `links = 0`. Že je řetěz v tomtéž
+  dílu, říká tip a údaj o článcích na stránce.
+- Chipy: `ParametricGenerator::CHOICE_ICONS` (`body` → `SHAPE_ICONS`, `hang` → `chain`, `ribbon`), `tools/_choice.blade.php` obecně,
+  ikony `i-hang-*` za `i-shape-*`. Text v `title`, `aria-label` i pod ikonou.
+- Texty `lang/src/medal_ribbon.json`; `lead`, `tip`, `title`, `hint` medaile zmizely ze skupin `lang/*/param.php` a `tools.php`,
+  JSON má přednost a druhá kopie by zastarala. Název nástroje se změnil, proto i `heading` v `lang/*/tools_seo/medallion.php`;
+  zbytek stránky pro vyhledávače jsem neměnil.
+- Ověřeno: testy `ShapeToolsTest` (štěrbina prázdná v celé tloušťce lícem dolů i nahoru, stěny a příčka, jazýček 34 mm, sedm tvarů
+  jedno těleso), `ToolPageTest`. Chrome lokálně cs a es na 1280 a 390 px: `--flows=medal-ribbon`, `medal-chips` (chipy, co ukazují a skrývají, bez vodorovného posuvu; „2. místo“ nechá stužku); en jen testem.
+- **Ověří až tisk:** příčka 3 × 4,4 mm drží tah za stužku; štěrbina 3 mm stačí pro stužku 1 mm; rohy jazýčku a štěrbiny po zaoblení
+  hran medaile (na vrchu při tisku je štěrbina o 2 mm vyšší a příčka tam má jen 1 mm).
+- Snímky `docs/img/medal-ribbon.png`, `medal-ribbon-chips-1280.png`, `medal-ribbon-chips-390.png`.
+
 ## 9. Brčko: text podél, klipy po délce, průměr (29. 10. 2026, session G)
 
 Zadání `docs/prompts/brcko-text-podel.md` (TODO #55), větev `feature/straw-along`. Roman u `/tools/straw-topper`:

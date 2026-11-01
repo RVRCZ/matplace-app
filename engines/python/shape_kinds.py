@@ -31,7 +31,8 @@ A straw topper may also lie along the straw (`text_dir` "along"): its name is tu
 
 The bag_charm is glued on a bag with holes: a pocket in its back takes the pin that comes through the hole from inside.
 
-The medallion is a round or star plate with an eyelet and, next to it on the bed, the open links of its chain.
+The medallion is a round or star plate with an eyelet and, next to it on the bed, the open links of its chain; or, instead of
+both (`hang` = ribbon), a flat loop on top of it with a slot for a ribbon.
 
 The photo_organizer is the same dish grown tall: walls along the outline of the picture, and inside them a grid of
 dividers, a block with round holes, or one open pocket.
@@ -49,7 +50,7 @@ PRODUCTS = ("charm", "keychain", "earrings", "ornament", "magnet", "coaster", "g
 LIMITS = {
     "width": (10, 250), "height": (6, 250), "wall": (1.2, 3), "thickness": (1.2, 15), "frame": (0, 10), "relief": (0.2, 2), "colors_n": (1, 8), "bg_strength": (0, 100), "smooth": (0, 1),
     "contrast": (50, 150), "brightness": (50, 150), "saturation": (0, 200), "eye_pos": (0, 100), "eye_hole": (1.5, 8), "eye_wall": (1.2, 4),
-    "mag_d": (4, 30), "mag_h": (0.4, 6), "mag_gap": (0, 0.4), "text_size": (30, 150), "text_y": (-60, 60), "spike": (30, 100), "spikes": (1, 2), "links": (0, 80), "depth": (0.4, 1.0), "motif_size": (20, 95), "cell": (20, 80), "hole_d": (8, 40), "bag_hole": (6, 20), "bag_wall": (1, 10), "straw_d": (5, 14),
+    "mag_d": (4, 30), "mag_h": (0.4, 6), "mag_gap": (0, 0.4), "text_size": (30, 150), "text_y": (-60, 60), "spike": (30, 100), "spikes": (1, 2), "links": (0, 80), "ribbon_w": (10, 40), "depth": (0.4, 1.0), "motif_size": (20, 95), "cell": (20, 80), "hole_d": (8, 40), "bag_hole": (6, 20), "bag_wall": (1, 10), "straw_d": (5, 14),
 }
 BODIES = {"charm": ("image", "circle", "oval", "rect", "heart", "hex", "star"), "keychain": ("rect", "image", "circle"), "earrings": ("image", "circle"), "ornament": ("image", "circle", "star"),
           "magnet": ("image", "circle", "rect"), "coaster": ("circle", "square", "hex"), "gingerbread": ("image",), "name_letter": ("image",), "cookie": ("image", "circle"), "topper": ("image",), "tray": ("image", "circle"), "badge": ("image", "circle", "rect"), "medallion": ("circle", "star", "hex", "shield", "octagon", "rosette", "heart"), "photo_organizer": ("image", "circle"), "bag_charm": ("image", "circle", "rect"), "straw": ("image", "circle"), "opener": ("image", "circle", "rect")}
@@ -236,6 +237,10 @@ LINK_HEIGHT = 4.0                # 20 layers of 0.2, 10 under the bar's axis and
 LINK_OVERHANG = 45.0             # the steepest the underside of a link leans out, from the vertical: prints without supports
 LINK_SLICES = 16                 # points up each side of the round bar's profile
 MEDAL_ROUND = 1.0                # a medal's outline is rounded by this much at its top and its bottom
+# the loop of a medal on a ribbon: the slot as wide as the ribbon and a little more, high enough for a ribbon of 1 mm folded in
+# half; the bar over it and the sides beside it; how far the slot stands off the outline; the shoulders into the medal
+RIBBON_SLACK, RIBBON_SLOT, RIBBON_BAR, RIBBON_SIDE, RIBBON_CORNER, RIBBON_OFF = 1.0, 3.0, 3.0, 4.0, 2.0, 1.5
+RIBBON_ARM, RIBBON_INTO = 3.0, 12.0
 MEDAL_STEPS = 10                 # slabs of each rounded edge: a tenth of a millimetre, finer than a layer
 
 
@@ -328,6 +333,46 @@ def _fused(M, solids):
     for s in solids[1:]:
         out = out + s
     return out
+
+
+def _ribbon_loop(C, outline, ribbon_w):
+    """
+    The loop of a medal on a ribbon, straight above its middle: returns the tab with its shoulders, the slot, and its note.
+    The slot stands over the highest point under the tab, so a heart's lobes beside its cleft keep their motif and rim. The
+    shoulders run from under the slot to a band inside the outline, wider than the tab where the medal is wide enough (a
+    hull, no sharp corner where a pull on the ribbon would crack it), and below the outline on the axis (a heart's cleft
+    stays no window). A star's tip is narrower than the tab at any depth: the shoulders narrow into it.
+    """
+    x0, y0, x1, y1 = outline.bounds()
+    mid = (x0 + x1) / 2
+    slot_w = ribbon_w + RIBBON_SLACK
+    tab_w = slot_w + 2 * RIBBON_SIDE
+    across = lambda x, w: C.square([w, y1 - y0 + 2]).translate([x - w / 2, y0 - 1])     # noqa: E731
+    top = (outline ^ across(mid, tab_w)).bounds()[3]
+    axis = (outline ^ across(mid, 0.4)).bounds()[3]
+    slot_y = top + RIBBON_OFF
+    up = slot_y + RIBBON_SLOT + RIBBON_BAR
+
+    def half_at(y):
+        cx0, _, cx1, _ = (outline ^ C.square([x1 - x0 + 2, 0.2]).translate([x0 - 1, y])).bounds()
+        return min(mid - cx0, cx1 - mid)
+
+    want = tab_w / 2 + RIBBON_ARM
+    level = top - RIBBON_INTO
+    for i in range(1, int(RIBBON_INTO / 0.5) + 1):
+        if half_at(top - i * 0.5) >= want + 0.5:
+            level = top - i * 0.5
+            break
+    level = min(level, axis - 1.0)
+    half = max(min(half_at(level) - 0.5, want), 0.5)         # the band's ends inside the outline: no sliver along it
+    edge = C.square([tab_w, 0.05]).translate([mid - tab_w / 2, slot_y])
+    r = RIBBON_CORNER
+    tab = (edge + C.circle(r, 32).translate([mid - tab_w / 2 + r, up - r]) + C.circle(r, 32).translate([mid + tab_w / 2 - r, up - r])).hull()
+    shoulders = (edge + C.square([2 * half, 0.05]).translate([mid - half, level])).hull()
+    c = 0.8                                                  # the slot's corners: round, nothing for a crack to start from
+    corners = [C.circle(c, 16).translate([mid + sx * (slot_w / 2 - c), slot_y + sy]) for sx in (-1, 1) for sy in (c, RIBBON_SLOT - c)]
+    slot = (corners[0] + corners[1] + corners[2] + corners[3]).hull()
+    return tab + shoulders, slot, {"w": round(ribbon_w, 1), "slot": [round(slot_w, 1), RIBBON_SLOT], "bar": RIBBON_BAR, "tab": round(tab_w, 1), "x": round(mid, 2), "y": round(slot_y + RIBBON_SLOT / 2, 2)}
 
 
 def _chain(M, count, medal_w, medal_h):
@@ -473,6 +518,10 @@ def build(M, Invalid, p, product):
     motif = p.get("motif", "flush") if medal else None
     if medal and motif not in ("flush", "raised"):
         raise Invalid("bad_choice", "motif")
+    # how it hangs: an eyelet with a chain beside it on the bed, or a loop with a slot for a ribbon and no chain (docs/P.md §8e)
+    ribbon = medal and p.get("hang", "chain") == "ribbon"
+    if medal and p.get("hang", "chain") not in ("chain", "ribbon"):
+        raise Invalid("bad_choice", "hang")
     # a flat plate with its colours flush prints the same way: the first layers are the face, smooth, its colours sharply
     # apart and nothing to iron (docs/P.md §11). A cookie's round top, a letter's stand, a straw's clip stay face up
     face_down = (medal and (motif == "flush" or bool(p.get("inlay", False)))) or (flush and product in FLUSH_DOWN)
@@ -481,7 +530,7 @@ def build(M, Invalid, p, product):
     border = medal and bool(p.get("border", True))
     if medal:
         flush, rim, bevel = False, False, False
-    eyelet = (bool(p.get("eyelet", False)) and product in ("charm", "keychain", "earrings", "ornament", "gingerbread")) or (bool(p.get("hang", False)) and product in ("cookie", "name_letter")) or medal
+    eyelet = (bool(p.get("eyelet", False)) and product in ("charm", "keychain", "earrings", "ornament", "gingerbread")) or (bool(p.get("hang", False)) and product in ("cookie", "name_letter")) or (medal and not ribbon)
     biscuit = product == "cookie"                             # a picture or a silhouette as dough, icing piped on it by hand
     cookie = product in ("gingerbread", "name_letter", "topper")      # the shape is ours, the visitor brings the name
     warn = []
@@ -657,6 +706,9 @@ def build(M, Invalid, p, product):
         held = medal or (ring_out ^ body2d).area() < ring_out.area() / 3
         body2d = body2d + ring_out + (neck - hole2d) if held else body2d + ring_out
         notes["eyelet"] = {"x": round(cx, 2), "y": round(cy, 2), "hole": hole_d}
+    if ribbon:
+        tab2d, hole2d, notes["ribbon"] = _ribbon_loop(C, body2d, n("ribbon_w", 20))
+        body2d = body2d + tab2d
     foot = None
     if product == "name_letter" and bool(p.get("stand", False)):
         # a letter that would not stand by itself gets a foot under its lowest part and a base with a slot for it. The base
@@ -741,7 +793,7 @@ def build(M, Invalid, p, product):
         t = round(mag_h + 0.8, 2)                             # a floor of four layers over the magnet
         notes["thickened"] = t
     depth = n("depth", 0.6) if medal else INLAY
-    if medal and not face_down and int(n("links", 40)) > 0:
+    if medal and not ribbon and not face_down and int(n("links", 40)) > 0:
         tall = math.ceil(_link_profile(LINK[2])[0] / 0.2 - 1e-6) * 0.2
         if t < tall - 1e-6:
             # a change of filament by height colours everything above it on the bed, links too: they stay under the plate's top
@@ -761,6 +813,8 @@ def build(M, Invalid, p, product):
         lem2d = medal2d - medal2d.offset(-2.0, J, 2.0, 32)
         if ring_out is not None:
             lem2d = lem2d - ring_out.offset(0.01, J, 2.0, 24)
+        if ribbon:
+            lem2d = lem2d - hole2d
         if not lem2d.is_empty():
             layers[0]["own"] = layers[0]["own"] + lem2d
             layers[0]["stack"] = layers[0]["stack"] + lem2d
@@ -871,7 +925,7 @@ def build(M, Invalid, p, product):
     if product == "medallion":
         # the links lie round the medal on the bed and belong to its plate: one part, one filament
         bx0, by0, bx1, by1 = body2d.bounds()
-        asked = int(n("links", 40))
+        asked = 0 if ribbon else int(n("links", 40))
         chain = _chain(M, asked, bx1 - bx0, by1 - by0)
         if chain is not None:
             links = chain[0].translate([bx0, by0, 0])
@@ -1060,6 +1114,8 @@ def build(M, Invalid, p, product):
             notes["outline"] = [[round(c - o, 1) for c, o in zip(S.along(travel, i / 120.0)[:2], (x0, y0))] for i in range(120)]
         notes["eyelet"]["x"], notes["eyelet"]["y"] = round(notes["eyelet"]["x"] - x0, 2), round(notes["eyelet"]["y"] - y0, 2)
         notes["eyelet"]["z"] = round(t, 2)
+    if "ribbon" in notes:
+        notes["ribbon"]["x"], notes["ribbon"]["y"] = round(notes["ribbon"]["x"] - x0, 2), round(notes["ribbon"]["y"] - y0, 2)
     if "magnet" in notes:
         notes["magnet"]["x"], notes["magnet"]["y"] = round(notes["magnet"]["x"] - x0, 2), round(notes["magnet"]["y"] - y0, 2)
     return parts, notes

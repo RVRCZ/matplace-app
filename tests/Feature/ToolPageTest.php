@@ -342,6 +342,37 @@ class ToolPageTest extends TestCase
         }
     }
 
+    public function test_the_medal_hangs_on_a_chain_first_and_offers_a_ribbon_as_chips_with_icons(): void
+    {
+        // the places change nothing of how it hangs: saved designs and presets stay on their chain
+        foreach (ParametricGenerator::presets('medallion') as $preset) {
+            $this->assertArrayNotHasKey('hang', $preset);
+        }
+        foreach (['cs' => ['Řetěz', 'Stužka', 'Šířka stužky', 'Zavěšení'], 'en' => ['Chain', 'Ribbon', 'Ribbon width', 'How it hangs'], 'es' => ['Cadena', 'Cinta', 'Ancho de la cinta', 'Cómo se cuelga']] as $lang => $words) {
+            $page = $this->get($this->localized('/tools/medallion', $lang))->assertOk();
+            foreach ($words as $word) {
+                $page->assertSee($word);
+            }
+            $html = $page->getContent();
+            $this->assertMatchesRegularExpression('/<input(?=[^>]*data-choice="hang" value="chain")(?=[^>]*\schecked)(?=[^>]*aria-label="'.$words[0].'")/', $html, $lang);
+            $this->assertStringContainsString('aria-label="'.$words[1].'"', $html);
+            $this->assertStringContainsString('title="'.$words[1].'"', $html);
+            $this->assertStringContainsString('href="#i-hang-chain"', $html);
+            $this->assertStringContainsString('href="#i-hang-ribbon"', $html);
+            $this->assertStringContainsString('id="i-hang-ribbon"', $html);
+            $this->assertMatchesRegularExpression('/data-when="hang=ribbon" data-field="ribbon_w"/', $html);
+            $this->assertMatchesRegularExpression('/data-when="hang=chain" data-field="links"/', $html);
+            // the eyelet's sizes are all that is under "more": on a ribbon no heading stays over nothing
+            $this->assertMatchesRegularExpression('/<details class="text-sm" data-when="hang=chain">/', $html);
+            $this->assertMatchesRegularExpression('/<label[^>]*data-when="hang=chain"[^>]*>[^<]*<span[^>]*>\s*<input data-param="eye_hole"/', $html);
+            // right after the motif, before anything else of the step
+            $this->assertLessThan(strpos($html, 'data-choice="hang"'), strpos($html, 'data-choice="motif"'));
+            $this->assertLessThan(strpos($html, 'data-preset="place1"'), strpos($html, 'data-choice="hang"'));
+        }
+        // no other choice got an icon
+        $this->assertStringNotContainsString('href="#i-motif-', $this->get('/tools/medallion')->getContent());
+    }
+
     public function test_the_parametric_page_keeps_its_fields_and_adds_sliders_units_and_colours(): void
     {
         $html = (string) $this->get('/tools/box')->assertOk()->getContent();

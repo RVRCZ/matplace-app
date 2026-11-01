@@ -84,8 +84,6 @@ return [
     'photo_organizer.title' => 'Organizador con forma de imagen',
     'photo_organizer.hint' => 'Un organizador para lápices, maquillaje o cepillos de dientes que sigue el contorno de una imagen, con compartimentos u orificios redondos.',
     'photo_organizer.action' => 'Diseñar un organizador',
-    'medallion.title' => 'Medalla para los ganadores, con cadena',
-    'medallion.hint' => 'Medalla para los ganadores: 1.º, 2.º y 3.er puesto, con cadena, impresa en oro, plata y bronce.',
     'medallion.action' => 'Diseñar una medalla',
     'text.title' => 'Texto 3D que se sostiene de pie',
     'text.hint' => 'Letras gruesas sobre un pie: un nombre, una palabra o un mensaje corto, hasta tres líneas en treinta tipografías.',

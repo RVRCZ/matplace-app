@@ -31,7 +31,7 @@ interface ShapeColor { part: string; index: number; rgb: string; code: string; h
 interface ShapeNotes {
     colors?: ShapeColor[]; paint?: Record<string, string>; parts?: string[]; body_color?: { code: string; hex: string }; rim_color?: { code: string; hex: string };
     filaments?: number; multi_material?: boolean; one_plate_required?: boolean; color_changes?: { z: number }[]; found?: number; wanted?: number; each?: number[]; copies?: number;
-    eyelet?: { x: number; y: number; z: number }; outline?: [number, number][]; thickened?: number; magnet?: { d: number; h: number; mount: string }; chain?: { links: number; length: number }; pockets?: { kind: string; count: number; depth: number }; pin?: { d: number; head: number; height: number }; stand?: number[]; source?: string;
+    eyelet?: { x: number; y: number; z: number }; outline?: [number, number][]; thickened?: number; magnet?: { d: number; h: number; mount: string }; chain?: { links: number; length: number }; ribbon?: { w: number; slot: [number, number]; bar: number }; pockets?: { kind: string; count: number; depth: number }; pin?: { d: number; head: number; height: number }; stand?: number[]; source?: string;
     frame?: [number, number, number]; draw_z?: number;
     layers?: { part: string; index: number; box: [number, number, number, number]; z: number }[]; outer?: number[];
 }
@@ -159,6 +159,8 @@ export function bootParam(stage: Stage): void {
         if (shape && magnet && magnet.mount !== 'through') facts.push(t('shape.magnet.fact', { d: nf.format(magnet.d), h: nf.format(magnet.h) }));
         const chain = shapeNotes().chain;
         if (shape && chain) facts.push(t('shape.chain.fact', { n: chain.links, l: nf.format(chain.length / 10) }));
+        const ribbon = shapeNotes().ribbon;
+        if (shape && ribbon) facts.push(t('shape.ribbon.fact', { w: nf.format(ribbon.slot[0]), h: nf.format(ribbon.slot[1]) }));
         const pin = shapeNotes().pin;
         if (shape && pin) facts.push(t('shape.pin.fact', { d: nf.format(pin.d), h: nf.format(pin.head), l: nf.format(pin.height) }));
         const base = shapeNotes().stand;

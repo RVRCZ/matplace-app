@@ -3,7 +3,7 @@
 // The page for the query "custom medal 3d print" (docs/AP.md §9). 'heading' = the page's H1, 'h1' = the heading of the content under the tool.
 return [
     'title' => 'Custom medal to 3D print: gold, silver, bronze with a chain',
-    'heading' => 'Custom medal with a chain to 3D print',
+    'heading' => 'Custom medal on a chain or a ribbon to 3D print',
     'description' => 'A gold, silver or bronze medal for 1st, 2nd and 3rd place with a number or a name and a chain of 40 links. We print it, or you download the model free.',
     'h1' => 'How the medal is made, what you can change and what it costs with the chain',
     'intro' => [

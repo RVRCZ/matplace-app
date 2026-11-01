@@ -85,9 +85,9 @@ class FarmPagesTest extends TestCase
             }
         }
         app()->setLocale('cs');
-        // the medal (Roman's order 194): the medal with its chain, and the number with its rim; the words of its page too
+        // the medal (Roman's order 194): the medal, with its chain or on a ribbon, and the number with its rim; the words of its page too
         $medal = new ModelFile(['origin' => 'tool', 'origin_ref' => 'medallion']);
-        $this->assertSame(['Medaile a řetěz', 'Číslo a lem', 'Barva 2', 'Lem'], array_map(fn ($p) => OrderService::partLabel($medal, $p), ['body', 'color_1', 'color_2', 'rim']));
+        $this->assertSame(['Medaile', 'Číslo a lem', 'Barva 2', 'Lem'], array_map(fn ($p) => OrderService::partLabel($medal, $p), ['body', 'color_1', 'color_2', 'rim']));
         $this->assertSame('Jen krabička', OrderService::partLabel(new ModelFile(['origin' => 'tool', 'origin_ref' => 'box']), 'body'));
         $this->assertNotSame('', $box);
     }
