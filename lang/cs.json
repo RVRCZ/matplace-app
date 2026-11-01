@@ -1803,7 +1803,7 @@
     "param.flag.medallion.border": "Lem",
     "param.flag.medallion.border.hint": "Okraj 2 mm kolem medaile v barvě motivu.",
     "param.medallion.depth.hint": "Jen v těchto vrstvách tiskárna střídá dvě cívky, nad nimi tiskne jednou barvou. Výměn podle řezu: 0,4 mm ≈ 2, 0,6 mm ≈ 4, 0,8 mm ≈ 4, 1,0 mm ≈ 6.",
-    "param.part.body.medallion": "Placka a řetěz",
+    "param.part.body.medallion": "Medaile a řetěz",
     "param.part.color_1.medallion": "Číslo a lem",
     "param.part.body.box": "Jen krabička",
     "param.part.layer": "Vrstva :n",
@@ -1982,5 +1982,6 @@
     "param.preset.matplace": "Logo Matplace",
     "param.o.shape.oval": "Ovál",
     "artwork.items.matplace": "Logo Matplace",
-    "artwork.keywords.matplace": "matplace logo 3d tisk tiskarna"
+    "artwork.keywords.matplace": "matplace logo 3d tisk tiskarna",
+    "param.part.piece": "Díl :n"
 }

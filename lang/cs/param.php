@@ -245,7 +245,6 @@ return [
     'f.medallion.width' => 'Průměr medaile',
     'f.links' => 'Počet článků řetězu',
     'shape.chain.fact' => 'Počet článků: :n, řetěz dlouhý asi :l cm.',
-    'shape.part.body.medallion' => 'Medaile a řetěz',
     'text.lead' => 'Nápis, který stojí sám: silná písmena na patce, jeden až tři řádky ve třiceti písmech. Na poličku, na stůl nebo do výlohy.',
     'preset.stand' => 'Stojící nápis',
     'o.sign.stand' => 'Stojící nápis',

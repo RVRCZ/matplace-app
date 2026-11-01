@@ -13,8 +13,8 @@ use Illuminate\Support\Facades\Route;
  * off at /admin/tools (table tool_flags; no row = the config alone decides). A tool that is not public is in no list,
  * no sitemap and no link, and its page and API answer 404; an admin still opens it, to try it before it goes out.
  *
- * The home page shows the tools config/home.php lists, unless the admin switched one off there, and those the admin
- * switched on (tool_flags.home; null = the config decides).
+ * The home page shows the tools the admin switched on (tool_flags.home), then those config/home.php lists, unless the
+ * admin switched one off there (null = the config decides).
  *
  * The switches are read once a request and kept in the cache for a minute; saving one clears both.
  */
@@ -54,16 +54,24 @@ final class ToolVisibility
     }
 
     /**
-     * The tools on the home page, best first: those of config/home.php in its order, then those the admin added in the
-     * order of the catalogue. Only public ones with a page; `home.tools_shown` is the page's own limit.
+     * The tools on the home page, best first: those the admin switched on, so that the limit never leaves one out, then
+     * the rest of config/home.php. Each group in the order of config/home.php, then of the catalogue. Only public ones
+     * with a page; `home.tools_shown` is the page's own limit.
      *
      * @return list<string>
      */
     public static function onHome(): array
     {
         $tools = array_values(array_unique([...(array) config('home.tools'), ...array_keys((array) config('tools'))]));
+        $chosen = array_filter($tools, fn (string $tool) => self::chosenForHome($tool));
 
-        return array_values(array_filter($tools, fn (string $tool) => self::wantsHome($tool) && self::isPublic($tool) && Route::has((string) config('tools')[$tool]['route'])));
+        return array_values(array_filter(array_unique([...$chosen, ...$tools]), fn (string $tool) => self::wantsHome($tool) && self::isPublic($tool) && Route::has((string) config('tools')[$tool]['route'])));
+    }
+
+    /** The admin switched the tool on for the home page (not merely left it as config/home.php has it). */
+    public static function chosenForHome(string $tool): bool
+    {
+        return (self::state()->flags()[$tool]['home'] ?? null) === true;
     }
 
     /** The tool whose page a route is (the name with or without the language prefix), null for any other page. */
