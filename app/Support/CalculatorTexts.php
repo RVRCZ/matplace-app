@@ -44,6 +44,16 @@ final class CalculatorTexts
     }
 
     /**
+     * The names a tool gives its parts by kind (param.part.<part>.<kind>), for its own page: they go before any other.
+     *
+     * @return array<string, string>
+     */
+    public static function partNamesOf(string $kind): array
+    {
+        return array_filter(self::partNames(), fn (string $key) => str_starts_with($key, 'param.part.') && str_ends_with($key, '.'.$kind), ARRAY_FILTER_USE_KEY);
+    }
+
+    /**
      * The names of the parts of every tool, for the download panel (parts.ts): not listed by hand, a new tool's parts
      * would read "color_1" again. The keys are those of the tools' own pages.
      *

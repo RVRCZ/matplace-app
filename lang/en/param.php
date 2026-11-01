@@ -245,7 +245,6 @@ return [
     'f.medallion.width' => 'Diameter of the medal',
     'f.links' => 'Links of the chain',
     'shape.chain.fact' => 'Links: :n, a chain about :l cm long.',
-    'shape.part.body.medallion' => 'Medal and chain',
     'text.lead' => 'A text that stands by itself: thick letters on a foot, one to three lines in thirty typefaces. For a shelf, a desk or a shop window.',
     'preset.stand' => 'Standing text',
     'o.sign.stand' => 'Standing text',

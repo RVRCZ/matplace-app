@@ -767,9 +767,8 @@ Zadání `docs/prompts/admin-domu-ikony-pohledu.md`, větev `feature/admin-home-
   `get()`, ne výběr sloupců: kód nasazený před migrací dál čte přepínač „veřejný“, skrytý nástroj se neodkryje.
 - Řádek posílá políčko při každém uložení. Hodnota shodná s tím, co platí teď, nic nezapíše, takže uložení poznámky
   nezamrazí `null` na `true`.
-- **Otevřené pro Romana:** se 13 nástroji v configu a stropem 8 je nově zapnutý nástroj čtrnáctý a na stránce se neukáže
-  (lokálně ověřeno: krabička „v pořadí je 14.“, po vypnutí QR třináctá). Pořadí je podle zadání; řádek to říká. Volby:
-  zkrátit `home.tools` na 8, zvednout strop, nebo dát ručně zapnuté nástroje dopředu.
+- Se 13 nástroji v configu a stropem 8 byl nově zapnutý nástroj čtrnáctý a na stránce se neukázal. Vyřešeno v části D
+  (§21.4): ručně zapnuté jdou první.
 
 ### 21.2 B: ikony pohledů
 
@@ -805,8 +804,33 @@ Zadání `docs/prompts/admin-domu-ikony-pohledu.md`, větev `feature/admin-home-
 
   Přívěsek jsem vyrobil přes API s obrázkem o jedné barvě, takže „Barva 2“ a „Barva 3“ ze snímku Romana se v běhu
   neobjevily; `partLabel` je sestavuje stejně a `OrderService` je ověřený testem.
-- **Nesoulad se stránkou objednávky:** medaile tam říká „Placka a řetěz“ a „Číslo a lem“ (`param.part.*.medallion`, test
+- **Nesoulad se stránkou objednávky (vyřešeno v §21.4):** medaile tam říká „Placka a řetěz“ a „Číslo a lem“ (`param.part.*.medallion`, test
   `FarmPagesTest`, objednávka 194), nástroj a kalkulace „Medaile a řetěz“ a „Barva 1“. Stránka objednávky patří session 2,
   neměnil jsem ji. Srovnání `partLabel` s `OrderService::partLabel` přes všechny díly všech generátorů a upravovacích nástrojů (cs): 130 ze 133 stejně; rozdíl je medaile (2) a dílek puzzle, který objednávka ukazuje surově `piece_2` (panel „Díl 2“).
 - Snímky `docs/img/download-one-project-nastroj.png`, `download-one-project-kalkulace.png`.
 
+### 21.4 D: ručně zapnuté první, jeden název dílu (dodatek zadání, 1. 11. 2026)
+
+Větev `feature/home-first-part-names`.
+
+- **Pořadí:** `ToolVisibility::onHome()` dá dopředu nástroje s `home = true` (v pořadí configu, pak katalogu), za ně zbytek
+  `config('home.tools')` bez vypnutých; strop `tools_shown` a štítek `popular` beze změny. Zapnutý nástroj se tak ukáže i při
+  plném configu, dokud zapnutých není víc než strop.
+- **Admin:** řádek ručně zapnutého nástroje říká „Zapnutý ručně: na hlavní straně jde první.“, poznámka nad tabulkou to říká
+  taky. JSON vrací `home_hints` pro všechny řádky místo `home_hint`, protože zapnutí jednoho posune jiný přes strop.
+- **Vedlejší účinek:** nástroj z configu, který správce vypnul a znovu zapnul, má `home = true` a jde taky dopředu. Odpovídá to
+  zadání a řádek to říká, zpět na místo v configu ho z adminu vrátit nejde.
+- **Jeden název:** `parts.ts` i `OrderService::partLabel` berou první `param.part.<díl>.<druh>`. Medaile všude „Medaile a řetěz“
+  a „Číslo a lem“ (en „Medal and chain“, „Number and rim“; es „Medalla y cadena“, „Número y borde“). Klíč
+  `shape.part.body.medallion` zrušen, ať druhé slovo nemůže utéct. Barevný řádek medaile na stránce nástroje teď taky říká
+  „Číslo a lem“, ne „Barva 1“.
+- **Puzzle:** nový `param.part.piece` („Díl :n“), objednávka u upravovacích nástrojů končí na `param.part.<díl>`, `parts.ts` taky.
+- **Stránka nástroje:** `CalculatorTexts::partNamesOf($kind)` předá `param.part.*.<druh>` bez ručního seznamu v `param.blade.php`.
+  Nově tak dostane svůj název i vykrajovátko („Jen vykrajovátko“), které v seznamu chybělo.
+- **Změněno v souborech objednávky (session 2):** `OrderService::partLabel` (poslední položka řetězu u upravovacích nástrojů),
+  `lang/src/order_part_labels.json` (text medaile, `param.part.piece`), `FarmPagesTest` (očekávaná „Medaile a řetěz“).
+- **Ověřeno:** porovnání `parts.ts` a `OrderService::partLabel` přes všechny díly generátorů a úprav v cs: 133 ze 133 stejně
+  (předtím 130). Chrome lokálně: `--flows=admin-home` (cs, 1280 px), krabička první na hlavní straně, řádek osmého nástroje
+  po uložení „v pořadí je 9.“; `--flows=menu-medallion` (cs, en, 1280 px) a panel kalkulace (cs): „Medaile a řetěz · Číslo a lem“.
+  Stránka objednávky jen testem (`OrderService::partLabel`), v prohlížeči ne; es jen testem.
+- Snímky `docs/img/admin-tools-home-first-1280.png`, `part-names-medal-nastroj.png`, `part-names-medal-kalkulace.png`.

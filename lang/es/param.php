@@ -245,7 +245,6 @@ return [
     'f.medallion.width' => 'Diámetro de la medalla',
     'f.links' => 'Eslabones de la cadena',
     'shape.chain.fact' => 'Eslabones: :n, una cadena de unos :l cm.',
-    'shape.part.body.medallion' => 'Medalla y cadena',
     'text.lead' => 'Un texto que se sostiene solo: letras gruesas sobre un pie, de una a tres líneas en treinta tipografías. Para una estantería, un escritorio o un escaparate.',
     'preset.stand' => 'Texto de pie',
     'o.sign.stand' => 'Texto de pie',

@@ -60,17 +60,43 @@ class ToolHomeSwitchTest extends TestCase
         $this->assertNotContains('box', config('home.tools'));
         $this->assertSame(['qr', 'relief'], $this->cards());
 
-        // on: a tool the config does not list comes after those it does
+        // on: a tool the admin chose goes before those of the config
         $res = $this->save($admin, 'box', true)->assertJson(['tool' => 'box', 'home' => true]);
         $this->assertTrue(ToolFlag::where('tool', 'box')->value('home'));
         $this->assertStringContainsString('3', $res->json('home_note'));
         $this->assertStringContainsString('Roman', $res->json('changed'));
-        $this->assertSame(['qr', 'relief', 'box'], ToolVisibility::onHome());
-        $this->assertSame(['qr', 'relief', 'box'], $this->cards());
+        $this->assertSame(['box', 'qr', 'relief'], ToolVisibility::onHome());
+        $this->assertSame(['box', 'qr', 'relief'], $this->cards());
 
         // off: a tool the config lists leaves
         $this->save($admin, 'qr', false)->assertJson(['tool' => 'qr', 'home' => false]);
-        $this->assertSame(['relief', 'box'], $this->cards());
+        $this->assertSame(['box', 'relief'], $this->cards());
+    }
+
+    public function test_a_tool_switched_on_is_on_the_page_with_a_full_config_and_its_row_says_it_goes_first(): void
+    {
+        $admin = $this->admin();
+        $this->assertNotContains('box', config('home.tools'));
+        $this->assertGreaterThanOrEqual(13, count(config('home.tools')));
+        $this->assertSame(8, config('home.tools_shown'));
+        $this->assertSame(array_slice(ToolVisibility::onHome(), 0, 8), array_slice($this->cards(), 0, 8));
+        $eighth = ToolVisibility::onHome()[7];
+
+        $res = $this->save($admin, 'box', true);
+        $this->assertSame('box', $this->cards()[0]);
+        $this->assertCount(8, $this->cards());
+        $this->assertNotContains($eighth, $this->cards(), 'the last of the config gives way');
+        $this->assertSame(__('tools.admin.home.first'), $res->json('home_hints.box'));
+        // the row the new one pushed over the limit hears of it without a reload
+        $this->assertSame(__('tools.admin.home.beyond', ['at' => 9, 'max' => 8]), $res->json('home_hints.'.$eighth));
+        $this->assertStringContainsString(e(__('tools.admin.home.first')), $this->actingAs($admin)->get('/admin/tools')->assertOk()->getContent());
+
+        // two chosen: config order first, then the catalogue; a tool the config lists and the admin only left alone has no such note
+        config(['home.tools' => ['qr', 'relief']]);
+        $this->save($admin, 'relief', false);
+        $this->save($admin, 'relief', true);
+        $this->assertSame(['relief', 'box', 'qr'], ToolVisibility::onHome());
+        $this->assertSame('', $this->save($admin, 'qr', true)->json('home_hints.qr'));
     }
 
     public function test_a_row_saved_for_something_else_leaves_the_config_deciding(): void
@@ -95,7 +121,7 @@ class ToolHomeSwitchTest extends TestCase
         $admin = $this->admin();
         config(['home.tools' => ['qr']]);
         $res = $this->save($admin, 'box', true, false)->assertJson(['home' => true, 'listed' => false]);
-        $this->assertSame(__('tools.admin.home.hint'), $res->json('home_hint'));
+        $this->assertSame(__('tools.admin.home.hint'), $res->json('home_hints.box'));
         $this->assertSame(['qr'], $this->cards());
         $this->assertStringContainsString(e(__('tools.admin.home.hint')), $this->actingAs($admin)->get('/admin/tools')->assertOk()->getContent());
     }
@@ -138,7 +164,7 @@ class ToolHomeSwitchTest extends TestCase
         foreach (['cs', 'en', 'es'] as $locale) {
             app()->setLocale($locale);
             $i18n = CalculatorTexts::all(120);
-            foreach (['shape.part.body', 'shape.part.rim', 'shape.part.color', 'shape.part.icing', 'shape.part.body.medallion', 'param.part.body', 'param.part.body.box', 'param.part.lid', 'param.part.post.hair_tie', 'edit.split.part.piece', 'edit.art.part.plate', 'edit.flexi_cut.part.segment'] as $key) {
+            foreach (['shape.part.body', 'shape.part.rim', 'shape.part.color', 'shape.part.icing', 'param.part.body.medallion', 'param.part.color_1.medallion', 'param.part.piece', 'param.part.body', 'param.part.body.box', 'param.part.lid', 'param.part.post.hair_tie', 'edit.split.part.piece', 'edit.art.part.plate', 'edit.flexi_cut.part.segment'] as $key) {
                 $this->assertArrayHasKey($key, $i18n, "{$locale} {$key}");
             }
             $this->assertNotSame($i18n['param.part.body.box'], $i18n['param.part.body'], "{$locale}: the generic word is no box");
@@ -157,6 +183,29 @@ class ToolHomeSwitchTest extends TestCase
         $charm = new ModelFile(['origin' => 'tool', 'origin_ref' => 'charm']);
         $this->assertSame(['Podklad', 'Barva 1', 'Barva 3', 'Lem'], array_map(fn ($p) => OrderService::partLabel($charm, $p), ['body', 'color_1', 'color_3', 'rim']));
         $this->assertSame('Jen krabička', OrderService::partLabel(new ModelFile(['origin' => 'tool', 'origin_ref' => 'box']), 'body'));
+    }
+
+    public function test_a_part_has_one_name_on_the_page_of_its_tool_and_on_the_order(): void
+    {
+        foreach (['cs', 'en', 'es'] as $locale) {
+            app()->setLocale($locale);
+            $medal = new ModelFile(['origin' => 'tool', 'origin_ref' => 'medallion']);
+            $this->assertSame([__('param.part.body.medallion'), __('param.part.color_1.medallion')], array_map(fn ($p) => OrderService::partLabel($medal, $p), ['body', 'color_1']));
+            // what the tool's page reads first (parts.ts), the same text
+            $this->assertSame(['param.part.body.medallion' => __('param.part.body.medallion'), 'param.part.color_1.medallion' => __('param.part.color_1.medallion')], CalculatorTexts::partNamesOf('medallion'));
+            // the medal's page has no other word left that could go its own way
+            $this->assertArrayNotHasKey('shape.part.body.medallion', CalculatorTexts::all(120), $locale);
+            $this->assertSame(str_replace(':n', '2', __('param.part.piece')), OrderService::partLabel(new ModelFile(['origin' => 'tool', 'origin_ref' => 'puzzle']), 'piece_2'), $locale);
+        }
+        app()->setLocale('cs');
+        $medal = new ModelFile(['origin' => 'tool', 'origin_ref' => 'medallion']);
+        $this->assertSame(['Medaile a řetěz', 'Číslo a lem'], array_map(fn ($p) => OrderService::partLabel($medal, $p), ['body', 'color_1']));
+        $this->assertSame('Díl 2', OrderService::partLabel(new ModelFile(['origin' => 'tool', 'origin_ref' => 'puzzle']), 'piece_2'));
+
+        // the medal's page hands them over to its script
+        $this->get(route('tools.medallion'))->assertOk()->assertSee('param.part.body.medallion', false)->assertSee('param.part.color_1.medallion', false);
+        // and a tool no list by hand ever named
+        $this->get('/tools/cookie-cutter')->assertOk()->assertSee('param.part.body.cutter', false);
     }
 
     public function test_a_design_tells_its_family_to_the_calculation(): void

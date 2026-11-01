@@ -94,12 +94,14 @@ Sloupec **„Na hlavní straně“** v `/admin/tools` (`tool_flags.home`, kdo a 
 `null` = rozhoduje `config/home.php`, `true`/`false` = rozhodl správce. Uložení řádku kvůli poznámce nebo přepínači
 „veřejný“ posílá políčko tak, jak stojí; to nic nerozhoduje a `null` zůstává.
 
-`ToolVisibility::onHome()`: nástroje z `config('home.tools')`, které správce nevypnul, v tomto pořadí, za nimi ty, které
-zapnul, v pořadí katalogu. Jen veřejné a se stránkou. Hlavní strana ukáže prvních `home.tools_shown` (8).
+`ToolVisibility::onHome()`: nejdřív nástroje, které správce zapnul (`home = true`), za nimi zbytek `config('home.tools')`
+bez vypnutých. V každé skupině pořadí configu, pak katalogu. Jen veřejné a se stránkou. Hlavní strana ukáže prvních
+`home.tools_shown` (8), takže ručně zapnutý nástroj se ukáže vždy, dokud zapnutých není víc než strop.
 
 - Nad tabulkou je počet zapnutých a upozornění, když je jich víc než strop.
-- Na řádku je poznámka, když přepínač nástroj na stránku nedostane: není veřejný, nebo je v pořadí až za stropem.
+- Na řádku je poznámka, když přepínač nástroj na stránku nedostane: není veřejný, nebo je v pořadí až za stropem. Ručně
+  zapnutý řádek říká, že jde první. Po uložení se poznámky obnoví na všech řádcích, zapnutí posouvá ostatní přes strop.
 - Filtr „Na hlavní straně“ ukáže dlaždice v pořadí stránky.
 
-**Pozor:** `config/home.php` dnes uvádí 13 nástrojů a strop je 8. Nově zapnutý nástroj je proto až čtrnáctý a neukáže se,
-dokud správce nevypne dost jiných (nebo se nezvedne strop).
+**Pozor:** nástroj z `config/home.php`, který správce vypnul a znovu zapnul, má `home = true` a jde dopředu jako ručně
+zapnutý. Zpět na své místo v configu ho z adminu nevrátíte, jen přes `null` v tabulce.

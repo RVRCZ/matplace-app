@@ -88,7 +88,7 @@
                 if (!res.ok) throw new Error(String(res.status));
                 const data = await res.json();
                 row.querySelector('[data-state]').textContent = data.listed ? texts.public : texts.hidden;
-                row.querySelector('[data-home-hint]').textContent = data.home_hint;
+                document.querySelectorAll('#admin-tools tr[data-tool]').forEach((r) => { r.querySelector('[data-home-hint]').textContent = data.home_hints[r.dataset.tool] ?? ''; });
                 document.getElementById('tools-home-note').textContent = data.home_note;
                 row.querySelector('[data-changed]').textContent = data.changed;
                 result.textContent = texts.saved;

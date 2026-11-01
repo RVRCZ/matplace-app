@@ -89,7 +89,8 @@ class ToolController extends Controller
             'public' => $flag->public,
             'listed' => ToolVisibility::isPublic($tool),
             'home' => $flag->home,
-            'home_hint' => self::homeHint($tool),
+            // one switch moves the others along the limit: every row gets its hint again
+            'home_hints' => collect(array_keys((array) config('tools')))->mapWithKeys(fn ($key) => [$key => self::homeHint((string) $key)])->all(),
             'home_note' => self::homeNote(),
             'changed' => self::changed($flag),
         ]);
@@ -104,7 +105,7 @@ class ToolController extends Controller
         return __('tools.admin.home.count', ['n' => $on, 'max' => $shown]).($on > $shown ? ' '.__('tools.admin.home.over', ['max' => $shown]) : '');
     }
 
-    /** Why a tool's switch does not put it on the page: it is not public, or it is further down than the page's limit. */
+    /** Why a tool's switch does not put it on the page (it is not public, or further down than the limit), or that the admin's switch put it first. */
     private static function homeHint(string $tool): string
     {
         if (! ToolVisibility::isPublic($tool)) {
@@ -113,7 +114,11 @@ class ToolController extends Controller
         $at = array_search($tool, ToolVisibility::onHome(), true);
         $shown = (int) config('home.tools_shown', 8);
 
-        return $at !== false && $at >= $shown ? __('tools.admin.home.beyond', ['at' => $at + 1, 'max' => $shown]) : '';
+        if ($at !== false && $at >= $shown) {
+            return __('tools.admin.home.beyond', ['at' => $at + 1, 'max' => $shown]);
+        }
+
+        return ToolVisibility::chosenForHome($tool) ? __('tools.admin.home.first') : '';
     }
 
     /** "Roman · 10. 10. 2026 14:05": who touched the switch last. */
