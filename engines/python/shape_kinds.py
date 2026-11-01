@@ -59,6 +59,7 @@ CLIP_MIN = 14.0              # the clip of a straw topper at one point of its ou
 CLIP_ARM = 12.0              # how far the plate may reach out to the clip: longer is ugly and weak
 CLIP_ALONG = 15.0            # along the straw: the same clip, as long whatever the name, in the middle of its side
 OVAL = 0.7                  # an oval's height to its width: a fixed proportion, the name or picture is sized to it
+EYE_SUNK = 1.0              # how far the hole of an eyelet reaches into the plate: its whole wall lies inside the outline
 INLAY = 0.6                 # how deep inlaid colours go: three layers, nothing of the plate shows through
 GAP = 6.0                   # between the two earrings on the bed
 
@@ -637,13 +638,18 @@ def build(M, Invalid, p, product):
             px, py, nx, ny = mid, (body2d ^ C.square([0.4, by1 - by0 + 2]).translate([mid - 0.2, by0 - 1])).bounds()[3], 0.0, 1.0
         else:
             px, py, nx, ny = S.along(travel, n("eye_pos", 0) / 100.0)
-        reach = hole_d / 2 + wall / 2                        # the hole stays outside the shape, half the wall bites into it
+        # sunk into the plate, so the ring is held along its width and not by half its wall (Roman, 1 Nov 2026). A medal keeps
+        # its hole outside: it hangs by its own rule
+        reach = hole_d / 2 + wall / 2 if medal else max(0.0, hole_d / 2 - EYE_SUNK)
         cx, cy = px + nx * reach, py + ny * reach
         ring_out = C.circle(hole_d / 2 + wall, 64).translate([cx, cy])
         hole2d = C.circle(hole_d / 2, 48).translate([cx, cy])
-        # a neck from the ring into the body: on a thin or hollow spot of the outline the ring would hang by a thread
-        neck = (C.circle(max(1.0, wall * 0.6), 24).translate([cx - nx * hole_d / 2, cy - ny * hole_d / 2]) + C.circle(max(1.0, wall * 0.6), 24).translate([px - nx * wall, py - ny * wall])).hull()
-        body2d = body2d + ring_out + (neck - hole2d)
+        # a neck from the ring into the body: on a thin or hollow spot of the outline the ring would hang by a thread. Where the
+        # plate holds the ring anyway there is none: it would only stick out
+        into = wall if medal else 2 * wall + EYE_SUNK
+        neck = (C.circle(max(1.0, wall * 0.6), 24).translate([cx - nx * hole_d / 2, cy - ny * hole_d / 2]) + C.circle(max(1.0, wall * 0.6), 24).translate([px - nx * into, py - ny * into])).hull()
+        held = medal or (ring_out ^ body2d).area() < ring_out.area() / 3
+        body2d = body2d + ring_out + (neck - hole2d) if held else body2d + ring_out
         notes["eyelet"] = {"x": round(cx, 2), "y": round(cy, 2), "hole": hole_d}
     foot = None
     if product == "name_letter" and bool(p.get("stand", False)):
