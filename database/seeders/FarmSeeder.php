@@ -81,7 +81,7 @@ class FarmSeeder extends Seeder
             // curr_bed_type: without it the Orca CLI slices for a "Cool Plate" (bed 35 °C). The S1 printed on its textured
             // PEI plate until 24 Sep 2026, since then on a smooth PEI plate = Orca's "High Temp Plate" (the bed temperature
             // itself is rewritten per spool into the G-code anyway, GcodeSlot)
-            'process_overrides' => ['enable_prime_tower' => '0', 'enable_support' => '1', 'support_type' => 'tree(auto)', 'support_threshold_angle' => '30', 'curr_bed_type' => 'High Temp Plate'],
+            'process_overrides' => ['enable_prime_tower' => '0', 'enable_support' => '1', 'support_type' => 'tree(auto)', 'support_threshold_angle' => '35', 'curr_bed_type' => 'High Temp Plate'],
         ]);
 
         if ($printer->wasRecentlyCreated) {
@@ -103,7 +103,7 @@ class FarmSeeder extends Seeder
             'machine_profile' => 'machine_kobra3max.json',
             'process_profiles' => ['draft' => 'process_draft.json', 'standard' => 'process_standard.json', 'fine' => 'process_fine.json'],
             'machine_overrides' => [],
-            'process_overrides' => ['enable_prime_tower' => '0', 'enable_support' => '1', 'support_type' => 'tree(auto)', 'support_threshold_angle' => '30', 'curr_bed_type' => 'Textured PEI Plate'],
+            'process_overrides' => ['enable_prime_tower' => '0', 'enable_support' => '1', 'support_type' => 'tree(auto)', 'support_threshold_angle' => '35', 'curr_bed_type' => 'Textured PEI Plate'],
         ]);
         if ($max->wasRecentlyCreated) {
             foreach ([0, 1, 2, 3] as $i) {
@@ -125,7 +125,7 @@ class FarmSeeder extends Seeder
             'machine_profile' => 'machine.json',
             'process_profiles' => ['draft' => 'process_draft.json', 'standard' => 'process_standard.json', 'fine' => 'process_fine.json'],
             'machine_overrides' => ['printable_area' => ['0x0', '250x0', '250x250', '0x250'], 'printable_height' => '250'],
-            'process_overrides' => ['enable_prime_tower' => '0', 'enable_support' => '1', 'support_type' => 'tree(auto)', 'support_threshold_angle' => '30', 'curr_bed_type' => 'High Temp Plate'],
+            'process_overrides' => ['enable_prime_tower' => '0', 'enable_support' => '1', 'support_type' => 'tree(auto)', 'support_threshold_angle' => '35', 'curr_bed_type' => 'High Temp Plate'],
         ]);
         if ($s1b->wasRecentlyCreated) {
             foreach ([0, 1, 2, 3] as $i) {

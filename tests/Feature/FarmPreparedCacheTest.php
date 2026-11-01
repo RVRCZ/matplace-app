@@ -65,6 +65,15 @@ class FarmPreparedCacheTest extends TestCase
         $cached->prepare($src, $dir.'/d.stl', 1.0, new Dimensions(420, 420, 500));
         $cached->prepare($src, $dir.'/e.stl', 1.0, $bed, true);
         $this->assertSame(4, $inner->calls);
+
+        // an entry from before the pose rules changed, under the key of that time, is not taken: "Přeřezat" gets the new pose
+        $tools = md5_file(base_path('engines/python/farm_tool.py')).md5_file(base_path('engines/python/repair_tool.py'));
+        $before = sha1(implode('|', [md5_file($src), round(1.0, 6), $bed->x, $bed->y, $bed->z, 0, 'counting', $tools]));
+        File::ensureDirectoryExists($dir.'/old');
+        File::copy($src, $dir.'/old/'.$before.'.stl');
+        File::put($dir.'/old/'.$before.'.json', json_encode($a->toArray()));
+        (new CachedPrintPreparer($inner, $dir.'/old'))->prepare($src, $dir.'/f.stl', 1.0, $bed);
+        $this->assertSame(5, $inner->calls);
         File::deleteDirectory($dir);
     }
 

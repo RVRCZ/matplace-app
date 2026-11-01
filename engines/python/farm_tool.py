@@ -161,6 +161,10 @@ def plate_shadow(vertices, limit=64):
     return [[round(float(x), 1), round(float(y), 1)] for x, y in h] if len(h) >= 3 else None
 
 
+BED_GAP_MM = 0.3                                             # how far above the lowest point a face still counts as on the plate
+BED_COS = math.cos(math.radians(3.0))                        # and how far from level
+
+
 def rate(m, down, cos_limit, bed):
     """Lower is better. Areas are relative to the whole surface so small and large models score alike."""
     import numpy as np
@@ -171,7 +175,9 @@ def rate(m, down, cos_limit, bed):
     z0, z1 = float(height_v.min()), float(height_v.max())
     height = z1 - z0
     face_z = height_v[m.faces].min(axis=1)
-    on_bed = (facing > 0.9995) & (face_z - z0 < 0.05)
+    # a flat face a hair above the lowest point still lies on the plate: a scraper's blade 0.06 mm below its back left
+    # 46 mm2 of base and the whole back as overhang, so it stood on its edge with supports (1 Nov 2026, docs/AL.md §17)
+    on_bed = (facing > BED_COS) & (face_z - z0 < BED_GAP_MM)
     base = float(areas[on_bed].sum())
     overhang = float(areas[(facing > cos_limit) & ~on_bed].sum())
     diag = float(np.linalg.norm(m.extents)) or 1.0

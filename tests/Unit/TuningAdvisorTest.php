@@ -3,7 +3,7 @@
 namespace Tests\Unit;
 
 use App\Domain\Farm\TuningAdvisor;
-use PHPUnit\Framework\TestCase;
+use Tests\TestCase;
 
 /** Observed defects on the test object → concrete setting changes with a reason, never outside sane bounds. */
 class TuningAdvisorTest extends TestCase
@@ -32,6 +32,21 @@ class TuningAdvisorTest extends TestCase
         $r = TuningAdvisor::advise(['stringing' => 0, 'corners' => 'ok', 'top' => 'ok', 'cube_x' => 15.02, 'cube_y' => 14.97, 'hole' => 7.98], $this->candidate, 'quick');
         $this->assertSame([], $r['advice']);
         $this->assertEquals($this->candidate, $r['overrides']);
+    }
+
+    public function test_a_test_print_only_lowers_the_support_threshold_of_the_farm(): void
+    {
+        $threshold = fn (int $clean) => TuningAdvisor::supportSettings(['overhang_ok' => $clean], 'quick')['support_threshold_angle'];
+        $this->assertSame(['25', '30', '35', '35', '35', '35'], array_map($threshold, [70, 65, 60, 50, 30, 0]));
+
+        // what the test asked for and the farm did not give is written down for the operator
+        $r = TuningAdvisor::advise(['overhang_ok' => 40], $this->candidate, 'quick');
+        $this->assertSame('35', $this->settings($r)['process.support_threshold_angle']);
+        $this->assertStringContainsString('55°', implode(' ', $r['notes']));
+        $this->assertStringNotContainsString('práh', implode(' ', TuningAdvisor::advise(['overhang_ok' => 70], $this->candidate, 'quick')['notes']));
+
+        config(['farm.support_threshold_angle' => 30]);
+        $this->assertSame('30', $threshold(50));
     }
 
     public function test_the_cube_is_measured_against_the_edge_of_its_own_test_object(): void

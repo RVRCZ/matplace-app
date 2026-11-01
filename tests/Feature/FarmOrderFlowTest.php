@@ -493,6 +493,37 @@ class FarmOrderFlowTest extends TestCase
         $this->actingAs($this->user)->get('/farm?supports=off')->assertOk()->assertSee('name="supports" value="off"', false);
     }
 
+    /** The farm's support threshold (docs/AL.md §17): over the slicer profile, under the printer's overrides. */
+    public function test_the_support_threshold_of_the_farm_is_above_the_profile_and_below_the_printer(): void
+    {
+        $threshold = fn () => $this->order()->slice_params['overrides']['process']['support_threshold_angle'];
+        $this->assertSame('35', $threshold(), 'the seeded printers say 35');
+
+        foreach (FarmPrinter::all() as $p) {
+            $p->update(['process_overrides' => array_diff_key((array) $p->process_overrides, ['support_threshold_angle' => 1])]);
+        }
+        config(['farm.support_threshold_angle' => 33]);
+        $this->assertSame('33', $threshold(), 'a printer without its own value slices with the farm one');
+
+        foreach (FarmPrinter::all() as $p) {
+            $p->update(['process_overrides' => ['support_threshold_angle' => '28'] + (array) $p->process_overrides]);
+        }
+        $this->assertSame('28', $threshold(), 'the printer wins');
+    }
+
+    public function test_the_migration_sets_the_threshold_only_on_printers_that_carry_one(): void
+    {
+        $with = FarmPrinter::firstOrFail();
+        $with->update(['process_overrides' => ['support_threshold_angle' => '45', 'enable_prime_tower' => '0']]);
+        $without = FarmPrinter::whereKeyNot($with->id)->firstOrFail();
+        $without->update(['process_overrides' => ['enable_prime_tower' => '1']]);
+
+        (require database_path('migrations/2026_11_01_210000_farm_support_threshold_35.php'))->up();
+
+        $this->assertSame(['support_threshold_angle' => '35', 'enable_prime_tower' => '0'], $with->fresh()->process_overrides);
+        $this->assertSame(['enable_prime_tower' => '1'], $without->fresh()->process_overrides);
+    }
+
     /** A model from one of our tools built to print without supports (a cap) is sliced without them unless the customer asks. */
     public function test_a_tool_model_built_without_supports_is_sliced_without_them(): void
     {

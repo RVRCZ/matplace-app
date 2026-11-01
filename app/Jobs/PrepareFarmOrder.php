@@ -339,7 +339,8 @@ class PrepareFarmOrder implements ShouldQueue
         $hints = $order->modelFile?->processHints() ?? [];
         $overrides = [
             'machine' => (array) $printer->machine_overrides,
-            'process' => ['layer_height' => (string) $layer] + $profile->process + (array) $printer->process_overrides + $hints,
+            // the farm's support threshold is above the slicer profile and below everything of the farm's own (docs/AL.md §17)
+            'process' => ['layer_height' => (string) $layer] + $profile->process + (array) $printer->process_overrides + $hints + ['support_threshold_angle' => (string) config('farm.support_threshold_angle', 35)],
             'filament' => $profile->filament,
         ];
         if ($order->isTest()) {
