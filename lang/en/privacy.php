@@ -63,7 +63,7 @@ return [
             'li' => [
                 'Account – while it exists; deleted or anonymised within 30 days after closing it.',
                 'Orders and payments – 5 years after completion (accounting and tax rules), invoices up to 10 years as the law requires.',
-                'Photos for recognition and generation – at most 1 day; anonymously uploaded files 30 days.',
+                'Photos for recognition and generation – at most 1 day; uploaded files without an order 30 days.',
                 'Time-lapse videos – with the order while your account exists; on YouTube until you refuse publishing, take the consent back or we delete them.',
                 'Technical logs – at most 12 months.',
             ],

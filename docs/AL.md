@@ -1999,3 +1999,71 @@ přesměrování s chybou; admin; hotová zakázka v barvě, která je k mání,
 dvěma změnami; krabička po dílech), `FarmGuestCheckoutTest` (host po zaplacení kartou, stejná relace),
 `ThreeMfColorsTest` (namalovaná želva ve 2 ks: po dílech, jedna podložka, tři barvy). Stránku v prohlížeči jsem
 neprocházel.
+
+## 16. Úklid souborů zakázek (TODO #62, 1. 11. 2026, feature/order-files-prune)
+
+Zadání `docs/prompts/uklid-souboru-zakazek.md`. Roman, když došlo místo na disku: „soubory zakázek starší 7 dnů také“. Pravidlo je v denním `matplace:prune` (03:30), logika v `App\Domain\Farm\OrderFiles`. První běh na produkci spouští řídící, nejdřív s `--dry-run`.
+
+### 16.1 Které zakázky
+
+- **Uzavřená:** `handed_over`, `cancelled`, `failed`, `done`, všechny druhy zakázek (i zkušební a výstavní), a poslední změna stavu je starší než `farm.files_retention_days` (výchozí 7, v `config/farm.php`, bez přepínače v adminu).
+- **Poslední změna stavu = historie zakázky** (`farm_order_events`, řádky s `from` různým od `to`). Zvolil jsem ji místo `handed_at`/`finished_at`/`updated_at`: `OrderFlow::move` ji píše při každé změně a do uzavřených stavů nevede jiná cesta. `finished_at` u zakázky, která se po dokončení ukázala jako vadná, ukazuje na starší okamžik, a `cancelled` ani `failed` vlastní čas nemají. `updated_at` se posouvá každou poznámkou, takže by zakázku držel déle bez důvodu. Jen zakázka bez jediné změny v historii se řídí `updated_at`.
+- **Nikdy:** otevřené stavy, ani staré, a zakázka s úlohou v `FarmPrintJob::ACTIVE` (`pending`, `sent`, `printing`, `paused`, `unknown`), ať má zakázka jakýkoli stav. `pending` v zadání nebyl, ale agent si G-code stahuje i u něj.
+
+### 16.2 Co se maže
+
+- **Pryč:** `*.gcode`, `*.3mf`, `print.stl`, `plate.stl`, `part-*.stl`, `plate-part-*.stl`, `rest.stl`, `*.stl.stage`, `supports.bin`, složky `frames/` a `frames_layer/`.
+- **Zůstává:** `timelapse.mp4`, `short.mp4`, `wide.mp4`, `snapshot.jpg`, `*.json`, `*.txt`, `photos/` a všechno, co pravidlo nezná.
+- **Sloupce:** `print_stl_path`, `gcode_path`, `gcode_sha256`, `rest_gcode_path` se vynulují, v `part_plates` zmizí `stl_path`, `gcode_path`, `sha256`. Díly s barvami a časy zůstávají (stránka zakázky je vypisuje, „Vytisknout znovu“ z nich bere barvy). Nový sloupec `files_pruned_at` (migrace) říká, že to udělal úklid.
+- **`updated_at` se nemění:** seznam „Čeká na vás“ ho porovnává s `attention_cleared_at`, takže by první běh vrátil do seznamu všechny staré zakázky.
+- Soubor, který nejde smazat, skončí v logu a další noc se zkusí znovu (úklid prochází všechny uzavřené zakázky, ne jen ty bez `files_pruned_at`).
+- `matplace:prune` vypíše `farm order files removed: N orders, X MB`, `--dry-run` navíc každou zakázku s velikostí a nic nezmění.
+- Ostrý běh vypíše u modelů jen počty (`model files nothing holds removed: with an account N, without M`), `--dry-run` i velikosti v GB zvlášť za soubory s účtem a bez účtu.
+
+### 16.3 Co na souborech závisí
+
+- **Stránka zakázky a účet:** `model_url` spadne na původní STL (`OrderController::model`). Je to soubor před otočením a změnou velikosti, takže u staré zakázky náhled nemusí přesně odpovídat tisku, u zakázky po dílech je jeden kus v jedné barvě a u změn barvy podle výšky mohou pruhy sedět jinak. Podpěry se neukážou bez chyby (`supports_url` je null). Když si zákazník model mezitím smazal z účtu, náhled není vůbec, stránka funguje.
+- **Vytisknout znovu:** nová zakázka z původního souboru, soubory staré zakázky nepotřebuje (test).
+- **Zpět do fronty:** `failed → queued` bez G-code by zastavilo celou frontu tiskárny, protože `Dispatcher::kick` u první zakázky bez `gcode_path` skončí. `FarmOrder::canMoveTo` to proto odmítne (`filesPruned()`), admin tuhle volbu nenabídne. Cesta zpět je „Uložit a naslicovat znovu“ na stránce zakázky: nový slice vrátí `gcode_path` a zakázka je zase běžná.
+- **Stránka v adminu:** místo odkazů na G-code věta „Soubory pro tisk jsou smazané“, díly bez odkazu. Pohled na tiskárně (`admin-farm-viewer`) jde na stejnou adresu modelu jako dřív.
+- **Videa:** měsíční video a Short s cenou berou hotová mp4, nic nečtou z G-code ani snímků. Týdenní video staví ze snímků v neděli 18:00 za uplynulý týden: tisk z pondělí ráno má tou dobou méně než 7 dní, takže o nic nepřijde. Hodnotu pod 7 dní proto nenastavovat. Ruční `farm:weekly-video --week=` za starší týden už bude mít méně tisků než dřív. `FarmVideos::score` si skóre ukládá při založení videa; bez G-code vrací null a tisk se v řazení posune dozadu.
+
+### 16.4 Odchylka od zadání: snímky Shortu, který čeká na schválení
+
+Snímky zakázky, jejíž Short je ve stavu `pending` nebo `uploaded`, se v tomhle kroku nemažou a jdou podle dosavadního pravidla po 14 dnech (`BuildFarmTimelapse::KEEP_FRAMES_DAYS`). Důvod: „Postavit znovu“ u čekajícího Shortu (#60, odstranění ceny ze záběru) staví právě z nich a smazání je nevratné. Místa to vezme málo a jen o nejvýš 7 dní déle. G-code a STL takové zakázky se mažou normálně.
+
+### 16.5 Modely bez zakázky po 30 dnech (doplnění zadání, Roman: „modely bez zakázky starší 30 dnů pryč“)
+
+Jeden průchod v `matplace:prune`, dotaz v `ModelLibrary::unordered()`, lhůta `uploads.unordered_retention_days` (30, podle `created_at`). Klíč nahradil `anonymous_retention_days`; `.env` s `ANON_RETENTION_DAYS` se už nečte, výchozí hodnota je stejná. Smaže se složka v `models/files` i řádek, kalkulace padají kaskádou.
+
+- **Drží soubor s účtem i bez účtu:** poptávka, nabídka (i přes svou kalkulaci, `calculation_id`), katalog, karta návrháře, zaplacená zakázka.
+- **Navíc mimo zadání:** článek blogu, který kalkulaci souboru ukazuje (`[calc: <token>]`) nebo na ni odkazuje (`/c/<token>`). Vazba je jen v textu článku, bez cizího klíče, a bez téhle pojistky by se karta v článku tiše změnila na holý odkaz. Prochází se tělo všech článků ve všech jazycích, i nepublikovaných (naplánované články).
+- **Navíc drží jen soubor s účtem:** jakákoli zakázka a požadavek generátoru (`generation_requests.result_model_file_id`).
+
+**Odchylka od zadání, soubor bez účtu:** zadání bere dnešní pravidlo pro anonymní soubory jako podmnožinu nového, ale není to tak. Dnes jde anonymní soubor pryč i se zrušenou nezaplacenou zakázkou a s požadavkem generátoru (každý vygenerovaný model ho má, `FigureToolTest`, komentář v `PruneData`). Podle doslovného znění by takové soubory zůstaly navždy a úklid by mazal méně než dnes. Proto soubor bez účtu drží jen zaplacená zakázka nebo zakázka v jiném stavu než `cancelled`. Hostovu nezaplacenou zakázku stejně po 7 dnech zruší `matplace:prune`.
+
+**Složka zakázky, která jde se souborem:** řádek zakázky padá kaskádou a složku `orders/<token>` by už nikdo nesmazal, proto ji průchod smaže první. Starší osiřelé složky tohle neřeší, kolik jich je, se dá zjistit jen na produkci porovnáním složek s `farm_orders.token`.
+
+**Co je vidět:**
+- V „Moje modely“ věta `user.models.retention` („Soubory bez objednávky mažeme po 30 dnech.“).
+- `/c/<token>` bez kalkulace vrací 410 se stránkou `calculator.gone` a odkazem na nahrání (`Route::missing`). Zvolil jsem to místo ponechání kalkulace: je to jednodušší a nemění se cizí klíč. Stránka proto neodliší smazanou kalkulaci od překlepu v adrese a text říká důvod v obou případech. Má `noindex`.
+- Vlastní seznam „moje návrhy“ žádný nástroj nemá, návrhy jsou v „Moje modely“ a řádek zmizí se souborem.
+- **Zásady ochrany soukromí a stránka o souborech** (`lang/*/privacy.php`, `lang/*/pages.php`) slibovaly 30 dní jen u anonymních souborů, opravil jsem je na soubory bez objednávky. Je to změna právního textu a `terms_version` jsem neměnil; posouzení je na Romanovi.
+
+**Co s tím souvisí a zadání to nezmiňuje:** lhůta se počítá od nahrání, ne od posledního použití. Soubor starý 31 dní bez zakázky zmizí, i když nad ním někdo před chvílí počítal cenu. Zákazníkům s účtem žádný mail předem nechodí. Mezi smazanými budou i zkušební návrhy, například medaile `/c/naze69mzmy0h` z `docs/P.md`, pokud nemá zakázku.
+
+### 16.6 Soubory, které jsou v databázi, ale ne na disku
+
+Řídící 1. 11. 2026 na produkci jednorázově smazal ve složkách bez souboru mladšího 7 dnů (209 z 267, ve všech stavech zakázky) `*.gcode`, `plate.stl`, `*.3mf`, `supports.bin`, `rest.stl`, `plate-part-*.stl`, `part-*-plate.stl` (526 souborů, 6,5 GB, seznam `/root/deleted-order-files-20261101.txt`). Sloupce na ně dál ukazují, proto:
+
+- `absoluteGcodePath()`, `absolutePrintStlPath()`, `absoluteSupportsPath()` a nové `absolutePartStlPath()` vrací null, když soubor není. Stránka zakázky tak spadne na původní STL, díl bez souboru nedostane `model_url` a prohlížeč se ho nesnaží načítat.
+- `filesPruned()` platí i pro `gcode_path`, jehož soubor chybí, takže admin ukáže větu místo odkazu a `failed → queued` se odmítne. Automatický druhý tisk (`printsAgain`) se v tomhle stavu nespustí.
+- První běh pravidla u uzavřených zakázek sloupce srovná: takové zakázky se počítají do `N orders` i s malým počtem MB.
+
+**Otevřené:** jednorázové mazání nerozlišovalo stav. Stará otevřená zakázka (`sliced`, `paid`, `queued`) mohla přijít o G-code a tohle pravidlo ji neřeší, protože není uzavřená. Agent na ni dostane 404 a tiskárna zůstane v úloze, která se nerozběhne (ověřeno jen čtením kódu). Pokud taková je, potřebuje „Uložit a naslicovat znovu“ v adminu (jde u `sliced`, `paid`, `failed`, ne u `queued`).
+
+### 16.7 Ověřeno
+
+`FarmOrderFilesPruneTest` (Storage::fake na skutečném souborovém systému, skutečný příkaz): tři zakázky ze zadání včetně sloupců, všechny uzavřené i otevřené stavy, `--dry-run`, všechny aktivní stavy úlohy, poslední změna stavu proti poznámce a starému `finished_at`, `updated_at` beze změny, díly, snímky čekajícího Shortu, stránka a `model.stl` míří na původní STL, smazaný model, Vytisknout znovu, zablokovaná fronta a návrat novým slicem, stránka v adminu, sloupce ukazující na chybějící soubory (účet i admin). Modely: 31 dní bez vazby s účtem i bez účtu, 20 dní, zakázka `sliced` a `cancelled`, katalog, poptávka přímo i přes kalkulaci, generátor, článek přes `[calc:]` i odkazem, anonymní soubor se zrušenou zakázkou a její složkou, `--dry-run` zvlášť za účet a bez účtu, věta v „Moje modely“, 410 česky i anglicky.
+
+**Neověřeno:** běh nad skutečnými soubory (MySQL a produkční disk, místní testy běží na SQLite), stránka v prohlížeči, skutečný slicer (testy mají falešný). Vazba přes `quotes` je v dotazu, ale test ji nezakládá. Zisk prvního běhu místně zjistit nejde.

@@ -1,0 +1,32 @@
+{
+    "farm.admin.files_pruned": [
+        "Soubory pro tisk (G-code, STL) jsou smazané: drží se :days dní po uzavření zakázky.",
+        "The print files (G-code, STL) are deleted: they stay for :days days after an order closes.",
+        "Los archivos de impresión (G-code, STL) están borrados: se guardan :days días tras cerrar el pedido."
+    ],
+    "farm.admin.files_pruned_again": [
+        "Zpět do fronty zakázka bez G-code jít nemůže. „Uložit a naslicovat znovu“ výš ji připraví z původního souboru.",
+        "An order without a G-code cannot go back to the queue. “Save and slice again” above prepares it from the original file.",
+        "Un pedido sin G-code no puede volver a la cola. «Guardar y laminar de nuevo» arriba lo prepara desde el archivo original."
+    ],
+    "user.models.retention": [
+        "Soubory bez objednávky mažeme po :days dnech.",
+        "Files without an order are deleted after :days days.",
+        "Los archivos sin pedido se borran a los :days días."
+    ],
+    "calc.gone.title": [
+        "Tahle kalkulace už tu není",
+        "This calculation is no longer here",
+        "Este cálculo ya no está aquí"
+    ],
+    "calc.gone.text": [
+        "Soubory bez objednávky mažeme po :days dnech a kalkulace jde se souborem. Model můžete nahrát znovu.",
+        "Files without an order are deleted after :days days and the calculation goes with the file. You can upload the model again.",
+        "Los archivos sin pedido se borran a los :days días y el cálculo se va con el archivo. Puede volver a subir el modelo."
+    ],
+    "calc.gone.cta": [
+        "Nahrát model",
+        "Upload a model",
+        "Subir un modelo"
+    ]
+}

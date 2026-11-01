@@ -26,7 +26,7 @@ class BuildFarmTimelapse implements ShouldQueue
 
     public int $timeout = 900;
 
-    public const KEEP_FRAMES_DAYS = 14;     // frames stay this long so a video can be built again (farm:timelapse, farm:weekly-video)
+    public const KEEP_FRAMES_DAYS = 14;     // frames stay this long at most so a video can be built again (farm:timelapse, farm:weekly-video); a closed order's go sooner (OrderFiles)
 
     /** @param  bool  $rebuild  build again although the order already has its videos (farm:timelapse) */
     public function __construct(public readonly int $orderId, public readonly bool $rebuild = false) {}

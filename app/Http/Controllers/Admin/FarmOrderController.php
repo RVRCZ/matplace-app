@@ -105,7 +105,7 @@ class FarmOrderController extends Controller
 
         return view('admin.farm.order', [
             'order' => $order,
-            'targets' => FarmOrder::TRANSITIONS[$order->status] ?? [],
+            'targets' => array_values(array_filter(FarmOrder::TRANSITIONS[$order->status] ?? [], fn ($to) => $order->canMoveTo($to))),
             'eta' => $this->dispatcher->estimate($order, $this->settings),
             // a guest's order before its payment has no account and no credit (docs/AO.md)
             'balance' => $order->user ? app(Wallet::class)->balance($order->user) : null,

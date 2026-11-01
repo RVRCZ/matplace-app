@@ -258,7 +258,7 @@ return [
                 'h' => '4. Soubory, které nahrajete',
                 'p' => [
                     'Za soubory, které nahrajete, odpovídáte vy. Nahrávejte jen modely a fotografie, které jste vytvořili nebo které smíte použít.',
-                    'Nahrané soubory ukládáme neveřejně a používáme je jen k tomu, kvůli čemu jste je nahráli: k výpočtu ceny, k práci v nástroji a k vyřízení zakázky. Soubory nahrané bez přihlášení mažeme po 30 dnech.',
+                    'Nahrané soubory ukládáme neveřejně a používáme je jen k tomu, kvůli čemu jste je nahráli: k výpočtu ceny, k práci v nástroji a k vyřízení zakázky. Soubory bez objednávky mažeme po 30 dnech, i když jsou ve vašem účtu.',
                 ],
             ],
             [

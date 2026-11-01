@@ -13,6 +13,10 @@ return [
     // private disk for print files, G-code and camera snapshots (config/filesystems.php)
     'disk' => 'farm',
 
+    // the print files of a closed order (G-code, prepared STL, frames) stay this many days after its last change of
+    // state, then matplace:prune takes them (docs/AL.md §16). Under 7 the weekly video loses the week's first prints.
+    'files_retention_days' => 7,
+
     // A big model's order is not sliced before the customer has chosen the settings and confirmed the colour
     // (docs/AL.md §11). What is big is decided with the first page in one place (App\Domain\Calculation\BigModel:
     // engines.mesh.decimate_above triangles, engines.mesh.big_slice_s). The page says how long the slice will take: the

@@ -7,6 +7,7 @@
         <a href="{{ route('account') }}" class="text-sm text-action-dark">← {{ __('user.profile.back') }}</a>
     </div>
     @include('partials.flash')
+    <p class="mt-2 text-sm text-slate-500" data-retention>{{ __('user.models.retention', ['days' => config('uploads.unordered_retention_days')]) }}</p>
 
     <nav class="mt-4 flex flex-wrap gap-2" aria-label="{{ __('user.models.title') }}">
         <a href="{{ route('account.models') }}" class="chip {{ $origin === null ? 'chip-on' : '' }}" @if($origin === null) aria-current="page" @endif>{{ __('user.models.origin.all') }}</a>

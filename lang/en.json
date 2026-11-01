@@ -2017,5 +2017,11 @@
     "tools.medallion.hint": "A medal for the winners: 1st, 2nd and 3rd place, on a chain or a ribbon, printed in gold, silver and bronze.",
     "youtube.video.shown_price": "the finished piece and its price are at the end",
     "youtube.video.shown_plain": "the finished piece is at the end",
-    "farm.order.colors_fix": "Change the colours in the design"
+    "farm.order.colors_fix": "Change the colours in the design",
+    "farm.admin.files_pruned": "The print files (G-code, STL) are deleted: they stay for :days days after an order closes.",
+    "farm.admin.files_pruned_again": "An order without a G-code cannot go back to the queue. “Save and slice again” above prepares it from the original file.",
+    "user.models.retention": "Files without an order are deleted after :days days.",
+    "calc.gone.title": "This calculation is no longer here",
+    "calc.gone.text": "Files without an order are deleted after :days days and the calculation goes with the file. You can upload the model again.",
+    "calc.gone.cta": "Upload a model"
 }
