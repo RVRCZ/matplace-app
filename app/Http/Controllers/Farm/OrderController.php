@@ -781,8 +781,8 @@ class OrderController extends Controller
         $this->authorizeOrder($request, $order);
         abort_if($order->hidesModelFrom($request->user()), 403);
         $plate = collect($order->partPlates())->firstWhere('part', $part);
-        $path = $plate && ! empty($plate['stl_path']) ? Storage::disk(config('farm.disk'))->path((string) $plate['stl_path']) : null;
-        abort_unless($path && is_file($path), 404);
+        $path = $plate ? $order->absolutePartStlPath($plate) : null;
+        abort_unless($path, 404);
 
         return response()->file($path, ['Content-Type' => 'model/stl', 'Cache-Control' => 'private, max-age=60']);
     }
@@ -933,7 +933,7 @@ class OrderController extends Controller
             'copies' => (int) ($p['copies'] ?? $order->copies), 'minutes' => $p['minutes'] ?? null, 'grams' => $p['grams'] ?? null,
             // the part's own plate for the preview, in the colour of its spool (the design's colour until one is chosen)
             'spool_hex' => $partSpools->get($p['slot_id'] ?? 0)?->color?->hex,
-            'model_url' => ! empty($p['stl_path']) && ! $order->hidesModelFrom($request->user()) ? route('farm.orders.part_model', [$order, $p['part']]).'?v='.($order->updated_at?->timestamp ?? 0) : null,
+            'model_url' => $order->absolutePartStlPath($p) && ! $order->hidesModelFrom($request->user()) ? route('farm.orders.part_model', [$order, $p['part']]).'?v='.($order->updated_at?->timestamp ?? 0) : null,
         ], $partPlates, array_keys($partPlates));
 
         return [
@@ -1024,7 +1024,7 @@ class OrderController extends Controller
             // a guest's order, or a guest looking at it: no credit (the card pays all of it)
             'balance' => $order->user && $request->user() ? $this->wallet->balance($request->user()->id === $order->user_id ? $request->user() : $order->user)->amount : 0.0,
             'guest' => $request->user() === null || $order->isGuest(),
-            'model_url' => ($order->print_stl_path || $order->modelFile?->stl_path) && ! $order->hidesModelFrom($request->user()) ? route('farm.orders.model', $order).'?v='.($order->updated_at?->timestamp ?? 0) : null,
+            'model_url' => ($order->absolutePrintStlPath() || $order->modelFile?->stl_path) && ! $order->hidesModelFrom($request->user()) ? route('farm.orders.model', $order).'?v='.($order->updated_at?->timestamp ?? 0) : null,
             'supports_url' => $order->absoluteSupportsPath() ? route('farm.orders.supports', $order).'?v='.($order->updated_at?->timestamp ?? 0) : null,
             'queue' => app(Dispatcher::class)->estimate($order, $this->settings),
             'timelapse_url' => $order->timelapse_path ? route('farm.orders.timelapse', $order) : null,

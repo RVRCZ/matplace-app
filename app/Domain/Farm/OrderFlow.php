@@ -307,6 +307,7 @@ final class OrderFlow
     {
         return (bool) config('farm.payments.auto_reprint', true) && $order->paid_at !== null && $order->kind === FarmOrder::KIND_PRINT
             && (int) $order->reprints < self::AUTO_REPRINTS && in_array($code, self::REPRINT_CODES, true)
+            && ! $order->filesPruned()
             && ($order->status === FarmOrder::STATUS_PRINTING || ($actor === 'agent' && $order->status === FarmOrder::STATUS_QUEUED));
     }
 

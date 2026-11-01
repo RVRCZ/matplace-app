@@ -4,12 +4,14 @@ namespace App\Domain\Account;
 
 use App\Models\FarmOrder;
 use App\Models\ModelFile;
+use App\Models\Post;
 use App\Models\User;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\LazyCollection;
 
 /**
  * "My models": everything a person uploaded, generated or made with a tool, including what they made before
@@ -64,6 +66,41 @@ final class ModelLibrary
     public function lock(ModelFile $file): ?string
     {
         return $this->locks([$file])[$file->id] ?? null;
+    }
+
+    /**
+     * Files nothing holds any more, older than uploads.unordered_retention_days (matplace:prune, docs/AL.md §16.5).
+     * Held by an inquiry, a quote (or their calculation), the catalogue, a designer's card, an article that shows the
+     * calculation, or a paid order. A file with an account also by any order and by the generator's request it came
+     * from; a file without one goes with its orders nobody paid and that were cancelled, and with its request.
+     *
+     * @return LazyCollection<int, ModelFile>
+     */
+    public function unordered(): LazyCollection
+    {
+        $linked = fn (string $table, string $column = 'model_file_id') => DB::table($table)->whereNotNull($column)->select($column);
+        $byCalculation = fn (string $table) => DB::table('calculations')->whereIn('id', $linked($table, 'calculation_id'))->select('model_file_id');
+        $tokens = Post::query()->pluck('body')->flatMap(function ($body) {
+            preg_match_all('~(?:\[calc:\s*|/c/)([A-Za-z0-9_-]+)~', implode("\n", array_filter((array) $body, 'is_string')), $m);
+
+            return $m[1];
+        })->unique()->values()->all();
+
+        return ModelFile::where('created_at', '<', now()->subDays(max(1, (int) config('uploads.unordered_retention_days', 30))))
+            ->whereNotIn('id', $linked('inquiries'))
+            ->whereNotIn('id', $linked('quotes'))
+            ->whereNotIn('id', $byCalculation('inquiries'))
+            ->whereNotIn('id', $byCalculation('quotes'))
+            ->whereNotIn('id', $linked('catalog_models'))
+            ->whereNotIn('id', $linked('designer_models'))
+            ->whereNotIn('id', DB::table('calculations')->whereIn('token', $tokens)->select('model_file_id'))
+            ->where(fn ($q) => $q
+                ->where(fn ($own) => $own->whereNotNull('owner_user_id')
+                    ->whereNotIn('id', $linked('farm_orders'))
+                    ->whereNotIn('id', $linked('generation_requests', 'result_model_file_id')))
+                ->orWhere(fn ($anon) => $anon->whereNull('owner_user_id')
+                    ->whereNotIn('id', DB::table('farm_orders')->where(fn ($o) => $o->whereNotNull('paid_at')->orWhere('status', '!=', FarmOrder::STATUS_CANCELLED))->select('model_file_id'))))
+            ->lazyById(200);
     }
 
     /**

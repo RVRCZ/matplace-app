@@ -83,7 +83,7 @@ class FarmOrder extends Model
         'started_at' => 'datetime', 'finished_at' => 'datetime', 'handed_at' => 'datetime', 'attention_cleared_at' => 'datetime',
         'video_consent' => 'bool', 'video_consent_at' => 'datetime', 'royalty_czk' => 'float',
         'shipping_price' => 'float', 'shipped_at' => 'datetime', 'timings' => 'array', 'color_changes' => 'array', 'by_parts' => 'bool', 'part_plates' => 'array',
-        'big_model' => 'bool', 'slice_run' => 'int', 'slice_estimate_s' => 'int', 'photo_meta' => 'array',
+        'big_model' => 'bool', 'slice_run' => 'int', 'slice_estimate_s' => 'int', 'photo_meta' => 'array', 'files_pruned_at' => 'datetime',
     ];
 
     /**
@@ -410,7 +410,18 @@ class FarmOrder extends Model
 
     public function canMoveTo(string $status): bool
     {
+        // a failed order sent back without its G-code would stop the printer's queue behind it (Dispatcher::kick)
+        if ($this->status === self::STATUS_FAILED && $status === self::STATUS_QUEUED && $this->filesPruned()) {
+            return false;
+        }
+
         return in_array($status, self::TRANSITIONS[$this->status] ?? [], true);
+    }
+
+    /** The order's G-code is gone: matplace:prune took it (App\Domain\Farm\OrderFiles) or the file is simply not there. A new slice brings it back. */
+    public function filesPruned(): bool
+    {
+        return $this->gcode_path ? ! $this->absoluteGcodePath() : $this->files_pruned_at !== null;
     }
 
     public function isCommitted(): bool
@@ -519,15 +530,22 @@ class FarmOrder extends Model
         return $out;
     }
 
-    /** The G-code of one plate: every full plate shares the main file, a partly filled last plate has its own; by parts, every plate its own. */
+    /** The G-code of one plate: every full plate shares the main file, a partly filled last plate has its own; by parts, every plate its own. Null when the file is not there. */
     public function absoluteGcodePath(?int $plate = null): ?string
     {
         if ($this->isByParts() && $plate !== null && ($own = $this->partPlates()[$plate - 1]['gcode_path'] ?? null)) {
-            return Storage::disk(config('farm.disk'))->path((string) $own);
+            return $this->existing((string) $own);
         }
-        $rel = $plate !== null && $plate >= $this->plates && $this->rest_gcode_path ? $this->rest_gcode_path : $this->gcode_path;
 
-        return $rel ? Storage::disk(config('farm.disk'))->path($rel) : null;
+        return $this->existing($plate !== null && $plate >= $this->plates && $this->rest_gcode_path ? $this->rest_gcode_path : $this->gcode_path);
+    }
+
+    /** A path of the farm disk when the file is there (the print files of a closed order go, docs/AL.md §16). */
+    private function existing(?string $rel): ?string
+    {
+        $path = $rel ? Storage::disk(config('farm.disk'))->path($rel) : null;
+
+        return $path && is_file($path) ? $path : null;
     }
 
     /** The plate a job started now would print (1-based). */
@@ -554,14 +572,18 @@ class FarmOrder extends Model
 
     public function absolutePrintStlPath(): ?string
     {
-        return $this->print_stl_path ? Storage::disk(config('farm.disk'))->path($this->print_stl_path) : null;
+        return $this->existing($this->print_stl_path);
+    }
+
+    /** One part's prepared STL for the preview, when the file is there. */
+    public function absolutePartStlPath(array $plate): ?string
+    {
+        return $this->existing(isset($plate['stl_path']) ? (string) $plate['stl_path'] : null);
     }
 
     /** Support structures for the 3D preview (App\Engines\Gcode\SupportLines), when the slice built any. */
     public function absoluteSupportsPath(): ?string
     {
-        $path = Storage::disk(config('farm.disk'))->path($this->dir().'/supports.bin');
-
-        return is_file($path) ? $path : null;
+        return $this->existing($this->dir().'/supports.bin');
     }
 }

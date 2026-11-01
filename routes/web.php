@@ -79,7 +79,8 @@ use Illuminate\Support\Facades\Route;
 $pages = function () {
     // ── Public: the one screen ───────────────────────────────────────────────────
     Route::get('/', [CalculatorController::class, 'index'])->name('home');
-    Route::get('/c/{calculation}', [CalculatorController::class, 'share'])->name('calc.share');
+    // a calculation goes with its file (matplace:prune): the address says why instead of a bare 404
+    Route::get('/c/{calculation}', [CalculatorController::class, 'share'])->name('calc.share')->missing(fn () => response()->view('calculator.gone', [], 410));
 
     // Marketplace (config/features.php): public printer pages, quotes, customer inquiries — 404 while switched off
     Route::middleware('feature:marketplace')->group(function () {

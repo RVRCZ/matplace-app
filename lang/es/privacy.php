@@ -63,7 +63,7 @@ return [
             'li' => [
                 'Cuenta – mientras exista; se borra o anonimiza en 30 días tras cerrarla.',
                 'Pedidos y pagos – 5 años desde su finalización (normas contables y fiscales), facturas hasta 10 años según la ley.',
-                'Fotos para reconocimiento y generación – como máximo 1 día; archivos subidos de forma anónima 30 días.',
+                'Fotos para reconocimiento y generación – como máximo 1 día; archivos subidos sin pedido 30 días.',
                 'Vídeos time-lapse – con el pedido mientras exista su cuenta; en YouTube hasta que rechace la publicación, retire el consentimiento o los borremos.',
                 'Registros técnicos – como máximo 12 meses.',
             ],

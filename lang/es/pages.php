@@ -258,7 +258,7 @@ return [
                 'h' => '4. Los archivos que sube',
                 'p' => [
                     'Usted es responsable de los archivos que sube. Suba solo modelos y fotos que haya creado o que tenga derecho a usar.',
-                    'Los archivos subidos se guardan de forma privada y solo se usan para aquello para lo que los subió: calcular el precio, trabajar en una herramienta y tramitar su pedido. Los archivos subidos sin iniciar sesión se borran a los 30 días.',
+                    'Los archivos subidos se guardan de forma privada y solo se usan para aquello para lo que los subió: calcular el precio, trabajar en una herramienta y tramitar su pedido. Los archivos sin pedido se borran a los 30 días, aunque estén en su cuenta.',
                 ],
             ],
             [
