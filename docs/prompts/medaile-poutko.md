@@ -1,4 +1,4 @@
-# Medaile: poutko na stužku vedle očka na řetěz, šířka stužky volitelná
+# Medaile: poutko na stužku vedle očka na řetěz, šířka stužky volitelná (session 3)
 
 Zadal Roman 1. 11. 2026 dopoledne se snímkem medaile Winter League (`docs/img/zadani-medaile-poutko.png`, zeleně orámované poutko): „pro medaili by to chtělo i poutko na stužku, ne jen očko na řetěz; šíře by měla být volitelná“. Navazuje na docs/P.md §8 až §8d (medaile, session 1).
 
@@ -27,6 +27,6 @@ Zadal Roman 1. 11. 2026 dopoledne se snímkem medaile Winter League (`docs/img/z
 
 ## 4. Kde a jak
 
-- Session 3, worktree `C:\matplace-edit-wt`, větev `feature/medal-ribbon` z main (6917ab47 nebo novější). Session G pracuje souběžně v `shape_kinds.py` (#58, barvy lícem dolů: řádky kolem 466 až 480, 711 až 716, 754 až 800, 822 až 834, 948 až 960). Drž změny v medailové části (definice `eyelet` řádek 478, očko 630 až 654, lem 741 až 752, řetěz 836 až 849) a nepřesouvej cizí řádky, ať jde obojí sloučit.
+- Session 3, worktree `C:\matplace-edit-wt`, větev `feature/medal-ribbon` z main (c95f597e nebo novější). #58 (barvy lícem dolů, session G) už je v main: čísla řádků v §1 jsou z main před ním a mohou být o pár řádků posunutá, souběžná práce v `shape_kinds.py` teď žádná není. Drž změny v medailové části (definice `eyelet`, očko, lem `border`, řetěz) a nepřesouvej cizí řádky. `tools/_choice.blade.php` a ikony `shape-*` dělala session G (P.md §10), při nejasnosti se jí zeptej zprávou.
 - Soubory: `engines/python/shape_kinds.py`, `app/Domain/Tools/ParametricGenerator.php` (FIELDS, CHOICES, WHEN, CHOICE_ICONS), `resources/views/tools/_choice.blade.php`, `resources/views/partials/icons.blade.php`, lang přes `lang/src/*.json`, `resources/js/calc/parts.ts` a `OrderService::partLabel` jen kvůli názvu dílu.
 - Zápis: `docs/P.md` §8e („Poutko na stužku“). Texty jen přes lang soubory, `git add` jmenovitě, žádný stash. Nic nenasazuj. Po pushi zpráva řídící session: větev, commit, co je ověřené, snímky.
