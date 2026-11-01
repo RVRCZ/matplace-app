@@ -15,6 +15,9 @@ use Illuminate\Support\Facades\File;
  */
 final class CachedPrintPreparer implements PrintPreparer
 {
+    /** Raised when the rules of the pose change, so that "Přeřezat" on an old order never gets the old pose back. */
+    public const ORIENTATION = 'orient-v2';
+
     public function __construct(private readonly PrintPreparer $inner, private readonly string $dir, private readonly int $keepDays = 14) {}
 
     public function name(): string
@@ -58,7 +61,7 @@ final class CachedPrintPreparer implements PrintPreparer
             $tools .= @md5_file(base_path('engines/python/'.$f));   // a changed tool prepares every model again
         }
 
-        return sha1(implode('|', [md5_file($stlPath), round($unitScale, 6), $bed->x, $bed->y, $bed->z, (int) $keepPose, $this->inner->name(), $tools]));
+        return sha1(implode('|', [md5_file($stlPath), round($unitScale, 6), $bed->x, $bed->y, $bed->z, (int) $keepPose, $this->inner->name(), $tools, self::ORIENTATION]));
     }
 
     private function prune(): void
