@@ -708,6 +708,104 @@ class ShapeToolsTest extends TestCase
         $this->assertEquals(4.0, $thick['notes']['thickened']);
     }
 
+    /** The corners of the triangles of an STL (x, y, z), and every triangle's middle: what stands in a place of the model. */
+    private static function points(string $stl): array
+    {
+        $n = unpack('V', substr($stl, 80, 4))[1];
+        $points = [];
+        for ($i = 0; $i < $n; $i++) {
+            $v = array_values(unpack('f12', substr($stl, 84 + 50 * $i, 48)));
+            $points[] = [$v[3], $v[4], $v[5]];
+            $points[] = [$v[6], $v[7], $v[8]];
+            $points[] = [$v[9], $v[10], $v[11]];
+            $points[] = [($v[3] + $v[6] + $v[9]) / 3, ($v[4] + $v[7] + $v[10]) / 3, ($v[5] + $v[8] + $v[11]) / 3];
+        }
+
+        return $points;
+    }
+
+    public function test_a_medal_on_a_ribbon_has_a_loop_with_a_slot_and_no_chain(): void
+    {
+        $one = ['line1' => '1', 'typeface' => 'archivo'];
+        // the chain stays as it was: the numbers of the tool before this choice (main c95f597e, 1 Nov 2026)
+        foreach ([[[], 46786.1, [195, 176.5, 4.4]], [['hang' => 'chain'], 46786.1, [195, 176.5, 4.4]], [['motif' => 'raised'], 47174.7, [195, 176.5, 5]], [['links' => 0], 12685.7, [60, 70.5, 4.4]]] as [$more, $volume, $box]) {
+            $m = $this->meta($this->preview('medallion', $one + $more)->assertOk());
+            $this->assertEqualsWithDelta($volume, $m['volume_mm3'], 0.11, json_encode($more));
+            $this->assertEquals($box, [$m['bbox']['x'], $m['bbox']['y'], $m['bbox']['z']], json_encode($more));
+            $this->assertArrayNotHasKey('ribbon', $m['notes']);
+        }
+
+        // a ribbon of 25 mm: a slot of 26 × 3 under a bar of 3, a tab of 34; no eyelet and no chain, whatever links says
+        $ribbon = $one + ['hang' => 'ribbon', 'ribbon_w' => 25];
+        $first = $this->meta($this->preview('medallion', $ribbon, 'all', true)->assertOk());
+        $note = $first['notes']['ribbon'];
+        $this->assertSame([25, [26, 3], 3, 34], [$note['w'], $note['slot'], $note['bar'], $note['tab']]);
+        $this->assertArrayNotHasKey('chain', $first['notes']);
+        $this->assertArrayNotHasKey('eyelet', $first['notes']);
+        $this->assertArrayNotHasKey('outline', $first['notes']);
+        $this->assertSame([], $first['notes']['warnings']);
+        $this->assertEqualsWithDelta(30, $note['x'], 0.01, 'straight above the middle');
+        // judged by its own size: the medal, 1.5 mm to the slot, the slot, the bar
+        $this->assertEquals([60, 67.5, 4.4], [$first['bbox']['x'], $first['bbox']['y'], $first['bbox']['z']]);
+        $this->assertEqualsWithDelta($first['volume_mm3'], $this->meta($this->preview('medallion', $ribbon + ['links' => 80])->assertOk())['volume_mm3'], 0.11);
+
+        foreach ([[], ['motif' => 'raised']] as $more) {
+            $whole = $this->preview('medallion', $ribbon + $more)->assertOk();
+            $points = self::points($whole->streamedContent() ?: $whole->getContent());
+            // through the whole thickness: nothing of the plate, the motif or the rim stands in the slot, at any height
+            // (its corners are round, 0.8 mm: the box looked into stops short of them)
+            $in = array_filter($points, fn ($q) => abs($q[0] - $note['x']) < 12.2 && abs($q[1] - $note['y']) < 1.48);
+            $this->assertSame([], array_values($in), 'the slot is empty '.json_encode($more));
+            $this->assertEqualsWithDelta(13.0, min(array_map(fn ($q) => abs($q[0] - $note['x']), array_filter($points, fn ($q) => abs($q[1] - $note['y']) < 0.5))), 0.01, 'the slot 26 mm wide, at the narrowest');
+            // its walls are where they should be, at the narrowest; the bar over it 3 mm; the tab beside it 34 mm
+            $wall = fn (int $side) => array_map(fn ($q) => abs($q[1] - $note['y']), array_filter($points, fn ($q) => abs($q[0] - $note['x']) < 10 && $side * ($q[1] - $note['y']) > 0 && abs($q[1] - $note['y']) < 3));
+            $this->assertEqualsWithDelta(1.5, min($wall(1)), 0.01);
+            $this->assertEqualsWithDelta(1.5, min($wall(-1)), 0.01);
+            $this->assertEqualsWithDelta(3.0, max(array_column($points, 1)) - $note['y'] - 1.5, 0.01, 'the bar');
+            $beside = array_column(array_filter($points, fn ($q) => abs($q[1] - $note['y']) < 1.5), 0);
+            $this->assertEqualsWithDelta(34, max($beside) - min($beside), 0.01, 'the tab');
+        }
+
+        // the rim follows the medal and not the loop; the motif is the size it is with a chain
+        $parts = collect($first['parts'])->keyBy('name');
+        $this->assertEqualsWithDelta(60, $parts['color_1']['bbox'][3] - $parts['color_1']['bbox'][0], 0.2);
+        $this->assertLessThanOrEqual(60.01, $parts['color_1']['bbox'][4]);
+        $this->assertTrue($first['notes']['one_plate_required']);
+        $motif = fn (array $hang) => collect($this->meta($this->preview('medallion', $one + $hang + ['border' => false], 'all', true)->assertOk())['parts'])->firstWhere('name', 'color_1')['bbox'];
+        $bare = $motif(['hang' => 'ribbon']);
+        $chained = $motif(['links' => 0]);
+        $this->assertEqualsWithDelta($chained[3] - $chained[0], $bare[3] - $bare[0], 0.01);
+        $this->assertEqualsWithDelta($chained[4] - $chained[1], $bare[4] - $bare[1], 0.01);
+        // face up the same, one change of filament, the plate as thin as asked: no link to stay under
+        $up = $this->meta($this->preview('medallion', $ribbon + ['motif' => 'raised', 'thickness' => 3], 'all', true)->assertOk());
+        $this->assertSame([3], array_column($up['notes']['color_changes'], 'z'));
+        $this->assertArrayNotHasKey('thickened', $up['notes']);
+        $this->assertSame($note['slot'], $up['notes']['ribbon']['slot']);
+
+        // on every shape one closed piece on the bed; solid under the slot (a heart's cleft stays no window), the slot clear of the medal
+        foreach (['circle', 'star', 'hex', 'shield', 'octagon', 'rosette', 'heart'] as $body) {
+            $shaped = ['line1' => '2', 'body' => $body, 'hang' => 'ribbon'];
+            $m = $this->meta($this->preview('medallion', $shaped, 'all', true)->assertOk());
+            $this->assertEqualsWithDelta($m['bbox']['x'] / 2, $m['notes']['ribbon']['x'], 0.01, $body);
+            $this->assertLessThanOrEqual($m['notes']['ribbon']['y'] - 1.5 - 1.4, collect($m['parts'])->firstWhere('name', 'color_1')['bbox'][4], $body);
+            $plate = $this->preview('medallion', $shaped, 'body')->assertOk();
+            $plate = $plate->streamedContent() ?: $plate->getContent();
+            $this->assertSame(1, self::bodies($plate), $body);
+            if ($body !== 'star') {     // between the tip and the arms of a star there is no plate to speak of
+                $window = array_filter(self::points($plate), fn ($q) => abs($q[0] - $m['notes']['ribbon']['x']) < 2 && $q[1] < $m['notes']['ribbon']['y'] - 1.6 && $q[1] > $m['notes']['ribbon']['y'] - 20 && $q[2] > 1.5 && $q[2] < 3);
+                $this->assertSame([], array_values($window), $body);
+            }
+        }
+
+        // the widest ribbon on the smallest medal: the tab is what is wide
+        $small = $this->meta($this->preview('medallion', ['line1' => '1', 'hang' => 'ribbon', 'width' => 40, 'ribbon_w' => 40])->assertOk());
+        $this->assertEquals(49, $small['bbox']['x']);
+
+        $this->preview('medallion', $one + ['hang' => 'sideways'])->assertStatus(422);
+        $this->preview('medallion', ['ribbon_w' => 9] + $ribbon)->assertStatus(422);
+        $this->preview('medallion', ['ribbon_w' => 41] + $ribbon)->assertStatus(422);
+    }
+
     public function test_an_organizer_is_a_tall_dish_with_compartments_or_round_holes(): void
     {
         $cloud = ['artwork' => 'lib:nature/cloud', 'width' => 120, 'height' => 80, 'thickness' => 2, 'wall' => 1.6];

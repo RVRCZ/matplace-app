@@ -109,6 +109,7 @@ const VIEW_BAR = "JSON.stringify([...document.querySelectorAll('#tool-views [dat
 const TOOL_MENU = "[...document.querySelectorAll('#tool-download-menu > *')].map((r) => r.textContent.trim()).join(' | ')";
 const CALC_PARTS = "[location.pathname, document.getElementById('dl-stl')?.textContent, document.getElementById('dl-parts')?.textContent, document.getElementById('dl-vendor')?.value].join(' | ')";
 const ADMIN_HOME = "[location.pathname, document.getElementById('tools-home-note')?.textContent, document.querySelector('#tool-box [data-home-hint]')?.textContent, 'cutter: ' + document.querySelector('#tool-cutter [data-home-hint]')?.textContent, document.querySelector('#tool-box [data-result]')?.textContent, 'scrollW ' + document.documentElement.scrollWidth].join(' | ')";
+const MEDAL_HANG = "[...document.querySelectorAll('[data-choice=hang]')].map((i) => i.value + ':' + i.getAttribute('aria-label') + ':' + (i.checked ? 'on' : 'off') + ':' + Math.round(i.closest('label').getBoundingClientRect().width) + 'x' + Math.round(i.closest('label').getBoundingClientRect().height)).join(' ') + ' | shown ' + ['ribbon_w', 'links', 'depth'].filter((k) => { const f = document.querySelector('[data-field=' + k + ']'); return f && !f.closest('.is-off'); }).join(',') + ' | ' + (document.getElementById('param-facts')?.textContent ?? '').trim().slice(0, 160) + ' | scrollW ' + document.documentElement.scrollWidth";
 const FLOWS = {
     'file-price': [['go', '/'], ['file', '#file-input', FIXTURES.cube], ['wait', 25000], ['shot'], ['nav'], ['clickText', ORDER], ['wait', 5000], ['shot']],
     'tool-price': [['go', '/tools/qr'], ['wait', 6000], ['shot'], ['nav'], ['click', '#tool-go'], ['wait', 20000], ['shot'], ['nav'], ['clickText', ORDER], ['wait', 5000], ['shot']],
@@ -158,6 +159,14 @@ const FLOWS = {
         ['click', '#tool-box input[name=home][type=checkbox]'], ['wait', 1200], ['read', ADMIN_HOME], ['click', '#tool-qr input[name=home][type=checkbox]'], ['wait', 1200], ['read', ADMIN_HOME], ['shot'],
         ['go', '/admin/tools?show=home'], ['wait', 1000], ['read', "[...document.querySelectorAll('#admin-tools tr[data-tool]')].map((r) => r.dataset.tool).join(',')"], ['shot'],
         ['go', '/'], ['wait', 1500], ['read', "[...document.querySelectorAll('[aria-labelledby=home-tools] a[data-cats], [aria-labelledby=home-tools] [data-cats] a')].map((a) => new URL(a.href).pathname).join(',')"]],
+    // a medal on a ribbon: the chips of the choice, what they show and hide, the loop on three outlines
+    'medal-ribbon': [['go', '/tools/medallion'], ['wait', 7000], ['read', MEDAL_HANG], ['shot'],
+        ['read', "document.querySelector('[data-choice=hang][value=ribbon]').click(); document.querySelector('[data-view=top]').click(); 'ribbon, from above'"], ['wait', 5000], ['read', MEDAL_HANG], ['shot'],
+        ['read', "document.querySelector('[data-choice=body][value=heart]').click(); 'heart'"], ['wait', 5000], ['read', MEDAL_HANG], ['shot'],
+        ['read', "document.querySelector('[data-choice=body][value=star]').click(); 'star'"], ['wait', 5000], ['read', MEDAL_HANG], ['shot']],
+    // the chips where they are; a place keeps the ribbon that was chosen
+    'medal-chips': [['go', '/tools/medallion'], ['wait', 6000], ['read', "document.querySelector('[data-choice=hang][value=ribbon]').click(); document.querySelector('[data-choice=hang]').closest('fieldset').scrollIntoView({ block: 'center' }); 'at the chips'"], ['wait', 4000], ['read', MEDAL_HANG], ['shot'],
+        ['read', "document.querySelector('[data-preset=place2]').click(); 'place 2'"], ['wait', 4000], ['read', MEDAL_HANG + " + ' | line1 ' + document.querySelector('[data-text=line1]')?.value + ' | more ' + [...document.querySelectorAll('details')].filter((d) => d.querySelector('[data-param=eye_hole]')).map((d) => d.classList.contains('is-off')).join()"], ['shot']],
     'colors-stl': [['go', '/'], ['file', '#file-input', FIXTURES.cube], ['wait', 20000], ['read', TOOL_COLORS], ['shot']],
     // the right column of the calculation scrolls inside its frame from lg: the panel moves, the price card, the viewer and the window stay
     // (the pieces are typed while their field is in view, as a person does: typing focuses the field, and a focused field is brought into view)

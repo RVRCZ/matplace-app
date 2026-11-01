@@ -47,6 +47,9 @@ final class ParametricGenerator
     /** The values of a `body` choice that have an icon `shape-<value>` in partials/icons.blade.php: their chips show it above the text. */
     public const SHAPE_ICONS = ['image', 'circle', 'oval', 'rect', 'square', 'heart', 'hex', 'star', 'octagon', 'shield', 'rosette'];
 
+    /** the choices whose chips show an icon above their name: choice → its values with one (icon `shape-<value>` for `body`, else `<choice>-<value>`) */
+    public const CHOICE_ICONS = ['body' => self::SHAPE_ICONS, 'hang' => ['chain', 'ribbon']];
+
     /** family → field, flag or choice → the section of the tool page it belongs to (fields and flags: size, choices: input, when not named) */
     public const PLACE = ['sign' => ['ring_at' => 'size'], 'qr' => ['hidden' => 'input'], 'papel' => self::PAPEL_PLACE, 'shape' => [
         'bg_strength' => 'input', 'smooth' => 'input', 'contrast' => 'input', 'brightness' => 'input', 'saturation' => 'input', 'remove_bg' => 'input',
@@ -58,7 +61,7 @@ final class ParametricGenerator
     public const SECTIONS = ['papel' => ['frame' => 'input', 'placement' => 'size']];
 
     /** kind → the choice the first step opens with, before the picture (what is made of the picture) */
-    public const FIRST = ['papel' => 'treatment', 'qr' => 'content', 'medallion' => 'motif'];
+    public const FIRST = ['papel' => 'treatment', 'qr' => 'content', 'medallion' => ['motif', 'hang']];
 
     /** fields of the input section that sit folded under "adjust the photo" */
     public const FOLDED = ['contrast', 'brightness', 'saturation'];
@@ -205,7 +208,7 @@ final class ParametricGenerator
         // a medal: `motif` flush (face down, the motif level with the plate, two filaments in one plate) or raised (face up,
         // a change by height; the plate then as thick as a link, else the links' tops would print in the motif's colour).
         // The motif a share of the width (motif_size, %), the eyelet always on top (docs/P.md §8b)
-        'medallion' => ['width' => [40, 120, 60, 1], 'thickness' => [3, 6, 4.4, 0.2], 'frame' => [0, 5, 2, 0.1], 'motif_size' => [20, 95, 55, 1]] + self::SHAPE_FIELDS + ['depth' => [0.4, 1, 0.6, 0.2], 'eye_hole' => [5, 8, 6, 0.5], 'eye_wall' => [2, 4, 3, 0.1], 'links' => [0, 80, 40, 1]],
+        'medallion' => ['width' => [40, 120, 60, 1], 'thickness' => [3, 6, 4.4, 0.2], 'frame' => [0, 5, 2, 0.1], 'motif_size' => [20, 95, 55, 1]] + self::SHAPE_FIELDS + ['depth' => [0.4, 1, 0.6, 0.2], 'eye_hole' => [5, 8, 6, 0.5], 'eye_wall' => [2, 4, 3, 0.1], 'links' => [0, 80, 40, 1], 'ribbon_w' => [10, 40, 20, 1]],
         // a charm for a bag with holes: `bag_hole` is the hole of the bag the pin goes through, `bag_wall` how thick the bag is there
         'bag_charm' => ['width' => [30, 80, 45, 1], 'thickness' => [4, 8, 5, 0.2], 'frame' => [0, 3, 1.5, 0.1]] + self::SHAPE_FIELDS + ['bag_hole' => [6, 20, 12, 0.5], 'bag_wall' => [1, 10, 4, 0.5]],
         // held, not hung: a clip for a drinking straw of `straw_d`, and the tongue of a can opener; both sit on the outline at `eye_pos`
@@ -304,7 +307,7 @@ final class ParametricGenerator
         'topper' => ['template' => ['number', 'heart', 'star', 'circle', 'none'], 'typeface' => ['script', 'sans', 'serif', 'mono']],
         'tray' => ['body' => ['image', 'circle'], 'floor' => ['engraved', 'colors', 'plain'], 'typeface' => ['sans', 'serif', 'mono', 'script']],
         'badge' => ['body' => ['image', 'circle', 'rect'], 'typeface' => ['sans', 'serif', 'mono', 'script'], 'mount' => ['glue', 'none']],
-        'medallion' => ['motif' => ['flush', 'raised'], 'body' => ['circle', 'star', 'hex', 'shield', 'octagon', 'rosette', 'heart'], 'typeface' => ['sans', 'serif', 'mono', 'script']],
+        'medallion' => ['motif' => ['flush', 'raised'], 'hang' => ['chain', 'ribbon'], 'body' => ['circle', 'star', 'hex', 'shield', 'octagon', 'rosette', 'heart'], 'typeface' => ['sans', 'serif', 'mono', 'script']],
         'photo_organizer' => ['body' => ['image', 'circle'], 'inside' => ['grid', 'holes', 'open']],
         'bag_charm' => ['body' => ['image', 'circle', 'rect'], 'typeface' => ['sans', 'serif', 'mono', 'script']],
         // the straw's size by its kind (thin, common, bubble tea), its number for any other; the name across the clip or along the straw
@@ -363,7 +366,7 @@ final class ParametricGenerator
     public const MAIN = [
         'name_cup' => ['width', 'height'], 'beads' => ['size', 'hole'],
         'charm' => ['width', 'thickness', 'frame', 'eye_pos', 'eye_hole'], 'keychain' => ['width', 'thickness', 'frame', 'eye_pos', 'eye_hole'], 'earrings' => ['width', 'thickness', 'frame', 'eye_pos', 'eye_hole'], 'ornament' => ['width', 'thickness', 'frame', 'eye_pos', 'eye_hole'],
-        'magnet' => ['width', 'thickness', 'frame', 'mag_d', 'mag_h'], 'coaster' => ['width', 'thickness', 'frame'], 'gingerbread' => ['width', 'thickness', 'eye_pos', 'eye_hole'], 'name_letter' => ['height', 'thickness'], 'cookie' => ['width', 'thickness', 'frame'], 'topper' => ['width', 'text_size', 'text_y', 'spike', 'spikes'], 'tray' => ['width', 'height', 'frame'], 'badge' => ['width', 'thickness', 'frame', 'mag_d'], 'medallion' => ['width', 'motif_size', 'depth', 'thickness', 'frame', 'links'], 'photo_organizer' => ['width', 'height', 'cell', 'hole_d'], 'bag_charm' => ['width', 'thickness', 'bag_hole', 'bag_wall'], 'straw' => ['width', 'thickness', 'eye_pos'], 'opener' => ['width', 'thickness', 'eye_pos'],
+        'magnet' => ['width', 'thickness', 'frame', 'mag_d', 'mag_h'], 'coaster' => ['width', 'thickness', 'frame'], 'gingerbread' => ['width', 'thickness', 'eye_pos', 'eye_hole'], 'name_letter' => ['height', 'thickness'], 'cookie' => ['width', 'thickness', 'frame'], 'topper' => ['width', 'text_size', 'text_y', 'spike', 'spikes'], 'tray' => ['width', 'height', 'frame'], 'badge' => ['width', 'thickness', 'frame', 'mag_d'], 'medallion' => ['width', 'motif_size', 'depth', 'thickness', 'frame', 'links', 'ribbon_w'], 'photo_organizer' => ['width', 'height', 'cell', 'hole_d'], 'bag_charm' => ['width', 'thickness', 'bag_hole', 'bag_wall'], 'straw' => ['width', 'thickness', 'eye_pos'], 'opener' => ['width', 'thickness', 'eye_pos'],
         'organizer' => ['width', 'depth', 'height', 'rows', 'cols', 'radius'], 'box' => ['inner_w', 'inner_d', 'inner_h', 'radius'], 'phone_stand' => ['width', 'device', 'angle', 'back', 'depth', 'vent', 'thickness', 'radius', 'cutout_size', 'rib_pitch', 'band', 'across'],
         'cable_holder' => ['count', 'cable', 'depth'], 'modular' => ['inner_w', 'inner_d', 'height', 'cols', 'rows', 'radius'], 'vase' => ['height', 'top_d', 'bottom_d', 'waists', 'waist_at', 'ribs', 'flute', 'twist'], 'sign' => ['text_height', 'thickness', 'relief', 'radius'], 'logo' => ['width', 'thickness', 'base_h'], 'stamp' => ['width', 'relief'], 'qr' => ['size'], 'stencil' => ['width', 'margin'], 'papel' => ['width', 'height', 'base', 'relief', 'thickness'], 'notes' => ['width', 'pad', 'depth', 'thickness'], 'hair_tie' => ['width', 'post_h', 'post_d', 'thickness'], 'candle_stand' => ['width', 'jar_d', 'thickness'], 'insert' => ['depth', 'gap', 'margin'], 'compose' => ['thickness', 'step'], 'lightbox' => ['width', 'depth'], 'cutter' => ['width', 'height', 'wall', 'flange'], 'holder' => ['obj_w', 'obj_d', 'height', 'hook_h', 'bend', 'edge'], 'cap' => ['size_a', 'size_b', 'outer', 'height', 'pitch', 'mouth', 'edge'],
     ];
@@ -407,7 +410,7 @@ final class ParametricGenerator
         // a shape cut out or standing has no plate: what belongs to the plate shows only with it
         'logo' => ['bevel' => ['mode', ['cutout']], 'shape' => ['mode', ['relief', 'height']], 'plate' => ['mode', ['relief', 'height']], 'margin' => ['mode', ['relief', 'height']], 'base_h' => ['mode', ['standing']]],
         'cookie' => self::HANG_WHEN + self::SHAPE_WHEN, 'name_letter' => self::HANG_WHEN + self::SHAPE_WHEN,
-        'medallion' => ['bg_strength' => ['remove_bg', ['on']], 'relief' => ['motif', ['raised']], 'depth' => ['motif', ['flush']]], 'bag_charm' => self::FLUSH_DOWN_WHEN,
+        'medallion' => ['bg_strength' => ['remove_bg', ['on']], 'relief' => ['motif', ['raised']], 'depth' => ['motif', ['flush']], 'eye_hole' => ['hang', ['chain']], 'eye_wall' => ['hang', ['chain']], 'links' => ['hang', ['chain']], 'ribbon_w' => ['hang', ['ribbon']]], 'bag_charm' => self::FLUSH_DOWN_WHEN,
         // the clip and the tongue are always there: their place on the outline is not hidden behind a flag
         // along the straw the clip runs the whole side that touches it: there is no place on the outline to drag it to
         'straw' => ['bg_strength' => ['remove_bg', ['on']], 'relief' => ['flush', ['off']], 'eye_pos' => ['text_dir', ['across']]], 'opener' => ['bg_strength' => ['remove_bg', ['on']], 'relief' => ['flush', ['off']]],

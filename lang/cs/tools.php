@@ -84,8 +84,6 @@ return [
     'photo_organizer.title' => 'Organizér ve tvaru obrázku',
     'photo_organizer.hint' => 'Stojánek na tužky, líčení nebo zubní kartáčky podle obrysu obrázku, s přihrádkami nebo kulatými otvory.',
     'photo_organizer.action' => 'Navrhnout organizér',
-    'medallion.title' => 'Medaile pro vítěze s řetězem',
-    'medallion.hint' => 'Medaile pro vítěze: 1., 2. a 3. místo, s řetězem, tiskneme ve zlaté, stříbrné a bronzové.',
     'medallion.action' => 'Navrhnout medaili',
     'text.title' => '3D nápis, který stojí',
     'text.hint' => 'Silná písmena na patce: jméno, slovo nebo krátký vzkaz, až tři řádky ve třiceti písmech.',

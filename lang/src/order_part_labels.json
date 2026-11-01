@@ -1,5 +1,5 @@
 {
-    "param.part.body.medallion": ["Medaile a řetěz", "Medal and chain", "Medalla y cadena"],
+    "param.part.body.medallion": ["Medaile", "Medal", "Medalla"],
     "param.part.color_1.medallion": ["Číslo a lem", "Number and rim", "Número y borde"],
     "param.part.body.box": ["Jen krabička", "Box only", "Solo la caja"],
     "param.part.layer": ["Vrstva :n", "Layer :n", "Capa :n"],

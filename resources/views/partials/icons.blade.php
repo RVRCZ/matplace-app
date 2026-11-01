@@ -77,4 +77,7 @@
     <symbol id="i-shape-octagon" viewBox="0 0 24 24"><path d="M8.3 3h7.4L21 8.3v7.4L15.7 21H8.3L3 15.7V8.3z"/></symbol>
     <symbol id="i-shape-shield" viewBox="0 0 24 24"><path d="M4 3h16v8.5C20 16.5 16 20 12 22c-4-2-8-5.5-8-10.5z"/></symbol>
     <symbol id="i-shape-rosette" viewBox="0 0 24 24"><path d="M12.0 3.3A2.3 2.3 0 0 1 16.3 4.5A2.3 2.3 0 0 1 19.5 7.6A2.3 2.3 0 0 1 20.7 12.0A2.3 2.3 0 0 1 19.5 16.3A2.3 2.3 0 0 1 16.3 19.5A2.3 2.3 0 0 1 12.0 20.7A2.3 2.3 0 0 1 7.7 19.5A2.3 2.3 0 0 1 4.5 16.4A2.3 2.3 0 0 1 3.3 12.0A2.3 2.3 0 0 1 4.5 7.6A2.3 2.3 0 0 1 7.6 4.5A2.3 2.3 0 0 1 12.0 3.3"/></symbol>
+    {{-- how a medal hangs (ParametricGenerator::CHOICE_ICONS): an eyelet and a link of chain, a loop with a slot and a ribbon through it --}}
+    <symbol id="i-hang-chain" viewBox="0 0 24 24"><circle cx="12" cy="16.5" r="6"/><circle cx="12" cy="8.5" r="2"/><ellipse cx="12" cy="3.6" rx="1.5" ry="2.4"/></symbol>
+    <symbol id="i-hang-ribbon" viewBox="0 0 24 24"><circle cx="12" cy="16.5" r="6"/><rect x="6" y="5.8" width="12" height="5" rx="1.5"/><path d="M8.5 8.3h7M9 5.8 7.5 1.5M15 5.8l1.5-4.3"/></symbol>
 </svg>

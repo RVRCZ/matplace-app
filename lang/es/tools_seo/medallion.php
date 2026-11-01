@@ -3,7 +3,7 @@
 // La página para la búsqueda «medalla personalizada impresión 3d» (docs/AP.md §9). 'heading' = el H1 de la página, 'h1' = el título del contenido bajo la herramienta.
 return [
     'title' => 'Medalla personalizada en 3D: oro, plata o bronce con cadena',
-    'heading' => 'Medalla personalizada con cadena para imprimir en 3D',
+    'heading' => 'Medalla personalizada con cadena o cinta para imprimir en 3D',
     'description' => 'Medalla de oro, plata o bronce para el 1.º, 2.º y 3.º puesto con número o nombre y cadena de 40 eslabones. La imprimimos, o descarga el modelo gratis.',
     'h1' => 'Cómo nace la medalla, qué se puede cambiar y cuánto cuesta con la cadena',
     'intro' => [

@@ -199,7 +199,7 @@ class ToolHomeSwitchTest extends TestCase
         }
         app()->setLocale('cs');
         $medal = new ModelFile(['origin' => 'tool', 'origin_ref' => 'medallion']);
-        $this->assertSame(['Medaile a řetěz', 'Číslo a lem'], array_map(fn ($p) => OrderService::partLabel($medal, $p), ['body', 'color_1']));
+        $this->assertSame(['Medaile', 'Číslo a lem'], array_map(fn ($p) => OrderService::partLabel($medal, $p), ['body', 'color_1']));
         $this->assertSame('Díl 2', OrderService::partLabel(new ModelFile(['origin' => 'tool', 'origin_ref' => 'puzzle']), 'piece_2'));
 
         // the medal's page hands them over to its script
