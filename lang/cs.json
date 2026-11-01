@@ -2014,5 +2014,7 @@
     "param.medallion.lead": "Medaile pro vítěze: 1., 2. a 3. místo, s řetězem nebo s poutkem na stužku. Zlatá, stříbrná nebo bronzová medaile s červenou číslicí a lemem, zarovnanými s plackou, nebo vystouplými; řetěz z článků, které do sebe zacvaknete, hned vedle, poutko se štěrbinou podle šířky stužky.",
     "param.medallion.tip": "Zarovnaný motiv se tiskne lícem dolů: dvě barvy v týchž vrstvách, jedna podložka na tiskárně s měničem cívek. Vystouplý lícem nahoru s jednou výměnou filamentu. Články mají kulatý průřez, zaháknete je do sebe a první do očka. Řetěz z tvrdého plastu nepatří na krk malým dětem bez dozoru. Poutko se tiskne s medailí v jednom kuse; stužku do 1 mm provlečete štěrbinou i napůl složenou.",
     "tools.medallion.title": "Medaile pro vítěze s řetězem nebo na stužku",
-    "tools.medallion.hint": "Medaile pro vítěze: 1., 2. a 3. místo, s řetězem nebo na stužku, tiskneme ve zlaté, stříbrné a bronzové."
+    "tools.medallion.hint": "Medaile pro vítěze: 1., 2. a 3. místo, s řetězem nebo na stužku, tiskneme ve zlaté, stříbrné a bronzové.",
+    "youtube.video.shown_price": "hotový kus a cenu vidíte na konci",
+    "youtube.video.shown_plain": "hotový kus vidíte na konci"
 }

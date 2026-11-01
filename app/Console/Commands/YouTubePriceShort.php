@@ -26,6 +26,12 @@ class YouTubePriceShort extends Command
 
     public function handle(SeriesCutter $series, TimelapseCutter $cutter, FarmVideos $videos): int
     {
+        // the Short is about the prices: with them switched off there is nothing to build (docs/AL.md §13.8)
+        if (! $videos->showsPrices()) {
+            $this->warn('Ceny ve videích jsou vypnuté (/admin/farm/settings): Short se nestaví.');
+
+            return self::SUCCESS;
+        }
         $n = max(2, min(8, (int) $this->option('n')));
         $byTool = $series->priceCandidates();
         $orders = $series->pickForPrice($byTool, $n, $this->option('seed') !== null ? (int) $this->option('seed') : null);

@@ -34,6 +34,12 @@ final class VideoCut
         public readonly array $chapters = [],
     ) {}
 
+    /** The same video written to another file. */
+    public function to(string $out): self
+    {
+        return new self($this->kind, $out, $this->lists, $this->texts, $this->inputs, $this->graph, $this->seconds, $this->growth, $this->fps, $this->music, $this->crf, $this->chapters);
+    }
+
     /** Frames shown, over all lists. */
     public function frameCount(): int
     {

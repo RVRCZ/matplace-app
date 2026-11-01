@@ -2014,5 +2014,7 @@
     "param.medallion.lead": "A medal for the winners: 1st, 2nd and 3rd place, with a chain or a loop for a ribbon. A gold, silver or bronze medal with a red number and rim, flush with the plate or raised; a chain of links that snap into one another is printed right next to it, the loop has a slot as wide as your ribbon.",
     "param.medallion.tip": "A flush motif prints face down: two colours in the same layers, one plate on a printer with a spool changer. A raised one prints face up with one change of filament. The links are round; hook them into one another and the first one into the eyelet. A chain of hard plastic is not for the necks of small children without supervision. The loop prints in one piece with the medal; a ribbon up to 1 mm goes through the slot even folded in half.",
     "tools.medallion.title": "Medal for the winners, on a chain or a ribbon",
-    "tools.medallion.hint": "A medal for the winners: 1st, 2nd and 3rd place, on a chain or a ribbon, printed in gold, silver and bronze."
+    "tools.medallion.hint": "A medal for the winners: 1st, 2nd and 3rd place, on a chain or a ribbon, printed in gold, silver and bronze.",
+    "youtube.video.shown_price": "the finished piece and its price are at the end",
+    "youtube.video.shown_plain": "the finished piece is at the end"
 }

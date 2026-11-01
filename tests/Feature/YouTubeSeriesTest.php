@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use App\Domain\Farm\FarmSettings;
 use App\Domain\Farm\PrintPhotos;
 use App\Domain\YouTube\FarmVideos;
 use App\Domain\YouTube\SeriesCutter;
@@ -206,6 +207,28 @@ final class YouTubeSeriesTest extends TestCase
         $this->assertFalse(app(FarmVideos::class)->consented($video));
     }
 
+    public function test_with_the_prices_off_the_price_short_is_not_built_and_the_page_says_why(): void
+    {
+        foreach (['vase', 'box', 'qr'] as $tool) {
+            $this->print($tool, 490);
+        }
+        Process::fake();
+        $waiting = FarmVideo::create(['kind' => FarmVideo::KIND_PRICE, 'status' => FarmVideo::STATUS_PENDING, 'title' => 'Kolik stojí', 'path' => 'series/old.mp4', 'meta' => ['key' => 'old', 'orders' => []]]);
+        $admin = User::factory()->create();
+        $admin->setRole(User::ROLE_ADMIN, true);
+        $this->actingAs($admin)->get('/admin/youtube')->assertOk()->assertDontSee('nový Short se nestaví');
+
+        app(FarmSettings::class)->set('video_prices', false);
+        $this->artisan('youtube:price-short')->expectsOutputToContain('Ceny ve videích jsou vypnuté (/admin/farm/settings)')->assertSuccessful();
+        $this->artisan('youtube:price-short', ['--dry-run' => true])->expectsOutputToContain('Ceny ve videích jsou vypnuté (/admin/farm/settings)')->assertSuccessful();
+        Process::assertNothingRan();
+        $this->assertSame(1, FarmVideo::where('kind', FarmVideo::KIND_PRICE)->count(), 'nothing new in the queue');
+        $this->assertFalse(Storage::disk('farm')->exists('series/price-'.now()->format('Y-m-d').'-2.mp4'));
+        // the Short already waiting has its prices in the picture: no button, the admin rejects it
+        $this->actingAs($admin)->get('/admin/youtube')->assertOk()->assertSee('nový Short se nestaví')->assertDontSee(route('admin.youtube.rebuild', $waiting), false);
+        $this->assertNull(app(FarmVideos::class)->rebuildState($waiting));
+    }
+
     public function test_the_monthly_video_tells_the_steps_between_the_months_prints_with_chapters_and_the_numbers(): void
     {
         foreach (range(1, 8) as $i) {
@@ -225,6 +248,7 @@ final class YouTubeSeriesTest extends TestCase
         $numbers = ['printed' => 412, 'handed_over_days_median' => 3.0, 'last_30_days_printed' => 37, 'videos_published' => 31];
         $cut = $series->monthly($orders, $month, $numbers, Storage::disk('farm')->path('series/month-2026-10.mp4'));
         $this->assertSame(FarmVideo::KIND_MONTHLY, $cut->kind);
+        $this->assertSame([], array_filter($cut->texts, fn ($t) => str_contains($t, 'Kč')), 'the month shows no amount, so the switch of the prices has nothing to do here');
         $fixed = 4 + 5 * 3 + 6 + 4;
         $per = (180 - $fixed - 6 * 3) / 8;
         $this->assertEqualsWithDelta(16.625, $per, 0.001);
