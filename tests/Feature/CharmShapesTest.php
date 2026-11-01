@@ -3,6 +3,7 @@
 namespace Tests\Feature;
 
 use App\Domain\Tools\ParametricGenerator;
+use App\Engines\Mesh\StlFile;
 use App\Engines\Repair\PythonTool;
 use App\Support\PreviewMeta;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -42,13 +43,98 @@ class CharmShapesTest extends TestCase
         return $farm;
     }
 
+    /** @return list<array{0: array{float, float, float}, 1: array{float, float, float}, 2: array{float, float, float}}> */
+    private function triangles(array $params): array
+    {
+        $r = $this->postJson('/api/tools/param/preview', ['kind' => 'charm', 'params' => $params])->assertOk();
+
+        return iterator_to_array(StlFile::triangles($r->baseResponse->getFile()->getPathname()), false);
+    }
+
+    /** How many bodies of more than a square millimetre of surface: joined by their corners, whatever flaps lie about. */
+    private function solidBodies(array $triangles): int
+    {
+        $of = [];
+        $find = function (string $k) use (&$of, &$find): string {
+            return ($of[$k] ??= $k) === $k ? $k : ($of[$k] = $find($of[$k]));
+        };
+        $areas = [];
+        foreach ($triangles as $t) {
+            $keys = array_map(fn ($p) => round($p[0], 3).' '.round($p[1], 3).' '.round($p[2], 3), $t);
+            $of[$find($keys[0])] = $find($keys[1]);
+            $of[$find($keys[1])] = $find($keys[2]);
+        }
+        foreach ($triangles as [$a, $b, $c]) {
+            $u = [$b[0] - $a[0], $b[1] - $a[1], $b[2] - $a[2]];
+            $v = [$c[0] - $a[0], $c[1] - $a[1], $c[2] - $a[2]];
+            $root = $find(round($a[0], 3).' '.round($a[1], 3).' '.round($a[2], 3));
+            $areas[$root] = ($areas[$root] ?? 0) + sqrt(($u[1] * $v[2] - $u[2] * $v[1]) ** 2 + ($u[2] * $v[0] - $u[0] * $v[2]) ** 2 + ($u[0] * $v[1] - $u[1] * $v[0]) ** 2) / 2;
+        }
+
+        return count(array_filter($areas, fn ($area) => $area > 1));
+    }
+
+    public function test_the_eyelet_is_sunk_into_the_plate_and_its_hole_goes_right_through(): void
+    {
+        // on the right side of a straight plate; a 4.5 mm hole in a 2 mm wall, as the page opens with
+        $plate = ['line1' => 'Jana', 'body' => 'rect', 'width' => 55, 'thickness' => 3, 'frame' => 1.5, 'eyelet' => true, 'eye_pos' => 25, 'eye_hole' => 4.5, 'eye_wall' => 2];
+        $m = $this->meta($plate);
+        $eye = $m['notes']['eyelet'];
+        $edge = $eye['x'] - 1.25;                                // the middle of the ring stands 1.25 mm off the plate: a millimetre of the hole lies in it
+        $this->assertEqualsWithDelta($m['bbox']['x'], $eye['x'] + 4.25, 0.05);
+        // a line along the edge of the plate, just outside it, at half its thickness: what the ring holds on to
+        $hits = [];
+        foreach ($this->triangles($plate) as [$a, $b, $c]) {
+            $x = $edge + 0.05;
+            $z = 1.37;
+            $d = ($b[0] - $a[0]) * ($c[2] - $a[2]) - ($c[0] - $a[0]) * ($b[2] - $a[2]);
+            if (abs($d) < 1e-9) {
+                continue;
+            }
+            $u = (($x - $a[0]) * ($c[2] - $a[2]) - ($c[0] - $a[0]) * ($z - $a[2])) / $d;
+            $v = (($b[0] - $a[0]) * ($z - $a[2]) - ($x - $a[0]) * ($b[2] - $a[2])) / $d;
+            if ($u >= 0 && $v >= 0 && $u + $v <= 1) {
+                $hits[] = $a[1] + $u * ($b[1] - $a[1]) + $v * ($c[1] - $a[1]);
+            }
+        }
+        sort($hits);
+        // the ring, then the hole, then the ring again: 8 of its 8.5 mm wide, where it used to stand on 5.5 mm
+        $this->assertCount(4, $hits);
+        $this->assertGreaterThan(7.8, $hits[3] - $hits[0]);
+        $this->assertEqualsWithDelta($eye['y'], ($hits[0] + $hits[3]) / 2, 0.1);
+        $this->assertGreaterThan(3.4, $hits[2] - $hits[1], 'the hole between them');
+
+        // the hole goes right through whatever lies at the edge: the plate, the raised colours, the rim, the inlaid colours, the bevel
+        foreach ([[], ['rim' => true], ['flush' => true], ['bevel' => true], ['frame' => 0], ['thickness' => 6]] as $more) {
+            $params = $more + $plate;
+            $eye = $this->meta($params)['notes']['eyelet'];
+            $deepest = 0.0;
+            foreach ($this->triangles($params) as $t) {
+                $mid = [($t[0][0] + $t[1][0] + $t[2][0]) / 3, ($t[0][1] + $t[1][1] + $t[2][1]) / 3];
+                foreach ([$t[0], $t[1], $t[2], $mid] as $p) {
+                    $deepest = max($deepest, 2.25 - hypot($p[0] - $eye['x'], $p[1] - $eye['y']));
+                }
+            }
+            $this->assertLessThan(0.05, $deepest, json_encode($more));
+            $this->assertSame(1, $this->farm($params)['shells'], json_encode($more));
+        }
+
+        // a ring on the end of a letter's stroke holds too: nothing is cut off, wherever it is put on a name that follows its
+        // outline. Counted here, not by the farm: seams of the colours leave flaps only its pymeshfix mends (docs/P.md §10)
+        foreach ([5, 20, 45, 70, 95] as $pos) {
+            $name = ['line1' => 'Jana', 'body' => 'image', 'width' => 55, 'thickness' => 3, 'frame' => 1.5, 'eyelet' => true, 'eye_pos' => $pos, 'eye_hole' => 4.5];
+            $this->assertSame(1, $this->solidBodies($this->triangles($name)), "{$pos} %");
+        }
+    }
+
     public function test_the_page_opens_with_our_logo_as_roman_set_it_up(): void
     {
         $preset = ParametricGenerator::presets('charm')['matplace'];
         $this->get('/tools/charm')->assertOk()->assertSee('preset: "matplace"', false);
-        // his screenshot: 61.9 x 34.4 x 5.4 mm, three colours of the picture on a grey plate, the eyelet right of the e
+        // his screenshot: 61.9 x 34.4 x 5.4 mm less the 2 mm the eyelet was sunk by (1 Nov 2026), three colours of the picture on
+        // a grey plate, the eyelet right of the e
         $m = $this->meta($preset);
-        $this->assertEqualsWithDelta(61.9, $m['bbox']['x'], 0.1);
+        $this->assertEqualsWithDelta(59.9, $m['bbox']['x'], 0.1);
         $this->assertEqualsWithDelta(34.4, $m['bbox']['y'], 0.1);
         $this->assertEqualsWithDelta(5.4, $m['bbox']['z'], 0.01);
         $this->assertSame([], array_values((array) ($m['notes']['warnings'] ?? [])));
@@ -79,12 +165,12 @@ class CharmShapesTest extends TestCase
                 if ($y !== null) {
                     $this->assertEqualsWithDelta($y, $bare['bbox']['y'], 0.3, $name);
                 }
-                // the eyelet sits on the outline at every place: half the wall into the plate, the hole outside it
+                // the eyelet sits on the outline at every place: its middle half a millimetre off it (a 3 mm hole, sunk by 1 mm)
                 foreach ([0, 35, 70] as $pos) {
                     $m = $this->meta($params + ['eyelet' => true, 'eye_pos' => $pos, 'eye_hole' => 3, 'eye_wall' => 2]);
                     $eye = $m['notes']['eyelet'];
                     $nearest = min(array_map(fn ($p) => hypot($p[0] - $eye['x'], $p[1] - $eye['y']), $m['notes']['outline']));
-                    $this->assertEqualsWithDelta(2.5, $nearest, 0.8, "{$name} {$pos} %");
+                    $this->assertLessThan(1.5, $nearest, "{$name} {$pos} %");
                     $this->assertSame(1, $this->farm($params + ['eyelet' => true, 'eye_pos' => $pos])['shells'], "{$name} {$pos} %: one body");
                 }
             }

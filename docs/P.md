@@ -1120,3 +1120,37 @@ jménem: šířka, očko na obrysu ve 3 polohách, jedno těleso; čipy ve třec
 
 Neověřeno: filamenty na produkci a tisk. Logo má na švech barev pár hran, které farma opravuje sama (§9a.1): model projde,
 kalkulace ale může napsat, že byl opraven.
+
+### 10a. Dodatek: očko zapuštěné do destičky (1. 11. 2026, session G)
+
+Roman: „očko zapustit víc do destičky, aby lépe drželo“ (zadání §6), větev `feature/eyelet-deep`.
+
+- `reach = max(0, hole_d/2 − EYE_SUNK)`, `EYE_SUNK = 1,0` mm: celá stěna kroužku leží uvnitř obrysu a otvor sahá 1 mm do
+  destičky. Platí pro všechny druhy s očkem kromě medaile, která má dál hole_d/2 + wall/2. Otvor (`hole2d`) se už dřív
+  vyřezával z destičky i vrstev, lem a okraj ustupují kroužku, stačilo tedy posunout kroužek.
+- Krček jen jako pojistka: přidá se, jen když kroužek překrývá destičku z méně než třetiny plochy. Jinde by trčel.
+- Uložené návrhy se změní: model je užší o 2 mm (u otvoru 4,5 mm, stěna 2 mm). **Logo Matplace 59,9 × 34,3 × 5,4 mm**, dřív 61,9.
+  Očko je dál vpravo u e, `eye_pos` zůstává 42.
+
+**Čísla spoje, otvor 4,5 mm, stěna 2 mm** (poloměr kroužku 4,25 mm):
+
+| | střed od obrysu | rozpětí spoje na obrysu | plný materiál na obrysu |
+|---|---|---|---|
+| dřív (půl stěny) | 3,25 mm | 5,5 mm | 5,5 mm |
+| teď (otvor 1 mm v destičce) | 1,25 mm | 8,1 mm | 4,4 mm (dvě ramena, mezi nimi otvor) |
+| varianta `EYE_SUNK = 0` (otvor těsně u obrysu) | 2,25 mm | 7,2 mm | 7,2 mm |
+
+Zadání chtělo „spoj aspoň průměr kroužku“ a to na obrysu nejde: rozpětí 8,1 mm z 8,5 mm a test hlídá přes 7,8 mm. Otvor do
+destičky ale plný materiál přímo na obrysu zmenšuje. Varianta 0 má plného materiálu víc a nezasahuje do písmen; rozhodne
+tah za vytištěný kus, ne výpočet. Přepnutí je jedna konstanta (a test rozměrů), viz řádek výš.
+
+![Logo Matplace před a po](img/charm-eyelet-deep.png)
+
+Ověřeno: `CharmShapesTest`: rozpětí spoje v řezu těsně za obrysem, otvor průchozí s lemem, zapuštěnými barvami, zkosením, bez okraje a u
+tloušťky 6 mm, jedno těleso i na konci písmene. Farma v 84 návrzích (přívěsek, magnetka, klíčenka; 7 motivů; 4 polohy) s pymeshfix
+nic neodmítla. Neověřeno: pevnost tahem, tisk.
+
+**Upřesnění k §9a.1 a §10:** švy barev. Na hlavní větvi je 48 z těch 84 návrhů nečistých a farma je opraví; bez `pymeshfix`
+na stroji (lokální Python ho neměl) by je ale odmítla, takže „farma to opraví“ platí jen s ním, a podle `docs/AL.md` ho
+produkce má. Kalkulace u nich může napsat, že model opravila. Přesah 0,01 mm mezi vrstvami to není (zkoušeno bez něj, stejný
+výsledek), plošky leží ve výšce desky. Příčinu jsem dál nehledal.
