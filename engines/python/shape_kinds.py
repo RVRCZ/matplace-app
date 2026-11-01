@@ -59,7 +59,9 @@ CLIP_MIN = 14.0              # the clip of a straw topper at one point of its ou
 CLIP_ARM = 12.0              # how far the plate may reach out to the clip: longer is ugly and weak
 CLIP_ALONG = 15.0            # along the straw: the same clip, as long whatever the name, in the middle of its side
 OVAL = 0.7                  # an oval's height to its width: a fixed proportion, the name or picture is sized to it
+FLUSH_DOWN = ("charm", "keychain", "earrings", "ornament", "magnet", "coaster", "badge", "bag_charm")     # flat plates whose flush colours print face down (ParametricGenerator::FLUSH_DOWN)
 EYE_SUNK = 1.0              # how far the hole of an eyelet reaches into the plate: its whole wall lies inside the outline
+POCKET_CLOSE = 0.1          # slits in the pocket of a face-down picture narrower than twice this are not left standing
 INLAY = 0.6                 # how deep inlaid colours go: three layers, nothing of the plate shows through
 GAP = 6.0                   # between the two earrings on the bed
 
@@ -471,7 +473,11 @@ def build(M, Invalid, p, product):
     motif = p.get("motif", "flush") if medal else None
     if medal and motif not in ("flush", "raised"):
         raise Invalid("bad_choice", "motif")
-    face_down = medal and (motif == "flush" or bool(p.get("inlay", False)))
+    # a flat plate with its colours flush prints the same way: the first layers are the face, smooth, its colours sharply
+    # apart and nothing to iron (docs/P.md §11). A cookie's round top, a letter's stand, a straw's clip stay face up
+    face_down = (medal and (motif == "flush" or bool(p.get("inlay", False)))) or (flush and product in FLUSH_DOWN)
+    if face_down:
+        bevel = False                                         # the edge on the bed cannot be chamfered; a saved design may ask for both
     border = medal and bool(p.get("border", True))
     if medal:
         flush, rim, bevel = False, False, False
@@ -711,9 +717,16 @@ def build(M, Invalid, p, product):
     if face_down:
         # the motif is seen from below once the medal is turned over: mirrored left to right, a number reads right
         mx0, _, mx1, _ = body2d.bounds()
+        turned = lambda cs: cs.scale([-1.0, 1.0]).translate([mx0 + mx1, 0])       # noqa: E731
         for layer in layers:
-            layer["own"] = layer["own"].scale([-1.0, 1.0]).translate([mx0 + mx1, 0])
-            layer["stack"] = layer["stack"].scale([-1.0, 1.0]).translate([mx0 + mx1, 0])
+            layer["own"] = turned(layer["own"])
+            layer["stack"] = turned(layer["stack"])
+        if not medal:
+            # a medal's outline is the same both ways; any other outline turns with its picture. `travel` and the notes of
+            # the eyelet stay as the piece is seen: the preview shows it turned over, within the same bounds
+            body2d, plate2d = turned(body2d), turned(plate2d)
+            if ring_out is not None:
+                ring_out = turned(ring_out)
 
     # ── heights ─────────────────────────────────────────────────────────────────────────────────────────────────
     pocketed = product in ("magnet", "badge")                # a pocket in the back: for a magnet, or for the sticky dot of a badge reel
@@ -727,7 +740,7 @@ def build(M, Invalid, p, product):
     if mount in ("glue", "press") and t < mag_h + 0.8:
         t = round(mag_h + 0.8, 2)                             # a floor of four layers over the magnet
         notes["thickened"] = t
-    depth = n("depth", 0.6)
+    depth = n("depth", 0.6) if medal else INLAY
     if medal and not face_down and int(n("links", 40)) > 0:
         tall = math.ceil(_link_profile(LINK[2])[0] / 0.2 - 1e-6) * 0.2
         if t < tall - 1e-6:
@@ -751,6 +764,17 @@ def build(M, Invalid, p, product):
         if not lem2d.is_empty():
             layers[0]["own"] = layers[0]["own"] + lem2d
             layers[0]["stack"] = layers[0]["stack"] + lem2d
+    band2d, band_cut = None, None
+    if rim and face_down:
+        # nothing can stand on a face that lies on the bed: the rim is a band in its own colour beside the picture, level with it.
+        # Its place in the plate is cut from beyond the outline: a cut along the plate's own wall leaves a sliver on every facet
+        band2d = plate2d - plate2d.offset(-edge, J, 2.0, 24)
+        band_cut = plate2d.offset(1.0, J, 2.0, 24) - plate2d.offset(-edge, J, 2.0, 24)
+        if ring_out is not None:
+            band2d = band2d - ring_out.offset(0.01, J, 2.0, 24)
+            band_cut = band_cut - ring_out.offset(0.01, J, 2.0, 24)
+        for layer in layers:
+            layer["own"], layer["stack"] = layer["own"] - band2d, layer["stack"] - band2d
     if face_down:
         top = t
         solids = [(layer, layer["own"].extrude(depth)) for layer in layers]
@@ -776,6 +800,12 @@ def build(M, Invalid, p, product):
         pocket = None
         for layer, _ in solids:
             pocket = layer["own"] if pocket is None else pocket + layer["own"]
+        if band_cut is not None:
+            pocket = band_cut if pocket is None else pocket + band_cut
+        if pocket is not None and face_down and not medal:
+            # a hairline left between two colours, or between a colour and the rim, would stay in the plate as a wall of no
+            # thickness: nothing a nozzle prints, and the farm refuses the body (91 bodies on the logo with a rim)
+            pocket = pocket.offset(POCKET_CLOSE, J, 2.0, 16).offset(-POCKET_CLOSE, J, 2.0, 16)
         if pocket is not None:
             body = body - (pocket.extrude(depth + 1).translate([0, 0, -1]) if face_down else pocket.extrude(INLAY + 1).translate([0, 0, t - INLAY]))
     if dish:
@@ -794,7 +824,10 @@ def build(M, Invalid, p, product):
                 body, whole = body + filling, whole + filling
             notes["pockets"] = dict(made, depth=round(rise - t, 1))
     rim_solid = None
-    if rim:
+    if band2d is not None:
+        if not band2d.is_empty():
+            rim_solid = band2d.extrude(INLAY)
+    elif rim:
         rim_top = (t + INLAY) if flush else top
         rim2d = plate2d - plate2d.offset(-edge, J, 2.0, 24)
         if ring_out is not None:
@@ -816,11 +849,13 @@ def build(M, Invalid, p, product):
             solids = [(layer, s - cut) for layer, s in solids]
         else:
             deep = mag_h + (0.2 if product == "magnet" else 0.0)      # a magnet must not stand proud; a sticky dot is as deep as asked
-            cut = M.Manifold.cylinder(deep + 1, need, need, 64).translate([mx, my, -1])
+            # in the back: on top when the face lies on the bed (the pocket needs no bridge then)
+            cut = M.Manifold.cylinder(deep + 1, need, need, 64).translate([mx, my, t - deep if face_down else -1])
             body, whole = body - cut, whole - cut
         notes["magnet"] = {"x": round(mx, 2), "y": round(my, 2), "d": mag_d, "h": mag_h, "mount": mount}
     if product == "coaster" and p.get("grooves", False):
-        # rings cut two layers deep into the underside: the coaster does not slide on a wet table
+        # rings cut two layers deep into the underside: the coaster does not slide on a wet table. Printed face down its
+        # underside is on top
         cut2d = None
         for i in range(3):
             a = plate2d.offset(-(6.0 + 9.0 * i), J, 2.0, 32)
@@ -829,7 +864,7 @@ def build(M, Invalid, p, product):
                 break
             cut2d = (a - b) if cut2d is None else cut2d + (a - b)
         if cut2d is not None:
-            cut = cut2d.extrude(0.4 + 1).translate([0, 0, -1])
+            cut = cut2d.extrude(0.4 + 1).translate([0, 0, t - 0.4 if face_down else -1])
             body, whole = body - cut, whole - cut
 
     chain = None
@@ -856,6 +891,7 @@ def build(M, Invalid, p, product):
         body, whole = body - bore, whole - bore
         solids = [(layer, s - bore) for layer, s in solids]
         grip = grip - bore                                   # the clip as it is printed: open on top, and that lower
+    pin, pinless = None, None
     beside = None                                            # what lies on the bed next to the product: the plate's width, depth, and its own height
     if chain is not None:
         beside = (chain[1], chain[2], _link_profile(LINK[2])[0])
@@ -886,6 +922,7 @@ def build(M, Invalid, p, product):
         head_r, stem_h = mag_d / 2 + 4.0, 2.0 + n("bag_wall", 4) + mag_h - 0.3
         pin = M.Manifold.cylinder(2.0, head_r, head_r, 64) + M.Manifold.cylinder(stem_h, mag_d / 2, mag_d / 2, 64)
         pin = pin.translate([bx1 + 4.0 + head_r, by0 + head_r, 0])
+        pinless = (body, whole)
         body, whole = body + pin, whole + pin
         notes["pin"] = {"d": round(mag_d, 1), "head": round(2 * head_r, 1), "height": round(stem_h, 1)}
         beside = (bx1 - bx0 + 4.0 + 2 * head_r, max(by1 - by0, 2 * head_r), stem_h)
@@ -924,6 +961,8 @@ def build(M, Invalid, p, product):
         if product != "earrings":
             return one
         two = one.mirror([1, 0, 0]).translate([span, 0, 0]) if p.get("mirror", False) else one
+        if face_down:
+            one, two = two, one                              # turning the pair over swaps it: left is still the one that reads right
         return one + two.translate([span + GAP, 0, 0])
 
     parts = {"body": laid(body)}
@@ -948,7 +987,7 @@ def build(M, Invalid, p, product):
     if not flush and not face_down:
         for i, (layer, solid) in enumerate(solids):
             fused = fused + layer["stack"].extrude(step + 0.01).translate([0, 0, t + i * step - 0.01])
-    if has_rim:
+    if has_rim and not face_down:
         fused = fused + rim_solid.translate([0, 0, -0.01])
     parts["all"] = laid(fused)
     parts["_pieces"] = {"all": pieces}
@@ -957,13 +996,18 @@ def build(M, Invalid, p, product):
         # the preview shows the medal as it is worn: turned over, its face up and the number reading right
         parts["use"] = parts["all"].rotate([0, 180, 0])
         parts["_pieces"]["use"] = [(name, solid.rotate([0, 180, 0])) for name, solid in pieces]
+        if pin is not None:
+            # the pin of a bag charm is no part of the face: it stays as it lies, to the right of the charm and on the same floor
+            beside_it = laid(pin).translate([-span, 0, -t])
+            parts["use"] = laid(pinless[1]).rotate([0, 180, 0]) + beside_it
+            parts["_pieces"]["use"] = [(name, laid(pinless[0]).rotate([0, 180, 0]) + beside_it if name == "body" else solid) for name, solid in parts["_pieces"]["use"]]
 
     # ── what the print needs ───────────────────────────────────────────────────────────────────────────────────
     # the print from the bed up, band by band: which filaments each band of layers holds. One filament in every band =
     # the colours can be changed by height; two in one band = only a printer that changes filament by itself
-    bands = [(0.0, "body", [body_color] + ([(c["code"], c["hex"]) for c in listed] if flush or face_down else []))]
+    bands = [(0.0, "body", [body_color] + ([(c["code"], c["hex"]) for c in listed] if flush or face_down else []) + ([rim_color] if face_down and has_rim else []))]
     if flush or face_down:
-        if has_rim:
+        if has_rim and not face_down:
             bands.append((t, "rim", [rim_color]))
     else:
         for i, c in enumerate(listed):

@@ -5,6 +5,7 @@ namespace Tests\Feature;
 use App\Domain\Farm\GcodeSlot;
 use App\Domain\Farm\OrderService;
 use App\Domain\Farm\Wallet;
+use App\Domain\Tools\ParametricGenerator;
 use App\Engines\Mesh\StlFile;
 use App\Engines\Mesh\StlTopology;
 use App\Mail\FarmAdminAlert;
@@ -317,6 +318,52 @@ class FarmOnePlateTest extends TestCase
         $this->s1->update(['mode' => FarmPrinter::MODE_AGENT, 'last_seen_at' => now()]);
         $this->actingAs($this->user)->postJson("/farm/orders/{$order->token}/pay", ['slot' => $main['slot'], 'delivery' => 'pickup', 'terms' => true, 'expected_total' => $main['total'], 'part_slots' => ['color_2' => $this->red->id]])
             ->assertOk()->assertJsonPath('status', 'queued');
+    }
+
+    /**
+     * A flat plate with flush colours prints face down, one plate on a machine with a changer (docs/P.md §11). A design saved
+     * before that has no `one_plate_required`, but its parts are built anew from its parameters and by parts its colours
+     * would come out loose: the same rule holds, read from its kind and `flush`.
+     */
+    public function test_a_flush_plate_saved_before_it_printed_face_down_goes_on_one_plate_or_not_at_all(): void
+    {
+        if (! app(ParametricGenerator::class)->available()) {
+            $this->markTestSkipped('The model generator needs Python with manifold3d.');
+        }
+        $saved = fn (array $more, string $kind = 'charm') => new ModelFile(['origin' => 'tool', 'origin_ref' => $kind, 'tool_params' => $more]);
+        $this->assertTrue($saved(['flush' => true, 'multi_material' => true])->onePlateRequired());
+        $this->assertTrue($saved(['flush' => true, 'multi_material' => true], 'coaster')->onePlateRequired());
+        $this->assertFalse($saved(['flush' => true, 'multi_material' => false])->onePlateRequired(), 'all in one filament: nothing to change');
+        $this->assertFalse($saved(['flush' => false, 'multi_material' => true])->onePlateRequired(), 'raised colours and a rim: as before');
+        $this->assertFalse($saved(['flush' => true, 'multi_material' => true], 'straw')->onePlateRequired(), 'a straw topper stays face up');
+        $this->assertFalse((new ModelFile(['origin' => 'upload', 'origin_ref' => 'charm', 'tool_params' => ['flush' => true]]))->onePlateRequired());
+
+        $file = $this->design();
+        $file->forceFill(['origin_ref' => 'charm', 'tool_params' => [
+            'line1' => 'Ela', 'lines' => ['Ela'], 'body' => 'rect', 'width' => 50, 'thickness' => 3, 'frame' => 1.5, 'flush' => true, 'multi_material' => true, 'parts' => ['body', 'color_1'],
+            'part_colors' => ['body' => ['hex' => '#f4f4f0'], 'color_1' => ['hex' => '#c01818']],
+        ]])->save();
+        $this->assertTrue($file->onePlateRequired());
+        $this->assertSame(['body', 'color_1'], OrderService::designParts($file));
+
+        // by parts it is refused with the reason: two copies, then a machine run by hand
+        $two = $this->order($file, ['part_color' => ['color_1' => $this->red->farm_color_id], 'copies' => 2]);
+        $this->assertSame([FarmOrder::STATUS_FAILED, 'one_plate_needed', 'copies'], [$two->status, $two->error, $two->error_detail]);
+        $this->s1->update(['mode' => FarmPrinter::MODE_MANUAL]);
+        $manual = $this->order($file, ['part_color' => ['color_1' => $this->red->farm_color_id]]);
+        $this->assertSame([FarmOrder::STATUS_FAILED, 'one_plate_needed', 'manual'], [$manual->status, $manual->error, $manual->error_detail]);
+        $this->s1->update(['mode' => FarmPrinter::MODE_AGENT]);
+
+        // on the machine with a changer it goes on one plate, its parts where the plate has them: the colour on the bed
+        $order = $this->order($file, ['part_color' => ['color_1' => $this->red->farm_color_id]]);
+        $this->assertTrue($order->onePlate());
+        $disk = Storage::disk('farm');
+        [$bodyLo, $bodyHi] = StlFile::bounds($disk->path($order->dir().'/plate-part-1.stl'));
+        [$colorLo, $colorHi] = StlFile::bounds($disk->path($order->dir().'/plate-part-2.stl'));
+        $this->assertEqualsWithDelta(0.0, $colorLo[2], 0.001);
+        $this->assertEqualsWithDelta(0.6, $colorHi[2], 0.001);
+        $this->assertEqualsWithDelta(3.0, $bodyHi[2] - $bodyLo[2], 0.001);
+        $this->assertGreaterThan($bodyLo[0], $colorLo[0], 'the letters inside the plate, not each in its corner');
     }
 
     /**

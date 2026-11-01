@@ -30,7 +30,7 @@ interface BomLine { size: string; w_mm: number; d_mm: number; color: string; cou
 interface ShapeColor { part: string; index: number; rgb: string; code: string; hex: string; share: number }
 interface ShapeNotes {
     colors?: ShapeColor[]; paint?: Record<string, string>; parts?: string[]; body_color?: { code: string; hex: string }; rim_color?: { code: string; hex: string };
-    filaments?: number; multi_material?: boolean; color_changes?: { z: number }[]; found?: number; wanted?: number; each?: number[]; copies?: number;
+    filaments?: number; multi_material?: boolean; one_plate_required?: boolean; color_changes?: { z: number }[]; found?: number; wanted?: number; each?: number[]; copies?: number;
     eyelet?: { x: number; y: number; z: number }; outline?: [number, number][]; thickened?: number; magnet?: { d: number; h: number; mount: string }; chain?: { links: number; length: number }; pockets?: { kind: string; count: number; depth: number }; pin?: { d: number; head: number; height: number }; stand?: number[]; source?: string;
     frame?: [number, number, number]; draw_z?: number;
     layers?: { part: string; index: number; box: [number, number, number, number]; z: number }[]; outer?: number[];
@@ -402,7 +402,7 @@ export function bootParam(stage: Stage): void {
         const swaps = (n.color_changes ?? []).length;
         // the farm loads four spools for one print: a design of more different colours is told so (a colour may come back, that costs no spool)
         const spools = n.filaments ?? 1;
-        if (print) print.textContent = n.multi_material ? t('shape.print.multi') : spools > 4 ? t('shape.print.many', { n: swaps, c: spools }) : swaps > 1 ? t('shape.print.swap', { n: swaps }) : swaps ? t('shape.print.swap1') : t('shape.print.one');
+        if (print) print.textContent = n.one_plate_required ? t(spools > 4 ? 'shape.print.plate.many' : 'shape.print.plate', { c: spools }) : n.multi_material ? t('shape.print.multi') : spools > 4 ? t('shape.print.many', { n: swaps, c: spools }) : swaps > 1 ? t('shape.print.swap', { n: swaps }) : swaps ? t('shape.print.swap1') : t('shape.print.one');
         renderRecent();
     };
 
