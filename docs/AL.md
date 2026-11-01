@@ -1676,6 +1676,60 @@ Test v `YouTubeSeriesTest` s částečným mockem `duration` (18,8 s → mimo; 3
 „from 1.5 s, 6 s“; žádný „window past the end“). Po nasazení stačí `farm:monthly-video --month=2026-10 --check-inputs
 --dry-run` a pak sestavit znovu (přestavba vezme nový soubor, dokud video není na YouTube).
 
+## 13.8 Ceny ve videích volitelně (TODO #60, 1. 11. 2026, feature/video-prices-switch)
+
+Zadání docs/prompts/ceny-ve-videich.md. Roman: „nelíbí se mi ceny ve videích, co se ukazují na konci“. Přepínač `video_prices` (výchozí zapnuto) je na /admin/farm/settings v části Přepínače webu jako „Ceny ve videích“.
+
+### 13.8.1 Co vypnutí dělá
+
+- **Short výtisku:** `FarmVideos::priceLine()` vrací prázdný řádek, karta se staví bez něj. Adresa a otázka zůstávají na svém místě a délka videa se nemění; po řádku ceny zůstane nad adresou volné místo, stejně jako dosud u ukázkových kusů. Snímek: docs/img/short-no-price.png (syntetické snímky a adresa z místního prostředí).
+- **Komentář kanálu:** `commentText()` je jen výzva s odkazem. Čte přepínač v okamžiku zveřejnění.
+- **Popis:** „hotový kus vidíte na konci“ místo „hotový kus a cenu vidíte na konci“ (`youtube.video.shown_plain` a `shown_price`, cs/en/es v lang/src/video_prices.json; `description` má místo věty `:shown`).
+- **Short „Kolik stojí 3D tisk?“:** `youtube:price-short` skončí větou „Ceny ve videích jsou vypnuté (/admin/farm/settings): Short se nestaví.“, i s `--dry-run`. Nic nestaví a nic nefrontuje. U čekajícího Shortu toho seriálu to řekne i /admin/youtube.
+
+Zapnuto zpět: vše jako dřív, nové Shorty mají cenu znovu bez přestavby.
+
+**Záměrně beze změny:**
+- Výzva „Nahrajte model a hned uvidíte cenu“ v popisu a komentáři. Mluví o ceně diváka, ne o částce ve videu, a zadání ji v komentáři nechává.
+- Týdenní a měsíční video neukazují žádnou částku: `priceLine()` a `price()` volá jen Short a seriál o cenách, 16:9 a zákaznické video ceny nemají a měsíční bere jen rostoucí část z 16:9 nebo zákaznického videa. Krok „Cena hned“ a věta v popisu měsíčního videa říkají, že cenu zjistíte do minuty, částka v nich není. Testy to hlídají přes texty karet, ne přes obraz.
+
+### 13.8.2 Čekající videa: proč nové tlačítko
+
+„Nahradit novou verzí“ video nestaví: smaže kopii z YouTube a vrátí řádek ke schválení, nahraje se pak hotový soubor. Cena je v obraze souboru, proto přibylo **„Postavit znovu“** u Shortu, který čeká (`pending`) nebo je soukromě nahraný (`uploaded`).
+
+- Běží na pozadí (`App\Jobs\RebuildFarmShort`), staví ze snímků tisku jen Short s dnešním nastavením. Zákaznické video na stránce zakázky se nemění.
+- Nový soubor se píše vedle (`short.mp4.new.mp4`) a starý nahradí až hotový. Selhání ani schválení během stavby tedy starý soubor nerozbijí; chyba se ukáže u videa.
+- Popis se přepne hned, mění se jen ta jedna věta, co admin dopsal, zůstává.
+- Druhý klik během stavby nic nespustí, stránka píše „Staví se znovu“ (zámek v cache na 15 minut).
+- Snímky se drží 14 dní (`KEEP_FRAMES_DAYS`). Starší video tlačítko nemá; s vypnutými cenami stránka řekne proč.
+
+U naplánovaných videí přibylo „Nahradit novou verzí“, server to uměl, jen tlačítko chybělo.
+
+### 13.8.3 Co Roman klikne
+
+1. /admin/farm/settings: odškrtnout **Ceny ve videích**, uložit.
+2. /admin/youtube, podle stavu videa:
+
+| Video | Klik |
+|---|---|
+| Short čekající na schválení | **Postavit znovu**, po pár minutách obnovit stránku, zkontrolovat konec videa, schválit |
+| Short soukromě nahraný (tlačítko „Zveřejnit na YouTube“) | **Postavit znovu**, po pár minutách **Nahradit novou verzí** (smaže soukromou kopii), schválit |
+| Short naplánovaný | **Nahradit novou verzí** (smaže naplánovanou kopii), pak **Postavit znovu**, schválit |
+| Short bez tlačítka, snímky starší než 14 dní | Bez ceny nejde: **Zamítnout**, nebo zveřejnit s cenou |
+| Short „Kolik stojí 3D tisk?“ (např. price-2026-10-28-1.mp4) | Bez cen nemá smysl: **Zamítnout** |
+| Týdenní a měsíční video (např. month-2026-10.mp4) | Nic, částku neukazují |
+| Zveřejněná videa | Nic se nemění; komentář s cenou jde upravit ručně na YouTube |
+
+### 13.8.4 Ověřeno
+
+- Testy: `FarmVideosCutTest` (texty a graf karty zapnuto i vypnuto, komentář, popis, ostatní střihy bez částky, Postavit znovu včetně selhání, běhu a chybějících snímků), `YouTubeSeriesTest` (příkaz nic nefrontuje a řekne proč, nápověda u seriálu), `FarmAdminNotifyTest` (výchozí zapnuto, uložení a načtení).
+- Skutečný render s ffmpeg 9 na PC: Short s cenou a po Postavit znovu bez ní má stejnou délku v toleranci 0,05 s, 1080×1920. Oba snímky karty jsem prohlédl, adresa a otázka jsou na stejném místě.
+
+**Neověřeno:**
+- Klikání v prohlížeči; stránky jsou ověřené testy odpovědí.
+- Fronta a ffmpeg na produkci, tedy doba stavby a oprávnění k zápisu.
+- Mazání z YouTube přes „Nahradit“ na ostrém kanálu (v testech je Google falešný, nic jsem na YouTube nevolal).
+
 ## 14. Import 3MF s namalovanými barvami (TODO #50, 28. 10. 2026)
 
 Zadání `docs/prompts/import-3mf-barvy.md`, větev `feature/import-3mf-colors` z main 78f4e203. Roman: želva

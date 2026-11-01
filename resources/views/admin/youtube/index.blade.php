@@ -138,6 +138,9 @@
             <p class="text-xs text-slate-500">Instruktážní video {{ $group->first()->meta['name'] ?? '' }} · sestaveno {{ $group->first()->updated_at?->timezone($tz)->format('j. n. Y H:i') }} (php artisan farm:howto-video)</p>
         @elseif($group->first()->kind === 'price')
             <p class="text-xs text-slate-500">Seriál „Kolik stojí 3D tisk?“ · {{ count($group->first()->meta['orders'] ?? []) }} kusů s cenou · sestaveno {{ $group->first()->updated_at?->timezone($tz)->format('j. n. Y H:i') }} (php artisan youtube:price-short)</p>
+            @unless($videoPrices)
+                <p class="mt-1 text-xs font-semibold text-action-dark">Ceny ve videích jsou vypnuté (<a href="{{ route('admin.farm.settings') }}" class="underline">nastavení farmy</a>): nový Short se nestaví a tento ceny ukazuje, bez nich ho postavit nejde. Pokud ho nechcete, zamítněte ho.</p>
+            @endunless
         @elseif($group->first()->kind === 'monthly')
             <p class="text-xs text-slate-500">Měsíc {{ $group->first()->meta['key'] ?? '' }} · {{ count($group->first()->meta['orders'] ?? []) }} tisků · sestaveno {{ $group->first()->updated_at?->timezone($tz)->format('j. n. Y H:i') }} (php artisan farm:monthly-video)</p>
         @else
@@ -204,6 +207,7 @@
             <span class="flex gap-2">
                 @if($v->status === 'scheduled')
                     <form method="post" action="{{ route('admin.youtube.publish', $v) }}">@csrf<input type="hidden" name="title" value="{{ $v->title }}"><input type="hidden" name="description" value="{{ $v->description }}"><input type="hidden" name="when" value="now"><button class="btn-quiet text-sm">Zveřejnit hned</button></form>
+                    <form method="post" action="{{ route('admin.youtube.replace', $v) }}" onsubmit="return confirm('Smazat naplánovanou verzi z YouTube? Video se vrátí ke schválení, kde ho můžete postavit znovu.')">@csrf<button class="btn-quiet text-sm">Nahradit novou verzí</button></form>
                     <form method="post" action="{{ route('admin.youtube.reject', $v) }}" onsubmit="return confirm('Zamítnout video? Z YouTube se smaže.')">@csrf<button class="btn-quiet text-sm text-red-700">Zamítnout</button></form>
                 @endif
                 @if($v->status === 'published' && $v->watchUrl())<a href="{{ $v->watchUrl() }}" target="_blank" rel="noopener" class="btn-quiet text-sm">Přehrát</a>@endif

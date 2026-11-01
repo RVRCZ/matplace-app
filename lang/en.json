@@ -2003,5 +2003,7 @@
     "param.badge.tip": "It prints flat, face up, without supports. It is glued on the reel: with a double-sided sticky dot, a hook-and-loop dot or superglue. The badge reel itself is not part of the print. With flush colours it prints face down, so the face is smooth from the bed.",
     "param.bag_charm.tip": "The charm prints face up and the pin head down next to it, both without supports. Measure the hole of the bag and the thickness of its wall; the pin is 0.6 mm thinner than the hole. Glue it in with superglue. With flush colours it prints face down, so the face is smooth from the bed.",
     "param.shape.print.plate.many": "The colours lie side by side in the first layers and there are :c of them. Only a printer that changes filament by itself and holds :c spools can print that; otherwise reduce the colours or merge some.",
-    "param.shape.print.plate.many.farm": "This design has :c different colours in its first layers. The farm prints at most four in one print: reduce the colours, merge some, or download the parts for your own printer."
+    "param.shape.print.plate.many.farm": "This design has :c different colours in its first layers. The farm prints at most four in one print: reduce the colours, merge some, or download the parts for your own printer.",
+    "youtube.video.shown_price": "the finished piece and its price are at the end",
+    "youtube.video.shown_plain": "the finished piece is at the end"
 }

@@ -4,6 +4,7 @@ namespace App\Domain\YouTube;
 
 use App\Domain\Farm\FarmSettings;
 use App\Domain\Social\VideoSharer;
+use App\Jobs\RebuildFarmShort;
 use App\Jobs\UploadFarmVideo;
 use App\Mail\FarmAdminAlert;
 use App\Mail\FarmVideoPublished;
@@ -12,6 +13,7 @@ use App\Models\FarmVideo;
 use App\Models\YouTubeAccount;
 use App\Support\Money;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Process;
@@ -336,6 +338,40 @@ class FarmVideos
         }
         $video->update(['status' => FarmVideo::STATUS_PENDING, 'youtube_id' => null, 'uploaded_at' => null, 'published_at' => null, 'approved_at' => null, 'scheduled_at' => null, 'error' => null,
             'views' => null, 'likes' => null, 'comments' => null, 'stats_at' => null]);
+    }
+
+    /**
+     * "Postavit znovu": what the button of a waiting Short can do. Only a Short carries a price in its picture; null =
+     * no button, `running` = being built, `no_frames` = the frames are gone (BuildFarmTimelapse::KEEP_FRAMES_DAYS).
+     */
+    public function rebuildState(FarmVideo $video): ?string
+    {
+        if ($video->kind !== FarmVideo::KIND_SHORT || ! $video->order || ! in_array($video->status, [FarmVideo::STATUS_PENDING, FarmVideo::STATUS_UPLOADED], true)) {
+            return null;
+        }
+        if (Cache::has(RebuildFarmShort::lockKey($video->id))) {
+            return 'running';
+        }
+        $disk = Storage::disk(config('farm.disk'));
+        $dir = $video->order->dir();
+
+        return count($disk->files($dir.'/frames_layer')) + count($disk->files($dir.'/frames')) >= 4 ? 'ready' : 'no_frames';
+    }
+
+    /** The Short built again with today's settings, in the background; its waiting descriptions follow the switch at once. False when there is nothing to build from or it runs already. */
+    public function rebuild(FarmVideo $video): bool
+    {
+        if ($this->rebuildState($video) !== 'ready' || ! Cache::add(RebuildFarmShort::lockKey($video->id), true, RebuildFarmShort::TIMEOUT)) {
+            return false;
+        }
+        $locale = (string) config('youtube.language');
+        [$old, $new] = [$this->shownAtEnd(! $this->showsPrices(), $locale), $this->shownAtEnd($this->showsPrices(), $locale)];
+        // the words alone: whatever the admin wrote around them stays
+        $video->order->videos()->whereIn('status', [FarmVideo::STATUS_PENDING, FarmVideo::STATUS_UPLOADED])->get()
+            ->each(fn (FarmVideo $v) => $v->update(['description' => str_replace($old, $new, (string) $v->description)]));
+        RebuildFarmShort::dispatch($video->id);
+
+        return true;
     }
 
     /** Failed, or stuck in `uploading` after a crash: try again (an approved video goes up, an unapproved one waits for the admin). */
@@ -680,7 +716,7 @@ class FarmVideos
     {
         $locale = (string) config('youtube.language');
         $call = $this->callLine($this->linkOf($video), $locale);
-        $price = $video->order ? $this->price($video->order, $locale) : null;
+        $price = $video->order && $this->showsPrices() ? $this->price($video->order, $locale) : null;
 
         return $price !== null ? __('youtube.video.comment', ['cta' => $call, 'price' => $price], $locale) : $call;
     }
@@ -712,10 +748,16 @@ class FarmVideos
         return Money::of(round((float) $order->price_total), (string) ($order->currency ?: Money::CZK))->format($locale ?? (string) config('youtube.language'));
     }
 
-    /** "Cena: 99 Kč" on the Short's end; '' without a price (a showcase). */
+    /** The admin's switch (/admin/farm/settings): do the videos built from now on show what a print cost? */
+    public function showsPrices(): bool
+    {
+        return (bool) app(FarmSettings::class)->get('video_prices');
+    }
+
+    /** "Cena: 99 Kč" on the Short's end; '' without a price (a showcase) or with the prices switched off. */
     public function priceLine(FarmOrder $order, ?string $locale = null): string
     {
-        $price = $this->price($order, $locale);
+        $price = $this->showsPrices() ? $this->price($order, $locale) : null;
 
         return $price !== null ? __('youtube.video.price', ['price' => $price], $locale ?? (string) config('youtube.language')) : '';
     }
@@ -857,12 +899,18 @@ class FarmVideos
     public function defaultDescription(FarmOrder $order, ?string $music = null, string $kind = FarmVideo::KIND_SHORT, ?string $videoId = null): string
     {
         $locale = (string) config('youtube.language');
-        $text = __('youtube.video.description', $this->facts($order) + ['cta' => $this->callLine($this->link($order, $kind, 'youtube', null, $videoId), $locale)], $locale);
+        $text = __('youtube.video.description', $this->facts($order) + ['shown' => $this->shownAtEnd($this->showsPrices(), $locale), 'cta' => $this->callLine($this->link($order, $kind, 'youtube', null, $videoId), $locale)], $locale);
         if ($music) {
             $text .= "\n\n".__('youtube.video.music', ['track' => self::musicCredit($music)], $locale);
         }
 
         return $kind === FarmVideo::KIND_SHORT && $order->timelapse_short_path ? $text."\n\n".$this->hashtags($order, $locale) : $text;
+    }
+
+    /** The description's words for what the end of the video shows. */
+    private function shownAtEnd(bool $prices, string $locale): string
+    {
+        return __($prices ? 'youtube.video.shown_price' : 'youtube.video.shown_plain', [], $locale);
     }
 
     /**

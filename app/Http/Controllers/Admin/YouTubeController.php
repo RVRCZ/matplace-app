@@ -55,6 +55,7 @@ class YouTubeController extends Controller
             'finish' => $videos->whereIn('status', [FarmVideo::STATUS_PENDING, FarmVideo::STATUS_QUEUED, FarmVideo::STATUS_FAILED])->whereNotNull('farm_order_id')
                 ->mapWithKeys(fn ($v) => [$v->farm_order_id => $v->order ? $this->photos->finishIndex($v->order) : null])->all(),
             'kinds' => $this->byKind(),
+            'videoPrices' => $this->videos->showsPrices(),
             'done' => $videos->whereIn('status', [FarmVideo::STATUS_SCHEDULED, FarmVideo::STATUS_PUBLISHED, FarmVideo::STATUS_REJECTED, FarmVideo::STATUS_WITHDRAWN, FarmVideo::STATUS_MISSING]),
             'nextSlot' => $this->videos->nextSlot()->timezone((string) config('youtube.publish_timezone', 'Europe/Prague')),
             // the Facebook page / Instagram: offered at the approval when Meta is connected, and what came of it per video
@@ -188,6 +189,18 @@ class YouTubeController extends Controller
         }
 
         return back()->with('status', 'Stará verze je z YouTube smazaná, nová se nahrává.');
+    }
+
+    /** "Postavit znovu": the waiting Short again from its frames, with today's settings (e.g. without the price). */
+    public function rebuild(FarmVideo $video): RedirectResponse
+    {
+        if (! $this->videos->rebuild($video)) {
+            return back()->with('error', 'Video teď nejde postavit znovu: snímky tisku už jsou smazané, nebo se právě staví.');
+        }
+
+        return back()->with('status', $video->status === FarmVideo::STATUS_UPLOADED
+            ? 'Video se staví znovu, za pár minut tu bude nové. Na YouTube je zatím stará verze: potom klikněte na „Nahradit novou verzí“.'
+            : 'Video se staví znovu, za pár minut tu bude nové (obnovte stránku).');
     }
 
     /** A print for the channel on a free machine (ShowcasePrints). */

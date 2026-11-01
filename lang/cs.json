@@ -2003,5 +2003,7 @@
     "param.badge.tip": "Tiskne se naplocho, lícem nahoru, bez podpěr. Na držák se lepí: oboustranným lepicím kolečkem, suchým zipem, nebo vteřinovým lepidlem. Držák karty není součástí výtisku. Se zarovnanými barvami se tiskne lícem dolů, líc je pak hladký od podložky.",
     "param.bag_charm.tip": "Ozdoba se tiskne lícem nahoru, čep hlavou dolů vedle ní, obojí bez podpěr. Změřte otvor v tašce a tloušťku její stěny; čep je o 0,6 mm tenčí než otvor. Vlepte ho vteřinovým lepidlem. Se zarovnanými barvami se tiskne lícem dolů, líc je pak hladký od podložky.",
     "param.shape.print.plate.many": "Barvy leží vedle sebe v prvních vrstvách a je jich :c. To vytiskne jen tiskárna, která mění filament sama a má :c cívek; jinak snižte počet barev nebo některé slučte.",
-    "param.shape.print.plate.many.farm": "Tenhle návrh má :c různých barev v prvních vrstvách. Na farmě tiskneme nejvýš čtyři v jednom tisku: snižte počet barev, některé slučte, nebo si stáhněte díly pro svou tiskárnu."
+    "param.shape.print.plate.many.farm": "Tenhle návrh má :c různých barev v prvních vrstvách. Na farmě tiskneme nejvýš čtyři v jednom tisku: snižte počet barev, některé slučte, nebo si stáhněte díly pro svou tiskárnu.",
+    "youtube.video.shown_price": "hotový kus a cenu vidíte na konci",
+    "youtube.video.shown_plain": "hotový kus vidíte na konci"
 }

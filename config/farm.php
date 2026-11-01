@@ -84,6 +84,7 @@ return [
         'notify_done' => true,              // the last plate came off, with the camera's last picture
         'notify_problem' => true,           // print failed, cancelled by the customer, start failed, printer offline, error pending, currency
         'notify_paused' => true,            // the printer paused a print by itself (with its reason, when it gave one); once per pause
+        'video_prices' => true,             // false: videos built from now on show no price (FarmVideos::showsPrices, docs/AL.md §13.8; Roman, 1 Nov 2026)
 
         // ── product switches (the admin's value wins over .env; see App\Providers\AppServiceProvider) ──
         'marketplace' => (bool) env('FEATURE_MARKETPLACE', false),   // printers' marketplace: price lists, inquiries, quotes

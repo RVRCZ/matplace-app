@@ -343,12 +343,19 @@ class FarmAdminNotifyTest extends TestCase
 
         // the admin unticks "paid": the form saves the four switches like any other box
         $settings = app(FarmSettings::class)->all();
+        $this->assertTrue($settings['video_prices'], 'on by default');
         $form = ['topup_amounts' => implode(', ', $settings['topup_amounts']), 'qualities' => json_encode($settings['qualities']), 'strengths' => json_encode($settings['strengths']), 'delivery_modes' => $settings['delivery_modes']]
             + array_intersect_key($settings, array_flip(['hourly_rate', 'vat_percent', 'rounding', 'max_upload_mb', 'daily_slices_per_user', 'min_model_mm', 'bed_margin_mm', 'fixed_fee', 'min_price', 'topup_min', 'topup_max', 'generation_price', 'changeover_minutes', 'offline_after_seconds', 'terms_version', 'admin_email']));
         $this->actingAs($admin)->post('/admin/farm/settings', $form + ['notify_printing' => 1, 'notify_done' => 1, 'notify_problem' => 1])->assertRedirect()->assertSessionHasNoErrors();
         $this->app->forgetScopedInstances();
         $this->assertFalse(app(FarmSettings::class)->get('notify_paid'));
         $this->assertTrue(app(FarmSettings::class)->get('notify_done'));
+        // the prices in the videos (docs/AL.md §13.8) start on; the box left empty above switched them off, ticked brings them back
+        $this->assertFalse(app(FarmSettings::class)->get('video_prices'));
+        $this->actingAs($admin)->get('/admin/farm/settings')->assertOk()->assertSee('Ceny ve videích')->assertDontSee('name="video_prices" value="1" checked', false);
+        $this->actingAs($admin)->post('/admin/farm/settings', $form + ['notify_printing' => 1, 'notify_done' => 1, 'notify_problem' => 1, 'video_prices' => 1])->assertRedirect()->assertSessionHasNoErrors();
+        $this->assertTrue(app(FarmSettings::class)->get('video_prices'));
+        $this->actingAs($admin)->get('/admin/farm/settings')->assertOk()->assertSee('name="video_prices" value="1" checked', false);
         $this->actingAs($admin)->get('/admin/farm/settings')->assertOk()->assertDontSee('name="notify_paid" value="1" checked', false);
 
         // paid is off: the payment itself is quiet, but a manual machine still asks for its start (that is "printing")
