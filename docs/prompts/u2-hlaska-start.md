@@ -71,3 +71,23 @@ v adminu „uvolnil podložku“, farma poslala ASA (F26-000122, slot 3), hláš
 Zjisti také, jak se tiskárna v té chvíli jeví přes Moonraker (`print_stats.state`, `pause_resume.is_paused`,
 `idle_timeout.state`, objekt `mmu`), aby agent 0.2.9 uměl rozpoznat „stojí na hlášce 10011715“ a případně poslat
 `RESUME` nebo totéž, co dělá ťuknutí na displeji (co posílá K3SysUi, je vidět v logu Rinkhalsu po Romanově ťuknutí).
+
+## Odchylky session 4 (3. 11. 2026 večer)
+
+- Žádné tisky na U2: Roman nebyl k dispozici a U2 tiskla zakázku F26-000122. Místo bodu B je kit `C:\tmp\u2\variants\`
+  (6 souborů kostky 10 mm, README s pořadím a voláním Moonrakeru) a `C:\tmp\u2\watch_u2.py`. Varianta 5 (PLA 220/60) jde
+  ze slotu 2 (PETG), U2 PLA nemá. Přidána varianta 2b (M104/M109 před G9111, T3 za M117), to je tvar nového přepínače.
+  Varianta 5 zadání (stock soubor ze Sliceru Next) v kitu není, Slicer Next tu není; Roman ji může přidat sám.
+- Bod A zodpovězen bez SSH: logy Moonrakeru jsou ke stažení přes `GET /server/files/logs/<soubor>` a komponenta
+  `mmu_ace` do nich píše. Časy v logu jsou UTC. Původní repozitář `jbatonnet/Rinkhals` je opuštěný, zdroj je
+  `rinkhals-community/Rinkhals` (vydání 20260901_01 je to, co tiskárny mají; 20261101_01 věc opravuje, issue #196).
+- Těch 41 s mezi chybou a druhým FEED není ťuknutí, je to automatický další pokus smyčky Rinkhalsu (kód i shodné časy
+  41 s/41 s/52 s). Zda tisk bez ťuknutí dojede sám, nelze z logů říct; zkouška je v kitu (varianta 1).
+- Oprava v `GcodeSlot` je jen za přepínačem `heat_before_start_macro` (výchozí vypnuto): pořadí řádků za G9111 příčinou
+  není, ale nahřátí před G9111 by mělo auto-feed vyprovokovat ještě před vyrovnáním, horký. Hypotéza do pokusu 2b.
+- Ovladač: volba `preload_filament` (výchozí vypnuto) a hláška u běžícího tisku. Automatické `RESUME` ani potvrzení
+  dialogu nejsou: zdroje neukazují, co displej posílá, a tisk přes Moonraker vypadá jako `printing`, ne `paused`.
+- `FarmOnePlateTest::test_a_flush_plate_saved_before_it_printed_face_down…` padá na řádku 456 v `C:\matplace-sell-wt`
+  i s původními soubory z `origin/main` (prostředí worktree, generátor dílu); v `C:\matplace-farmcolors-wt` prochází.
+  Do této větve nepatří.
+- Agent má verzi 0.2.10, zip pro PC farmy stavěný nebyl (nic nenasazovat, než pokusy řeknou, který přepínač zapnout).

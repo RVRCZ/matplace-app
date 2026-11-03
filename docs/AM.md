@@ -597,3 +597,111 @@ jako 0.2.8). Na PC farmy: zastavit úlohu `matplace-farm-agent`, přehrát slož
 `requirements.txt` beze změny), spustit úlohu. Server: migrace (`php artisan migrate --force`), `config:clear`
 (`notify_paused`), `view:clear`; bez buildu (žádné TS). Po nasazení v `/admin/farm/settings` zkontrolovat zaškrtnutou
 „pauza tiskárny“ a na stránce tiskárny B3 kliknout „Načíst seznam“.
+
+## 11. U2 stojí na startu na hlášce 10539 „Extruder must heat up first“ (TODO #65, větev `fix/s1-start-heat`, 3. 11. 2026)
+
+Zadání `docs/prompts/u2-hlaska-start.md`. Čteno jen přes Moonraker HTTP (GET), bez tisků a bez SSH, U2 tiskla zakázku.
+Zdroje: logy Moonrakeru obou tiskáren (`GET /server/files/logs/moonraker.log` a `moonraker.log.2026-11-01`; časy v logu
+jsou UTC, o hodinu méně než v konzoli), `gcode_store`, `configfile.settings`, historie úloh a zdrojáky Rinkhalsu.
+Pozor: repozitář `jbatonnet/Rinkhals` je od července 2026 opuštěný, vývoj běží v `rinkhals-community/Rinkhals`. U1 i U2
+mají Rinkhals `20260901_01` (cesta `/useremain/rinkhals/20260901_01/…` ve `/server/files/roots`), GoKlipper V1.3.863.
+Stažené logy a zdrojáky leží ve scratchpadu session 4
+(`C:\Users\roman\AppData\Local\Temp\claude\c--Users-roman-Documents-MatPlace-conceprt19092026\ac77c450-d812-4639-8c0c-b3457b294a63\scratchpad\printer-logs` a `…\rinkhals-new`).
+
+### 11a. Kdo hlášku vyvolá (prokázáno logem Moonrakeru U2)
+
+- Při každém startu volá Rinkhals `mmu_ace.py` `patch_print_data()` (komponenta Moonrakeru `mmu_ace`, 20260901_01, řádky
+  2395 až 2627). Když ACE nehlásí zavedený filament (`filament_hub.current_filament == ""`; u S1 po každém tisku, koncové
+  makro filament vrací) a soubor používá jeden nástroj (trailer `; referenced_tools = 3`, který při nahrání připíše
+  `mmu_ace_metadata.py` podle řádků `T<n>`), naplánuje `_auto_feed_at_print_start(gate)`. Log 3. 11. 20:07:29 UTC:
+  `patch_print_data: no filament currently loaded, scheduling auto-feed for gate 3 (via detected_tools=[3] → ttg_map[3])`.
+- `_auto_feed_at_print_start` (řádky 2629 až 2720) se každé 2 s ptá na trysku. Jakmile je cíl aspoň 190 °C a teplota do
+  10 °C pod ním, pošle `FEED_FILAMENT ID=0 INDEX=3 LENGTH=80 SPEED=25`. To je první FEED v konzoli (21:09:56, 2,5 min po
+  startu). Posílá ho Rinkhals. Ne náš soubor, ne G9111.
+- GoKlipper požadavek zařadí za běžící příkaz. Tím je G9111 (vyrovnání LeviQ; stav `leveling` v logu 7 minut, požadavek
+  `gcode/script pending` 60, 120, 180, 240 s). LeviQ při sondování stáhne cíl trysky na 140 až 170 °C. Když vyrovnání
+  skončí, firmware FEED vykoná se studenou tryskou a odmítne ho: `!! error: typ = WebRequestError, code = 10011715,
+  message = Extruder must heat up first` (21:14:20, přesně na konci stavu `leveling`; log Rinkhalsu `auto-feed: poll
+  error: Extruder must heat up first`). Displej ukáže 10539.
+- Smyčka Rinkhalsu chybu zaloguje a jede dál. Jakmile se tryska znovu ohřeje k cíli, pošle FEED podruhé. To je druhý
+  FEED po 41 s (21:15:01). Není to ťuknutí na displeji, je to automatický pokus (stejných 41 s u PETG 20:57:20, 52 s
+  1. 11.). Co ťuknutí posílá, v logu Moonrakeru není (K3SysUi je binárka Anycubicu, v této věci nepatchovaná).
+- Druhý FEED se u obou dnešních tisků povedl: hub hlásil `current_filament='0-3'` ve 21:19:12 (ASA, tisk doběhl) a
+  `'0-1'` ve 21:01:23 (PETG, tisk od 21:03 běžel, ve 21:06 zrušen). 1. 11. Roman tisk zrušil 3:57 min po druhém FEED,
+  těsně před časem, kdy dnes zavedení doběhlo (4:01 a 4:03 min). Zda tisk bez ťuknutí pokračuje sám, z logů rozhodnout
+  nejde. Zkouška je v kitu (varianta 1, 10 minut nesahat).
+- Náš `T3` je až za `M109`, tedy za vším výše. Na tiskárně se zavedeným slotem nic neudělá (dnešní tisky po druhém FEED
+  jely přes náš `T3` bez chyby; totéž U1 1. 11. přes `T0`). Pořadí `M104/M109/T3` za G9111 příčinou není.
+
+### 11b. Proč U2 a ne U1
+
+- Stejný Rinkhals, stejná konfigurace GoKlipperu (`configfile.settings` se liší jen tryskou, U1 mosaz, U2 kalená ocel,
+  a PID; `min_extrude_temp` 170 obě). Auto-feed dostávají obě. U1 1. 11. (F26-000116, PLA 230/55, jeden nástroj):
+  `scheduling auto-feed for gate 0`, FEED až 12:40:15 UTC, 7,5 min po startu, ve stavu `heating` po vyrovnání,
+  zavedeno za 42 s, bez chyby, tisk doběhl.
+- Rozdíl je v tom, kdy podmínka smyčky poprvé platí. Na U2 (ASA 270/100, PETG 250/75) platila během vyrovnání, 2 až 3
+  min po startu. Na U1 (PLA 230/55) až po vyrovnání. Dvě hypotézy: (a) U2 má novější firmware Anycubicu (2.7.2.7 podle
+  issue #196 hřeje na tiskovou teplotu před LeviQ), U1 starší; (b) stejný firmware, ale u podložky 100 °C čeká makro na
+  podložku déle a tryska mezitím dosáhne tiskové teploty, u 55 °C začne sondování dřív, než se tryska dostane k 220 °C.
+  Rozhodne verze firmwaru na displejích a varianta 5 kitu (220/60 na U2).
+- U1 dnes (F26-000123, tři nástroje) auto-feed nedostala: `multi-tool print (detected_tools=[0, 1, 3]); skipping
+  auto-feed, gcode T-commands will handle it`. Soubory s více filamenty závod nemají. (U1 stojí od 21:50 na `10011720
+  Filament is runout`, slot 2 hlásí `runout`; jiná věc, stav `paused` agent 0.2.9 vidí.)
+
+### 11c. Jak to vypadá přes Moonraker
+
+- Po chybě jde `print_stats.state` GoKlipperu na `error` jen na 1 až 4 vzorky, pak `heating`. `kobra.py` Rinkhalsu
+  `heating` i `leveling` přepisuje na `printing`. Agent tedy celou dobu vidí `printing`, `pause_resume.is_paused` false,
+  žádnou pauzu, žádný mail. Jediné stopy: řádek `10011715` v `gcode_store` a prázdné `filament_hub.current_filament`.
+- Upstream: `rinkhals-community/Rinkhals` issue #196 (23. 10. 2026, Kobra S1 2.7.2.7, totéž včetně doporučení zavést
+  filament ručně před startem), oprava PR #197 „don't auto-feed a file that selects its own tool“ a nová volba
+  `auto_feed: False` v `[mmu_ace]`, obojí ve vydání `20261101_01` (1. 11. 2026). Ve 20260901_01 volba není.
+
+### 11d. Co je v kódu (nic nenasazeno, výchozí chování beze změny)
+
+- `GcodeSlot::retarget(..., bool $heatFirst = false)` a `fileFor(..., ?bool $heatFirst = null)`: zapnuto dává `M104/M109`
+  před `G9111` a holé `T<n>` za `M117` (komentář `; matplace slot: heat before the start macro`), kopie má značku
+  `.hot.pre.slot…`. Přepínač `heat_before_start_macro` v `config/farm.php` `settings` (výchozí false) a v
+  `/admin/farm/settings` („Nahřát trysku před startovním makrem“). Myšlenka: smyčka Rinkhalsu vystřelí FEED během našeho
+  `M109`, firmware ho vykoná hned po `M109`, horký, před vyrovnáním. Hypotéza, kit varianta 2b. `retargetMany` beze
+  změny (více nástrojů auto-feed nemá). Soubor bez G9111 přepínač nemění. Test
+  `GcodeSlotTest::test_a_one_filament_file_heats_before_the_start_macro_only_when_asked`.
+- Ovladač `moonraker` 0.2.10, volba `preload_filament` (výchozí false, `config.yaml` u tiskárny): před startem, když
+  hub hlásí prázdnou hlavu, `M104 S<teplota z řádku G9111 souboru>` (nebo `preload_temp`), počká na teplotu do 10 °C,
+  pošle `FEED_FILAMENT ID=<slot//4> INDEX=<slot%4> LENGTH=80 SPEED=25` (totéž co Rinkhals), počká, až hub hlásí
+  `0-<slot>`, teprve pak nahraje a spustí. Jiný slot v hlavě nechá být (horký `T<n>` ho vymění jako od 12. 10.). Chyba
+  zavedení = `DriverError` se slovy tiskárny, `M104 S0`, nic se nenahraje, server pošle mail „start selhal“.
+  `preload_timeout` 600 s. Nejistota: Rinkhals si po zavedení stav `loaded_gate` o sekundu později zase maže (log
+  `setting MMU gate=3`, pak `clearing loaded state`; ve 21:30 hub `0-3`, objekt `mmu` `gate -1`), auto-feed tak může být
+  naplánován i po preloadu a poslat FEED na zavedený slot. Co na to GoKlipper, nevíme. Proto za přepínačem, kit 3b.
+- Ovladač `moonraker`: běžící tisk s prázdnou hlavou a řádkem `10011715` v konzoli od startu úlohy dostane
+  `telemetry.message` i `job.message` „error: … Extruder must heat up first: the print stands at the screen's dialog
+  10539 until it is confirmed or the retried feed lands“. Jakmile hub hlásí slot, hláška zmizí. Stav zůstává `printing`,
+  mail se neposílá (server maily jen u pauzy; námět: mail i na tuto hlášku). Automatické potvrzení dialogu není, zdroje
+  Rinkhalsu neukazují, co displej posílá; `POST /printer/print/resume` během stání je neověřený pokus pro Romana.
+- Testy: `agent/tests/test_moonraker_preload.py` (7 nových), celá sada agenta 100. PHPUnit `GcodeSlotTest` 4 a
+  `GcodeColorChangesTest` zelené, pint OK.
+
+### 11e. Kit pokusů `C:\tmp\u2\variants\` a `C:\tmp\u2\watch_u2.py`
+
+- Kostka 10 mm nařezaná lokální Orcou 2.4 (`scratchpad/orca24`) s profily repozitáře (`machine.json`,
+  `process_standard.json`, `filament_asa.json`; pro variantu 5 kopie PLA profilu s 220/60), 50 vrstev, asi 3 min tisku.
+  Varianty 1, 2b a 5 vyrobil produkční `GcodeSlot::retarget`, 2, 3 a 4 jsou textové úpravy varianty 1. První řádek
+  souboru říká, co zkouší. `README.md` v kitu má pořadí, volání Moonrakeru, co zapsat a co z výsledků plyne.
+- Pořadí: 2b (kandidát opravy), 1 (reference a pokus 10 min nesahat na displej), 4 (bez T: se slotem z displeje a se
+  zavedením předem ručně, což je totéž co `preload_filament`), 5 (220/60), 3, 2 (čekaná chyba studené trysky).
+- `watch_u2.py` čte každé 2 s stav (`print_stats`, `pause_resume`, `idle_timeout`, teploty, `mmu`, `filament_hub`,
+  `ota_filament_hub`, `display_status`, `webhooks`) a konzoli, píše JSONL a CSV, nic neposílá, Ctrl+C končí. Ověřeno
+  30 s proti U2 (15 vzorků, stav `complete`).
+
+### 11f. Co potřebuje Romana
+
+- Verze firmwaru Anycubicu na U1 a U2 (displej, Nastavení, O zařízení). Pokud U2 má 2.7.2.7 a U1 starší, platí 11b (a).
+- Tisky z kitu podle README, u každé fotka displeje a výstup `watch_u2.py`; u varianty 1 nic nepotvrzovat 10 minut.
+- Aktualizace Rinkhalsu na `20261101_01` na obou tiskárnách (portál Rinkhalsu nebo OTA v menu displeje). Po ní soubor
+  s `T<n>` auto-feed nedostane; `auto_feed: False` v `moonraker.custom.conf` `[mmu_ace]` ho vypne úplně. Pak jsou
+  `heat_before_start_macro` i `preload_filament` zbytečné, škodit by neměly. Vydání mění i další chování (odmítne tisk
+  s nástrojem na prázdném slotu předem, „dokončeno“ hlásí o 25 s později, atomický zápis souboru při nahrání).
+- SSH jen s Romanem: po dalším výskytu a po ťuknutí `grep -n "10011715\|FEED_FILAMENT\|feed_filament\|cmd_T\|10539"
+  /tmp/gklib.log` (co ťuknutí pošle GoKlipperu) a `cat /useremain/dev/version` (verze firmwaru, pokud soubor je).
+  Během stání zkusit `curl -X POST http://192.168.8.23:7125/printer/print/resume` a zapsat, zda tisk pokračuje.
