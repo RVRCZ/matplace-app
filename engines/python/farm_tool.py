@@ -5,8 +5,9 @@ Print farm: make an uploaded STL ready for the plate (trimesh, numpy, optional p
   farm_tool.py prepare <in.stl> <out.stl> <unit_scale> <bed_x> <bed_y> <bed_z> [overhang_deg]
 
     1. load as it is (no unit guessing here: the customer confirmed the units, unit_scale turns them into mm)
-    2. not closed -> repair: merge vertices, fix normals, fill holes, then pymeshfix; the repair is only accepted
-       when the result is closed and still the same object (size within 2 %)
+    2. not closed -> repair: merge vertices, fix normals, fill holes, then pymeshfix (only with holes, at most
+       REPAIR_SECONDS); the repair is only accepted when the result is closed and still the same object (size within
+       2 %), else the mesh goes on as it is and `unrepaired` says why
     3. orient: try the big faces of the convex hull and the six axis directions as "down" and keep the one with
        the least overhang area, a real flat base and a low height; a model that already lies well stays as it is
     4. spin about Z when only the other way round fits the plate, put on Z = 0, centre in XY, write binary STL
@@ -54,8 +55,11 @@ def meshfix_arrays(mf):
     return np.asarray(v, dtype=float), np.asarray(f).reshape(-1, 3)
 
 
-def repair(m):
-    """Body by body, the same way as the repair tool; one pass over the whole mesh glued separate parts together."""
+def repair(m, meshfix=True):
+    """
+    Body by body, the same way as the repair tool; one pass over the whole mesh glued separate parts together.
+    Returns (mesh or None, method, whether pymeshfix ran out of REPAIR_SECONDS).
+    """
     import numpy as np
     import os
     import sys
@@ -64,14 +68,15 @@ def repair(m):
     before = m.extents.copy()
     welded = m.copy()
     welded.merge_vertices()
-    fixed, actions = mend(welded)
+    fixed, actions = mend(welded, meshfix, REPAIR_SECONDS)
     method = "pymeshfix" if actions.get("rebuilt_bodies") else "trimesh"
+    stopped = bool(actions.get("meshfix_stopped"))
     same_object = bool(np.all(np.abs(fixed.extents - before) <= np.maximum(before * 0.02, 0.05)))
     if fixed.is_watertight and same_object:
         if fixed.volume < 0:
             fixed.invert()
-        return fixed, method
-    return None, method
+        return fixed, method, stopped
+    return None, method, stopped
 
 
 def candidates(m, limit=24):
@@ -163,6 +168,7 @@ def plate_shadow(vertices, limit=64):
 
 BED_GAP_MM = 0.3                                             # how far above the lowest point a face still counts as on the plate
 BED_COS = math.cos(math.radians(3.0))                        # and how far from level
+REPAIR_SECONDS = 60                                          # pymeshfix's time per model; then it prints unrepaired (docs/AL.md §18)
 
 
 def rate(m, down, cos_limit, bed):
@@ -212,12 +218,19 @@ def prepare(src, dst, unit_scale, bed, overhang_deg, keep_pose=False):
 
     was_watertight = bool(m.is_watertight)
     holes, joints = open_edges(m)
-    repaired, method = False, None
+    repaired, method, unrepaired = False, None, None
     if not was_watertight:
         stage(dst, "repairing")
-        fixed, method = repair(m)
+        # nothing open, only edges shared by three or more faces: the slicer cuts that as it is, and pymeshfix took four
+        # minutes over two such edges (order 277, docs/AL.md §18); doubled faces and dust still go
+        fixed, method, stopped = repair(m, meshfix=holes > 0)
         if fixed is not None:
             m, repaired = fixed, True
+        else:
+            unrepaired = {"reason": "no_holes" if holes == 0 else ("timeout" if stopped else "failed"),
+                          "holes": holes, "non_manifold_edges": joints}
+            if holes == 0 and m.volume < 0:
+                m.invert()
     elif m.volume < 0:
         m.invert()
 
@@ -261,16 +274,24 @@ def prepare(src, dst, unit_scale, bed, overhang_deg, keep_pose=False):
         pass
     holes_after, joints_after = open_edges(m)
     ex = m.extents
+    volume = abs(float(m.volume))
+    if not m.is_watertight:
+        hull = abs(float(m.convex_hull.volume))
+        # a surface without an opening still encloses its volume; one with holes gets the old rough guess
+        volume = volume if holes_after == 0 and 0 < volume <= hull * 1.001 else hull * 0.6
     out({
         "ok": True,
         "was_watertight": was_watertight,
         "watertight": bool(m.is_watertight),
         "repaired": repaired,
         "repair_method": method,
+        "unrepaired": unrepaired,
         "open_edges_before": holes + joints,
         "open_edges": holes_after + joints_after,
+        "holes": holes_after,
+        "non_manifold_edges": joints_after,
         "bbox": {"x": float(ex[0]), "y": float(ex[1]), "z": float(ex[2])},
-        "volume_mm3": abs(float(m.volume)) if m.is_watertight else abs(float(m.convex_hull.volume)) * 0.6,
+        "volume_mm3": volume,
         "area_mm2": float(m.area),
         "triangles": int(len(m.faces)),
         "shells": int(shells),

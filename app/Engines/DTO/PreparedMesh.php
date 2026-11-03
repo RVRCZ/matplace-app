@@ -10,6 +10,8 @@ final class PreparedMesh
      * @param  array<string,mixed>  $orientation  rotation matrix (row-major 3×3), method, overhang area before/after, base area
      * @param  list<array{0: float, 1: float}>|null  $footprint  the piece's shadow on the plate as it prints (convex hull,
      *                                                           mm, at most 64 corners; App\Domain\Farm\Footprint); null = unknown
+     * @param  int|null  $holes  of the open edges, those on the rim of a hole (the rest are shared by three or more faces);
+     *                           null = not told apart
      */
     public function __construct(
         public readonly string $path,
@@ -25,6 +27,7 @@ final class PreparedMesh
         public readonly array $orientation,
         public readonly string $engine,
         public readonly ?array $footprint = null,
+        public readonly ?int $holes = null,
     ) {}
 
     public function toArray(): array
@@ -34,6 +37,6 @@ final class PreparedMesh
             'open_edges' => $this->openEdges, 'bbox' => $this->bbox->toArray(), 'volume_mm3' => round($this->volumeMm3, 2),
             'area_mm2' => round($this->areaMm2, 2), 'triangles' => $this->triangles, 'shells' => $this->shells,
             'orientation' => $this->orientation, 'engine' => $this->engine,
-        ] + ($this->footprint !== null ? ['footprint' => $this->footprint] : []);
+        ] + ($this->footprint !== null ? ['footprint' => $this->footprint] : []) + ($this->holes !== null ? ['holes' => $this->holes] : []);
     }
 }

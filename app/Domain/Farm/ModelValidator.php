@@ -64,7 +64,10 @@ final class ModelValidator
             if ($d->z > $usable->z || ! self::fitsPlate($d, $usable)) {
                 $errors[] = ['code' => 'exceeds_bed', 'data' => ['x' => round($d->x, 1), 'y' => round($d->y, 1), 'z' => round($d->z, 1), 'bed_x' => $usable->x, 'bed_y' => $usable->y, 'bed_z' => $usable->z]];
             }
-            if ($mesh->watertight === false) {
+            // nothing open, only edges shared by three or more faces: the slicer cuts it as it is (docs/AL.md §18)
+            if ($mesh->watertight === false && $mesh->holes === 0) {
+                $warnings[] = ['code' => 'non_manifold', 'data' => ['edges' => $mesh->openEdges]];
+            } elseif ($mesh->watertight === false) {
                 $errors[] = ['code' => 'not_watertight', 'data' => ['open_edges' => $mesh->openEdges]];
             }
         }

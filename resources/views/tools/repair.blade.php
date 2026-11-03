@@ -3,7 +3,7 @@
         'repair.verdict.clean', 'repair.verdict.repaired', 'repair.verdict.improved', 'repair.verdict.unchanged',
         'repair.before', 'repair.after', 'repair.row.open_edges', 'repair.row.non_manifold_edges', 'repair.row.shells', 'repair.row.flipped_normals', 'repair.row.triangles', 'repair.row.watertight',
         'repair.yes', 'repair.no', 'repair.done', 'repair.act.removed_degenerate', 'repair.act.removed_duplicate', 'repair.act.removed_dust', 'repair.act.rebuilt_bodies',
-        'repair.act.closed_edges', 'repair.act.fixed_normals', 'repair.act.fixed_non_manifold', 'repair.act.none', 'repair.left', 'repair.download'];
+        'repair.act.closed_edges', 'repair.act.fixed_normals', 'repair.act.fixed_non_manifold', 'repair.act.meshfix_stopped', 'repair.act.none', 'repair.left', 'repair.download'];
     $i18n = collect($keys)->mapWithKeys(fn ($k) => [$k => __($k, ['max' => $config['max_upload_mb']])])->all();
 @endphp
 

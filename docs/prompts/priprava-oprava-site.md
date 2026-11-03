@@ -60,3 +60,16 @@ G. Když oprava potřebuje změnu PHP (pole v JSON, stránka zakázky), drž ji 
 - Git add jen jmenovitě, žádný stash. Commit končí `Co-Authored-By: Claude Fable 5.1 <noreply@anthropic.com>`.
 - Produkční databázi ani server nečti, data máš v `C:\tmp\order277`. Po opravě a nasazení Roman zakázky založí
   znovu („Uložit a naslicovat znovu“).
+
+## Odchylky (session G, 3. 11. 2026)
+
+- B1: při `holes == 0` se nepřeskakuje celá oprava, jen pymeshfix. Rychlé kroky (zdvojené plochy, smítka) uzavírají Baby Turtle
+  (`RepairToolTest`), která má taky 0 otevřených hran. Neuzavřenou síť bez děr musel pustit i `ModelValidator` (varování
+  `non_manifold`); jinak by zakázka místo zaseknutí skončila chybou `not_watertight`.
+- B2: strop hlídá jen pymeshfix (ve vlastním procesu), ne celou opravu. Ostatní kroky trvají na dílu 1 dohromady 0,5 s a
+  `/tools/repair` si tak nechá, co stihly. Konstanta je `REPAIR_SECONDS` v `farm_tool.py` a `MESHFIX_SECONDS` v `repair_tool.py`;
+  pro testy je přepíše `MP_MESHFIX_SECONDS`.
+- C: nejde o skupinu procesů, ale nejspíš o cgroup při restartu přes `PartOf=`. Jednotky systemd jsem neměnil, návrh je v `docs/AL.md` §18.
+- D: celou zakázku přes `PrepareFarmOrder` jsem lokálně nespouštěl (sdílené `dev.sqlite`, žádný migrate). Engine, slicer a validátor
+  jsou ověřené každý zvlášť.
+- Commit nese `Co-Authored-By: Claude Opus 5.5`: v této session běží Opus 5.5, ne Fable 5.1.

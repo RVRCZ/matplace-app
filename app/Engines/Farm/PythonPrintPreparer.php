@@ -39,9 +39,10 @@ final class PythonPrintPreparer implements PrintPreparer
             areaMm2: (float) $r['area_mm2'],
             triangles: (int) $r['triangles'],
             shells: (int) $r['shells'],
-            orientation: (array) $r['orientation'] + ['repair_method' => $r['repair_method'] ?? null],
+            orientation: (array) $r['orientation'] + ['repair_method' => $r['repair_method'] ?? null] + (! empty($r['unrepaired']) ? ['unrepaired' => $r['unrepaired']] : []),
             engine: $this->name(),
             footprint: Footprint::fromArray($r['footprint'] ?? null)?->toArray(),
+            holes: isset($r['holes']) ? (int) $r['holes'] : null,
         );
     }
 }

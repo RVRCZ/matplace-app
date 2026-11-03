@@ -1,0 +1,12 @@
+{
+    "farm.warn.non_manifold": [
+        "Na některých hranách modelu (:edges) se stýkají víc než dvě plochy. Povrch je jinak uzavřený, slicer ho proto připraví tak, jak je. Zkontrolujte prosím náhled.",
+        "Some edges of the model (:edges) are shared by more than two faces. The surface is closed otherwise, so the slicer prepares it as it is. Please check the preview.",
+        "En algunas aristas del modelo (:edges) se juntan más de dos caras. Por lo demás la superficie está cerrada, así que el programa de corte lo prepara tal cual. Revise la vista previa, por favor."
+    ],
+    "repair.act.meshfix_stopped": [
+        "Úplná oprava trvala přes minutu, proto jsme ji zastavili. Ostatní opravy zůstaly.",
+        "The full repair took over a minute, so we stopped it. The other fixes are kept.",
+        "La reparación completa tardó más de un minuto, así que la detuvimos. Las demás correcciones se conservan."
+    ]
+}

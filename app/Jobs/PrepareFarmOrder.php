@@ -789,6 +789,7 @@ class PrepareFarmOrder implements ShouldQueue
             orientation: ['method' => 'as-built', 'changed' => false, 'parts' => count($meshes)] + ($plan ? ['copies' => $per, 'grid' => $plan['full']['grid']] : []),
             engine: $all->first()->engine,
             footprint: $all->first()->footprint,
+            holes: $all->every(fn (PreparedMesh $m) => $m->holes !== null) ? (int) $all->sum(fn (PreparedMesh $m) => $m->holes) : null,
         );
         // the plate is its parts side by side: several bodies are the design, not a broken mesh (the upload drops the same
         // warning for a file with parts, UploadController::describe)

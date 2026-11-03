@@ -54,39 +54,89 @@ def meshfix_arrays(mf):
     return np.asarray(v, dtype=float), np.asarray(f).reshape(-1, 3)
 
 
-def fix_body(p):
-    """One body: normals, holes, and pymeshfix when the simple means did not close it. Returns (mesh, used_meshfix)."""
+# pymeshfix has no limit of its own: it took 238 s over a part of 62 000 faces whose only fault was two edges shared by
+# four faces (farm order 277, 1 Nov 2026, docs/AL.md §18). It runs in a process of its own and is stopped after this many
+# seconds, for all the bodies of a file together; the body keeps what the simple means did.
+MESHFIX_SECONDS = 60
+
+
+def _meshfix_child(conn, vertices, faces):
+    """pymeshfix in a process of its own, so that the caller can stop it."""
+    import os
+    import time
+    delay = float(os.environ.get("MP_MESHFIX_DELAY") or 0)   # tests: a repair this slow, without a slow mesh
+    if delay:
+        time.sleep(delay)
+    import pymeshfix
+    mf = pymeshfix.MeshFix(vertices, faces)
+    mf.repair(joincomp=False, remove_smallest_components=False)
+    conn.send(meshfix_arrays(mf))
+
+
+def meshfix_within(vertices, faces, seconds):
+    """(vertices, faces) from pymeshfix and whether it was stopped; (None, False) when it failed or is not installed."""
+    import importlib.util
+    import multiprocessing
+    if seconds <= 0:
+        return None, True
+    if importlib.util.find_spec("pymeshfix") is None:
+        return None, False
+    ctx = multiprocessing.get_context("spawn")
+    here, there = ctx.Pipe(duplex=False)
+    child = ctx.Process(target=_meshfix_child, args=(there, vertices, faces), daemon=True)
+    child.start()
+    there.close()
+    try:
+        if not here.poll(seconds):
+            return None, True
+        return here.recv(), False
+    except (EOFError, OSError):
+        return None, False                                   # the child died: an exception or a crash inside pymeshfix
+    finally:
+        if child.is_alive():
+            child.terminate()
+        child.join(5)
+        if child.is_alive():
+            child.kill()
+        here.close()
+
+
+def fix_body(p, meshfix=True, seconds=MESHFIX_SECONDS):
+    """
+    One body: normals, holes, and pymeshfix when the simple means did not close it (and `meshfix` allows it, for at most
+    `seconds`). Returns (mesh, used_meshfix, meshfix_stopped).
+    """
     import numpy as np
     import trimesh
     before = p.extents.copy()
     q = p.copy()
     trimesh.repair.fix_normals(q)
     trimesh.repair.fill_holes(q)
-    used = False
-    if not q.is_watertight:
-        try:
-            import pymeshfix
-            mf = pymeshfix.MeshFix(np.asarray(q.vertices, dtype=float), np.asarray(q.faces, dtype=np.int32))
-            mf.repair(joincomp=False, remove_smallest_components=False)
-            vv, ff = meshfix_arrays(mf)
+    used = stopped = False
+    if not q.is_watertight and meshfix:
+        got, stopped = meshfix_within(np.asarray(q.vertices, dtype=float), np.asarray(q.faces, dtype=np.int32), seconds)
+        if got is not None:
+            vv, ff = got
             cand = trimesh.Trimesh(vertices=vv, faces=ff, process=True)
             same = len(cand.faces) > 0 and bool(np.all(np.abs(cand.extents - before) <= np.maximum(before * 0.02, 0.05)))
             if same and cand.is_watertight:
                 q, used = cand, True
-        except Exception:  # noqa: BLE001 - optional library; without it the simple repair is all there is
-            pass
     if q.is_watertight and float(q.volume) < 0:
         q.invert()
-    return q, used
+    return q, used, stopped
 
 
-def mend(welded):
+def mend(welded, meshfix=True, seconds=MESHFIX_SECONDS):
     """
     The repair itself, shared with the print farm: doubled and flat faces out, dust out, every body closed on its
     own. Bodies are never joined: a model of several closed parts (a turtle with separate legs) stays that way.
+    `meshfix` False leaves pymeshfix out; `seconds` is its time for all bodies together (MP_MESHFIX_SECONDS overrides it).
     Returns (mesh, actions).
     """
+    import os
+    import time
     import trimesh
+    deadline = time.monotonic() + float(os.environ.get("MP_MESHFIX_SECONDS") or seconds)
     actions = {}
     work = welded.copy()
     keep = work.nondegenerate_faces()
@@ -101,19 +151,21 @@ def mend(welded):
     if not parts:
         parts = [work]
     biggest = max(float(max(p.extents)) for p in parts)
-    bodies, dust, meshfix = [], 0, 0
+    bodies, dust, rebuilt, stopped = [], 0, 0, 0
     for p in parts:
         # specks a thousand times smaller than the model are scanner or export noise, not a part of it
         if len(parts) > 1 and (len(p.faces) < 4 or float(max(p.extents)) < biggest * 0.001):
             dust += 1
             continue
-        q, used = fix_body(p)
-        meshfix += 1 if used else 0
+        q, used, cut = fix_body(p, meshfix, deadline - time.monotonic())
+        rebuilt += 1 if used else 0
+        stopped += 1 if cut else 0
         bodies.append(q)
     if not bodies:
         bodies = [work]
     actions["removed_dust"] = dust
-    actions["rebuilt_bodies"] = meshfix
+    actions["rebuilt_bodies"] = rebuilt
+    actions["meshfix_stopped"] = stopped
     return (bodies[0] if len(bodies) == 1 else trimesh.util.concatenate(bodies)), actions
 
 
@@ -138,7 +190,7 @@ def main(argv):
         actions["fixed_normals"] = bool(before["flipped_normals"] and not after["flipped_normals"])
         actions["fixed_non_manifold"] = max(0, before["non_manifold_edges"] - after["non_manifold_edges"])
 
-        changed = any(v for v in actions.values())
+        changed = any(v for k, v in actions.items() if k != "meshfix_stopped")
         if before["watertight"] and not before["flipped_normals"] and not changed:
             verdict = "clean"
         elif after["watertight"] and not after["flipped_normals"]:

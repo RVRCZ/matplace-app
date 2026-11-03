@@ -2143,3 +2143,138 @@ Kalkulačka bez farmy krájí dál s profilem (`process_standard` 30°, `fine` 2
 `FarmOrientationTest` (deska se zkoseným ostřím ze šesti výchozích poloh, díl na nožce 10 a 0,5 mm), `FarmPreparedCacheTest`, `FarmOrderFlowTest` (pořadí vrstev, migrace tiskáren a řádků ladění), `TuningAdvisorTest`.
 
 Neověřeno: skutečný tisk, slice na farmě a produkční hodnoty tiskárem. Stránku ladění v prohlížeči jsem neotevíral.
+
+## 18. Příprava zakázky visí v opravě sítě (TODO #64, 3. 11. 2026, fix/prepare-repair-hang)
+
+Zadání: `docs/prompts/priprava-oprava-site.md`. Zakázky 277 a 278 z 1. 11. 2026 (návrh o čtyřech dílech, poloha `keep`) skončily
+`failed`. Příprava dílu 1 přetekla 300 s v `PythonPrintPreparer` a python druhé zakázky dostal o 5 s později signál 15.
+
+### Kde to visí
+
+Díl 1 krok po kroku. Měřeno v podprocesu s limitem 420 s v místním venv: Python 3.11.9, trimesh 5.2.0, numpy 2.4.6, pymeshfix 0.18.1.
+
+| krok | čas od startu |
+|---|---|
+| načtení, 62 114 trojúhelníků | 0,06 s |
+| `merge_vertices`, 30 116 vrcholů | 0,12 s |
+| hrany: 0 otevřených, 2 sdílené čtyřmi plochami | 0,25 s |
+| degenerované plochy (7 pryč), duplicitní (0), `split` (1 těleso) | 0,46 s |
+| `fix_normals`, `fill_holes` (síť pořád neuzavřená) | 0,51 s |
+| `pymeshfix.MeshFix.repair()` | 0,91 → 239,3 s |
+
+pymeshfix nevisí donekonečna, nad dvěma hranami ale počítá 238 s. Server je pomalejší, takže přetekl 300 s. Ani kdyby doběhl, výsledek
+by nepomohl: starý engine připravil celý díl lokálně za 235 s, ale síť od pymeshfix neprošla kontrolou (uzavřená a stejný rozměr).
+Díl tak šel dál neopravený s `watertight: false` a `ModelValidator` by zakázku odmítl jako `not_watertight`. Zakázka by tedy skončila
+chybou tak jako tak, jen o 4 minuty později.
+
+### Oprava
+
+- `repair_tool.py`: pymeshfix běží ve vlastním procesu (`multiprocessing`, spawn) a po `MESHFIX_SECONDS` = 60 s se zastaví. Strop platí
+  pro všechna tělesa souboru dohromady. Těleso si pak nechá, co udělaly rychlé kroky. `mend()` vrací nové `actions.meshfix_stopped`.
+  Spadne-li pymeshfix uvnitř svého procesu, bere se to jako neúspěšná oprava.
+- `farm_tool.py prepare`: `REPAIR_SECONDS = 60` vedle `BED_GAP_MM`. Síť bez otevřených hran (`holes == 0`) pymeshfix vůbec nedostane.
+  Rychlé kroky (zdvojené plochy, smítka, normály) proběhnou dál.
+- **Odchylka od zadání:** zadání chtělo při `holes == 0` přeskočit celou opravu. Tím by se rozbila Baby Turtle (`RepairToolTest`):
+  zdvojená plocha a smítko mají taky 0 otevřených hran a uzavřou je právě rychlé kroky. Přeskakuje se proto jen pymeshfix.
+- JSON z `prepare` má nová pole:
+  - `unrepaired`: `null`, nebo `{reason: no_holes | timeout | failed, holes, non_manifold_edges}` (počty z doby před opravou);
+  - `holes` a `non_manifold_edges` po přípravě.
+
+  `open_edges` je dál jejich součet, ostatní pole se nemění.
+- Objem neuzavřené sítě: bez otevřených hran se bere skutečný objem, pokud leží mezi 0 a objemem konvexního obalu. Jinak platí dál
+  0,6 × obal. Díl 1 má 8 156 mm³ místo odhadu 6 675 mm³.
+- PHP:
+  - `PreparedMesh::$holes` (null = neznámé) plní `PythonPrintPreparer`, cache, `PlateLayout` i deska z dílů;
+  - `ModelValidator`: neuzavřená síť s `holes === 0` je jen varování `non_manifold` (text `farm.warn.non_manifold`), síť s dírami je dál chyba `not_watertight`;
+  - důvod jde do záznamu zakázky jako `orientation.unrepaired`.
+
+  Stránka zakázky ukazuje z `check` přeložená varování, zákazník tedy uvidí žlutý řádek „Na některých hranách modelu (2) se stýkají víc
+  než dvě plochy…“.
+- `/tools/repair` používá tutéž `mend`, takže visel taky: na dílu 1 by běžel asi 4 minuty uvnitř požadavku HTTP. Teď skončí za 62 s a
+  napíše „Úplná oprava trvala přes minutu, proto jsme ji zastavili. Ostatní opravy zůstaly.“ (`repair.act.meshfix_stopped`).
+  Nástroj pouští pymeshfix i při `holes == 0`, protože zákazník opravu chce; jen má strop.
+- Limit 300 s v `PythonPrintPreparer` zůstává jako poslední záchrana. Klíč cache připravených modelů obsahuje md5 obou skriptů, takže
+  „Přeřezat“ připraví díl znovu.
+
+**Starší chyba nástroje, neopravená:** na dílu 1 nástroj odstraní 7 degenerovaných ploch a ze 2 nemanifoldních hran udělá 12 otevřených.
+Verdikt je přesto „Zlepšeno“, protože se něco změnilo. Farmu se to netýká: neuzavřený výsledek zahodí a pokračuje s původní sítí.
+
+### Signál 15 u zakázky 278
+
+Server jsem nečetl, tohle je z kódu:
+
+- Symfony Process při vlastním timeoutu posílá SIGTERM jen svému PID: `proc_terminate`, a příkaz začíná `exec`, takže PID je python.
+  Pak hlásí `ProcessTimedOutException`. Hláška „has been signaled with signal 15“ (`ProcessSignaledException`) proto znamená, že signál
+  poslal někdo jiný než Process zakázky 278. O skupinu procesů nejde, `setsid` by nic nezměnil.
+- Jednotky systemd:
+  - `deploy/matplace-worker@.service` má `PartOf=matplace-worker.service` a výchozí `KillMode=control-group`;
+  - hlavní worker má `Restart=always`, `RestartSec=5` a `--max-time=3600`.
+- Hlavní worker končí každou hodinu kvůli `--max-time`, nebo nad `--memory=512`; vždy až po dokončené úloze. systemd ho za 5 s spustí
+  znovu a restart přenese na jednotky s `PartOf=`. Systemd to při automatickém restartu dělá (`JOB_RESTART_DEPENDENCIES`), verzi na
+  serveru jsem ale neověřil. Zastavení `matplace-worker@2`/`@3` pošle SIGTERM celé jejich cgroup, tedy i pythonu nebo Orce, která v nich
+  zrovna běží.
+- Na 277/278 to sedí: 277 běžela na hlavním workeru a po jejím timeoutu úloha skončila. Worker pak odešel kvůli `--max-time` nebo paměti
+  a za 5 s se restartoval. Python zakázky 278 na `@2` nebo `@3` tím dostal SIGTERM.
+- **Ověření** (jen čtení, Roman nebo řídící):
+
+  ```
+  journalctl -u matplace-worker -u 'matplace-worker@*' --since "2026-11-01 22:40" --until "2026-11-01 23:00" --no-pager
+  ```
+
+  Hledat „Scheduled restart job“ u `matplace-worker.service` a „Stopping“ u `@2`/`@3` asi 5 s po timeoutu 277.
+- **Návrh opravy** (jednotky jsem neměnil, rozhodne Roman): v obou jednotkách `KillMode=mixed` a `TimeoutStopSec=960`.
+  - `KillMode=mixed`: SIGTERM dostane jen PHP worker; ten dokončí úlohu a skončí.
+  - `TimeoutStopSec=960`: úloha má `$timeout` 900 s.
+
+  Cena: `systemctl restart` při nasazení počká, až doběhnou rozběhnuté úlohy, nejvýš 16 min. Bez změny zabije každý restart hlavního
+  workeru, i ten hodinový, řezy na `@2`/`@3`.
+- Vedlejší nález: fronta `database` má `retry_after` 90 s, ale `PrepareFarmOrder::$timeout` je 900 s. Úlohu, která běží přes 90 s, vezme
+  jiný worker znovu a `WithoutOverlapping` ji pak vrací každých 5 s, dokud první běh neskončí. SIGTERM to nezpůsobí, jen to spotřebuje
+  pokusy (`$tries` 400) a dotazy.
+
+### Měření po opravě
+
+Příprava lokálně (venv výše, `prepare … keep`):
+
+| | předtím | nově |
+|---|---|---|
+| díl 1 | 235 s lokálně, na serveru přes 300 s → `failed` | 2 s, `unrepaired: no_holes`, 2 hrany |
+| díly 2–4 | nespustily se | 2, 1 a 1 s; díl 2 uzavřely rychlé kroky, 3 a 4 jsou čisté |
+| objem dílu 1 | 6 675 mm³ (odhad z obalu) | 8 156 mm³ |
+| výška dílu 1 | 5,98 mm | 5,98 mm |
+
+Řez v AnycubicSlicerNext (profil `process_standard`, PLA, stromové podpěry, práh 25°):
+
+| | čas | filament | podpěry |
+|---|---|---|---|
+| díl 1 neopravený (soubor ze zakázky i výstup `prepare`) | 16 min 17 s | 5,69 g | 2 mm filamentu (0,1 %) |
+| deska ze čtyř dílů v poloze z návrhu | 29 min 12 s | 7,89 g | 2 mm |
+| totéž bez podpěr | 29 min 7 s | 7,89 g | 0 |
+
+Slicer síť přijal. V logu je u každého řezu `calc_exclude_triangles: Unable to create exclude triangles`, i u čistého dílu 3; s opravou
+sítě to nesouvisí.
+
+### Testy a co ověřené není
+
+`FarmPrepareRepairTest` má tři testy:
+
+- Prstenec ze sedmi kostek, jehož konce se dotýkají jen hranou (1 hrana, 4 plochy, jedno těleso jako díl 1): `prepare` doběhne pod
+  20 s neopravený (`no_holes`, objem 7 000 mm³) a validátor ho pustí s varováním `non_manifold`.
+- Kostka bez vrchu a přední stěny (díra o 6 hranách) s `MP_MESHFIX_SECONDS=2` a `MP_MESHFIX_DELAY=60`: oprava se zastaví (`timeout`) a
+  validátor díru dál odmítá. Bez umělého zpomalení ji pymeshfix uzavře.
+- Nástroj oprav za stejných podmínek hlásí `meshfix_stopped`.
+
+Proměnné předává `PythonTool::switches()`. Testy se stropem se bez pymeshfix přeskočí.
+
+Výsledky: s venv (pymeshfix) prošly FarmPrepareRepair, FarmOrientation, FarmPreparedCache, RepairTool, FarmOrderFlow,
+FarmModelValidator, PlateLayout a FarmOnePlate (79 testů). S výchozím Pythonem bez pymeshfix prošla `Farm|RepairTool|StlFileBlocks`
+(256 testů, 4 přeskočené).
+
+Neověřeno:
+
+- časy na serveru a verze pymeshfix a systemd tam;
+- spawn procesu v Pythonu serveru;
+- journal k signálu 15;
+- celá zakázka přes `PrepareFarmOrder` lokálně (ověřené jsou engine, slicer a validátor zvlášť);
+- skutečný tisk;
+- nová zakázka od Romana.
