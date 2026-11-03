@@ -2023,5 +2023,7 @@
     "user.models.retention": "Los archivos sin pedido se borran a los :days días.",
     "calc.gone.title": "Este cálculo ya no está aquí",
     "calc.gone.text": "Los archivos sin pedido se borran a los :days días y el cálculo se va con el archivo. Puede volver a subir el modelo.",
-    "calc.gone.cta": "Subir un modelo"
+    "calc.gone.cta": "Subir un modelo",
+    "farm.warn.non_manifold": "En algunas aristas del modelo (:edges) se juntan más de dos caras. Por lo demás la superficie está cerrada, así que el programa de corte lo prepara tal cual. Revise la vista previa, por favor.",
+    "repair.act.meshfix_stopped": "La reparación completa tardó más de un minuto, así que la detuvimos. Las demás correcciones se conservan."
 }

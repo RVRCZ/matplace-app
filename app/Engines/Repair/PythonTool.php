@@ -54,7 +54,8 @@ final class PythonTool implements ScriptRunner
     }
 
     /**
-     * The switches the scripts read from their environment (PAPEL_REMBG=off in PapelPortraitTest), handed over by name:
+     * The switches the scripts read from their environment (PAPEL_REMBG=off in PapelPortraitTest, pymeshfix's time limit
+     * and a made-up slowness in FarmPrepareRepairTest), handed over by name:
      * Symfony's Process gives a child only the variables the process started with ($_SERVER), so a putenv() made later,
      * as a test does, would never reach Python and the test would follow whatever this machine has installed.
      *
@@ -63,7 +64,7 @@ final class PythonTool implements ScriptRunner
     private static function switches(): array
     {
         $out = [];
-        foreach (['PAPEL_REMBG'] as $name) {
+        foreach (['PAPEL_REMBG', 'MP_MESHFIX_SECONDS', 'MP_MESHFIX_DELAY'] as $name) {
             $value = getenv($name);
             if ($value !== false) {
                 $out[$name] = (string) $value;

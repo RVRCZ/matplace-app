@@ -2023,5 +2023,7 @@
     "user.models.retention": "Soubory bez objednávky mažeme po :days dnech.",
     "calc.gone.title": "Tahle kalkulace už tu není",
     "calc.gone.text": "Soubory bez objednávky mažeme po :days dnech a kalkulace jde se souborem. Model můžete nahrát znovu.",
-    "calc.gone.cta": "Nahrát model"
+    "calc.gone.cta": "Nahrát model",
+    "farm.warn.non_manifold": "Na některých hranách modelu (:edges) se stýkají víc než dvě plochy. Povrch je jinak uzavřený, slicer ho proto připraví tak, jak je. Zkontrolujte prosím náhled.",
+    "repair.act.meshfix_stopped": "Úplná oprava trvala přes minutu, proto jsme ji zastavili. Ostatní opravy zůstaly."
 }

@@ -2023,5 +2023,7 @@
     "user.models.retention": "Files without an order are deleted after :days days.",
     "calc.gone.title": "This calculation is no longer here",
     "calc.gone.text": "Files without an order are deleted after :days days and the calculation goes with the file. You can upload the model again.",
-    "calc.gone.cta": "Upload a model"
+    "calc.gone.cta": "Upload a model",
+    "farm.warn.non_manifold": "Some edges of the model (:edges) are shared by more than two faces. The surface is closed otherwise, so the slicer prepares it as it is. Please check the preview.",
+    "repair.act.meshfix_stopped": "The full repair took over a minute, so we stopped it. The other fixes are kept."
 }

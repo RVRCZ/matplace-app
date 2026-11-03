@@ -205,6 +205,7 @@ final class PlateLayout
             shells: $piece->shells * $copies,
             orientation: $piece->orientation + ['copies' => $copies, 'grid' => [$cols, $rows], 'grid_rotated' => $layout['rotated']],
             engine: $piece->engine,
+            holes: $piece->holes === null ? null : $piece->holes * $copies,
         );
     }
 
@@ -489,6 +490,7 @@ final class PlateLayout
             orientation: $piece->orientation + ['copies' => $copies, 'layout' => 'rows', 'rows' => $plan['rows'], 'per_row' => $plan['per_row'],
                 'set_turn' => $plan['turn'] * 90, 'alternate' => $plan['alternate'], 'odd_rows' => $plan['odd_rows']],
             engine: $piece->engine,
+            holes: $piece->holes === null ? null : $piece->holes * $copies,
         );
     }
 }
