@@ -17,6 +17,12 @@ printers:
     snapshot_url: http://192.168.8.21/webcam/?action=snapshot
     # light_device: chamber_light                          # switched on for the camera during a print (Rinkhals default); "" = no light
     # api_key: ...                                          # only when Moonraker is set up to require one
+    # preload_filament: true                               # Kobra S1 + ACE under Rinkhals 20260901_01: feed the slot before the start when the
+    #                                                      #   head holds nothing (hot nozzle, printer idle), so Rinkhals' own auto-feed has
+    #                                                      #   nothing to do and the print does not stop at 10539 "Extruder must heat up first"
+    #                                                      #   (docs/AM.md §11). Default false = nothing changes.
+    # preload_temp: 0                                      # °C for the preload; 0 = the file's G9111 extruderTemp (the first layer's)
+    # preload_timeout: 600                                 # seconds for the heating and the feed together
 
   # Second, third… printer: one more block. One agent serves them all.
   # - key: kobra-s1-02

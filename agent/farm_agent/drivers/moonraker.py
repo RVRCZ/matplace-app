@@ -15,6 +15,12 @@ Moonraker (Klipper) driver - Anycubic Kobra S1 with the Rinkhals firmware overla
              GoKlipper under Rinkhals tells why it stopped: "!! error: ... filament hub feed filament timeout")
   files      GET  /server/files/directory?path=gcodes (names, sizes, dates, disk_usage) | GET /server/files/gcodes/<name>
              | DELETE /server/files/gcodes/<name>
+  preload    (option preload_filament, off by default) before a start on a Kobra S1 + ACE whose head holds nothing:
+             M104 to the file's first-layer temperature, wait for it, FEED_FILAMENT ID=<slot//4> INDEX=<slot%4>
+             LENGTH=80 SPEED=25 (what Rinkhals itself sends), wait until filament_hub.current_filament names the
+             slot. Rinkhals 20260901_01 feeds a one-tool file by itself at print start and the firmware runs that
+             feed after the leveling, cold, so the print stops at 10539 "Extruder must heat up first"; fed
+             beforehand there is nothing left to feed (docs/AM.md §11, Rinkhals issue #196).
   light      POST /machine/device_power/device?device=<light_device>&action=on|off   (Rinkhals: "chamber_light")
   dryer      POST /printer/gcode/script?script=MMU_DRYER_START UNIT=0 DURATION=<min> TEMP=<°C> | MMU_DRYER_STOP UNIT=0
              (Rinkhals mmu_ace component; the live dryer values come back in the `filament_hub` object, `mmu_machine`
@@ -22,7 +28,9 @@ Moonraker (Klipper) driver - Anycubic Kobra S1 with the Rinkhals firmware overla
 
 Options (config.yaml): url, api_key (optional), snapshot_url (optional), light_device (optional, default chamber_light
 on Rinkhals; "" = the printer has no light), timeout (seconds, default 15), start_timeout (seconds the print/start call
-may take, default 120), start_wait (seconds to watch the printer after a start call that gave no answer, default 60).
+may take, default 120), start_wait (seconds to watch the printer after a start call that gave no answer, default 60),
+preload_filament (default false), preload_temp (°C, default 0 = the file's G9111 extruderTemp), preload_timeout
+(seconds for the heating and the feed together, default 600), preload_length (mm, 80), preload_speed (mm/s, 25).
 """
 from __future__ import annotations
 
@@ -52,6 +60,15 @@ CONSOLE_LINES = 50
 CONSOLE_CACHE_SECONDS = 20.0
 MESSAGE_LIMIT = 300
 
+# GoKlipper's answer to a feed into a cold nozzle (code 10011715, screen 10539). Under Rinkhals 20260901_01 it comes from
+# Rinkhals' own auto-feed at the start of a one-tool file: the print shows "printing" the whole time (the firmware's
+# "heating" is mapped to it), nothing is paused, only the console and the empty head give it away (docs/AM.md §11).
+HEAT_FIRST = re.compile(r"10011715|Extruder must heat up first", re.I)
+HEAT_FIRST_NOTE = "the print stands at the screen's dialog 10539 until it is confirmed or the retried feed lands"
+# the start macro's line in a Kobra S1 file: the first-layer temperature the preload heats to
+START_TEMP = re.compile(r"^G9111 bedTemp=\d+ extruderTemp=(\d+)", re.M)
+PRELOAD_HEAD_BYTES = 65536
+
 # print_stats.state -> (printer state, job state)
 STATES = {
     "standby": (IDLE, None),
@@ -72,6 +89,11 @@ class MoonrakerDriver(PrinterDriver):
         self.start_wait = float(options.get("start_wait", 60))
         self.start_poll = float(options.get("start_poll", 5))
         self.reset_settle = float(options.get("reset_settle", 5))
+        self.preload = bool(options.get("preload_filament", False))
+        self.preload_temp = int(options.get("preload_temp", 0) or 0)
+        self.preload_timeout = float(options.get("preload_timeout", 600))
+        self.preload_length = int(options.get("preload_length", 80))
+        self.preload_speed = int(options.get("preload_speed", 25))
         self.headers = {"X-Api-Key": options["api_key"]} if options.get("api_key") else {}
         self.snapshot_url = options.get("snapshot_url")
         self.light_device = options.get("light_device", "chamber_light")
@@ -119,7 +141,9 @@ class MoonrakerDriver(PrinterDriver):
         # everything the printer has to say, in one line for the operator (docs/AM.md §10): the screen's M117 text,
         # print_stats.message, a Klipper shutdown, the ACE's hub and slots, and while it stands still the last error
         # lines of the console. Rinkhals shows the reason of a pause nowhere else: the screen only offers resume or stop.
-        message = await self._message(s, printer_state, stats, hooks)
+        # A print whose head holds nothing yet (the ACE's current_filament is "") is watched for the cold feed too.
+        unfed = printer_state == PRINTING and (s.get("filament_hub") or {}).get("current_filament") == ""
+        message, standing = await self._message(s, printer_state, stats, hooks, unfed)
         if message:
             telemetry["message"] = message
         confirmed = self.plate_confirmed(terminal=stats.get("state") in ("complete", "cancelled", "error") and bool(stats.get("filename")),
@@ -171,12 +195,14 @@ class MoonrakerDriver(PrinterDriver):
                 print_duration=int(stats.get("print_duration") or 0),
                 filament_used=float(stats.get("filament_used") or 0),
                 # a print that stands still carries the whole reason, a running one only what print_stats says
-                message=message if job_state in (JOB_PAUSED, JOB_FAILED) else str(stats.get("message") or ""),
+                message=message if job_state in (JOB_PAUSED, JOB_FAILED) or standing else str(stats.get("message") or ""),
             )
         return PrinterStatus(printer_state, {k: v for k, v in telemetry.items() if v is not None}, job)
 
-    async def _message(self, s: dict, printer_state: str, stats: dict, hooks: dict) -> str:
+    async def _message(self, s: dict, printer_state: str, stats: dict, hooks: dict, unfed: bool = False) -> tuple[str, bool]:
+        """The printer's words in one line, and whether a running print stands at the cold-feed dialog (10011715)."""
         parts: list[str] = []
+        standing = False
 
         def add(text) -> None:
             # the same thing said twice (print_stats and the console, a msg with and without its code) is said once
@@ -205,12 +231,19 @@ class MoonrakerDriver(PrinterDriver):
         ota = s.get("ota_filament_hub") or {}
         if ota.get("state") and ota["state"] != "standby":
             add(f"ACE {ota['state']} {ota.get('progress', 0)}%")
-        if printer_state in (PAUSED, ERROR):
+        if printer_state in (PAUSED, ERROR) or unfed:
             # what the console said since this print began (total_duration is the time since its start)
             since = time.time() - float(stats.get("total_duration") or 3600)
-            for line in await self._console_errors(since):
-                add(line)
-        return " · ".join(parts)[:MESSAGE_LIMIT]
+            lines = await self._console_errors(since)
+            if printer_state in (PAUSED, ERROR):
+                for line in lines:
+                    add(line)
+            else:
+                cold = [line for line in lines if HEAT_FIRST.search(line)]
+                if cold:
+                    standing = True
+                    add(f"{cold[-1]}: {HEAT_FIRST_NOTE}")
+        return " · ".join(parts)[:MESSAGE_LIMIT], standing
 
     _console_cache: tuple = (0.0, [])
 
@@ -348,6 +381,8 @@ class MoonrakerDriver(PrinterDriver):
         now = await self.status()
         if now.state != IDLE:
             raise DriverError(f"printer is {now.state}, not idle")
+        if self.preload:
+            await self._preload(gcode_path, slot)
         form = aiohttp.FormData()
         form.add_field("root", "gcodes")
         with open(gcode_path, "rb") as fh:
@@ -375,6 +410,69 @@ class MoonrakerDriver(PrinterDriver):
                     said = (now.job.message if now.job else "") or now.telemetry.get("error") or "no message"
                     raise DriverError(f"print start: the printer reports an error: {said}") from e
             raise
+
+    async def _preload(self, gcode_path: str, slot: int) -> None:
+        """Feed the slot before the print, hot and with the printer idle (option preload_filament, docs/AM.md §11).
+
+        Rinkhals 20260901_01 (mmu_ace.py, _auto_feed_at_print_start) feeds the one tool of a file by itself when the
+        ACE holds nothing at print start: it sends FEED_FILAMENT once the nozzle target is a print temperature and the
+        nozzle is near it, GoKlipper queues the feed behind the running start macro and runs it after the leveling,
+        when the nozzle is cold again - 10011715 "Extruder must heat up first", screen 10539, the print stands (U2,
+        1-3 Nov 2026). Fed beforehand, the auto-feed has nothing to do (the Rinkhals maintainers' own workaround,
+        issue #196), and the file's T<n> after the macro finds its slot loaded. Another slot in the head is left
+        alone: the file's hot T<n> changes it, as it has since 12 Oct 2026."""
+        try:
+            s = (await self._get("/printer/objects/query?filament_hub&extruder"))["result"]["status"]
+        except Exception as e:  # noqa: BLE001 - whatever it is, the printer cannot be asked
+            raise DriverError(f"preload: the ACE cannot be read: {e.__class__.__name__} {e}") from e
+        hub = s.get("filament_hub") or {}
+        if "current_filament" not in hub:
+            log.info("%s: no ACE reported, nothing to preload", self.key)
+            return
+        loaded = str(hub.get("current_filament") or "")
+        want = f"{slot // 4}-{slot % 4}"
+        if loaded:
+            log.info("%s: the ACE holds %s already (%s wanted), the file's own T%d does the rest", self.key, loaded, want, slot)
+            return
+        temp = self.preload_temp or _start_temp(gcode_path) or 230
+        log.info("%s: preload: heating to %d °C, then feeding slot %d", self.key, temp, slot + 1)
+        deadline = time.monotonic() + self.preload_timeout
+        await self._script(f"M104 S{temp}", 60)
+        try:
+            while True:
+                try:
+                    ext = (await self._get("/printer/objects/query?extruder"))["result"]["status"].get("extruder") or {}
+                except Exception as e:  # noqa: BLE001
+                    raise DriverError(f"preload: the nozzle cannot be read: {e.__class__.__name__} {e}") from e
+                if float(ext.get("temperature") or 0) >= temp - 10:
+                    break
+                if time.monotonic() > deadline:
+                    raise DriverError(f"preload: the nozzle is at {ext.get('temperature')} °C after {self.preload_timeout:.0f} s, {temp} wanted")
+                await asyncio.sleep(self.start_poll)
+            script = f"FEED_FILAMENT ID={slot // 4} INDEX={slot % 4} LENGTH={self.preload_length} SPEED={self.preload_speed}"
+            log.info("%s: preload: %s", self.key, script)
+            await self._script(script, max(30.0, deadline - time.monotonic()))
+            # the feed call answers when the ACE is done; the hub's word is what Rinkhals goes by at the start
+            for _ in range(15):
+                try:
+                    hub = (await self._get("/printer/objects/query?filament_hub"))["result"]["status"].get("filament_hub") or {}
+                except Exception as e:  # noqa: BLE001
+                    raise DriverError(f"preload: the ACE cannot be read after the feed: {e.__class__.__name__} {e}") from e
+                if str(hub.get("current_filament") or "") == want:
+                    log.info("%s: preload: slot %d is in the head", self.key, slot + 1)
+                    return
+                await asyncio.sleep(min(2.0, self.start_poll))
+            raise DriverError(f"preload: FEED_FILAMENT came back, but the ACE reports {hub.get('current_filament')!r} in the head, not {want}")
+        except DriverError:
+            # a start that failed leaves nothing heating
+            try:
+                await self._script("M104 S0", 30)
+            except DriverError as e:
+                log.info("%s: preload: could not switch the heater off: %s", self.key, e)
+            raise
+
+    async def _script(self, script: str, timeout: float) -> dict:
+        return await self._post("/printer/gcode/script", params={"script": script}, timeout=aiohttp.ClientTimeout(total=timeout))
 
     async def pause(self) -> None:
         await self._post("/printer/print/pause")
@@ -456,6 +554,17 @@ class MoonrakerDriver(PrinterDriver):
             except Exception as e:  # noqa: BLE001 - printer switched off, network down... polling still works meanwhile
                 log.debug("%s: websocket down: %s", self.key, e)
             await asyncio.sleep(10)
+
+
+def _start_temp(gcode_path: str) -> int:
+    """The first-layer nozzle temperature of a Kobra S1 file (its G9111 line), 0 when there is none."""
+    try:
+        with open(gcode_path, "rb") as fh:
+            head = fh.read(PRELOAD_HEAD_BYTES).decode("utf-8", "replace")
+    except OSError:
+        return 0
+    m = START_TEMP.search(head)
+    return int(m.group(1)) if m else 0
 
 
 def _num(v) -> Optional[float]:

@@ -24,6 +24,9 @@ class FakeMoonraker:
         self.webhooks = {"state": "ready", "state_message": "Printer is ready"}
         self.display = {"message": ""}
         self.filament_hub = None        # the Rinkhals filament_hub object, None = no ACE
+        self.extruder = {"temperature": 25.0, "target": 0.0}
+        self.heats = True               # M104 S<n> takes the nozzle to n at once (False: the target is set, the nozzle stays cold)
+        self.feed_error = ""            # FEED_FILAMENT answers 400 with these words (""= it loads the slot into the hub)
         self.gcode_store = []           # [{"message", "time", "type"}] as /server/gcode_store returns them
         self.files = {}                 # name -> (size, modified) in the gcodes root
         self.disk = {"total": 6228017152, "used": 2943553536, "free": 2967470080}
@@ -66,7 +69,7 @@ class FakeMoonraker:
     async def query(self, request):
         status = {
             "print_stats": dict(self.print_stats), "virtual_sdcard": {"progress": 0.0},
-            "extruder": {"temperature": 25.0, "target": 0.0}, "heater_bed": {"temperature": 24.0, "target": 0.0},
+            "extruder": dict(self.extruder), "heater_bed": {"temperature": 24.0, "target": 0.0},
             "webhooks": dict(self.webhooks), "display_status": dict(self.display),
         }
         if self.filament_hub is not None:
@@ -134,6 +137,18 @@ class FakeMoonraker:
             if not self.knows_reset:
                 return web.json_response({"error": {"code": 400, "message": "Unknown command:\"SDCARD_RESET_FILE\""}}, status=400)
             self.print_stats.update(state="standby", filename="", message="")
+        elif script.startswith("M104 S"):
+            target = float(script.split("S", 1)[1])
+            self.extruder["target"] = target
+            if self.heats:
+                self.extruder["temperature"] = target
+        elif script.startswith("FEED_FILAMENT "):
+            # GoKlipper's own answer to a feed it refuses: an error on the gcode/script call (the console shows the same)
+            if self.feed_error:
+                return web.json_response({"error": {"code": 400, "message": self.feed_error}}, status=400)
+            args = dict(p.split("=", 1) for p in script.split()[1:])
+            if self.filament_hub is not None:
+                self.filament_hub["current_filament"] = f"{args.get('ID', '0')}-{args.get('INDEX', '0')}"
         return web.json_response({"result": "ok"})
 
     async def firmware_restart(self, request):

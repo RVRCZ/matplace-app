@@ -93,6 +93,12 @@ return [
         'notify_problem' => true,           // print failed, cancelled by the customer, start failed, printer offline, error pending, currency
         'notify_paused' => true,            // the printer paused a print by itself (with its reason, when it gave one); once per pause
         'video_prices' => true,             // false: videos built from now on show no price (FarmVideos::showsPrices, docs/AL.md §13.8; Roman, 1 Nov 2026)
+        // true: the copy of a one-filament G-code for the printer heats the nozzle to the first-layer temperature BEFORE
+        // the Anycubic start macro G9111 (and selects the slot after it); false: heats after the macro, right before
+        // the T<n> line (today's shape). The Rinkhals auto-feed of the Kobra S1 + ACE fires as soon as the nozzle is at a
+        // print temperature and the firmware runs it when the leveling has cooled the nozzle again, so the print stops at
+        // 10539 "Extruder must heat up first" (U2, TODO #65, docs/AM.md §11). Takes effect on copies made from now on.
+        'heat_before_start_macro' => false,
 
         // ── product switches (the admin's value wins over .env; see App\Providers\AppServiceProvider) ──
         'marketplace' => (bool) env('FEATURE_MARKETPLACE', false),   // printers' marketplace: price lists, inquiries, quotes

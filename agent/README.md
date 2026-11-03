@@ -109,6 +109,7 @@ Viz `config.example.yaml`. Token lze místo souboru předat proměnnou prostřed
 | `printers[].package` | jen `anycubic_lan`: soubor poslat jako balíček `.gcode.3mf` s náhledem (jako Slicer Next) místo holého G-code s doplněnými řádky; obě cesty ověřené na Kobra X 18. 10. 2026 (`docs/AM.md`) |
 | `printers[].url` | Moonraker, `http://IP:7125` |
 | `printers[].snapshot_url` | snímek z kamery, u Rinkhals `http://IP/webcam/?action=snapshot` |
+| `printers[].preload_filament` | jen `moonraker`, Kobra S1 + ACE: před startem zavede filament zvoleného slotu, když v hlavě nic není (nahřeje trysku na teplotu první vrstvy ze souboru, pošle `FEED_FILAMENT`, počká, až hub hlásí slot). Rinkhals 20260901_01 jinak zavádí sám během vyrovnání podložky a tisk stojí na hlášce 10539 „Extruder must heat up first“ (`docs/AM.md` §11). Výchozí `false` = nic se nemění. K tomu `preload_temp` (°C, `0` = z řádku G9111 souboru) a `preload_timeout` (s, výchozí 600) |
 | `printers[].light_device` | světlo komory (Moonraker power device); výchozí `chamber_light` = Rinkhals. Agent ho rozsvítí před startem tisku a zhasne po jeho konci, v adminu jsou tlačítka Rozsvítit/Zhasnout. `""` = tiskárna světlo nemá |
 
 ## Kobra X a další Anycubic s původním firmwarem (`anycubic_lan`)

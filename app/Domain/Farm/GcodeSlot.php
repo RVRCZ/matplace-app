@@ -96,8 +96,12 @@ final class GcodeSlot
         return substr($gcode, 0, $found)."\n".$line.substr($gcode, $found);
     }
 
-    /** @param  array{nozzle?: int, nozzle_first?: int, bed?: int}  $temps  degrees of the chosen kind; empty = keep the sliced ones */
-    public static function retarget(string $gcode, int $slot, array $temps = []): string
+    /**
+     * @param  array{nozzle?: int, nozzle_first?: int, bed?: int}  $temps  degrees of the chosen kind; empty = keep the sliced ones
+     * @param  bool  $heatFirst  heat the nozzle before the start macro G9111 instead of after it (farm setting
+     *                           `heat_before_start_macro`, docs/AM.md §11); a file without that macro keeps today's shape
+     */
+    public static function retarget(string $gcode, int $slot, array $temps = [], bool $heatFirst = false): string
     {
         // written for slot 1 (T0) as well: a file without any tool line is refused by the firmware of the S1 + ACE
         // ("cannot parse the file", 23 Sep 2026, order F26-000002)
@@ -108,14 +112,26 @@ final class GcodeSlot
         if ($hot < 100 && preg_match('/^G9111 bedTemp=\d+ extruderTemp=(\d+)/m', $gcode, $g)) {
             $hot = (int) $g[1];
         }
-        $heat = $hot >= 100 ? 'M104 S'.$hot." ; matplace slot: heat before the spool change\nM109 S".$hot." ; matplace slot: wait for it\n" : '';
-        $line = $heat.'T'.$slot.' ; slot chosen by matplace farm';
+        // Heating ahead of the start macro (heat_before_start_macro): Rinkhals 20260901_01 feeds the slot by itself at
+        // the start of every one-tool file when the ACE holds nothing (mmu_ace.py, _auto_feed_at_print_start). It sends
+        // FEED_FILAMENT as soon as the nozzle target is a print temperature and the nozzle is near it; the firmware runs
+        // the queued feed when the running command ends. After G9111 that is the end of the leveling, which has cooled
+        // the nozzle again, and the print stops at 10539 "Extruder must heat up first" (U2, 1-3 Nov 2026, TODO #65).
+        // With M104/M109 before G9111 the feed runs right after M109, hot, before the leveling; the T<n> after the macro
+        // then finds its slot loaded and does nothing (seen on every print that went on after the second feed).
+        $heatFirst = $heatFirst && $hot >= 100 && preg_match('/^G9111 bedTemp=\d+ extruderTemp=\d+/m', $gcode) === 1;
+        $heat = $hot >= 100 ? 'M104 S'.$hot.' ; matplace slot: heat before the '.($heatFirst ? 'start macro' : 'spool change')."\nM109 S".$hot." ; matplace slot: wait for it\n" : '';
+        $tool = 'T'.$slot.' ; slot chosen by matplace farm';
+        $line = $heatFirst ? $tool : $heat.$tool;
         $out = preg_replace('/^T0[ \t]*(;.*)?$/m', $line, $gcode, 1, $n);
         if ($n === 0) {
             // OrcaSlicer writes no tool line at all for a single-filament print: put one right after the start macro
             $out = preg_replace('/^(M117[ \t]*\r?\n)/m', '$1'.$line."\n", $out, 1, $n);
         }
         $out = $n > 0 ? (string) $out : $gcode;
+        if ($heatFirst && $n > 0) {
+            $out = (string) preg_replace_callback('/^G9111 bedTemp=\d+ extruderTemp=\d+/m', fn ($m) => $heat.$m[0], $out, 1);
+        }
         if (! empty($temps['nozzle'])) {
             $first = (int) (($temps['nozzle_first'] ?? 0) ?: $temps['nozzle'] + 5);
             $bed = (int) ($temps['bed'] ?? 0);
@@ -236,19 +252,32 @@ final class GcodeSlot
      * Writes the retargeted copy next to the original and returns its path (the original when nothing changes).
      *
      * @param  array{slot:int, z:float}|list<array{slot:int, z:float}>|null  $changes  one change (older callers) or the list of them
+     * @param  bool|null  $heatFirst  null = the farm setting `heat_before_start_macro`
      */
-    public static function fileFor(string $gcodePath, int $slot, array $temps = [], ?array $changes = null): string
+    public static function fileFor(string $gcodePath, int $slot, array $temps = [], ?array $changes = null, ?bool $heatFirst = null): string
     {
         $changes = $changes === null ? [] : (isset($changes['slot']) ? [$changes] : array_values($changes));
-        // "hot": copies made before the heating-before-the-spool-change (12 Oct 2026) are not reused
-        $tag = '.hot.slot'.$slot.(! empty($temps['nozzle']) ? '-'.$temps['nozzle'].'-'.(int) ($temps['bed'] ?? 0) : '')
+        $heatFirst ??= self::heatFirstDefault();
+        // "hot": copies made before the heating-before-the-spool-change (12 Oct 2026) are not reused; "pre": heated
+        // before the start macro, another copy than the one heated after it
+        $tag = '.hot'.($heatFirst ? '.pre' : '').'.slot'.$slot.(! empty($temps['nozzle']) ? '-'.$temps['nozzle'].'-'.(int) ($temps['bed'] ?? 0) : '')
             .($changes ? '.then'.implode('_', array_map(fn ($c) => $c['slot'].'at'.str_replace('.', '_', (string) $c['z']), $changes)) : '');
         $target = preg_replace('/\.gcode$/', '', $gcodePath).$tag.'.gcode';
         if (! is_file($target) || filemtime($target) < filemtime($gcodePath)) {
-            $gcode = self::retarget((string) file_get_contents($gcodePath), $slot, $temps);
+            $gcode = self::retarget((string) file_get_contents($gcodePath), $slot, $temps, $heatFirst);
             file_put_contents($target, $changes ? self::colorChanges($gcode, $changes) : $gcode);
         }
 
         return $target;
+    }
+
+    /** The admin's switch (config/farm.php `settings.heat_before_start_macro`, /admin/farm/settings); off without a booted app. */
+    private static function heatFirstDefault(): bool
+    {
+        try {
+            return function_exists('app') && app()->bound('config') ? (bool) app(FarmSettings::class)->get('heat_before_start_macro') : false;
+        } catch (\Throwable) {
+            return false;
+        }
     }
 }

@@ -54,6 +54,46 @@ class GcodeSlotTest extends TestCase
         $this->assertSame($this->gcode(), GcodeSlot::retargetMany($this->gcode(), []), 'no map: nothing changes');
     }
 
+    public function test_a_one_filament_file_heats_before_the_start_macro_only_when_asked(): void
+    {
+        // what OrcaSlicer writes for one filament on the Kobra S1: the start macro, M117, no tool line
+        $one = "; HEADER_BLOCK_START\n; HEADER_BLOCK_END\nG9111 bedTemp=100 extruderTemp=270\nM117\nG90\nG21\nM83\nG1 X1 Y1 E1\nM104 S270 ; set nozzle temperature\nM140 S100 ; set bed temperature\nM104 S0 ; turn off temperature\n";
+        $temps = ['nozzle' => 265, 'nozzle_first' => 270, 'bed' => 100];
+
+        // today's shape (the default): heated after the macro, right before the tool line
+        $after = GcodeSlot::retarget($one, 3, $temps);
+        $this->assertStringContainsString("G9111 bedTemp=100 extruderTemp=270\nM117\nM104 S270 ; matplace slot: heat before the spool change\nM109 S270 ; matplace slot: wait for it\nT3 ; slot chosen by matplace farm\nG90\n", $after);
+        $this->assertSame(1, preg_match_all('/^T\d/m', $after));
+
+        // heat_before_start_macro: M104/M109 ahead of G9111, the bare tool line after M117, nothing else moves
+        $before = GcodeSlot::retarget($one, 3, $temps, true);
+        $this->assertStringContainsString("; HEADER_BLOCK_END\nM104 S270 ; matplace slot: heat before the start macro\nM109 S270 ; matplace slot: wait for it\nG9111 bedTemp=100 extruderTemp=270\nM117\nT3 ; slot chosen by matplace farm\nG90\n", $before);
+        $this->assertSame(1, preg_match_all('/^T\d/m', $before));
+        $this->assertSame(1, preg_match_all('/^M109 /m', $before), 'one wait, before the macro');
+        $this->assertStringContainsString("M104 S265 ; set nozzle temperature\nM140 S100 ; set bed temperature\nM104 S0 ; turn off temperature\n", $before, 'the printing temperatures and the switch-off as before');
+        $this->assertSame(strlen($after), strlen($before) + strlen('spool change') - strlen('start macro'), 'the same lines, only moved');
+        // a file written for slot 1 (T0 by the slicer) gets the same treatment
+        $t0 = GcodeSlot::retarget(str_replace("M117\n", "M117\nT0\n", $one), 2, $temps, true);
+        $this->assertStringContainsString("M109 S270 ; matplace slot: wait for it\nG9111 bedTemp=100 extruderTemp=270\nM117\nT2 ; slot chosen by matplace farm\nG90\n", $t0);
+        // no start macro (another printer): the switch changes nothing
+        $plain = str_replace("G9111 bedTemp=100 extruderTemp=270\n", '', $one);
+        $this->assertSame(GcodeSlot::retarget($plain, 3, $temps), GcodeSlot::retarget($plain, 3, $temps, true));
+
+        // the copies are two different files, each written once
+        $dir = sys_get_temp_dir().'/mp_heat_'.uniqid();
+        mkdir($dir);
+        file_put_contents($dir.'/one.gcode', $one);
+        $copyAfter = GcodeSlot::fileFor($dir.'/one.gcode', 3, $temps, null, false);
+        $copyBefore = GcodeSlot::fileFor($dir.'/one.gcode', 3, $temps, null, true);
+        $this->assertStringEndsWith('one.hot.slot3-265-100.gcode', $copyAfter);
+        $this->assertStringEndsWith('one.hot.pre.slot3-265-100.gcode', $copyBefore);
+        $this->assertStringContainsString("heat before the start macro\nM109 S270 ; matplace slot: wait for it\nG9111", (string) file_get_contents($copyBefore));
+        $this->assertStringContainsString("M117\nM104 S270 ; matplace slot: heat before the spool change", (string) file_get_contents($copyAfter));
+        $this->assertSame($copyAfter, GcodeSlot::fileFor($dir.'/one.gcode', 3, $temps), 'without a booted app the setting is off: today\'s copy');
+        array_map('unlink', glob($dir.'/*'));
+        rmdir($dir);
+    }
+
     public function test_the_copy_for_the_printer_is_written_once_and_the_stats_read_the_filaments_apart(): void
     {
         $dir = sys_get_temp_dir().'/mp_slot_'.uniqid();
