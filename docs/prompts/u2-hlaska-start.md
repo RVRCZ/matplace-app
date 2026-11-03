@@ -61,3 +61,13 @@ E. **Docs:** `docs/AM.md` §11 (časová osa, kdo hlášku posílá, varianty a 
 - Texty jen přes `lang/src/*.json` + `python scripts/lang_add.py`; validuj každý JSON, který upravíš.
 - Git add jen jmenovitě, žádný stash. Commit končí `Co-Authored-By: Claude <model session> <noreply@anthropic.com>`.
 - Produkční databázi ani server nečti. Tiskárny: čtení přes Moonraker kdykoli, tisky a SSH jen s Romanem.
+
+## Doplnění 3. 11. 2026 večer (Roman)
+
+Hláška tisk **zastaví** a pokračuje až po potvrzení na displeji; těch 41 s mezi chybou a druhým FEED je Romanovo ťuknutí.
+Průběh dnes: na podložce zůstal neúspěšný tisk z PETG (start 20:51 se slotem 1, hláška, tisk stál, ve 21:06 zrušen), Roman
+v adminu „uvolnil podložku“, farma poslala ASA (F26-000122, slot 3), hláška znovu, po potvrzení tiskne dál. Varianta B.4
+(bez řádku T) a automatické pokračování z ovladače v bodě C mají proto přednost: cílem je start bez člověka u tiskárny.
+Zjisti také, jak se tiskárna v té chvíli jeví přes Moonraker (`print_stats.state`, `pause_resume.is_paused`,
+`idle_timeout.state`, objekt `mmu`), aby agent 0.2.9 uměl rozpoznat „stojí na hlášce 10011715“ a případně poslat
+`RESUME` nebo totéž, co dělá ťuknutí na displeji (co posílá K3SysUi, je vidět v logu Rinkhalsu po Romanově ťuknutí).
