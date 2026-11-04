@@ -52,3 +52,26 @@ F. **Docs:** `docs/AL.md` nový oddíl (limit, výběr, co kde platí), řádek 
 - Jen tvoje větev a worktree; `GcodeSlot.php` a ovladače agenta neměň (TODO #67 je o ně opřené), když je to nutné, napiš řídící.
 - Texty jen přes `lang/src/<název>.json` + `python scripts/lang_add.py`; validuj každý JSON. Git add jmenovitě, žádný stash.
 - Commit končí `Co-Authored-By: Claude <model session> <noreply@anthropic.com>`. Produkční databázi ani server nečti.
+
+## Odchylky session 2 (4. 11. 2026, feature/colors-per-machine, docs/AL.md §19)
+
+- Hláška `too_many_colors` neskloňuje: „nejvýš tolik barev, kolik má tiskárna pozic na cívky, tady :n“ (platí pro 4 i 7).
+  Stejně `parts_hint` a `by_parts_hint` bez „nejvýš 4 barvy“.
+- `spoolsForParts` počítá **vyžádané** barvy (s hlavní), ne jen výsledné: výsledných nemůže být víc než pozic stroje,
+  takže by limit stroje nikdy nepadl. Stránka zakázky nikdy nepošle víc, nabízí jen cívky jednoho stroje; týká se jen
+  `part_color` při vzniku (API, testy, dřív start). Předvolba za zákazníka je proto po strojích (`nearestSet` hodnotí
+  každý stroj zvlášť) a „tisknout znovu“ napasuje staré cívky na jeden stroj (`cap`), aby odmítnutí nikdy nepřišlo samo.
+- Pojmenování pozic se odvozuje z profilu stroje (`SpoolPositions`), ne z ovladače agenta (web ovladač nezná). Prusa Core
+  One + INDX dostane zatím „Pozice n“, dokud session 4 neřekne, jak INDX pozice číslovat; admin je může pojmenovat sám
+  (`label`). Změna v `agent/` ani `GcodeSlot.php` nebyla potřeba.
+- „Stav cívky, pokud ho web zná“: web zná jen zbytek gramů a zapnutí; karta a dlaždice říkají důvod (prázdná pozice,
+  málo materiálu, cívka se nenabízí, jiný druh, jen ruční podavač), ne stav z tiskárny.
+- Počet pozic v administraci: řádky slotů + odkaz „+ přidat pozici“ (`?slots=n`, do 16); žádné samostatné pole počtu.
+- Místní průchod podle AL.md §14.10 neprošel: sdílený `dev.sqlite` nemá migrace od 28. 10. (`farm_orders.anonymous_session_id`),
+  zakázka se na něm nezaloží; migrace soukromé kopie auto režim odmítl. Stránka zakázky proto vypsaná testem
+  (`FarmColorsPerMachineTest::test_the_order_page…`, `MP_DUMP_ORDER_PAGE=<složka>`) a prohlédnutá v headless Chrome
+  1280 a 390 px vedle kopie `public/build` (karty, počitadlo, dlaždice, přepnutí stroje, ruční volba). Živé „Přepočítat“
+  a platba v prohlížeči neprošly, kryje je PHPUnit.
+- `engines.colors.max` z configu odstraněn (nahrazen `ColorLimit::farm()`); `PaintedColors` ukládá do `colors.max` číslo,
+  se kterým soubor sloučil, a díly řeže stejným.
+

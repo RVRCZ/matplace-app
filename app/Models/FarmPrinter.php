@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Domain\Farm\ColorLimit;
 use App\Domain\Farm\FarmSettings;
 use App\Engines\DTO\Dimensions;
 use Illuminate\Database\Eloquent\Model;
@@ -105,6 +106,15 @@ class FarmPrinter extends Model
     public function slots(): HasMany
     {
         return $this->hasMany(FarmPrinterSlot::class)->orderBy('slot');
+    }
+
+    /**
+     * How many colours one print on this machine may take: as many as it has spool positions (the Kobra X 7, a Kobra S1
+     * 4), capped by config farm.max_colors_ceiling (App\Domain\Farm\ColorLimit, docs/AL.md §19).
+     */
+    public function colorLimit(): int
+    {
+        return ColorLimit::of($this);
     }
 
     public function orders(): HasMany

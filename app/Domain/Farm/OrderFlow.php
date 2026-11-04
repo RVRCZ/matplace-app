@@ -121,8 +121,10 @@ final class OrderFlow
                 $slot = $id === (int) $offer['slot']->id ? $offer['slot'] : ($others->firstWhere('id', $id) ?? throw new FarmRefusal('color_gone'));
                 $picked[] = ['z' => round((float) $change['z'], 3), 'slot_id' => (int) $slot->id, 'color_id' => (int) $slot->farm_color_id];
             }
-            if (count(array_unique(array_merge([(int) $offer['slot']->farm_color_id], array_column($picked, 'color_id')))) > FarmOrder::MAX_COLORS) {
-                throw new FarmRefusal('too_many_colors', ['n' => FarmOrder::MAX_COLORS]);
+            // as many colours as the machine that prints has spool positions (ColorLimit, docs/AL.md §19)
+            $limit = $offer['printer']->colorLimit();
+            if (count(array_unique(array_merge([(int) $offer['slot']->farm_color_id], array_column($picked, 'color_id')))) > $limit) {
+                throw new FarmRefusal('too_many_colors', ['n' => $limit]);
             }
         }
         $second = $picked && $picked[0]['slot_id'] !== $offer['slot']->id ? $others->firstWhere('id', $picked[0]['slot_id']) : null;

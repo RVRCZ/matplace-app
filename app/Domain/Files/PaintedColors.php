@@ -3,6 +3,7 @@
 namespace App\Domain\Files;
 
 use App\Domain\Calculation\MaterialCatalog;
+use App\Domain\Farm\ColorLimit;
 use App\Engines\Repair\PythonTool;
 use App\Models\ModelFile;
 use Illuminate\Support\Facades\File;
@@ -15,16 +16,18 @@ use Illuminate\Support\Facades\Storage;
  * materials or an extruder per object (engines/python/colors_tool.py reads them all).
  *
  *   analyse    when the upload is processed (ProcessModelFile): the colours by area, the small ones (under
- *              engines.colors.merge_below per cent, and beyond FarmOrder::MAX_COLORS) joined to the colour of their
- *              body; the converted STL written again ordered by colour with `groups` (triangle ranges) for the viewer;
+ *              engines.colors.merge_below per cent, and beyond what the farm's biggest changer holds, ColorLimit::farm,
+ *              7 with the Kobra X) joined to the colour of their body; the converted STL written again ordered by
+ *              colour with `groups` (triangle ranges) for the viewer;
  *              how many 0.2 mm layers hold 2, 3, 4 colours (the colour changes of a one-plate print)
  *   parts      for the farm: one part per printed colour (color_1… by area), the painted areas as inlays 1.2 mm deep
  *              (the colour splitter of /tools/colors with the same merge), into files/<uuid>/parts where
  *              OrderService::partStl looks for parts; made once, when the order is prepared
  *
  * Stored on the file as `colors` (null for a file without colours):
- *   {v, status: done|failed, count, merged, too_many, colors: [{hex, share 0..1, merged, into?, extruder, sources}],
+ *   {v, status: done|failed, count, merged, too_many, max, colors: [{hex, share 0..1, merged, into?, extruder, sources}],
  *    groups: [{hex, from, to}]|null, layers: {"2": n, …}, height, split_triangles, ms, error?}
+ *   `max` is the colour limit the analysis merged with; the parts are cut with the same number, whatever the farm holds later.
  */
 final class PaintedColors
 {
@@ -42,9 +45,11 @@ final class PaintedColors
             return null;
         }
         $t = microtime(true);
+        // as many colours as the farm's biggest changer holds (the Kobra X 7); the smaller ones join their body
+        $max = ColorLimit::farm();
         try {
             $r = $this->python->runScript('colors_tool.py', ['upload', $file->absolutePath(), $stlAbs, (string) json_encode([
-                'merge_below' => (float) config('engines.colors.merge_below', 1.0), 'max_colors' => (int) config('engines.colors.max', 4),
+                'merge_below' => (float) config('engines.colors.merge_below', 1.0), 'max_colors' => $max,
             ])], (int) config('engines.colors.timeout', 180));
         } catch (\Throwable $e) {
             $r = ['ok' => false, 'error' => $e->getMessage()];
@@ -59,7 +64,7 @@ final class PaintedColors
             return null;   // one colour: nothing to show, nothing to change
         }
 
-        return ['v' => 1, 'status' => 'done', 'count' => (int) $r['count'], 'merged' => (int) ($r['merged'] ?? 0), 'too_many' => (bool) ($r['too_many'] ?? false),
+        return ['v' => 1, 'status' => 'done', 'count' => (int) $r['count'], 'merged' => (int) ($r['merged'] ?? 0), 'too_many' => (bool) ($r['too_many'] ?? false), 'max' => $max,
             'colors' => array_values((array) $r['colors']), 'groups' => $r['groups'] ?? null, 'layers' => (array) ($r['layers'] ?? []),
             'height' => (float) ($r['height'] ?? 0), 'split_triangles' => (int) ($r['split_triangles'] ?? 0), 'ms' => $ms];
     }
@@ -121,8 +126,9 @@ final class PaintedColors
         $out = $dir.'/all.stl';
         $t = microtime(true);
         try {
+            // the same merge as the analysis (its `max`), so the parts are the colours the customer saw
             $r = $this->python->runScript('edit_tool.py', ['colors', $file->absolutePath(), $out, (string) json_encode([
-                'depth' => 1.2, 'in_place' => true, 'merge_below' => (float) config('engines.colors.merge_below', 1.0), 'max_colors' => (int) config('engines.colors.max', 4),
+                'depth' => 1.2, 'in_place' => true, 'merge_below' => (float) config('engines.colors.merge_below', 1.0), 'max_colors' => (int) (($file->colors['max'] ?? 0) ?: ColorLimit::farm()),
             ]), $dir], (int) config('engines.colors.timeout', 180) * 2);
         } catch (\Throwable $e) {
             $r = ['ok' => false, 'error' => $e->getMessage()];

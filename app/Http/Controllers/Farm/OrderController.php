@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Farm;
 use App\Domain\Calculation\BigModel as Threshold;
 use App\Domain\Farm\BigModel;
 use App\Domain\Farm\CardRefunds;
+use App\Domain\Farm\ColorLimit;
 use App\Domain\Farm\Dispatcher;
 use App\Domain\Farm\FarmGate;
 use App\Domain\Farm\FarmRefusal;
@@ -155,7 +156,10 @@ class OrderController extends Controller
      * lid in two colours) gets the spools of one machine nearest to them, a design in one freely chosen colour (a blue
      * box) the spool nearest to it, and anything else the first colour of the calculation's kind.
      *
-     * @param  array{color?: int|null, changes?: list<int|null>|null, by_parts?: bool|null, parts?: array<string, int|null>|null}  $wish
+     * The colours picked for the customer come from one machine and stay within its number of spool positions (ColorLimit,
+     * docs/AL.md §19); `cap` asks the same of colours a print made again brings along (a spool gone meanwhile is dropped).
+     *
+     * @param  array{color?: int|null, changes?: list<int|null>|null, by_parts?: bool|null, parts?: array<string, int|null>|null, cap?: bool}  $wish
      * @return array{color: ?int, changes: list<int>, by_parts: bool, parts: array<string, int>}
      */
     private function preselect(ModelFile $file, string $quality, ?string $material, array $wish): array
@@ -167,15 +171,28 @@ class OrderController extends Controller
         // the separately printed parts of the design (a box and its lid, the plates of a layered picture): each may
         // take its own spool of the machine, printed one after another
         $parts = OrderService::designParts($file);
-        $colors = $this->orders->offeredColors($quality)->map(fn ($r) => [
-            'id' => $r['color']->id, 'name' => $r['color']->displayName(), 'code' => $r['color']->material->code, 'hex' => $r['color']->hex,
-            'enough' => $r['slot']->availableGrams() > 50,
-            // the second colours of every machine that holds this colour, not just the one the colour is listed with
-            'seconds' => $twoColor || $parts ? $this->orders->secondSpoolsAcross($r['slot'], null, $quality)->map(fn ($s) => ['id' => $s->color->id, 'hex' => $s->color->hex])->values()->all() : [],
-        ])->sortBy(fn ($c) => [$c['code'] === $material ? 0 : 1, $c['name']])->values()->all();
+        $colors = $this->orders->offeredColors($quality)->map(function ($r) use ($twoColor, $parts, $quality) {
+            // every machine that holds this colour (its own first) with its other spools and how many colours it takes: the
+            // spools picked for the customer come from one machine (nearestSet); the second colours of all of them filter a wish
+            $machines = $twoColor || $parts ? $this->orders->firstsAcross($r['slot'], null, $quality)->map(fn ($f) => ['main' => $f->id, 'limit' => $f->printer->colorLimit(),
+                'spools' => $this->orders->secondSpools($f)->map(fn ($s) => ['id' => $s->color->id, 'hex' => $s->color->hex])->values()->all()])->values()->all() : [];
+            $seconds = [];
+            foreach ($machines as $m) {
+                foreach ($m['spools'] as $s) {
+                    $seconds[$s['id']] ??= $s;
+                }
+            }
+
+            return [
+                'id' => $r['color']->id, 'name' => $r['color']->displayName(), 'code' => $r['color']->material->code, 'hex' => $r['color']->hex,
+                'enough' => $r['slot']->availableGrams() > 50,
+                'seconds' => array_values($seconds), 'machines' => $machines,
+            ];
+        })->sortBy(fn ($c) => [$c['code'] === $material ? 0 : 1, $c['name']])->values()->all();
         $wantedColor = (int) ($wish['color'] ?? 0);
         $wantedChanges = array_values(array_map('intval', (array) ($wish['changes'] ?? [])));
         $partWanted = array_map('intval', (array) ($wish['parts'] ?? []));
+        $capTo = null;   // how many colours the machine the picks come from takes (nearestSet, fitToOneMachine)
         $said = $wantedColor || $wantedChanges || $partWanted || ($wish['by_parts'] ?? null) !== null;
         // the colour asked for when it is still loaded; else none yet (below: a design that names its colours): the
         // order starts on the cheapest kind loaded, or the calculation's, and the order page offers that machine's colours first
@@ -205,22 +222,28 @@ class OrderController extends Controller
         if ($byParts && ! $wantedColor && ! $partWanted && count(array_filter($partHex)) >= 1 && ($near = self::nearestSet($colors, $partHex[$parts[0]] ?? null, array_values(array_map(fn ($h) => (string) ($h ?: ''), array_slice($partHex, 1)))))) {
             // nothing chosen yet: the first colour follows the first part (the box), the other parts take the spool of that
             // machine nearest to their own colour (the first colour itself counts: "the main colour")
-            [$preselect, $picks] = $near;
+            [$preselect, $picks, $capTo] = $near;
             $machine = collect(collect($colors)->firstWhere('id', $preselect)['seconds'] ?? [])->pluck('id')->push($preselect);
             foreach (array_slice($parts, 1) as $i => $part) {
                 $partWanted[$part] = $partHex[$part] ? (int) ($picks[$i] ?? 0) : 0;
             }
         }
         $partPick = [];
-        // the spools picked for the customer stay within what one print takes (a design of 5 colours on a machine of more
-        // spools: the order opens and says so, colours_over); a colour the customer named is refused by OrderService instead
-        $ours = $partWanted && empty($wish['parts']);
+        // the spools picked for the customer stay within what one print takes on one machine: the machine nearestSet chose,
+        // or (a print made again, `cap`) the machine holding most of the colours asked for – a design of more colours than
+        // that machine has positions opens with the rest on the first colour and says so (colors_over). A colour the
+        // customer named himself is refused by OrderService instead (too_many_colors with the machine's number)
+        $ours = ($partWanted && empty($wish['parts'])) || ! empty($wish['cap']);
+        if ($ours && $partWanted && $capTo === null) {
+            [$partWanted, $capTo] = self::fitToOneMachine(collect($colors)->firstWhere('id', $preselect)['machines'] ?? [], (int) $preselect, $partWanted);
+        }
+        $cap = $capTo ?? ColorLimit::farm();
         $used = [(int) $preselect];
         foreach ($parts as $part) {
             $want = (int) ($partWanted[$part] ?? 0);
             $partPick[$part] = $want && $machine->contains($want) && $want !== $preselect ? $want : 0;
             if ($ours && $partPick[$part] && ! in_array($partPick[$part], $used, true)) {
-                if (count($used) >= FarmOrder::MAX_COLORS) {
+                if (count($used) >= $cap) {
                     $partPick[$part] = 0;
                 } else {
                     $used[] = $partPick[$part];
@@ -229,6 +252,33 @@ class OrderController extends Controller
         }
 
         return ['color' => $preselect, 'changes' => $changePick, 'by_parts' => $byParts && count($parts) >= 2, 'parts' => $partPick];
+    }
+
+    /**
+     * The colours asked for narrowed to one machine holding the first colour: the one that holds most of them, then the
+     * one with more positions. A part whose colour that machine lacks gets the first colour. Returns the narrowed wish
+     * and the machine's colour limit (null when no machine is known).
+     *
+     * @param  list<array{main: int, limit: int, spools: list<array{id: int, hex: string}>}>  $machines
+     * @param  array<string, int>  $wanted  part → colour
+     * @return array{0: array<string, int>, 1: ?int}
+     */
+    private static function fitToOneMachine(array $machines, int $first, array $wanted): array
+    {
+        $asked = array_unique(array_filter(array_map('intval', $wanted), fn ($id) => $id > 0 && $id !== $first));
+        $best = null;
+        foreach ($machines as $m) {
+            $held = array_map('intval', array_column($m['spools'], 'id'));
+            $n = count(array_intersect($asked, $held));
+            if ($best === null || $n > $best[0] || ($n === $best[0] && (int) $m['limit'] > $best[1])) {
+                $best = [$n, (int) $m['limit'], $held];
+            }
+        }
+        if ($best === null) {
+            return [$wanted, null];
+        }
+
+        return [array_map(fn ($id) => in_array((int) $id, $best[2], true) || (int) $id === $first ? (int) $id : 0, $wanted), $best[1]];
     }
 
     /**
@@ -255,11 +305,14 @@ class OrderController extends Controller
             return null;
         }
         $hexes = array_map('strtolower', array_filter(self::partHexes($file, array_column($order->partPlates(), 'part'))));
-        if (count(array_unique($hexes)) <= FarmOrder::MAX_COLORS) {
+        // as many colours as the roomiest machine holding the first colour takes (the page offers those machines' cards)
+        $slot = $order->slot()->first();
+        $limit = ($slot ? $this->orders->firstsAcross($slot, $order)->max(fn (FarmPrinterSlot $f) => $f->printer->colorLimit()) : null) ?: ($order->printer?->colorLimit() ?? ColorLimit::farm());
+        if (count(array_unique($hexes)) <= $limit) {
             return null;
         }
 
-        return ['text' => __('farm.refuse.too_many_colors', ['n' => FarmOrder::MAX_COLORS]), 'link' => __('farm.order.colors_fix'), 'url' => UploadController::toolOf($file)['url'] ?? null];
+        return ['text' => __('farm.refuse.too_many_colors', ['n' => $limit]), 'link' => __('farm.order.colors_fix'), 'url' => UploadController::toolOf($file)['url'] ?? null];
     }
 
     /** How far two colours are apart, the way the calculation measures it too (Palette::distance, CIE76 in Lab). */
@@ -272,9 +325,12 @@ class OrderController extends Controller
      * The first colour (its machine) and a spool of that machine for every change, together nearest to the colours the
      * design was made in. A spool may serve several changes; the first colour itself may be one of them (A, B, A).
      *
-     * @param  list<array<string, mixed>>  $colors  the colours on offer (preselect), every colour with its `seconds`
+     * Machine by machine (every colour lists the machines holding it, `machines`): the picks are always one machine's
+     * spools, so the order starts on it and its number of positions is what the picks are capped to (docs/AL.md §19).
+     *
+     * @param  list<array<string, mixed>>  $colors  the colours on offer (preselect), every colour with its `machines` (else `seconds`)
      * @param  list<string>  $wanted  hex of every change, bottom to top
-     * @return array{0: int, 1: list<int>}|null the first colour and a colour per change; null when nothing is loaded
+     * @return array{0: int, 1: list<int>, 2: int}|null the first colour, a colour per change and the machine's colour limit; null when nothing is loaded
      */
     private static function nearestSet(array $colors, ?string $bodyHex, array $wanted): ?array
     {
@@ -284,28 +340,30 @@ class OrderController extends Controller
             if (! $c['enough']) {
                 continue;
             }
-            $spools = array_merge([['id' => $c['id'], 'hex' => $c['hex']]], $c['seconds']);
-            $d = $bodyHex ? $far($c['hex'], $bodyHex) : 0.0;
-            $picks = [];
-            foreach ($wanted as $hex) {
-                $near = null;
-                foreach ($spools as $s) {
-                    $e = $far($s['hex'], $hex);
-                    if ($near === null || $e < $near[0]) {
-                        $near = [$e, (int) $s['id']];
+            foreach ($c['machines'] ?: [['main' => null, 'limit' => ColorLimit::farm(), 'spools' => $c['seconds']]] as $m) {
+                $spools = array_merge([['id' => $c['id'], 'hex' => $c['hex']]], $m['spools']);
+                $d = $bodyHex ? $far($c['hex'], $bodyHex) : 0.0;
+                $picks = [];
+                foreach ($wanted as $hex) {
+                    $near = null;
+                    foreach ($spools as $s) {
+                        $e = $far($s['hex'], $hex);
+                        if ($near === null || $e < $near[0]) {
+                            $near = [$e, (int) $s['id']];
+                        }
                     }
+                    $d += $near[0];
+                    $picks[] = $near[1];
                 }
-                $d += $near[0];
-                $picks[] = $near[1];
-            }
-            // a design in several colours wants several spools: a machine with one spool scores worse than one with many
-            $d += max(0, count(array_unique(array_merge([$c['id']], array_column($wanted ? $spools : [], 'id')))) < min(count($wanted) + 1, FarmOrder::MAX_COLORS) ? 200 : 0);
-            if ($best === null || $d < $best[0]) {
-                $best = [$d, (int) $c['id'], $picks];
+                // a design in several colours wants several spools: a machine with one spool scores worse than one with many
+                $d += max(0, count(array_unique(array_merge([$c['id']], array_column($wanted ? $spools : [], 'id')))) < min(count($wanted) + 1, (int) $m['limit']) ? 200 : 0);
+                if ($best === null || $d < $best[0]) {
+                    $best = [$d, (int) $c['id'], $picks, (int) $m['limit']];
+                }
             }
         }
 
-        return $best ? [$best[1], $best[2]] : null;
+        return $best ? [$best[1], $best[2], $best[3]] : null;
     }
 
     /** "Print again": the start page with this order's model, settings and colours; a colour no longer loaded is replaced on the order page. */
@@ -388,6 +446,7 @@ class OrderController extends Controller
         $changes = array_column($order->colorSlots(), 'color_id') ?: ($order->second_color_id ? [$order->second_color_id] : []);
         $pick = $this->preselect($file, (string) $order->quality, $order->material?->code, [
             'color' => $order->farm_color_id, 'changes' => $changes ?: null, 'by_parts' => $order->isByParts(), 'parts' => $parts ?: null,
+            'cap' => true,   // the old spools fitted to one machine of today's farm, within its positions (a colour gone is `missing`)
         ]);
         $unit = collect(ModelValidator::UNITS)->search(fn ($v) => abs($v - (float) ($order->unit_scale ?: 1)) < 1e-6) ?: null;
         $new = $this->orders->create($request->user(), $file, (string) $order->quality, (string) $order->strength, $unit, (int) $order->copies, (float) ($order->scale ?: 1),
@@ -877,6 +936,11 @@ class OrderController extends Controller
         // the colours are on offer once the price is known – and before any slice for a big model, which is sliced for
         // the colour the customer confirms (awaiting_choices) and again when the choices change while it runs (docs/AL.md §11)
         $choosing = $sliced || $order->awaitsChoices() || $order->sliceRestartable();
+        // the spool positions of a machine once per page, however many colours list it (OrderService::positionsOf)
+        $positionsOf = [];
+        $positions = function (FarmPrinterSlot $f) use (&$positionsOf): array {
+            return $positionsOf[$f->id] ??= $this->orders->positionsOf($f);
+        };
         $colors = $choosing
             ? $this->orders->availableColors($order, $required)->map(fn ($r) => [
                 'slot' => $r['slot']->id, 'name' => $r['color']->displayName(), 'kind' => $r['color']->material->label(), 'hex' => $r['color']->hex, 'finish' => $r['color']->material->finish, 'photo' => $r['color']->photoUrl(),
@@ -899,8 +963,12 @@ class OrderController extends Controller
                 // choices, and sends that one machine's slots (the customer picks colours, the farm the machine)
                 'machines' => $order->isByParts() ? $this->orders->firstsAcross($r['slot'], $order)
                     ->filter(fn ($f) => ! $required || $f->printer->isAgentDriven())
-                    ->map(fn ($f) => ['main' => $f->id, 'name' => $f->printer->name, 'code' => $f->code(), 'colors' => $this->orders->secondSpools($f)
-                        ->map(fn ($s) => ['slot' => $s->id, 'color_id' => $s->farm_color_id, 'name' => $s->color->displayName(), 'kind' => $s->color->material->label(), 'hex' => $s->color->hex, 'finish' => $s->color->material->finish, 'photo' => $s->color->photoUrl(), 'code' => $s->code()])->values()->all()])
+                    ->map(fn ($f) => ['main' => $f->id, 'name' => $f->printer->name, 'code' => $f->code(), 'key' => $f->printer->key, 'printer_code' => $f->printer->shortCode(),
+                        // how many colours this machine takes and every one of its spool positions in the operator's order (the
+                        // empty and the unfit ones too, each with its reason), for the chooser's machine card (docs/AL.md §19)
+                        'limit' => $f->printer->colorLimit(), 'changer' => $f->printer->isAgentDriven(), 'positions' => $positions($f),
+                        'colors' => $this->orders->secondSpools($f)
+                            ->map(fn ($s) => ['slot' => $s->id, 'color_id' => $s->farm_color_id, 'name' => $s->color->displayName(), 'kind' => $s->color->material->label(), 'hex' => $s->color->hex, 'finish' => $s->color->material->finish, 'photo' => $s->color->photoUrl(), 'code' => $s->code()])->values()->all()])
                     ->values()->all() : [],
                 // the time, the weight and the price on the page were computed for this colour's machine and kind
                 'sliced' => $r['printer']->id === $order->farm_printer_id && $r['color']->material->id === $order->farm_material_id
@@ -955,7 +1023,8 @@ class OrderController extends Controller
             'offer_one_color' => $painted && $order->status === FarmOrder::STATUS_FAILED && ! $order->number && $order->error === 'painted_one_plate',
             // how many separately printed parts the design has: two or more, and the order page offers "print them apart"
             'part_count' => $choosing && $order->modelFile ? count(OrderService::designParts($order->modelFile)) : 0,
-            'max_colors' => FarmOrder::MAX_COLORS,
+            // how many colours one print takes on the machine the order sits on (each machine card says its own)
+            'max_colors' => $order->printer?->colorLimit() ?? ColorLimit::farm(),
             'colors_over' => $choosing ? $this->colorsOver($order) : null,
             'status' => $order->status,
             'status_text' => $order->statusText(),

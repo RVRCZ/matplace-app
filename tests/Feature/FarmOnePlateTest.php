@@ -280,17 +280,41 @@ class FarmOnePlateTest extends TestCase
         return $file;
     }
 
-    /** The spools of the machine in the design's colours, the design's first colour first. */
-    private function loadColours(ModelFile $file): void
+    /**
+     * The spools of the machine in the design's colours, the design's first colour first: the S1's four positions take
+     * the first four colours (white among them); a fifth colour goes to the second S1 next to a white of its own, run by
+     * hand, so the first S1 stays the machine that prints (a print takes as many colours as the machine has positions,
+     * docs/AL.md §19). Returns the colours in the design's order.
+     *
+     * @return list<FarmColor>
+     */
+    private function loadColours(ModelFile $file): array
     {
         $this->s1->slots()->where('id', '!=', $this->white->id)->update(['farm_color_id' => null, 'remaining_g' => 0, 'enabled' => false]);
+        $free = $this->s1->slots()->where('id', '!=', $this->white->id)->orderBy('slot')->get()->all();
+        $other = null;
+        $colours = [];
         foreach (array_values($file->tool_params['part_colors']) as $i => $part) {
             $color = $i === 0 ? FarmColor::find($this->white->farm_color_id) : FarmColor::where('id', '!=', $this->white->farm_color_id)->whereHas('material', fn ($q) => $q->where('code', 'like', 'PLA%'))->orderBy('id')->skip($i)->firstOrFail();
             $color->update(['hex' => $part['hex'], 'enabled' => true]);
-            if ($i > 0) {
-                $this->s1->slots()->updateOrCreate(['slot' => 10 + $i], ['farm_color_id' => $color->id, 'remaining_g' => 800, 'enabled' => true]);
+            $colours[] = $color;
+            if ($i === 0) {
+                continue;
             }
+            if (isset($free[$i - 1])) {
+                $free[$i - 1]->update(['farm_color_id' => $color->id, 'remaining_g' => 800, 'enabled' => true]);
+
+                continue;
+            }
+            if (! $other) {
+                $other = FarmPrinter::where('key', 'kobra-s1-02')->firstOrFail();
+                $other->update(['mode' => FarmPrinter::MODE_MANUAL, 'farm_agent_id' => null, 'enabled' => true]);
+                $other->slots()->orderBy('slot')->firstOrFail()->update(['farm_color_id' => $this->white->farm_color_id, 'remaining_g' => 800, 'enabled' => true]);
+            }
+            $other->slots()->orderBy('slot')->skip($i - count($free))->firstOrFail()->update(['farm_color_id' => $color->id, 'remaining_g' => 800, 'enabled' => true]);
         }
+
+        return $colours;
     }
 
     public function test_the_calculator_leaves_the_parts_of_a_tools_design_to_the_servers_rule(): void
@@ -322,18 +346,20 @@ class FarmOnePlateTest extends TestCase
     public function test_a_design_of_more_colours_than_a_print_takes_opens_and_says_so_with_the_way_back(): void
     {
         $file = $this->designOf(5);
-        $this->loadColours($file);
-        $this->assertCount(5, $this->s1->slots()->whereNotNull('farm_color_id')->get(), 'a machine that could feed all five');
+        $colours = $this->loadColours($file);
+        $this->assertCount(4, $this->s1->slots()->whereNotNull('farm_color_id')->get(), 'the S1 has four positions; the fifth colour sits in the second S1 next to white');
+        $this->assertSame(4, $this->s1->colorLimit());
 
         // the order opens (the refusal would leave the customer on the calculation without a way to one colour)
         $r = $this->actingAs($this->user)->postJson('/farm/orders', ['file' => $file->uuid])->assertCreated();
         $order = FarmOrder::where('token', basename($r->json('url')))->firstOrFail();
         $this->assertTrue($order->isByParts());
-        $this->assertLessThanOrEqual(FarmOrder::MAX_COLORS, count(array_unique(array_column($order->partPlates(), 'color_id'))));
+        $this->assertSame($this->s1->id, $order->farm_printer_id, 'the machine holding most of the colours');
+        $this->assertLessThanOrEqual($this->s1->colorLimit(), count(array_unique(array_column($order->partPlates(), 'color_id'))));
 
-        // the page says why at once, with the link to the design
+        // the page says why at once, with the machine's number and the link to the design
         $state = $this->actingAs($this->user)->getJson("/farm/orders/{$order->token}/status")->assertOk()->json();
-        $this->assertSame(__('farm.refuse.too_many_colors', ['n' => FarmOrder::MAX_COLORS]), $state['colors_over']['text']);
+        $this->assertSame(__('farm.refuse.too_many_colors', ['n' => $this->s1->colorLimit()]), $state['colors_over']['text']);
         $this->assertSame(__('farm.order.colors_fix'), $state['colors_over']['link']);
         $this->assertSame(route('tools.'.$file->origin_ref, ['from' => $file->uuid]), $state['colors_over']['url']);
         $this->actingAs($this->user)->get("/farm/orders/{$order->token}")->assertOk()->assertSee('id="farm-colors-over"', false);
@@ -345,10 +371,10 @@ class FarmOnePlateTest extends TestCase
         $this->assertNull($one['colors_over']);
         $this->assertSame(5, $one['part_count'], 'the box to tick it back stays');
 
-        // five colours the customer names himself are still refused with the same sentence
-        $slots = $this->s1->slots()->whereNotNull('farm_color_id')->pluck('farm_color_id')->all();
-        $this->actingAs($this->user)->postJson('/farm/orders', ['file' => $file->uuid, 'color' => $slots[0], 'by_parts' => 1, 'part_color' => array_combine(['color_1', 'color_2', 'color_3', 'color_4', 'color_5'], $slots)])
-            ->assertStatus(422)->assertJsonPath('error', 'too_many_colors');
+        // five colours the customer names himself (all loaded, the fifth in the other S1) are still refused with the same sentence
+        $ids = array_map(fn (FarmColor $c) => $c->id, $colours);
+        $this->actingAs($this->user)->postJson('/farm/orders', ['file' => $file->uuid, 'color' => $ids[0], 'by_parts' => 1, 'part_color' => array_combine(['color_1', 'color_2', 'color_3', 'color_4', 'color_5'], $ids)])
+            ->assertStatus(422)->assertJsonPath('error', 'too_many_colors')->assertJsonPath('message', __('farm.refuse.too_many_colors', ['n' => 4]));
     }
 
     public function test_a_design_of_four_colours_says_nothing(): void
