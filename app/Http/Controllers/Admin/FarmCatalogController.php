@@ -208,6 +208,7 @@ class FarmCatalogController extends Controller
             }],
             'slots.*.remaining_g' => ['nullable', 'numeric', 'min:0', 'max:100000'],
             'slots.*.enabled' => ['nullable', 'boolean'],
+            'slots.*.label' => ['nullable', 'string', 'max:40'],   // the position's name for the operator; empty = the model's (SpoolPositions)
             // a spool that is not in the catalogue yet: a new colour of a known kind, made right here
             'slots.*.new' => ['nullable', 'array'],
             'slots.*.new.name' => ['nullable', 'string', 'max:80'],
@@ -256,6 +257,7 @@ class FarmCatalogController extends Controller
         foreach ($slots as $index => $s) {
             $printer->slots()->updateOrCreate(['slot' => (int) $index], [
                 'farm_color_id' => $s['color'] ?? null, 'remaining_g' => (float) ($s['remaining_g'] ?? 0), 'enabled' => ! empty($s['enabled']) && ! empty($s['color']),
+                'label' => trim((string) ($s['label'] ?? '')) ?: null,
             ]);
         }
         app(ProfileLibrary::class)->sync();

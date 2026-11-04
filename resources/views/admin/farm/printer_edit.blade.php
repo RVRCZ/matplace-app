@@ -3,7 +3,8 @@
 @php
     $json = fn ($v) => $v ? json_encode($v, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) : '';
     $slots = $printer->exists ? $printer->slots->keyBy('slot') : collect();
-    $slotCount = max(4, $slots->count());
+    // the positions (slot rows) of the machine: at least four, as many as it has, or as many as "+ přidat pozici" asked for (?slots=n)
+    $slotCount = min(16, max(4, $slots->count(), (int) request()->query('slots', 0)));
     $in = 'mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm font-normal';
     $lb = 'block text-xs font-semibold text-slate-600';
 @endphp
@@ -117,10 +118,12 @@
     <section class="rounded-2xl border border-slate-200 bg-white p-4">
         <h2 class="font-bold">Sloty (cívky)</h2>
         <p class="text-xs text-slate-500">Zákazník vidí jen barvy v zapnutých slotech. Číslo slotu je číslo nástroje v G-code (slot 1 = T0). {{ __('farm.admin.new_color_hint') }} {{ __('farm.admin.manual_only_slots_hint') }}</p>
+        {{-- one print takes as many colours as the machine has positions (docs/AL.md §19): the rows here are the positions --}}
+        <p class="text-xs text-slate-500">Počet řádků je počet pozic na cívky, a tedy nejvíc barev v jednom tisku (Kobra X se stojanem a ACE 7, Core One s INDX 8). Název pozice se odvodí z modelu tiskárny (Stojan 1, ACE 1), nebo ho napište.</p>
         <div class="mt-2 space-y-2">
             @for($i = 0; $i < $slotCount; $i++)
                 @php $s = $slots->get($i); $isNew = old("slots.$i.color") === 'new'; @endphp
-                <div class="grid items-end gap-2 sm:grid-cols-[3rem_1fr_8rem_6rem]">
+                <div class="grid items-end gap-2 sm:grid-cols-[3rem_1fr_8rem_9rem_6rem]">
                     <span class="pb-2 text-sm font-bold">{{ $i + 1 }}</span>
                     <label class="{{ $lb }}">Barva
                         <select name="slots[{{ $i }}][color]" data-slot-color="{{ $i }}" class="{{ $in }}"><option value="">— prázdný —</option>
@@ -130,8 +133,9 @@
                         </select>
                     </label>
                     <label class="{{ $lb }}">Zbývá (g)<input type="number" step="1" min="0" name="slots[{{ $i }}][remaining_g]" value="{{ old("slots.$i.remaining_g", $s ? round($s->remaining_g) : 0) }}" class="{{ $in }}"></label>
+                    <label class="{{ $lb }}">Pozice <span class="font-normal">(pro obsluhu)</span><input name="slots[{{ $i }}][label]" maxlength="40" value="{{ old("slots.$i.label", $s?->label) }}" placeholder="{{ \App\Domain\Farm\SpoolPositions::name($printer, $i, $slotCount) }}" class="{{ $in }}"></label>
                     <label class="flex items-center gap-2 pb-2 text-sm"><input type="checkbox" name="slots[{{ $i }}][enabled]" value="1" @checked(old("slots.$i.enabled", $s?->enabled)) class="h-4 w-4 accent-action"> nabízet</label>
-                    @error("slots.$i.color")<p class="text-xs text-red-700 sm:col-span-4">{{ $message }}</p>@enderror
+                    @error("slots.$i.color")<p class="text-xs text-red-700 sm:col-span-5">{{ $message }}</p>@enderror
                 </div>
                 {{-- a spool the catalogue does not know: typed in right here, created with the printer (FarmCatalogController::newColor) --}}
                 <div data-slot-new="{{ $i }}" class="{{ $isNew ? '' : 'hidden' }} ml-0 grid gap-2 rounded-xl border border-dashed border-slate-300 bg-slate-50 p-2 sm:ml-[3.5rem] sm:grid-cols-[1fr_1fr_1fr_1fr_5rem_1fr]">
@@ -147,6 +151,9 @@
                 </div>
             @endfor
         </div>
+        @if($slotCount < 16)
+            <p class="mt-2 text-xs"><a href="{{ request()->fullUrlWithQuery(['slots' => $slotCount + 1]) }}" class="font-semibold text-action-dark underline">+ přidat pozici</a> <span class="text-slate-500">(neuložené změny se tím zahodí, uložte nejdřív)</span></p>
+        @endif
         <script>
             document.querySelectorAll('[data-slot-color]').forEach((sel) => {
                 const box = document.querySelector(`[data-slot-new="${sel.dataset.slotColor}"]`);

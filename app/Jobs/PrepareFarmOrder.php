@@ -615,8 +615,9 @@ class PrepareFarmOrder implements ShouldQueue
     /**
      * An order by parts whose parts print together: one plate, one G-code, a filament per spool (`T0`…`T<n-1>` in the
      * file, the prime tower between them), the machine changing spools as it goes. Possible when the machine is run
-     * by an agent (a changer; an operator feeds one spool), there is one copy, the spools are at most MAX_COLORS and
-     * all of this machine, the parts as the tool laid them fit the plate, and the slicer manages it. Returns false,
+     * by an agent (a changer; an operator feeds one spool), there is one copy, the spools are no more than the machine
+     * has positions (FarmPrinter::colorLimit) and all of this machine, the parts as the tool laid them fit the plate,
+     * and the slicer manages it. Returns false,
      * with nothing of the order changed, when it is not: the caller prints the parts one plate each.
      */
     private function prepareOnePlate(FarmOrder $order, PrintPreparer $preparer, Slicer $slicer, FarmSettings $settings, OrderService $orders, OrderFlow $flow, Stopwatch $clock, $disk, Dimensions $bed): bool
@@ -651,7 +652,7 @@ class PrepareFarmOrder implements ShouldQueue
             $index[$key] ??= count($index);
             $filamentOf[$i] = $index[$key];
         }
-        if (count($index) < 2 || count($index) > FarmOrder::MAX_COLORS || count($index) > max(1, $printer->slots()->count())) {
+        if (count($index) < 2 || count($index) > $printer->colorLimit() || count($index) > max(1, $printer->slots()->count())) {
             return $skip(count($index) < 2 ? 'one_spool' : 'filaments');
         }
 

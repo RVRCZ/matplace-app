@@ -42,6 +42,11 @@ return [
     // extra slicer profiles uploaded for new printers/materials; looked up before engines/orca/profiles
     'profiles_dir' => storage_path('app/farm/profiles'),
 
+    // One print takes as many colours as the machine that prints it has spool positions (App\Domain\Farm\ColorLimit,
+    // docs/AL.md §19: the Kobra X 3 on the rack + 4 in the ACE = 7, a Kobra S1 4, a Core One with the INDX 8); this is
+    // the safety ceiling no machine's count may pass, whatever its slots table says.
+    'max_colors_ceiling' => (int) env('FARM_MAX_COLORS_CEILING', 16),
+
     'settings' => [
         // ── upload and abuse limits ──────────────────────────────────────────
         'max_upload_mb' => (int) env('FARM_MAX_UPLOAD_MB', 120),

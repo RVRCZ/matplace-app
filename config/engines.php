@@ -78,11 +78,11 @@ return [
     // only while the worst deviation stays within `max_deviation_mm` and the mesh stays watertight; the original is what
     // the customer sees and downloads. Above `max_triangles` a file is refused on upload with the advice to thin it at home.
     // the colours painted in an uploaded 3MF (App\Domain\Files\PaintedColors, docs/AL.md §14): a colour under `merge_below`
-    // per cent of the area joins the colour of its body (the turtle of 28 Oct 2026: eyes 0.8 %, pupils 0.1 %); at most `max`
-    // colours print (FarmOrder::MAX_COLORS), the smaller ones join theirs too
+    // per cent of the area joins the colour of its body (the turtle of 28 Oct 2026: eyes 0.8 %, pupils 0.1 %); as many
+    // colours print as the farm's biggest changer has spool positions (App\Domain\Farm\ColorLimit::farm, docs/AL.md §19),
+    // the smaller ones join theirs too
     'colors' => [
         'merge_below' => (float) env('COLORS_MERGE_BELOW', 1.0),
-        'max' => 4,
         'timeout' => 180,
         // what a colour change of a one-plate print costs for the calculator's "in colours from", measured on the turtle of
         // 28 Oct 2026 sliced by Orca 2.4 for the S1 with ACE (docs/AL.md §14.5): 69 changes added 155 min and 2.9 g (the

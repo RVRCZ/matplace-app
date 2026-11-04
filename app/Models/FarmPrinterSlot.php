@@ -2,13 +2,17 @@
 
 namespace App\Models;
 
+use App\Domain\Farm\SpoolPositions;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
-/** One spool position of a printer (ACE slot, or the single spool holder). `slot` is the tool number in the G-code. */
+/**
+ * One spool position of a printer (a place on the Kobra X's rack, an ACE slot, the single spool holder). `slot` is the
+ * tool number in the G-code; `label` the admin's own name of the position ("INDX 5"), null = the model's (SpoolPositions).
+ */
 class FarmPrinterSlot extends Model
 {
-    protected $fillable = ['farm_printer_id', 'slot', 'farm_color_id', 'remaining_g', 'enabled'];
+    protected $fillable = ['farm_printer_id', 'slot', 'farm_color_id', 'label', 'remaining_g', 'enabled'];
 
     protected $casts = ['slot' => 'int', 'remaining_g' => 'float', 'enabled' => 'bool'];
 
@@ -29,6 +33,22 @@ class FarmPrinterSlot extends Model
     public function code(): string
     {
         return $this->printer->shortCode().($this->slot + 1);
+    }
+
+    /**
+     * The position as the operator sees it ("Stojan 2", "ACE 1"): the admin's own name, else the one the machine's model
+     * implies for the n-th position in slot order (docs/AL.md §19).
+     */
+    public function positionLabel(): string
+    {
+        $own = trim((string) ($this->attributes['label'] ?? ''));
+        if ($own !== '') {
+            return $own;
+        }
+        $slots = $this->printer->slots;
+        $index = $slots->search(fn (FarmPrinterSlot $s) => (int) $s->id === (int) $this->id);
+
+        return SpoolPositions::name($this->printer, $index === false ? (int) $this->slot : (int) $index, $slots->count());
     }
 
     /**
