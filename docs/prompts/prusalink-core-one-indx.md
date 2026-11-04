@@ -58,3 +58,28 @@ H. **Docs:** `docs/AM.md` nový oddíl (API, ovladač, mapování nástrojů, pr
 - `GcodeSlot.php` a soubory session 2 neměň; když je to nutné, napiš řídící. Klíče a adresy jen od Romana a jen v jeho
   config.yaml. Git add jmenovitě, žádný stash. Commit končí `Co-Authored-By: Claude <model session> <noreply@anthropic.com>`.
 - Produkční databázi ani server nečti. Tiskárna: čtení přes API až s klíčem od Romana, tisky jen s ním.
+
+## Odchylky session 4 (4. 11. 2026)
+
+- Profily nejsou z portable 2.5.0-alpha, ale ze souborů tagu `v2.5.0-alpha` na GitHubu: portable balí dodavatele do `.opc`
+  (magic `ZCRO`, není to zip). Portable posloužil k řezu. Rozbalení řetězce dělá `scripts/orca_flatten_profile.py`, chybějící
+  klíče doplněny výchozími hodnotami 2.5 (bez nich 2.5 i 2.4 filamenty odmítají).
+- Procesů jsou čtyři (0,25 Draft, 0,20 Balanced, 0,15 Detail, 0,10 Fine), filamenty Generic PLA, Generic PETG, Prusament PLA,
+  Prusament PETG. ASA ani TPU pro INDX Orca 2.5 nemá; doplní se, až Roman řekne, co v INDX má.
+- Orca 2.4.0-beta s profily 2.5 padá (segfault), 2.4 je tedy nezkouší ani nenačte. Orca 2.5 navíc odmítá farmě filamenty
+  s neprázdným `inherits` (`filament_pla.json`, `filament_petg.json`, `filament_tpu.json` a varianty); to je k vyřešení při
+  povýšení serveru (AM.md §12e).
+- Navíc proti zadání: dvouřádková pojistka v `AgentController::gcode` a `FarmOrderController::gcode`: pro
+  `FarmPrinter::isToolChanger()` jde agentovi i adminovi originál řezu, protože `GcodeSlot` INDX soubor nepřemapuje (žádný
+  holý `T<n>`), ale s teplotami cívky přepíše 6 řádků `M104/M109` ve startu Prusy. `GcodeSlot.php` beze změny. Volbu nástroje
+  musí dělat řez (AM.md §12d), to je na session 2 a řídící.
+- Ověření `X-Api-Key` doplněno o `auth: digest` (uživatel `maker`, `aiohttp.DigestAuthMiddleware`, aiohttp 3.12+ v
+  `requirements.txt`), protože fóra hlásí firmwary, které klíč v hlavičce odmítají; na Romanově 8.0.0 klíč funguje.
+- `plate_confirmed` podle přechodu FINISHED/STOPPED → IDLE/READY (obrazovka dotištění opuštěna, „Set ready“), ne podle
+  náhrady Rinkhalsu; po konci firmware soubor nejmenuje, proto si ovladač poslední úlohu pamatuje v `work/<key>.prusalink.json`.
+- Druh stroje „měnič nástrojů“ je bez nového sloupce (`isToolChanger()` podle jména profilu stroje). V kalkulaci na
+  proplachu závisí jen `PrepareFarmOrder::ONE_PLATE_PROCESS` (věž) a odhad `engines.colors` u malovaných 3MF; popsáno
+  v AM.md §12d, ceny beze změny.
+- Mapování nástrojů je ze zdrojů firmwaru a dokumentace, ne ze zkoušky s Romanem (tiskárna tiskla). Časosběr po vrstvách
+  na Core One nejde (API nedává polohu při pohybu), u tiskárny má být vypnutý.
+- Agent 0.2.11 obsahuje jen tento ovladač; 0.2.10 (`fix/s1-start-heat`) zůstává nesloučený, čísla verzí na sebe navazují.
