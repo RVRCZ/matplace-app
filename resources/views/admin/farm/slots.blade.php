@@ -32,7 +32,7 @@
                 @for($i = 0; $i < $count; $i++)
                     @php $s = $slots->get($i); $want = $planned[$i] ?? null; @endphp
                     <div class="rounded-xl bg-slate-50 p-2" data-slot="{{ $i }}" data-plan-id="{{ $want['id'] ?? '' }}">
-                        <label class="{{ $lb }}">{{ $p->positionLabel($i) }}
+                        <label class="{{ $lb }}">{{ trim((string) $s?->label) !== '' ? $s->label : \App\Domain\Farm\SpoolPositions::name($p, $i, $count) }}
                             <select name="slots[{{ $p->id }}][{{ $i }}][color]" data-color class="{{ $in }}"><option value="">— {{ __('farm.admin.slots_empty') }} —</option>
                                 @foreach($groups as $kind => $group)<optgroup label="{{ $kind }}">@foreach($group as $c)<option value="{{ $c->id }}" @selected($s?->farm_color_id === $c->id)>{{ $c->fullLabel() }}</option>@endforeach</optgroup>@endforeach
                             </select>

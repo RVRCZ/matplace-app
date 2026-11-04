@@ -2278,3 +2278,103 @@ Neověřeno:
 - celá zakázka přes `PrepareFarmOrder` lokálně (ověřené jsou engine, slicer a validátor zvlášť);
 - skutečný tisk;
 - nová zakázka od Romana.
+
+## 19. Barvy podle stroje: limit cívek z počtu pozic tiskárny a výběr barev po tiskárnách (TODO #66, 4. 11. 2026, feature/colors-per-machine)
+
+Zadání `docs/prompts/barvy-podle-stroje.md`. Roman: „špatně se vyznám v barvách, když volím barvu pro vícebarevný tisk, a Kobra X
+umí 7 barev, my dovolíme jen 4.“
+
+### 19.1 Limit
+
+- **Kolik barev smí mít jeden tisk** = kolik má **tiskárna, která ho tiskne, pozic na cívky** (`FarmPrinter::colorLimit()` =
+  `App\Domain\Farm\ColorLimit::of()` = počet řádků `FarmPrinterSlot`), nejvýš strop `config/farm.php` `max_colors_ceiling`
+  (16, `.env` `FARM_MAX_COLORS_CEILING`). Kobra X se stojanem a ACE 7, Kobra S1 4, Core One s INDX 8 (až bude mít pozice v
+  administraci). Stroj bez pozic v databázi dostane starou výchozí hodnotu `FarmOrder::MAX_COLORS` (4); konstanta jinak
+  v rozhodování není.
+- **Bez stroje** (nahrání malovaného 3MF, předvolba barev za zákazníka): `ColorLimit::farm()` = největší počet pozic mezi
+  zapnutými tiskárnami řízenými agentem (měnič), bez nich mezi všemi zapnutými, jinak 4. Stav online se nebere: soubor
+  nahraný při vypnutém stroji se musí rozřezat stejně, až stroj zase běží.
+- **Kde platí:** `OrderService::spoolsForParts` (vznik zakázky: počítají se **vyžádané** barvy i s hlavní, víc než pozic
+  stroje hlavní cívky = `too_many_colors` s číslem toho stroje, i když stroj některou z nich nemá), `partPlatesOn` (přepočet
+  a platba podle slotů stránky, počet výsledných barev), `spoolsForChanges` (změny po výšce), `OrderFlow::pay` (změny
+  při platbě, stroj z `machineFor`), `PrepareFarmOrder::prepareOnePlate` (jedna podložka jen do limitu stroje),
+  `OrderController::colorsOver` (hláška „nejvýš n barev“ s číslem nejprostornějšího stroje, který drží hlavní barvu),
+  `describe()['max_colors']` = limit stroje zakázky.
+- **Předvolba za zákazníka** (`OrderController::preselect`): `nearestSet` hledá nejbližší cívky **po strojích** (každá barva
+  nese `machines` = stroje, které ji drží, s jejich cívkami a limitem), takže výběr je vždy z jednoho stroje a je oříznutý
+  na jeho limit; díly nad limit dostanou hlavní barvu a stránka to řekne (`colors_over`). „Tisknout znovu“ posílá
+  `cap => true`: staré cívky se napasují na jeden dnešní stroj (ten, který jich drží nejvíc, pak víc pozic,
+  `fitToOneMachine`), co na něm není, je `missing` jako dřív. Barvy, které zákazník vybral sám (`part_color` při
+  vzniku), se nad limit odmítají; stránka zakázky je ale nikdy nepošle, nabízí jen cívky jednoho stroje.
+- **Malované 3MF:** `PaintedColors::analyse` slučuje barvy nad `ColorLimit::farm()` (dnes 4 bez Kobry X v administraci,
+  7 s ní), výsledek nese `colors.max`; `ensureParts` řeže díly se **stejným** číslem (`colors.max`), ne s dnešním, aby díly
+  byly barvy, které zákazník viděl. `engines.colors.max` z configu pryč.
+- **Hlášky:** `farm.refuse.too_many_colors` = „Jeden tisk může mít nejvýš tolik barev, kolik má tiskárna pozic na cívky, tady
+  :n.“ (číslo bez skloňovaného podstatného jména, platí pro 4 i 7), `farm.order.parts_hint` a `by_parts_hint` bez
+  „nejvýš 4 barvy“, `parts_one_machine` „Vyberte tiskárnu…“.
+
+### 19.2 Výběr barev po tiskárnách (stránka zakázky, díly a skupiny barev malovaného 3MF)
+
+- `describe()` dává u každé hlavní barvy `machines[]` navíc `key`, `printer_code`, `limit`, `changer` a **`positions[]`** =
+  všechny pozice stroje v pořadí obsluhy (`OrderService::positionsOf`): `label` („Stojan 1“, „ACE 2“), cívka (barva, druh,
+  hex, foto, kód), `main` (pozice hlavní barvy), `offer` (smí tisknout díl vedle hlavní barvy = přesně to, co dává
+  `secondSpools`) a `reason`, proč ne: `empty`, `main` (hlavní barva nebo její druhá cívka), `off` (slot, barva nebo druh
+  vypnutý), `kind` (jiná rodina plastu), `manual_only`, `low` (≤ 30 g).
+- **Názvy pozic** (`App\Domain\Farm\SpoolPositions`) podle `machineName()` z profilu stroje: Kobra X = stojan a pak ACE po
+  čtyřech (7 → Stojan 1 až 3, ACE 1 až 4; 4 → Stojan 1 až 4; 11 → + ACE2 1 až 4), ostatní Kobry = ACE 1 až 4, ACE2 1 až 4,
+  jiný stroj = Pozice n. Admin může každé pozici dát vlastní název (`farm_printer_slots.label`, migrace
+  `2026_11_04_120000`, nullable, SQLite i MariaDB), ten vítězí (`FarmPrinterSlot::positionLabel()`); texty
+  `farm.position.*`.
+- **farm.ts** (`renderColors`, větev po dílech): nahoře **karty strojů** (`#farm-machines`, pod sebou na telefonu, dvě vedle
+  sebe od `sm`): název, kód tiskárny, „Pozice: n“, u vybrané **počitadlo „3 ze 7 barev“** (`farm.order.colors_count`,
+  předložka z/ze podle čísla v `czOf`), „nejvíc barev návrhu“ u doporučené, pod tím řada pozic (vzorek + název pozice,
+  prázdná čárkovaně, hlavní barva s kroužkem). Předvolený stroj: karta, kterou zákazník vybral; jinak stroj cívek, které
+  zakázka drží; jinak stroj, kde se návrh potká s nejvíc barvami (počet dílů s cívkou do vzdálenosti 0,3 v RGB 0..1, pak
+  menší součet vzdáleností).
+- Pod kartami u každého dílu **jen pozice vybraného stroje**: dlaždice „Hlavní barva“ s názvem pozice hlavní cívky, pak
+  každá pozice v pořadí obsluhy; nevyhovující **viditelná, zašedlá (`disabled`), s důvodem** (`farm.order.pos_reason.*`),
+  včetně `limit` = volba by znamenala víc barev než pozic. Automaticky předvolená barva nese štítek **„předvoleno“**
+  (`partAuto`); klik ho sundá. Přepnutí karty: ruční volby, které nový stroj má, zůstanou; ostatní se předvolí znovu
+  (nejbližší barva) a pod kartami to věta `farm.order.machine_repicked` jmenuje; díly, pro které stroj nic nemá, dostanou
+  hlavní barvu a řekne to `farm.order.machine_fell_back`. `resolved()` beze změny (sloty jednoho stroje), náhled se
+  obarví hned (`paintTones`).
+- Blade `farm/order.blade.php`: `#farm-machines`, `#farm-machine-note`, nové klíče v `i18n`, `by_parts_hint` s
+  `max_colors` zakázky. Druhá barva po výšce (deska s textem) beze změny.
+
+### 19.3 Administrace
+
+`printer_edit.blade.php`: řádky slotů = pozice; `?slots=n` a odkaz „+ přidat pozici“ (do 16; neuložené změny se tím
+zahodí) a pole **Pozice (pro obsluhu)** s odvozeným názvem jako nápovědou; `FarmCatalogController::savePrinter` ukládá
+`slots.*.label` (max 40). Seznam tiskáren a stránka hromadného nakládání beze změny (session 4 tam přidává ovladač).
+
+### 19.4 Testy a ověření
+
+- `FarmColorsPerMachineTest` (5 testů): limit S1 4, Kobra X 7, strop 5, stroj bez pozic 4, farma 7 / 4 podle měniče, názvy
+  pozic, label vítězí; návrh o 7 barvách na Kobře X → 7 barev, jedna podložka se 7 filamenty, `max_colors` 7, karty
+  (X: Stojan 1 až 3 + ACE 1 až 4, všech 6 `offer`; S1 s PETG, 20 g, vypnutou a prázdnou pozicí: důvody `kind, low, main,
+  off, empty`), platba se sloty X; osmá barva: předvolba nechá 7 a `colors_over` jmenuje 7, `part_color` s 8 barvami
+  422 `too_many_colors` s hláškou pro 7, 7 projde, `spoolsForParts` přímo odmítne 8 s číslem 7 na X a 4 na S1;
+  malované 3MF se 6 barvami (`tests/fixtures/painted-six-cubes.3mf`, generátor vedle): s Kobrou X 6 skupin, zakázka
+  6 dílů na jedné podložce se 6 filamenty, bez ní 4 + 2 sloučené; admin: 8 pozic, `label` „INDX 8“, odvozené ACE/ACE2.
+- `FarmOnePlateTest` upraven: `loadColours` plní 4 pozice S1 a pátou barvu dává do druhé S1 (ruční, s bílou);
+  „víc barev než tisk unese“ = 5 barev na S1 se 4 pozicemi, hláška se 4, 5 vyžádaných 422.
+- Zelené: FarmOrderFlow, FarmOnePlate, CalcToolColors, ThreeMfColors, FarmGuestCheckout, FarmPages, FarmCatalogAdmin,
+  FarmOrderColors, StandPartsFarm, FarmColorsPerMachine = 111 testů, 2641 assertions, 2 přeskočené (Orca). `tsc`,
+  `npm run build`, `pint`.
+- **Prohlížeč.** Postup z §14.10 (`php -S` nad `dev.sqlite`) nešel: sdílený `dev.sqlite` nemá migrace od 28. 10.
+  (`farm_orders.anonymous_session_id`), zakázka se na něm nezaloží, a migraci i soukromé kopie auto režim odmítl. Proto
+  `FarmColorsPerMachineTest::test_the_order_page_of_the_seven_colour_design_can_be_written_out_for_a_look`
+  (jen s `MP_DUMP_ORDER_PAGE=<složka>`) vypíše stránku zakázky návrhu o 7 barvách na Kobře X (+ S1 s PETG, 20 g,
+  vypnutou a prázdnou pozicí) a její `state.json`; stránka otevřená v headless Chrome (CDP) vedle kopie `public/build`
+  (výběr běží z `MP_FARM.state`, bez serveru). 1280 px: dvě karty vedle sebe (Kobra X „Pozice: 7 · 7 ze 7 barev · nejvíc
+  barev návrhu“, Stojan 1 až 3 + ACE 1 až 4; S1 „Pozice: 5“), u každého dílu 7 dlaždic (Hlavní barva + 6 pozic X, všechny
+  s názvem pozice a kódem, předvolená se štítkem), přepnutí na S1: 5 dlaždic, 4 zašedlé s důvody „jiný druh materiálu,
+  málo materiálu, cívka se nenabízí, prázdná pozice“, počitadlo „1 z 5 barev“, věta „Tahle tiskárna nemá barvu pro díly…
+  Dostaly hlavní barvu.“; zpět na X: původních 7; ruční volba u dílu 2 sundá „předvoleno“ a počitadlo jde na „6 ze 7“,
+  „Hlavní barva“ u dílu 3 na „5 ze 7“. 390 px: karty pod sebou, dlaždice ve dvou sloupcích, žádná dlaždice pod 44 px,
+  `scrollWidth` = 390 (nic nepřetéká), bez chyb v konzoli. Snímky `docs/img/order-colors-per-machine-1280.webp`,
+  `-390.webp`, `-390-switched.webp`. Živé „Přepočítat“ a platba v prohlížeči neprošly (kryje PHPUnit: platba se sloty X,
+  přepočet s part_slots).
+- **Neověřeno:** skutečný tisk 7 barev na Kobře X (řez falešným slicerem; Orca s 7 filamenty a věží neřezána),
+  Romanova skutečná tiskárna v administraci (3 + 4 pozice má mít, názvy se odvodí z profilu `machine_kobrax.json`),
+  pojmenování pozic INDX (session 4), stránka opakování tisku s `cap` jen v kódu a testu FarmOrderFlow (zelený).

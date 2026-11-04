@@ -395,6 +395,7 @@ final class OrderService
         if (! $wanted || ! $colorIds) {
             return [];
         }
+        $main->loadMissing('printer');
         $others = $this->secondSpools($main);
         $out = [];
         $used = [(int) $main->farm_color_id];
@@ -410,8 +411,10 @@ final class OrderService
             $used[] = $id;
             $out[] = ['z' => round((float) $change['z'], 3), 'slot_id' => (int) $slot->id, 'color_id' => $id];
         }
-        if (count(array_unique($used)) > FarmOrder::MAX_COLORS) {
-            throw new FarmRefusal('too_many_colors', ['n' => FarmOrder::MAX_COLORS]);
+        // as many colours as the machine has spool positions (ColorLimit, docs/AL.md §19)
+        $limit = $main->printer->colorLimit();
+        if (count(array_unique($used)) > $limit) {
+            throw new FarmRefusal('too_many_colors', ['n' => $limit]);
         }
 
         return $out;
@@ -521,9 +524,16 @@ final class OrderService
      * One plate per part, each with the spool the customer named for it (the main spool itself, or another spool of
      * its machine); a part nobody named prints from the main spool. [] when the design has fewer than two parts.
      *
+     * The print takes as many colours as the machine of `$main` has spool positions (ColorLimit, docs/AL.md §19): more
+     * colours asked for than that, the first one counted, are refused with the machine's number – whether or not this
+     * machine holds every one of them (the page offers one machine's spools; the colours picked for the customer are
+     * fitted to one machine beforehand, OrderController::preselect).
+     *
      * @param  list<string>  $parts
      * @param  array<string, int|null>  $colorIds  part → colour
      * @return list<array{part: string, slot_id: int, color_id: int}>
+     *
+     * @throws FarmRefusal too_many_colors
      */
     public function spoolsForParts(?FarmPrinterSlot $main, array $parts, array $colorIds): array
     {
@@ -534,7 +544,12 @@ final class OrderService
             // no colour chosen yet: the spools are picked on the order page
             return array_map(fn ($part) => ['part' => $part, 'slot_id' => null, 'color_id' => null], $parts);
         }
-        $main->loadMissing('color');
+        $main->loadMissing(['color', 'printer']);
+        $limit = $main->printer->colorLimit();
+        $asked = array_unique(array_filter(array_merge([(int) $main->farm_color_id], array_map('intval', array_values($colorIds)))));
+        if (count($asked) > $limit) {
+            throw new FarmRefusal('too_many_colors', ['n' => $limit]);
+        }
         $others = $this->secondSpools($main);
         $out = [];
         foreach ($parts as $part) {
@@ -543,8 +558,8 @@ final class OrderService
             $slot ??= $main;
             $out[] = ['part' => $part, 'slot_id' => (int) $slot->id, 'color_id' => (int) $slot->farm_color_id];
         }
-        if (count(array_unique(array_merge([(int) $main->farm_color_id], array_column($out, 'color_id')))) > FarmOrder::MAX_COLORS) {
-            throw new FarmRefusal('too_many_colors', ['n' => FarmOrder::MAX_COLORS]);
+        if (count(array_unique(array_merge([(int) $main->farm_color_id], array_column($out, 'color_id')))) > $limit) {
+            throw new FarmRefusal('too_many_colors', ['n' => $limit]);
         }
 
         return $out;
@@ -565,7 +580,7 @@ final class OrderService
      */
     public function partPlatesOn(FarmPrinterSlot $main, array $plates, array $wantedSlotIds = [], bool $carry = true): array
     {
-        $main->loadMissing('color');
+        $main->loadMissing(['color', 'printer']);
         $others = $this->secondSpools($main);
         $out = [];
         foreach ($plates as $plate) {
@@ -584,11 +599,49 @@ final class OrderService
             }
             $out[] = ['slot_id' => (int) $spool->id, 'color_id' => (int) $spool->farm_color_id] + $plate;
         }
-        if (count(array_unique(array_merge([(int) $main->farm_color_id], array_column($out, 'color_id')))) > FarmOrder::MAX_COLORS) {
-            throw new FarmRefusal('too_many_colors', ['n' => FarmOrder::MAX_COLORS]);
+        $limit = $main->printer->colorLimit();
+        if (count(array_unique(array_merge([(int) $main->farm_color_id], array_column($out, 'color_id')))) > $limit) {
+            throw new FarmRefusal('too_many_colors', ['n' => $limit]);
         }
 
         return $out;
+    }
+
+    /**
+     * Every spool position of the machine of `$first` (the first colour's slot there) in the operator's order, for the
+     * chooser of an order by parts (docs/AL.md §19): what sits in it, and whether it may print a part next to the first
+     * colour – when not, why (`reason`): empty, main (the first colour itself, or a second spool of it), off (the slot,
+     * the colour or its kind is switched off), kind (another family of plastic), manual_only (fed by hand only), low
+     * (filament). `offer` true means exactly the spools secondSpools() offers.
+     *
+     * @return list<array<string, mixed>>
+     */
+    public function positionsOf(FarmPrinterSlot $first): array
+    {
+        $first->loadMissing(['color.material', 'printer']);
+        $printer = $first->printer;
+        $slots = FarmPrinterSlot::with(['color.material'])->where('farm_printer_id', $printer->id)->orderBy('slot')->get();
+        $names = SpoolPositions::names($printer, $slots->count());
+        $family = self::family($first->color?->material);
+
+        return $slots->values()->map(function (FarmPrinterSlot $s, int $i) use ($first, $printer, $names, $family) {
+            $s->setRelation('printer', $printer);
+            $color = $s->color;
+            $reason = match (true) {
+                ! $color => 'empty',
+                (int) $s->id === (int) $first->id || (int) $color->id === (int) $first->farm_color_id => 'main',
+                ! $s->enabled || ! $color->enabled || ! ($color->material?->enabled ?? true) => 'off',
+                self::family($color->material) !== $family => 'kind',
+                ! $s->kindFitsPrinter() => 'manual_only',
+                $s->availableGrams() <= 30 => 'low',
+                default => null,
+            };
+            $own = trim((string) ($s->getAttributes()['label'] ?? ''));
+
+            return ['slot' => $s->id, 'n' => (int) $s->slot, 'label' => $own !== '' ? $own : ($names[$i] ?? __('farm.position.generic', ['n' => $i + 1])),
+                'color_id' => $color?->id, 'name' => $color?->displayName(), 'kind' => $color?->material?->label(), 'hex' => $color?->hex, 'finish' => $color?->material?->finish, 'photo' => $color?->photoUrl(),
+                'code' => $s->code(), 'main' => (int) $s->id === (int) $first->id, 'offer' => $reason === null, 'reason' => $reason];
+        })->values()->all();
     }
 
     /**

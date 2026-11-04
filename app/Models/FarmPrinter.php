@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Domain\Farm\ColorLimit;
 use App\Domain\Farm\FarmSettings;
 use App\Engines\DTO\Dimensions;
 use Illuminate\Database\Eloquent\Model;
@@ -108,6 +109,15 @@ class FarmPrinter extends Model
     public function slots(): HasMany
     {
         return $this->hasMany(FarmPrinterSlot::class)->orderBy('slot');
+    }
+
+    /**
+     * How many colours one print on this machine may take: as many as it has spool positions (the Kobra X 7, a Kobra S1
+     * 4), capped by config farm.max_colors_ceiling (App\Domain\Farm\ColorLimit, docs/AL.md §19).
+     */
+    public function colorLimit(): int
+    {
+        return ColorLimit::of($this);
     }
 
     public function orders(): HasMany
@@ -237,16 +247,10 @@ class FarmPrinter extends Model
         return str_contains(strtolower((string) $this->machine_profile), 'indx');
     }
 
-    /** How many spool positions the admin form offers for this machine at least. */
+    /** How many spool positions the admin forms offer for this machine at least (the names: App\Domain\Farm\SpoolPositions). */
     public function positionRows(): int
     {
         return $this->isToolChanger() ? self::TOOL_CHANGER_POSITIONS : 4;
-    }
-
-    /** A position as the operator finds it on the machine: "Nástroj 3" on a tool changer, else its number. */
-    public function positionLabel(int $slot): string
-    {
-        return $this->isToolChanger() ? __('farm.admin.position_tool', ['n' => $slot + 1]) : (string) ($slot + 1);
     }
 
     /** The same machine for tuning: the same slicer machine profile and the same nozzle. */

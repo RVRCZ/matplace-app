@@ -763,10 +763,13 @@ Ověřeno na G-kódu z Orcy 2.5 (12e):
 
 ### 12f. Web
 
-- `FarmPrinter::isToolChanger()` (soubor profilu stroje se jménem `indx`), `positionRows()` 8, `positionLabel()`
-  „Nástroj n“. Stránka tiskárny i stránka založení cívek ukazují u INDX 8 pozic „Nástroj 1 až 8“, ostatní stroje čísla jako
-  dřív. U klíče je nápověda s názvy ovladačů (`farm.admin.driver_hint`). Texty `lang/src/prusalink.json`. Test
-  `tests/Feature/FarmPrinterPositionsTest.php`; `FarmPagesTest` zelený.
+- `FarmPrinter::isToolChanger()` (soubor profilu stroje se jménem `indx`), `positionRows()` 8 (stránka tiskárny nabídne
+  u INDX rovnou 8 řádků, jinak 4, víc přes „+ přidat pozici“ session 2). Názvy pozic dává po sloučení s TODO #66
+  `App\Domain\Farm\SpoolPositions::names()`: větev pro měnič nástrojů „Nástroj 1 až 8“ (`farm.admin.position_tool`),
+  Kobra X „Stojan/ACE“, Kobra „ACE“, jinak „Pozice“; název, který admin napsal do `label` slotu, vítězí
+  (`FarmPrinterSlot::positionLabel()`). Stránka založení cívek ukazuje totéž. U klíče je nápověda s názvy ovladačů
+  (`farm.admin.driver_hint`). Texty `lang/src/prusalink.json`. Test `tests/Feature/FarmPrinterPositionsTest.php`;
+  `FarmPagesTest` a `FarmColorsPerMachineTest` zelené.
 - Druh stroje „měnič nástrojů“ bez nového sloupce; co by v kalkulaci měl měnit je v 12d.
 
 ### 12g. Živá zkouška (jen s Romanem, až tiskárna netiskne)

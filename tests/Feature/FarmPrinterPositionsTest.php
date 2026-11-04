@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use App\Domain\Farm\SpoolPositions;
 use App\Models\FarmPrinter;
 use App\Models\User;
 use Database\Seeders\FarmSeeder;
@@ -30,12 +31,15 @@ class FarmPrinterPositionsTest extends TestCase
         $this->assertFalse($kobra->isToolChanger());
         $this->assertSame(8, $indx->positionRows());
         $this->assertSame(4, $kobra->positionRows());
-        $this->assertSame('Nástroj 8', $indx->positionLabel(7));
-        $this->assertSame('3', $kobra->positionLabel(2));
+        $this->assertSame('Nástroj 8', SpoolPositions::name($indx, 7, 8));
+        $this->assertSame(['Nástroj 1', 'Nástroj 2'], SpoolPositions::names($indx, 2));
+        $this->assertSame('ACE 3', SpoolPositions::name($kobra, 2, 4), 'the Kobra keeps its ACE names');
+        $indx->slots()->create(['slot' => 4, 'label' => 'INDX levý']);
+        $this->assertSame('INDX levý', $indx->slots()->first()->positionLabel(), 'what the admin typed wins');
 
         $this->actingAs($admin)->get("/admin/farm/printers/{$indx->id}")->assertOk()
             ->assertSee('Nástroj 1')->assertSee('Nástroj 8')->assertDontSee('Nástroj 9')->assertSee('prusalink');
         $this->actingAs($admin)->get("/admin/farm/printers/{$kobra->id}")->assertOk()->assertDontSee('Nástroj ');
-        $this->actingAs($admin)->get('/admin/farm/printers/load')->assertOk()->assertSee('Nástroj 8');
+        $this->actingAs($admin)->get('/admin/farm/printers/load')->assertOk()->assertSee('Nástroj 8')->assertSee('INDX levý')->assertSee('ACE 1');
     }
 }

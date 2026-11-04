@@ -10,7 +10,10 @@
         'farm.units.mm', 'farm.units.cm', 'farm.units.in', 'farm.units.m', 'farm.order.cancel_running_confirm', 'farm.order.supports_hide', 'farm.order.supports_show',
         'farm.delivery.free', 'farm.delivery.not_here', 'farm.delivery.too_big', 'farm.delivery.too_big_pickup', 'farm.delivery.none', 'farm.delivery.pick_point', 'farm.delivery.fill_address', 'farm.delivery.to', 'farm.delivery.track',
         'farm.order.tl.print', 'farm.order.tl.printing', 'farm.order.tl.printing_now', 'farm.order.tl.printing_end', 'farm.order.tl.done', 'farm.order.tl.dispatched', 'farm.order.tl.parcel', 'farm.order.tl.pickup', 'farm.order.tl.none', 'farm.order.why.lead', 'farm.order.why.printer', 'farm.order.why.kind', 'farm.order.why.settings', 'farm.order.why.time', 'farm.order.reslicing', 'farm.order.ship.total', 'farm.order.ship.total_estimate', 'farm.order.pay_note_round', 'farm.order.pay_note_min', 'farm.order.while_slicing', 'farm.order.while_slicing_big', 'farm.order.estimate_range', 'farm.order.estimate_time', 'farm.order.estimate_wait', 'farm.order.estimate_running', 'farm.order.slice_start', 'farm.order.slice_start_hint', 'farm.order.restart_slice', 'farm.recalculate', 'farm.order.ship.choose', 'farm.order.ship.pickup', 'farm.order.ship.parcel', 'farm.order.ship.counting', 'farm.order.ship.free', 'farm.order.pay_total', 'farm.order.refunded',
-        'farm.order.bar.pay', 'farm.order.bar.pay_card', 'farm.order.bar.pay_card_rest', 'farm.order.bar.pick_color', 'farm.order.bar.total', 'farm.order.bar.total_estimate', 'farm.order.bar.email', 'farm.order.bar.terms', 'farm.order.recolor_first'];
+        'farm.order.bar.pay', 'farm.order.bar.pay_card', 'farm.order.bar.pay_card_rest', 'farm.order.bar.pick_color', 'farm.order.bar.total', 'farm.order.bar.total_estimate', 'farm.order.bar.email', 'farm.order.bar.terms', 'farm.order.recolor_first',
+        // the chooser by machine (docs/AL.md §19): the card of the printer with its positions, the reasons a position cannot print a part
+        'farm.order.machine_title', 'farm.order.machine_hint', 'farm.order.colors_count', 'farm.order.positions_n', 'farm.order.machine_best', 'farm.order.machine_chosen', 'farm.order.preselected', 'farm.order.machine_repicked', 'farm.order.machine_fell_back',
+        'farm.order.pos_reason.empty', 'farm.order.pos_reason.main', 'farm.order.pos_reason.off', 'farm.order.pos_reason.kind', 'farm.order.pos_reason.low', 'farm.order.pos_reason.manual_only', 'farm.order.pos_reason.limit'];
     $farmCfg = [
         'state' => $state,
         'prefill' => $prefill,
@@ -174,13 +177,17 @@
                          its own print from its own spool of the machine, one plate after another (sliced again when changed) --}}
                     <label id="farm-by-parts-box" class="mt-3 hidden cursor-pointer items-start gap-2 rounded-xl border border-slate-200 p-3 text-sm">
                         <input type="checkbox" id="farm-by-parts" class="mt-1 h-4 w-4 accent-action">
-                        <span><span id="farm-by-parts-title" class="font-semibold text-slate-700"></span><br><span class="text-xs text-slate-500">{{ __('farm.order.by_parts_hint', ['max' => \App\Models\FarmOrder::MAX_COLORS]) }}</span></span>
+                        <span><span id="farm-by-parts-title" class="font-semibold text-slate-700"></span><br><span class="text-xs text-slate-500">{{ __('farm.order.by_parts_hint', ['max' => $state['max_colors'] ?? \App\Models\FarmOrder::MAX_COLORS]) }}</span></span>
                     </label>
                     {{-- a design of more colours than one print takes: said at once, with the way back to the tool (docs/AL.md §14.10) --}}
                     <p id="farm-colors-over" class="mt-2 hidden rounded-lg bg-amber-50 p-3 text-sm text-amber-900"></p>
                     <div id="farm-second" class="mt-3 hidden">
                         <div class="text-sm font-semibold text-slate-700">{{ __('farm.order.second_color') }}</div>
                         <p class="text-xs text-slate-600">{{ __('farm.order.second_color_hint') }}</p>
+                        {{-- printed by parts (docs/AL.md §19): a card per machine holding the first colour, its spool positions as the
+                             operator sees them and a count of the colours chosen; the parts below are offered that machine's spools only --}}
+                        <div id="farm-machines" class="mt-2 hidden grid-cols-1 gap-2 sm:grid-cols-2" role="radiogroup" aria-label="{{ __('farm.order.machine_title') }}"></div>
+                        <p id="farm-machine-note" class="mt-2 hidden rounded-lg bg-amber-50 p-2 text-xs text-amber-900"></p>
                         <div id="farm-second-colors" class="mt-2 grid grid-cols-2 gap-2 sm:grid-cols-3" role="radiogroup" aria-label="{{ __('farm.order.second_color') }}"></div>
                     </div>
                     <p id="farm-start-note" class="mt-2 text-xs text-slate-600"></p>
