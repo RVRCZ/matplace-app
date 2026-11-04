@@ -12,8 +12,8 @@ zákazník ──> matplace (beta.matplace.com) <── HTTPS, jen odchozí ─�
 - Tisk **nikdy nezačne sám od sebe**. Agent jen plní příkaz `start`, který matplace vydá až poté, co obsluha
   v administraci potvrdí „podložka je volná“. Spuštěním se potvrzení spotřebuje.
 - Komunikace s tiskárnou je schovaná za ovladačem (`farm_agent/drivers/`): teď `moonraker` (Kobra S1 s Rinkhals),
-  `anycubic_lan` (Kobra X s původním firmwarem v LAN režimu) a `mock`, později třeba `prusalink` nebo `simplyprint` —
-  jeden nový soubor, zbytek se nemění.
+  `anycubic_lan` (Kobra X s původním firmwarem v LAN režimu), `prusalink` (Prusa CORE One s INDX, MK4, XL) a `mock`,
+  později třeba `simplyprint` — jeden nový soubor, zbytek se nemění.
 
 ## Ověřené verze
 
@@ -98,7 +98,9 @@ Viz `config.example.yaml`. Token lze místo souboru předat proměnnou prostřed
 | `poll_seconds` | jak často se agent hlásí a ptá na práci (výchozí 5 s); změnu stavu tiskárny posílá hned (websocket) |
 | `snapshot_seconds` | jak často posílá snímek z kamery běžícího tisku (výchozí 15 s; živý náhled, server si nechává jeden za minutu pro časosběr) |
 | `printers[].key` | klíč tiskárny v administraci |
-| `printers[].driver` | `moonraker`, `anycubic_lan` nebo `mock` |
+| `printers[].driver` | `moonraker`, `anycubic_lan`, `prusalink` nebo `mock` |
+| `printers[].api_key` | jen `prusalink`: heslo PrusaLinku z displeje tiskárny (Nastavení → Síť → PrusaLink → Heslo); posílá se jako `X-Api-Key`, s `auth: digest` jako HTTP digest uživatele `maker` |
+| `printers[].upload_timeout`, `start_wait` | jen `prusalink`: sekundy na nahrání souboru na USB tiskárny (výchozí 1800) a na rozběh tisku po startu (výchozí 180; firmware soubor nejdřív čte) |
 | `printers[].ip` | jen `anycubic_lan`: IP tiskárny (rezervovat v routeru) |
 | `printers[].camera` | jen `anycubic_lan`: snímek z vlastní kamery tiskárny (výchozí `true`, potřebuje balíček `av`) |
 | `printers[].light` | jen `anycubic_lan`: rozsvěcet světlo kamery před tiskem a zhasnout po něm (výchozí `true`) |
@@ -107,8 +109,8 @@ Viz `config.example.yaml`. Token lze místo souboru předat proměnnou prostřed
 | `printers[].layer_window` | jen `anycubic_lan`: ruční přepsání – kolik sekund po ohlášené vrstvě hlásit park jako plánovanou polohu (výchozí `0` = podle změřeného předstihu) |
 | `printers[].auto_leveling` | jen `anycubic_lan`: tiskárna si před každým tiskem vyrovná podložku, jako po odeslání ze Sliceru Next (výchozí `true`) |
 | `printers[].package` | jen `anycubic_lan`: soubor poslat jako balíček `.gcode.3mf` s náhledem (jako Slicer Next) místo holého G-code s doplněnými řádky; obě cesty ověřené na Kobra X 18. 10. 2026 (`docs/AM.md`) |
-| `printers[].url` | Moonraker, `http://IP:7125` |
-| `printers[].snapshot_url` | snímek z kamery, u Rinkhals `http://IP/webcam/?action=snapshot` |
+| `printers[].url` | Moonraker `http://IP:7125`; PrusaLink `http://IP` |
+| `printers[].snapshot_url` | snímek z kamery, u Rinkhals `http://IP/webcam/?action=snapshot`; u `prusalink` libovolná adresa s JPEG (firmware kameru nemá) |
 | `printers[].light_device` | světlo komory (Moonraker power device); výchozí `chamber_light` = Rinkhals. Agent ho rozsvítí před startem tisku a zhasne po jeho konci, v adminu jsou tlačítka Rozsvítit/Zhasnout. `""` = tiskárna světlo nemá |
 
 ## Kobra X a další Anycubic s původním firmwarem (`anycubic_lan`)
@@ -143,6 +145,35 @@ ale hlásí číslo vrstvy, a tak ovladač po každé ohlášené změně vrstvy
 v parku“ a agent vybere nejklidnější snímek (viz `docs/AM.md` §7; dwell tiskárny v adminu nastavit podle měření).
 Neumí: reset chyby (chybu potvrdí obsluha na displeji), vlastní časosběr tiskárny (video si tiskárna ukládá, ale
 v LAN ho nejde stáhnout). Soubory v úložišti tiskárny nikdy nemaže.
+
+## Prusa CORE One s INDX a další tiskárny Prusa (`prusalink`)
+
+Firmware Buddy (CORE One, MK4/MK4S, XL, MINI) má PrusaLink v sobě; agent s ním mluví přes `http://IP` (podrobnosti,
+odpovědi skutečné Core One+ a zdroje firmwaru v `docs/AM.md` §12).
+
+1. Na displeji Nastavení → Síť → PrusaLink: zapnout, opsat **heslo**. Heslo patří jen do `config.yaml` (`api_key`).
+2. IP tiskárny rezervovat v routeru. Tiskárna umí Wi‑Fi i kabel; nahrání většího G‑kódu na USB trvá po Wi‑Fi minuty, kabel je jistější.
+3. Blok v `config.yaml`: `driver: prusalink`, `url: http://IP`, `api_key: …` (vzor v `config.example.yaml`). `--check` musí vypsat
+   `idle` a teploty; `offline` s `link: unauthorized` = špatné heslo. Kdyby firmware klíč v hlavičce odmítal (401 trvá), `auth: digest`.
+4. Knihovny: `requirements.txt` chce aiohttp 3.12 (digest); stará instalace agenta je dostane příkazem
+   `venv\Scripts\python.exe -m pip install -r requirements.txt`.
+
+**Pozice (sloty) u INDX** jsou nástroje 1 až 8 = `T0` až `T7` v G‑kódu, nic se tiskárně neposílá zvlášť. Firmware mapuje
+nástroje souboru na své 1:1. **Tisk začne bez dotyku na displeji jen tehdy, když u každého nástroje, který soubor používá,
+je zavedený filament se stejným názvem typu jako ve slicu (PLA, PETG…) a tryska souhlasí.** Jinak tiskárna ukáže obrazovku
+mapování nástrojů, PrusaLink hlásí `ATTENTION` a agent úlohu vede jako `paused` s hláškou „the printer waits for a touch on
+its screen“ (obsluze přijde mail o pauze); po potvrzení na displeji tisk pokračuje. V administraci má tiskárna 8 pozic
+„Nástroj 1 až 8“.
+
+Co ovladač umí: stav (volná / tiskne / pauza / chyba / čeká na displej), teploty, průběh, zbývající minuty, jméno souboru
+(pravé, ne krátké 8.3); nahrání G‑kódu na USB a start; pauza, pokračování, zrušení; seznam, stažení a mazání souborů na USB
+(bez velikostí, firmware je v seznamu nedává); „podložka uklizená“, když obsluha opustí obrazovku dotištění (FINISHED →
+IDLE) nebo dá „Set ready“. Po dotištění firmware soubor už nejmenuje, agent si poslední úlohu pamatuje v `work/<key>.prusalink.json`.
+Neumí: kameru (firmware ji nemá; `snapshot_url` na libovolnou webkameru), reset chyby (jen displej), světlo, sušení,
+časosběr po vrstvách (API nedává polohu hlavy v pohybu; u tiskárny ho vypněte). Soubory přijímá `.gcode` i `.bgcode`.
+
+Server musí pro Core One řezat Orcou 2.5 s profily `*coreone_indx8t.json` (Orca 2.4 s nimi padá) a měniči nástrojů dává
+originál řezu bez přemapování slotů (`docs/AM.md` §12d, §12e).
 
 ## Zkouška bez tiskárny (mock)
 
@@ -216,7 +247,7 @@ Zbývá vyzkoušet: **pauza / pokračování / zrušení** z administrace a chov
 
 ```bash
 cd agent
-python -m pytest tests                      # 93 testů proti simulované tiskárně, falešnému Moonrakeru, falešné Kobře X a falešnému serveru
+python -m pytest tests                      # 108 testů proti simulované tiskárně, falešnému Moonrakeru, falešné Kobře X, falešnému PrusaLinku a falešnému serveru
 ```
 
 Nový ovladač: třída odvozená z `PrinterDriver` (`drivers/base.py`: `status`, `start`, `pause`, `resume`, `cancel`,
