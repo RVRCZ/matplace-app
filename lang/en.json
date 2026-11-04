@@ -2045,5 +2045,7 @@
     "farm.order.pos_reason.limit": "more colours than the printer has positions",
     "farm.order.preselected": "preselected",
     "farm.order.machine_repicked": "After the change of printer the colour of these parts was picked again: :parts.",
-    "farm.order.machine_fell_back": "This printer has no colour for these parts: :parts. They take the main colour."
+    "farm.order.machine_fell_back": "This printer has no colour for these parts: :parts. They take the main colour.",
+    "farm.admin.position_tool": "Tool :n",
+    "farm.admin.driver_hint": "(driver in the agent's config.yaml: moonraker = Kobra S1 with Rinkhals, anycubic_lan = Kobra X, prusalink = Prusa Core One, MK4, XL; an INDX has 8 tools)"
 }

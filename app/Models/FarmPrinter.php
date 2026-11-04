@@ -32,6 +32,9 @@ class FarmPrinter extends Model
     /** The quality a machine with a finer nozzle is kept for (config/farm.php `qualities`). */
     public const FINE_QUALITY = 'fine';
 
+    /** Spool positions a tool changer has by its build: the Prusa CORE One INDX carries 8 tools (docs/AM.md §12). */
+    public const TOOL_CHANGER_POSITIONS = 8;
+
     /** Build plates as OrcaSlicer names them (process setting curr_bed_type) → what the operator calls them. */
     public const BED_TYPES = [
         'Textured PEI Plate' => 'texturovaná PEI',
@@ -232,6 +235,22 @@ class FarmPrinter extends Model
         }
 
         return $names[$file] ?? (string) $this->model;
+    }
+
+    /**
+     * A tool changer (Prusa CORE One INDX, machine_coreone_indx8t.json): every position is a tool with its own nozzle, the
+     * slicer selects it by the T<n> it writes, and the printer purges at its own station (docs/AM.md §12). Told by the
+     * machine profile's name, so no column is needed.
+     */
+    public function isToolChanger(): bool
+    {
+        return str_contains(strtolower((string) $this->machine_profile), 'indx');
+    }
+
+    /** How many spool positions the admin forms offer for this machine at least (the names: App\Domain\Farm\SpoolPositions). */
+    public function positionRows(): int
+    {
+        return $this->isToolChanger() ? self::TOOL_CHANGER_POSITIONS : 4;
     }
 
     /** The same machine for tuning: the same slicer machine profile and the same nozzle. */

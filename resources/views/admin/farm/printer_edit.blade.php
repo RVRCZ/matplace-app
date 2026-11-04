@@ -3,8 +3,8 @@
 @php
     $json = fn ($v) => $v ? json_encode($v, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) : '';
     $slots = $printer->exists ? $printer->slots->keyBy('slot') : collect();
-    // the positions (slot rows) of the machine: at least four, as many as it has, or as many as "+ přidat pozici" asked for (?slots=n)
-    $slotCount = min(16, max(4, $slots->count(), (int) request()->query('slots', 0)));
+    // the positions (slot rows) of the machine: at least four (eight on a tool changer), as many as it has, or as many as "+ přidat pozici" asked for (?slots=n)
+    $slotCount = min(16, max($printer->positionRows(), $slots->count(), (int) request()->query('slots', 0)));
     $in = 'mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm font-normal';
     $lb = 'block text-xs font-semibold text-slate-600';
 @endphp
@@ -20,7 +20,7 @@
             <label class="{{ $lb }}">Název<input name="name" required value="{{ old('name', $printer->name) }}" class="{{ $in }}"></label>
             <label class="{{ $lb }}">Kód <span class="font-normal">(farma + číslo tiskárny, např. U3, B7, X1; cívka přidá slot: U33 = farma U, tiskárna 3, slot 3; prázdné = podle názvu)</span><input name="code" value="{{ old('code', $printer->code) }}" maxlength="4" pattern="[A-Za-z][0-9]{1,3}" class="{{ $in }} font-mono uppercase"></label>
             <label class="{{ $lb }}">Model<input name="model" required value="{{ old('model', $printer->model) }}" class="{{ $in }}"></label>
-            <label class="{{ $lb }}">Klíč (v konfiguraci agenta)<input name="key" required value="{{ old('key', $printer->key) }}" class="{{ $in }}"></label>
+            <label class="{{ $lb }}">Klíč (v konfiguraci agenta) <span class="font-normal">{{ __('farm.admin.driver_hint') }}</span><input name="key" required value="{{ old('key', $printer->key) }}" class="{{ $in }}"></label>
             <label class="{{ $lb }}">Režim
                 <select name="mode" class="{{ $in }}">@foreach(['manual', 'agent'] as $m)<option value="{{ $m }}" @selected(old('mode', $printer->mode) === $m)>{{ __('farm.admin.mode.'.$m) }}</option>@endforeach</select>
             </label>

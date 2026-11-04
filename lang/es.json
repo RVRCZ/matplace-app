@@ -2045,5 +2045,7 @@
     "farm.order.pos_reason.limit": "más colores que posiciones tiene la impresora",
     "farm.order.preselected": "preseleccionado",
     "farm.order.machine_repicked": "Tras cambiar de impresora se eligió de nuevo el color de estas piezas: :parts.",
-    "farm.order.machine_fell_back": "Esta impresora no tiene color para estas piezas: :parts. Llevan el color principal."
+    "farm.order.machine_fell_back": "Esta impresora no tiene color para estas piezas: :parts. Llevan el color principal.",
+    "farm.admin.position_tool": "Herramienta :n",
+    "farm.admin.driver_hint": "(controlador en el config.yaml del agente: moonraker = Kobra S1 con Rinkhals, anycubic_lan = Kobra X, prusalink = Prusa Core One, MK4, XL; un INDX tiene 8 herramientas)"
 }

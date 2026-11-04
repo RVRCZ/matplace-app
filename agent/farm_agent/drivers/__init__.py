@@ -3,12 +3,14 @@ from .anycubic_lan import AnycubicLanDriver
 from .base import DriverError, JobStatus, PrinterDriver, PrinterStatus
 from .mock import MockDriver
 from .moonraker import MoonrakerDriver
+from .prusalink import PrusaLinkDriver
 
 DRIVERS = {
     "moonraker": MoonrakerDriver,
     "anycubic_lan": AnycubicLanDriver,     # Kobra X (Kobra 3 / S1 family) with the stock firmware in LAN mode
+    "prusalink": PrusaLinkDriver,  # Prusa CORE One (+ INDX), MK4, XL: the Buddy firmware's own PrusaLink API
     "mock": MockDriver,
-    # later: "prusalink": PrusaLinkDriver, "simplyprint": SimplyPrintDriver
+    # later: "simplyprint": SimplyPrintDriver
 }
 
 

@@ -597,3 +597,229 @@ jako 0.2.8). Na PC farmy: zastavit úlohu `matplace-farm-agent`, přehrát slož
 `requirements.txt` beze změny), spustit úlohu. Server: migrace (`php artisan migrate --force`), `config:clear`
 (`notify_paused`), `view:clear`; bez buildu (žádné TS). Po nasazení v `/admin/farm/settings` zkontrolovat zaškrtnutou
 „pauza tiskárny“ a na stránce tiskárny B3 kliknout „Načíst seznam“.
+
+## 12. Ovladač `prusalink`: Prusa CORE One+ s INDX, 8 nástrojů (agent 0.2.11, větev `feature/agent-prusalink`, 4. 11. 2026)
+
+Zadání `docs/prompts/prusalink-core-one-indx.md` (TODO #67). Bez tiskárny: Core One ten den tiskla a klíč API má jen Roman. Vše je
+postavené podle specifikace PrusaLinku a zdrojů firmwaru Buddy a ověřené proti falešnému PrusaLinku v testech. Řídící přečetla
+z Romanovy tiskárny čtyři odpovědi (firmware 8.0.0+17068, PrusaLink api 2.0.0, server 2.1.2) a jsou zapracované. Oddíl 11 patří
+nesloučené větvi `fix/s1-start-heat`.
+
+### 12a. API PrusaLinku (specifikace a firmware)
+
+- Zdroje: `github.com/prusa3d/Prusa-Link-Web` `spec/openapi.yaml` (1.0.0-draft) a firmware `prusa3d/Prusa-Firmware-Buddy`
+  (`lib/WUI/link_content/prusa_link_api_v1.cpp`, `basic_gets.cpp`, `prusa_api_helpers.cpp`, `lib/WUI/wui_api.cpp`,
+  `lib/WUI/nhttp/status_renderer.cpp`, `gcode_upload.cpp`, `file_info.cpp`, `req_parser.cpp`, `status_page.cpp`,
+  `src/state/printer_state.cpp`, `src/common/marlin_server.cpp`, `marlin_print_preview.cpp`, `tools_mapping.cpp`,
+  `src/feature/compatibility_checks/gcode_compatibility.cpp`, `src/common/gcode/gcode_info.cpp`, `src/common/filename_type.cpp`,
+  `include/buddy/filename_defs.hpp`), čteno 4. 11. 2026 z větve master.
+- Ověření: hlavička `X-Api-Key: <heslo PrusaLinku>` (displej: Nastavení → Síť → PrusaLink → Heslo). Bez ní nebo se špatným
+  heslem 401 a `WWW-Authenticate: ApiKey realm="Printer API"`. Totéž heslo platí pro HTTP digest s uživatelem `maker`
+  (výzva `Digest realm="Printer API", nonce=..., stale=...`, bez `qop`). Na Romanově Core One klíč v hlavičce funguje
+  (řídící 4. 11. 2026). Fóra píší o 403 „Bad X-Api-Key“ na některých firmwarech; pro ten případ je v ovladači `auth: digest`.
+- `GET /api/v1/status`: `printer{state, temp_nozzle, target_nozzle, temp_bed, target_bed, axis_z, flow, speed, fan_hotend,
+  fan_print}`, `job{id, progress, time_remaining, time_printing}` jen při tisku, `storage{path /usb/, name usb, read_only}`.
+  `axis_x`, `axis_y` jen když hlava stojí. Slova stavu (`printer_state::to_str`): `IDLE, BUSY, PRINTING, PAUSED, FINISHED,
+  STOPPED, ERROR, ATTENTION, READY`.
+- `GET /api/v1/job`: 204 bez úlohy (`has_job()` platí jen pro PRINTING, PAUSED a ATTENTION; po dotištění tedy `FINISHED`
+  ani `STOPPED` soubor nejmenují), jinak `{id, state, progress, time_printing, time_remaining, file{name = krátké jméno 8.3
+  (`GREEK-~3.BGC`), display_name = pravé jméno, path, size, m_timestamp, refs.download}}`.
+- `GET /api/v1/info`: `nozzle_diameter, mmu (false i s INDX), serial, hostname, min_extrusion_temp`. O nástrojích nic.
+  `GET /api/version`: `api 2.0.0, server 2.1.2, firmware 8.0.0+17068, printer 7.10.0, capabilities.upload-by-put true`.
+- Nahrání: `PUT /api/v1/files/usb/<jméno>`, tělo = soubor, hlavičky `Content-Length`, `Overwrite: ?1`, `Print-After-Upload:
+  ?0|?1`. Odpovědi: 201; 409 `File is busy`, `Another transfer in progress`, `File already exists`, `Cannot print right now`
+  (firmware píše „Can“ s apostrofem); 415 `Not a GCODE`; 431 jméno přes 167 znaků (`max_filename_length`); 507 plný disk
+  nebo chyba zápisu; 411 bez délky. Firmware tiskne `.gcode .gco .g .gc` i `.bgcode .bgc` (`filename_is_printable`). Farmě
+  tedy stačí obyčejný G-code, binární není potřeba (Romanovy soubory z PrusaSliceru jsou `.bgcode`, to je jeho výchozí export).
+- Start: `POST /api/v1/files/usb/<jméno>` → 204, nebo 409 když tiskárna nemůže. `remote_print_ready` bere start ve stavech
+  IDLE, READY, FINISHED i STOPPED, takže obrazovka „tisk dokončen“ start neblokuje.
+- Řízení: `PUT /api/v1/job/<id>/pause`, `/resume`, `DELETE /api/v1/job/<id>` (stop) → 204; 409 ve špatném stavu; 404 cizí id.
+- Soubory: `GET /api/v1/files/usb/` s `Accept: application/json` → `{type FOLDER, children[{name 8.3, display_name, type
+  PRINT_FILE|FOLDER, m_timestamp, ro, refs{icon, thumbnail, download "/usb/<8.3>"}}]}`. Velikosti ani volné místo seznam
+  nenese (velikost dá jen `GET` jednoho souboru). Právě tištěný soubor je `ro: true` a bez `download`. Stažení
+  `GET /usb/<8.3>`, smazání `DELETE /api/v1/files/usb/<8.3>` (409 při tisku).
+- Kamera: firmware žádné `/api/v1/cameras` nemá (to má jen PrusaLink na Raspberry Pi). Chyby: API nenese text chyby ani
+  důvod pauzy, jen slovo stavu.
+
+### 12b. Ovladač `prusalink` (`agent/farm_agent/drivers/prusalink.py`, agent 0.2.11)
+
+- Volby `url`, `api_key` (jen v config.yaml), `auth` (`key` výchozí, `digest`), `username` (`maker`), `timeout` 15,
+  `upload_timeout` 1800, `start_wait` 180, `start_poll` 3, `snapshot_url`. Žádný websocket, jen dotazy po `poll_seconds`.
+  Digest dělá `aiohttp.DigestAuthMiddleware` (aiohttp 3.12+, `requirements.txt` povýšen; se starší knihovnou se pošle klíč).
+- Stavy: IDLE a READY → `idle`; PRINTING a BUSY → `printing`; PAUSED → `paused`; ATTENTION → `paused` s hláškou „the printer
+  waits for a touch on its screen (tools mapping, a filament question or an error)“, takže server pošle mail o pauze
+  (§10e); FINISHED → `idle` a úloha `done`; STOPPED → `idle` a `cancelled`; ERROR → `error` a `failed` s hláškou, že text je
+  jen na displeji. Telemetrie: `extruder`, `extruder_target`, `bed`, `bed_target`, `printer_state`, `z`, `speed`, `flow`,
+  `fan_hotend`, `fan_print`, `remain_min`, `message`, `error`, `bed_cleared_at`.
+- Úloha: jméno z `display_name` (ne 8.3), průběh a `time_printing` z `/api/v1/job`. Po konci firmware soubor nejmenuje,
+  proto si ovladač poslední úlohu pamatuje (`<work_dir>/<key>.prusalink.json`, přežije restart agenta) a hlásí ji jako
+  `done`, `cancelled` nebo `failed` podle slova stavu, dokud nezačne nová (jako Moonraker hlásí `complete`). Když tiskárna
+  skočí rovnou do IDLE (obsluha klepla mezi dvěma dotazy), rozhoduje průběh: od 99 % `done`, jinak `cancelled` s poznámkou
+  „ended at N % without a finished state“.
+- Start: stav musí být `idle`; jméno musí mít tiskovou příponu a nejvýš 167 znaků; `PUT` s `Overwrite ?1` a
+  `Print-After-Upload ?0`; `POST`. Pak čekání až `start_wait`: firmware po POST soubor nejdřív čte (hlásí IDLE), potom
+  PRINTING (nahřívání, homing i MBL jsou už součást tisku), nebo ATTENTION (dialog na displeji; start se bere jako
+  úspěšný a úloha je `paused` s důvodem, soubor je na tiskárně), ERROR = chyba startu. `slot` se jen zaloguje: nástroj si
+  soubor volí sám (12d).
+- `plate_confirmed`: přechod FINISHED/STOPPED → IDLE/READY (obsluha opustila obrazovku dotištění, nebo „Set ready“ na
+  displeji či v Connectu) = `bed_cleared_at`, stejně jako u Rinkhalsu `complete → standby` (§10). Náš vlastní start tento
+  přechod nespustí.
+- `files`, `fetch`, `delete`: pravé jméno ↔ 8.3 ze seznamu (velikost 0 = neznámá, volné místo None). `slot_status` vždy None
+  (API o nástrojích mlčí, filamenty hlídá firmware při startu). `snapshot` jen přes `snapshot_url` (třeba webkamera u PC
+  farmy přes mjpg-streamer; do budoucna i obrázek z Prusa Connectu, ten ale vede přes cloud). `reset` odmítne: chybu
+  potvrzuje displej. `head` None: polohy při pohybu API nedává, časosběr po vrstvách tedy na Core One nejde a u tiskárny
+  má být vypnutý. `light` a `dry` nic.
+- Testy `agent/tests/test_prusalink.py` (15) s falešným PrusaLinkem: stav a úloha s pravým jménem, špatný klíč (offline s
+  `link: unauthorized`), nedostupná tiskárna, start s hlavičkami a čekáním, pomalé čtení souboru, tiskárna, která nezačne,
+  ATTENTION, start odmítnutý s textem, špatná jména před odesláním, pauza a pokračování a zrušení podle id úlohy, dotištění
+  a úklid podložky i po restartu agenta, konec rovnou v IDLE, chyba, soubory a stažení a mazání podle 8.3, digest. Celkem
+  108 testů agenta (`python -m pytest tests` v `agent/`).
+
+### 12c. Mapování nástrojů při startu: podmínka provozu bez obsluhy
+
+Zjištěno ze zdrojů firmwaru a z dokumentace, na tiskárně nezkoušeno:
+
+- PrusaLink startuje tisk voláním `print_start(soubor, PreviewSkipIfAble::all)` (`wui_api.cpp`, `wui_start_print`), stejně
+  `POST` i `Print-After-Upload`.
+- V náhledu tisku (`marlin_print_preview.cpp`, stav `checks_done`): na stroji s měničem nástrojů (`is_tool_mapping_possible`:
+  víc než jeden nástroj povolen a soubor nějaký používá, tedy na INDX i u jednobarevného souboru) firmware spočítá zprávu
+  kompatibility pro výchozí mapování 1:1. Když je `fully_compatible`, obrazovku mapování přeskočí a tiskne. Jinak čeká ve
+  stavu `tools_mapping_wait_user`, PrusaLink hlásí `ATTENTION` a bez dotyku na displeji se nic neděje.
+- Co se kontroluje (`gcode_compatibility.cpp`, `generate_toolmapping_only_noclear`), pro každý nástroj, který soubor
+  používá: nástroj přiřazen a povolen (jinak Abort); dok zkalibrován; **typ filamentu v souboru (`; filament_type =
+  PLA;PETG`, položka toho nástroje) se rovná názvu typu zavedeného u nástroje na tiskárně** (jinak Warning, pevně); průměr
+  trysky z `; nozzle_diameter` (přísnost podle Nastavení → Hardware → Kontroly → Tryska); kalená tryska u abrazivního
+  filamentu a HF tryska (`M862.1 T<n> P0.4 A<abraziv> F1`); **filament zavedený** podle čidla (jinak Warning); spool join.
+  Barva se nekontroluje. Jakékoli Warning = obrazovka mapování. Prázdný typ v souboru kontrolu typu vynechá.
+- Podmínka provozu: u každého nástroje, ze kterého farma tiskne, je na tiskárně zavedený filament se **stejným názvem typu**
+  jako ve slicu (PLA, PETG, ASA, PC...; Prusa pojmenovává pružné FLEX, Orca píše TPU, proto u pružných pozor), filament
+  je fyzicky zavedený a trysky jsou 0,4 HF (Romanovy jsou všechny 0,4 HF kalené). Pak tisk přes PrusaLink začne bez
+  dotyku. Při neshodě ovladač start nezahodí: úloha je `paused` s hláškou o displeji, obsluha na tiskárně mapování potvrdí
+  nebo tisk zruší.
+- Dokumentace Prusy: článek „Tools Mapping (XL, INDX)“ (help.prusa3d.com/article/tools-mapping-xl_668277) říká, že
+  obrazovka se otevírá při tisku z USB po „Continue/Print“ a že z Prusa Connectu „this feature is not available“; článek
+  o stavu 31814 říká „Select Print to start the print with defaults“. Issue Buddy #4013 (MMU3 přes PrusaLink, zavřeno
+  „not planned“ 22. 12. 2025): obrazovka mizí, když je filament zavedený přes „load filament advanced“, tedy se správným
+  typem. To sedí se zdrojem.
+
+### 12d. Co to znamená pro server (GcodeSlot, jedna podložka, věž)
+
+Ověřeno na G-kódu z Orcy 2.5 (12e):
+
+- Orca pro INDX píše výměnu jako odsazený řádek `  T1 S1 L0 D0` uvnitř skriptu výměny a start jako `T0 S1 L2 D0` a
+  `T0 S1 L0 D0`. Žádný holý řádek `T<n>`, žádné `G9111` ani `M117`. `GcodeSlot::retarget` ani `retargetMany` proto **žádný
+  nástroj nepřemapují** (0 řádků „matplace slot“); `retargetMany` jen vloží hlavičku `; matplace filaments`.
+- S teplotami cívky obě **přepíšou 6 řádků `M104/M109`** ve startu Prusy (`M104 S120` před homingem Z, `M109 S170` sonda
+  MBL, `M104 S175`, `S225`, `S220` v čištění) na jednu hodnotu a `M140/M190` na podložku cívky. To by rozbilo Prusovu
+  choreografii teplot. Bez teplot `retargetMany` nemění nic kromě hlavičky.
+- Proto u měniče nástrojů server soubor pro agenta nepřemapovává: `AgentController::gcode` a stažení v administraci
+  (`FarmOrderController::gcode`) dají pro `isToolChanger()` originál řezu (pojistka v této větvi, `GcodeSlot.php` beze
+  změny). Volbu nástroje musí udělat řez: díl na extruder `slot + 1` v 3MF a profil filamentu pro ten nástroj. Dnes řeže
+  jednobarevný tisk vždy T0 (nástroj 1) a jedna podložka filamenty v pořadí dílů (T0, T1...), proto první zkoušky jen
+  s cívkami v nástrojích 1 a 2 ve stejném pořadí. Přemapovat tokeny `T<n>` v `T<n> S1`, `M104 T<n>`, `M862.1 T<n>`,
+  `M574 S<n>` by šlo, ale `G427` a bloky `is_extruder_used` jsou vyhodnocené při řezu. Doporučení pro session 2 a řídící:
+  tool changer = řez s pravými čísly nástrojů, bez GcodeSlot.
+- Firmware mapuje T<n> souboru na fyzický nástroj n (1:1); PrusaLink jiné mapování poslat neumí (Connect ano). Pozice
+  farmy = číslo nástroje, slot 0 = Nástroj 1.
+- Věž: `PrepareFarmOrder::ONE_PLATE_PROCESS` (věž 25 mm, `flush_into_infill`) je na INDX zbytečná, čistí se na stanici
+  (`G12 S90`, `G12 S30`, blok `FLUSH_START`, 10 mm³ na výměnu, `filament_minimal_purge_on_wipe_tower`). Dvě kostky 15 mm:
+  bez věže 2,24 g a 18 min, s přepisy farmy 4,49 g a 22,5 min. Cena jde z hlavičky, zákazník by věž zaplatil. Druh stroje
+  „měnič nástrojů“ má tedy v kalkulaci smysl jen tady: u `isToolChanger()` nevnucovat věž a `flush_into_infill`. Ceny ani
+  `engines.colors.change_minutes/flush_mm3/tower_g` (odhad kalkulačky u malovaných 3MF) neměním, rozhodne Roman.
+- Buddy čte z hlavičky `; filament_type` (oddělovač `;`), `; filament used [g]` (`,`), `; extruder_colour`, `; nozzle_diameter`
+  a řádky `M862.x`. Orca 2.5 je píše ve tvaru, který firmware čeká.
+
+### 12e. Profily Orca 2.5 pro INDX 8T
+
+- Zdroj: OrcaSlicer 2.5.0-alpha (16. 10. 2026; PR #15903 „CoreOne INDX 8T and 4T“ sloučen 4. 10., #16209 výměny podle
+  PrusaSliceru 3.0 sloučen 6. 10.; Prusa bundle 02.04.00.17 podle PrusaResearch 2.5.10). Portable 2.5 balí dodavatele do
+  `.opc` (magic `ZCRO`, není to zip), proto jsou vstupem soubory tagu `v2.5.0-alpha`
+  (`resources/profiles/Prusa/{machine,process,filament}`), portable sloužil k řezu.
+- Řetězec `inherits` a `include` rozbaluje `scripts/orca_flatten_profile.py` (rodiče, pak vlastní klíče každého `include`
+  v pořadí, pak vlastní klíče presetu, jak to dělá `PresetBundle.cpp` 2.5). Chybějící klíče doplněny výchozími hodnotami
+  Orcy 2.5 z `--export-settings` jednoho řezu: Orca 2.5 i 2.4 odmítají filament bez úplných vektorových klíčů
+  („filament_is_support count 1 not equal to filament_colour size 2“). Soubory v `engines/orca/profiles`:
+  `machine_coreone_indx8t.json` (name „Prusa CORE One INDX 8T HF 0.4 nozzle“, `printer_model` „Prusa CORE One INDX 8T“,
+  248×205×270, 8 trysek 0,4 HF, `gcode_flavor marlin2`, `single_extruder_multi_material 0`, `purge_in_prime_tower 0`),
+  `process_draft_` (0,25 mm Draft), `process_standard_` (0,20 Balanced), `process_detail_` (0,15 Detail), `process_fine_`
+  (0,10 Fine) `coreone_indx8t.json`, filamenty `filament_pla_` a `filament_petg_coreone_indx8t.json` (Generic @Prusa CORE One
+  INDX; `machineVariant` je k `machine_coreone_indx8t.json` najde sama), `filament_prusament_pla_` a
+  `filament_prusament_petg_coreone_indx8t.json` (k ručnímu přiřazení). ASA ani TPU pro INDX Orca 2.5 nemá; Roman řekne,
+  co v INDX má, a odvodí se stejným skriptem z profilu CORE One HF s `include fdm_filament_template_indx`.
+- Zkouška řezu (dvě kostky 15×15×6 mm, PLA na nástroji 1, PETG na 2, 3MF z `ThreeMfWriter`, CLI jako farma:
+  `--load-settings machine;process --load-filaments f1;f2 --arrange 0 --slice 0`, podložka Textured PEI): Orca 2.5 **řeže**,
+  30 vrstev, `; total filament change = 30`, 31 řádků `T<n> S1 L0 D0`, 31 čištění na stanici (`G12 S90`, `G12 S30`,
+  `;FLUSH_START`), `enable_prime_tower 0`, bez `G9111`, bez `M117`, `M862.3 P "COREONEINDX"`, `M862.1 T0 P0.4 A0 F1`,
+  `; filament_type = PLA;PETG`, `; filament used [g] = 1.12, 1.13`, 18 min. `GcodeStats::fromFile` čte gramy po filamentu
+  i počet výměn. S přepisy `ONE_PLATE_PROCESS`: věž 61 vrstev `;TYPE:Prime tower`, 4,49 g, 22,5 min. Jednobarevný řez:
+  1,84 g, 10 min, také bez věže.
+- Orca 2.4.0-beta (portable session 2, `59282dac…/scratchpad/orca24`) s těmito profily **padá** (segfault po načtení
+  druhého filamentu, před řezem; log končí „skip scalar option inherits from filament 2“). Bez povýšení serveru na 2.5
+  INDX neřeže. Dál: Orca 2.5 odmítá farmě profily filamentů s neprázdným `inherits` (`filament_pla.json`,
+  `filament_petg.json`, `filament_tpu.json` a jejich `_kobra3max`, `_kobras1_n02`: `inherits: "Anycubic PLA @acbase"` →
+  „can not resolve preset: Preset was not found in the loaded bundle“); před povýšením jim dát `inherits: ""`. Ověřil jsem
+  jen to odmítnutí, ne řez S1 v 2.5. To je vstup pro řídící k povýšení serveru.
+- Orca 2.5 ukládá do `; thumbnails` formát QOI; farma náhledy nepotřebuje.
+
+### 12f. Web
+
+- `FarmPrinter::isToolChanger()` (soubor profilu stroje se jménem `indx`), `positionRows()` 8 (stránka tiskárny nabídne
+  u INDX rovnou 8 řádků, jinak 4, víc přes „+ přidat pozici“ session 2). Názvy pozic dává po sloučení s TODO #66
+  `App\Domain\Farm\SpoolPositions::names()`: větev pro měnič nástrojů „Nástroj 1 až 8“ (`farm.admin.position_tool`),
+  Kobra X „Stojan/ACE“, Kobra „ACE“, jinak „Pozice“; název, který admin napsal do `label` slotu, vítězí
+  (`FarmPrinterSlot::positionLabel()`). Stránka založení cívek ukazuje totéž. U klíče je nápověda s názvy ovladačů
+  (`farm.admin.driver_hint`). Texty `lang/src/prusalink.json`. Test `tests/Feature/FarmPrinterPositionsTest.php`;
+  `FarmPagesTest` a `FarmColorsPerMachineTest` zelené.
+- Druh stroje „měnič nástrojů“ bez nového sloupce; co by v kalkulaci měl měnit je v 12d.
+
+### 12g. Živá zkouška (jen s Romanem, až tiskárna netiskne)
+
+1. V routeru rezervovat IP tiskárny (192.168.8.60). Tiskárna je na Wi‑Fi; nahrání 50 MB trvá minuty, kabel je jistější.
+2. Na displeji Nastavení → Síť → PrusaLink: zapnuto, opsat heslo. Heslo patří jen do `config.yaml` agenta (`api_key`).
+3. `config.yaml` (PC farmy nebo zkušební agent na Romanově PC): blok `key: core-one-01`, `driver: prusalink`,
+   `url: http://192.168.8.60`, `api_key: <heslo>`. Pak `venv\Scripts\python.exe -m pip install -r requirements.txt`
+   (aiohttp 3.12) a `venv\Scripts\python.exe -m farm_agent --config config.yaml --check`: musí vypsat `idle` a teploty.
+   `offline` s `link: unauthorized` = špatné heslo; když 401 trvá i se správným, `auth: digest`.
+4. Administrace, tiskárna s klíčem `core-one-01`: režim agent, agent farmy, profil stroje `machine_coreone_indx8t.json`,
+   procesy `{"draft":"process_draft_coreone_indx8t.json","standard":"process_standard_coreone_indx8t.json","fine":"process_fine_coreone_indx8t.json"}`,
+   podložka texturovaná PEI, 248 × 205 × 270, tryska 0,4, časosběr vypnuto. Sloty: Nástroj 1 = cívka, kterou má tiskárna
+   v nástroji 1 zavedenou se stejným typem (PLA), Nástroj 2 = cívka nástroje 2.
+5. Server musí řezat Orcou 2.5 (12e). Bez toho řez pro tuhle tiskárnu selže.
+6. Malý jednobarevný objekt z farmy ze slotu 1. Sledovat: v logu agenta `uploading`, `starting`, `the printer took`;
+   na displeji žádný dialog (jinak 12c); nástěnka `printing`, průběh a zbývající minuty; po dotištění `done` a po odklepnutí
+   obrazovky na displeji `bed_cleared_at` na nástěnce. Pak pauza, pokračování a zrušení z adminu.
+7. Dvoubarevný objekt (jedna podložka, cívky v nástrojích 1 a 2 ve stejném pořadí jako filamenty zakázky). Sledovat totéž
+   a výměny na stanici. Bez úpravy `ONE_PLATE_PROCESS` (12d) tiskárna postaví věž navíc.
+8. Když přijde `paused` s hláškou o displeji: na tiskárně je obrazovka mapování. Zkontrolovat typy filamentů u nástrojů,
+   potvrdit, příště typy srovnat.
+
+### 12i. Farmě profily filamentů bez `inherits` (pro povýšení serveru na Orcu 2.5)
+
+- Devět profilů mělo `inherits` na preset, který v žádném bundlu Orcy není: `filament_pla.json`, `filament_petg.json`,
+  `filament_tpu.json` a jejich varianty `_kobra3max` a `_kobras1_n02` („Anycubic PLA/PETG/TPU @acbase“). Orca 2.4 to jen
+  nese s sebou (CLI 2.4 bere u filamentů z `--load-filaments` všechny hodnoty ze souboru, větev „update to newest“ platí jen
+  pro filamenty z projektu 3MF), Orca 2.5 rodiče hledá a bez něj soubor odmítne. Změna: `"inherits": ""` v těch devíti
+  souborech, nic jiného (jeden řádek na soubor). Všech 32 profilů prošlo `json.load` i kontrolou duplicitních klíčů.
+- Ověření (`scratchpad/inherits_check.py`, kostka 10 mm `cube10.stl` z pokusu k TODO #65, CLI jako farma, podložka
+  Textured PEI, `enable_support 0`): každý z devíti filamentů na svém stroji (S1 `machine.json` + `process_standard`,
+  S1 0,2 `machine_kobras1_n02` + `process_standard_n02`, Kobra 3 Max `machine_kobra3max` + `process_standard`) a navíc
+  dvoufilamentová podložka S1 (dvě kostky, dvakrát PLA, přepisy `ONE_PLATE_PROCESS`). Tři řezy na kombinaci: Orca
+  2.4.0-beta před změnou, 2.4.0-beta po změně, 2.5.0-alpha po změně.
+- Výsledek: **2.4 po změně = 2.4 před změnou** ve všech deseti kombinacích (normalizovaný G-code bez časových řádků a
+  náhledů stejný bajt po bajtu, stejné vrstvy, gramy i posloupnost `M104/M109/M140/M190/G9111`). **2.5 proti 2.4:** stejný
+  počet vrstev (50, 100 u trysky 0,2, 30 u podložky), gramy 0,00 % rozdíl u všech devíti kostek a 0,68 % u dvoufilamentové
+  podložky (1,47/1,55 → 1,48/1,56 g), stejná množina i posloupnost teplotních příkazů, čas do 2 s u kostek, 1 h 10 min →
+  1 h 13 min u podložky s věží. Tělo G-kódu se mezi 2.4 a 2.5 liší (jiná verze sliceru), ne kvůli profilům.
+- PLA a PETG na jedné podložce odmítají 2.4 i 2.5 shodně („nozzle temperature must fall within the recommended range of
+  the other filaments“, předvolba „Remove mixed temperature restriction“), to je stav i dnes a profily na tom nic nemění.
+- Pro povýšení serveru tedy k profilům nezbývá nic; zůstává `machine_kobra3max.json` bez klíče `inherits` vůbec (2.5 bere
+  jako prázdné, řez v 2.5 prošel).
+
+### 12h. Soubory
+
+`agent/farm_agent/drivers/prusalink.py`, `agent/farm_agent/drivers/__init__.py`, `agent/farm_agent/__init__.py` (0.2.11),
+`agent/farm_agent/config.py`, `agent/requirements.txt`, `agent/config.example.yaml`, `agent/README.md`,
+`agent/tests/test_prusalink.py`; `scripts/orca_flatten_profile.py`; `engines/orca/profiles/*coreone_indx8t.json` (9);
+`app/Models/FarmPrinter.php`, `app/Http/Controllers/Farm/AgentController.php`, `app/Http/Controllers/Admin/FarmOrderController.php`,
+`resources/views/admin/farm/printer_edit.blade.php`, `slots.blade.php`, `lang/src/prusalink.json`, `lang/{cs,en,es}.json`,
+`tests/Feature/FarmPrinterPositionsTest.php`; `docs/TODO.md` řádek 67, `docs/prompts/prusalink-core-one-indx.md` odchylky.

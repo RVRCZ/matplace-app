@@ -38,6 +38,18 @@ printers:
   #   # auto_leveling: true                                # the printer levels the bed before every print (as after the Slicer Next)
   #   # package: true                                      # the file goes up as a .gcode.3mf package with a thumbnail; false = bare G-code (README)
 
+  # Prusa CORE One (with or without the INDX tool changer), MK4/MK4S, XL, MINI: PrusaLink of the Buddy firmware (docs/AM.md §12).
+  # - key: core-one-01
+  #   driver: prusalink
+  #   url: http://192.168.8.60                             # the printer's address; reserve it in the router (Wi-Fi works, a cable is steadier)
+  #   api_key: PASTE_THE_PRUSALINK_PASSWORD                # printer: Settings -> Network -> PrusaLink -> Password; only here, never in git
+  #   # auth: digest                                       # when the firmware refuses the X-Api-Key header: HTTP digest with the user "maker"
+  #   # upload_timeout: 1800                               # seconds for the upload to the USB stick (a few MB/s, less on Wi-Fi)
+  #   # start_wait: 180                                    # seconds for the print to begin after the start call (the firmware reads the file first)
+  #   # snapshot_url: http://192.168.8.70:8080/?action=snapshot   # the firmware has no camera: any address answering a JPEG (a webcam on the farm PC)
+  #   # INDX: the positions are the tools T0..T7 as the slicer wrote them; nothing is sent for the slot. The print starts without a
+  #   # touch only when every tool the file uses holds the filament type the file names (README, "Prusa CORE One").
+
   # Simulated printer — try the whole order flow without a machine (see README, "Zkouška bez tiskárny").
   # - key: kobra-s1-01
   #   driver: mock

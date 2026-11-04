@@ -8,7 +8,7 @@ use App\Models\FarmPrinter;
  * What the operator calls a spool position (TODO #66, docs/AL.md §19). The Kobra X feeds from its own rack and from the
  * ACE box behind it: with the changer the rack keeps three places and the ACE four ("Stojan 1 až 3, ACE 1 až 4",
  * docs/AM.md §8), alone the rack has four. A Kobra S1 or 3 Max feeds from the ACE ("ACE 1 až 4", a second box
- * "ACE2 1 až 4"). Any other machine: "Pozice n". The order is matplace's slot order (T0 = the first position), the
+ * "ACE2 1 až 4"). A tool changer (Prusa CORE One INDX): "Nástroj n". Any other machine: "Pozice n". The order is matplace's slot order (T0 = the first position), the
  * same the agent's driver numbers (anycubic_lan.Position). A name the admin typed in (FarmPrinterSlot::label) wins.
  */
 final class SpoolPositions
@@ -27,6 +27,14 @@ final class SpoolPositions
         $count = max(0, (int) $count);
         $model = $printer->machineName();
         $out = [];
+        if ($printer->isToolChanger() || preg_match('/indx/i', $model)) {
+            // a tool changer (Prusa CORE One INDX): every position is a tool, T<n> in the G-code = tool n + 1 (docs/AM.md §12)
+            for ($i = 1; $i <= $count; $i++) {
+                $out[] = __('farm.admin.position_tool', ['n' => $i]);
+            }
+
+            return $out;
+        }
         if (preg_match('/kobra\s*x\b/i', $model)) {
             // the rack first, then the ACE units: a changer behind the machine takes the rack's fourth place for its feed
             $units = $count > self::BOX ? (int) ceil(($count - self::BOX) / self::BOX) : 0;

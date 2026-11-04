@@ -22,7 +22,7 @@
     </div>
 
     @foreach($printers as $p)
-        @php $slots = $p->slots->keyBy('slot'); $count = max(4, $slots->count()); $planned = $plan[$p->key] ?? []; @endphp
+        @php $slots = $p->slots->keyBy('slot'); $count = max($p->positionRows(), $slots->count()); $planned = $plan[$p->key] ?? []; @endphp
         <section class="rounded-2xl border border-slate-200 bg-white p-3" data-printer="{{ $p->key }}">
             <div class="flex flex-wrap items-baseline justify-between gap-2">
                 <h2 class="font-bold">{{ $p->name }} <span class="text-xs font-normal text-slate-500">{{ $p->key }} · {{ $p->model }} · {{ __('farm.admin.mode.'.$p->mode) }}</span></h2>
@@ -32,7 +32,7 @@
                 @for($i = 0; $i < $count; $i++)
                     @php $s = $slots->get($i); $want = $planned[$i] ?? null; @endphp
                     <div class="rounded-xl bg-slate-50 p-2" data-slot="{{ $i }}" data-plan-id="{{ $want['id'] ?? '' }}">
-                        <label class="{{ $lb }}">{{ $i + 1 }}
+                        <label class="{{ $lb }}">{{ trim((string) $s?->label) !== '' ? $s->label : \App\Domain\Farm\SpoolPositions::name($p, $i, $count) }}
                             <select name="slots[{{ $p->id }}][{{ $i }}][color]" data-color class="{{ $in }}"><option value="">— {{ __('farm.admin.slots_empty') }} —</option>
                                 @foreach($groups as $kind => $group)<optgroup label="{{ $kind }}">@foreach($group as $c)<option value="{{ $c->id }}" @selected($s?->farm_color_id === $c->id)>{{ $c->fullLabel() }}</option>@endforeach</optgroup>@endforeach
                             </select>
