@@ -1,0 +1,12 @@
+{
+    "farm.admin.position_tool": [
+        "Nástroj :n",
+        "Tool :n",
+        "Herramienta :n"
+    ],
+    "farm.admin.driver_hint": [
+        "(ovladač v config.yaml agenta: moonraker = Kobra S1 s Rinkhals, anycubic_lan = Kobra X, prusalink = Prusa Core One, MK4, XL; INDX má 8 nástrojů)",
+        "(driver in the agent's config.yaml: moonraker = Kobra S1 with Rinkhals, anycubic_lan = Kobra X, prusalink = Prusa Core One, MK4, XL; an INDX has 8 tools)",
+        "(controlador en el config.yaml del agente: moonraker = Kobra S1 con Rinkhals, anycubic_lan = Kobra X, prusalink = Prusa Core One, MK4, XL; un INDX tiene 8 herramientas)"
+    ]
+}

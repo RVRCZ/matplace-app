@@ -2025,5 +2025,7 @@
     "calc.gone.text": "Files without an order are deleted after :days days and the calculation goes with the file. You can upload the model again.",
     "calc.gone.cta": "Upload a model",
     "farm.warn.non_manifold": "Some edges of the model (:edges) are shared by more than two faces. The surface is closed otherwise, so the slicer prepares it as it is. Please check the preview.",
-    "repair.act.meshfix_stopped": "The full repair took over a minute, so we stopped it. The other fixes are kept."
+    "repair.act.meshfix_stopped": "The full repair took over a minute, so we stopped it. The other fixes are kept.",
+    "farm.admin.position_tool": "Tool :n",
+    "farm.admin.driver_hint": "(driver in the agent's config.yaml: moonraker = Kobra S1 with Rinkhals, anycubic_lan = Kobra X, prusalink = Prusa Core One, MK4, XL; an INDX has 8 tools)"
 }

@@ -3,7 +3,7 @@
 @php
     $json = fn ($v) => $v ? json_encode($v, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) : '';
     $slots = $printer->exists ? $printer->slots->keyBy('slot') : collect();
-    $slotCount = max(4, $slots->count());
+    $slotCount = max($printer->positionRows(), $slots->count());
     $in = 'mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm font-normal';
     $lb = 'block text-xs font-semibold text-slate-600';
 @endphp
@@ -19,7 +19,7 @@
             <label class="{{ $lb }}">Název<input name="name" required value="{{ old('name', $printer->name) }}" class="{{ $in }}"></label>
             <label class="{{ $lb }}">Kód <span class="font-normal">(farma + číslo tiskárny, např. U3, B7, X1; cívka přidá slot: U33 = farma U, tiskárna 3, slot 3; prázdné = podle názvu)</span><input name="code" value="{{ old('code', $printer->code) }}" maxlength="4" pattern="[A-Za-z][0-9]{1,3}" class="{{ $in }} font-mono uppercase"></label>
             <label class="{{ $lb }}">Model<input name="model" required value="{{ old('model', $printer->model) }}" class="{{ $in }}"></label>
-            <label class="{{ $lb }}">Klíč (v konfiguraci agenta)<input name="key" required value="{{ old('key', $printer->key) }}" class="{{ $in }}"></label>
+            <label class="{{ $lb }}">Klíč (v konfiguraci agenta) <span class="font-normal">{{ __('farm.admin.driver_hint') }}</span><input name="key" required value="{{ old('key', $printer->key) }}" class="{{ $in }}"></label>
             <label class="{{ $lb }}">Režim
                 <select name="mode" class="{{ $in }}">@foreach(['manual', 'agent'] as $m)<option value="{{ $m }}" @selected(old('mode', $printer->mode) === $m)>{{ __('farm.admin.mode.'.$m) }}</option>@endforeach</select>
             </label>
@@ -121,7 +121,7 @@
             @for($i = 0; $i < $slotCount; $i++)
                 @php $s = $slots->get($i); $isNew = old("slots.$i.color") === 'new'; @endphp
                 <div class="grid items-end gap-2 sm:grid-cols-[3rem_1fr_8rem_6rem]">
-                    <span class="pb-2 text-sm font-bold">{{ $i + 1 }}</span>
+                    <span class="pb-2 text-sm font-bold">{{ $printer->positionLabel($i) }}</span>
                     <label class="{{ $lb }}">Barva
                         <select name="slots[{{ $i }}][color]" data-slot-color="{{ $i }}" class="{{ $in }}"><option value="">— prázdný —</option>
                             <option value="new" @selected($isNew)>{{ __('farm.admin.new_color') }}</option>

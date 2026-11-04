@@ -121,10 +121,14 @@ class FarmOrderController extends Controller
         $plate = max(1, min((int) $order->plates, (int) request()->query('plate') ?: $order->nextPlate()));
         $path = $order->absoluteGcodePath($plate);
         abort_unless($path && is_file($path), 404);
-        // the operator sends this file by hand: it must already select the customer's slot (by parts: the slot of this plate)
-        $path = $order->onePlate()
-            ? GcodeSlot::fileForMany($path, $order->filamentSlots(), PrintProfile::tempsForFilaments($order))
-            : GcodeSlot::fileFor($path, (int) ($order->plateSpool($plate)?->slot ?? 0), PrintProfile::tempsForPlate($order, $plate), $order->isByParts() ? [] : $order->colorChanges());
+        // the operator sends this file by hand: it must already select the customer's slot (by parts: the slot of this plate).
+        // A tool changer (Prusa CORE One INDX) takes the file as sliced: GcodeSlot would not touch its tools but would rewrite
+        // the temperatures of Prusa's start sequence (docs/AM.md §12d)
+        $path = match (true) {
+            (bool) $order->printer?->isToolChanger() => $path,
+            $order->onePlate() => GcodeSlot::fileForMany($path, $order->filamentSlots(), PrintProfile::tempsForFilaments($order)),
+            default => GcodeSlot::fileFor($path, (int) ($order->plateSpool($plate)?->slot ?? 0), PrintProfile::tempsForPlate($order, $plate), $order->isByParts() ? [] : $order->colorChanges()),
+        };
 
         return response()->download($path, 'matplace-'.($order->number ?: $order->token).($order->plates > 1 ? '-p'.$plate : '').'.gcode', ['Content-Type' => 'text/x.gcode']);
     }

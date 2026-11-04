@@ -2025,5 +2025,7 @@
     "calc.gone.text": "Soubory bez objednávky mažeme po :days dnech a kalkulace jde se souborem. Model můžete nahrát znovu.",
     "calc.gone.cta": "Nahrát model",
     "farm.warn.non_manifold": "Na některých hranách modelu (:edges) se stýkají víc než dvě plochy. Povrch je jinak uzavřený, slicer ho proto připraví tak, jak je. Zkontrolujte prosím náhled.",
-    "repair.act.meshfix_stopped": "Úplná oprava trvala přes minutu, proto jsme ji zastavili. Ostatní opravy zůstaly."
+    "repair.act.meshfix_stopped": "Úplná oprava trvala přes minutu, proto jsme ji zastavili. Ostatní opravy zůstaly.",
+    "farm.admin.position_tool": "Nástroj :n",
+    "farm.admin.driver_hint": "(ovladač v config.yaml agenta: moonraker = Kobra S1 s Rinkhals, anycubic_lan = Kobra X, prusalink = Prusa Core One, MK4, XL; INDX má 8 nástrojů)"
 }
