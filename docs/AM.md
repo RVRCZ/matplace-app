@@ -790,6 +790,28 @@ Ověřeno na G-kódu z Orcy 2.5 (12e):
 8. Když přijde `paused` s hláškou o displeji: na tiskárně je obrazovka mapování. Zkontrolovat typy filamentů u nástrojů,
    potvrdit, příště typy srovnat.
 
+### 12i. Farmě profily filamentů bez `inherits` (pro povýšení serveru na Orcu 2.5)
+
+- Devět profilů mělo `inherits` na preset, který v žádném bundlu Orcy není: `filament_pla.json`, `filament_petg.json`,
+  `filament_tpu.json` a jejich varianty `_kobra3max` a `_kobras1_n02` („Anycubic PLA/PETG/TPU @acbase“). Orca 2.4 to jen
+  nese s sebou (CLI 2.4 bere u filamentů z `--load-filaments` všechny hodnoty ze souboru, větev „update to newest“ platí jen
+  pro filamenty z projektu 3MF), Orca 2.5 rodiče hledá a bez něj soubor odmítne. Změna: `"inherits": ""` v těch devíti
+  souborech, nic jiného (jeden řádek na soubor). Všech 32 profilů prošlo `json.load` i kontrolou duplicitních klíčů.
+- Ověření (`scratchpad/inherits_check.py`, kostka 10 mm `cube10.stl` z pokusu k TODO #65, CLI jako farma, podložka
+  Textured PEI, `enable_support 0`): každý z devíti filamentů na svém stroji (S1 `machine.json` + `process_standard`,
+  S1 0,2 `machine_kobras1_n02` + `process_standard_n02`, Kobra 3 Max `machine_kobra3max` + `process_standard`) a navíc
+  dvoufilamentová podložka S1 (dvě kostky, dvakrát PLA, přepisy `ONE_PLATE_PROCESS`). Tři řezy na kombinaci: Orca
+  2.4.0-beta před změnou, 2.4.0-beta po změně, 2.5.0-alpha po změně.
+- Výsledek: **2.4 po změně = 2.4 před změnou** ve všech deseti kombinacích (normalizovaný G-code bez časových řádků a
+  náhledů stejný bajt po bajtu, stejné vrstvy, gramy i posloupnost `M104/M109/M140/M190/G9111`). **2.5 proti 2.4:** stejný
+  počet vrstev (50, 100 u trysky 0,2, 30 u podložky), gramy 0,00 % rozdíl u všech devíti kostek a 0,68 % u dvoufilamentové
+  podložky (1,47/1,55 → 1,48/1,56 g), stejná množina i posloupnost teplotních příkazů, čas do 2 s u kostek, 1 h 10 min →
+  1 h 13 min u podložky s věží. Tělo G-kódu se mezi 2.4 a 2.5 liší (jiná verze sliceru), ne kvůli profilům.
+- PLA a PETG na jedné podložce odmítají 2.4 i 2.5 shodně („nozzle temperature must fall within the recommended range of
+  the other filaments“, předvolba „Remove mixed temperature restriction“), to je stav i dnes a profily na tom nic nemění.
+- Pro povýšení serveru tedy k profilům nezbývá nic; zůstává `machine_kobra3max.json` bez klíče `inherits` vůbec (2.5 bere
+  jako prázdné, řez v 2.5 prošel).
+
 ### 12h. Soubory
 
 `agent/farm_agent/drivers/prusalink.py`, `agent/farm_agent/drivers/__init__.py`, `agent/farm_agent/__init__.py` (0.2.11),

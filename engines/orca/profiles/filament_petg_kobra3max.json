@@ -7,7 +7,7 @@
     "instantiation": "true",
     "version": "1.3.2504.18",
     "name": "Anycubic PETG @Anycubic Kobra 3 Max 0.4 nozzle",
-    "inherits": "Anycubic PETG @acbase",
+    "inherits": "",
     "filament_vendor": [
         "Anycubic"
     ],
