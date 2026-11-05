@@ -19,8 +19,9 @@ use Tests\TestCase;
 
 /**
  * The colours of an order are chosen once, on the order page: one list of what is loaded and printable right now, in
- * the order of the colour window, every colour with the codes of its spools (U33 = farm U, printer 3, slot 3); the
- * same codes in the summary, the mails and on the farm's dashboard.
+ * the order of the colour window. The customer picks a colour, not a spool: his page and mail name no spool code; the
+ * admin's view of the same page says where every spool sits ("Kobra S1 #1 · ACE 4", TODO #69, docs/AL.md §20) and the
+ * operator keeps the codes (U33 = farm U, printer 3, slot 3) in the dashboard and the admin's mails.
  */
 class FarmOrderColorsTest extends TestCase
 {
@@ -75,13 +76,28 @@ class FarmOrderColorsTest extends TestCase
         $order = $this->order();
         $colors = $this->colors($order);
         $this->assertSame([$this->spools['red']->id, $this->spools['blue']->id, $this->spools['white']->id, $this->spools['black']->id], array_column($colors, 'slot'));
-        // the seeded S1 took the code K1 (its name, Kobra S1 #1): slot 2 counted from 1 is K12
-        $this->assertSame(['K12', 'K14', 'K13', 'K11'], array_column($colors, 'code'));
-        $this->assertSame([['K12'], ['K14'], ['K13'], ['K11']], array_column($colors, 'codes'));
+        // the customer picks a colour, not a spool: his state and page carry no spool code (docs/AL.md §20)
+        $this->s1->update(['code' => 'QZXWV']);
+        foreach ($this->colors($order) as $c) {
+            $this->assertArrayNotHasKey('code', $c);
+            $this->assertArrayNotHasKey('codes', $c);
+        }
+        $state = $this->actingAs($this->user)->getJson("/farm/orders/{$order->token}/status")->assertOk();
+        $this->assertFalse($state->json('admin'));
+        $this->assertStringNotContainsString('QZXWV', (string) $state->getContent());
+        $this->assertStringNotContainsString('QZXWV', (string) $this->actingAs($this->user)->get("/farm/orders/{$order->token}")->assertOk()->getContent());
+        // the admin reads where every spool sits, in the operator's words: the machine and its position (the S1 feeds from its ACE, slot 2 counted from 1 is ACE 2)
+        $admin = User::factory()->create();
+        $admin->setRole(User::ROLE_ADMIN, true);
+        $his = fn () => $this->actingAs($admin)->getJson("/farm/orders/{$order->token}/status")->assertOk()->json();
+        $this->assertTrue($his()['admin']);
+        $this->assertSame(['Kobra S1 #1 · ACE 2', 'Kobra S1 #1 · ACE 4', 'Kobra S1 #1 · ACE 3', 'Kobra S1 #1 · ACE 1'], array_column($his()['colors'], 'code'));
+        $this->assertSame([['Kobra S1 #1 · ACE 2'], ['Kobra S1 #1 · ACE 4'], ['Kobra S1 #1 · ACE 3'], ['Kobra S1 #1 · ACE 1']], array_column($his()['colors'], 'codes'));
 
-        // the operator renames the machine U3: the spools follow
-        $this->s1->update(['code' => 'U3']);
-        $this->assertSame(['U32', 'U34', 'U33', 'U31'], array_column($this->colors($order), 'code'));
+        // the operator renames the machine: the places follow; a name he gave a position wins
+        $this->s1->update(['name' => 'Farm U #3']);
+        $this->spools['white']->update(['label' => 'Vlevo nahoře']);
+        $this->assertSame(['Farm U #3 · ACE 2', 'Farm U #3 · ACE 4', 'Farm U #3 · Vlevo nahoře', 'Farm U #3 · ACE 1'], array_column($his()['colors'], 'code'));
     }
 
     public function test_only_spools_that_can_print_now_are_offered(): void
@@ -132,14 +148,20 @@ class FarmOrderColorsTest extends TestCase
         $this->user->refresh();
         $blue = collect($this->colors($order))->firstWhere('slot', $this->spools['blue']->id);
         $state = $this->actingAs($this->user)->postJson("/farm/orders/{$order->token}/pay", ['slot' => $blue['slot'], 'delivery' => 'pickup', 'terms' => true, 'expected_total' => $blue['total']])->assertOk()->json();
-        $this->assertSame('K14', $state['color']['code']);
-        $this->assertSame([['role' => 'main', 'n' => null, 'part' => null, 'name' => $blue['name'], 'kind' => $blue['kind'], 'hex' => $this->spools['blue']->color->hex, 'code' => 'K14']], $state['spools']);
+        $this->assertNull($state['color']['code'], 'the customer sees no spool code');
+        $this->assertSame([['role' => 'main', 'n' => null, 'part' => null, 'name' => $blue['name'], 'kind' => $blue['kind'], 'hex' => $this->spools['blue']->color->hex, 'code' => null]], $state['spools']);
         $order->refresh();
-        $this->assertStringContainsString('(K14)', $order->spoolText());
-        Mail::assertQueued(FarmOrderStatus::class, fn (FarmOrderStatus $mail) => str_contains($mail->render(), '(K14)'));
+        $this->assertStringContainsString('(K14)', $order->spoolText(), 'the operator keeps the code');
+        $this->assertStringNotContainsString('(K14)', $order->spoolText(false));
+        // the customer's mail names the colour, never the spool
+        Mail::assertQueued(FarmOrderStatus::class, fn (FarmOrderStatus $mail) => ! str_contains($mail->render(), '(K14)') && str_contains($mail->render(), $blue['name']));
 
         $admin = User::factory()->create();
         $admin->setRole(User::ROLE_ADMIN, true);
+        // the admin's view of the same page: the machine and the position instead of the code
+        $his = $this->actingAs($admin)->getJson("/farm/orders/{$order->token}/status")->assertOk()->json();
+        $this->assertSame('Kobra S1 #1 · ACE 4', $his['color']['code']);
+        $this->assertSame('Kobra S1 #1 · ACE 4', $his['spools'][0]['code']);
         $this->actingAs($admin)->get('/admin/farm')->assertOk()->assertSee('<span class="font-mono">K14</span>', false)->assertSee($order->spoolText());
         $this->actingAs($admin)->get(route('admin.farm.orders.show', $order))->assertOk()->assertSee('K14');
     }

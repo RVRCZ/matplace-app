@@ -210,7 +210,16 @@ final class FarmColorsPerMachineTest extends TestCase
         $machines = collect($white['machines'])->keyBy('key');
         $this->assertSame(['kobra-x-01', 'kobra-s1-01'], $machines->keys()->all(), 'the machine the order sits on first');
         $card = $machines['kobra-x-01'];
-        $this->assertSame([7, true, 'X1'], [$card['limit'], $card['changer'], $card['printer_code']]);
+        $this->assertSame([7, true], [$card['limit'], $card['changer']]);
+        // the customer gets no machine code nor spool code; the admin reads the code of the machine and the place of every position (docs/AL.md §20)
+        $this->assertArrayNotHasKey('printer_code', $card);
+        $this->assertArrayNotHasKey('code', $card['positions'][0]);
+        $admin = User::factory()->create();
+        $admin->setRole(User::ROLE_ADMIN, true);
+        $his = collect($this->actingAs($admin)->getJson("/farm/orders/{$order->token}/status")->assertOk()->json('colors'))->firstWhere('color_id', $this->white->farm_color_id);
+        $hisCard = collect($his['machines'])->firstWhere('key', 'kobra-x-01');
+        $this->assertSame(['X1', 'Kobra X #1 · Stojan 1'], [$hisCard['printer_code'], $hisCard['code']]);
+        $this->assertSame(['Kobra X #1 · Stojan 1', 'Kobra X #1 · Stojan 2', 'Kobra X #1 · Stojan 3', 'Kobra X #1 · ACE 1', 'Kobra X #1 · ACE 2', 'Kobra X #1 · ACE 3', 'Kobra X #1 · ACE 4'], array_column($hisCard['positions'], 'code'));
         $this->assertSame(['Stojan 1', 'Stojan 2', 'Stojan 3', 'ACE 1', 'ACE 2', 'ACE 3', 'ACE 4'], array_column($card['positions'], 'label'));
         $this->assertSame([true, false, false, false, false, false, false], array_column($card['positions'], 'main'));
         $this->assertSame([false, true, true, true, true, true, true], array_column($card['positions'], 'offer'));

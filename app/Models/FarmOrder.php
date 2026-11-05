@@ -228,18 +228,19 @@ class FarmOrder extends Model
     /**
      * The spools of the order as people read them: the first colour, then the spool of every change of the design or
      * of every part printed separately, each with its code ("U33" = farm U, printer 3, slot 3) so the operator finds
-     * machine and spool and the customer sees what was chosen. A change or part on the first colour is left out.
+     * machine and spool, and with `place` ("Farm U #3 · ACE 3"), the same in the operator's words for the admin's view of
+     * the order page (docs/AL.md §20; the customer's page carries neither). A change or part on the first colour is left out.
      *
-     * @return list<array{role: string, n: ?int, part: ?string, name: string, kind: string, hex: ?string, code: ?string}>
+     * @return list<array{role: string, n: ?int, part: ?string, name: string, kind: string, hex: ?string, code: ?string, place: ?string}>
      */
     public function spoolLines(): array
     {
         $ids = array_filter(array_merge([(int) $this->farm_printer_slot_id], array_column($this->colorSlots(), 'slot_id'), array_map('intval', array_column($this->partPlates(), 'slot_id'))));
-        $slots = $ids ? FarmPrinterSlot::with(['color.material', 'printer'])->whereIn('id', $ids)->get()->keyBy('id') : collect();
+        $slots = $ids ? FarmPrinterSlot::with(['color.material', 'printer.slots'])->whereIn('id', $ids)->get()->keyBy('id') : collect();
         $line = function (?FarmPrinterSlot $slot, ?FarmColor $color, string $role, ?int $n = null, ?string $part = null): array {
             $color ??= $slot?->color;
 
-            return ['role' => $role, 'n' => $n, 'part' => $part, 'name' => (string) $color?->displayName(), 'kind' => (string) $color?->material?->label(), 'hex' => $color?->hex, 'code' => $slot?->code()];
+            return ['role' => $role, 'n' => $n, 'part' => $part, 'name' => (string) $color?->displayName(), 'kind' => (string) $color?->material?->label(), 'hex' => $color?->hex, 'code' => $slot?->code(), 'place' => $slot?->placeLabel()];
         };
         if (! $this->color && ! $slots->get((int) $this->farm_printer_slot_id)) {
             return [];
@@ -262,15 +263,18 @@ class FarmOrder extends Model
         return $out;
     }
 
-    /** The spools in one line, for a mail or the operator: "PLA+ modrá (U33), barva 2: bílá (U31)". */
-    public function spoolText(): string
+    /**
+     * The spools in one line: for the operator with the codes, "PLA+ modrá (U33), barva 2: bílá (U31)"; for the customer
+     * (`$withCodes` false: the mails) the colours alone, since a spool code tells him nothing (docs/AL.md §20).
+     */
+    public function spoolText(bool $withCodes = true): string
     {
         return implode(', ', array_map(fn (array $l) => match ($l['role']) {
             'second' => __('farm.order.second_line', ['name' => $l['name']]),
             'change' => __('farm.order.change_line', ['n' => $l['n'], 'name' => $l['name']]),
             'part' => __('farm.order.part_line', ['part' => $l['part'], 'name' => $l['name']]),
             default => trim($l['kind'].' '.$l['name']),
-        }.($l['code'] ? ' ('.$l['code'].')' : ''), $this->spoolLines()));
+        }.($withCodes && $l['code'] ? ' ('.$l['code'].')' : ''), $this->spoolLines()));
     }
 
     /**

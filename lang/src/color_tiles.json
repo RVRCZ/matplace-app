@@ -1,0 +1,27 @@
+{
+    "farm.order.tile_now": [
+        "začne hned",
+        "starts right away",
+        "empieza enseguida"
+    ],
+    "farm.order.tile_queue": [
+        "do fronty",
+        "joins the queue",
+        "a la cola"
+    ],
+    "farm.order.kind_switch": [
+        "Druh plastu",
+        "Kind of plastic",
+        "Tipo de plástico"
+    ],
+    "farm.order.where_hint": [
+        "Tiskárna a pozice cívky (vidí jen správce)",
+        "Printer and spool position (admins only)",
+        "Impresora y posición de la bobina (solo administradores)"
+    ],
+    "farm.order.changes_one_machine": [
+        "Všechny barvy musí být v jedné tiskárně spolu s hlavní barvou. Vyberte tiskárnu, pak nabízíme jen její cívky.",
+        "All the colours must sit in one printer together with the main colour. Pick the printer; only its spools are offered then.",
+        "Todos los colores deben estar en una misma impresora junto con el color principal. Elija la impresora; después solo ofrecemos sus bobinas."
+    ]
+}

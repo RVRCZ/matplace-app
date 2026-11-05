@@ -341,8 +341,25 @@ class FarmOrderFlowTest extends TestCase
         $entry = collect($state['colors'])->first(fn ($c) => in_array($c['slot'], [$whiteSlot->id, $maxSlots[0]->id], true));
         $this->assertNotNull($entry, 'the white is on offer once');
         $this->assertSame(1, collect($state['colors'])->where('name', $entry['name'])->where('kind', $entry['kind'])->count(), 'one card for a colour in two machines');
-        $this->assertEqualsCanonicalizing([$whiteSlot->fresh()->code(), $maxSlots[0]->fresh()->code()], $entry['codes'], 'with the codes of both spools');
-        $this->assertSame($entry['codes'][0], $entry['code']);
+        // the customer gets no spool codes; the admin reads where both spools sit (docs/AL.md §20)
+        $this->assertArrayNotHasKey('codes', $entry);
+        $this->assertArrayNotHasKey('code', $entry);
+        $admin = User::factory()->create();
+        $admin->setRole(User::ROLE_ADMIN, true);
+        $his = collect($this->actingAs($admin)->getJson("/farm/orders/{$order->token}/status")->assertOk()->json('colors'))->firstWhere('slot', $entry['slot']);
+        $this->assertEqualsCanonicalizing([$whiteSlot->fresh()->placeLabel(), $maxSlots[0]->fresh()->placeLabel()], $his['codes'], 'with the places of both spools');
+        $this->assertContains('Kobra 3 Max #1 · ACE 1', $his['codes']);
+        $this->assertSame($his['codes'][0], $his['code']);
+        // the changes choose by machine too: a card per machine holding the white, each with its own other spools, no code for the customer
+        $machines = collect($entry['machines'])->keyBy('key');
+        $this->assertEqualsCanonicalizing(['kobra-s1-01', 'kobra-3-max-01'], $machines->keys()->all());
+        $this->assertSame([$onS1->id], array_column($machines['kobra-s1-01']['colors'], 'color_id'));
+        $this->assertSame([$onMax->id], array_column($machines['kobra-3-max-01']['colors'], 'color_id'));
+        $this->assertSame($maxSlots[0]->id, $machines['kobra-3-max-01']['main']);
+        $this->assertArrayNotHasKey('code', $machines['kobra-3-max-01']);
+        $this->assertArrayNotHasKey('code', $machines['kobra-3-max-01']['colors'][0]);
+        $this->assertArrayNotHasKey('code', $machines['kobra-3-max-01']['positions'][0]);
+        $this->assertSame('Kobra 3 Max #1 · ACE 1', collect($his['machines'])->firstWhere('key', 'kobra-3-max-01')['code']);
         $seconds = collect($entry['second']);
         $this->assertEqualsCanonicalizing([$onS1->id, $onMax->id], FarmPrinterSlot::whereIn('id', $seconds->pluck('slot'))->pluck('farm_color_id')->all(), 'the second colours of both machines');
         $maxRed = $seconds->first(fn ($s) => FarmPrinterSlot::find($s['slot'])->farm_printer_id === $max->id);

@@ -410,11 +410,16 @@ class FarmOnePlateTest extends TestCase
         $state = $this->actingAs($this->user)->getJson("/farm/orders/{$order->token}/status")->assertOk()->json();
         $this->assertTrue($state['one_plate_required']);
         $white = collect($state['colors'])->first(fn ($c) => $c['slot'] === $this->white->id);
-        $this->assertSame([$this->white->code()], $white['codes'], 'the Max (manual) is not among the spools of this colour');
+        $this->assertArrayNotHasKey('codes', $white, 'the customer gets no spool codes (docs/AL.md §20)');
+        // the admin reads where the spools of a colour sit
+        $admin = User::factory()->create();
+        $admin->setRole(User::ROLE_ADMIN, true);
+        $places = fn (FarmOrder $o) => collect($this->actingAs($admin)->getJson("/farm/orders/{$o->token}/status")->assertOk()->json('colors'))->first(fn ($c) => $c['slot'] === $this->white->id)['codes'];
+        $this->assertSame([$this->white->placeLabel()], $places($order), 'the Max (manual) is not among the spools of this colour');
         $this->assertNotContains($max->slots()->where('slot', 0)->value('id'), array_column($white['second'], 'slot'));
         $other = $this->order($this->design(), ['part_color' => ['color_2' => $this->red->farm_color_id]]);
-        $otherWhite = collect($this->actingAs($this->user)->getJson("/farm/orders/{$other->token}/status")->json('colors'))->first(fn ($c) => $c['slot'] === $this->white->id);
-        $this->assertContains($max->shortCode().'1', $otherWhite['codes'], 'an ordinary design may go to the Max');
+        $this->assertContains($max->slots()->where('slot', 0)->firstOrFail()->placeLabel(), $places($other), 'an ordinary design may go to the Max');
+        $this->assertContains('Kobra 3 Max #1 · ACE 1', $places($other));
 
         // two copies: stopped, not printed by parts; the customer reads why
         $two = $this->order($file, ['part_color' => ['color_2' => $this->red->farm_color_id], 'copies' => 2]);
