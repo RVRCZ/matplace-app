@@ -307,6 +307,27 @@ final class FarmColorTilesTest extends TestCase
      * plate with a text, parts), the customer's and the admin's, their state JSON and their models into that folder, to be
      * opened in a browser next to a copy of public/build (docs/AL.md §19.4, §20).
      */
+    /** The recalculation sent the way the page sends it for a plate with a text (the machine's white + its black) must move the order there. */
+    public function test_a_recalculation_with_the_other_machines_white_moves_the_order_there(): void
+    {
+        $red = $this->colour('červená', '#C01818');
+        $black = $this->colour('černá', '#101012');
+        $this->load($this->s1, 0, $red);
+        $this->max->update(['enabled' => true]);
+        $this->load($this->max, 0, $this->white->color);
+        $this->load($this->max, 1, $black);
+        $order = $this->order($this->sign('#101012'), ['color' => $this->white->farm_color_id]);
+        $this->assertSame($this->s1->id, $order->farm_printer_id);
+        $white = collect($this->state($order)['colors'])->firstWhere('color_id', $this->white->farm_color_id);
+        $maxCard = collect($white['machines'])->firstWhere('key', 'kobra-3-max-01');
+
+        $r = $this->actingAs($this->user)->postJson("/farm/orders/{$order->token}/reslice", ['quality' => 'standard', 'strength' => 'standard', 'supports' => 'auto', 'unit' => 'mm', 'copies' => 1, 'scale' => 1, 'by_parts' => false, 'settings' => [],
+            'slot' => $maxCard['main'], 'change_slots' => [$maxCard['colors'][0]['slot']], 'part_slots' => null])->assertOk();
+        $order->refresh();
+        $this->assertSame([$this->max->id, $maxCard['main']], [$order->farm_printer_id, $order->farm_printer_slot_id], 'the order follows the chosen machine');
+        $this->assertSame($maxCard['main'], $r->json('slot'), 'the page is told the slot it chose');
+    }
+
     public function test_the_order_pages_can_be_written_out_for_a_look(): void
     {
         $dir = (string) getenv('MP_DUMP_ORDER_PAGE');

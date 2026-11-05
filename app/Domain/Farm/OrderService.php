@@ -188,7 +188,9 @@ final class OrderService
             'price' => null, 'price_total' => null,
         ]);
         // another colour: the order moves to the machine that holds that spool and is sliced and priced for it
-        $chosen = $slotId ? $this->availableColors($order)->first(fn ($r) => $r['slot']->id === $slotId) : null;
+        // the spool may be another machine's of the same colour (the page names the machine's own slot, docs/AL.md §20):
+        // every slot machine by machine, not the one-per-colour list
+        $chosen = $slotId ? $this->availableSlots($order)->first(fn ($r) => $r['slot']->id === $slotId) : null;
         if ($chosen) {
             $order->fill([
                 'farm_printer_id' => $chosen['printer']->id, 'farm_material_id' => $chosen['color']->material->id,
