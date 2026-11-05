@@ -2047,5 +2047,10 @@
     "farm.order.machine_repicked": "Tras cambiar de impresora se eligió de nuevo el color de estas piezas: :parts.",
     "farm.order.machine_fell_back": "Esta impresora no tiene color para estas piezas: :parts. Llevan el color principal.",
     "farm.admin.position_tool": "Herramienta :n",
-    "farm.admin.driver_hint": "(controlador en el config.yaml del agente: moonraker = Kobra S1 con Rinkhals, anycubic_lan = Kobra X, prusalink = Prusa Core One, MK4, XL; un INDX tiene 8 herramientas)"
+    "farm.admin.driver_hint": "(controlador en el config.yaml del agente: moonraker = Kobra S1 con Rinkhals, anycubic_lan = Kobra X, prusalink = Prusa Core One, MK4, XL; un INDX tiene 8 herramientas)",
+    "farm.order.tile_now": "empieza enseguida",
+    "farm.order.tile_queue": "a la cola",
+    "farm.order.kind_switch": "Tipo de plástico",
+    "farm.order.where_hint": "Impresora y posición de la bobina (solo administradores)",
+    "farm.order.changes_one_machine": "Todos los colores deben estar en una misma impresora junto con el color principal. Elija la impresora; después solo ofrecemos sus bobinas."
 }

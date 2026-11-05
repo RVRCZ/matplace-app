@@ -2047,5 +2047,10 @@
     "farm.order.machine_repicked": "Po změně tiskárny jsme znovu předvolili barvu u dílů: :parts.",
     "farm.order.machine_fell_back": "Tahle tiskárna nemá barvu pro díly: :parts. Dostaly hlavní barvu.",
     "farm.admin.position_tool": "Nástroj :n",
-    "farm.admin.driver_hint": "(ovladač v config.yaml agenta: moonraker = Kobra S1 s Rinkhals, anycubic_lan = Kobra X, prusalink = Prusa Core One, MK4, XL; INDX má 8 nástrojů)"
+    "farm.admin.driver_hint": "(ovladač v config.yaml agenta: moonraker = Kobra S1 s Rinkhals, anycubic_lan = Kobra X, prusalink = Prusa Core One, MK4, XL; INDX má 8 nástrojů)",
+    "farm.order.tile_now": "začne hned",
+    "farm.order.tile_queue": "do fronty",
+    "farm.order.kind_switch": "Druh plastu",
+    "farm.order.where_hint": "Tiskárna a pozice cívky (vidí jen správce)",
+    "farm.order.changes_one_machine": "Všechny barvy musí být v jedné tiskárně spolu s hlavní barvou. Vyberte tiskárnu, pak nabízíme jen její cívky."
 }

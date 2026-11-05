@@ -638,9 +638,12 @@ final class OrderService
             };
             $own = trim((string) ($s->getAttributes()['label'] ?? ''));
 
-            return ['slot' => $s->id, 'n' => (int) $s->slot, 'label' => $own !== '' ? $own : ($names[$i] ?? __('farm.position.generic', ['n' => $i + 1])),
+            $label = $own !== '' ? $own : ($names[$i] ?? __('farm.position.generic', ['n' => $i + 1]));
+
+            // `place` = the position in the operator's words with the machine ("Farm U #3 · ACE 3"): the admin's view (docs/AL.md §20)
+            return ['slot' => $s->id, 'n' => (int) $s->slot, 'label' => $label,
                 'color_id' => $color?->id, 'name' => $color?->displayName(), 'kind' => $color?->material?->label(), 'hex' => $color?->hex, 'finish' => $color?->material?->finish, 'photo' => $color?->photoUrl(),
-                'code' => $s->code(), 'main' => (int) $s->id === (int) $first->id, 'offer' => $reason === null, 'reason' => $reason];
+                'code' => $s->code(), 'place' => $printer->name.' · '.$label, 'main' => (int) $s->id === (int) $first->id, 'offer' => $reason === null, 'reason' => $reason];
         })->values()->all();
     }
 
@@ -711,10 +714,10 @@ final class OrderService
      * Colours the customer can have right now: every enabled kind loaded in an enabled slot of an online printer that
      * prints this order's G-code (same machine profile), with enough filament left after what is already promised.
      * The kind's temperatures go into the G-code when the print is sent (GcodeSlot), so PLA, PLA+ and PETG mix freely.
-     * One entry per colour – the customer picks a colour, the farm the machine (machineFor) – with the codes of every
-     * spool of that colour that could print it ("U33", the entry's own first), in the order of the colour window.
+     * One entry per colour – the customer picks a colour, the farm the machine (machineFor) – with every spool of that
+     * colour that could print it (`spools`, the entry's own first) and their codes ("U33"), in the order of the colour window.
      *
-     * @return Collection<int, array{slot: FarmPrinterSlot, color: FarmColor, printer: FarmPrinter, enough: bool, codes: list<string>}>
+     * @return Collection<int, array{slot: FarmPrinterSlot, color: FarmColor, printer: FarmPrinter, enough: bool, codes: list<string>, spools: Collection<int, FarmPrinterSlot>}>
      */
     public function availableColors(FarmOrder $order, bool $changerOnly = false): Collection
     {
@@ -724,11 +727,11 @@ final class OrderService
             ->filter(fn ($r) => ! $changerOnly || $r['printer']->isAgentDriven())
             ->sortBy(fn ($r) => [$r['enough'] ? 0 : 1, $r['printer']->id === $order->farm_printer_id ? 0 : 1, $r['printer']->readyForAutoStart() ? 0 : 1, $r['slot']->id])
             ->values();
-        $codes = $slots->groupBy(fn ($r) => $r['color']->id)->map(fn ($rows) => $rows->map(fn ($r) => $r['slot']->code())->unique()->values()->all());
+        $spools = $slots->groupBy(fn ($r) => $r['color']->id)->map(fn ($rows) => $rows->map(fn ($r) => $r['slot'])->unique('id')->values());
 
         return $slots->unique(fn ($r) => $r['color']->id)
             ->sortBy(fn ($r) => self::colorOrder($r['color']))
-            ->map(fn ($r) => $r + ['codes' => $codes[$r['color']->id]])
+            ->map(fn ($r) => $r + ['spools' => $spools[$r['color']->id], 'codes' => $spools[$r['color']->id]->map(fn (FarmPrinterSlot $s) => $s->code())->unique()->values()->all()])
             ->values();
     }
 

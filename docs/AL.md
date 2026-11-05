@@ -2487,3 +2487,106 @@ zahodí) a pole **Pozice (pro obsluhu)** s odvozeným názvem jako nápovědou; 
 - **Neověřeno:** skutečný tisk 7 barev na Kobře X (řez falešným slicerem; Orca s 7 filamenty a věží neřezána),
   Romanova skutečná tiskárna v administraci (3 + 4 pozice má mít, názvy se odvodí z profilu `machine_kobrax.json`),
   pojmenování pozic INDX (session 4), stránka opakování tisku s `cap` jen v kódu a testu FarmOrderFlow (zelený).
+
+## 20. Výběr barvy pro zákazníka: jedna dlaždice na barvu, kódy pozic jen pro správce, značka startu, výměny po stroji (TODO #69, 5. 11. 2026, feature/color-tiles)
+
+Zadání `docs/prompts/vyber-barev-zakaznik.md`. Roman 4. a 5. 11. 2026 u jednoho modelu ve 4 kusech: „v barvách se nevyznám
+pořád“; kódy pozic cívek vidí jen správce, a to čitelně; cena na dlaždici ne. Zásada: **zákazník vybírá barvu, ne cívku; stroj
+a pozici řeší farma.** Volba barvy před druhem plastu zůstává (druh je filtr, 17. 10.).
+
+### 20.1 Co vidí zákazník
+
+- **Jedna dlaždice na barvu**, ne na barvu a druh. `describe()` dává každé položce `colors[]` (dál jedna na `FarmColor`,
+  tedy na barvu a druh; `slot` a všechno za ním beze změny) klíč **`group`** = `displayName` malými + `|` + povrch
+  (`material->finish`): „bílá|solid“ je PLA+, PETG i PLA bílá. `farm.ts` (`renderColors`) seskupí zobrazené položky podle
+  `group` v pořadí prvního výskytu a kreslí jednu dlaždici (`tile()`): fotka nebo vzorek a název z aktivní položky; má-li
+  barva víc druhů, je pod názvem **přepínač druhů** (malé pilulky „PLA · PLA+ · PETG“, `aria-pressed`), jinak druh malým
+  písmem jako dřív. Aktivní položka dlaždice = vybraná (`picked`), jinak druh zakázky (`state.material_kind` =
+  `order->material->label()`, tedy to, co zákazník zvolil v kalkulačce), jinak první s dostatkem materiálu. Klik na dlaždici
+  i na pilulku nastaví `picked` na slot té barvy a druhu; přepočet, platba, `recolor`, souhrn i testy jdou dál přes slot.
+- **Čipy druhů** nahoře zůstávají filtrem; „Všechny (n)“ počítá dlaždice (barvy), čip druhu položky toho druhu. Po přepnutí
+  druhu zůstane vybraná stejná barva, pokud v tom druhu je (stejný `group` a dost materiálu), jinak první barva druhu (jako
+  dřív). Dlaždice v jednom druhu má jen jeden druh, přepínač se neukáže.
+- **Značka startu** na každé dlaždici: „začne hned“ (zeleně, `starts_now` aktivní položky) nebo „do fronty“. Věta
+  `farm-start-note` pod seznamem pro vybranou barvu zůstává. **Cena na dlaždici není** (Roman 5. 11.), zůstává v kartě ceny.
+- **Málo materiálu:** server řadí položky s `enough === false` na konec (`describe`, stabilně za ty s dostatkem), klient
+  řadí dlaždici bez jediné položky s dostatkem na konec, zašedlou, s důvodem `low_filament`; druh bez dostatku je v přepínači
+  zašedlý. Značka startu se u zašedlé dlaždice nekreslí.
+- **Žádné kódy cívek.** Zákazníkův JSON `codes` a `code` u barvy vůbec nenese (klíče chybí), `second[].code`,
+  `machines[].code`, `machines[].printer_code`, `positions[].code` a `machines[].colors[].code` chybí, `color.code`,
+  `spools[].code`, `changes[].slot_code` a `parts[].slot_code` jsou `null`. Vysvětlivka `farm.order.codes_hint` z Blade
+  pryč (klíč v `lang/cs/farm.php` zůstal, nikdo ho nečte). Řádek čísla zakázky říká jen druh a název barvy. **Maily
+  zákazníka** (`farm_order_status`, `farm_guest_order`) volají `spoolText(false)`: barvy bez kódů (nad rámec zadání, ale
+  podle jeho zásady; mail správce `FarmAdminAlert`, dashboard a stránka zakázky v administraci kódy drží).
+
+### 20.2 Co vidí správce
+
+- `describe()` nese `admin` (`$request->user()?->isAdmin()`). Správci jde na stejná místa místo „U33 · U13“ text
+  **`FarmPrinterSlot::placeLabel()` = `název tiskárny · positionLabel()`** („Farm U #3 · ACE 3“, „Kobra X #1 · Stojan 2“,
+  pojmenovaná pozice vítězí): `codes` všech cívek barvy (čárkou), `code` první, `second[].code`, `machines[].code` (cívka
+  hlavní barvy na tom stroji), `machines[].printer_code` (zkratka stroje na kartě, jak ji zná z administrace),
+  `positions[].code`, `machines[].colors[].code`, `color.code`, `spools[].code` (řádek čísla zakázky „(Farm U #3 · ACE 3)“),
+  `changes[].slot_code`, `parts[].slot_code`. `OrderService::positionsOf` k tomu dává `place`, `FarmOrder::spoolLines()`
+  `place`; `describe` je přemapuje na `code` správci a zákazníkovi odstraní. `codeTag` v `farm.ts` už není mono, title
+  `farm.order.where_hint` („vidí jen správce“).
+- Kódy `FarmPrinterSlot::code()` („U33“) zůstávají obsluze: dashboard, administrace zakázky, maily správce, `spoolText()`.
+
+### 20.3 Výměny u desky s nápisem po stroji, jeden vzhled dlaždic
+
+- `machines[]` (stroje držící hlavní barvu, pozice, cívky, limit) jde nově i zakázce s `wantedChanges()`, ne jen po dílech.
+  `renderSecond()` v `farm.ts` řeší díly i výměny jednou cestou: stroj = karta zvolená rukou, jinak stroj uložených slotů
+  (`parts[].slot_id` / `changes[].slot_id`), jinak stroj, kde se návrh potká s nejvíc barvami (stejné skóre jako u dílů,
+  barvy výměn místo barev dílů). **Řádky výměn nabízejí jen cívky vybraného stroje** (+ cívku hlavní barvy na něm jako
+  „první barva (zpět na ni)“); volba mimo nabídku nového stroje se zahodí a předvolí znovu nejbližší. Karty strojů u výměn
+  jen když hlavní barvu drží víc strojů (u dílů jako dřív vždy, žije na nich počitadlo). `resolved().slot` u výměn =
+  `machine.main` (slot hlavní barvy na vybraném stroji), jakmile má některá výměna cívku; bez výměny dál `picked`.
+  Server (`machineFor`, `one_machine`) se neměnil: dostává sloty jednoho stroje. Plochý seznam `second` zůstává v JSON
+  (starší stránka, testy FarmOrderFlow/FarmOnePlate), stránka ho už nekreslí.
+- Souhrn kroku 3 bere cívky výměn ze zvoleného stroje (hlavní barva s jeho cívkou), `paintTones` zná i cívky strojů.
+- **Jedna funkce `tile()`** pro hlavní barvu, druhou barvu a výměny i díly: rámeček s vzorkem nebo fotkou (zoom), názvem,
+  druhem, u dílu pozicí, zašednutím s důvodem (`disabled` na tlačítku, `opacity-60` na rámečku), štítkem „předvoleno“,
+  kódem pro správce a značkou startu; `foot` = přepínač druhů uvnitř rámečku. Dlaždice je `div[data-tile]` s tlačítkem
+  `button[data-slot|data-change|data-part]` uvnitř (přepínač druhů jsou další tlačítka, tlačítko v tlačítku nejde).
+
+### 20.4 Testy a ověření
+
+- **`FarmColorTilesTest`** (4 testy + výpis stránek): tři „bílé“ v PLA+, PETG a PLA (název i s velkým B) dají jeden `group`
+  „bílá|solid“ se třemi sloty a druhy, černá svůj; `material_kind` = druh zakázky; přepočet se slotem PETG bílé přepne
+  zakázku na PETG, tu barvu a ten slot (`sliced` u něj). Zákazník: žádný kód nikde ve state (kolektor `codesIn` přes
+  barvy, druhé cívky, stroje, pozice, `color`, `spools`, `changes`, `parts`), kód stroje „QZXWV“ ani „ACE“ ve state ani v
+  HTML, `codes_hint` pryč, `admin` false; správce: `codes` „Kobra S1 #1 · ACE 3, Kobra 3 Max #1 · ACE 1“ (vlastní stroj
+  první), po platbě `color.code` a `spools[].code` s místem, zákazník `null`, `spoolText()` dál „(QZXWV3)“. Málo materiálu:
+  80 mm kostka, červená s 50 g (dost pro malý tisk, ne pro tento) je z první podle odstínu poslední s `enough` false a
+  nikdy předvolená. Deska s nápisem: bílá na S1 (agent, s červenou) i Maxu (ručně, s černou) → `machines` obou strojů s
+  pozicemi a cívkami, bez kódů, `second` dál obě barvy; správce `code`/`printer_code`/`positions[].code`/`colors[].code`
+  s místy; platba se slotem bílé na Maxu + černou Maxu (tak to posílá stránka) jde na Max, `second_slot_id` černá.
+- Upravené testy: `FarmOrderColorsTest` (zákazník bez kódů, správce místa i po přejmenování stroje a pozice, mail zákazníka
+  bez „(K14)“), `FarmOrderFlowTest` (dvě tiskárny s bílou: `codes` jen správci, `machines` i u změn), `FarmOnePlateTest`,
+  `FarmManualOnlyKindsTest`, `ThreeMfColorsTest` (cívky jen měničů čtené ze správcova state), `FarmColorsPerMachineTest`
+  (`printer_code` a `positions[].code` jen správci).
+- Zelené: FarmColorTiles, FarmOrderColors, FarmManualOnlyKinds = 14 testů, 287 assertions (1 přeskočený = výpis stránek);
+  FarmOrderFlow, FarmOnePlate, ThreeMfColors, FarmColorsPerMachine, FarmGuestCheckout, CalcToolColors, FarmColorsFill = 91
+  testů, 1 512 assertions, 3 přeskočené (2 Orca, výpis), po opravě FarmColorsPerMachine znovu 6 testů zelených. `tsc`,
+  `npm run build` (app-DNmWANx8.js), `pint`, 4 JSON bez duplicit (`lang/src/color_tiles.json`: tile_now, tile_queue,
+  kind_switch, where_hint, changes_one_machine).
+- **Prohlížeč** (headless Chrome přes CDP, stránky vypsané testem `FarmColorTilesTest::test_the_order_pages_can_be_written_out_for_a_look`
+  s `MP_DUMP_ORDER_PAGE`, malý statický server nad výpisem a `public/build` na portu APP_URL 8022, skript `look.mjs` ve
+  scratchpadu session 2; S1 agent volný: bílá PLA+/PETG/PLA, černá; Max ručně: bílá, červená, modrá 50 g, žlutá PETG):
+  - **Jedna barva ve 4 kusech** (40 mm kostka): 7 položek → 5 dlaždic „Všechny (5)“, bílá s pilulkami „PETG · PLA+ · PLA“
+    (otevřená na PLA = druh zakázky), značky „začne hned“ (S1) a „do fronty“ (Max), modrá se 50 g poslední, zašedlá,
+    „na cívce je málo materiálu“. Klik na pilulku PLA+ přepne `picked` na slot PLA+ bílé (souhrn „bílá PLA+“), čip
+    „PLA (1)“ nechá bílou (PLA), čip „PETG (2)“ nechá bílou (PETG), „Všechny“ + žlutá → žlutá, věta „do fronty“.
+    1280 px tři sloupce (dlaždice 151 px, pilulky se zalomí do dvou řádků), 390 px dva sloupce (158 px, pilulky v jednom
+    řádku), `scrollWidth` = 390, bez chyb v konzoli. Správce: pod druhem „Kobra 3 Max #1 · ACE 2“, u bílé
+    „Kobra S1 #1 · ACE 3, Kobra 3 Max #1 · ACE 1“, na kartách „K1“/„K2“.
+  - **Deska s nápisem** (červený text): dvě karty (S1, Max „2 ze 4 barev · nejvíc barev návrhu“ předvolený), řádek výměny
+    jen Maxovy cívky (Stejná jako model, červená předvolená, modrá); karta S1 → řádek Bílá PLA, černá (předvolena černá),
+    zpět → Maxovy; volba Bílá PLA v souhrnu „Druhá barva: Bílá PLA“. Věta `changes_one_machine` + `machine_hint` pod nadpisem.
+  - **Díly** (3 díly): dvě karty (Max „3 ze 4 barev“ předvolený), u dílů Hlavní barva + pozice Maxu, červená a modrá
+    „předvoleno“, žlutá PETG zašedlá „jiný druh materiálu“; stejná dlaždice jako nahoře.
+  - Snímky ve scratchpadu session 2 (`shots/one-1280.webp`, `one-390.webp`, `one-petg-*`, `one-pla-*`, `one-full-390.webp`,
+    `one-admin-*`, `sign-*`, `sign-second-*`, `sign-switched-*`, `sign-admin-*`, `parts-*`, `parts-second-*`, `parts-admin-*`,
+    `facts.json`); do repozitáře nejdou.
+- **Neověřeno:** živý přepočet a platba v prohlížeči (kryje PHPUnit: přepočet se slotem druhu, platba výměny přes slot
+  stroje), produkce (skutečné názvy strojů a pozic Romanovy farmy, fotky cívek na dlaždicích), Kobra X se 7 pozicemi u
+  výměn (jen díly v §19), stránka v angličtině a španělštině (texty přes `lang_add`, klíče v `i18n` Blade).

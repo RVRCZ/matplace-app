@@ -16,8 +16,8 @@ import { printOnly, shippingText, totalText } from './order_price';
 import { estimate as roughEstimate, shapeOf, rangeFactors, type RoughConfig } from './rough';
 
 interface Price { time: number; material: number; fixed: number; min_price_applied: boolean; net: number; vat: number; shipping: number; total: number; print_total: number; royalty?: number; inputs: { vat_percent: number } }
-/** A colour on offer: one per colour, with the codes of every spool of it that could print the order ("U33" = farm U, printer 3, slot 3). Its price once sliced; before that the rates the page estimates with. */
-interface Color { slot: number; name: string; kind?: string; hex: string; finish?: string | null; photo: string | null; code?: string | null; codes?: string[]; enough: boolean; price: Price | null; total: number | null; rates?: Rates; starts_now: boolean; sliced: boolean; second?: Second[]; color_id?: number; machines?: Machine[] }
+/** A colour on offer: one per colour and kind (`group` joins the kinds of one colour into one tile, docs/AL.md §20). The admin's state names where its spools sit (`codes`, "Farm U #3 · ACE 3"), the customer's names no spool. Its price once sliced; before that the rates the page estimates with. */
+interface Color { slot: number; name: string; kind?: string; hex: string; finish?: string | null; photo: string | null; code?: string | null; codes?: string[]; group?: string; enough: boolean; price: Price | null; total: number | null; rates?: Rates; starts_now: boolean; sliced: boolean; second?: Second[]; color_id?: number; machines?: Machine[] }
 /** What the price of a colour is made of on its machine: the kind's price per gram and density, the machine's rate and factors (PriceCalculator). */
 interface Rates { price_per_gram: number; density: number; hourly_rate: number; time_factor: number; weight_factor: number }
 /** A big model before its slice (docs/AL.md §11): what the rough price is computed from, the way the calculator's first page does it. */
@@ -27,7 +27,9 @@ interface Second { slot: number; name: string; kind?: string; hex: string; finis
 /** One spool of a machine that holds the first colour (by parts): the colour it is, and its slot there. */
 interface Spool { slot: number; color_id: number; name: string; kind?: string; hex: string; finish?: string | null; photo: string | null; code?: string | null }
 /** One spool position of a machine in the operator's order (docs/AL.md §19): what sits in it, whether it may print a part next to the first colour (`offer`) and, when not, why (`reason`). */
-interface Position { slot: number; n: number; label: string; color_id: number | null; name: string | null; kind: string | null; hex: string | null; finish?: string | null; photo: string | null; code: string; main: boolean; offer: boolean; reason: string | null }
+interface Position { slot: number; n: number; label: string; color_id: number | null; name: string | null; kind: string | null; hex: string | null; finish?: string | null; photo: string | null; code?: string | null; main: boolean; offer: boolean; reason: string | null }
+/** What a tile of the colour chooser shows (docs/AL.md §20): the name, the kind, a part's position (`where`), the admin's codes, why it cannot be chosen (`reason`), a badge ("preselected"), the small mark of the start. */
+interface Tile { on: boolean; name: string; kind?: string; hex?: string | null; photo?: string | null; where?: string | null; code?: (string | null | undefined)[]; reason?: string | null; badge?: string; mark?: { text: string; now: boolean } | null; attrs: string; foot?: string }
 /** A machine holding the first colour: its slot of it (`main`, with its code), how many colours it takes (`limit`), its positions and its other spools; the parts' colours must all be here. */
 interface Machine { main: number; name: string; code?: string | null; key?: string; printer_code?: string | null; limit?: number; changer?: boolean; positions?: Position[]; colors: Spool[] }
 /** One spool of the order as chosen so far (FarmOrder::spoolLines). */
@@ -43,6 +45,8 @@ interface Change { z: number; hex: string; code: string | null; slot_id: number 
 interface Part { part: string; plate: number; label: string; hex: string | null; slot_id: number | null; color_id?: number | null; name?: string | null; copies: number; minutes?: number | null; grams?: number | null; spool_hex?: string | null; model_url?: string | null }
 interface FarmState {
     token: string; number: string | null; status: string; status_text: string; stage: string | null; stage_step: number | null; stage_total: number; error: string | null; error_text: string | null; big_model?: string | null;
+    /** the admin's view: the spools' places ride with the colours (docs/AL.md §20); `material_kind` = the kind the order was made with, the kind a tile of several opens on */
+    admin?: boolean; material_kind?: string | null;
     /** money the bank has given back to the card for this order (docs/AO.md §2) */
     refunded?: number | null;
     /** a big model: sliced only on the customer's word (awaiting_choices), the rough price until then; `choosing` = the colours are on offer right now */
@@ -325,7 +329,8 @@ export function bootFarmOrder(): void {
     let partAutoKnown = false;
     // what the server gets: the first colour's slot on that machine and, per part, its colour's slot there – never two machines'
     const resolved = (): { slot: number | null; part_slots: Record<string, number | null> | undefined } => {
-        if (!state.by_parts) return { slot: picked, part_slots: undefined };
+        // a plate with a text: once a change has a spool, the first colour's slot on the machine the changes come from (docs/AL.md §20)
+        if (!state.by_parts) return { slot: (state.changes ?? []).length && machine && changes.some((s) => s !== null) ? machine.main : picked, part_slots: undefined };
         const main = machine ? machine.main : picked;
         return { slot: main, part_slots: Object.fromEntries((state.parts ?? []).map((p) => { const id = partColours[p.part] ?? null; const s = id !== null && machine ? machine.colors.find((x) => x.color_id === id)?.slot : undefined; return [p.part, s ?? main]; })) };
     };
@@ -350,7 +355,8 @@ export function bootFarmOrder(): void {
         }
         const c = state.colors.find((x) => x.slot === picked);
         const first = (state.choosing ? c?.hex : state.color?.hex) ?? null;
-        const spools = c ? [{ slot: c.slot, hex: c.hex }, ...(c.second ?? [])] : [];
+        // every spool a change may name: the first colour here and on every machine that holds it, their other spools, the flat offer
+        const spools = c ? [{ slot: c.slot, hex: c.hex }, ...(c.machines ?? []).flatMap((m) => [{ slot: m.main, hex: c.hex }, ...m.colors]), ...(c.second ?? [])] : [];
         const picks = (state.changes ?? []).map((w, i) => (state.choosing ? spools.find((s) => s.slot === changes[i])?.hex ?? null : (w.slot_id === null ? null : w.hex)));
         viewer.paint(geom && changeHeights().length && first ? multiTone(geom, changeHeights(), first, picks) : null);
     };
@@ -487,8 +493,27 @@ export function bootFarmOrder(): void {
         const barErr = $('farm-bar-error'); if (barErr) { barErr.textContent = text; barErr.hidden = text === ''; }
     };
 
-    // "U33 · U13": the spools a colour sits in (farm, printer, slot), small, after the kind
-    const codeTag = (codes: (string | null | undefined)[]): string => { const list = codes.filter(Boolean) as string[]; return list.length ? `<span class="font-mono text-[11px] text-slate-500" title="${esc(tr('farm.order.codes_hint'))}">${esc(list.join(' · '))}</span>` : ''; };
+    // the admin's "Farm U #3 · ACE 3": where a spool sits, small, after the kind; several spools of one colour with commas.
+    // The customer's state carries no spool codes at all (docs/AL.md §20), so his tiles never show this line
+    const codeTag = (codes: (string | null | undefined)[]): string => { const list = codes.filter(Boolean) as string[]; return list.length ? `<span class="text-[11px] text-slate-500" title="${esc(tr('farm.order.where_hint'))}">${esc(list.join(', '))}</span>` : ''; };
+    /** The square of a tile: the spool's photo (zoomable when it has a title), its colour, or a dashed square for an empty position. */
+    const swatchOf = (hex: string | null | undefined, photo: string | null | undefined, zoom = ''): string => (photo
+        ? `<img src="${esc(photo)}" alt=""${zoom ? ` data-zoom="${esc(photo)}" data-zoom-title="${esc(zoom)}"` : ''} class="h-10 w-10 shrink-0 ${zoom ? 'cursor-zoom-in ' : ''}rounded-lg object-cover">`
+        : hex ? `<span class="h-10 w-10 shrink-0 rounded-lg border border-slate-200" style="background:${esc(hex)}"></span>` : '<span class="h-10 w-10 shrink-0 rounded-lg border border-dashed border-slate-300 bg-slate-50"></span>');
+    /**
+     * One look for every choice of a colour on the page (docs/AL.md §20): the main colour, a change of a plate with a text, a
+     * part. A frame with the swatch, the name, the kind, for a part its position, greyed with the reason when it cannot be
+     * chosen, the admin's code; `foot` sits under the button inside the frame (the kind switch of a main colour).
+     */
+    const tile = (t: Tile): string => `<div class="flex flex-col rounded-xl border bg-white text-sm ${t.on ? 'border-action ring-2 ring-action' : 'border-slate-300'}${t.reason ? ' opacity-60' : ''}" data-tile>
+            <button type="button" role="radio" aria-checked="${t.on}" ${t.attrs}${t.reason ? ` disabled title="${esc(t.reason)}"` : ''} class="flex min-w-0 flex-1 items-center gap-2 rounded-xl p-2 text-left">
+                ${swatchOf(t.hex, t.photo, `${t.name}${t.kind ? ` · ${t.kind}` : ''}`)}<span class="min-w-0">
+                    <span class="font-semibold">${esc(t.name)}</span>${t.badge ? ` <span class="rounded-full bg-action-soft px-1.5 text-[10px] font-semibold text-action-dark">${esc(t.badge)}</span>` : ''}${t.kind ? `<br><span class="text-xs text-slate-500">${esc(t.kind)}</span>` : ''}${t.where ? `<br><span class="text-[11px] text-slate-500">${esc(t.where)}</span>` : ''}${(t.code ?? []).length ? `<br>${codeTag(t.code ?? [])}` : ''}${t.reason ? `<br><span class="text-[11px] text-amber-700">${esc(t.reason)}</span>` : ''}${t.mark ? `<br><span class="text-[10px] font-semibold ${t.mark.now ? 'text-emerald-700' : 'text-slate-500'}">${esc(t.mark.text)}</span>` : ''}
+                </span>
+            </button>${t.foot ?? ''}
+        </div>`;
+    // the colours of one tile: the same name and finish in several kinds of plastic (the server's key, docs/AL.md §20)
+    const groupOf = (c: Color): string => c.group ?? String(c.slot);
     const renderColors = (): void => {
         const box = $('farm-colors')!;
         const kindsBox = $('farm-kinds');
@@ -500,71 +525,137 @@ export function bootFarmOrder(): void {
         state.colors.forEach((c) => { const k = c.kind ?? ''; count[k] = (count[k] ?? 0) + 1; });
         const kinds = Object.keys(count).sort((a, b) => count[b] - count[a] || a.localeCompare(b));
         if (kindShown === null || (kindShown !== '*' && !kinds.includes(kindShown))) kindShown = '*';
+        const groups = new Set(state.colors.map(groupOf));
         if (kindsBox) {
             const chip = (value: string, label: string): string => `<button type="button" role="radio" aria-checked="${kindShown === value}" data-kind="${esc(value)}" class="seg min-h-0 px-3 py-1.5 text-sm ${kindShown === value ? 'seg-on' : ''}">${esc(label)}</button>`;
             kindsBox.innerHTML = kinds.length > 1
-                ? chip('*', tr('farm.order.kind_all', { n: state.colors.length })) + kinds.map((k) => chip(k, `${k} (${count[k]})`)).join('')
+                ? chip('*', tr('farm.order.kind_all', { n: groups.size })) + kinds.map((k) => chip(k, `${k} (${count[k]})`)).join('')
                 : `<span class="rounded-full bg-slate-100 px-3 py-1.5 text-sm font-semibold">${esc(kinds[0] || '')}</span>`;
             kindsBox.querySelectorAll<HTMLButtonElement>('button[data-kind]').forEach((b) => b.addEventListener('click', () => {
                 kindShown = b.dataset.kind ?? '*';
-                // another kind: its first colour (the machine the order was computed for first) takes the place of the chosen one
+                // another kind: the chosen colour stays when it comes in that kind too; else the kind's first colour (the
+                // machine the order was computed for first) takes its place
                 const cur = state.colors.find((x) => x.slot === picked);
                 if (kindShown !== '*' && cur?.kind !== kindShown) {
                     const own = state.colors.filter((x) => x.kind === kindShown && x.enough);
-                    picked = (own.find((x) => x.sliced) ?? own[0])?.slot ?? picked;
+                    picked = ((cur ? own.find((x) => groupOf(x) === groupOf(cur)) : undefined) ?? own.find((x) => x.sliced) ?? own[0])?.slot ?? picked;
                 }
                 render();
             }));
         }
+        // one tile per colour, not per colour and kind (docs/AL.md §20): the kinds a colour comes in as a switch inside the
+        // tile, open on the kind the order was made with (the calculator's choice), else the first with enough filament;
+        // a colour short of filament in every kind goes to the end, greyed, with the reason. `picked` stays the slot
         const shown = state.colors.filter((c) => kindShown === '*' || c.kind === kindShown || c.slot === picked);
-        box.innerHTML = shown.map((c) => `
-            <button type="button" role="radio" aria-checked="${c.slot === picked}" data-slot="${c.slot}" ${c.enough ? '' : 'disabled'}
-                class="flex items-center gap-2 rounded-xl border bg-white p-2 text-left text-sm disabled:opacity-50 ${c.slot === picked ? 'border-action ring-2 ring-action' : 'border-slate-300'}">
-                ${c.photo ? `<img src="${esc(c.photo)}" alt="${esc(c.name)}" data-zoom="${esc(c.photo)}" data-zoom-title="${esc(c.name)}${c.kind ? ' · ' + esc(c.kind) : ''}" class="h-10 w-10 shrink-0 cursor-zoom-in rounded-lg object-cover">` : `<span class="h-10 w-10 shrink-0 rounded-lg border border-slate-200" style="background:${esc(c.hex)}"></span>`}
-                <span class="min-w-0"><span class="font-semibold">${esc(c.name)}</span>${c.kind ? `<br><span class="text-xs text-slate-500">${esc(c.kind)}</span>` : ''}${(c.codes ?? []).length ? `<br>${codeTag(c.codes ?? [])}` : ''}${c.enough ? '' : `<br><span class="text-xs text-amber-700">${esc(tr('farm.order.low_filament'))}</span>`}</span>
-            </button>`).join('');
+        const tiles: Color[][] = [];
+        shown.forEach((c) => { const g = tiles.find((t) => groupOf(t[0]) === groupOf(c)); if (g) g.push(c); else tiles.push([c]); });
+        tiles.sort((a, b) => Number(!a.some((c) => c.enough)) - Number(!b.some((c) => c.enough)));
+        box.innerHTML = tiles.map((entries) => {
+            const active = entries.find((c) => c.slot === picked) ?? entries.find((c) => c.enough && c.kind === state.material_kind) ?? entries.find((c) => c.enough) ?? entries[0];
+            const many = entries.length > 1;
+            const foot = many ? `<span class="flex flex-wrap gap-1 px-2 pb-2" aria-label="${esc(tr('farm.order.kind_switch'))}">${entries.map((e) => `<button type="button" aria-pressed="${e.slot === active.slot}" data-slot="${e.slot}"${e.enough ? '' : ` disabled title="${esc(tr('farm.order.low_filament'))}"`} class="rounded-md border px-1.5 py-0.5 text-[11px] leading-4 disabled:opacity-50 ${e.slot === active.slot ? 'border-action bg-action-soft font-semibold text-action-dark' : 'border-slate-200 text-slate-600'}">${esc(e.kind ?? '')}</button>`).join('')}</span>` : '';
+            const enough = entries.some((c) => c.enough);
+            return tile({ on: active.slot === picked, name: active.name, kind: many ? '' : (active.kind ?? ''), hex: active.hex, photo: active.photo, code: active.codes ?? [],
+                reason: enough ? null : tr('farm.order.low_filament'),
+                // the small mark of the start: the machine is free, or the order waits its turn (the sentence under the list says it for the chosen one)
+                mark: enough ? { text: tr(active.starts_now ? 'farm.order.tile_now' : 'farm.order.tile_queue'), now: active.starts_now } : null,
+                attrs: `data-slot="${active.slot}"`, foot });
+        }).join('');
+        // the tile and the kinds inside it both name a slot: the colour in that kind is picked, nothing else changes
         box.querySelectorAll<HTMLButtonElement>('button[data-slot]').forEach((b) => b.addEventListener('click', () => { picked = Number(b.dataset.slot); render(); }));
         const c = state.colors.find((x) => x.slot === picked);
         $('farm-start-note')!.textContent = c ? tr(c.starts_now ? 'farm.order.starts_now' : 'farm.order.goes_to_queue') : '';
         viewer.setColor(c?.hex ?? null, c?.finish ?? null);   // the spool's finish: silk shines, matte does not
-        const heading0 = $('farm-second')?.querySelector<HTMLElement>('div');
-        const hint0 = $('farm-second')?.querySelector<HTMLElement>('p');
-        const list0 = $('farm-second-colors');
-        const dot0 = (hex: string): string => `<span class="h-10 w-10 shrink-0 rounded-lg border border-slate-200" style="background:${esc(hex)}"></span>`;
         const colorTitle = $('farm-color-title');
         if (colorTitle) colorTitle.textContent = colorTitle.dataset.plain ?? '';
-        if (state.by_parts && (state.parts ?? []).length) {
-            // printed by parts (docs/AL.md §19): the customer picks the machine (a card per machine holding the first colour, its
-            // spool positions as the operator sees them, a count of the colours) and then a colour for every part from that
-            // machine's spools alone, so what is sent (resolved) is always one machine's slots. The first part (the plate, the
-            // body) is the colour chosen above: it has no row of its own below, the list above is named after it
-            const parts = (state.parts ?? []).slice(1);
-            const first = (state.parts ?? [])[0];
-            if (first) partColours[first.part] = null;
-            if (colorTitle && first) colorTitle.textContent = `${colorTitle.dataset.plain ?? ''}: ${first.label}`;
-            const machines = c?.machines ?? [];
-            parts.forEach((p) => { if (partColours[p.part] === c?.color_id) partColours[p.part] = null; });
-            const far = (a: string, b: string): number => { const x = rgbOf(a); const y = rgbOf(b); return Math.hypot(x[0] - y[0], x[1] - y[1], x[2] - y[2]); };
-            const nearestOn = (m: Machine, p: Part): Spool | null => (p.hex ? [...m.colors].sort((a, b) => far(a.hex, p.hex ?? '') - far(b.hex, p.hex ?? ''))[0] ?? null : null);
-            // which machine: the card chosen; before that the machine of the spools the order holds; before that the one where
-            // the design meets most of its colours (a spool near the part's colour counts), then the one nearer in all of them
-            const stored = (state.parts ?? []).map((p) => p.slot_id).filter((id): id is number => id !== null);
-            const score = (m: Machine): [number, number] => {
-                let hits = 0; let dist = 0;
-                parts.forEach((p) => { if (!p.hex) return; const near = nearestOn(m, p); const d = Math.min(near ? far(near.hex, p.hex) : 9, c ? far(c.hex, p.hex) : 9); dist += d; if (d <= 0.3) hits++; });
-                return [hits, -dist];
+        renderSecond(c);
+    };
+
+    /**
+     * The second choice under the main colour (docs/AL.md §19, §20): the parts of a design printed by parts, or the changes of
+     * a plate with a text (a picture in colours one on another). Both come from one machine that holds the first colour: a
+     * card per such machine (by parts always, for the changes once there is a choice), its spool positions as the operator
+     * sees them and a count of the colours; below it only that machine's spools, so what is sent (resolved) is always one
+     * machine's slots. The customer picks colours and, when it matters, the machine; the farm would pick it otherwise.
+     */
+    const secondHintPlain = $('farm-second')?.querySelector<HTMLElement>('p')?.textContent ?? '';
+    const renderSecond = (c: Color | undefined): void => {
+        const box = $('farm-second');
+        const heading0 = box?.querySelector<HTMLElement>('div');
+        const hint0 = box?.querySelector<HTMLElement>('p');
+        const list0 = $('farm-second-colors');
+        const cards = $('farm-machines');
+        const colorTitle = $('farm-color-title');
+        const byParts = !!state.by_parts && (state.parts ?? []).length > 0;
+        const wanted = byParts ? [] : (state.changes ?? []);
+        if (!byParts && !wanted.length) { machine = null; show(box, false); paintTones(); return; }
+        // by parts the first part (the plate, the body) is the colour chosen above: it has no row of its own below, the list above is named after it
+        const parts = byParts ? (state.parts ?? []).slice(1) : [];
+        const first = byParts ? (state.parts ?? [])[0] : undefined;
+        if (first) { partColours[first.part] = null; if (colorTitle) colorTitle.textContent = `${colorTitle.dataset.plain ?? ''}: ${first.label}`; }
+        const machines = c?.machines ?? [];
+        parts.forEach((p) => { if (partColours[p.part] === c?.color_id) partColours[p.part] = null; });
+        const far = (a: string, b: string): number => { const x = rgbOf(a); const y = rgbOf(b); return Math.hypot(x[0] - y[0], x[1] - y[1], x[2] - y[2]); };
+        const nearestOn = (m: Machine, hex: string | null | undefined): Spool | null => (hex ? [...m.colors].sort((a, b) => far(a.hex, hex) - far(b.hex, hex))[0] ?? null : null);
+        // which machine: the card chosen; before that the machine of the spools the order holds; before that the one where
+        // the design meets most of its colours (a spool near the design's colour counts), then the one nearer in all of them
+        const designHexes = byParts ? parts.map((p) => p.hex).filter((h): h is string => !!h) : wanted.map((w) => w.hex);
+        const stored = (byParts ? (state.parts ?? []).map((p) => p.slot_id) : wanted.map((w) => w.slot_id)).filter((id): id is number => id !== null && id !== undefined);
+        const score = (m: Machine): [number, number] => {
+            let hits = 0; let dist = 0;
+            designHexes.forEach((h) => { const near = nearestOn(m, h); const d = Math.min(near ? far(near.hex, h) : 9, c ? far(c.hex, h) : 9); dist += d; if (d <= 0.3) hits++; });
+            return [hits, -dist];
+        };
+        const best = [...machines].sort((a, b) => { const sa = score(a); const sb = score(b); return sb[0] - sa[0] || sb[1] - sa[1]; })[0] ?? null;
+        machine = machines.find((m) => m.main === machineByHand)
+            ?? machines.find((m) => stored.length > 0 && (m.positions ?? []).some((x) => stored.includes(x.slot)))
+            ?? best;
+        const limit = machine?.limit ?? state.max_colors ?? 4;
+        const offer = machine?.colors ?? [];
+        const any = machines.some((m) => m.colors.length > 0);
+        show(box, any);
+        // the spools of the changes on this machine: the first colour's own slot here counts (a print may go back to it)
+        const pool: Second[] = machine && c ? [{ slot: machine.main, name: c.name, kind: c.kind ?? '', hex: c.hex, finish: c.finish, photo: c.photo, code: machine.code ?? c.code ?? null }, ...machine.colors] : [];
+        if (!byParts) {
+            changes = wanted.map((w, i) => (changes[i] !== null && changes[i] !== undefined && pool.some((o) => o.slot === changes[i]) ? changes[i] : null));
+            // nothing chosen yet (a fresh order, another machine): the spool nearest to the colour the design was made in
+            wanted.forEach((w, i) => {
+                if (changes[i] !== null || byHand.has(i) || !pool.length) return;
+                const cand = i === 0 ? pool.filter((o) => o.slot !== machine?.main) : pool;
+                changes[i] = [...cand].sort((a, b) => far(a.hex, w.hex) - far(b.hex, w.hex))[0]?.slot ?? null;
+            });
+        }
+        // the colours chosen so far, the first one among them: what the card counts against the machine's positions
+        const chosen = (): Set<number> => new Set<number>([c?.color_id ?? -1, ...(byParts
+            ? parts.map((p) => partColours[p.part]).filter((x): x is number => x !== null)
+            : changes.map((s) => (s === null ? null : s === machine?.main ? (c?.color_id ?? null) : (offer.find((o) => o.slot === s)?.color_id ?? null))).filter((x): x is number => x !== null))]);
+        // the machine cards: name, how many colours it takes, the colours chosen so far, its positions in the operator's
+        // order (an empty one dashed, the first colour's ringed); stacked on a phone, two abreast from sm. By parts always
+        // (the count lives there); for the changes only when more than one machine holds the first colour
+        const withCards = any && (byParts || machines.length > 1);
+        if (cards) {
+            show(cards, withCards);
+            cards.classList.toggle('grid', withCards);
+            const card = (m: Machine): string => {
+                const on = machine?.main === m.main;
+                const pos = (m.positions ?? []).map((x) => `<span class="flex w-12 flex-col items-center gap-0.5" title="${esc([x.label, x.name ?? tr('farm.order.pos_reason.empty'), x.kind ?? ''].filter(Boolean).join(' · '))}">
+                        <span class="h-6 w-6 rounded-md border ${x.color_id === null ? 'border-dashed border-slate-300 bg-slate-50' : 'border-slate-200'} ${x.main ? 'ring-2 ring-action ring-offset-1' : ''}" style="${x.hex ? `background:${esc(x.hex)}` : ''}"></span>
+                        <span class="w-12 truncate text-center text-[10px] leading-tight text-slate-500">${esc(x.label)}</span></span>`).join('');
+                const n = m.limit ?? (m.positions ?? []).length;
+                return `<button type="button" role="radio" aria-checked="${on}" data-machine="${m.main}" class="rounded-xl border bg-white p-2 text-left text-sm ${on ? 'border-action ring-2 ring-action' : 'border-slate-300'}">
+                    <span class="flex items-baseline justify-between gap-2"><span class="font-semibold">${esc(m.name)}</span>${m.printer_code ? codeTag([m.printer_code]) : ''}</span>
+                    <span class="block text-xs text-slate-500">${esc(tr('farm.order.positions_n', { n }))}${on ? ` · <span class="font-semibold text-slate-700">${esc(tr('farm.order.colors_count', { n: chosen().size, max: n, of: czOf(n) }))}</span>` : ''}${best && best.main === m.main && machines.length > 1 ? ` · ${esc(tr('farm.order.machine_best'))}` : ''}</span>
+                    <span class="mt-1.5 flex flex-wrap gap-1">${pos}</span>
+                </button>`;
             };
-            const best = [...machines].sort((a, b) => { const sa = score(a); const sb = score(b); return sb[0] - sa[0] || sb[1] - sa[1]; })[0] ?? null;
-            machine = machines.find((m) => m.main === machineByHand)
-                ?? machines.find((m) => stored.length > 0 && (m.positions ?? []).some((x) => stored.includes(x.slot)))
-                ?? best;
-            const limit = machine?.limit ?? state.max_colors ?? 4;
-            const offer = machine?.colors ?? [];
-            const distinct = (): Set<number> => new Set<number>([c?.color_id ?? -1, ...parts.map((p) => partColours[p.part]).filter((x): x is number => x !== null)]);
+            cards.innerHTML = withCards ? machines.map(card).join('') : '';
+            cards.querySelectorAll<HTMLButtonElement>('button[data-machine]').forEach((b) => b.addEventListener('click', () => { machineByHand = Number(b.dataset.machine); machineSwitched = true; render(); }));
+        }
+        if (byParts) {
             // a part keeps its colour when this machine holds it; else (nothing chosen yet, or the machine changed) the spool nearest
             // to the design's colour, within the machine's number of colours, and it is shown as preselected
             if (!partAutoKnown && machine) {
-                parts.forEach((p) => { const cur = partColours[p.part] ?? null; if (cur !== null && nearestOn(machine as Machine, p)?.color_id === cur) partAuto.add(p.part); });
+                parts.forEach((p) => { const cur = partColours[p.part] ?? null; if (cur !== null && nearestOn(machine as Machine, p.hex)?.color_id === cur) partAuto.add(p.part); });
                 partAutoKnown = true;
             }
             const repicked: string[] = [];
@@ -573,8 +664,8 @@ export function bootFarmOrder(): void {
                 const cur = partColours[p.part] ?? null;
                 if (cur !== null && offer.some((o) => o.color_id === cur)) return;
                 partColours[p.part] = null;
-                const near = !partByHand.has(p.part) && offer.length && p.hex && machine ? nearestOn(machine, p) : null;
-                if (!near || (!distinct().has(near.color_id) && distinct().size >= limit)) { if (cur !== null) fellBack.push(p.label); return; }
+                const near = !partByHand.has(p.part) && offer.length && p.hex && machine ? nearestOn(machine, p.hex) : null;
+                if (!near || (!chosen().has(near.color_id) && chosen().size >= limit)) { if (cur !== null) fellBack.push(p.label); return; }
                 partColours[p.part] = near.color_id;
                 partAuto.add(p.part);
                 if (cur !== null) repicked.push(p.label);
@@ -587,8 +678,6 @@ export function bootFarmOrder(): void {
                 show(note, said);
             }
             machineSwitched = false;
-            const any = machines.some((m) => m.colors.length > 0);
-            show($('farm-second'), any);
             if (heading0) heading0.textContent = tr('farm.order.parts_title');
             if (hint0) hint0.textContent = (noMachine() ? `${tr('farm.order.colors_no_machine')} ` : '')
                 + (state.one_plate ? tr('farm.order.parts_one_plate', { n: String(state.filament_changes ?? 0) }) : tr('farm.order.parts_hint', { max: String(limit) }))
@@ -596,54 +685,29 @@ export function bootFarmOrder(): void {
                 + ` ${tr('farm.order.machine_hint')}`
                 // a painted 3MF's copies share the plate (docs/AL.md §14.8): one piece at a time is the tool's designs alone
                 + (state.one_plate_required && !state.painted_colors && (state.copies ?? 1) > 1 ? ` ${tr('farm.order.one_plate_copies')}` : '');
-            // the machine cards: name, how many colours it takes, the colours chosen so far, its positions in the operator's
-            // order (an empty one dashed, the first colour's ringed); stacked on a phone, two abreast from sm
-            const cards = $('farm-machines');
-            if (cards) {
-                show(cards, any);
-                cards.classList.toggle('grid', any);
-                const card = (m: Machine): string => {
-                    const on = machine?.main === m.main;
-                    const pos = (m.positions ?? []).map((x) => `<span class="flex w-12 flex-col items-center gap-0.5" title="${esc([x.label, x.name ?? tr('farm.order.pos_reason.empty'), x.kind ?? ''].filter(Boolean).join(' · '))}">
-                            <span class="h-6 w-6 rounded-md border ${x.color_id === null ? 'border-dashed border-slate-300 bg-slate-50' : 'border-slate-200'} ${x.main ? 'ring-2 ring-action ring-offset-1' : ''}" style="${x.hex ? `background:${esc(x.hex)}` : ''}"></span>
-                            <span class="w-12 truncate text-center text-[10px] leading-tight text-slate-500">${esc(x.label)}</span></span>`).join('');
-                    const n = m.limit ?? (m.positions ?? []).length;
-                    return `<button type="button" role="radio" aria-checked="${on}" data-machine="${m.main}" class="rounded-xl border bg-white p-2 text-left text-sm ${on ? 'border-action ring-2 ring-action' : 'border-slate-300'}">
-                        <span class="flex items-baseline justify-between gap-2"><span class="font-semibold">${esc(m.name)}</span>${m.printer_code ? codeTag([m.printer_code]) : ''}</span>
-                        <span class="block text-xs text-slate-500">${esc(tr('farm.order.positions_n', { n }))}${on ? ` · <span class="font-semibold text-slate-700">${esc(tr('farm.order.colors_count', { n: distinct().size, max: n, of: czOf(n) }))}</span>` : ''}${best && best.main === m.main && machines.length > 1 ? ` · ${esc(tr('farm.order.machine_best'))}` : ''}</span>
-                        <span class="mt-1.5 flex flex-wrap gap-1">${pos}</span>
-                    </button>`;
-                };
-                cards.innerHTML = any ? machines.map(card).join('') : '';
-                cards.querySelectorAll<HTMLButtonElement>('button[data-machine]').forEach((b) => b.addEventListener('click', () => { machineByHand = Number(b.dataset.machine); machineSwitched = true; render(); }));
-            }
             if (list0 && any && machine) {
                 const reasonText = (r: string): string => tr(`farm.order.pos_reason.${r}`);
                 const mainPos = (machine.positions ?? []).find((x) => x.main) ?? null;
                 // a tile per position of the chosen machine (the first colour's own as "the main colour"): a position that cannot
                 // print the part stays visible, greyed, with its reason; a preselected colour says so
-                const tile = (part: string, x: Position | null, on: boolean, disabled: string | null, auto: boolean): string => {
-                    const name = x ? (x.name ?? reasonText('empty')) : tr('farm.order.part_main');
-                    const kind = x ? (x.kind ?? '') : (c?.name ?? '');
-                    const swatch = x === null ? dot0(c?.hex ?? '#ffffff') : x.photo ? `<img src="${esc(x.photo)}" alt="" class="h-10 w-10 shrink-0 rounded-lg object-cover">` : x.hex ? dot0(x.hex) : '<span class="h-10 w-10 shrink-0 rounded-lg border border-dashed border-slate-300 bg-slate-50"></span>';
-                    const where = x ? x.label : (mainPos?.label ?? '');
-                    const code = x ? x.code : (machine?.code ?? c?.code ?? null);
-                    return `<button type="button" role="radio" aria-checked="${on}" data-part="${esc(part)}" data-colour="${x?.color_id ?? ''}"${disabled !== null ? ' disabled' : ''}${disabled !== null ? ` title="${esc(disabled)}"` : ''}
-                        class="flex items-center gap-2 rounded-xl border bg-white p-2 text-left text-sm disabled:opacity-60 ${on ? 'border-action ring-2 ring-action' : 'border-slate-300'}">
-                        ${swatch}<span class="min-w-0"><span class="font-semibold">${esc(name)}</span>${auto && on ? ` <span class="rounded-full bg-action-soft px-1.5 text-[10px] font-semibold text-action-dark">${esc(tr('farm.order.preselected'))}</span>` : ''}${kind ? `<br><span class="text-xs text-slate-500">${esc(kind)}</span>` : ''}<br><span class="text-[11px] text-slate-500">${esc(where)}</span> ${code ? codeTag([code]) : ''}${disabled !== null ? `<br><span class="text-[11px] text-amber-700">${esc(disabled)}</span>` : ''}</span>
-                    </button>`;
-                };
+                const partTile = (part: string, x: Position | null, on: boolean, disabled: string | null, auto: boolean): string => tile({
+                    on, name: x ? (x.name ?? reasonText('empty')) : tr('farm.order.part_main'), kind: x ? (x.kind ?? '') : (c?.name ?? ''),
+                    hex: x ? x.hex : (c?.hex ?? '#ffffff'), photo: x ? x.photo : (c?.photo ?? null),
+                    where: x ? x.label : (mainPos?.label ?? ''), code: [x ? x.code : (machine?.code ?? c?.code ?? null)],
+                    reason: disabled, badge: auto && on ? tr('farm.order.preselected') : undefined,
+                    attrs: `data-part="${esc(part)}" data-colour="${x?.color_id ?? ''}"`,
+                });
                 const positions = (machine.positions ?? []).filter((x) => !x.main);
                 list0.innerHTML = parts.map((p) => {
                     const cur = partColours[p.part] ?? null;
-                    const chosen = distinct();
+                    const taken = chosen();
                     return `<div class="col-span-full mt-1 text-xs font-semibold text-slate-700">${esc(p.label)}${p.minutes ? ` <span class="font-normal text-slate-500">· ${p.minutes} min, ${p.grams ?? ''} g</span>` : ''}</div>`
-                        + tile(p.part, null, cur === null, null, false)
+                        + partTile(p.part, null, cur === null, null, false)
                         + positions.map((x) => {
                             const on = cur !== null && cur === x.color_id;
                             // one colour more than the machine has positions: said on the tile, not hidden
-                            const over = !on && x.color_id !== null && !chosen.has(x.color_id) && chosen.size >= limit;
-                            return tile(p.part, x, on, !x.offer ? reasonText(x.reason ?? 'off') : over ? reasonText('limit') : null, partAuto.has(p.part));
+                            const over = !on && x.color_id !== null && !taken.has(x.color_id) && taken.size >= limit;
+                            return partTile(p.part, x, on, !x.offer ? reasonText(x.reason ?? 'off') : over ? reasonText('limit') : null, partAuto.has(p.part));
                         }).join('');
                 }).join('');
                 list0.querySelectorAll<HTMLButtonElement>('button[data-part]').forEach((b) => b.addEventListener('click', () => {
@@ -657,33 +721,14 @@ export function bootFarmOrder(): void {
             paintTones();      // the model in the parts' colours right away, not only after the next slice
             return;
         }
-        // a plate with a raised text, a picture in colours one on another: every change picks a spool of this machine
-        // (the first colour itself counts: a print may go back to it)
-        const wanted = state.changes ?? [];
-        const offer = wanted.length && c?.second?.length ? [{ slot: c.slot, name: c.name, kind: c.kind ?? '', hex: c.hex, photo: c.photo, code: c.code ?? null }, ...c.second] : [];
-        changes = wanted.map((w, i) => (changes[i] !== null && changes[i] !== undefined && offer.some((o) => o.slot === changes[i]) ? changes[i] : null));
-        // nothing chosen yet (a fresh order, another machine): the spool nearest to the colour the design was made in
-        wanted.forEach((w, i) => {
-            if (changes[i] !== null || byHand.has(i) || !offer.length) return;
-            const far = (hex: string): number => { const a = rgbOf(hex); const b = rgbOf(w.hex); return Math.hypot(a[0] - b[0], a[1] - b[1], a[2] - b[2]); };
-            const pool = i === 0 ? offer.filter((o) => o.slot !== c?.slot) : offer;
-            changes[i] = [...pool].sort((a, b) => far(a.hex) - far(b.hex))[0]?.slot ?? null;
-        });
-        show($('farm-second'), offer.length > 0);
-        const list = $('farm-second-colors');
-        const heading = $('farm-second')?.querySelector<HTMLElement>('div');
-        if (heading) heading.textContent = tr(wanted.length === 1 ? 'farm.order.second_color' : 'farm.order.changes_title');
-        if (list && offer.length) {
-            const tile = (i: number, slot: number | null, name: string, kind: string, swatch: string, code: string | null = null): string => `
-                <button type="button" role="radio" aria-checked="${slot === changes[i]}" data-change="${i}" data-second="${slot ?? ''}"
-                    class="flex items-center gap-2 rounded-xl border bg-white p-2 text-left text-sm ${slot === changes[i] ? 'border-action ring-2 ring-action' : 'border-slate-300'}">
-                    ${swatch}<span class="min-w-0"><span class="font-semibold">${esc(name)}</span>${kind ? `<br><span class="text-xs text-slate-500">${esc(kind)}</span>` : ''}${code ? `<br>${codeTag([code])}` : ''}</span>
-                </button>`;
-            const dot = (hex: string): string => `<span class="h-10 w-10 shrink-0 rounded-lg border border-slate-200" style="background:${esc(hex)}"></span>`;
-            list.innerHTML = wanted.map((w, i) => (wanted.length > 1 ? `<div class="col-span-full mt-1 text-xs font-semibold text-slate-700">${esc(tr('farm.order.change_title', { n: i + 2, z: w.z.toFixed(1) }))}</div>` : '')
-                + tile(i, null, tr(i === 0 ? 'farm.order.second_same' : 'farm.order.change_same'), tr(i === 0 ? 'farm.order.second_same_hint' : 'farm.order.change_same_hint'), dot(i === 0 ? c?.hex ?? '#ffffff' : '#ffffff'))
-                + offer.filter((o) => i > 0 || o.slot !== c?.slot).map((o) => tile(i, o.slot, o.name, o.slot === c?.slot ? tr('farm.order.change_first') : (o.kind ?? ''), o.photo ? `<img src="${esc(o.photo)}" alt="" class="h-10 w-10 shrink-0 rounded-lg object-cover">` : dot(o.hex), o.code ?? null)).join('')).join('');
-            list.querySelectorAll<HTMLButtonElement>('button[data-change]').forEach((b) => b.addEventListener('click', () => {
+        // a plate with a raised text, a picture in colours one on another: every change picks a spool of the chosen machine
+        if (heading0) heading0.textContent = tr(wanted.length === 1 ? 'farm.order.second_color' : 'farm.order.changes_title');
+        if (hint0) hint0.textContent = secondHintPlain + (machines.length > 1 ? ` ${tr('farm.order.changes_one_machine')} ${tr('farm.order.machine_hint')}` : '');
+        if (list0 && any) {
+            list0.innerHTML = wanted.map((w, i) => (wanted.length > 1 ? `<div class="col-span-full mt-1 text-xs font-semibold text-slate-700">${esc(tr('farm.order.change_title', { n: i + 2, z: w.z.toFixed(1) }))}</div>` : '')
+                + tile({ on: changes[i] === null, name: tr(i === 0 ? 'farm.order.second_same' : 'farm.order.change_same'), kind: tr(i === 0 ? 'farm.order.second_same_hint' : 'farm.order.change_same_hint'), hex: i === 0 ? c?.hex ?? '#ffffff' : '#ffffff', attrs: `data-change="${i}" data-second=""` })
+                + pool.filter((o) => i > 0 || o.slot !== machine?.main).map((o) => tile({ on: o.slot === changes[i], name: o.name, kind: o.slot === machine?.main ? tr('farm.order.change_first') : (o.kind ?? ''), hex: o.hex, photo: o.photo, code: [o.code ?? null], attrs: `data-change="${i}" data-second="${o.slot}"` })).join('')).join('');
+            list0.querySelectorAll<HTMLButtonElement>('button[data-change]').forEach((b) => b.addEventListener('click', () => {
                 const i = Number(b.dataset.change);
                 changes[i] = b.dataset.second ? Number(b.dataset.second) : null;
                 if (changes[i] === null) byHand.add(i); else byHand.delete(i);
@@ -693,16 +738,19 @@ export function bootFarmOrder(): void {
         paintTones();
     };
 
-    /** Step 3: the colours chosen above as tags with their spool codes; only shown here, "Změnit" goes back up. */
+    /** Step 3: the colours chosen above as tags (the admin's with where the spools sit); only shown here, "Změnit" goes back up. */
     const renderSummary = (): void => {
         const box = $('farm-summary');
         if (!box) return;
         const c = state.colors.find((x) => x.slot === picked);
         if (!c) { box.innerHTML = `<li class="text-slate-600">${esc(tr('farm.order.no_colors'))}</li>`; return; }
-        const spools = [{ slot: c.slot, name: c.name, kind: c.kind ?? '', hex: c.hex, code: c.code ?? null }, ...(c.second ?? []).map((s) => ({ slot: s.slot, name: s.name, kind: s.kind ?? '', hex: s.hex, code: s.code ?? null }))];
+        // every spool a change may have taken: the first colour (here, and on the machine the changes settled on), that machine's others, the flat offer
+        const spools = [{ slot: c.slot, name: c.name, kind: c.kind ?? '', hex: c.hex, code: c.code ?? null },
+            ...(machine ? [{ slot: machine.main, name: c.name, kind: c.kind ?? '', hex: c.hex, code: machine.code ?? c.code ?? null }, ...machine.colors.map((s) => ({ slot: s.slot, name: s.name, kind: s.kind ?? '', hex: s.hex, code: s.code ?? null }))] : []),
+            ...(c.second ?? []).map((s) => ({ slot: s.slot, name: s.name, kind: s.kind ?? '', hex: s.hex, code: s.code ?? null }))];
         const tag = (label: string, s: { name: string; kind: string; hex: string; code: string | null }): string => `<li class="inline-flex items-center gap-1.5 rounded-full border border-line bg-white px-2.5 py-1">
             <span class="h-3.5 w-3.5 shrink-0 rounded-full border border-slate-300" style="background:${esc(s.hex)}"></span>${label ? `<span class="text-slate-500">${esc(label)}</span>` : ''}<span class="font-semibold">${esc(s.name)}</span><span class="text-xs text-slate-500">${esc(s.kind)}</span>${s.code ? codeTag([s.code]) : ''}</li>`;
-        // the first colour with the code of its spool on the machine the parts settled on
+        // the first colour with the code of its spool on the machine the parts or changes settled on
         const tags = [tag('', machine && machine.main !== c.slot ? { ...spools[0], code: machine.code ?? spools[0].code } : spools[0])];
         if (state.by_parts) {
             const held = machine?.colors ?? (c.machines ?? []).flatMap((m) => m.colors);
@@ -710,7 +758,7 @@ export function bootFarmOrder(): void {
         } else {
             (state.changes ?? []).forEach((w, i) => {
                 const s = spools.find((x) => x.slot === changes[i]);
-                if (s && (i > 0 || s.slot !== c.slot)) tags.push(tag((state.changes ?? []).length === 1 ? `${tr('farm.order.second_color')}:` : `${tr('farm.order.change_title', { n: i + 2, z: w.z.toFixed(1) })}:`, s));
+                if (s && (i > 0 || (s.slot !== c.slot && s.slot !== machine?.main))) tags.push(tag((state.changes ?? []).length === 1 ? `${tr('farm.order.second_color')}:` : `${tr('farm.order.change_title', { n: i + 2, z: w.z.toFixed(1) })}:`, s));
             });
         }
         box.innerHTML = tags.join('');
@@ -803,7 +851,7 @@ export function bootFarmOrder(): void {
             $('farm-progress-step')!.textContent = tr('farm.stage_step', { n: step, total: s.stage_total || 5 });
         }
         show($('farm-spinner'), working || s.status === 'printing');
-        // "F26-000077 · PLA+ Modrá (U33), druhá barva: bílá (U31)": every spool of the order with its code
+        // "F26-000077 · PLA+ Modrá, druhá barva: bílá": every spool of the order; the admin reads where each sits "(Farm U #3 · ACE 3)"
         const spoolLine = (l: SpoolLine): string => (l.role === 'second' ? tr('farm.order.second_line', { name: l.name }) : l.role === 'change' ? tr('farm.order.change_line', { n: l.n ?? 2, name: l.name }) : l.role === 'part' ? tr('farm.order.part_line', { part: l.part ?? '', name: l.name }) : `${l.kind} ${l.name}`.trim()) + (l.code ? ` (${l.code})` : '');
         const num = $('farm-number')!; num.textContent = s.number ? [s.number, (s.spools ?? []).map(spoolLine).join(', ') || s.color?.name || ''].filter(Boolean).join(' · ') : ''; show(num, !!s.number);
         const pr = $('farm-printer'); if (pr) { pr.textContent = s.printer ? tr('farm.order.printer', { name: s.printer.name, bed: s.printer.bed }) : ''; show(pr, !!s.printer); }

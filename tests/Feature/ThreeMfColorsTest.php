@@ -261,12 +261,17 @@ final class ThreeMfColorsTest extends TestCase
         $this->assertTrue($state['painted_colors']);
         $this->assertGreaterThan(1, (int) $state['max_copies'], 'one piece ordered: how many would fit, not 1');
         // only the machines that change spools are on offer, the manual ones of the seed hold colours too
-        $manual = FarmPrinter::where('mode', FarmPrinter::MODE_MANUAL)->whereHas('slots', fn ($q) => $q->whereNotNull('farm_color_id'))->get()->map->shortCode()->all();
-        $this->assertContains($other->shortCode(), $manual);
-        $codes = collect($state['colors'])->flatMap(fn ($c) => array_merge((array) $c['codes'], array_column((array) $c['second'], 'code'), array_column((array) $c['machines'], 'code')))->filter()->unique()->values()->all();
-        $this->assertNotEmpty($codes);
-        foreach ($codes as $code) {
-            $this->assertNotContains(substr($code, 0, -1), $manual, 'a spool of a manual machine on offer: '.$code);
+        $manual = FarmPrinter::where('mode', FarmPrinter::MODE_MANUAL)->whereHas('slots', fn ($q) => $q->whereNotNull('farm_color_id'))->get();
+        $this->assertContains($other->shortCode(), $manual->map->shortCode()->all());
+        // the customer's state names no spool; the admin's names every spool's machine and position (docs/AL.md §20)
+        $named = fn (array $colors) => collect($colors)->flatMap(fn ($c) => array_merge((array) ($c['codes'] ?? []), array_column((array) $c['second'], 'code'), array_column((array) $c['machines'], 'code')))->filter()->unique()->values()->all();
+        $this->assertSame([], $named($state['colors']));
+        $admin = User::factory()->create();
+        $admin->setRole(User::ROLE_ADMIN, true);
+        $places = $named($this->actingAs($admin)->getJson(route('farm.orders.status', $order))->assertOk()->json('colors'));
+        $this->assertNotEmpty($places);
+        foreach ($places as $place) {
+            $this->assertNotContains(explode(' · ', $place)[0], $manual->pluck('name')->all(), 'a spool of a manual machine on offer: '.$place);
         }
     }
 

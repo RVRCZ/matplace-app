@@ -191,11 +191,12 @@ class FarmManualOnlyKindsTest extends TestCase
         $this->assertSame([], app(OrderService::class)->secondSpools($blackSlot)->pluck('farm_color_id')->all());
         $this->assertSame([], app(OrderService::class)->secondSpoolsAcross($blackSlot)->pluck('farm_color_id')->all());
 
-        // in a manual machine: offered, with that machine's code; as a second colour next to its white as well
+        // in a manual machine: offered, the admin reading that machine's place (the customer no code at all); as a second colour next to its white as well
         $this->manual->slots()->where('slot', 0)->update(['farm_color_id' => $this->glowColor->id, 'remaining_g' => 800, 'enabled' => true]);
         $this->assertEqualsCanonicalizing([$white->id, $black->id, $this->glowColor->id], $this->offered($order));
-        $colors = collect($this->actingAs($this->user)->getJson("/farm/orders/{$order->token}/status")->json('colors'));
-        $this->assertSame([$this->manual->shortCode().'1'], $colors->firstWhere('slot', $this->manual->slots()->where('slot', 0)->value('id'))['codes']);
+        $colors = collect($this->actingAs($this->admin)->getJson("/farm/orders/{$order->token}/status")->json('colors'));
+        $this->assertSame([$this->manual->slots()->where('slot', 0)->firstOrFail()->placeLabel()], $colors->firstWhere('slot', $this->manual->slots()->where('slot', 0)->value('id'))['codes']);
+        $this->assertArrayNotHasKey('codes', collect($this->actingAs($this->user)->getJson("/farm/orders/{$order->token}/status")->json('colors'))->firstWhere('slot', $this->manual->slots()->where('slot', 0)->value('id')));
         $whiteSlot = $this->manual->slots()->where('slot', 2)->firstOrFail();
         $this->assertSame([$this->glowColor->id], app(OrderService::class)->secondSpools($whiteSlot)->pluck('farm_color_id')->all());
         // without the flag the agent's machine offers it like any other spool

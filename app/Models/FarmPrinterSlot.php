@@ -52,6 +52,15 @@ class FarmPrinterSlot extends Model
     }
 
     /**
+     * Where the spool sits, in the operator's words ("Farm U #3 · ACE 3"): the printer's name and the position. What the
+     * admin sees on the order page instead of the code (TODO #69, docs/AL.md §20); the customer sees neither.
+     */
+    public function placeLabel(): string
+    {
+        return $this->printer->name.' · '.$this->positionLabel();
+    }
+
+    /**
      * May this spool be offered from this machine? A kind that breaks in the filament changer (FarmMaterial::manual_only)
      * is fed straight from the holder by a person, so it is offered only from a printer in manual mode; such a colour
      * in a slot of an agent-driven machine (old data, or a machine switched to the agent since) counts as not loaded.

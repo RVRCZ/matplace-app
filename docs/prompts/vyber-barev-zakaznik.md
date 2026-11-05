@@ -77,3 +77,25 @@ F. **Docs.** `docs/AL.md` nový oddíl 20 (co vidí zákazník, co správce, ses
 - Texty jen přes `lang/src/<název>.json` + `python scripts/lang_add.py`; validuj každý JSON (načtení + duplicitní
   klíče). Git add jmenovitě, žádný stash. Commit končí `Co-Authored-By: Claude <model session> <noreply@anthropic.com>`.
 - Produkční databázi ani server nečti. Žádný `php artisan migrate*` ani `db:*` v žádném worktree.
+
+## Odchylky session 2 (5. 11. 2026, feature/color-tiles, docs/AL.md §20)
+
+- **Seskupení** dělá `describe` klíčem `group` (název malými + povrch) na každé položce `colors[]`; tvar seznamu zůstal
+  jedna položka na barvu a druh (slot, cena, `rates`, `sliced`, `machines` dál na položce), dlaždice z toho skládá
+  `farm.ts`. Nový tvar „jedna položka na dlaždici“ by přepsal `picked` a všechno za ním (přepočet, platba, souhrn,
+  testy), které zadání chce beze změny; takhle je `picked` dál id slotu a druh uvnitř dlaždice jen jiný slot téže barvy.
+- **Karty strojů** u výměn (deska s nápisem) jen když hlavní barvu drží víc strojů, jak zadání říká; u dílů zůstaly vždy
+  (žije na nich počitadlo „k ze n barev“ z #66), tam jsem nic neubíral. Zúžení řádků je ostřejší než „stroje, které
+  drží všechny dosavadní volby“: řádky nabízejí jen cívky **jednoho** vybraného stroje (karta, uložené sloty, jinak stroj
+  s nejvíc barvami návrhu), takže `one_machine` ze serveru nepřijde ani bez karet (jeden stroj = bez karty = bez volby).
+- `second` (plochý seznam cívek přes stroje s `main`) v JSON **zůstává**, stránka ho už nekreslí: čtou ho testy
+  FarmOrderFlow a FarmOnePlate a případná stará stránka v prohlížeči; stojí jen pár dotazů navíc.
+- **Maily zákazníka** (`farm_order_status`, `farm_guest_order`) jdou nad rámec zadání bez kódů (`spoolText(false)`): zásada
+  „zákazník nikdy nedostane kódy cívek“ by jinak padla hned v potvrzení platby. Dashboard, administrace zakázky a mail
+  správce kódy drží. Test FarmOrderColors upraven (mail bez „(K14)“, s názvem barvy).
+- Kód správce na **dlaždici dílu** je totéž, co „název tiskárny · pozice“, i když pozice je na dlaždici už napsaná
+  (zadání: „kód u barvy je cívka toho stroje“, jeden formát všude); zákazník vidí jen název pozice.
+- „Filtr druhu drží vybranou barvu“ a přepínač druhů jsou chování stránky (JS): PHPUnit kryje data (`group`, `material_kind`,
+  přepočet na slot druhu, pořadí málo materiálu, žádné kódy, místa správce), chování je ověřené v headless Chrome nad
+  stránkou vypsanou testem (§20.4), ne PHPUnit testem.
+- `FarmColorsPerMachineTest` (#66) četl `printer_code` ze zákazníkova JSON; teď ho čte jako správce.

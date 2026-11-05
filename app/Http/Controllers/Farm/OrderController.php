@@ -49,6 +49,7 @@ use Illuminate\Support\Facades\Lang;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Str;
 use Illuminate\View\View;
 use Symfony\Component\HttpFoundation\BinaryFileResponse;
 
@@ -936,55 +937,73 @@ class OrderController extends Controller
         // the colours are on offer once the price is known – and before any slice for a big model, which is sliced for
         // the colour the customer confirms (awaiting_choices) and again when the choices change while it runs (docs/AL.md §11)
         $choosing = $sliced || $order->awaitsChoices() || $order->sliceRestartable();
+        // the customer picks a colour, the farm the machine: his page carries no spool codes at all; the admin sees where
+        // every spool sits, in the operator's words ("Farm U #3 · ACE 3", FarmPrinterSlot::placeLabel, docs/AL.md §20)
+        $admin = (bool) $request->user()?->isAdmin();
+        $place = fn (FarmPrinterSlot $s): string => $s->placeLabel();
+        $where = fn (FarmPrinterSlot $s): array => $admin ? ['code' => $place($s)] : [];
         // the spool positions of a machine once per page, however many colours list it (OrderService::positionsOf)
         $positionsOf = [];
-        $positions = function (FarmPrinterSlot $f) use (&$positionsOf): array {
-            return $positionsOf[$f->id] ??= $this->orders->positionsOf($f);
+        $positions = function (FarmPrinterSlot $f) use (&$positionsOf, $admin): array {
+            $positionsOf[$f->id] ??= $this->orders->positionsOf($f);
+
+            return array_map(fn (array $p) => $admin ? ['code' => $p['place']] + Arr::except($p, ['place']) : Arr::except($p, ['code', 'place']), $positionsOf[$f->id]);
         };
+        // a design of more colours than one (a plate with a text, a picture in colours one on another, parts): the second
+        // colours come from the machine of the first, so every machine holding the first colour is listed (`machines`)
+        $multi = $order->wantedChanges() || $order->isByParts();
         $colors = $choosing
-            ? $this->orders->availableColors($order, $required)->map(fn ($r) => [
-                'slot' => $r['slot']->id, 'name' => $r['color']->displayName(), 'kind' => $r['color']->material->label(), 'hex' => $r['color']->hex, 'finish' => $r['color']->material->finish, 'photo' => $r['color']->photoUrl(),
-                // the spools of this colour that could print the order, this entry's own first ("U33"): farm, printer, slot
-                'code' => $r['codes'][0] ?? null, 'codes' => $r['codes'],
-                'enough' => $r['enough'],
-                // the price for this colour's machine and kind once sliced; before that the page estimates it from these rates
-                'price' => $price = $sliced ? $this->orders->priceFor($order, $r['printer'], Shipping::PICKUP, $r['color']->material, null, $currency) : null, 'total' => $price['total'] ?? null,
-                'rates' => ['price_per_gram' => (float) $r['color']->material->price_per_gram, 'density' => (float) ($r['color']->material->density ?: 1.24),
-                    'hourly_rate' => (float) ($r['printer']->hourly_rate ?? $this->settings->get('hourly_rate')), 'time_factor' => (float) ($r['printer']->time_factor ?: 1), 'weight_factor' => (float) ($r['printer']->weight_factor ?: 1)],
-                'starts_now' => $r['printer']->readyForAutoStart() && ! $this->settings->get('require_approval'),
-                // a plate with a raised text: the colours the text can have next to this colour of the plate – from every
-                // machine that holds this colour (the order goes where both spools are, machineFor)
-                'second' => ($order->wantedChanges() || $order->isByParts() ? $this->orders->secondSpoolsAcross($r['slot'], $order) : collect())
-                    ->filter(fn ($s) => ! $required || $s->printer->isAgentDriven())->values()
-                    ->map(fn ($s) => ['slot' => $s->id, 'name' => $s->color->displayName(), 'kind' => $s->color->material->label(), 'hex' => $s->color->hex, 'finish' => $s->color->material->finish, 'photo' => $s->color->photoUrl(), 'main' => $s->main_slot_id, 'code' => $s->code()])->values()->all(),
-                'color_id' => $r['color']->id,
-                // printed by parts: every machine that holds this colour, with its first-colour slot and its other spools – the
-                // page offers each part the colours one machine holds together with the first colour and the other parts'
-                // choices, and sends that one machine's slots (the customer picks colours, the farm the machine)
-                'machines' => $order->isByParts() ? $this->orders->firstsAcross($r['slot'], $order)
-                    ->filter(fn ($f) => ! $required || $f->printer->isAgentDriven())
-                    ->map(fn ($f) => ['main' => $f->id, 'name' => $f->printer->name, 'code' => $f->code(), 'key' => $f->printer->key, 'printer_code' => $f->printer->shortCode(),
-                        // how many colours this machine takes and every one of its spool positions in the operator's order (the
-                        // empty and the unfit ones too, each with its reason), for the chooser's machine card (docs/AL.md §19)
-                        'limit' => $f->printer->colorLimit(), 'changer' => $f->printer->isAgentDriven(), 'positions' => $positions($f),
-                        'colors' => $this->orders->secondSpools($f)
-                            ->map(fn ($s) => ['slot' => $s->id, 'color_id' => $s->farm_color_id, 'name' => $s->color->displayName(), 'kind' => $s->color->material->label(), 'hex' => $s->color->hex, 'finish' => $s->color->material->finish, 'photo' => $s->color->photoUrl(), 'code' => $s->code()])->values()->all()])
-                    ->values()->all() : [],
-                // the time, the weight and the price on the page were computed for this colour's machine and kind
-                'sliced' => $r['printer']->id === $order->farm_printer_id && $r['color']->material->id === $order->farm_material_id
-                    && ($order->farm_color_id === null || $order->farm_color_id === $r['color']->id),
-            ])->all()
+            ? $this->orders->availableColors($order, $required)->map(function ($r) use ($order, $sliced, $required, $currency, $multi, $admin, $place, $where, $positions): array {
+                // the spools of this colour that could print the order, this entry's own first: the admin's "Farm U #3 · ACE 3"
+                $places = $r['spools']->map($place)->unique()->values()->all();
+
+                return [
+                    'slot' => $r['slot']->id, 'name' => $r['color']->displayName(), 'kind' => $r['color']->material->label(), 'hex' => $r['color']->hex, 'finish' => $r['color']->material->finish, 'photo' => $r['color']->photoUrl(),
+                    // the page shows one tile per colour, its kinds of plastic as a switch inside: the colours of one tile share this key
+                    'group' => Str::lower($r['color']->displayName()).'|'.(string) $r['color']->material->finish,
+                    'enough' => $r['enough'],
+                    // the price for this colour's machine and kind once sliced; before that the page estimates it from these rates
+                    'price' => $price = $sliced ? $this->orders->priceFor($order, $r['printer'], Shipping::PICKUP, $r['color']->material, null, $currency) : null, 'total' => $price['total'] ?? null,
+                    'rates' => ['price_per_gram' => (float) $r['color']->material->price_per_gram, 'density' => (float) ($r['color']->material->density ?: 1.24),
+                        'hourly_rate' => (float) ($r['printer']->hourly_rate ?? $this->settings->get('hourly_rate')), 'time_factor' => (float) ($r['printer']->time_factor ?: 1), 'weight_factor' => (float) ($r['printer']->weight_factor ?: 1)],
+                    'starts_now' => $r['printer']->readyForAutoStart() && ! $this->settings->get('require_approval'),
+                    // a plate with a raised text: the colours the text can have next to this colour of the plate – from every
+                    // machine that holds this colour (the order goes where both spools are, machineFor); every colour once
+                    'second' => ($multi ? $this->orders->secondSpoolsAcross($r['slot'], $order) : collect())
+                        ->filter(fn ($s) => ! $required || $s->printer->isAgentDriven())->values()
+                        ->map(fn ($s) => ['slot' => $s->id, 'name' => $s->color->displayName(), 'kind' => $s->color->material->label(), 'hex' => $s->color->hex, 'finish' => $s->color->material->finish, 'photo' => $s->color->photoUrl(), 'main' => $s->main_slot_id] + $where($s))->values()->all(),
+                    'color_id' => $r['color']->id,
+                    // more colours than one: every machine that holds this colour, with its first-colour slot and its other spools –
+                    // the page offers each change or part the colours one machine holds together with the first colour and the other
+                    // choices, and sends that one machine's slots (the customer picks colours, the farm the machine, docs/AL.md §19, §20)
+                    'machines' => $multi ? $this->orders->firstsAcross($r['slot'], $order)
+                        ->filter(fn ($f) => ! $required || $f->printer->isAgentDriven())
+                        ->map(fn ($f) => ['main' => $f->id, 'name' => $f->printer->name, 'key' => $f->printer->key,
+                            // how many colours this machine takes and every one of its spool positions in the operator's order (the
+                            // empty and the unfit ones too, each with its reason), for the chooser's machine card (docs/AL.md §19)
+                            'limit' => $f->printer->colorLimit(), 'changer' => $f->printer->isAgentDriven(), 'positions' => $positions($f),
+                            'colors' => $this->orders->secondSpools($f)
+                                ->map(fn ($s) => ['slot' => $s->id, 'color_id' => $s->farm_color_id, 'name' => $s->color->displayName(), 'kind' => $s->color->material->label(), 'hex' => $s->color->hex, 'finish' => $s->color->material->finish, 'photo' => $s->color->photoUrl()] + $where($s))->values()->all()]
+                            + ($admin ? ['code' => $place($f), 'printer_code' => $f->printer->shortCode()] : []))
+                        ->values()->all() : [],
+                    // the time, the weight and the price on the page were computed for this colour's machine and kind
+                    'sliced' => $r['printer']->id === $order->farm_printer_id && $r['color']->material->id === $order->farm_material_id
+                        && ($order->farm_color_id === null || $order->farm_color_id === $r['color']->id),
+                ] + ($admin ? ['code' => $places[0] ?? null, 'codes' => $places] : []);
+            })
+            // a colour short of filament for this print (greyed on the page) comes after the ones with enough
+                ->sortBy(fn (array $c) => $c['enough'] ? 0 : 1)->values()->all()
             : [];
 
         // every change of the design: where, the colour it was designed in, and the spool chosen for it so far
         $stored = $order->colorSlots();
         $spools = $stored ? FarmPrinterSlot::with(['color', 'printer'])->whereIn('id', array_column($stored, 'slot_id'))->get()->keyBy('id') : collect();
-        $changes = array_map(function (array $c) use ($stored, $spools): array {
+        $changes = array_map(function (array $c) use ($stored, $spools, $admin): array {
             foreach ($stored as $s) {
                 if (abs($s['z'] - $c['z']) < 0.005) {
                     $spool = $spools->get($s['slot_id']);
 
-                    return $c + ['slot_id' => $s['slot_id'], 'name' => $spool?->color?->displayName(), 'slot_code' => $spool?->code()];
+                    return $c + ['slot_id' => $s['slot_id'], 'name' => $spool?->color?->displayName(), 'slot_code' => $admin ? $spool?->placeLabel() : null];
                 }
             }
 
@@ -997,7 +1016,7 @@ class OrderController extends Controller
         $parts = array_map(fn ($p, $i) => [
             'part' => $p['part'], 'plate' => $order->onePlate() ? 1 : $i + 1, 'label' => OrderService::partLabel($order->modelFile, (string) $p['part']),
             'hex' => ($order->modelFile?->tool_params['part_colors'][$p['part']]['hex'] ?? null) ?: null,
-            'slot_id' => ($p['slot_id'] ?? null) ?: null, 'color_id' => ($p['color_id'] ?? null) ?: null, 'name' => $partSpools->get($p['slot_id'] ?? 0)?->color?->displayName(), 'slot_code' => $partSpools->get($p['slot_id'] ?? 0)?->code(),
+            'slot_id' => ($p['slot_id'] ?? null) ?: null, 'color_id' => ($p['color_id'] ?? null) ?: null, 'name' => $partSpools->get($p['slot_id'] ?? 0)?->color?->displayName(), 'slot_code' => $admin ? $partSpools->get($p['slot_id'] ?? 0)?->placeLabel() : null,
             'copies' => (int) ($p['copies'] ?? $order->copies), 'minutes' => $p['minutes'] ?? null, 'grams' => $p['grams'] ?? null,
             // the part's own plate for the preview, in the colour of its spool (the design's colour until one is chosen)
             'spool_hex' => $partSpools->get($p['slot_id'] ?? 0)?->color?->hex,
@@ -1007,6 +1026,10 @@ class OrderController extends Controller
         return [
             'token' => $order->token,
             'number' => $order->number,
+            // the admin's page says where the spools sit; the customer's never names a spool (docs/AL.md §20)
+            'admin' => $admin,
+            // the kind the order was made with (the calculator's choice): the kind a tile of several kinds opens on
+            'material_kind' => $order->material?->label(),
             'changes' => $parts ? [] : $changes,
             'by_parts' => $order->isByParts(),
             'parts' => $parts,
@@ -1083,9 +1106,14 @@ class OrderController extends Controller
             'colors' => $colors,
             // the last card payment made for this order from this page: the page waits for the bank, or says the money stayed as credit
             'card' => ($card = Payment::where('farm_order_id', $order->id)->where('purpose', Payment::PURPOSE_ORDER)->latest('id')->first()) ? ['status' => $card->status, 'result' => $card->context['result'] ?? null] : null,
-            'color' => $order->color ? ['name' => $order->color->material->label().' '.$order->color->displayName(), 'hex' => $order->color->hex, 'finish' => $order->color->material->finish, 'code' => $order->slot?->code()] : null,
-            // every spool of the order as chosen so far, with its code: the summary over the payment, the line under the number
-            'spools' => $order->spoolLines(),
+            'color' => $order->color ? ['name' => $order->color->material->label().' '.$order->color->displayName(), 'hex' => $order->color->hex, 'finish' => $order->color->material->finish, 'code' => $admin ? $order->slot?->placeLabel() : null] : null,
+            // every spool of the order as chosen so far: the line under the number; the admin reads where each one sits
+            'spools' => array_map(function (array $l) use ($admin): array {
+                $l['code'] = $admin ? $l['place'] : null;
+                unset($l['place']);
+
+                return $l;
+            }, $order->spoolLines()),
             // not paid yet: the delivery the page opens with (the last one used, else the cheapest), so the sum with the
             // delivery is on the page at once; paid: the one chosen
             'delivery' => $order->paid_at !== null ? $order->delivery : $this->preselectedDelivery($order, $request),

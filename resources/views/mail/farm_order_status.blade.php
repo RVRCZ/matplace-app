@@ -2,7 +2,7 @@
 # {{ __('farm.mail.'.$text.'.subject', ['number' => $order->number]) }}
 
 {{ __('farm.mail.'.$text.'.body', ['name' => $order->modelFile?->original_name, 'color' => $order->color?->name]) }}
-@if($spools = $order->spoolText())
+@if($spools = $order->spoolText(false))
 
 {{ __('farm.mail.colors', ['list' => $spools]) }}
 @endif
