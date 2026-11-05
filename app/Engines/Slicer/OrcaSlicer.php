@@ -74,7 +74,7 @@ final class OrcaSlicer implements Slicer
                 $placed = $params->project;
             }
 
-            $attempt = function (bool $supports) use ($work, $mesh, $placed, $params, $filament, $process, $machine, $pairing, $clock): array {
+            $attempt = function (bool $supports) use ($work, $mesh, $placed, $params, $filament, $process, $machine, $pairing, $clock, $bin): array {
                 $proc = json_decode((string) File::get($process), true) ?: [];
                 if ($params->vaseMode) {
                     $proc['spiral_mode'] = '1';
