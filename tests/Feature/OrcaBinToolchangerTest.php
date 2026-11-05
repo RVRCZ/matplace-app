@@ -3,9 +3,11 @@
 namespace Tests\Feature;
 
 use App\Engines\DTO\SliceParams;
+use App\Engines\Exceptions\SlicerException;
 use App\Engines\Slicer\CachedSlicer;
 use App\Engines\Slicer\OrcaSlicer;
 use App\Models\FarmPrinter;
+use Illuminate\Support\Facades\File;
 use Tests\TestCase;
 
 /**
@@ -80,6 +82,28 @@ class OrcaBinToolchangerTest extends TestCase
         $this->assertSame($cache(null)->key($mesh, $s1), $cache($bin25)->key($mesh, $s1));
         // and the same binary gives the same key
         $this->assertSame($cache($bin25)->key($mesh, $indx), $cache($bin25)->key($mesh, $indx));
+    }
+
+    /** The inner attempt of a slice must see the binary (5 Nov 2026: `$bin` was set outside the closure and every farm slice failed). */
+    public function test_the_slice_itself_runs_the_binary_it_chose(): void
+    {
+        $win = PHP_OS_FAMILY === 'Windows';
+        $fake = tempnam(sys_get_temp_dir(), 'orca').($win ? '.cmd' : '.sh');
+        file_put_contents($fake, $win ? "@echo off\r\necho fake slicer %*\r\nexit /b 0\r\n" : "#!/bin/sh\necho fake slicer \"$@\"\nexit 0\n");
+        chmod($fake, 0755);
+        $this->temp[] = $fake;
+        $work = sys_get_temp_dir().'/mp_fake_orca_'.uniqid();
+        $orca = new OrcaSlicer(['bin' => $fake, 'xvfb' => false, 'work_dir' => $work, 'timeout' => 60] + config('engines.orca'));
+        try {
+            $orca->slice(base_path('tests/fixtures/cube10.stl'), new SliceParams('PLA', supports: false));
+            $this->fail('a slicer that writes no G-code must be reported');
+        } catch (SlicerException $e) {
+            // the fake ran (its words come back in the slicer's output), so the command was built with the binary
+            $this->assertStringContainsString('Slice failed (no gcode)', $e->getMessage());
+            $this->assertStringContainsString('fake slicer', $e->getMessage());
+        } finally {
+            File::deleteDirectory($work);
+        }
     }
 
     public function test_a_missing_second_binary_stops_the_tool_changers_slice_with_a_clear_message(): void
