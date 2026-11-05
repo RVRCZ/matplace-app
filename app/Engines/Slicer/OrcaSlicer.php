@@ -37,7 +37,8 @@ final class OrcaSlicer implements Slicer
 
     public function slice(string $meshPath, SliceParams $params): SliceResult
     {
-        $this->assertAvailable();
+        $bin = $this->binFor($params->profiles['machine'] ?? null);
+        $this->assertAvailable($bin);
         $work = $this->workDir('job');
         $clock = new Stopwatch;
         try {
@@ -100,7 +101,7 @@ final class OrcaSlicer implements Slicer
                 File::ensureDirectoryExists($out);
 
                 $cmd = array_merge($this->prefix(), [
-                    $this->config['bin'],
+                    $bin,
                     '--datadir', $work.'/data',
                     '--arrange', $placed ? '0' : '1',
                     '--load-settings', $machine.';'.$procFile,
@@ -389,10 +390,27 @@ final class OrcaSlicer implements Slicer
         return $dir;
     }
 
-    private function assertAvailable(): void
+    private function assertAvailable(string $bin): void
     {
-        if (! is_file($this->config['bin'])) {
-            throw new SlicerException('OrcaSlicer binary not found: '.$this->config['bin']);
+        if (! is_file($bin)) {
+            throw new SlicerException('OrcaSlicer binary not found: '.$bin);
         }
+    }
+
+    /**
+     * The slicer binary for a machine profile: a tool changer takes `bin_toolchanger` when it is set (Orca 2.5 reads the
+     * INDX profiles, Orca 2.4 crashes on them, docs/AM.md §12e), every other machine the usual `bin`.
+     */
+    public function binFor(?string $machineProfile): string
+    {
+        $other = (string) ($this->config['bin_toolchanger'] ?? '');
+
+        return $other !== '' && self::isToolChangerProfile($machineProfile) ? $other : (string) $this->config['bin'];
+    }
+
+    /** A machine that changes whole tools (Prusa INDX): its machine profile is named after it (FarmPrinter::isToolChanger). */
+    public static function isToolChangerProfile(?string $machineProfile): bool
+    {
+        return str_contains(strtolower((string) $machineProfile), 'indx');
     }
 }

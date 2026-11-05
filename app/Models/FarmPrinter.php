@@ -5,6 +5,7 @@ namespace App\Models;
 use App\Domain\Farm\ColorLimit;
 use App\Domain\Farm\FarmSettings;
 use App\Engines\DTO\Dimensions;
+use App\Engines\Slicer\OrcaSlicer;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
@@ -244,7 +245,7 @@ class FarmPrinter extends Model
      */
     public function isToolChanger(): bool
     {
-        return str_contains(strtolower((string) $this->machine_profile), 'indx');
+        return OrcaSlicer::isToolChangerProfile((string) $this->machine_profile);
     }
 
     /** How many spool positions the admin forms offer for this machine at least (the names: App\Domain\Farm\SpoolPositions). */

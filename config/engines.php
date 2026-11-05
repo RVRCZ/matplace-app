@@ -38,6 +38,9 @@ return [
 
     'orca' => [
         'bin' => env('ORCA_BIN', '/opt/orca/squashfs-root/AppRun'),
+        // a tool changer (a machine profile named "indx") slices with this binary when it is set (Orca 2.5, docs/AM.md §12e);
+        // the rest of the farm keeps `bin`. Empty = one slicer for everything.
+        'bin_toolchanger' => env('ORCA_BIN_TOOLCHANGER') ?: null,
         'profiles' => env('ORCA_PROFILES', base_path('engines/orca/profiles')),
         'xvfb' => env('ORCA_XVFB', true),
         'work_dir' => env('ORCA_WORK_DIR', storage_path('app/slicer')),

@@ -760,6 +760,14 @@ Ověřeno na G-kódu z Orcy 2.5 (12e):
   „can not resolve preset: Preset was not found in the loaded bundle“); před povýšením jim dát `inherits: ""`. Ověřil jsem
   jen to odmítnutí, ne řez S1 v 2.5. To je vstup pro řídící k povýšení serveru.
 - Orca 2.5 ukládá do `; thumbnails` formát QOI; farma náhledy nepotřebuje.
+- **Dva slicery vedle sebe (řídící, 5. 11. 2026, větev `feature/orca-bin-toolchanger`):** `config/engines.php` `orca.bin_toolchanger`
+  (`ORCA_BIN_TOOLCHANGER`, prázdné = jako dřív). `OrcaSlicer::binFor(machineProfile)` vrátí tuhle binárku pro profil stroje se
+  jménem `indx` (`OrcaSlicer::isToolChangerProfile`, totéž používá `FarmPrinter::isToolChanger()`), pro všechno ostatní `bin`;
+  `assertAvailable` kontroluje tu, která poběží. `CachedSlicer::key` bere do klíče binárku, se kterou řez opravdu běží, takže
+  klíče S1 a Kobra X se nemění a INDX má své. Server: Orca 2.5.0-alpha (AppImage Ubuntu 24.04 x86_64, 218 MB) rozbalit do
+  `/opt/orca/squashfs-root-250a` vedle 2.4 (`/opt/orca/squashfs-root`), do `.env` `ORCA_BIN_TOOLCHANGER=/opt/orca/squashfs-root-250a/AppRun`;
+  zbytek farmy dál řeže 2.4. Až INDX pár týdnů poběží, přepnout vše jedním `ORCA_BIN` (12i říká, že farmě profily v 2.5 projdou).
+  Test `tests/Feature/OrcaBinToolchangerTest.php`.
 
 ### 12f. Web
 
@@ -784,7 +792,7 @@ Ověřeno na G-kódu z Orcy 2.5 (12e):
    procesy `{"draft":"process_draft_coreone_indx8t.json","standard":"process_standard_coreone_indx8t.json","fine":"process_fine_coreone_indx8t.json"}`,
    podložka texturovaná PEI, 248 × 205 × 270, tryska 0,4, časosběr vypnuto. Sloty: Nástroj 1 = cívka, kterou má tiskárna
    v nástroji 1 zavedenou se stejným typem (PLA), Nástroj 2 = cívka nástroje 2.
-5. Server musí řezat Orcou 2.5 (12e). Bez toho řez pro tuhle tiskárnu selže.
+5. Server musí řezat Orcou 2.5 (12e): `ORCA_BIN_TOOLCHANGER` míří na rozbalenou 2.5.0-alpha, ostatní stroje zůstávají na 2.4. Bez toho řez pro tuhle tiskárnu selže (2.4 padá).
 6. Malý jednobarevný objekt z farmy ze slotu 1. Sledovat: v logu agenta `uploading`, `starting`, `the printer took`;
    na displeji žádný dialog (jinak 12c); nástěnka `printing`, průběh a zbývající minuty; po dotištění `done` a po odklepnutí
    obrazovky na displeji `bed_cleared_at` na nástěnce. Pak pauza, pokračování a zrušení z adminu.
