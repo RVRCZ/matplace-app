@@ -102,7 +102,9 @@ final class CachedSlicer implements Slicer
         }
         ksort($profiles);
         $code = array_map(fn (string $f) => @md5_file(__DIR__.'/'.$f), self::CODE);
-        $bin = $this->binary && is_file($this->binary) ? filesize($this->binary).':'.filemtime($this->binary) : '';
+        // the binary this slice runs with: a tool changer may have its own (OrcaSlicer::binFor)
+        $binary = $this->inner instanceof OrcaSlicer ? $this->inner->binFor($params->profiles['machine'] ?? null) : $this->binary;
+        $bin = $binary && is_file($binary) ? filesize($binary).':'.filemtime($binary) : '';
 
         return sha1(implode('|', [
             $this->inner->name(), md5_file($meshPath), json_encode($params->toArray()), json_encode($profiles), implode(',', $code), $bin,
