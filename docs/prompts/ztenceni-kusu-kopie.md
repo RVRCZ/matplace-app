@@ -77,3 +77,28 @@ F. **Docs.** AL.md nový pododdíl §11.3 (kus × kopie, časový limit, měřen
 - Texty (kdyby nějaké byly) jen přes `lang/src/<název>.json` + `python scripts/lang_add.py`; validuj každý JSON. Git add
   jmenovitě, žádný stash. Commit končí `Co-Authored-By: Claude <model session> <noreply@anthropic.com>`.
 - Produkční databázi ani server nečti. Žádný `php artisan migrate*` v žádném worktree.
+
+## Odchylky session 2 (5. 11. 2026, fix/decimate-copies, docs/AL.md §11.9)
+
+1. Pododdíl je **§11.9**, ne §11.3: §11.3 („Nový stav všude, kde na stavu záleží“) v AL.md už existuje, §11 má 11.1–11.8.
+2. Ztenčení kusu dělá `PrepareFarmOrder` **i u 1 kusu** (ne jen před `replicate`): slicer dostává z farmy vždy
+   `withoutThinning()`, aby mezipaměť a `timings` byly jedny; navenek stejné chování jako dosud (stejný klíč mezipaměti –
+   bajty `print.stl`, slicer dřív ztenčoval tentýž soubor). `print.thin.stl` se po běhu maže, `print.stl` zůstává plný.
+3. Vypršení rozpočtu ztenčení (`timeout`) se **pamatuje** v `decimate_cache` jako `deviation`. Zadání: „po vypršení řez
+   plné sítě jako dnes“ – to platí; navíc se stejný soubor podruhé nezkouší, protože na produkci by jinak každý přeřez
+   znovu čekal celý rozpočet. Pád skriptu (`error`) se dál nepamatuje.
+4. Rozpočet používá `BigModel::estimateSeconds` včetně spodní hranice 120 s (zadání připouštělo „lepší odhad z měření“):
+   z měření plyne, že poměr s/M závisí na tvaru, podpěrách a délce G‑kódu víc než na trojúhelnících, proto jsem výchozí
+   čísla neměnil a jen navrhl (`seconds_per_million` 60, `decimate_above` kandidát 1 M).
+5. Poznámka v historii zakázky u důvodu `copies` neříká počet kusů (skládá ji řádek `OrderService` 147, který nebyl ve
+   výjimce); `BigModel::judge` vrací `copies` i `reason = copies`, text může doplnit řídící nebo #69.
+6. Cíl na kus u podložky s kopiemi (strop trojúhelníků na podložku / kopie) **nezaveden**: Orca čas trojúhelníky skoro
+   neurčují, ztenčení podložky je čistá ztráta (tabulka v §11.9).
+7. Modely k měření: generovaná polokoule Ø 80 mm bez převisů (aby čas Orcy neurčovaly podpěry), 387 200 a 441 800
+   trojúhelníků; v `Documents\MODELS` žádný STL kolem 390 k není (3MF a STEP). Měření místně bez `CachedSlicer` (každý
+   řádek opravdu řeže) a bez souběhu s jinou prací. Přeřez jinou barvou u velké zakázky měřicí skript napoprvé nezapsal
+   (seed farmy má v S1 jedinou barvu, „jiná cívka“ neexistovala); doměřeno zvlášť s druhou cívkou PLA v S1: 388 k
+   16,6 s (Orca 7,8, nic ke ztenčení), 442 k 15,2 s (ztenčení kusu z paměti 0,02 s, Orca 7,3). Řádek „dnes“ u 388 k
+   byl proto přeřez touž cívkou (trefa podložky 0,05 s) – v tabulce §11.9 označeno.
+8. Harness měření a modely nejsou v repozitáři (scratchpad session 2); postup: PHPUnit test mimo `tests/` s navázaným
+   `OrcaSlicer` na portable `orca-slicer.exe`, `CachedPrintPreparer(PythonPrintPreparer)`, výsledky `results.jsonl`.
