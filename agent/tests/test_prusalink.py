@@ -239,6 +239,9 @@ class PrusaLinkDriverTest(unittest.IsolatedAsyncioTestCase):
                 self.assertEqual(s.state, IDLE)
                 self.assertIsNone(s.job)
                 self.assertEqual((s.telemetry["extruder"], s.telemetry["bed_target"], s.telemetry["printer_state"]), (214.9, 60.0, "IDLE"))
+                # the fans in rpm, named so (agent 0.2.12): the dashboard prints the key with the figure
+                self.assertEqual((s.telemetry["fan_hotend_rpm"], s.telemetry["fan_print_rpm"]), (5000, 0))
+                self.assertNotIn("fan_hotend", s.telemetry)
                 fake.files["greek-godess_0.4n_0.2mm_PET_COREONEINDX_1h28m.bgcode"] = {"short": "GREEK-~3.BGC", "data": b"x", "m_timestamp": 1}
                 fake.begin("greek-godess_0.4n_0.2mm_PET_COREONEINDX_1h28m.bgcode")
                 fake.job.update(progress=72.0, time_printing=4282, time_remaining=1380)

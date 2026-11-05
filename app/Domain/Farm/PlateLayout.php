@@ -78,15 +78,16 @@ final class PlateLayout
      * The grid of a painted 3MF's copies on a plate that changes filaments (docs/AL.md §14.8): the pieces as they lie
      * (no turn: the project's object is placed again, not rotated), a gap between them, and the prime tower's band below
      * the set or left of it, as PrepareFarmOrder::towerSpot then finds it. `copies` given: the most square grid that holds
-     * them (or all that fit). The calculator asks the same, so its plates are the farm's.
+     * them (or all that fit). The calculator asks the same, so its plates are the farm's. `$tower` false: no band at all –
+     * a tool changer purges on its station and prints without the tower (docs/AM.md §12j).
      *
      * @return array{max: int, cols: int, rows: int}
      */
-    public static function towerGrid(Dimensions $piece, Dimensions $bed, float $edge, int $filaments, ?int $copies = null, float $gap = self::GAP_MM): array
+    public static function towerGrid(Dimensions $piece, Dimensions $bed, float $edge, int $filaments, ?int $copies = null, float $gap = self::GAP_MM, bool $tower = true): array
     {
         $t = PrepareFarmOrder::TOWER;
-        $needY = $t['depth_per_filament'] * max(1, $filaments - 1) + 2 * $t['brim'] + $t['gap'];
-        $needX = $t['width'] + 2 * $t['brim'] + $t['gap'];
+        $needY = $tower ? $t['depth_per_filament'] * max(1, $filaments - 1) + 2 * $t['brim'] + $t['gap'] : 0.0;
+        $needX = $tower ? $t['width'] + 2 * $t['brim'] + $t['gap'] : 0.0;
         $best = ['max' => 0, 'cols' => 0, 'rows' => 0];
         if ($piece->x <= 0 || $piece->y <= 0 || $piece->z > $bed->z) {
             return $best;

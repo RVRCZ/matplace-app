@@ -2052,5 +2052,7 @@
     "farm.order.tile_queue": "do fronty",
     "farm.order.kind_switch": "Druh plastu",
     "farm.order.where_hint": "Tiskárna a pozice cívky (vidí jen správce)",
-    "farm.order.changes_one_machine": "Všechny barvy musí být v jedné tiskárně spolu s hlavní barvou. Vyberte tiskárnu, pak nabízíme jen její cívky."
+    "farm.order.changes_one_machine": "Všechny barvy musí být v jedné tiskárně spolu s hlavní barvou. Vyberte tiskárnu, pak nabízíme jen její cívky.",
+    "farm.admin.result.slots_unchecked": "Pozice :slots agent nekontroloval, tiskárna své pozice nehlásí (filament hlídá firmware při startu).",
+    "farm.admin.result.printer_took": "tiskárna soubor převzala"
 }

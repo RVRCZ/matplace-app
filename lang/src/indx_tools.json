@@ -1,0 +1,12 @@
+{
+    "farm.admin.result.slots_unchecked": [
+        "Pozice :slots agent nekontroloval, tiskárna své pozice nehlásí (filament hlídá firmware při startu).",
+        "Positions :slots were not checked by the agent, the printer does not report its positions (the firmware checks the filament at the start).",
+        "El agente no comprobó las posiciones :slots, la impresora no informa de sus posiciones (el firmware comprueba el filamento al iniciar)."
+    ],
+    "farm.admin.result.printer_took": [
+        "tiskárna soubor převzala",
+        "the printer took the file",
+        "la impresora aceptó el archivo"
+    ]
+}

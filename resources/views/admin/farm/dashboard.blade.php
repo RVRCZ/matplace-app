@@ -55,7 +55,7 @@
             @endif
             @if($row['command'])
                 @php $c = $row['command']; @endphp
-                <p class="mt-1 text-xs text-slate-500" data-last-command>{{ __('farm.admin.last_command') }}: {{ __('farm.admin.command_type.'.$c->type) }} · {{ __('farm.admin.command_status.'.$c->status) }} {{ ($c->finished_at ?? $c->created_at)->format('H:i') }}@if($c->result) · {{ $c->result }}@endif</p>
+                <p class="mt-1 text-xs text-slate-500" data-last-command>{{ __('farm.admin.last_command') }}: {{ __('farm.admin.command_type.'.$c->type) }} · {{ __('farm.admin.command_status.'.$c->status) }} {{ ($c->finished_at ?? $c->created_at)->format('H:i') }}@if($c->result) · {{ $c->resultText() }}@endif</p>
             @endif
             @if($p->snapshot_path)
                 <img src="{{ route('admin.farm.printers.snapshot', $p) }}?t={{ $p->snapshot_at?->timestamp }}" alt="{{ __('farm.order.camera') }}" class="mt-2 w-full rounded-xl border border-slate-200">

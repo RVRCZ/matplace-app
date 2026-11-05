@@ -146,9 +146,12 @@ final class OrcaSlicer implements Slicer
             $stats = GcodeStats::fromFile($gcodePath);
             $grams = $stats['grams'];
             $minutes = $stats['minutes'];
-            if ($params->filaments && count($stats['filament_grams']) < count($params->filaments)) {
+            // the filaments something prints from: a tool changer's list carries placeholders for the tools between them
+            // (PrepareFarmOrder::withPlaceholders), Orca lists them in the header with 0.00 (docs/AM.md §12j)
+            $used = count(array_filter($params->filaments, fn ($f) => empty($f['placeholder'])));
+            if ($used > 1 && count($stats['filament_grams']) < $used) {
                 // the slicer put every part on one filament: the plate would print in one colour, not what was ordered
-                throw new SlicerException('The slicer did not keep the filaments apart: '.count($stats['filament_grams']).' of '.count($params->filaments).' in the header.');
+                throw new SlicerException('The slicer did not keep the filaments apart: '.count($stats['filament_grams']).' of '.$used.' in the header.');
             }
             if ($grams === null) {
                 throw new SlicerException('Could not parse filament grams from gcode.');

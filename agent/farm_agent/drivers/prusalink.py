@@ -9,7 +9,7 @@ the firmware's handlers (Prusa-Firmware-Buddy lib/WUI/link_content, lib/WUI/nhtt
              digest for the user "maker" (auth: digest), which aiohttp's digest middleware answers.
   status     GET /api/v1/status   printer{state IDLE|BUSY|PRINTING|PAUSED|FINISHED|STOPPED|ERROR|ATTENTION|READY,
                                   temp_nozzle, target_nozzle, temp_bed, target_bed, axis_z, flow, speed, fan_hotend,
-                                  fan_print}, job{id, progress, time_remaining, time_printing} only while a job runs
+                                  fan_print (both rpm)}, job{id, progress, time_remaining, time_printing} only while a job runs
              GET /api/v1/job      204 when nothing prints (also after a print: FINISHED/STOPPED name no file), else
                                   {id, state PRINTING|PAUSED|FINISHED|STOPPED|ERROR, progress, time_printing,
                                   time_remaining, file{name = the 8.3 short name, display_name = the real name, path,
@@ -132,7 +132,8 @@ class PrusaLinkDriver(PrinterDriver):
             "bed": _num(printer.get("temp_bed")), "bed_target": _num(printer.get("target_bed")),
             "printer_state": word or None, "z": _num(printer.get("axis_z")),
             "speed": _int(printer.get("speed")), "flow": _int(printer.get("flow")),
-            "fan_hotend": _int(printer.get("fan_hotend")), "fan_print": _int(printer.get("fan_print")),
+            # PrusaLink gives both fans in revolutions per minute (the Kobras report a percentage): the unit goes into the key
+            "fan_hotend_rpm": _int(printer.get("fan_hotend")), "fan_print_rpm": _int(printer.get("fan_print")),
         }
         live = data.get("job") if isinstance(data.get("job"), dict) else {}
         if live.get("time_remaining") is not None:

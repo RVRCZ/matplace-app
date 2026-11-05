@@ -1,0 +1,298 @@
+{
+    "type": "filament",
+    "from": "system",
+    "setting_id": "",
+    "is_custom_defined": "0",
+    "instantiation": "true",
+    "version": "",
+    "inherits": "",
+    "name": "Generic ASA @Prusa CORE One INDX",
+    "cool_plate_temp": [
+        "105"
+    ],
+    "eng_plate_temp": [
+        "105"
+    ],
+    "hot_plate_temp": [
+        "110"
+    ],
+    "cool_plate_temp_initial_layer": [
+        "105"
+    ],
+    "eng_plate_temp_initial_layer": [
+        "105"
+    ],
+    "hot_plate_temp_initial_layer": [
+        "110"
+    ],
+    "overhang_fan_threshold": [
+        "25%"
+    ],
+    "overhang_fan_speed": [
+        "25"
+    ],
+    "slow_down_for_layer_cooling": [
+        "1"
+    ],
+    "close_fan_the_first_x_layers": [
+        "4"
+    ],
+    "filament_end_gcode": [
+        "; Filament-specific end gcode"
+    ],
+    "filament_flow_ratio": [
+        "1"
+    ],
+    "reduce_fan_stop_start_freq": [
+        "1"
+    ],
+    "fan_cooling_layer_time": [
+        "20"
+    ],
+    "filament_cost": [
+        "35.28"
+    ],
+    "filament_density": [
+        "1.07"
+    ],
+    "filament_deretraction_speed": [
+        "nil"
+    ],
+    "filament_diameter": [
+        "1.75"
+    ],
+    "filament_max_volumetric_speed": [
+        "26"
+    ],
+    "filament_minimal_purge_on_wipe_tower": [
+        "10"
+    ],
+    "filament_retraction_minimum_travel": [
+        "nil"
+    ],
+    "filament_retract_before_wipe": [
+        "nil"
+    ],
+    "filament_retract_when_changing_layer": [
+        "nil"
+    ],
+    "filament_retraction_length": [
+        "nil"
+    ],
+    "filament_z_hop": [
+        "nil"
+    ],
+    "filament_retract_restart_extra": [
+        "nil"
+    ],
+    "filament_retraction_speed": [
+        "nil"
+    ],
+    "filament_settings_id": [
+        ""
+    ],
+    "filament_soluble": [
+        "0"
+    ],
+    "filament_type": [
+        "ASA"
+    ],
+    "filament_vendor": [
+        "Generic"
+    ],
+    "filament_wipe": [
+        "nil"
+    ],
+    "filament_wipe_distance": [
+        "nil"
+    ],
+    "bed_type": [
+        "Cool Plate"
+    ],
+    "nozzle_temperature_initial_layer": [
+        "265"
+    ],
+    "full_fan_speed_layer": [
+        "0"
+    ],
+    "fan_max_speed": [
+        "25"
+    ],
+    "fan_min_speed": [
+        "20"
+    ],
+    "slow_down_min_speed": [
+        "15"
+    ],
+    "slow_down_layer_time": [
+        "10"
+    ],
+    "filament_start_gcode": [
+        "M572 S{pressure_advance[filament_extruder_id]} ; Pressure advance\nM573 R"
+    ],
+    "nozzle_temperature": [
+        "265"
+    ],
+    "temperature_vitrification": [
+        "110"
+    ],
+    "idle_temperature": [
+        "130"
+    ],
+    "nozzle_temperature_range_low": [
+        "240"
+    ],
+    "nozzle_temperature_range_high": [
+        "270"
+    ],
+    "additional_cooling_fan_speed": [
+        "70"
+    ],
+    "filament_multitool_ramming": [
+        "1"
+    ],
+    "filament_multitool_ramming_flow": [
+        "30"
+    ],
+    "filament_multitool_ramming_volume": [
+        "18"
+    ],
+    "filament_notes": [
+        "\nmatplace: ASA for the INDX derived from Generic ASA @Prusa CORE One HF 0.4 + fdm_filament_template_indx (TODO #70), not tuned by Prusa, unverified on the printer; textured sheet 105 C instead of the vendor file's 45."
+    ],
+    "default_filament_colour": [
+        "#FF8000"
+    ],
+    "chamber_temperature": [
+        "40"
+    ],
+    "filament_retract_length_toolchange": [
+        "0.8"
+    ],
+    "compatible_printers": [
+        "Prusa CORE One INDX 4T HF 0.4 nozzle",
+        "Prusa CORE One INDX 8T HF 0.4 nozzle"
+    ],
+    "compatible_printers_condition": "",
+    "textured_plate_temp": [
+        "105"
+    ],
+    "textured_plate_temp_initial_layer": [
+        "105"
+    ],
+    "activate_chamber_temp_control": [
+        "1"
+    ],
+    "pressure_advance": [
+        "0.027"
+    ],
+    "filament_extruder_variant": [
+        "Direct Drive High Flow"
+    ],
+    "activate_air_filtration": [
+        "0"
+    ],
+    "adaptive_pressure_advance": [
+        "0"
+    ],
+    "adaptive_pressure_advance_bridges": [
+        "0"
+    ],
+    "adaptive_pressure_advance_model": [
+        "0,0,0\n0,0,0"
+    ],
+    "adaptive_pressure_advance_overhangs": [
+        "0"
+    ],
+    "complete_print_exhaust_fan_speed": [
+        "80"
+    ],
+    "dont_slow_down_outer_wall": [
+        "0"
+    ],
+    "during_print_exhaust_fan_speed": [
+        "60"
+    ],
+    "enable_overhang_bridge_fan": [
+        "1"
+    ],
+    "enable_pressure_advance": [
+        "0"
+    ],
+    "filament_adhesiveness_category": [
+        "0"
+    ],
+    "filament_cooling_final_speed": [
+        "2.5"
+    ],
+    "filament_cooling_initial_speed": [
+        "5"
+    ],
+    "filament_cooling_moves": [
+        "3"
+    ],
+    "filament_is_support": [
+        "0"
+    ],
+    "filament_loading_speed": [
+        "10"
+    ],
+    "filament_loading_speed_start": [
+        "50"
+    ],
+    "filament_ramming_parameters": [
+        "250 100 42.4194 42.4194| 0.05 42.4387 0.45 42.4387 0.95 42.4387 1.45 42.4387 1.95 42.4387 2.45 42.4387 2.95 42.4387 3.45 42.4387 3.95 42.4387 4.45 42.4387 4.95 42.4387"
+    ],
+    "filament_shrink": [
+        "100%"
+    ],
+    "filament_shrinkage_compensation_z": [
+        "100%"
+    ],
+    "filament_stamping_distance": [
+        "45"
+    ],
+    "filament_stamping_loading_speed": [
+        "26.5"
+    ],
+    "filament_toolchange_delay": [
+        "0"
+    ],
+    "filament_unloading_speed": [
+        "60"
+    ],
+    "filament_unloading_speed_start": [
+        "60"
+    ],
+    "internal_bridge_fan_speed": [
+        "-1"
+    ],
+    "required_nozzle_HRC": [
+        "0"
+    ],
+    "supertack_plate_temp": [
+        "35"
+    ],
+    "supertack_plate_temp_initial_layer": [
+        "35"
+    ],
+    "support_material_interface_fan_speed": [
+        "-1"
+    ],
+    "textured_cool_plate_temp": [
+        "40"
+    ],
+    "textured_cool_plate_temp_initial_layer": [
+        "40"
+    ],
+    "filament_retraction_distances_when_cut": [
+        "18"
+    ],
+    "filament_long_retractions_when_cut": [
+        "0"
+    ],
+    "filament_z_hop_types": [
+        "nil"
+    ],
+    "filament_id": ""
+}
