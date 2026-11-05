@@ -1,4 +1,4 @@
-# Výběr barvy pro zákazníka: jedna dlaždice na barvu, cena na dlaždici, kódy pozic jen pro správce (TODO #69)
+# Výběr barvy pro zákazníka: jedna dlaždice na barvu, kódy pozic jen pro správce, značka startu (TODO #69)
 
 Pro session 2, 5. 11. 2026. Worktree `C:\matplace-gcode-wt` (stojí na sloučené `feature/colors-per-machine`), nová větev
 `feature/color-tiles` z `origin/main`. Po pushi napiš řídící session. Nic nenasazuj, žádný `php artisan migrate*` ve
@@ -8,7 +8,7 @@ worktree (sdílený `dev.sqlite` nemá migrace od 28. 10., stránku zakázky vyp
 
 Roman 4. a 5. 11. 2026: „v barvách se nevyznám pořád“ u zakázky s jedním modelem ve 4 kusech (ne po dílech; #66 tam nic
 neměnilo). Rozhodl: kódy pozic cívek vidí jen správce, a to čitelně („Farm U #1 · ACE 3“, tedy název tiskárny a pozice,
-ne „U13“). Cena na dlaždicích je v návrhu zahrnutá (Roman neřekl ne). Zásada: zákazník vybírá barvu, ne cívku; stroj a
+ne „U13“). Cena na dlaždicích ne (Roman 5. 11. 2026), zůstává v kartě ceny jako dnes. Zásada: zákazník vybírá barvu, ne cívku; stroj a
 pozici řeší farma. Volba barvy před druhem plastu zůstává (Roman 17. 10.: druh je filtr).
 
 ## Stav dnes
@@ -45,13 +45,12 @@ B. **Kódy pozic jen pro správce.** Do `describe` příznak `admin` (`$request-
    (`printer_code`), u druhé barvy, u štítků kroku 3 a v řádku čísla zakázky (`spoolLine`: zákazník vidí jen název
    barvy, správce i pozici). Vysvětlivku `codes_hint` z Blade pryč (zákazníkovi nic neříká). Administrace
    (`resources/views/admin/farm/*`) kódy používá dál, té se netýká.
-C. **Na dlaždici cena a start.** Po řezu `c.total` (`money`, měna stránky, vyzvednutí, jako `total()`), před řezem odhad
-   stejným výpočtem jako dnešní odhad vybrané barvy, s „asi“; malá značka „začne hned“ nebo „do fronty“ (dnes
-   `farm-start-note` jen pro vybranou; nech ho jako větu pod seznamem, značka je navíc). Barvy s `enough === false` na
-   konec seznamu, zašedlé, důvod `low_filament` zůstává. Mobil 390 px dvě sloupce: cena pod názvem, nic se neláme
-   mimo dlaždici.
+C. **Značka startu a pořadí.** Cena na dlaždici ne (Roman 5. 11. 2026), zůstává v kartě ceny pro vybranou barvu. Na
+   dlaždici jen malá značka „začne hned“ nebo „do fronty“ (dnes `farm-start-note` jen pro vybranou; nech ho jako větu
+   pod seznamem, značka je navíc). Barvy s `enough === false` na konec seznamu, zašedlé, důvod `low_filament`
+   zůstává. Mobil 390 px dvě sloupce: nic se neláme mimo dlaždici.
 D. **Jeden vzhled pro všechny tři výběry.** Hlavní barva, druhá barva a výměny u desky s nápisem a díly a skupiny z #66
-   používají jednu funkci dlaždice (fotka nebo vzorek, název, druh, cena kde je známá, zašednutí s důvodem, kód pro
+   používají jednu funkci dlaždice (fotka nebo vzorek, název, druh, zašednutí s důvodem, kód pro
    správce). Karty strojů (`farm-machines`) tam, kde zakázka potřebuje víc barev než jednu: u dílů už jsou, u druhé
    barvy a výměn je doplň stejně (karta jen když vyhovuje víc strojů, jinak bez karty); u jedné barvy stroj volí farma,
    karta se neukáže. Když se ukáže, že druhá barva s kartami je velká změna, udělej jen společnou dlaždici a napiš to
@@ -59,12 +58,12 @@ D. **Jeden vzhled pro všechny tři výběry.** Hlavní barva, druhá barva a v�
 E. **Testy.** FarmColorsPerMachineTest, FarmOrderFlowTest, FarmGuestCheckoutTest, CalcToolColorsTest, ThreeMfColorsTest,
    FarmColorsFillTest zelené. Nové: dvě `FarmColor` stejného názvu v PLA a PETG dají jednu dlaždici se dvěma druhy a
    `picked` správný slot; zákazník nedostane `codes` ani kódy v HTML, správce dostane „Farm U #3 · ACE 3“; dlaždice
-   s málo materiálu je na konci; cena na dlaždici po řezu odpovídá `total` ceny; filtr druhu drží vybranou barvu.
+   s málo materiálu je na konci; filtr druhu drží vybranou barvu.
    `npm run build`, `npx tsc --noEmit -p .`, pint. Stránku vypiš testem (`MP_DUMP_ORDER_PAGE`, vzor
    `test_the_order_page_of_the_seven_colour_design_can_be_written_out_for_a_look`) a prohlédni v headless Chrome
    1280 a 390 px pro tři případy: jedna barva ve 4 kusech, deska s nápisem, díly; screenshoty do scratchpadu, cesty
    do zprávy řídící. Nikdy dvě sady PHPUnit najednou.
-F. **Docs.** `docs/AL.md` nový oddíl 20 (co vidí zákazník, co správce, seskupení, odhad ceny před řezem, karty u druhé
+F. **Docs.** `docs/AL.md` nový oddíl 20 (co vidí zákazník, co správce, seskupení, karty u druhé
    barvy), řádek TODO 69 (řídící ho založila, doplň stav), odchylky od zadání sem dolů.
 
 ## Pravidla
