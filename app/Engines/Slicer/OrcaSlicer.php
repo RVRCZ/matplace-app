@@ -205,14 +205,18 @@ final class OrcaSlicer implements Slicer
         // a mesh of millions of triangles is thinned first (MeshDecimator, docs/AL.md §10.11): the slicer and the scaling
         // below work on the thinned copy, the file given stays as it is
         $decimator = app(MeshDecimator::class);
-        // a project is sliced as it is (its parts were thinned when it was written): the mesh beside it only gives the size
-        if (! $params->project && $decimator->wants($meshPath)) {
+        // a project is sliced as it is (its parts were thinned when it was written): the mesh beside it only gives the size;
+        // the farm's plates come thinned piece by piece or deliberately not at all (SliceParams::thinMesh, docs/AL.md §11.9)
+        if (! $params->project && $params->thinMesh && $decimator->wants($meshPath)) {
             $thin = $work.'/thin.stl';
             // the limits follow the layer of this slice: the farm names it in its process overrides, the calculator's
             // quality has the one of its process profile (config pricing.rough.quality_layer_mm, the same ladder)
             $layer = (float) ($params->overrides['process']['layer_height'] ?? config('pricing.rough.quality_layer_mm.'.$params->quality) ?? 0.2);
             $r = $decimator->decimate($meshPath, $thin, $layer > 0 ? $layer : null);
-            $clock?->note('decimate_s', $r['seconds'])->note('triangles_in', $r['before'])->note('triangles_sliced', $r['after'] ?? $r['before'])->note('decimate_limits', $r['limits'] ?? null);
+            $clock?->note('decimate_s', $r['seconds'])->note('triangles_in', $r['before'])->note('triangles_sliced', $r['after'] ?? $r['before'])->note('decimate_limits', $r['limits'] ?? null)->note('decimate_budget_s', $r['budget_s'] ?? null);
+            if (! empty($r['cached'])) {
+                $clock?->note('decimate_cached', true);
+            }
             if ($r['applied']) {
                 $clock?->note('decimate_deviation_mm', $r['deviation_mm'])->note('decimate_peak_mm', $r['peak_mm'] ?? null);
                 $meshPath = $thin;

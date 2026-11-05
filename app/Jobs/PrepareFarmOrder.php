@@ -45,6 +45,9 @@ use Illuminate\Support\Facades\Storage;
  * steps whether it is still the current run, and a run that was overtaken leaves the order to the next one (nothing
  * of its result moves the order on; the files it wrote are overwritten by the run that follows). The slicer itself
  * cannot be interrupted, so an overtaken run costs its minutes of Orca but no wrong price.
+ *
+ * A piece of very many triangles is thinned here, once, before its copies are laid out (thinPiece, docs/AL.md §11.9):
+ * the plates are built from the thinned piece and the slicer is told not to thin them again (SliceParams::thinMesh).
  */
 class PrepareFarmOrder implements ShouldQueue
 {
@@ -178,9 +181,17 @@ class PrepareFarmOrder implements ShouldQueue
 
                 return;
             }
-            $piece = $mesh;
             $margin = 2 * (float) $settings->get('bed_margin_mm');
             $usable = new Dimensions($bed->x - $margin, $bed->y - $margin, $bed->z);
+            // the slicer's settings now: the layer decides how far the piece may be thinned
+            $setup = $this->sliceSetup($order, $settings);
+            // a piece of very many triangles is thinned once, here, before it is copied onto the plate: the plate, the last
+            // plate and every slice after a change of colour take the thinned piece (its thinning is remembered); a plate of
+            // pieces under the threshold is never thinned as a whole, whatever their sum (docs/AL.md §11.9). The piece as
+            // prepared stays the order's print.stl: the preview and the record show the customer's own geometry
+            $thinRel = $order->dir().'/print.thin.stl';
+            $piece = $this->thinPiece($mesh, $disk->path($thinRel), (float) ($setup['params']->overrides['process']['layer_height'] ?? $setup['layer']), $clock, max(1, (int) $order->copies));
+            $sliceRel = $piece === $mesh ? $stlRel : $thinRel;
             $capacity = PlateLayout::capacityOf($piece, $usable);
             $plates = 1;
             $perPlate = $order->copies;
@@ -199,6 +210,7 @@ class PrepareFarmOrder implements ShouldQueue
                 $plateRel = $order->dir().'/plate.stl';
                 $mesh = $clock->measure('layout', fn () => PlateLayout::replicate($piece, $disk->path($plateRel), $perPlate, $usable)) ?? throw new \RuntimeException('Plate layout failed although the capacity allowed it.');
                 $stlRel = $plateRel;
+                $sliceRel = $plateRel;
             }
             $order->fill(['plates' => $plates, 'plates_done' => 0, 'plate_copies' => $perPlate, 'rest_copies' => $rest, 'rest_gcode_path' => null]);
             $verdict = ModelValidator::judge($mesh, $bed, [
@@ -219,8 +231,10 @@ class PrepareFarmOrder implements ShouldQueue
 
             // ── 2. slice ───────────────────────────────────────────────────────
             $order->update(['stage' => 'slicing']);
-            ['params' => $params, 'profiles' => $profiles, 'overrides' => $overrides, 'profile' => $profile, 'layer' => $layer, 'infill' => $infill, 'quality' => $quality] = $this->sliceSetup($order, $settings);
-            $result = $clock->measure('slice', fn () => $slicer->slice($disk->path($stlRel), $params));
+            ['profiles' => $profiles, 'overrides' => $overrides, 'profile' => $profile, 'layer' => $layer, 'infill' => $infill, 'quality' => $quality] = $setup;
+            // the piece was thinned above or is fine enough: the slicer takes the file as it is, a plate of copies is never thinned as a whole
+            $params = $setup['params']->withoutThinning();
+            $result = $clock->measure('slice', fn () => $slicer->slice($disk->path($sliceRel), $params));
             $clock->merge($result->timings);
             $postStart = hrtime(true);
             if ($this->overtaken($order)) {
@@ -301,6 +315,7 @@ class PrepareFarmOrder implements ShouldQueue
             $clock->note('failed', true);
             $this->fail($flow, $order, 'slicing_failed', mb_substr($e->getMessage(), 0, 1000));
         } finally {
+            @unlink($disk->path($order->dir().'/print.thin.stl'));   // the thinned piece served its slices; its thinning stays remembered (MeshDecimator)
             // only the column: whatever the steps above saved stays as it is. An overtaken run leaves the timings to the
             // run that replaced it (which may have written its own already).
             $clock->note('finished', round(microtime(true), 1));
@@ -370,6 +385,52 @@ class PrepareFarmOrder implements ShouldQueue
             ->withFarmProfile($profiles, $overrides);
 
         return compact('params', 'profiles', 'overrides', 'profile', 'layer', 'infill', 'quality');
+    }
+
+    /**
+     * The piece thinned for the slicer when it has more triangles than config engines.mesh.decimate_above (MeshDecimator,
+     * docs/AL.md §10.11 and §11.9): the same piece with the thinned file as its path and its new triangle count, or the
+     * piece itself when it is fine enough or could not be thinned. Done once per run, before the piece is copied onto a
+     * plate, so the plate, the last plate and the slice after a change of colour all take it (the thinning is remembered
+     * by the file's bytes). The numbers go to the timings the way the slicer's own thinning writes them.
+     *
+     * @param  int  $copies  how many pieces will be sliced from it: the thinning's time budget grows with them
+     * @param  string  $suffix  for the keys of an order by parts (`_1`, `_2`…)
+     */
+    private function thinPiece(PreparedMesh $piece, string $thinPath, float $layer, Stopwatch $clock, int $copies, string $suffix = ''): PreparedMesh
+    {
+        $decimator = app(MeshDecimator::class);
+        if (! $decimator->wants($piece->path)) {
+            return $piece;
+        }
+        $r = $clock->measure('decimate', fn () => $decimator->decimate($piece->path, $thinPath, $layer > 0 ? $layer : null, $copies));
+        $clock->note('triangles_in'.$suffix, $r['before'])->note('triangles_sliced'.$suffix, $r['after'] ?? $r['before'])->note('decimate_limits'.$suffix, $r['limits'] ?? null)->note('decimate_budget_s'.$suffix, $r['budget_s'] ?? null);
+        if (! empty($r['cached'])) {
+            $clock->note('decimate_cached'.$suffix, true);
+        }
+        if (! $r['applied']) {
+            $clock->note('decimate_skipped'.$suffix, $r['reason'] ?? 'unknown');
+
+            return $piece;
+        }
+        $clock->note('decimate_deviation_mm'.$suffix, $r['deviation_mm'])->note('decimate_peak_mm'.$suffix, $r['peak_mm'] ?? null);
+
+        return new PreparedMesh(
+            path: $thinPath,
+            watertight: $piece->watertight,
+            wasWatertight: $piece->wasWatertight,
+            repaired: $piece->repaired,
+            openEdges: $piece->openEdges,
+            bbox: $piece->bbox,
+            volumeMm3: $piece->volumeMm3,
+            areaMm2: $piece->areaMm2,
+            triangles: (int) $r['after'],
+            shells: $piece->shells,
+            orientation: $piece->orientation,
+            engine: $piece->engine,
+            footprint: $piece->footprint,
+            holes: $piece->holes,
+        );
     }
 
     /** The sliced order gets its price and moves on: to the customer (sliced), or straight on when nobody pays or has paid already. */
@@ -442,13 +503,16 @@ class PrepareFarmOrder implements ShouldQueue
                 }
             }
             @unlink($disk->path($stlRel).'.stage');
-            $piece = $mesh;
+            // the part thinned once before its copies are laid out (docs/AL.md §11.9); the part as prepared stays for the preview and the record
+            $piece = $this->thinPiece($mesh, $disk->path($stlRel).'.thin', (float) ($setup['params']->overrides['process']['layer_height'] ?? $setup['layer']), $clock, max(1, (int) $order->copies), '_'.$n);
+            $sliceRel = $piece === $mesh ? $stlRel : $stlRel.'.thin';
             $capacity = PlateLayout::capacityOf($piece, $usable);
             $maxCopies = $maxCopies === null ? $capacity['max'] : min($maxCopies, $capacity['max']);
             if ($order->copies > 1 && $capacity['max'] >= $order->copies) {
                 $plateRel = $order->dir().'/part-'.$n.'-plate.stl';
                 $mesh = $clock->measure('layout', fn () => PlateLayout::replicate($piece, $disk->path($plateRel), $order->copies, $usable)) ?? throw new \RuntimeException('Plate layout failed although the capacity allowed it.');
                 $stlRel = $plateRel;
+                $sliceRel = $plateRel;
             }
             $verdict = ModelValidator::judge($mesh, $bed, ['min_model_mm' => (float) $settings->get('min_model_mm'), 'bed_margin_mm' => (float) $settings->get('bed_margin_mm')]);
             if ($file->origin !== 'tool' && PaintedColors::printed($file) !== []) {
@@ -473,7 +537,8 @@ class PrepareFarmOrder implements ShouldQueue
                 return;
             }
             $order->update(['stage' => 'slicing']);
-            $result = $clock->measure('slice', fn () => $slicer->slice($disk->path($stlRel), $setup['params']));
+            $result = $clock->measure('slice', fn () => $slicer->slice($disk->path($sliceRel), $setup['params']->withoutThinning()));
+            @unlink($disk->path($order->dir().'/part-'.$n.'.stl.thin'));
             $clock->merge($result->timings, 'p'.$n.'_');
             if (! $result->gcodePath || ! is_file($result->gcodePath)) {
                 throw new \RuntimeException('Slicer returned no G-code for the part '.$plate['part'].'.');

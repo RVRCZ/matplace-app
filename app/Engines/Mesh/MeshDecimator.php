@@ -2,8 +2,10 @@
 
 namespace App\Engines\Mesh;
 
+use App\Domain\Farm\BigModel;
 use App\Engines\Repair\ScriptRunner;
 use Illuminate\Support\Facades\Log;
+use Symfony\Component\Process\Exception\ProcessTimedOutException;
 
 /**
  * A very fine mesh thinned before it is sliced (docs/AL.md §10.11): above the threshold of config engines.mesh the
@@ -21,6 +23,11 @@ use Illuminate\Support\Facades\Log;
  * and one layer at the worst sampled point (0.2 mm → 0.05 / 0.2, 0.28 → 0.07 / 0.28, 0.12 → 0.03 / 0.12), because a
  * deviation under a layer is what the slicer rounds away anyway. Without a layer the config's fixed limits apply.
  * The limits are part of the cache key, so a coarse quality never gets a thinning made for a fine one or the reverse.
+ *
+ * The thinning never runs longer than the slice it is meant to shorten (TODO #68, docs/AL.md §11.9): its time budget is
+ * the expected slice of what is thinned (BigModel::estimateSeconds of the triangles, times the copies that will be
+ * sliced from it), capped by config decimate_timeout. A thinning that runs out of its budget is killed, the original
+ * is sliced, and that answer is remembered like a deviation too big: the same file would run out again.
  */
 final class MeshDecimator
 {
@@ -28,7 +35,7 @@ final class MeshDecimator
     private const CACHE_DAYS = 30;
 
     /** Reasons that will not change on a second run of the same file (a missing library or a crash might). */
-    private const FINAL_REASONS = ['deviation', 'shape', 'not_watertight', 'small_enough'];
+    private const FINAL_REASONS = ['deviation', 'shape', 'not_watertight', 'small_enough', 'timeout'];
 
     public function __construct(private readonly ScriptRunner $python, private readonly array $config) {}
 
@@ -54,28 +61,53 @@ final class MeshDecimator
     }
 
     /**
+     * Seconds a thinning may take: the expected slice of the mesh (and of the copies that will be sliced from it), never
+     * more than config decimate_timeout, never less than a second. The slice of a plate of copies is what a thinned piece
+     * saves, so the piece's budget grows with the copies; the floor of the estimate (farm.big_model.min_seconds) is the
+     * least any thinning gets.
+     */
+    public function budget(int $triangles, int $copies = 1): int
+    {
+        $cap = max(1, (int) $this->config['decimate_timeout']);
+
+        return max(1, min($cap, BigModel::estimateSeconds(max(0, $triangles) * max(1, $copies), null)));
+    }
+
+    /**
      * Thins `$path` into `$out`. Returns what happened for the timings – `applied` true with the counts and the
      * deviation, or false with the reason (not watertight, deviation too big, the library missing…) – and never
      * throws: a mesh that cannot be thinned is sliced as it is. `cached` true when the answer came from the folder
      * of remembered thinnings. `$layerMm` is the layer the mesh will be sliced at: the limits follow it (limits()).
+     * `$copies` is how many times the thinned mesh will be sliced (a plate of copies): the time budget grows with it.
      *
-     * @return array{applied: bool, before: int, after?: int, deviation_mm?: float, reason?: string, seconds: float, cached?: bool, limits: array{0: float, 1: float}}
+     * @return array{applied: bool, before: int, after?: int, deviation_mm?: float, reason?: string, seconds: float, cached?: bool, limits: array{0: float, 1: float}, budget_s: int}
      */
-    public function decimate(string $path, string $out, ?float $layerMm = null): array
+    public function decimate(string $path, string $out, ?float $layerMm = null, int $copies = 1): array
     {
         $before = StlFile::triangleCount($path);
         $start = microtime(true);
         $limits = $this->limits($layerMm);
+        $budget = $this->budget($before, $copies);
         $key = $this->cacheKey($path, $limits);
         if ($key !== null && ($known = $this->remembered($key, $out)) !== null) {
-            return ['before' => $before] + $known + ['seconds' => round(microtime(true) - $start, 2), 'cached' => true, 'limits' => $limits];
+            return ['before' => $before] + $known + ['seconds' => round(microtime(true) - $start, 2), 'cached' => true, 'limits' => $limits, 'budget_s' => $budget];
         }
         try {
-            $r = $this->python->runScript('decimate_tool.py', [$path, $out, (string) (int) $this->config['decimate_target'], (string) $limits[0], (string) $limits[1]], (int) $this->config['decimate_timeout']);
+            $r = $this->python->runScript('decimate_tool.py', [$path, $out, (string) (int) $this->config['decimate_target'], (string) $limits[0], (string) $limits[1]], $budget);
+        } catch (ProcessTimedOutException $e) {
+            // longer than the slice it was to shorten: the original is sliced, and this file is not tried again
+            @unlink($out);
+            Log::warning('Mesh decimation ran out of its time budget, slicing the original', ['file' => basename($path), 'budget_s' => $budget, 'triangles' => $before, 'copies' => $copies]);
+            $result = ['applied' => false, 'before' => $before, 'reason' => 'timeout'];
+            if ($key !== null) {
+                $this->remember($key, null, $result);
+            }
+
+            return $result + ['seconds' => round(microtime(true) - $start, 2), 'limits' => $limits, 'budget_s' => $budget];
         } catch (\Throwable $e) {
             Log::warning('Mesh decimation failed, slicing the original', ['file' => basename($path), 'error' => $e->getMessage()]);
 
-            return ['applied' => false, 'before' => $before, 'reason' => 'error', 'seconds' => round(microtime(true) - $start, 2), 'limits' => $limits];
+            return ['applied' => false, 'before' => $before, 'reason' => 'error', 'seconds' => round(microtime(true) - $start, 2), 'limits' => $limits, 'budget_s' => $budget];
         }
         $seconds = round(microtime(true) - $start, 2);
         if (empty($r['ok']) || ! is_file($out) || filesize($out) < 100) {
@@ -86,7 +118,7 @@ final class MeshDecimator
                 $this->remember($key, null, $result);
             }
 
-            return $result + ['seconds' => $seconds, 'limits' => $limits];
+            return $result + ['seconds' => $seconds, 'limits' => $limits, 'budget_s' => $budget];
         }
 
         $result = ['applied' => true, 'before' => (int) ($r['before'] ?? $before), 'after' => (int) ($r['after'] ?? 0), 'deviation_mm' => (float) ($r['deviation_mm'] ?? 0), 'peak_mm' => (float) ($r['peak_mm'] ?? 0)];
@@ -94,7 +126,7 @@ final class MeshDecimator
             $this->remember($key, $out, $result);
         }
 
-        return $result + ['seconds' => $seconds, 'limits' => $limits];
+        return $result + ['seconds' => $seconds, 'limits' => $limits, 'budget_s' => $budget];
     }
 
     /**
