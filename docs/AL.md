@@ -849,6 +849,10 @@ scale 1,473 → 240 mm): kalkulace ~5 min, řez zakázky ~10 min (Orca 315 % CPU
   `triangles_sliced`, `decimate_deviation_mm`, `decimate_peak_mm`, při přeskočení `decimate_skipped` (důvod:
   `not_watertight`, `deviation`, `shape`, `small_enough`, `missing_fast_simplification`, `error`). Kontrola/oprava
   farmy běží na plné síti (správnost), ztenčení až pro řez.
+- **Kopie (TODO #68, §11.9):** farma ztenčuje **kus před rozkopírováním** (`PrepareFarmOrder::thinPiece`), podložka
+  s kopiemi se jako celek neztenčuje nikdy (`SliceParams::thinMesh` = false → `prepareMesh` ji nechá být); ztenčení má
+  časový rozpočet podle očekávaného řezu (`MeshDecimator::budget`, strop `decimate_timeout`) a vypršení se pamatuje;
+  měření 1/4/7 kusů a návrh výchozích hodnot v §11.9.
 - **Text pro zákazníka**: `/api/uploads` i kalkulace dávají `file.big_model` (+ `triangles`); kalkulátor při „Počítám
   přesně…“ přidá `calc.status.big_model` („Velký model (1,8 mil. trojúhelníků), řez trvá několik minut.“, cs/en/es),
   stránka zakázky `big_model` ve stavu (`farm.order.big_model`, „kontrola a řez trvají několik minut“) za textem fáze.
@@ -1098,6 +1102,111 @@ ASCII přepsané). Soubory: `app/Domain/Farm/{BigModel (nový),OrderService}.php
 - §8 zadání (zjednodušit zdrojový model jednou při nahrání a odvozovat z něj print.stl) neděláno.
 - Spolehlivé 350 k: deterministická kontrola špičky v `decimate_tool.py` (§11.4). Čas Orcy u draka drží podpěry
   (§10.11.2), ne trojúhelníky – viz měření v §11.4.
+
+### 11.9 Kus × kopie: ztenčení kusu před rozkopírováním, časový rozpočet ztenčení, verdikt s kopiemi (TODO #68, větev `fix/decimate-copies`, 5. 11. 2026)
+
+Zadání `docs/prompts/ztenceni-kusu-kopie.md` (Roman 4. 11. 2026 ráno, zakázka j9vAL9…: jeden model 388 162 trojúhelníků
+ve 4 kusech, „trvá to hodně dlouho a to jsem ještě nedal barvu“). Ze serveru: kus sám pod prahem 400 000, podložka
+`plate.stl` se 4 kopiemi 1 552 648 trojúhelníků (77 MB); `MeshDecimator` ztenčoval celou podložku, po 240 s to vzdal a
+Orca pak celou podložku nařezala za 50 s. Verdikt velkého modelu počítal jen jeden kus, proto řez jel hned, před volbou
+barvy. Nemergováno, nenasazeno.
+
+**Co se změnilo**
+
+- **Ztenčuje se kus, ne podložka** (`PrepareFarmOrder::thinPiece`). Hned po přípravě kusu (`prepare`), ještě před
+  `capacityOf`/`replicate`, se kus nad `engines.mesh.decimate_above` ztenčí do `print.thin.stl` (`MeshDecimator::decimate`
+  s limity podle vrstvy zakázky – `overrides.process.layer_height`, tedy i pokročilá vrstva zákazníka; `sliceSetup` se
+  proto volá dřív). Podložka `plate.stl`, zbytková `rest.stl` i podložky dílů `part-n-plate.stl` se skládají ze
+  ztenčeného kusu; `print.stl` (a `part-n.stl`) zůstává neztenčený pro náhled a záznam, `check.mesh.triangles` u podložky
+  je počet trojúhelníků podložky, jak šla do řezu. Slicer dostane `SliceParams::withoutThinning()` (nový příznak
+  `thinMesh`, do `toArray()` a klíče cache řezů nevstupuje), takže `OrcaSlicer::prepareMesh` podložku **nikdy**
+  neztenčuje – ani když součet trojúhelníků kopií práh přesáhne; kus pod prahem se neztenčuje vůbec. Řez kalkulace a
+  ostatní volání slicer ztenčuje dál sám jako dosud. `print.thin.stl` se po běhu smaže; ztenčení zůstává v mezipaměti
+  `decimate_cache` (klíč = bajty kusu + cíl + limity), takže přeřez po změně barvy, zbytková podložka, další zakázka
+  téhož souboru i tisk po dílech trefí mezipaměť (`timings.decimate_cached`). Jedna podložka s více filamenty
+  (`prepareOnePlate`) ztenčovala díly už dřív a kopie má jen v malovaném projektu – beze změny.
+- **Ztenčení nikdy déle než řez, který šetří** (`MeshDecimator::budget(triangles, copies)`): limit procesu
+  `decimate_tool.py` = min(`decimate_timeout` 240 s, `BigModel::estimateSeconds(trojúhelníky × kopie)`), tedy očekávaná
+  doba řezu podložky, kterou ztenčený kus ušetří, nejméně `farm.big_model.min_seconds` (120 s). Po vypršení se řeže plná
+  síť (`timings.decimate_skipped = timeout`) a výsledek se **zapamatuje** jako u `deviation` – stejný soubor by na stejném
+  serveru vypršel znovu (dřív `error`, nepamatováno, každý přeřez znovu 240 s). `timings.decimate_budget_s`. Pád skriptu
+  (`error`) se dál nepamatuje.
+- **Velký model podle kusu × kopie** (`BigModel::judge(file, calculation, copies)`, `OrderService::create` posílá kusy
+  zakázky): verdikt jako dosud (kus nad `decimate_above`, nebo `slice_s` kalkulace nad `big_slice_s`) a navíc **důvod
+  `copies`**: více kusů, jejichž očekávaný řez (`BigModel::expectedSeconds` – `slice_s × kopie × 1,2 + 15`, bez kalkulace
+  `trojúhelníky × kopie / 1e6 × seconds_per_million`, **bez spodní hranice**) je nad `big_slice_s` (60 s). Součet
+  trojúhelníků sám důvod není. Jeden kus se chová přesně jako dosud (pravidlo se u 1 kusu nepoužije). `slice_estimate_s`
+  (stránka „Přesnou cenu spočítáme… asi N min“) = `estimateSeconds(…, copies)`, tedy × kopie se spodní hranicí 120 s.
+  Verdikt se zapisuje při vzniku; **změna počtu kusů na stránce ho nepřeklápí** (jako dosud: zakázka založená na 4 kusy
+  zůstane „velká“ i po změně na 1, a zakázka založená na 1 kus se po změně na 4 řeže hned). Poznámka v historii zakázky
+  u důvodu `copies` zní jako u trojúhelníků („big model (0.4 M triangles): the slice waits for the choices“) – řádek
+  `OrderService` 147 patří #69, nesahal jsem na něj; `judge` vrací `copies` i `reason`, text může doplnit řídící.
+- Zakázka ze 4. 11. by s dnešními čísly (150 s/M) vznikla jako `awaiting_choices` (4 × 388 162 → 233 s > 60 s),
+  zákazník by nejdřív zvolil barvu a řez (bez ztenčování, Orca ~50 s) by běžel jednou.
+
+**Měření místně** (5. 11. 2026, Windows, Orca 2.4 portable, Store Python 3.11, profil S1, běžná kvalita, polokoule Ø 80 mm
+bez převisů generovaná skriptem – 387 200 a 441 800 trojúhelníků; skutečný `PrepareFarmOrder` s pravým `OrcaSlicer` bez
+cache řezů a pravým `farm_tool.py prepare`; `rest` = zbytková podložka; sekundy):
+
+| kus | scénář | dnes: layout / ztenčení (z → na) / Orca `slice1` / prepare / celkem | po opravě: layout / ztenčení / Orca / prepare / celkem |
+|---|---|---|---|
+| 388 k (pod prahem) | 1 kus | – / – / 3,5 / 12,2 / **17,1** | – / – / 3,2 / 11,7 / **16,1** |
+| 388 k | 4 kusy (podložka 1,55 M) | 4,3 / **28,6** (1 548 800 → 350 000) / 6,1 / 0,1 / **40,3** | 4,2 / – / 9,1 (1,55 M plná) / 0,1 / **18,9** (vznik `awaiting_choices`, odhad 233 s) |
+| 388 k | 4 kusy, přeřez jinou barvou téhož stroje | 4,1 / 0,05 (trefa: stejné bajty podložky; seed má v S1 jednu barvu, šlo o přeřez touž cívkou) / 5,9 / 0,1 / **11,3** | 3,8 / – / 7,8 / 0,1 / **16,6** (druhá cívka PLA v S1 doplněna do měření) |
+| 388 k | 7 kusů = 6 + rest 1 | 6,0 / **39,6** (2 323 200 → 349 992) / 11,3 + rest 3,7 / 0,1 / **65,0** | 6,3 / – / 12,5 + rest 3,6 / 0,1 / **33,5** |
+| 442 k (nad prahem) | 1 kus | – / 9,5 (441 800 → 350 000, ve sliceru) / 3,4 / 14,2 / **28,2** | – / 9,8 (kus, v úloze, rozpočet 120 s) / 3,3 / 13,8 / **28,3** |
+| 442 k | 4 kusy | 5,1 / **27,8** (1 767 200 → 350 000) / 7,2 / 0,1 / **41,5** | 4,0 / **0,03** (trefa mezipaměti kusu, rozpočet 240 s) / 8,7 (4 × 350 k) / 0,1 / **17,9** |
+| 442 k | 4 kusy, přeřez jinou barvou téhož stroje | (ve výchozím kódu trefa podložky jako u 388 k: ~0,05 + Orca ~7) | 3,4 / **0,02** (trefa mezipaměti kusu) / 7,3 / 0,1 / **15,2** |
+| 442 k | 7 kusů = 6 + rest 1 | 7,4 / **44,2** (2 650 800 → 349 992) + rest **9,7** (jiné bajty, netrefí) / 11,8 + rest 3,4 / 0,1 / **81,0** | 5,8 / 0,03 (trefa) / 12,2 + rest 3,3 / 0,1 / **31,8** |
+
+Co z toho plyne:
+
+1. **Čas Orcy trojúhelníky skoro neurčují** (jako už u draka, §10.11.2): 1 × 388 k 3,2 s; 4 × 87 k (podložka ztenčená
+   na 350 k) 6,1 s; 4 × 350 k 8,7 s; 4 × 388 k (1,55 M) 9,1 s; 6 × 58 k 11,3 s; 6 × 388 k (2,32 M) 12,5 s. Ztenčení podložky
+   1,55 M → 350 k ušetřilo 3 s Orcy za 28,6 s Pythonu (místně; na produkci > 240 s za ~15 s Orcy). **Snižovat cíl na kus
+   u podložky s kopiemi (strop trojúhelníků na podložku / kopie) nemá smysl** – nezavedeno, `decimate_target` beze změny.
+2. Řez roste zhruba lineárně s **počtem kusů** (1 → 4 → 6 kusů: 3,2 → 9,1 → 12,5 s; G‑kód 3,9 → 15,1 → 22,5 MB), ne
+   s trojúhelníky: odhad × kopie je správný, poměr „sekund na milion“ je ale dán tvarem, podpěrami a délkou G‑kódu.
+3. Ztenčení kusu 442 k → 350 k stojí 9,8 s místně (produkce odhadem 5–8× víc) a Orce ušetří ~0,3 s na kus. U kusů mezi
+   400 k a ~1 M se ztenčení nevyplácí ani samo o sobě; práh `decimate_above` by snesl zvýšení (návrh níže).
+4. Místní stroj je proti produkci ~5× rychlejší v Orce (1,55 M: 9 s vs. 50 s) a nejméně 8× v Pythonu (1,55 M: 29 s vs.
+   > 240 s), takže poměry platí, absolutní čísla ne.
+
+**Návrh výchozích hodnot (nic neměněno, rozhodne řídící):**
+
+- `farm.big_model.seconds_per_million`: 150 → **60**. Produkce bez podpěr 32 s/M (1 552 648 za 50 s), drak se stromovými
+  podpěrami 196 s / 1,8 M = 109 s/M; 60 je střed. Důsledky u kusu 388 k: 1 kus 23 s (malý, jako dnes), 2 kusy 47 s
+  (malý), 3 kusy 70 s (velký), 4 kusy 93 s (velký); drak 1,8 M bez kalkulace „asi 2 min“ (dnes „asi 5 min“, měřeno
+  3 min 16 s + ztenčení). Při ponechání 150 čeká na tlačítko už zakázka 2 × 200 k (60 s) – zákazník kliká navíc u řezů
+  kolem 20 s na produkci.
+- `engines.mesh.decimate_timeout` 240 s ponechat: rozpočet podle očekávaného řezu ho u kusu do ~1,6 M stejně sníží na
+  120 s (1 kus) nebo na odhad × kopie.
+- `engines.mesh.decimate_above` 400 000: u kusů 400 k–1 M ztenčení Orce nepomáhá (bod 3); kandidát **1 000 000** (drak
+  1,8 M se ztenčuje dál, 702 k síť po ztenčení už ne). Bez měření na produkci neměněno.
+- `farm.big_model.min_seconds` 120 ponechat.
+
+**Testy:** `tests/Feature/FarmDecimateCopiesTest.php` (podložka 4 × kus pod prahem se neztenčuje, i když součet práh
+přesáhne – žádné `decimate_s`; kus nad prahem se ztenčí jednou: podložka 4 × i zbytková ze ztenčeného souboru, `print.stl`
+netknutý, `print.thin.stl` smazaný, rozpočet s kopiemi, přeřez jinou barvou a zakázka 1 kusu téhož souboru z paměti
+(`decimate_cached`); zakázka po dílech (krabička s víkem, 3 kusy) ztenčí každý díl před rozložením; `judge` se 4 kopiemi
+dá odhad × 4 a důvod `copies`, zakázka `awaiting_choices` a `slice_minutes` s kopiemi, 1 kus jako dosud, `big_slice_s`
+platí, změna kusů po vzniku verdikt nepřeklopí, kalkulace se `slice_s` 30 s × 4), `tests/Unit/MeshDecimatorTest.php`
+(rozpočet: spodní hranice, × kopie, strop `decimate_timeout`; vypršení = `timeout`, nic napůl zapsaného, zapamatováno;
+původní test čeká rozpočet místo 240). Zelené: MeshDecimatorTest, FarmDecimateCopiesTest, FarmOrderFlowTest,
+FarmOnePlateTest, FarmBigModelFlowTest, PlateLayoutFarmTest, PlateLayoutTest, OnePlateTowerTest, BigMeshTest,
+SliceCacheTest, CalculationEstimateRangeTest – 11 + 77 testů, 146 + 36 443 asercí, 5. 11. 2026 (CalculationEstimateRangeTest
+napoprvé 500 kvůli zastaralému `public/build` worktree – Vite manifest bez `calc/boot.ts`; po `npm run build` zelený).
+
+**Soubory:** `app/Jobs/PrepareFarmOrder.php` (`thinPiece`, `sliceSetup` dřív, `$sliceRel`, úklid `print.thin.stl`),
+`app/Engines/Mesh/MeshDecimator.php` (`budget`, důvod `timeout`, `budget_s`), `app/Engines/DTO/SliceParams.php`
+(`thinMesh`, `withoutThinning`), `app/Engines/Slicer/OrcaSlicer.php` (`prepareMesh` ctí příznak, `decimate_cached`,
+`decimate_budget_s`), `app/Domain/Farm/BigModel.php` (`judge(copies)`, `expectedSeconds`), `app/Domain/Farm/OrderService.php`
+(jeden řádek). Nasazení: nic v `.env`, žádná migrace, `farm.ts` nezměněn (odhad minut přichází ze serveru v
+`slice_minutes`), zapamatovaná ztenčení podložek v `storage/app/mesh-cache` zestárnou samy (30 dní).
+
+**Neověřeno / co zbývá:** produkce (Orca 2.4.0‑beta na Linuxu, pomalejší Python) – u první zakázky s kopiemi po nasazení
+zkontrolovat `farm_orders.timings` (`decimate_s` chybí u kusu pod prahem, `slice1_s` kolem 50 s u 1,55 M) a stav
+`awaiting_choices` s důvodem `copies`; po rozhodnutí o `seconds_per_million` případně `FARM_BIG_MODEL_S_PER_M` v `.env`.
 
 # Prodejní cesta, část farma: platba bez povinného kreditu, celek s dopravou hned, čísla farmy, měření (session 2)
 

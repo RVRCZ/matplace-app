@@ -108,7 +108,7 @@ final class OrderService
         // the parts of the design printed separately, each from its own spool: one plate per part, laid out when it is prepared
         $partPlates = $partColorIds !== null ? $this->spoolsForParts($chosen['slot'] ?? null, self::designParts($file), $partColorIds) : [];
         // a big model is not sliced before the customer has chosen: the order waits for the button on its page
-        $big = BigModel::judge($file, $calculation);
+        $big = BigModel::judge($file, $calculation, max(1, min(PlateLayout::MAX_COPIES, $copies)));
 
         // the order and its first event together: one that cannot write its history is not made at all (orders 218–221,
         // 25 Oct 2026: the event column was too narrow for the new state and the orders stayed without a history)

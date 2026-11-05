@@ -5,6 +5,8 @@ namespace Tests\Unit;
 use App\Engines\Mesh\MeshDecimator;
 use App\Engines\Mesh\StlFile;
 use App\Engines\Repair\ScriptRunner;
+use Symfony\Component\Process\Exception\ProcessTimedOutException;
+use Symfony\Component\Process\Process;
 use Tests\Support\MeshFixtures;
 use Tests\TestCase;
 
@@ -68,7 +70,8 @@ final class MeshDecimatorTest extends TestCase
         $d = new MeshDecimator($python, ['decimate_above' => 10, 'decimate_target' => 8, 'max_deviation_mm' => 0.05, 'decimate_timeout' => 240]);
         $this->assertTrue($d->wants($this->dir.'/cube.stl'), '12 triangles are above a threshold of 10');
         $r = $d->decimate($this->dir.'/cube.stl', $this->dir.'/thin.stl');
-        $this->assertSame([['decimate_tool.py', [$this->dir.'/cube.stl', $this->dir.'/thin.stl', '8', '0.05', '0.15'], 240]], $calls, 'the script gets the target and the limits from the config (the peak three times the limit when unset)');
+        $this->assertSame([['decimate_tool.py', [$this->dir.'/cube.stl', $this->dir.'/thin.stl', '8', '0.05', '0.15'], $d->budget(12)]], $calls, 'the script gets the target and the limits from the config (the peak three times the limit when unset) and its time budget');
+        $this->assertSame((int) config('farm.big_model.min_seconds'), $d->budget(12), 'a dozen triangles: the floor of the expected slice, not the whole timeout');
         $this->assertTrue($r['applied']);
         $this->assertSame([12, 8, 0.01], [$r['before'], $r['after'], $r['deviation_mm']]);
         $this->assertFileExists($this->dir.'/thin.stl');
@@ -176,6 +179,38 @@ final class MeshDecimatorTest extends TestCase
         $this->assertCount(2, $calls, 'the same layer is answered from the remembered copy');
         $this->assertCount(4, glob($this->dir.'/cache/*') ?: [], 'two thinnings remembered, each with its own limits in the name');
         $this->assertCount(2, glob($this->dir.'/cache/*-0.05-0.2.*') ?: []);
+        foreach (glob($this->dir.'/cache/*') ?: [] as $f) {
+            @unlink($f);
+        }
+        @rmdir($this->dir.'/cache');
+    }
+
+    public function test_the_thinning_gets_no_more_time_than_the_slice_it_saves_and_a_timeout_is_remembered(): void
+    {
+        config(['farm.big_model.seconds_per_million' => 100, 'farm.big_model.min_seconds' => 30]);
+        $config = ['decimate_above' => 10, 'decimate_target' => 8, 'max_deviation_mm' => 0.05, 'decimate_timeout' => 240, 'decimate_cache' => $this->dir.'/cache'];
+        $d = new MeshDecimator($this->runner(fn () => ['ok' => false, 'reason' => 'deviation']), $config);
+        // the expected slice of what is thinned (BigModel::estimateSeconds), with its floor, capped by the timeout
+        $this->assertSame(30, $d->budget(12));
+        $this->assertSame(100, $d->budget(1_000_000));
+        $this->assertSame(200, $d->budget(500_000, 4), 'a piece sliced four times on one plate saves four slices');
+        $this->assertSame(240, $d->budget(1_000_000, 4), 'never more than the timeout');
+
+        // the script is killed at the budget: the original is sliced, and the file is not tried again
+        MeshFixtures::cubeStl($this->dir.'/cube.stl', 10);
+        mkdir($this->dir.'/cache');
+        $calls = [];
+        $python = $this->runner(function (array $args) {
+            file_put_contents($args[1], 'half a file');
+            throw new ProcessTimedOutException(Process::fromShellCommandline('decimate'), ProcessTimedOutException::TYPE_GENERAL);
+        }, $calls);
+        $r = (new MeshDecimator($python, $config))->decimate($this->dir.'/cube.stl', $this->dir.'/thin.stl', 0.2, 4);
+        $this->assertSame([false, 'timeout', 30], [$r['applied'], $r['reason'], $r['budget_s']]);
+        $this->assertSame(30, $calls[0][2], 'the budget is the script\'s timeout');
+        $this->assertFileDoesNotExist($this->dir.'/thin.stl', 'nothing half-written is left for the slicer');
+        $again = (new MeshDecimator($python, $config))->decimate($this->dir.'/cube.stl', $this->dir.'/thin2.stl', 0.2, 4);
+        $this->assertSame([false, 'timeout', true], [$again['applied'], $again['reason'], $again['cached']]);
+        $this->assertCount(1, $calls, 'a file that ran out of its time is remembered, like one that failed the deviation');
         foreach (glob($this->dir.'/cache/*') ?: [] as $f) {
             @unlink($f);
         }

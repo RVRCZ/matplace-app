@@ -24,11 +24,21 @@ final class SliceParams
         // object told its filament, and a filament profile per filament. Empty = one filament, the mesh as given.
         public readonly array $filaments = [],     // list of [profile => file, overrides => [setting => value], volume_mm3 => float]
         public readonly ?string $project = null,   // the 3MF the slicer loads instead of the mesh
+        // The slicer thins a very fine mesh before it slices it (MeshDecimator, docs/AL.md §10.11) unless the caller says it
+        // has done that itself: the farm thins the piece once and builds its plates of copies from the thinned piece
+        // (docs/AL.md §11.9), so a plate is never thinned as a whole. Not part of toArray(): the mesh bytes tell the plates apart.
+        public readonly bool $thinMesh = true,
     ) {}
 
     public function withFarmProfile(array $profiles, array $overrides): self
     {
-        return new self($this->materialCode, $this->quality, $this->infillPercent, $this->supports, $this->scale, $this->vaseMode, $this->treeSupports, $profiles, $overrides, true, $this->filaments, $this->project);
+        return new self($this->materialCode, $this->quality, $this->infillPercent, $this->supports, $this->scale, $this->vaseMode, $this->treeSupports, $profiles, $overrides, true, $this->filaments, $this->project, $this->thinMesh);
+    }
+
+    /** The same run over a mesh the caller has thinned already, or decided not to thin: the slicer slices it as it is. */
+    public function withoutThinning(): self
+    {
+        return new self($this->materialCode, $this->quality, $this->infillPercent, $this->supports, $this->scale, $this->vaseMode, $this->treeSupports, $this->profiles, $this->overrides, $this->keepGcode, $this->filaments, $this->project, false);
     }
 
     /** The same run with these process settings on top of any it has (what a design asks for, ModelFile::processHints). */
@@ -40,7 +50,7 @@ final class SliceParams
         $overrides = $this->overrides;
         $overrides['process'] = $process + (array) ($overrides['process'] ?? []);
 
-        return new self($this->materialCode, $this->quality, $this->infillPercent, $this->supports, $this->scale, $this->vaseMode, $this->treeSupports, $this->profiles, $overrides, $this->keepGcode, $this->filaments, $this->project);
+        return new self($this->materialCode, $this->quality, $this->infillPercent, $this->supports, $this->scale, $this->vaseMode, $this->treeSupports, $this->profiles, $overrides, $this->keepGcode, $this->filaments, $this->project, $this->thinMesh);
     }
 
     /**
@@ -55,7 +65,7 @@ final class SliceParams
         $overrides = $this->overrides;
         $overrides['process'] = $process + (array) ($overrides['process'] ?? []);
 
-        return new self($this->materialCode, $this->quality, $this->infillPercent, $this->supports, $this->scale, $this->vaseMode, $this->treeSupports, $this->profiles, $overrides, true, array_values($filaments), $project);
+        return new self($this->materialCode, $this->quality, $this->infillPercent, $this->supports, $this->scale, $this->vaseMode, $this->treeSupports, $this->profiles, $overrides, true, array_values($filaments), $project, $this->thinMesh);
     }
 
     public static function fromArray(array $a): self
