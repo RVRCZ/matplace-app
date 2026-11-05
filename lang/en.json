@@ -2052,5 +2052,7 @@
     "farm.order.tile_queue": "joins the queue",
     "farm.order.kind_switch": "Kind of plastic",
     "farm.order.where_hint": "Printer and spool position (admins only)",
-    "farm.order.changes_one_machine": "All the colours must sit in one printer together with the main colour. Pick the printer; only its spools are offered then."
+    "farm.order.changes_one_machine": "All the colours must sit in one printer together with the main colour. Pick the printer; only its spools are offered then.",
+    "farm.admin.result.slots_unchecked": "Positions :slots were not checked by the agent, the printer does not report its positions (the firmware checks the filament at the start).",
+    "farm.admin.result.printer_took": "the printer took the file"
 }

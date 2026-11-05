@@ -2052,5 +2052,7 @@
     "farm.order.tile_queue": "a la cola",
     "farm.order.kind_switch": "Tipo de plástico",
     "farm.order.where_hint": "Impresora y posición de la bobina (solo administradores)",
-    "farm.order.changes_one_machine": "Todos los colores deben estar en una misma impresora junto con el color principal. Elija la impresora; después solo ofrecemos sus bobinas."
+    "farm.order.changes_one_machine": "Todos los colores deben estar en una misma impresora junto con el color principal. Elija la impresora; después solo ofrecemos sus bobinas.",
+    "farm.admin.result.slots_unchecked": "El agente no comprobó las posiciones :slots, la impresora no informa de sus posiciones (el firmware comprueba el filamento al iniciar).",
+    "farm.admin.result.printer_took": "la impresora aceptó el archivo"
 }

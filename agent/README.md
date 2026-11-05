@@ -169,6 +169,9 @@ Co ovladač umí: stav (volná / tiskne / pauza / chyba / čeká na displej), te
 (pravé, ne krátké 8.3); nahrání G‑kódu na USB a start; pauza, pokračování, zrušení; seznam, stažení a mazání souborů na USB
 (bez velikostí, firmware je v seznamu nedává); „podložka uklizená“, když obsluha opustí obrazovku dotištění (FINISHED →
 IDLE) nebo dá „Set ready“. Po dotištění firmware soubor už nejmenuje, agent si poslední úlohu pamatuje v `work/<key>.prusalink.json`.
+Ventilátory hlásí PrusaLink v otáčkách za minutu, telemetrie je proto nese jako `fan_hotend_rpm` a `fan_print_rpm` (agent 0.2.12;
+Kobry dávají procenta). Pozice cívek API nehlásí, start je proto bez kontroly pozic (nástěnka to u příkazu řekne); mapování
+nástrojů hlídá firmware při startu (`docs/AM.md` §12c, §12j).
 Neumí: kameru (firmware ji nemá; `snapshot_url` na libovolnou webkameru), reset chyby (jen displej), světlo, sušení,
 časosběr po vrstvách (API nedává polohu hlavy v pohybu; u tiskárny ho vypněte). Soubory přijímá `.gcode` i `.bgcode`.
 
