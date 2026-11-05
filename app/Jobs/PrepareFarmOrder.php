@@ -24,6 +24,7 @@ use App\Engines\Mesh\MeshDecimator;
 use App\Engines\Mesh\StlFile;
 use App\Engines\Mesh\ThreeMfWriter;
 use App\Models\FarmOrder;
+use App\Models\FarmPrinter;
 use App\Models\FarmPrinterSlot;
 use App\Models\ModelFile;
 use App\Support\Stopwatch;
@@ -233,7 +234,11 @@ class PrepareFarmOrder implements ShouldQueue
             $order->update(['stage' => 'slicing']);
             ['profiles' => $profiles, 'overrides' => $overrides, 'profile' => $profile, 'layer' => $layer, 'infill' => $infill, 'quality' => $quality] = $setup;
             // the piece was thinned above or is fine enough: the slicer takes the file as it is, a plate of copies is never thinned as a whole
-            $params = $setup['params']->withoutThinning();
+            $base = $setup['params']->withoutThinning();
+            // a tool changer prints from the tool its spool sits in and changes tools at the heights the design asks for: the
+            // plate goes to the slicer as a project that names them (docs/AM.md §12j); every other machine takes the mesh
+            $toolPlan = $printer->isToolChanger() ? self::toolPlan($order) : null;
+            [$params, $toolFilaments] = $toolPlan ? $this->toolChangerParams($printer, $disk->path($sliceRel), $disk->path($order->dir().'/plate.3mf'), $base, $setup['profile'], $bed, $toolPlan, (float) $mesh->volumeMm3, (float) $layer, $clock) : [$base, []];
             $result = $clock->measure('slice', fn () => $slicer->slice($disk->path($sliceRel), $params));
             $clock->merge($result->timings);
             $postStart = hrtime(true);
@@ -269,7 +274,8 @@ class PrepareFarmOrder implements ShouldQueue
                 $restStl = $disk->path($order->dir().'/rest.stl');
                 PlateLayout::replicate($piece, $restStl, $rest, $usable) ?? throw new \RuntimeException('Rest plate layout failed.');
                 $clock->add('post', (hrtime(true) - $postStart) / 1e9);
-                $restResult = $clock->measure('rest_slice', fn () => $slicer->slice($restStl, $params));
+                $restParams = $toolPlan ? $this->toolChangerParams($printer, $restStl, $disk->path($order->dir().'/rest.3mf'), $base, $setup['profile'], $bed, $toolPlan, (float) $piece->volumeMm3 * $rest, (float) $layer, $clock)[0] : $params;
+                $restResult = $clock->measure('rest_slice', fn () => $slicer->slice($restStl, $restParams));
                 $clock->merge($restResult->timings, 'rest_');
                 $postStart = hrtime(true);
                 if (! $restResult->gcodePath || ! is_file($restResult->gcodePath)) {
@@ -293,10 +299,12 @@ class PrepareFarmOrder implements ShouldQueue
                 'slice_params' => [
                     'engine' => $slicer->name(), 'printer' => ['id' => $printer->id, 'key' => $printer->key, 'model' => $printer->model],
                     'material' => $order->material->code, 'quality' => $quality, 'layer_mm' => $layer, 'strength' => $order->strength, 'copies' => $order->copies,
-                    'infill_percent' => $infill, 'unit_scale' => $order->unit_scale, 'scale' => (float) $order->scale, 'profiles' => $profiles, 'overrides' => $overrides,
+                    'infill_percent' => $infill, 'unit_scale' => $order->unit_scale, 'scale' => (float) $order->scale, 'profiles' => $profiles, 'overrides' => $toolPlan ? $params->overrides : $overrides,
                     'profile_layers' => $profile->layers, 'profile_fingerprint' => $profile->sliceFingerprint(),
                     'profile_hashes' => $this->profileHashes($profiles), 'preparer' => $order->isTest() ? 'php-stl' : $preparer->name(), 'sliced_at' => now()->toIso8601String(),
                     'timelapse_minutes' => $parking,
+                    // a tool changer: the tool and the tool changes this file was sliced for (the payment slices again when they differ)
+                    'tool' => $toolPlan, 'filaments' => $toolPlan ? self::filamentRecord($toolFilaments) : null,
                 ],
                 'slice_result' => $result->toArray() + ['plates' => $plates, 'plate_copies' => $perPlate, 'rest_copies' => $rest, 'rest' => $restResult?->toArray()],
                 // the whole order: every full plate, plus the last one when it differs
@@ -537,7 +545,14 @@ class PrepareFarmOrder implements ShouldQueue
                 return;
             }
             $order->update(['stage' => 'slicing']);
-            $result = $clock->measure('slice', fn () => $slicer->slice($disk->path($sliceRel), $setup['params']->withoutThinning()));
+            $partParams = $setup['params']->withoutThinning();
+            if ($printer->isToolChanger()) {
+                // the plate of this part prints from the tool its spool sits in (docs/AM.md §12j)
+                $spool = ($plate['slot_id'] ?? null) ? FarmPrinterSlot::find((int) $plate['slot_id']) : null;
+                $position = $spool && (int) $spool->farm_printer_id === (int) $printer->id ? (int) $spool->slot : (int) ($order->slot?->slot ?? 0);
+                $partParams = $this->toolChangerParams($printer, $disk->path($sliceRel), $disk->path($order->dir().'/part-'.$n.'.3mf'), $partParams, $setup['profile'], $bed, ['position' => $position, 'changes' => []], (float) $mesh->volumeMm3, (float) $setup['layer'], $clock)[0];
+            }
+            $result = $clock->measure('slice', fn () => $slicer->slice($disk->path($sliceRel), $partParams));
             @unlink($disk->path($order->dir().'/part-'.$n.'.stl.thin'));
             $clock->merge($result->timings, 'p'.$n.'_');
             if (! $result->gcodePath || ! is_file($result->gcodePath)) {
@@ -607,15 +622,15 @@ class PrepareFarmOrder implements ShouldQueue
      * @param  array{0: float, 1: float, 2: float}  $size  one piece as it lies
      * @return array{max: int, per: int, plates: int, rest: ?int, full: array, last: ?array}|null
      */
-    private static function copiesPlan(array $size, Dimensions $bed, float $edge, int $filaments, int $copies): ?array
+    private static function copiesPlan(array $size, Dimensions $bed, float $edge, int $filaments, int $copies, bool $tower = true): ?array
     {
         $piece = new Dimensions($size[0], $size[1], $size[2]);
-        $max = PlateLayout::towerGrid($piece, $bed, $edge, $filaments)['max'];
+        $max = PlateLayout::towerGrid($piece, $bed, $edge, $filaments, tower: $tower)['max'];
         if ($max < 1) {
             return null;
         }
-        $layout = function (int $n) use ($piece, $bed, $edge, $filaments): array {
-            $g = PlateLayout::towerGrid($piece, $bed, $edge, $filaments, $n);
+        $layout = function (int $n) use ($piece, $bed, $edge, $filaments, $tower): array {
+            $g = PlateLayout::towerGrid($piece, $bed, $edge, $filaments, $n, tower: $tower);
             $offsets = [];
             for ($k = 0; $k < $n; $k++) {
                 $offsets[] = [round(($k % $g['cols']) * ($piece->x + PlateLayout::GAP_MM), 3), round(intdiv($k, $g['cols']) * ($piece->y + PlateLayout::GAP_MM), 3), 0.0];
@@ -633,6 +648,13 @@ class PrepareFarmOrder implements ShouldQueue
 
     /** The process settings of a plate that changes filaments: the prime tower on, the purge into the infill where it can go. */
     public const ONE_PLATE_PROCESS = ['enable_prime_tower' => '1', 'prime_tower_width' => '25', 'flush_into_infill' => '1', 'flush_into_objects' => '0', 'flush_into_support' => '1'];
+
+    /**
+     * The same on a tool changer (Prusa INDX): no prime tower, the machine purges every tool it picks on its cleaning
+     * station (the change_filament_gcode of the machine profile, `G12`; docs/AM.md §12d, §12j). Two cubes: 2.2 g and
+     * 18 min without the tower against 4.5 g and 22.5 min with it (Orca 2.5, 4 Nov 2026).
+     */
+    public const TOOL_CHANGER_PROCESS = ['enable_prime_tower' => '0'];
 
     /**
      * The prime tower's room: as wide as ONE_PLATE_PROCESS makes it, the profiles' 5 mm brim, a depth that grows with
@@ -717,8 +739,21 @@ class PrepareFarmOrder implements ShouldQueue
             $index[$key] ??= count($index);
             $filamentOf[$i] = $index[$key];
         }
-        if (count($index) < 2 || count($index) > $printer->colorLimit() || count($index) > max(1, $printer->slots()->count())) {
-            return $skip(count($index) < 2 ? 'one_spool' : 'filaments');
+        $toolChanger = $printer->isToolChanger();
+        if ($toolChanger) {
+            // a tool changer prints a spool from the tool it sits in, the firmware maps T<n> to tool n one to one (docs/AM.md
+            // §12d, §12j): filament n = position n, so a part's extruder is its spool's position + 1 whatever the order of the
+            // parts; a part without a spool goes with the first colour's tool
+            $positionOf = [];
+            foreach ($index as $key => $n) {
+                $positionOf[$n] = is_int($key) && ($s = $spools->get($key)) ? (int) $s->slot : (int) ($order->slot?->slot ?? 0);
+            }
+            $filamentOf = array_map(fn ($n) => $positionOf[$n], $filamentOf);
+            $index = array_map(fn ($n) => $positionOf[$n], $index);
+        }
+        $nFilaments = count(array_unique($filamentOf));
+        if ($nFilaments < 2 || $nFilaments > $printer->colorLimit() || $nFilaments > max(1, $printer->slots()->count())) {
+            return $skip($nFilaments < 2 ? 'one_spool' : 'filaments');
         }
 
         $margin = 2 * (float) $settings->get('bed_margin_mm');
@@ -749,9 +784,9 @@ class PrepareFarmOrder implements ShouldQueue
         $size = [$hi[0] - $lo[0], $hi[1] - $lo[1], $hi[2] - $lo[2]];
         // several copies: as many full plates as they need, the last one with the rest, every plate a grid that leaves
         // the tower its band (PlateLayout::towerGrid, the calculator counts the plates the same way)
-        $plan = (int) $order->copies > 1 && is_finite($lo[0]) ? self::copiesPlan($size, $bed, $margin / 2, count($index), (int) $order->copies) : null;
+        $plan = (int) $order->copies > 1 && is_finite($lo[0]) ? self::copiesPlan($size, $bed, $margin / 2, $nFilaments, (int) $order->copies, ! $toolChanger) : null;
         // a painted 3MF ordered once may take more copies later: the page says how many fit a plate (a tool's design: one)
-        $maxCopies = $plan ? $plan['max'] : ($paintedFile && is_finite($lo[0]) ? max(1, PlateLayout::towerGrid(new Dimensions($size[0], $size[1], $size[2]), $bed, $margin / 2, count($index))['max']) : 1);
+        $maxCopies = $plan ? $plan['max'] : ($paintedFile && is_finite($lo[0]) ? max(1, PlateLayout::towerGrid(new Dimensions($size[0], $size[1], $size[2]), $bed, $margin / 2, $nFilaments, tower: ! $toolChanger)['max']) : 1);
         if (! is_finite($lo[0]) || ((int) $order->copies > 1 && ! $plan) || $size[0] > $usable->x || $size[1] > $usable->y || $size[2] > $usable->z) {
             foreach ($paths as $rel) {
                 @unlink($disk->path($rel).'.raw');
@@ -759,9 +794,10 @@ class PrepareFarmOrder implements ShouldQueue
 
             return $skip('fit');   // the parts as designed do not fit the plate together: one plate each
         }
-        // the prime tower needs a band of its own beside the parts (it must not land on one); the parts give way to it
+        // the prime tower needs a band of its own beside the parts (it must not land on one); the parts give way to it.
+        // A tool changer prints without the tower (TOOL_CHANGER_PROCESS): nothing to make room for
         $set = $plan ? $plan['full']['set'] : [$size[0], $size[1]];
-        $tower = self::towerSpot([$set[0], $set[1], $size[2]], $bed, $margin / 2, count($index));
+        $tower = $toolChanger ? ['x' => null, 'y' => null, 'shift' => [0.0, 0.0]] : self::towerSpot([$set[0], $set[1], $size[2]], $bed, $margin / 2, $nFilaments);
         if (! $tower) {
             foreach ($paths as $rel) {
                 @unlink($disk->path($rel).'.raw');
@@ -875,15 +911,27 @@ class PrepareFarmOrder implements ShouldQueue
         $order->update(['stage' => 'slicing']);
         $setup = $this->sliceSetup($order, $settings);
         $filaments = [];
-        foreach ($index as $key => $n) {
-            $spool = is_int($key) ? $spools->get($key) : null;
-            $profile = $spool && $spool->color ? PrintProfile::for($printer, $spool->color->material, $spool->color) : $setup['profile'];
-            // the spool's colour goes to the slicer: Orca wants one per filament (its colour vector must reach every
-            // filament a part uses) and purges by the distance between them
-            $filaments[$n] = ['profile' => $profile->filamentProfile, 'overrides' => $profile->filament, 'colour' => $spool?->color?->hex, 'volume_mm3' => 0.0, 'slot_id' => $spool?->id, 'color_id' => $spool?->farm_color_id];
+        // the spools first: on a tool changer a part without a spool shares the first colour's tool and that spool's profile
+        foreach ([true, false] as $withSpool) {
+            foreach ($index as $key => $n) {
+                if (is_int($key) !== $withSpool || isset($filaments[$n])) {
+                    continue;
+                }
+                $spool = is_int($key) ? $spools->get($key) : null;
+                $profile = $spool && $spool->color ? PrintProfile::for($printer, $spool->color->material, $spool->color) : $setup['profile'];
+                // the spool's colour goes to the slicer: Orca wants one per filament (its colour vector must reach every
+                // filament a part uses) and purges by the distance between them
+                $filaments[$n] = ['profile' => $profile->filamentProfile, 'overrides' => $profile->filament, 'colour' => $spool?->color?->hex, 'volume_mm3' => 0.0, 'slot_id' => $spool?->id, 'color_id' => $spool?->farm_color_id];
+            }
         }
         foreach ($filamentOf as $i => $n) {
             $filaments[$n]['volume_mm3'] += (float) $volumes[$i];
+        }
+        if ($toolChanger) {
+            // every position up to the last tool used gets a filament (Orca addresses extruder n only among n loaded filaments):
+            // the first colour's profile and colour, flagged, nothing printed from it; Orca heats, calibrates and cleans the
+            // used tools alone (`is_extruder_used` in the machine's start G-code, verified on the G-code of 2.5, docs/AM.md §12j)
+            $filaments = self::withPlaceholders($filaments, (int) ($order->slot?->slot ?? 0));
         }
         ksort($filaments);
         $projectRel = $order->dir().'/plate.3mf';
@@ -925,8 +973,8 @@ class PrepareFarmOrder implements ShouldQueue
                 @unlink($disk->path($rel));   // the 3MF holds the thinned geometry now
             }
         }
-        $process = self::ONE_PLATE_PROCESS + ['wipe_tower_x' => [(string) $tower['x']], 'wipe_tower_y' => [(string) $tower['y']]];
-        $params = $setup['params']->withFilaments(array_map(fn ($f) => ['profile' => $f['profile'], 'overrides' => $f['overrides'], 'colour' => $f['colour'], 'volume_mm3' => round($f['volume_mm3'], 1)], $filaments), $disk->path($projectRel), $process);
+        $process = $toolChanger ? self::TOOL_CHANGER_PROCESS : self::ONE_PLATE_PROCESS + ['wipe_tower_x' => [(string) $tower['x']], 'wipe_tower_y' => [(string) $tower['y']]];
+        $params = $setup['params']->withFilaments(self::forSlicer($filaments), $disk->path($projectRel), $process);
         try {
             $result = $clock->measure('slice', fn () => $slicer->slice($disk->path($plateRel), $params));
         } catch (\Throwable $e) {
@@ -952,7 +1000,7 @@ class PrepareFarmOrder implements ShouldQueue
         $restResult = null;
         if ($plan && $plan['rest'] !== null) {
             $last = $plan['last'];
-            $restTower = self::towerSpot([$last['set'][0], $last['set'][1], $size[2]], $bed, $margin / 2, count($index)) ?? $tower;
+            $restTower = $toolChanger ? $tower : (self::towerSpot([$last['set'][0], $last['set'][1], $size[2]], $bed, $margin / 2, $nFilaments) ?? $tower);
             $restMove = [$bed->x / 2 - $lo[0] - $last['set'][0] / 2 + $restTower['shift'][0], $bed->y / 2 - $lo[1] - $last['set'][1] / 2 + $restTower['shift'][1], -$lo[2]];
             $restProject = $order->dir().'/plate-rest.3mf';
             if (! $clock->measure('repaint', fn () => app(PaintedColors::class)->project($file, $disk->path($restProject), $scale, $restMove, $partFilament, $last['offsets']))) {
@@ -960,8 +1008,8 @@ class PrepareFarmOrder implements ShouldQueue
 
                 return $skip('project');
             }
-            $restParams = $setup['params']->withFilaments(array_map(fn ($f) => ['profile' => $f['profile'], 'overrides' => $f['overrides'], 'colour' => $f['colour'], 'volume_mm3' => round($f['volume_mm3'] / $plan['per'] * $plan['rest'], 1)], $filaments),
-                $disk->path($restProject), self::ONE_PLATE_PROCESS + ['wipe_tower_x' => [(string) $restTower['x']], 'wipe_tower_y' => [(string) $restTower['y']]]);
+            $restParams = $setup['params']->withFilaments(self::forSlicer($filaments, $plan['rest'] / $plan['per']),
+                $disk->path($restProject), $toolChanger ? self::TOOL_CHANGER_PROCESS : self::ONE_PLATE_PROCESS + ['wipe_tower_x' => [(string) $restTower['x']], 'wipe_tower_y' => [(string) $restTower['y']]]);
             try {
                 $restResult = $clock->measure('rest_slice', fn () => $slicer->slice($disk->path($plateRel), $restParams));
             } catch (\Throwable $e) {
@@ -988,6 +1036,7 @@ class PrepareFarmOrder implements ShouldQueue
         $parking = (int) round($sum($parkingOf($gcodeRel), $restRel ? $parkingOf($restRel) : null));
         $plates = [];
         foreach ($skeleton as $i => $p) {
+            // the grams of filament n: the slicer lists one figure per filament loaded, a position nothing printed from 0.00
             $n = $filamentOf[$i];
             $plates[] = ['part' => (string) $p['part'], 'slot_id' => (int) ($p['slot_id'] ?? 0), 'color_id' => (int) ($p['color_id'] ?? 0), 'copies' => $per, 'extruder' => $n + 1,
                 'stl_path' => $paths[$i], 'grams' => isset($result->filamentGrams[$n]) ? round($sum((float) $result->filamentGrams[$n], isset($restResult?->filamentGrams[$n]) ? (float) $restResult->filamentGrams[$n] : null), 1) : null,
@@ -1004,9 +1053,9 @@ class PrepareFarmOrder implements ShouldQueue
                 'infill_percent' => $setup['infill'], 'unit_scale' => $order->unit_scale, 'scale' => (float) $order->scale, 'profiles' => $setup['profiles'], 'overrides' => $params->overrides,
                 'profile_layers' => $setup['profile']->layers, 'profile_fingerprint' => $setup['profile']->sliceFingerprint(),
                 'profile_hashes' => $this->profileHashes($setup['profiles']), 'preparer' => $preparer->name(), 'sliced_at' => now()->toIso8601String(),
-                'timelapse_minutes' => $parking, 'by_parts' => true, 'one_plate' => true,
-                'filaments' => array_map(fn ($f) => ['slot_id' => $f['slot_id'], 'color_id' => $f['color_id'], 'profile' => $f['profile'], 'colour' => $f['colour']], $filaments),
-                'tower' => ['x' => $tower['x'], 'y' => $tower['y'], 'shift' => $tower['shift']],
+                'timelapse_minutes' => $parking, 'by_parts' => true, 'one_plate' => true, 'tool_changer' => $toolChanger,
+                'filaments' => self::filamentRecord($filaments),
+                'tower' => $toolChanger ? null : ['x' => $tower['x'], 'y' => $tower['y'], 'shift' => $tower['shift']],
                 'copies_grid' => $plan ? ['per_plate' => $per, 'grid' => $plan['full']['grid'], 'rest_grid' => $plan['last']['grid'] ?? null] : null,
             ],
             'slice_result' => $result->toArray() + ['plates' => $platesCount, 'plate_copies' => $per, 'rest_copies' => $restResult ? $plan['rest'] : null, 'rest' => $restResult?->toArray(),
@@ -1020,6 +1069,97 @@ class PrepareFarmOrder implements ShouldQueue
         $this->price($order, $printer, $settings, $orders, $flow, $clock);
 
         return true;
+    }
+
+    /**
+     * The filaments of a tool changer's plate with every position up to the last tool used filled in (`$filaments` by
+     * position): a position nothing prints from takes the profile and colour of the first colour's spool (`$main`, else
+     * the lowest position), flagged `placeholder`, so Orca has a filament n for every extruder n a part names.
+     *
+     * @param  array<int, array{profile: string, overrides: array, colour: ?string, volume_mm3: float, slot_id: ?int, color_id: ?int}>  $filaments
+     * @return array<int, array{profile: string, overrides: array, colour: ?string, volume_mm3: float, slot_id: ?int, color_id: ?int, placeholder?: bool}>
+     */
+    public static function withPlaceholders(array $filaments, int $main): array
+    {
+        if (! $filaments) {
+            return [];
+        }
+        $template = $filaments[$main] ?? $filaments[min(array_keys($filaments))];
+        $last = (int) max(array_keys($filaments));
+        for ($n = 0; $n < $last; $n++) {
+            $filaments[$n] ??= ['profile' => $template['profile'], 'overrides' => $template['overrides'], 'colour' => $template['colour'], 'volume_mm3' => 0.0, 'slot_id' => null, 'color_id' => null, 'placeholder' => true];
+        }
+        ksort($filaments);
+
+        return $filaments;
+    }
+
+    /** The filament list as SliceParams::withFilaments takes it; `$share` scales the volumes (the last plate of several). */
+    private static function forSlicer(array $filaments, float $share = 1.0): array
+    {
+        return array_map(fn ($f) => ['profile' => $f['profile'], 'overrides' => $f['overrides'], 'colour' => $f['colour'], 'volume_mm3' => round($f['volume_mm3'] * $share, 1)] + (empty($f['placeholder']) ? [] : ['placeholder' => true]), $filaments);
+    }
+
+    /** The filament list as the order keeps it (slice_params.filaments): T<n> = entry n, a placeholder flagged. */
+    private static function filamentRecord(array $filaments): array
+    {
+        return array_values(array_map(fn ($f) => ['slot_id' => $f['slot_id'] ?? null, 'color_id' => $f['color_id'] ?? null, 'profile' => $f['profile'], 'colour' => $f['colour'] ?? null] + (empty($f['placeholder']) ? [] : ['placeholder' => true]), $filaments));
+    }
+
+    /**
+     * What a tool changer's slice of an order printed as one piece has to name (docs/AM.md §12j): the tool of the first
+     * colour (the spool's position, slot 0 = tool 1 = T0) and the tool changes at the design's heights
+     * (FarmOrder::colorChanges: positions of this machine, a change back to the running tool left out). The payment
+     * compares it with what the order was sliced with and slices again when it differs (OrderFlow::pay).
+     *
+     * @return array{position: int, changes: list<array{z: float, position: int}>}
+     */
+    public static function toolPlan(FarmOrder $order): array
+    {
+        return ['position' => (int) ($order->slot?->slot ?? 0), 'changes' => array_values(array_map(fn ($c) => ['z' => round((float) $c['z'], 3), 'position' => (int) $c['slot']], $order->colorChanges()))];
+    }
+
+    /** Do two plans name the same tools (a plan the order keeps came through JSON, which writes 3.0 as 3)? False for a missing plan. */
+    public static function sameToolPlan(?array $a, ?array $b): bool
+    {
+        $norm = fn (?array $p) => $p === null ? null : ['position' => (int) ($p['position'] ?? 0),
+            'changes' => array_map(fn ($c) => [number_format((float) ($c['z'] ?? 0), 3, '.', ''), (int) ($c['position'] ?? 0)], array_values((array) ($p['changes'] ?? [])))];
+
+        return $a !== null && $b !== null && $norm($a) === $norm($b);
+    }
+
+    /**
+     * The slice of one plate on a tool changer as a project (docs/AM.md §12j): the mesh placed in the middle of the bed
+     * (the slicer centres a mesh, not a project), one object on the first colour's tool, the tool changes at their
+     * heights (Orca's own per-layer tool change, ThreeMfWriter), a filament per position up to the last tool used (the
+     * spools of this machine by position, the positions between them placeholders), no prime tower. The mesh beside
+     * the project only gives the slicer the size. A change at `z` takes effect from the first layer whose middle lies
+     * above it (Orca switches from the layer whose print_z reaches `top_z`), the rule GcodeSlot::colorChanges applies
+     * on the machines with an ACE.
+     *
+     * @param  array{position: int, changes: list<array{z: float, position: int}>}  $plan
+     * @param  float  $layer  the layer height of this slice (mm)
+     * @return array{0: SliceParams, 1: array} the parameters of the slice and the filaments by position (slot, colour, placeholder) for the record
+     */
+    private function toolChangerParams(FarmPrinter $printer, string $meshPath, string $projectPath, SliceParams $params, PrintProfile $fallback, Dimensions $bed, array $plan, float $volumeMm3, float $layer, Stopwatch $clock): array
+    {
+        $positions = array_values(array_unique(array_merge([(int) $plan['position']], array_map('intval', array_column($plan['changes'], 'position')))));
+        $spools = $printer->slots()->with('color.material')->whereIn('slot', $positions)->get()->keyBy('slot');
+        $placed = $projectPath.'.placed.stl';
+        $clock->measure('layout', fn () => StlFile::place($meshPath, $placed, 1.0, $bed->x / 2, $bed->y / 2));
+        $changes = array_map(fn ($c) => ['z' => round((float) $c['z'] + $layer / 2, 3), 'extruder' => (int) $c['position'] + 1, 'colour' => $spools->get((int) $c['position'])?->color?->hex], $plan['changes']);
+        ThreeMfWriter::write($projectPath, [['name' => 'print', 'stl' => $placed, 'extruder' => (int) $plan['position'] + 1]], $changes);
+        @unlink($placed);
+        $filaments = [];
+        foreach ($positions as $n) {
+            $spool = $spools->get($n);
+            $profile = $spool && $spool->color ? PrintProfile::for($printer, $spool->color->material, $spool->color) : $fallback;
+            $filaments[$n] = ['profile' => $profile->filamentProfile, 'overrides' => $profile->filament, 'colour' => $spool?->color?->hex, 'volume_mm3' => $n === (int) $plan['position'] ? $volumeMm3 : 0.0, 'slot_id' => $spool?->id, 'color_id' => $spool?->farm_color_id];
+        }
+        $filaments = self::withPlaceholders($filaments, (int) $plan['position']);
+        $clock->note('tool_positions', implode(',', array_map(fn ($n) => $n + 1, $positions)));
+
+        return [$params->withFilaments(self::forSlicer($filaments), $projectPath, self::TOOL_CHANGER_PROCESS), $filaments];
     }
 
     /** Fingerprints of the profile files: the same names with different content would not be the same print. */

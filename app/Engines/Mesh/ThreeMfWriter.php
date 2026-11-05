@@ -16,8 +16,12 @@ final class ThreeMfWriter
     /**
      * @param  list<array{name: string, stl: string, extruder: int, process?: array<string, string>}>  $objects  binary or
      *                                                                                                           ASCII STL per part, extruder 1-based, process settings of this object alone (Orca's per-object config: `ironing_type` off for an inlay)
+     * @param  list<array{z: float, extruder: int, colour?: ?string}>  $toolChanges  changes of the filament at a height (mm, the print_z of the
+     *                                                                               layer the new filament starts with), extruder 1-based: Orca's own per-layer tool change (Metadata/custom_gcode_per_layer.xml,
+     *                                                                               type 2, mode MultiAsSingle), one filament printing the whole plate at a time – a tool changer (Prusa INDX) makes the change
+     *                                                                               on its station (docs/AM.md §12j; verified with Orca 2.5 on 6 Nov 2026)
      */
-    public static function write(string $path, array $objects): void
+    public static function write(string $path, array $objects, array $toolChanges = []): void
     {
         if (! $objects) {
             throw new EngineException('A 3MF needs at least one object.');
@@ -51,7 +55,29 @@ final class ThreeMfWriter
         $zip->addFromString('3D/3dmodel.model', '<?xml version="1.0" encoding="UTF-8"?>'."\n".'<model unit="millimeter" xml:lang="en-US" xmlns="http://schemas.microsoft.com/3dmanufacturing/core/2015/02">'
             .'<metadata name="Application">matplace farm</metadata><resources>'.$resources.'</resources><build>'.$build.'</build></model>');
         $zip->addFromString('Metadata/model_settings.config', '<?xml version="1.0" encoding="UTF-8"?>'."\n".'<config>'.$config.'</config>');
+        if ($toolChanges) {
+            $zip->addFromString('Metadata/custom_gcode_per_layer.xml', self::toolChangesXml($toolChanges));
+        }
         $zip->close();
+    }
+
+    /**
+     * The per-layer custom G-code file of Orca / Bambu Studio with a tool change per entry: `top_z` is the print_z of the
+     * layer the new filament starts with (the change comes before that layer), `type` 2 = ToolChange, `MultiAsSingle` =
+     * one filament prints the whole plate until the next change (libslic3r CustomGCode, ToolOrdering::custom_tool_changes).
+     *
+     * @param  list<array{z: float, extruder: int, colour?: ?string}>  $toolChanges
+     */
+    public static function toolChangesXml(array $toolChanges): string
+    {
+        usort($toolChanges, fn ($a, $b) => $a['z'] <=> $b['z']);
+        $rows = '';
+        foreach ($toolChanges as $c) {
+            $colour = htmlspecialchars((string) ($c['colour'] ?? ''), ENT_XML1 | ENT_QUOTES, 'UTF-8');
+            $rows .= '<layer top_z="'.rtrim(rtrim(sprintf('%.3f', (float) $c['z']), '0'), '.').'" type="2" extruder="'.max(1, (int) $c['extruder']).'" color="'.$colour.'" extra="" gcode="tool_change"/>'."\n";
+        }
+
+        return '<?xml version="1.0" encoding="utf-8"?>'."\n<custom_gcodes_per_layer>\n<plate>\n<plate_info id=\"1\"/>\n".$rows."<mode value=\"MultiAsSingle\"/>\n</plate>\n</custom_gcodes_per_layer>\n";
     }
 
     /** The triangles of an STL as a 3MF mesh, vertices shared where they coincide (to a hundredth of a micrometre). */
