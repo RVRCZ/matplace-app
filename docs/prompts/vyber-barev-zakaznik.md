@@ -53,8 +53,12 @@ D. **Jeden vzhled pro všechny tři výběry.** Hlavní barva, druhá barva a v�
    používají jednu funkci dlaždice (fotka nebo vzorek, název, druh, zašednutí s důvodem, kód pro
    správce). Karty strojů (`farm-machines`) tam, kde zakázka potřebuje víc barev než jednu: u dílů už jsou, u druhé
    barvy a výměn je doplň stejně (karta jen když vyhovuje víc strojů, jinak bez karty); u jedné barvy stroj volí farma,
-   karta se neukáže. Když se ukáže, že druhá barva s kartami je velká změna, udělej jen společnou dlaždici a napiš to
-   do odchylek.
+   karta se neukáže. Závazné i bez karet: po volbě v jednom řádku výměn nabízejí ostatní řádky jen cívky strojů, které drží
+   všechny dosavadní volby, a kód u barvy (správce) je cívka toho stroje. Dnes `secondSpoolsAcross` dává každou
+   barvu jednou s cívkou prvního stroje, který ji má (stroj hlavní barvy napřed), řádky se nezužují a server pak při
+   přepočtu odmítne `one_machine` (`machineFor`), když cívky sedí ve dvou strojích. Roman 5. 11. 2026 večer, ozdoba
+   na brčko: růžová na C1 i B3, bílá jen na B3, další řádky výměn dál ukazovaly C1. Když se ukáže, že karty u výměn
+   jsou velká změna, udělej aspoň to zúžení a společnou dlaždici a napiš to do odchylek.
 E. **Testy.** FarmColorsPerMachineTest, FarmOrderFlowTest, FarmGuestCheckoutTest, CalcToolColorsTest, ThreeMfColorsTest,
    FarmColorsFillTest zelené. Nové: dvě `FarmColor` stejného názvu v PLA a PETG dají jednu dlaždici se dvěma druhy a
    `picked` správný slot; zákazník nedostane `codes` ani kódy v HTML, správce dostane „Farm U #3 · ACE 3“; dlaždice
