@@ -831,3 +831,119 @@ Ověřeno na G-kódu z Orcy 2.5 (12e):
 `app/Models/FarmPrinter.php`, `app/Http/Controllers/Farm/AgentController.php`, `app/Http/Controllers/Admin/FarmOrderController.php`,
 `resources/views/admin/farm/printer_edit.blade.php`, `slots.blade.php`, `lang/src/prusalink.json`, `lang/{cs,en,es}.json`,
 `tests/Feature/FarmPrinterPositionsTest.php`; `docs/TODO.md` řádek 67, `docs/prompts/prusalink-core-one-indx.md` odchylky.
+
+### 12j. Nástroje podle pozic, věž pryč, výměny ve výšce, kontrola tisku s 8 barvami (TODO #70, větev `feature/indx-tools-by-position`, 6. 11. 2026)
+
+Zadání `docs/prompts/indx-nastroje-podle-pozic.md` (session 2, noc na 6. 11.). Do rána A, B, C; D, E a F také hotové. Všechno
+místně (falešný slicer, falešná binárka Orcy a skutečná Orca 2.5 portable), tiskárna ani server netknuté.
+
+**A. Nástroje podle pozic (`PrepareFarmOrder::prepareOnePlate`).** U měniče nástrojů (`FarmPrinter::isToolChanger()`) je seznam
+filamentů řezu v pořadí nástrojů: **filament n = pozice cívky n** (slot 0 = Nástroj 1 = `T0`), díl nebo skupina barev dostane
+v 3MF `extruder` = pozice své cívky + 1, ať jsou díly v jakémkoli pořadí; díl bez cívky jde na nástroj hlavní barvy. Pozice mezi
+použitými nástroji dostanou **zástupný filament** (`withPlaceholders`: profil a barva hlavní cívky, `placeholder: true`,
+`slot_id` null, objem 0), protože Orca osloví extruder n jen mezi n načtenými filamenty; Orca je v G‑kódu nenahřívá, nekalibruje
+ani nečistí (start stroje jde přes `is_extruder_used`, ověřeno: `M862.1 T<n>`, `M574 S<n>` a `M104 T<n> S0` na konci jen u
+použitých, `G427 R2 P3` kalibruje jen použité). Gramy: Orca 2.5 píše `; filament used [g]` **pro každý načtený filament, mezery
+0.00**, index = pozice, takže `part_plates[*].grams` se berou přímo podle pozice; `slice_params.filaments` nese všech n položek
+(zástupné označené), `FarmOrder::filamentSlots()` dává `{pozice: pozice}` jen pro použité (např. `{0:0, 1:1, 4:4}`), start pro
+agenta (`Dispatcher`) totéž, agent i správce dostanou **originál řezu** (12d). `OrcaSlicer::slice` počítá hlavičku proti počtu
+skutečně použitých filamentů (zástupné nepočítá), `FakeSlicer` dělá výměny jen mezi filamenty s objemem a `T<n>` jen pro ně.
+Stroje s ACE beze změny (`GcodeSlot::fileForMany` dál přemapovává; FarmOnePlate zelený).
+
+**B. Věž u měniče pryč.** `PrepareFarmOrder::TOOL_CHANGER_PROCESS = ['enable_prime_tower' => '0']` místo `ONE_PLATE_PROCESS`,
+žádné `wipe_tower_x/y`, `slice_params.tower` null, `copiesPlan` a `PlateLayout::towerGrid(..., tower: false)` pás pro věž
+nerezervují (kostka 75 mm na 248 × 205: 6 kusů místo 4). Čištění dělá stanice (`G12 S90`, `G12 S30`, `FLUSH_START`, blok
+`Purge Station` v `change_filament_gcode`, protože `enable_prime_tower == false`). Rozdíl z 12e platí dál: dvě kostky
+2,24 g a 18 min bez věže proti 4,49 g a 22,5 min s ní; dnešní řezy níž mají 0 řádků `;TYPE:Prime tower`.
+
+**D. Výměny ve výšce na měniči = projekt s výměnou nástroje ve vrstvě (varianta 2).** Orca 2.5 čte ze 3MF soubor
+`Metadata/custom_gcode_per_layer.xml` (`<layer top_z=".." type="2" extruder="n" .../>`, `<mode value="MultiAsSingle"/>`;
+`ThreeMfWriter::write(..., $toolChanges)` / `toolChangesXml`) a udělá výměnu nástroje svým vlastním blokem (`T<n> S1 L0 D0`,
+čištění na stanici), start nahřeje a zkalibruje oba nástroje. Ověřeno místně: kostka 10 mm, výměna v 5 mm → `total filament
+change = 1`, `T0` 3× a `T1` 1×, výměna před vrstvou `;Z:5` („Change Tool0 -> Tool1 (layer 24)“), 0,61 + 0,74 g, 13 min.
+Proto na měniči **každý tisk jednoho kusu i každá podložka dílu po dílech jde jako projekt** (`toolChangerParams`): síť
+položená na střed podložky (`StlFile::place`; slicer centruje jen sítě, ne projekty), jeden objekt na nástroji hlavní cívky,
+výměny z `FarmOrder::colorChanges()` jako výměny nástroje, filamenty podle pozic se zástupnými mezerami, `TOOL_CHANGER_PROCESS`.
+Výška: `top_z = z + výška vrstvy / 2`, tedy od první vrstvy, jejíž střed je nad změnou, stejně jako `GcodeSlot::colorChanges`
+u ACE (deska 3 mm, vrstvy 0,2: od vrstvy končící v 3,2). `slice_params.tool = {position, changes[{z, position}]}`
+(`PrepareFarmOrder::toolPlan`) a `slice_params.filaments`; **platba řeže znovu** („reslice for the tools“), když se nástroj
+hlavní barvy nebo výměny liší od toho, s čím byl soubor řezaný (`OrderFlow::pay`, `sameToolPlan`; porovnání hodnotou, JSON
+píše 3.0 jako 3; zakázka řezaná před touto větví bez `tool` se řeže znovu jednou). Jednobarevný tisk z nástroje 1 bez výměn
+jde touž cestou (projekt s jedním filamentem), aby záznam i porovnání byly stejné. Stránka zakázky kartu Core One u výměn
+nabízí dál, nic se neschovává. Varianta 1 (vkládat blok výměny při předání) zamítnuta: start stroje nahřívá a kalibruje jen
+nástroje, které řez použil (`G427`), dodatečně vložený nástroj by byl studený a nezkalibrovaný.
+
+**C. Předletová kontrola tisku s 8 barvami.** Prošlo: `ColorLimit::of(Core One s 8 pozicemi)` = 8, `max_colors` 8 na stránce,
+karta „Nástroj 1 až 8“, návrh 8 dílů → jedna podložka s 8 filamenty bez zástupných, `T0` až `T7`, 8 položek gramů, devátá
+barva `too_many_colors` s číslem 8; jediný strop 4 zůstává jako výchozí `FarmOrder::MAX_COLORS` pro stroj bez pozic
+a `?? 4` v `farm.ts`, strop `max_colors_ceiling` 16 nechán. Malované 3MF: `ColorLimit::farm()` = 8, jakmile je Core One
+zapnutá a přes agenta (slučuje se až nad 8). Skutečný řez 8 kostek na 8 nástrojích Orcou 2.5 níže.
+
+**Kontrolní seznam pro Romana (ráno 6. 11.):**
+1. Tiskárna: ve všech osmi nástrojích cívka **stejného typu podle displeje** (PLA; firmware porovnává `filament_type` souboru
+   s typem zavedeným u nástroje, 12c), filament zavedený (čidlo), trysky 0,4 HF, podložka texturovaná PEI, dok všech nástrojů
+   zkalibrovaný. Displej bez otevřeného dialogu.
+2. Administrace, tiskárna `core-one-01`: **pozice Nástroj 1 až 8 v pořadí nástrojů na tiskárně**, u každé správná barva a druh
+   (PLA stejné rodiny; pozice s jiným druhem se u dílů nabídne jen zašedlá), dost gramů, zapnuto; profil stroje
+   `machine_coreone_indx8t.json`, procesy `*_coreone_indx8t.json`, podložka texturovaná, časosběr vypnutý. Podložka prázdná
+   a potvrzená (`bed_clear`).
+3. Server: `ORCA_BIN_TOOLCHANGER` míří na Orcu 2.5 (12e); tato větev nasazená (bez ní jde filament i na nástroj i).
+4. Zakázka: návrh po dílech nebo malované 3MF s 8 barvami, na stránce karta Core One „8 z 8 barev“, u dílů pozice Nástroj 1–8;
+   po řezu v administraci odznak „jedna podložka · výměny n× · T0→slot 1 … T7→slot 8“ (T podle pozice, ne podle pořadí dílů),
+   `filament used [g]` v souboru 8 položek.
+5. Sledovat: start bez dialogu mapování (jinak `paused` s hláškou o displeji → na displeji potvrdit a srovnat typy), první
+   výměnu na stanici (`G12`), že barvy sedí na díly (pozice ↔ nástroj), čas: každá výměna asi 20 s (8 kostek 15 mm = 210 výměn
+   = 1 h 22 min, z toho tisk sám pár minut), gramy po nástrojích v hlavičce proti cívkám. Nástěnka: ventilátory v otáčkách
+   (`fan_*_rpm`), u startu věta o nekontrolovaných pozicích (API je nehlásí) je v pořádku.
+
+**E. Nástěnka.** Ovladač `prusalink` 0.2.12 posílá ventilátory jako `fan_hotend_rpm` a `fan_print_rpm` (PrusaLink dává
+otáčky, Kobry procenta); `FarmCommand::resultText()` překládá známé poznámky agenta u „Poslední příkaz“ („slot n not
+checked…“ → „Pozice 1, 2, 5 agent nekontroloval, tiskárna své pozice nehlásí…“, `lang/src/indx_tools.json`), ostatní nechává;
+„Poslední příkaz“ sám byl česky už dřív. `agent.py` netknutý (jen ovladač), pytest 108.
+
+**F. Profily INDX pro další druhy (neověřené na tiskárně, označené ve `filament_notes`).** `filament_asa_coreone_indx8t.json`
+(ASA, 265/265 °C, texturovaná 105 °C místo 45 z vendor souboru Prusy, 26 mm³/s) a `filament_tpu_coreone_indx8t.json` (TPU,
+230 °C, 50 °C, 2,5 mm³/s; na displeji Prusa říká FLEX, soubor TPU) jsou **syntetické** presety „Generic ASA/TPU @Prusa CORE One
+INDX“ (inherits `Generic ASA @Prusa CORE One HF 0.4` / `Generic TPU @Prusa CORE One`, include `fdm_filament_template_indx`,
+varianta „Direct Drive High Flow“) zploštělé `scripts/orca_flatten_profile.py`; `filament_abs_coreone_indx8t.json` a
+`filament_pla_silk_coreone_indx8t.json` jsou Prusiny vlastní INDX presety (ABS 260/110 °C; Z‑smrštění 0,22 % Prusy Orca
+odmítá, dáno 100 %). Všechny položené na klíčovou sadu `filament_pla_coreone_indx8t.json` (12e), JSON bez duplicit, Orca 2.5
+s každým řeže (kostka ASA 10 min, TPU 11 min, ABS + PLA Silk na jedné podložce 23 min: měnič nástrojů míchá druhy, žádné
+„mixed temperature“). `machineVariant` bere `filament_asa_*` pro ABS, ABS+, ASA i PC a `filament_tpu_*` pro TPU sám; silk
+a abs se přiřadí ručně. Podklady: `@System` presety z `OrcaFilamentLibrary` tagu v2.5.0-alpha. Roman ráno řekne, co do INDX dá.
+
+**Testy.** `FarmToolChangerPlateTest` (4): 3 díly na nástrojích 1, 2, 5 (extrudery 1, 2, 5; 5 filamentů, zástupné 3 a 4;
+`filamentSlots` `{0:0,1:1,4:4}`; věž 0; start `filaments {0:0,1:1,4:4}`; agent dostane originál, `T4` ano, `T2` ne; odznak
+„T4→slot 5“), 8 dílů na 8 nástrojích + devátá barva odmítnuta s 8, jednobarevný tisk z nástroje 2 (projekt na extruderu 2,
+`tool {position 1}`, platba bez nového řezu) a deska s nápisem (výměna v 3 mm na nástroj 5 → `top_z 3.1 extruder 5`, po platbě
+s černou z nástroje 2 „reslice for the tools“ a `extruder 2`), a **řez skutečnou třídou `OrcaSlicer` přes falešnou binárku**
+`tests/Support/fake_orca.php` (obal .cmd/.sh, čte 3MF a píše hlavičku jako Orca 2.5; 5 souborů filamentů s barvami, proces
+`enable_prime_tower 0`, projekt s extrudery 1, 2, 5, gramy `[1, 1, 0, 0, 1]`, 60 výměn; a jeden kus z nástroje 2 se 2 soubory).
+`ToolChangerPlateTest` (4): zástupné filamenty, mřížka bez pásu, soubor výměn, hlavičky Orcy 2.5 s mezerami a s 8 položkami.
+`FarmCommandResultTextTest` (2). Zelené dál: FarmOnePlate, FarmColorsPerMachine, FarmColorTiles, FarmDecimateCopies,
+OrcaBinToolchanger, GcodeStats, GcodeSlot, OnePlateTower, FarmOrderFlow, ThreeMfColors, FarmPrinterPositions, FarmOrderColors,
+FarmManualOnlyKinds, CalcToolColors = 110 testů, 1676 assertions, 4 přeskočené (Orca, výpisy stránek). pint, `npm run build`
+(Blade), pytest agenta 108.
+
+**Skutečné řezy Orcou 2.5 (portable, CLI jako farma `--load-settings machine;process --load-filaments f1;…;fn --arrange 0
+--slice 0`, podložka texturovaná, `enable_prime_tower 0`, 3MF z `ThreeMfWriter`, kostky 15 × 15 × 6 mm, 0,2 mm):**
+- 3 díly na nástrojích 1, 2, 5: `; filament used [g] = 1.29, 1.11, 0.00, 0.00, 1.10`, `; filament_colour =
+  #F4F4F0;#101010;#F5F5F1;#F6F6F2;#C01818`, `; total filament change = 60`, 27 min 54 s, `T0` 32×, `T1` 16×, `T4` 15×, žádné
+  `T2`/`T3`, `M862.1`/`M574`/`M104 T` jen T0, T1, T4, 61× `G12 S90`, 0 řádků věže.
+- 8 dílů na 8 nástrojích: `; filament used [g] = 1.12, 1.29, 1.29, 1.29, 1.29, 1.29, 1.11, 1.27` (9,93 g), `T0` až `T7`,
+  `total filament change = 210`, **1 h 21 min 48 s** (výměna asi 20 s), 211× čištění, `GcodeStats` čte 8 položek.
+- výměna ve výšce (D): viz výše. Skripty a výstupy ve scratchpadu session (`indx70/slice.php`, `a3/`, `a8/`, `d/`).
+
+**Soubory.** `app/Jobs/PrepareFarmOrder.php` (TOOL_CHANGER_PROCESS, withPlaceholders, toolPlan, sameToolPlan,
+toolChangerParams, filamentRecord), `app/Engines/Mesh/ThreeMfWriter.php`, `app/Domain/Farm/PlateLayout.php`,
+`app/Engines/Slicer/OrcaSlicer.php`, `app/Engines/Slicer/FakeSlicer.php`, `app/Domain/Farm/OrderFlow.php`,
+`app/Models/FarmCommand.php`, `resources/views/admin/farm/dashboard.blade.php`, `lang/src/indx_tools.json`,
+`agent/farm_agent/drivers/prusalink.py`, `agent/farm_agent/__init__.py` (0.2.12), `agent/README.md`, `agent/tests/test_prusalink.py`,
+`engines/orca/profiles/filament_{asa,tpu,abs,pla_silk}_coreone_indx8t.json`, `tests/Support/fake_orca.php`,
+`tests/Feature/FarmToolChangerPlateTest.php`, `tests/Unit/ToolChangerPlateTest.php`, `tests/Feature/FarmCommandResultTextTest.php`.
+
+**Neověřeno / otevřené.** Skutečný tisk (zítra): mapování nástrojů bez dialogu, barvy na dílech podle pozic, čas výměn. Malované
+3MF s mezerami mezi nástroji (repaint `colors_tool.py` s `map` na extruder 5 při chybějících 3 a 4) jen podle kódu, ne řezem.
+Kalkulačka počítá podložky malovaného 3MF dál s pásem věže (`CalculationController`, stroj nezná) – konzervativní. Zástupný
+profil u `machineVariant` je vždy INDX varianta hlavní cívky; dva druhy na jedné podložce měnič zvládne, nabídka dílů je ale dál
+jedna rodina plastu. Agent 0.2.12 zip pro PC farmy nedělán (jen ovladač; verze navazuje na 0.2.11).

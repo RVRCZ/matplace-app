@@ -80,3 +80,24 @@ G. **Testy a docs.** FarmOnePlate (pořadí u měniče, mezery), GcodeStats s 8 
 - Produkční databázi ani server nečti, nic nenasazuj, na tiskárnu nic neposílej. Nikdy dvě sady PHPUnit najednou. Python s českým
   textem do souboru, ne heredoc. Nečekej na nikoho; co nejde, zapiš do odchylek a pokračuj. Zpráva česky: SHA, mechanismus,
   výsledky testů, příkazy a hlavičky lokálních řezů, kontrolní seznam pro Romana, odchylky, co potřebuje řídící.
+
+## Odchylky session 2 (6. 11. 2026, feature/indx-tools-by-position, docs/AM.md §12j)
+
+- A platí i pro tisk jednoho kusu a pro díly po dílech, ne jen pro jednu podložku: na měniči jde každý řez jako projekt
+  (`toolChangerParams`), aby cívka v nástroji 3 tiskla z nástroje 3 (dosud vždy `T0`). Jednobarevný tisk z nástroje 1 jde touž
+  cestou (projekt s jedním filamentem), aby záznam `slice_params.tool` a porovnání při platbě byly jednotné.
+- D: zvolena varianta 2 (Orcina výměna nástroje ve vrstvě přes `Metadata/custom_gcode_per_layer.xml`), ověřená skutečným řezem;
+  varianta 1 zamítnuta (start stroje nahřívá a kalibruje jen nástroje použité v řezu); varianta 3 nebyla potřeba, karta Core One
+  u výměn zůstává. Výška výměny od první vrstvy se středem nad změnou (jako `GcodeSlot::colorChanges`), tedy `top_z = z + vrstva/2`.
+- `OrderFlow::pay` nově řeže znovu i podle nástrojů (`sameToolPlan`); zakázka na měniči řezaná před touto větví se při platbě
+  rozřeže jednou navíc (nemá `slice_params.tool`).
+- Gramy: Orca 2.5 píše položku pro každý načtený filament (mezery 0.00), mapování zpět je tedy přímo indexem; žádné „zhuštěné“
+  mapování nebylo potřeba. `OrcaSlicer::slice` kontroluje hlavičku proti počtu použitých filamentů.
+- E: „Poslední příkaz“ byl česky už dřív; anglicky byla poznámka agenta – překládá se na nástěnce (`FarmCommand::resultText`), v
+  databázi zůstává anglicky. Ventilátory v otáčkách s jednotkou v klíči (`fan_hotend_rpm`), ne v procentech (PrusaLink
+  maximum neudává). `agent.py` netknutý, zip 0.2.12 pro PC farmy nedělán.
+- F: ASA a TPU pro INDX Prusa nemá, odvozeno syntetickým presetem (HF 0.4 / CORE One + šablona INDX); ABS a PLA Silk zploštěny
+  z Prusiných INDX presetů. Texturovaná podložka u ASA 105 °C (vendor soubor Prusy říká 45), Z‑smrštění ABS 100 % (Orca
+  odmítá 0,22 %). Vše neověřené na tiskárně, označené v `filament_notes`. `@System` presety staženy z GitHubu (tag v2.5.0-alpha).
+- Kalkulačka (malované 3MF, `CalculationController`) stroj nezná a počítá podložky dál s pásem věže; neměněno.
+- Testy jsem pouštěl v jedné sadě po skupinách (nikdy dvě najednou); `npm run build` kvůli změně Blade, TS netknut.
