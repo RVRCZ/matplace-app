@@ -910,7 +910,7 @@ varianta „Direct Drive High Flow“) zploštělé `scripts/orca_flatten_profil
 odmítá, dáno 100 %). Všechny položené na klíčovou sadu `filament_pla_coreone_indx8t.json` (12e), JSON bez duplicit, Orca 2.5
 s každým řeže (kostka ASA 10 min, TPU 11 min, ABS + PLA Silk na jedné podložce 23 min: měnič nástrojů míchá druhy, žádné
 „mixed temperature“). `machineVariant` bere `filament_asa_*` pro ABS, ABS+, ASA i PC a `filament_tpu_*` pro TPU sám; silk
-a abs se přiřadí ručně. Podklady: `@System` presety z `OrcaFilamentLibrary` tagu v2.5.0-alpha. Roman ráno řekne, co do INDX dá.
+a abs se přiřadí ručně. **Řídící 6. 11. 2026 (Roman: profily ano):** aby se silk a ABS vybraly samy, přibyly základní kopie `filament_pla_silk.json` (= `filament_pla.json`, jiné jen jméno presetu) a `filament_abs.json` (= `filament_asa.json`, jiné jen jméno; typ zůstává ASA, na Anycubicích se tím nic nemění) a druhy PLA silk → `filament_pla_silk.json`, ABS a ABS+ → `filament_abs.json` (seeder + migrace `2026_11_06_100000_farm_materials_silk_abs_profiles`, jen řádky, které ještě ukazují na původní profil). PC zůstává na ASA. Na INDX pak `machineVariant` najde `filament_pla_silk_coreone_indx8t.json` a `filament_abs_coreone_indx8t.json`. Podklady: `@System` presety z `OrcaFilamentLibrary` tagu v2.5.0-alpha. Roman ráno řekne, co do INDX dá.
 
 **Testy.** `FarmToolChangerPlateTest` (4): 3 díly na nástrojích 1, 2, 5 (extrudery 1, 2, 5; 5 filamentů, zástupné 3 a 4;
 `filamentSlots` `{0:0,1:1,4:4}`; věž 0; start `filaments {0:0,1:1,4:4}`; agent dostane originál, `T4` ano, `T2` ne; odznak
