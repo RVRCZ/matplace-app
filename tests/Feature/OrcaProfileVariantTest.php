@@ -30,6 +30,35 @@ class OrcaProfileVariantTest extends TestCase
         $this->assertSame(['0'], $k3m['additional_cooling_fan_speed'], 'no auxiliary fan on the K3 Max');
     }
 
+    /**
+     * The CORE One INDX has its own preset for every kind the farm can load there (TODO #70 F, Roman 6 Nov 2026: yes).
+     * PLA Silk and ABS kinds reach theirs only through a base profile of their own: a kind on filament_pla.json would
+     * get the plain PLA preset, and a base that does not exist is "Slicer profile missing" on every other machine.
+     */
+    public function test_the_core_one_indx_gets_its_own_preset_for_every_kind_including_silk_and_abs(): void
+    {
+        foreach (['pla', 'petg', 'asa', 'tpu', 'abs', 'pla_silk', 'prusament_pla', 'prusament_petg'] as $kind) {
+            $this->assertSame("filament_{$kind}_coreone_indx8t.json", $this->variant("filament_{$kind}.json", 'machine_coreone_indx8t.json'), $kind);
+        }
+        $slicer = new OrcaSlicer(config('engines.orca'));
+        $file = fn (string $name) => (fn () => $this->profileFile($name))->call($slicer);
+        $this->assertFileExists($file('filament_pla_silk.json'), 'the base the silk kinds point at');
+        $this->assertFileExists($file('filament_abs.json'), 'the base the ABS kinds point at');
+
+        // the bases are the shared PLA and ASA profiles under another preset name: Anycubic machines print as before
+        $same = fn (string $a, string $b) => array_diff_key(json_decode(file_get_contents(base_path("engines/orca/profiles/{$a}")), true), ['name' => 1, 'filament_settings_id' => 1])
+            == array_diff_key(json_decode(file_get_contents(base_path("engines/orca/profiles/{$b}")), true), ['name' => 1, 'filament_settings_id' => 1]);
+        $this->assertTrue($same('filament_pla_silk.json', 'filament_pla.json'));
+        $this->assertTrue($same('filament_abs.json', 'filament_asa.json'));
+        $this->assertSame('filament_pla_silk.json', $this->variant('filament_pla_silk.json', 'machine.json'), 'the S1 keeps the shared base');
+        $this->assertSame('filament_abs.json', $this->variant('filament_abs.json', 'machine_kobrax.json'));
+
+        $silk = json_decode(file_get_contents(base_path('engines/orca/profiles/filament_pla_silk_coreone_indx8t.json')), true);
+        $this->assertSame(['PLA'], $silk['filament_type']);
+        $abs = json_decode(file_get_contents(base_path('engines/orca/profiles/filament_abs_coreone_indx8t.json')), true);
+        $this->assertSame(['ABS'], $abs['filament_type']);
+    }
+
     public function test_the_kobra_x_gets_its_own_profiles_that_the_servers_slicer_can_read(): void
     {
         $this->assertSame('filament_pla_kobrax.json', $this->variant('filament_pla.json', 'machine_kobrax.json'));
