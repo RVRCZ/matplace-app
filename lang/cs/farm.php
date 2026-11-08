@@ -468,6 +468,10 @@ return [
             'offline_order' => ':number: tiskárna :printer je offline',
             'error_pending' => ':number: tiskárna :printer hlásí chybu, čekám, zda zůstane',
             'paused' => ':number: :printer pozastavila tisk',
+            // the home page's router (docs/AN.md §22): somebody left an e-mail, a person answers
+            'intake' => 'Poptávka z rozcestníku: :what',
+            'intake_line' => 'Zadání: :kind, rozhodnutí :route, jistota :confidence',
+            'intake_shape' => 'Zákazník chce tvar podle fotky (ručně přes figurku nebo Tripo).',
             'line_pause_reason' => 'Hláška tiskárny: :message',
             'line_pause_none' => 'Hláška tiskárny: :none',
             'line_next_paused' => 'Co dál: podívejte se na tiskárnu a cívku. Pokračovat jde na displeji nebo tlačítkem Pokračovat v adminu; další e‑mail přijde až při další pauze.',

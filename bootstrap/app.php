@@ -7,6 +7,7 @@ use App\Http\Middleware\EnsureFeature;
 use App\Http\Middleware\EnsureRole;
 use App\Http\Middleware\ForwardEvents;
 use App\Http\Middleware\GuardModelFile;
+use App\Http\Middleware\IntakeHandoff;
 use App\Http\Middleware\LegacyRedirects;
 use App\Http\Middleware\RecordMissing;
 use App\Http\Middleware\RecordVisit;
@@ -41,6 +42,7 @@ return Application::configure(basePath: dirname(__DIR__))
             EnsureAnonymousSession::class,
             RememberReferral::class,
             ToolGate::class,
+            IntakeHandoff::class,     // a tool's page opened from the home page's router with ?intake=<token> (docs/AN.md §22)
             RecordVisit::class,
             ForwardEvents::class,
             SecurityHeaders::class,   // Permissions-Policy and the Content-Security-Policy (config/security.php)

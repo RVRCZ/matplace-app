@@ -834,3 +834,192 @@ Větev `feature/home-first-part-names`.
   po uložení „v pořadí je 9.“; `--flows=menu-medallion` (cs, en, 1280 px) a panel kalkulace (cs): „Medaile a řetěz · Číslo a lem“.
   Stránka objednávky jen testem (`OrderService::partLabel`), v prohlížeči ne; es jen testem.
 - Snímky `docs/img/admin-tools-home-first-1280.png`, `part-names-medal-nastroj.png`, `part-names-medal-kalkulace.png`.
+
+## 22. Rozcestník na hlavní straně: fotka, text nebo soubor (TODO #78)
+
+Zadání `docs/prompts/rozcestnik-hlavni-strana.md` (Roman 8. 11. 2026, schválený klikací návrh v scratchpadu řídící
+session), větev `feature/home-router` z `origin/main` 868b6050, worktree `C:/matplace-edit-wt`, 8.–9. 11. 2026.
+Nic nenasazeno, nic nemergováno. V tomto worktree není `ANTHROPIC_API_KEY`: vývoj a testy běžely s `FakeAssistant`
+a s klíčovou náhradou (§22.3), skutečný model tu nikdo nevolal.
+
+### 22.1 A: stránka
+
+- `resources/views/calculator/home.blade.php` je přepsaná: nahoře rozcestník (vlevo eyebrow, H1 „Z fotky vyrobíme
+  dárek. Z nápadu věc.“, podnadpis, řádek důvěry; vpravo karta `#intake-form`: plocha pro fotku nebo 3D soubor
+  s náhledem a „odebrat“, textové pole `#intake-text` s popiskem a příklady v placeholderu, čtyři štítky
+  `[data-fill]`, tlačítko `#intake-submit` „Navrhnout“ 60 px vysoké a na telefonu přes celou šířku, věta „Zdarma
+  a bez registrace…“, věta o smazání fotky po 30 dnech, odpověď asistenta `#intake-assist`). Pod tím „Po odeslání se
+  stane jedna ze tří věcí“ (`#router-paths`), „Dárky, které umíme z vaší fotky“ (`#router-gifts`, 8 karet
+  `data-gift`, obrázky `tools.picture`, tj. `img/tools/<klíč>-800.jpg`), pás „Do Vánoc stihneme…“ (`[data-deadline]`),
+  „Takhle to vypadá, když to přijde“ (`#router-prints`, jen když farma má vyfocené výtisky těchto nástrojů,
+  `ToolPhotos`; lokálně a zatím i na produkci prázdné, sekce se neukáže), „Máte vlastní model? Cena ze souboru během
+  minuty“ (`#router-file`: dovnitř se přesunul původní `calculator.inputs` s `#dropzone`, `#file-input`,
+  `#search-form` a řádkem výhod, tlačítka „Vyfotit“ a „Popsat slovy“ zůstaly pro skripty, ale skryté:
+  `inputs.blade.php` s `fileOnly`). Zbytek stránky beze změny: pět cest, nástroje, příklady, tři kroky, SEO část
+  `tools._content` pro `calc`.
+- Texty: `lang/src/home_router.json` (92 klíčů `router.*`, cs/en/es), `farm.admin.mail.intake*` přímo ve třech
+  `farm.php`. Datum „do Vánoc“ a lhůta odpovědi jsou nastavení farmy: `config/farm.php settings.christmas_deadline`
+  (`2026-12-15`, prázdné = stránka o Vánocích mlčí, prošlé datum taky) a `intake_reply_hours` (24); obojí jde
+  změnit v `/admin/farm/settings` („Ostatní“). Datum se píše podle jazyka (cs „15. 12.“, en „15 December“, es
+  „15 de diciembre“); en/es tedy vánoční větu mají, dokud je datum nastavené.
+- Cena „od“ u karet: `IntakePage::fromPrice()` bere nejlevnější skutečnou kalkulaci nástroje z `config/site.php
+  example_items` (jen v korunách). Dnes ji má jen busta (99 Kč); ostatní karty cenu neukazují, žádné číslo není
+  vymyšlené. Karty respektují `ToolVisibility::canOpen` a u busty a mazlíčka generátor.
+- Vstup pro fotku je `<input accept="image/*,.heic,.heif">` **bez** `capture="environment"`: s ním Android Chrome
+  i iOS Safari otevřou rovnou fotoaparát a galerii nenabídnou, tlačítko ale slibuje „Vyfotit **nebo vybrat** fotku“;
+  bez atributu nabídne telefon obojí. Odchylka od návrhu, viz zpráva řídící.
+- Kontrola: `scripts/review_round2.mjs --pages=home --widths=390,1280 --langs=cs,en`: H1, podnadpis i hlavní akce
+  na první obrazovce, `hScroll: false`, žádný cíl pod 44 px (štítky `min-h-11`). Snímky v scratchpadu session 3
+  (`router-shots/home-{390,1280}-{cs,en}-a.webp`, `-full.webp`, `-answer.webp` s odpovědí asistenta).
+
+### 22.2 B: příjem
+
+- `POST /intake` (`IntakeController@store`, `IntakeService::create`), v obou jazykových dvojčatech, CSRF jako jinde
+  (skript posílá `X-CSRF-TOKEN`), `throttle:intake` = 5 za hodinu na anonymní relaci **a** 5 na IP (admin bez
+  limitu). Vstup `photo` (jpg, png, webp, heic, heif, do 15 MB), nebo `model` (formáty kalkulačky, do
+  `uploads.max_mb`), `text` do 2000 znaků; bez fotky, souboru i textu 422 s `router.need_input`; 429 při limitu.
+  Odpověď 201 JSON: `token, route, tool_key, tool, summary, params, questions, wants_shape, has_photo, hours, file,
+  actions {tool, calc, request}`.
+- Fotka: originál `storage/app/private/intake/<token>/original.<ext>` (disk `local`), vedle `model.jpg` z
+  `photo_tool.py normalize … 2000` (EXIF otočení, delší strana 2000 px, HEIC přes `pillow_heif`; stejný skript jako
+  foto-box). Když Python neodpoví, JPEG/PNG/WebP jde modelu i nástrojům tak, jak přišel; HEIC se odmítne
+  `router.photo_unreadable` a řádek se smaže. Prohlížeč posílá fotku už zmenšenou (`calc/photo.ts shrinkPhoto`,
+  HEIC ve Windows Chrome projde beze změny a převede ho server).
+- Tabulky `intakes` a `intake_requests` (migrace `2026_11_09_100000_create_intakes.php`, **nespuštěná** ve
+  worktree; PHPUnit běží v paměti). `intakes`: token 24 znaků, relace / účet, druh, cesty k fotce, `model_file_id`,
+  text, jazyk, `route`, `tool_key`, `params`, `confidence`, `summary`, `answer` (celá odpověď modelu včetně vět ve
+  třech jazycích a otázek), `wants_shape`, `model`, tokeny, `cost_czk`, `duration_ms`, `status` (new | opened |
+  human | closed), `opened_at`, `photos_pruned_at`.
+- Mazání: `matplace:prune` → `IntakeService::prunePhotos()` smaže složku fotek intakes starších 30 dnů a zapíše
+  `photos_pruned_at`; řádek s textem a rozhodnutím zůstává (řádek „router photos removed: N“). Soubor modelu ze
+  souborové cesty jde dnešní cestou `ModelLibrary::unordered` (30 dnů bez objednávky).
+- `GET /intake/{token}/file`: `model.jpg` jen podle tokenu, `X-Robots-Tag: noindex, nofollow`, `Cache-Control:
+  private, max-age=600` (`response()->file()` je od Symfony `public`, proto `setPrivate()`).
+
+### 22.3 C: rozhodování
+
+- `App\Domain\Intake\IntakeRouter`: jedno volání `Assistant::ask('intake', …)` s obrázkem; `config/ai.php`
+  `kind_models.intake = env('ANTHROPIC_INTAKE_MODEL', 'claude-sonnet-5-5')`, nové `kind_timeouts.intake = 20` s
+  (`ClaudeAssistant` nově čte limit po druhu, ostatní druhy beze změny). Systémový prompt nese katalog
+  `IntakeRouter::TOOLS` (figure, pet, charm, medallion, map, topper, coaster, earrings: co berou, co dělají, rozsah
+  hlavní velikosti, počet barev) a pravidla ze zadání; odpověď je JSON schéma `route, tool_key, params {size_mm,
+  colors[], copies, text, place, kind}, summary {cs,en,es}, questions[], confidence`.
+- Pravidla domu nad odpovědí (`IntakeRouter::decide`): neznámá cesta, neznámý nástroj, `file` bez souboru,
+  `confidence < 0.6` → `human`; `shape` → `human` + `wants_shape` (fáze 1, tvar dělá Roman ručně); parametry jen ve
+  tvaru, který nástroj bere (velikost v rozsahu nástroje, max. 6 barev, kusy ≤ 100, text ≤ 60 znaků, `kind` jen
+  figure/pet); věta pro zákazníka v jeho jazyce, při přepsání modelu pravidly věta domu (`router.summary.fallback` /
+  `router.summary.shape`, obě s `:hours`). Chyba API nebo limit → `human`, věta „ozveme se do N hodin“, v `answer`
+  `failed` + chyba. Cena a čas volání se čtou z `ai_calls` (subjekt `intake`) do `intakes`.
+- Bez klíče (`Assistant::available()` false) rozhoduje `IntakeRouter::guess()`: skupiny slov cs/en/es v pořadí
+  člověk (díl, rozměry, závit, „aby pasovalo“…), tvar (soška, maskot, hračka, drak), mazlíček, člověk na fotce,
+  dort, mapa, medaile, podtácek, náušnice, přívěsek; velikost z „12 cm“ / „40 mm“, kusy z „4 kusy“, „dva kusy“;
+  fotka bez slov → tvar; jinak člověk. Zapíše se `model = keywords`. V testech je `FakeAssistant` (dostupný), takže
+  tam se chodí cestou modelu s podstrčenou odpovědí.
+- Zlatý soubor `tests/fixtures/intake/cases.json` (18 případů cs/en/es, s fotkou i bez, očekávaná cesta, nástroj,
+  `wants_shape`, parametry). `IntakeTest::test_the_golden_cases…` ho žene přes klíčovou náhradu;
+  `php artisan matplace:intake-cases [--photo=cesta] [--only=1,2]` ho požene přes skutečný model, až bude klíč
+  (tabulka očekáváno / dostalo, jistota, ms, tokeny, věta cs).
+- **Čísla:** skutečné volání tu neproběhlo. Odhad z promptu: systém + uživatel ≈ 1 100–1 300 tokenů, fotka 2000 px
+  ≈ 1 500 tokenů (API ji zmenší na 1568 px), odpověď ≈ 200–300 tokenů; Sonnet 5.5 (2 / 10 USD za milion) ≈ 0,01
+  USD ≈ 0,25 Kč na rozhodnutí; doba podle zkušenosti s `design` druhem 4–8 s, limit 20 s. Skutečná čísla ukáže
+  `/admin/intake` (sloupec „jistota · ms · Kč“) a `/admin/ai` po nasazení.
+
+### 22.4 D: předání do nástroje
+
+- `App\Http\Middleware\IntakeHandoff` (ve skupině web za `ToolGate`): GET stránky nástroje s `?intake=<token>` (24
+  znaků) najde intake, `IntakeService::handoff()` ho poprvé označí `opened` + událost `intake_tool_opened`, a do
+  `request()->attributes['intake']` dá `{token, tool, file, name, params, text}`; `tools/page.blade.php` to vloží do
+  `window.MP_TOOL.intake`. Hlavní strana a katalog token ignorují, cizí token nic neotevře, fotka bez `file` = null.
+- Jeden háček pro všechny moduly: `tool_page.ts` po startu modulu volá `calc/intake_preload.ts preloadIntake()`:
+  nejdřív parametry (`#figure-size` / `[data-param=width]` / `[data-param=size]` ← `size_mm` v mezích pole,
+  `[name=kind]` nebo `[name=style]` ← `kind`, `[data-text=line1]` a `[name=pedestal_name]` ← `text`,
+  `[data-text=name]` + `#map-place` + klik na `#map-search` ← `place`), pak fotku: `fetch` z `intake.file`, `File`
+  přes `DataTransfer` do `input[type=file][data-intake-photo]` a `change`. Pole označují `_figure_photos.blade.php`
+  (`#figure-photo`: busta i mazlíček), `param.blade.php` (`#param-artwork`: charm, coaster, earrings, medallion…;
+  skrytý vstup měl dosud jen dialog, `param.ts` mu dal `onchange` → `uploadArtwork` → `setArtwork`) a
+  `_papel_upload.blade.php` (`#param-artwork-file`). Souhlas u busty zůstává na zákazníkovi.
+- Ověřeno testem (`IntakeToolPreloadTest`: figure, pet-figurine, charm, map, cake-topper, medallion, coaster,
+  earrings dostanou payload; figure/pet/charm mají označené pole). V prohlížeči neprošlo: lokální dev.sqlite
+  nemá tabulku `intakes` (migrace se ve worktree nespouští), takže stránka nástroje s tokenem tu nejde otevřít.
+
+### 22.5 E: vezme si to člověk — rozhodnutí
+
+- **Tržiště se neohýbá.** Důvody: `Route::middleware('feature:marketplace')` drží `/q/{quote}` i `/i/{inquiry}` na
+  404, dokud je tržiště vypnuté (produkce: `FEATURE_MARKETPLACE` false, farma fáze 1); `InquiryService::create`
+  potřebuje `Calculation`, `createSparePart` rozesílá `PrinterProfile`ům a naše farma žádný profil tiskaře nemá;
+  `QuoteBuilder::fromCalculation` chce `PrinterProfile` a jeho ceník. Použít tok nabídek by znamenalo zapnout část
+  tržiště nebo založit falešného tiskaře. Proto jednoduchá tabulka `intake_requests` (e-mail, jméno, telefon,
+  `consent_at`, `wants_shape`, stav new | answered | closed, `reply`, `replied_at`, `replied_by`, jazyk) a
+  administrace `/admin/intake` (sekce „Rozcestník“ v `admin/nav.blade.php`): seznam (filtr „Poptávky člověku“ /
+  „Všechna zadání“, jistota · ms · Kč, model), detail (fotka přes `/admin/intake/{token}/photo`, text, rozhodnutí,
+  parametry, otázky, věty ve třech jazycích, co řekl model a co rozhodla pravidla), pole pro odpověď (předmět +
+  text → `PlainMessage` zákazníkovi v jeho jazyce, stav `answered`), „Uzavřít bez odpovědi“ / „Otevřít znovu“.
+- Zákazník: `POST /intake/{token}/request {email, consent}` (`throttle:10,60`), bez souhlasu 422
+  `router.request.need_consent`; vznikne `IntakeRequest` (stejný intake znovu = přepis, ne dvojice), intake
+  `status = human`, mail `App\Mail\IntakeReceived` („Máme vaši poptávku, ozveme se do :hours hodin“ + jeho zadání)
+  ve frontě, obsluze `OrderFlow::alertAdmin(…, 'inquiry', null, url)` s novým druhem `inquiry` (`ADMIN_KINDS`,
+  přepínač `notify_inquiry` v nastavení farmy, zaškrtávátko „poptávka z rozcestníku“), `alertAdmin` dostal volitelný
+  `$url` (tlačítko mailu vede do `/admin/intake/<token>`).
+
+### 22.6 F: soubor
+
+- 3D soubor z karty jde přes `UploadController::accept()` (vyčleněno ze `store()`, stejná kontrola formátu, uložení,
+  `ProcessModelFile`, událost `upload`, `measure`), intake dostane `model_file_id`, `route = file`, bez volání
+  modelu. Odpověď má `actions.calc = /?open=<uuid>&note=<text>`; `calculator.ts` už `?open=` umí (otevře soubor,
+  skryje `#hero`), `site/intake.ts noteFromAddress()` přečte `note` dřív, než kalkulačka adresu vyčistí, a ukáže ji
+  v `#calc-note` („Vaše poznámka“, v kartě ceny v `index.blade.php`). Stránka zakázky: `OrderController::show` dá
+  `intakeNote` = poslední text téhož návštěvníka (účet nebo relace) k témuž `model_file_id`, `order.blade.php` jím
+  předvyplní `textarea[name=note]` (cizí objednávka téhož souboru ho nedostane). Úpravy z textu („zmenšit na
+  10 cm“) jsou fáze 3, nic se z nich nečte.
+
+### 22.7 G: měření
+
+- Události (`Track::event`, podmět `intake`): `intake_submitted {kind, has_text}`, `intake_routed {route, tool,
+  confidence, ms, tokens}`, `intake_tool_opened {tool}`, `intake_human_created {wants_shape}`, `intake_file_to_calc
+  {kind = přípona}`. Pojmenování podtržítkem jako dosavadní typy (zadání psalo `intake.submitted`; tečka by se
+  tloukla s `failed:<krok>` a s konvencí AJ.md). `Track::META` nově pouští `route, confidence, ms, tokens,
+  has_text, wants_shape` (čísla, true/false, kódy; text zadání se do `events` nedostane), `intake_submitted` je
+  v `Track::ACTIONS` (potvrdí návštěvu jako lidskou).
+- Trychtýř `/admin/stats`: cesta „Rozcestník“ (`Funnel::PATHS['intake']`): návštěva → odesláno → rozhodnuto
+  (asistent, nebo soubor do kalkulačky) → otevřel nástroj / nechal e-mail / soubor v kalkulačce → zaplaceno; popisky
+  kroků v `funnel.blade.php`.
+
+### 22.8 H: testy a ověření
+
+- Nové: `HomeRouterPageTest` (5 testů: H1 a sekce ve třech jazycích bez syrových klíčů, vánoční věta podle
+  nastavení včetně prošlého data a formátů cs/en/es, cena „od“ jen u busty, pořadí sekcí a vstup kalkulačky,
+  karty podle `ToolVisibility`), `IntakeTest` (14: text → nástroj a události, jazyk odpovědi, fotka EXIF → 48×64 a
+  předání modelu, HEIC → JPEG, bez Pythonu přes `Process::fake`, odmítnutí prázdného zadání a ne-obrázku, nízká
+  jistota / tvar / rozbitá odpověď / `file` bez souboru / selhání API, ořez parametrů, zlaté případy + živý asistent
+  bez klíče, soubor → kalkulačka a poznámka v zakázce, 5 za hodinu, poptávka s maily a přepínačem, administrace
+  s odpovědí, mazání po 30 dnech přes `matplace:prune`), `IntakeToolPreloadTest` (4). Fixtures
+  `tests/fixtures/intake/{photo.jpg (EXIF 6), photo.heic, cases.json}`.
+- Upraveno: `CalculationFlowTest::test_homepage_keeps_the_working_entrance…` čeká nový H1.
+- Prošlo (po jedné sadě, `php -d memory_limit=2G vendor/bin/phpunit --filter …`): HomeRouterPageTest 5/112,
+  IntakeTest 14/285, IntakeToolPreloadTest 4/63, HomeWaysTest 3/60, CalculationFlowTest 10/149, SeoTest 12/4324,
+  LandingPagesTest 5/3665, ToolPageTest 25/4710, FarmAdminNotifyTest 7/162, AuditEventsTest 5/94, FarmPagesTest,
+  FarmOrderFilesPruneTest, FarmGuestCheckoutTest, FarmBigModelFlowTest, StickyLayoutTest, FigureToolTest,
+  PetFigurineTest (viz zpráva řídící pro konečný seznam). `npm run build` (tsc + vite + kontroly) prošel:
+  `app-*.js` 38,1 kB (gzip 13,1 kB; `site/intake.ts` je v něm), `boot-*.js` 269,9 kB beze změny podstaty,
+  `app.css` 96,5 kB. `vendor/bin/pint --test` na změněných souborech čistý.
+
+### 22.9 Co rozhodne Roman
+
+- Datum „do Vánoc“ (`christmas_deadline`, dnes 15. 12. 2026) a lhůta „ozveme se do“ (`intake_reply_hours`, 24).
+- Ceny „od“ u karet: dnes jen busta (99 Kč z kalkulace vxauvlvidinz). Ostatní dostanou cenu, až v `config/site.php
+  example_items` přibude jejich skutečná kalkulace (nebo jiný zdroj); nic se nevymýšlí.
+- Texty mailů: zákazníkovi `router.mail.received.*`, odpověď píše obsluha v adminu (předmět předvyplněn
+  `router.mail.reply.subject`); obsluze `farm.admin.mail.intake*`.
+- Příklady ve štítcích (`router.chip.*` a `router.text_placeholder`), věty u tří cest (bez cen, bez „2 minut“ u
+  tvaru: fáze 1 ho dělá člověk).
+- `capture` u vstupu fotky (§22.1), model (`ANTHROPIC_INTAKE_MODEL`, výchozí Sonnet 5.5) a limit 5/h.
+
+### 22.10 Co zbývá
+
+- Nasazení: migrace `intakes` + `intake_requests`, `php artisan config:cache` (nové klíče `farm.settings.*`,
+  `ai.kind_timeouts`), kontrola `pillow_heif` v `/opt/matplace-py` (je, 1.8), klíč `ANTHROPIC_API_KEY` tam je;
+  první skutečné rozhodnutí prohlédnout v `/admin/intake` a čísla doplnit sem.
+- Fáze 2: `shape` přes `GenerationService` (dnes `wants_shape` + člověk). Fáze 3: úpravy souboru z textu.
+- Fotky od Stelly na karty dárků přes správu fotek nástrojů (§15), až budou.
+- Stránka nástroje s předanou fotkou v prohlížeči (lokálně bez tabulky nešlo; po nasazení projít
+  `/tools/figure?intake=…` z opravdového zadání na telefonu).

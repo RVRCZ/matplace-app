@@ -311,7 +311,7 @@
                            class="mt-1 w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm">
                     <p class="mt-1 text-xs text-slate-500">{{ __('farm.guest.email_hint') }}</p>
                 @endif
-                <textarea name="note" rows="2" maxlength="500" placeholder="{{ __('farm.order.note') }}" aria-label="{{ __('farm.order.note') }}" class="mt-2 w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm"></textarea>
+                <textarea name="note" rows="2" maxlength="500" placeholder="{{ __('farm.order.note') }}" aria-label="{{ __('farm.order.note') }}" class="mt-2 w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm">{{ isset($intakeNote) ? mb_substr((string) $intakeNote, 0, 500) : '' }}</textarea>
 
                 <label class="mt-3 flex items-start gap-2 text-sm text-slate-700">
                     <input type="checkbox" id="farm-terms" required class="mt-1 h-4 w-4 accent-action">

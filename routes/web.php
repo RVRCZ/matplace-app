@@ -12,6 +12,7 @@ use App\Http\Controllers\Admin\FarmOrderController;
 use App\Http\Controllers\Admin\FarmTestPhotoController;
 use App\Http\Controllers\Admin\FarmTuningController;
 use App\Http\Controllers\Admin\FilamentShopController;
+use App\Http\Controllers\Admin\IntakeController as AdminIntakeController;
 use App\Http\Controllers\Admin\MetaController as AdminMetaController;
 use App\Http\Controllers\Admin\SearchConsoleController;
 use App\Http\Controllers\Admin\StatsController as AdminStatsController;
@@ -58,6 +59,7 @@ use App\Http\Controllers\Farm\OrderController;
 use App\Http\Controllers\FeedController;
 use App\Http\Controllers\InquiryController;
 use App\Http\Controllers\InspirationController;
+use App\Http\Controllers\IntakeController;
 use App\Http\Controllers\LocaleRedirectController;
 use App\Http\Controllers\MapToolController;
 use App\Http\Controllers\ModelCatalogController;
@@ -82,6 +84,11 @@ $pages = function () {
     Route::get('/', [CalculatorController::class, 'index'])->name('home');
     // a calculation goes with its file (matplace:prune): the address says why instead of a bare 404
     Route::get('/c/{calculation}', [CalculatorController::class, 'share'])->name('calc.share')->missing(fn () => response()->view('calculator.gone', [], 410));
+    // the home page's router (TODO #78, docs/AN.md §22): a photo, a 3D file or words → a tool, a person or the calculator;
+    // the tool's page fetches the photo by the token; "a person takes it over" leaves an e-mail
+    Route::post('/intake', [IntakeController::class, 'store'])->middleware('throttle:intake')->name('intake.store');
+    Route::get('/intake/{intake}/file', [IntakeController::class, 'file'])->name('intake.file');
+    Route::post('/intake/{intake}/request', [IntakeController::class, 'request'])->middleware('throttle:10,60,intake-request')->name('intake.request');
 
     // Marketplace (config/features.php): public printer pages, quotes, customer inquiries — 404 while switched off
     Route::middleware('feature:marketplace')->group(function () {
@@ -534,6 +541,13 @@ Route::middleware(['auth', 'role:admin'])->prefix('admin/farm')->name('admin.far
 // ── Admin: catalogues, collections, content, Meta, statistics, AI, e-mails (step F) ──
 Route::middleware(['auth', 'role:admin'])->prefix('admin')->name('admin.')->group(function () {
     Route::get('/', fn () => redirect()->route('admin.stats.funnel'))->name('home');
+
+    // the home page's router: what came in, the requests a person answers (TODO #78, docs/AN.md §22)
+    Route::get('/intake', [AdminIntakeController::class, 'index'])->name('intake.index');
+    Route::get('/intake/{intake}', [AdminIntakeController::class, 'show'])->name('intake.show');
+    Route::get('/intake/{intake}/photo', [AdminIntakeController::class, 'photo'])->name('intake.photo');
+    Route::post('/intake/{intake}/reply', [AdminIntakeController::class, 'reply'])->name('intake.reply');
+    Route::post('/intake/{intake}/status', [AdminIntakeController::class, 'status'])->name('intake.status');
 
     $catalog = AdminCatalogController::class;
     Route::get('/catalog', [$catalog, 'index'])->name('catalog.index');

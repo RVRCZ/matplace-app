@@ -62,7 +62,8 @@ final class Track
      * The keys an event's `meta` may have. Values are numbers, true/false, or short codes; `path` is an address of
      * ours already masked (self::pathOf). The markers bot/staff/js/act are set by this class itself.
      */
-    public const META = ['kind', 'tool', 'value', 'currency', 'order', 'results', 'event_id', 'path', 'printer', 'step', 'code', 'host', 'bot', 'staff', 'js', 'act'];   // host: the site an embedded calculator was shown on
+    public const META = ['kind', 'tool', 'value', 'currency', 'order', 'results', 'event_id', 'path', 'printer', 'step', 'code', 'host', 'bot', 'staff', 'js', 'act',
+        'route', 'confidence', 'ms', 'tokens', 'has_text', 'wants_shape'];   // host: the site an embedded calculator was shown on; route … wants_shape: the home page's router (docs/AN.md §22)
 
     private const SITES = [
         'google' => ['google.'], 'seznam' => ['seznam.cz'], 'bing' => ['bing.com'],
@@ -71,7 +72,7 @@ final class Track
     ];
 
     /** What only a person does. One of these makes the visit a person's even when its script never called home. */
-    public const ACTIONS = ['upload', 'generate', 'calculation', 'order_created', 'order_paid', 'topup_started', 'topup', 'register', 'search', 'designer_enabled', 'designer_import', 'designer_file_uploaded', 'share'];
+    public const ACTIONS = ['upload', 'generate', 'calculation', 'order_created', 'order_paid', 'topup_started', 'topup', 'register', 'search', 'designer_enabled', 'designer_import', 'designer_file_uploaded', 'share', 'intake_submitted'];
 
     /** Pages whose address names public content; any other address with a parameter is kept as its pattern (/c/{calculation}): private links carry tokens. */
     private const PUBLIC_PAGES = ['printers.show', 'designers.show', 'collections.show', 'blog.show', 'models.show', 'catalog.category', 'catalog.show'];

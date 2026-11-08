@@ -12,7 +12,7 @@ use Illuminate\Support\Facades\Http;
  */
 final class ClaudeAssistant implements Assistant
 {
-    /** @param  array{api_key?: string, assistant_model?: string, assistant_effort?: string, kind_models?: array<string, ?string>, timeout?: int}  $config */
+    /** @param  array{api_key?: string, assistant_model?: string, assistant_effort?: string, kind_models?: array<string, ?string>, kind_timeouts?: array<string, int>, timeout?: int}  $config */
     public function __construct(private readonly array $config) {}
 
     public function available(): bool
@@ -39,7 +39,8 @@ final class ClaudeAssistant implements Assistant
         $format = ['type' => 'json_schema', 'schema' => $schema];
 
         $started = microtime(true);
-        $res = Http::timeout((int) ($this->config['timeout'] ?? 120))
+        // a kind a visitor waits for (the home page's router) has a short limit of its own
+        $res = Http::timeout((int) (($this->config['kind_timeouts'][$kind] ?? null) ?: ($this->config['timeout'] ?? 120)))
             ->withHeaders(['x-api-key' => $this->config['api_key'], 'anthropic-version' => '2023-06-01'] + ($current ? ['anthropic-beta' => 'server-side-fallback-2026-07-01'] : []))
             ->post('https://api.anthropic.com/v1/messages', [
                 'model' => $model,

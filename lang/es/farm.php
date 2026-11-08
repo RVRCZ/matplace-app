@@ -468,6 +468,10 @@ return [
             'offline_order' => ':number: la impresora :printer está desconectada',
             'error_pending' => ':number: la impresora :printer informa de un error, esperando a ver si persiste',
             'paused' => ':number: :printer pausó la impresión',
+            // the home page's router (docs/AN.md §22): somebody left an e-mail, a person answers
+            'intake' => 'Solicitud del asistente de la portada: :what',
+            'intake_line' => 'Entrada: :kind, decisión :route, confianza :confidence',
+            'intake_shape' => 'El cliente quiere una forma a partir de la foto (a mano con la figura o Tripo).',
             'line_pause_reason' => 'Mensaje de la impresora: :message',
             'line_pause_none' => 'Mensaje de la impresora: :none',
             'line_next_paused' => 'Siguiente paso: revise la impresora y la bobina. Puede continuar en la pantalla o con el botón Continuar del admin; el próximo correo llegará solo con la próxima pausa.',

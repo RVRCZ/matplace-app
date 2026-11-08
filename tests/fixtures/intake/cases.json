@@ -1,0 +1,20 @@
+[
+    {"text": "Busta mého táty z téhle fotky, asi 12 cm vysoká, jedna barva, dárek k Vánocům.", "photo": true, "route": "tool", "tool": "figure", "params": {"size_mm": 120}},
+    {"text": "Figurka našeho psa podle fotky, 10 cm, hnědá a bílá.", "photo": true, "route": "tool", "tool": "pet", "params": {"size_mm": 100}},
+    {"text": "Přívěsek na klíče z téhle kresby od dcery, 4 cm, dvě barvy, dva kusy.", "photo": true, "route": "tool", "tool": "charm", "params": {"size_mm": 40, "copies": 2}},
+    {"text": "Ulomené kolečko z koše myčky, průměr 3 cm, potřebuji 4 kusy, vydrží horkou vodu.", "photo": true, "route": "human", "tool": null, "params": {"copies": 4}},
+    {"text": "Zápich do dortu se jménem Olivia a číslem 2, asi 12 cm široký.", "photo": false, "route": "tool", "tool": "topper"},
+    {"text": "3D mapa Prahy, Staré Město, 15 cm, jako dárek.", "photo": false, "route": "tool", "tool": "map", "params": {"size_mm": 150}},
+    {"text": "Medaile pro vítěze turnaje, 1. až 3. místo, zlatá, stříbrná a bronzová.", "photo": false, "route": "tool", "tool": "medallion"},
+    {"text": "Podtácek s naší fotkou ze svatby, 10 cm.", "photo": true, "route": "tool", "tool": "coaster", "params": {"size_mm": 100}},
+    {"text": "Náušnice z tohohle motivu, 3 cm.", "photo": true, "route": "tool", "tool": "earrings", "params": {"size_mm": 30}},
+    {"text": "Držák na Alexu pod kuchyňskou linku, rozměry 100 x 60 mm, aby to pasovalo.", "photo": false, "route": "human", "tool": null},
+    {"text": "Soška draka podle téhle kresby, asi 15 cm.", "photo": true, "route": "human", "tool": null, "wants_shape": true},
+    {"text": "", "photo": true, "route": "human", "tool": null, "wants_shape": true},
+    {"text": "A bust of my grandfather from this photo, about 15 cm.", "photo": true, "route": "tool", "tool": "figure", "params": {"size_mm": 150}},
+    {"text": "Keychain from my daughter's drawing, two pieces.", "photo": true, "route": "tool", "tool": "charm", "params": {"copies": 2}},
+    {"text": "A replacement bracket for a shelf, 80 mm, it has to fit the old holes.", "photo": true, "route": "human", "tool": null},
+    {"text": "Figura de nuestro gato, 8 cm, para mi madre.", "photo": true, "route": "tool", "tool": "pet", "params": {"size_mm": 80}},
+    {"text": "Una pieza de repuesto para la lavadora, 40 mm.", "photo": true, "route": "human", "tool": null, "params": {"size_mm": 40}},
+    {"text": "Cake topper with the name Emma and a heart.", "photo": false, "route": "tool", "tool": "topper"}
+]

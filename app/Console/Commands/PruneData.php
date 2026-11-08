@@ -5,6 +5,7 @@ namespace App\Console\Commands;
 use App\Domain\Account\ModelLibrary;
 use App\Domain\Farm\OrderFiles;
 use App\Domain\Farm\OrderFlow;
+use App\Domain\Intake\IntakeService;
 use App\Domain\Tools\Artwork;
 use App\Jobs\BuildFarmTimelapse;
 use App\Models\FarmOrder;
@@ -20,7 +21,8 @@ use Illuminate\Support\Facades\Storage;
  *  - leftover slicer gcode older than 7 days,
  *  - farm orders of big models whose customer never asked for the exact price (awaiting_choices for a week),
  *  - guests' farm orders nobody paid within a week (docs/AO.md),
- *  - print files of farm orders closed for farm.files_retention_days (docs/AL.md §16).
+ *  - print files of farm orders closed for farm.files_retention_days (docs/AL.md §16),
+ *  - photos of the home page's router older than 30 days (docs/AN.md §22).
  */
 class PruneData extends Command
 {
@@ -111,6 +113,10 @@ class PruneData extends Command
 
         // pictures uploaded into the tools stay 30 days ("my pictures")
         $temp += Artwork::prune($dry);
+
+        // photos of the home page's router stay 30 days too (docs/AN.md §22); the rows with the words and the decision stay
+        $intakes = app(IntakeService::class)->prunePhotos($dry);
+        $this->line("router photos removed: {$intakes}");
 
         // a big model's order waits for the customer's choices (docs/AL.md §11); one nobody came back to is closed
         // like any unpaid order the customer walked away from: cancelled, nothing was held

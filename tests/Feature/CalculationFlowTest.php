@@ -160,8 +160,8 @@ class CalculationFlowTest extends TestCase
 
     public function test_homepage_keeps_the_working_entrance_on_top_of_the_new_look(): void
     {
-        // the headline of the audit (10/2026): "Váš nápad vytiskneme ve 3D."
-        foreach (['cs' => 'Váš nápad', 'en' => 'Your idea', 'es' => 'Su idea'] as $lang => $title) {
+        // the headline of the router (TODO #78, docs/AN.md §22): "Z fotky vyrobíme dárek. Z nápadu věc." (the audit's slogan of 10/2026 before it)
+        foreach (['cs' => 'Z fotky vyrobíme dárek', 'en' => 'A gift from your photo', 'es' => 'De una foto, un regalo'] as $lang => $title) {
             $page = $this->get($this->localized('/', $lang))->assertOk()->assertSee($title);
             // the tools people use most, with their pictures, and the way to all of them
             $this->assertSame((int) config('home.tools_shown'), substr_count($page->getContent(), 'data-cats='));

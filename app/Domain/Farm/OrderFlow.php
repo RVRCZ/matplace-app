@@ -39,7 +39,7 @@ final class OrderFlow
     ];
 
     /** The kinds of mail the operator can switch off one by one in the farm's settings (`notify_<kind>`). */
-    public const ADMIN_KINDS = ['paid', 'printing', 'done', 'problem', 'paused'];
+    public const ADMIN_KINDS = ['paid', 'printing', 'done', 'problem', 'paused', 'inquiry'];
 
     /** A camera picture bigger than this is shrunk before it rides along with the "done" mail, or left out. */
     public const SNAPSHOT_MAX_BYTES = 300 * 1024;
@@ -453,17 +453,18 @@ final class OrderFlow
      * failure is logged; the farm never stops for it.
      *
      * @param  string[]  $lines
-     * @param  string  $kind  paid | printing | done | problem | paused (ADMIN_KINDS)
+     * @param  string  $kind  paid | printing | done | problem | paused | inquiry (ADMIN_KINDS)
      * @param  string|null  $attachment  a JPEG to ride along (the camera's last picture)
+     * @param  string|null  $url  where the mail's button leads when it is not an order (a request of the home page's router)
      */
-    public function alertAdmin(string $subject, ?FarmOrder $order = null, array $lines = [], string $kind = 'problem', ?string $attachment = null): void
+    public function alertAdmin(string $subject, ?FarmOrder $order = null, array $lines = [], string $kind = 'problem', ?string $attachment = null, ?string $url = null): void
     {
         $to = (string) $this->settings->get('admin_email');
         if ($to === '' || ! $this->settings->get('notify_'.$kind)) {
             return;
         }
         try {
-            Mail::to($to)->queue(new FarmAdminAlert($subject, $lines, $order ? route('admin.farm.orders.show', $order) : route('admin.farm.printers'), $kind, $attachment));
+            Mail::to($to)->queue(new FarmAdminAlert($subject, $lines, $url ?? ($order ? route('admin.farm.orders.show', $order) : route('admin.farm.printers')), $kind, $attachment));
         } catch (\Throwable $e) {
             Log::warning('Farm admin mail failed', ['error' => $e->getMessage()]);
         }

@@ -35,6 +35,8 @@
         'artwork' => ['upload' => route('api.tools.artwork'), 'library' => route('api.artwork.library'), 'mine' => route('api.artwork.mine'), 'file' => url('/api/artwork/file')],
         'zip' => route('api.tools.param.zip'),
         'shared' => route('api.shared'),   // the share event (ShareController)
+        // opened from the home page's router with ?intake=<token> (App\Http\Middleware\IntakeHandoff, docs/AN.md §22): the photo's address and the parameters
+        'intake' => request()->attributes->get('intake'),
         'i18n' => collect(\Illuminate\Support\Arr::dot(['toolpage' => trans('toolpage')]))->all() + ['farm.finish' => collect((array) trans('farm.finish'))->all()],
     ];
 @endphp

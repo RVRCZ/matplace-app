@@ -1,51 +1,175 @@
 {{--
-    Homepage for customers. The look comes from the approved concept (cream, ink blue, orange, product photography);
-    the first screen is still the working entrance: file, photo or words → price. Everything here hides once a model is open.
+    Homepage for customers. The first screen is the router (TODO #78, docs/AN.md §22): a photo, a 3D file or words →
+    the assistant says which tool makes it, whether a person has to look at it, or the calculator takes the file.
+    Under it the three ways it can go, the gifts made from a photo, the farm's photographed prints, the file's own
+    entrance (the calculator's drop zone, which its scripts need on the page), then the page as it was: the five ways in,
+    the tools people use most, the examples and the three steps. Everything here hides once a model is open.
 --}}
 @php
-    $pic = function (string $name, string $alt, string $sizes, bool $eager = false) {
-        $base = asset('img/home/'.$name);
-        return '<picture><source type="image/webp" srcset="'.$base.'-640.webp 640w, '.$base.'-1024.webp 1024w, '.$base.'-1536.webp 1536w" sizes="'.$sizes.'">'
-            .'<img src="'.$base.'-1024.jpg" alt="'.e($alt).'" width="1536" height="1024" '.($eager ? 'fetchpriority="high"' : 'loading="lazy"').' decoding="async" class="h-auto w-full"></picture>';
-    };
     // without the marketplace the copy speaks about downloading or printing on the farm, never about other printers
     $mp = (bool) config('features.marketplace');
     $tx = fn (string $key) => __($mp ? $key : 'home.farm.'.$key);
     // the spare-part inquiry is a tool of the catalogue too: no tile where its page would not open (/admin/tools)
     $spare = $mp && \App\Domain\Tools\ToolVisibility::canOpen(auth()->user(), 'spare');
+    // the router: the farm's numbers (the reply time, the Christmas deadline), the gift cards, the photographed prints
+    $hours = \App\Domain\Intake\IntakePage::hours();
+    $christmas = \App\Domain\Intake\IntakePage::christmas();
+    $gifts = \App\Domain\Intake\IntakePage::gifts(auth()->user(), (bool) ($config['generator'] ?? false));
+    $prints = \App\Domain\Intake\IntakePage::prints(3);
+    $pickup = in_array('pickup', (array) app(\App\Domain\Farm\FarmSettings::class)->get('delivery_modes'), true);
+    $mainFormats = strtoupper(implode(', ', array_intersect(['stl', '3mf', 'step', 'obj'], $config['formats']))) ?: $formats;
+    $routerTexts = collect(['router.kind.photo', 'router.kind.file', 'router.need_input', 'router.error', 'router.too_many', 'router.sending', 'router.submit.hint', 'router.assistant',
+        'router.tag.tool', 'router.tag.human', 'router.tag.shape', 'router.tag.file', 'router.act.open_tool', 'router.act.open_tool_text', 'router.act.rather_human', 'router.act.open_calc',
+        'router.act.send_request', 'router.act.sending', 'router.questions', 'router.request.title', 'router.request.lead', 'router.request.consent', 'router.request.sent',
+        'router.request.need_consent', 'router.request.need_email', 'router.request.failed'])
+        ->mapWithKeys(fn ($k) => [$k => __($k, ['hours' => ':hours', 'email' => ':email', 'tool' => ':tool'])])->all()
+        + ['photo.too_big' => __('photo.too_big', ['mb' => ':mb']), 'auth.email' => __('auth.email')];
+    $eyebrow = 'text-xs font-bold uppercase tracking-[0.14em] text-action';
+    $h2 = 'mt-2 text-2xl font-extrabold tracking-tight text-ink sm:text-3xl';
 @endphp
 
 <section id="hero">
-    {{-- one centred column: the file, the photo and the words are the page (the illustration left on 16 Oct 2026) --}}
-    <div class="mx-auto max-w-2xl pt-2 text-center lg:pt-8">
-        <div class="min-w-0">
-            <p class="flex items-center justify-center gap-2 text-xs font-bold uppercase tracking-[0.14em] text-action"><span class="h-1.5 w-1.5 rounded-full bg-action" aria-hidden="true"></span>{{ __('home.eyebrow') }}</p>
+    {{-- ── the router: the words on the left, the card on the right (one column on a phone, the card right under the title) ── --}}
+    <div class="grid gap-6 pt-2 lg:grid-cols-[1.05fr_1fr] lg:items-start lg:gap-10 lg:pt-8" id="router">
+        <div class="min-w-0 max-w-xl">
+            <p class="flex items-center gap-2 {{ $eyebrow }}"><span class="h-1.5 w-1.5 rounded-full bg-action" aria-hidden="true"></span>{{ __('router.eyebrow') }}</p>
             @php $titleTag = empty($initial) ? 'h1' : 'p'; @endphp{{-- a calculation (/c/<code>) has the model's name as its h1 --}}
-            <{{ $titleTag }} class="mt-3 break-words text-[2.4rem] font-extrabold leading-[1.05] tracking-tight text-ink sm:mt-4 sm:text-6xl">{{ __('home.title.a') }}<br><span class="text-action">{{ __('home.title.c') }}</span></{{ $titleTag }}>
-            <p class="mx-auto mt-3 max-w-md text-base leading-relaxed text-muted sm:mt-4 sm:text-lg">{{ $tx('home.lead') }}</p>
-            {{-- the quieter second way (audit 10/2026, bod 3): the model can be downloaded for one's own printer --}}
-            <p class="mx-auto mt-2 max-w-md text-sm text-muted">{{ __('home.printer_note') }}</p>
-            {{-- one line on a phone too: the first screen has the file field and the price promise on it (audit 10/2026, bod 4) --}}
-            <ol class="mt-3 flex flex-wrap items-center justify-center gap-x-1 gap-y-1 text-xs font-semibold text-ink sm:mt-4 sm:gap-x-2 sm:text-sm" aria-label="{{ __('home.path') }}">
-                @foreach(['idea', 'design', 'product'] as $i => $stage)
-                    @if($i)<li class="text-action" aria-hidden="true">→</li>@endif
-                    <li class="rounded-full border border-line bg-card px-2 py-0.5 sm:px-3 sm:py-1">{{ __('home.path.'.$stage) }}</li>
-                @endforeach
-            </ol>
-
-            <div class="mt-4 sm:mt-5">
-                @include('calculator.inputs', ['centered' => true])
-            </div>
-
-            <ul class="mt-4 flex flex-wrap justify-center gap-x-5 gap-y-1 text-xs text-muted">
-                {{-- "from 99 Kč": the cheapest of the priced examples (config site.example_items), only in crowns (audit 26 Oct 2026, D15) --}}
-                @php $from = \App\Support\Currency::current() === \App\Support\Money::CZK ? collect((array) config('site.example_items'))->map(fn ($i) => $i['price']['CZK'] ?? null)->filter()->min() : null; @endphp
-                @foreach($mp ? ['real_prices', 'no_signup', 'share'] : ['free_tools', 'download', $from ? 'farm_from' : 'farm'] as $b)
-                    <li class="flex items-center gap-1.5"><svg class="h-3.5 w-3.5 text-action" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2.4" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M4 10.5l4 4 8-9"/></svg>{{ $b === 'free_tools' ? trans_choice('home.benefit.free_tools_n', $n = (int) config('ai.daily_limits.generate_guest'), ['n' => $n]) : __('home.benefit.'.$b, ['price' => $from ? \App\Support\Money::of((float) $from, \App\Support\Money::CZK)->format() : '']) }}</li>
+            <{{ $titleTag }} class="mt-3 break-words text-[2.1rem] font-extrabold leading-[1.08] tracking-tight text-ink sm:text-5xl lg:text-[3.1rem]">{{ __('router.title') }}</{{ $titleTag }}>
+            <p class="mt-4 max-w-lg text-base leading-relaxed text-muted sm:text-lg">{{ __('router.lead') }}</p>
+            <ul class="mt-4 flex flex-wrap gap-x-4 gap-y-1.5 text-sm text-muted" aria-label="{{ __('router.trust.preview') }}">
+                @foreach(array_filter(['preview' => __('router.trust.preview'), 'no_signup' => __('router.trust.no_signup'), 'christmas' => $christmas ? __('router.trust.christmas', ['date' => $christmas]) : null]) as $k => $line)
+                    <li class="flex items-center gap-1.5" data-trust="{{ $k }}"><svg class="h-3.5 w-3.5 shrink-0 text-ok" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2.4" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M4 10.5l4 4 8-9"/></svg>{{ $line }}</li>
                 @endforeach
             </ul>
         </div>
+
+        <form id="intake-form" class="card grid gap-4 p-4 shadow-sm sm:p-5" novalidate enctype="multipart/form-data" method="post" action="{{ route('intake.store') }}"
+              data-url="{{ route('intake.store') }}" data-max-mb="{{ \App\Domain\Intake\IntakeService::PHOTO_MB }}" data-i18n="{{ json_encode($routerTexts, JSON_UNESCAPED_UNICODE) }}">
+            @csrf
+            {{-- the photo or the file: one area, a preview with "remove" once something is picked --}}
+            <div id="intake-drop" class="rounded-2xl border-2 border-dashed border-action/60 bg-action-soft/60 p-4 text-center">
+                <div id="intake-empty">
+                    <p class="font-semibold text-ink">{{ __('router.drop.title') }}</p>
+                    <p class="text-sm text-muted">{{ __('router.drop.or_file', ['formats' => $mainFormats]) }}</p>
+                    <div class="mt-3 flex flex-wrap justify-center gap-2">
+                        <label for="intake-photo" class="btn-primary cursor-pointer gap-2"><x-icon name="camera" class="h-5 w-5" />{{ __('router.photo_button') }}</label>
+                        <label for="intake-model" class="btn-secondary cursor-pointer">{{ __('router.file_button') }}</label>
+                    </div>
+                    {{-- no `capture`: a phone then offers the camera and the gallery both; with it Android and iOS open the camera alone --}}
+                    <input id="intake-photo" name="photo" type="file" accept="image/*,.heic,.heif" class="sr-only">
+                    <input id="intake-model" name="model" type="file" accept="{{ implode(',', array_map(fn ($f) => '.'.$f, $config['formats'])) }}" class="sr-only">
+                    <p class="mt-3 text-xs text-muted">{{ __('router.privacy') }}</p>
+                </div>
+                <div id="intake-preview" class="hidden items-center gap-3 text-left">
+                    <img id="intake-thumb" src="" alt="" class="hidden h-[72px] w-[72px] shrink-0 rounded-xl border border-line object-cover">
+                    <div class="min-w-0 flex-1">
+                        <div id="intake-file-name" class="break-all font-semibold text-ink"></div>
+                        <div id="intake-file-kind" class="text-sm text-muted"></div>
+                        <button type="button" id="intake-clear" class="mt-1 inline-flex min-h-11 items-center text-sm text-muted underline hover:text-ink">{{ __('router.remove') }}</button>
+                    </div>
+                </div>
+            </div>
+
+            <label class="block text-sm text-muted" for="intake-text">{{ __('router.text_label') }}
+                <textarea id="intake-text" name="text" maxlength="{{ \App\Domain\Intake\IntakeService::TEXT_MAX }}" rows="4" placeholder="{{ __('router.text_placeholder') }}" class="field mt-1 min-h-28 resize-y leading-relaxed"></textarea>
+            </label>
+
+            <div class="flex flex-wrap gap-2" aria-label="{{ __('router.examples') }}">
+                @foreach(['bust', 'pet', 'charm', 'part'] as $chip)
+                    <button type="button" class="chip min-h-11 hover:border-action hover:text-action-dark" data-fill="{{ __('router.chip.'.$chip.'.fill') }}">{{ __('router.chip.'.$chip) }}</button>
+                @endforeach
+            </div>
+
+            <div class="flex flex-col items-center gap-2 text-center">
+                {{-- the one orange action of the screen: at least 60 px tall, the whole width on a phone --}}
+                <button type="submit" id="intake-submit" class="btn-primary min-h-[60px] w-full rounded-2xl px-8 text-lg shadow-sm lg:w-auto lg:min-w-[320px]">{{ __('router.submit') }}</button>
+                <p id="intake-hint" class="max-w-md text-sm text-muted" aria-live="polite">{{ __('router.submit.hint') }}</p>
+            </div>
+            <p id="intake-error" class="note-error hidden text-sm" role="alert"></p>
+            <div id="intake-assist" class="hidden border-t border-line pt-4" aria-live="polite"></div>
+        </form>
     </div>
+
+    {{-- ── what happens after sending: the three ways it can go ── --}}
+    <section class="mt-14" aria-labelledby="router-paths-title" id="router-paths">
+        <p class="{{ $eyebrow }}">{{ __('router.paths.eyebrow') }}</p>
+        <h2 id="router-paths-title" class="{{ $h2 }}">{{ __('router.paths.title') }}</h2>
+        <p class="mt-1 max-w-3xl text-muted">{{ __('router.paths.lead') }}</p>
+        <div class="mt-5 grid gap-4 md:grid-cols-3">
+            @foreach(['tool' => 'camera', 'shape' => 'box', 'human' => 'wrench'] as $path => $ico)
+                <article class="card p-5" data-path="{{ $path }}">
+                    <span class="flex h-10 w-10 items-center justify-center rounded-xl bg-action-soft text-action-dark" aria-hidden="true"><x-icon :name="$ico" class="h-5 w-5" /></span>
+                    <h3 class="mt-3 text-lg font-bold text-ink">{{ __('router.paths.'.$path.'.title') }}</h3>
+                    <p class="mt-1 text-sm leading-relaxed text-muted">{{ __('router.paths.'.$path.'.text', ['hours' => $hours]) }}</p>
+                    <p class="mt-3 rounded-lg bg-page px-3 py-2 text-sm text-ink">{{ __('router.paths.'.$path.'.example', ['hours' => $hours]) }}</p>
+                </article>
+            @endforeach
+        </div>
+    </section>
+
+    {{-- ── the gifts made from a photo, a drawing or a name ── --}}
+    @if($gifts)
+    <section class="mt-14" aria-labelledby="router-gifts-title" id="router-gifts">
+        <p class="{{ $eyebrow }}">{{ __('router.gifts.eyebrow') }}</p>
+        <h2 id="router-gifts-title" class="{{ $h2 }}">{{ __('router.gifts.title') }}</h2>
+        <p class="mt-1 max-w-3xl text-muted">{{ __('router.gifts.lead') }}</p>
+        <div class="mt-5 grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4">
+            @foreach($gifts as $gift)
+                <a href="{{ $gift['url'] }}" data-gift="{{ $gift['key'] }}" class="card group flex flex-col overflow-hidden transition hover:border-ink">
+                    <span class="block overflow-hidden bg-studio">@include('tools.picture', ['key' => $gift['key'], 'sizes' => '(min-width: 1024px) 270px, (min-width: 640px) 45vw, 50vw'])</span>
+                    <span class="flex flex-1 flex-col p-3">
+                        <span class="font-semibold leading-tight text-ink group-hover:underline">{{ $gift['title'] }}</span>
+                        {{-- "from": the cheapest real calculation of the farm for the tool (config/site.php), nothing made up; without one the card says no price --}}
+                        @if($gift['from'])<span class="mt-1 text-sm text-muted">{{ __('router.gifts.from', ['price' => $gift['from']]) }}</span>@endif
+                    </span>
+                </a>
+            @endforeach
+        </div>
+        @if($christmas)
+            <div class="mt-4 flex flex-wrap items-center gap-x-3 gap-y-1 rounded-xl bg-studio px-4 py-3 text-sm" data-deadline>
+                <b class="font-semibold text-ink">{{ __('router.deadline', ['date' => $christmas]) }}</b>
+                <span class="text-muted">{{ __('router.deadline.note') }}@if($pickup) {{ __('router.deadline.pickup') }}@endif</span>
+            </div>
+        @endif
+    </section>
+    @endif
+
+    {{-- ── the farm's photographed prints of these gifts (App\Domain\Tools\ToolPhotos): nothing until there are photos ── --}}
+    @if($prints)
+    <section class="mt-14" aria-labelledby="router-prints-title" id="router-prints">
+        <p class="{{ $eyebrow }}">{{ __('router.prints.eyebrow') }}</p>
+        <h2 id="router-prints-title" class="{{ $h2 }}">{{ __('router.prints.title') }}</h2>
+        <ul class="mt-5 grid grid-cols-3 gap-3">
+            @foreach($prints as $p)
+                @php $when = $p['at'] ? \Carbon\Carbon::parse($p['at'])->format(app()->getLocale() === 'cs' ? 'j. n. Y' : 'j M Y') : null; @endphp
+                <li class="card overflow-hidden">
+                    <picture>
+                        @if(! empty($p['webp']))<source type="image/webp" srcset="{{ $p['webp'] }}">@endif
+                        <img src="{{ $p['url'] }}" alt="{{ trim(__('tools.photos.alt', ['tool' => __('tools.'.$p['tool'].'.title'), 'material' => $p['material'] ?? '', 'date' => $when ?? ''])) }}" width="600" height="450" loading="lazy" decoding="async" class="aspect-[4/3] w-full bg-studio object-cover">
+                    </picture>
+                    <p class="px-3 py-2 text-xs text-muted">{{ implode(' · ', array_filter([__('tools.'.$p['tool'].'.title'), $p['material'], $when])) }}</p>
+                </li>
+            @endforeach
+        </ul>
+    </section>
+    @endif
+
+    {{-- ── a model of one's own: the calculator's entrance (its scripts bind to the ids inside: file-input, dropzone, search-form) ── --}}
+    <section class="card mt-14 p-4 sm:p-6" aria-labelledby="router-file-title" id="router-file">
+        <p class="{{ $eyebrow }}">{{ __('router.file.eyebrow') }}</p>
+        <h2 id="router-file-title" class="{{ $h2 }}">{{ __('router.file.title') }}</h2>
+        <p class="mt-1 max-w-3xl text-muted">{{ __('router.file.lead') }}</p>
+        <div class="mt-4">
+            @include('calculator.inputs', ['centered' => false, 'fileOnly' => true])
+        </div>
+        <ul class="mt-4 flex flex-wrap gap-x-5 gap-y-1 text-xs text-muted">
+            {{-- "from 99 Kč": the cheapest of the priced examples (config site.example_items), only in crowns (audit 26 Oct 2026, D15) --}}
+            @php $from = \App\Support\Currency::current() === \App\Support\Money::CZK ? collect((array) config('site.example_items'))->map(fn ($i) => $i['price']['CZK'] ?? null)->filter()->min() : null; @endphp
+            @foreach($mp ? ['real_prices', 'no_signup', 'share'] : ['free_tools', 'download', $from ? 'farm_from' : 'farm'] as $b)
+                <li class="flex items-center gap-1.5"><svg class="h-3.5 w-3.5 text-action" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2.4" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M4 10.5l4 4 8-9"/></svg>{{ $b === 'free_tools' ? trans_choice('home.benefit.free_tools_n', $n = (int) config('ai.daily_limits.generate_guest'), ['n' => $n]) : __('home.benefit.'.$b, ['price' => $from ? \App\Support\Money::of((float) $from, \App\Support\Money::CZK)->format() : '']) }}</li>
+            @endforeach
+        </ul>
+    </section>
 
     @include('calculator.search_results')
 
