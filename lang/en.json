@@ -2126,5 +2126,18 @@
     "farm.admin.shop.no_position": "The card has no printer position; save the colour only.",
     "farm.admin.shop.note_settings": "From the shop :host :date: nozzle :nozzle, bed :bed:flow",
     "farm.admin.shop.note_price": "Price at the shop :host :date: :price",
-    "farm.admin.shop.materials_hint": "Or paste the link of the product page in the shop: the agent prepares the colour's card."
+    "farm.admin.shop.materials_hint": "Or paste the link of the product page in the shop: the agent prepares the colour's card.",
+    "farm.admin.shop.proposals.header": "Print photos awaiting approval: :n",
+    "farm.admin.shop.proposals.title": "Photos awaiting approval (:n)",
+    "farm.admin.shop.proposals.hint": "An approved photo becomes the colour's photo and customers see it; a shop photo is never shown to customers.",
+    "farm.admin.shop.proposals.from_order": "from order :number",
+    "farm.admin.shop.proposals.use": "Use as the colour's photo",
+    "farm.admin.shop.proposals.reject": "Reject",
+    "farm.admin.shop.proposals.approved": "The photo of :color is now the print's.",
+    "farm.admin.shop.proposals.rejected": "The photo proposal was rejected.",
+    "farm.admin.shop.proposals.decided": "This proposal has been decided already.",
+    "farm.admin.shop.photo_source.drive": "photo from Drive",
+    "farm.admin.shop.photo_source.upload": "photo uploaded",
+    "farm.admin.shop.photo_source.eshop": "photo from the shop (hidden from customers)",
+    "farm.admin.shop.photo_source.print": "photo of our print"
 }

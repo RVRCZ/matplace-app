@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Domain\Farm\ColorCatalog;
+use App\Domain\Farm\ColorPhotoProposals;
 use App\Domain\Farm\FarmSettings;
 use App\Domain\Farm\OrderFlow;
 use App\Domain\Farm\PrinterFiles;
@@ -13,6 +14,7 @@ use App\Http\Controllers\Controller;
 use App\Models\CreditTransaction;
 use App\Models\FarmAgent;
 use App\Models\FarmColor;
+use App\Models\FarmColorPhotoProposal;
 use App\Models\FarmMaterial;
 use App\Models\FarmOrder;
 use App\Models\FarmPrinter;
@@ -263,6 +265,7 @@ class FarmCatalogController extends Controller
         $color->code = ColorCatalog::codeFor($kind, $color->name_en ?: $color->name, $maker ?: null);
         if ($photo = $request->file("slots.$slot.new.photo")) {
             $color->photo_path = $photo->storeAs('farm/colors', Str::uuid().'.'.$photo->extension(), 'public');
+            $color->photo_source = FarmColor::PHOTO_UPLOAD;
         }
         $color->save();
 
@@ -304,10 +307,35 @@ class FarmCatalogController extends Controller
             ->merge(FarmOrder::query()->whereNotNull('farm_color_id')->distinct()->pluck('farm_color_id'))
             ->merge(FarmOrder::query()->whereNotNull('second_color_id')->distinct()->pluck('second_color_id'))->map(fn ($id) => (int) $id)->unique()->flip();
 
+        // photos of our prints waiting for the admin's yes as the pictures of their colours (ColorPhotoProposals, docs/AL.md §21.7)
+        $proposals = ColorPhotoProposals::pending();
+
         return view('admin.farm.materials', [
             'materials' => $materials, 'template' => $template, 'makers' => $this->makers(),
             'usedColors' => $used, 'usedKinds' => FarmOrder::query()->distinct()->pluck('farm_material_id')->map(fn ($id) => (int) $id)->flip(),
+            'proposals' => $proposals, 'pendingPhotos' => $proposals->flatten()->count(),
         ]);
+    }
+
+    /** "Použít": a photo of our print becomes the colour's photo (FarmColor::customerPhoto shows it to customers). */
+    public function approveProposal(Request $request, FarmColorPhotoProposal $proposal, ColorPhotoProposals $proposals): RedirectResponse
+    {
+        if ($proposal->status !== FarmColorPhotoProposal::STATUS_PENDING) {
+            return back()->with('error', __('farm.admin.shop.proposals.decided'));
+        }
+        $color = $proposals->approve($proposal, $request->user()?->id);
+
+        return redirect()->route('admin.farm.materials')->withFragment('kind-'.$color->farm_material_id)->with('status', __('farm.admin.shop.proposals.approved', ['color' => $color->name]));
+    }
+
+    public function rejectProposal(Request $request, FarmColorPhotoProposal $proposal, ColorPhotoProposals $proposals): RedirectResponse
+    {
+        if ($proposal->status !== FarmColorPhotoProposal::STATUS_PENDING) {
+            return back()->with('error', __('farm.admin.shop.proposals.decided'));
+        }
+        $proposals->reject($proposal, $request->user()?->id);
+
+        return redirect()->route('admin.farm.materials')->withFragment('kind-'.$proposal->color?->farm_material_id)->with('status', __('farm.admin.shop.proposals.rejected'));
     }
 
     public function saveMaterial(Request $request, ?FarmMaterial $material = null): RedirectResponse
@@ -430,9 +458,12 @@ class FarmCatalogController extends Controller
         if (($request->boolean('remove_photo') || $request->hasFile('photo')) && $color->photo_path) {
             Storage::disk('public')->delete($color->photo_path);
             $color->photo_path = null;
+            $color->photo_source = null;
         }
         if ($request->hasFile('photo')) {
+            // where the photo came from: the admin's upload is ours and customers see it (FarmColor::customerPhoto, docs/AL.md §21)
             $color->photo_path = $request->file('photo')->storeAs('farm/colors', Str::uuid().'.'.$request->file('photo')->extension(), 'public');
+            $color->photo_source = FarmColor::PHOTO_UPLOAD;
         }
         $color->save();
 

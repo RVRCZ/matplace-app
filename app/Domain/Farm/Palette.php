@@ -76,7 +76,7 @@ final class Palette
                 $finish = (string) ($c->material->finish ?? 'solid');
                 $rows[] = [
                     'code' => (string) $c->code, 'name' => $c->displayName(), 'hex' => strtolower($c->hex),
-                    'material' => (string) $c->material->code, 'finish' => $finish, 'photo' => $c->photoUrl(), 'in_stock' => (bool) $c->in_stock,
+                    'material' => (string) $c->material->code, 'finish' => $finish, 'photo' => $c->customerPhoto(), 'in_stock' => (bool) $c->in_stock,
                     'loaded' => isset($loaded[$c->id]),
                     'hue' => self::hue($c->hex, $finish, $c->name.' '.$c->name_en), 'light' => round(self::lab($c->hex)[0], 1),
                     // what the search of the colour window looks through: both names and the code, without accents

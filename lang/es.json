@@ -2126,5 +2126,18 @@
     "farm.admin.shop.no_position": "La ficha no tiene posición de impresora; guarde solo el color.",
     "farm.admin.shop.note_settings": "De la tienda :host :date: boquilla :nozzle, cama :bed:flow",
     "farm.admin.shop.note_price": "Precio en la tienda :host :date: :price",
-    "farm.admin.shop.materials_hint": "O pegue el enlace de la página del producto en la tienda: el agente prepara la ficha del color."
+    "farm.admin.shop.materials_hint": "O pegue el enlace de la página del producto en la tienda: el agente prepara la ficha del color.",
+    "farm.admin.shop.proposals.header": "Fotos de impresiones pendientes de aprobación: :n",
+    "farm.admin.shop.proposals.title": "Fotos pendientes de aprobación (:n)",
+    "farm.admin.shop.proposals.hint": "Una foto aprobada pasa a ser la foto del color y los clientes la ven; una foto de la tienda nunca se muestra a los clientes.",
+    "farm.admin.shop.proposals.from_order": "del pedido :number",
+    "farm.admin.shop.proposals.use": "Usar como foto del color",
+    "farm.admin.shop.proposals.reject": "Rechazar",
+    "farm.admin.shop.proposals.approved": "La foto de :color es ahora la de la impresión.",
+    "farm.admin.shop.proposals.rejected": "La propuesta de foto fue rechazada.",
+    "farm.admin.shop.proposals.decided": "Esta propuesta ya fue decidida.",
+    "farm.admin.shop.photo_source.drive": "foto de Drive",
+    "farm.admin.shop.photo_source.upload": "foto subida",
+    "farm.admin.shop.photo_source.eshop": "foto de la tienda (oculta a los clientes)",
+    "farm.admin.shop.photo_source.print": "foto de nuestra impresión"
 }

@@ -644,7 +644,7 @@ final class OrderService
 
             // `place` = the position in the operator's words with the machine ("Farm U #3 · ACE 3"): the admin's view (docs/AL.md §20)
             return ['slot' => $s->id, 'n' => (int) $s->slot, 'label' => $label,
-                'color_id' => $color?->id, 'name' => $color?->displayName(), 'kind' => $color?->material?->label(), 'hex' => $color?->hex, 'finish' => $color?->material?->finish, 'photo' => $color?->photoUrl(),
+                'color_id' => $color?->id, 'name' => $color?->displayName(), 'kind' => $color?->material?->label(), 'hex' => $color?->hex, 'finish' => $color?->material?->finish, 'photo' => $color?->customerPhoto(),
                 'code' => $s->code(), 'place' => $printer->name.' · '.$label, 'main' => (int) $s->id === (int) $first->id, 'offer' => $reason === null, 'reason' => $reason];
         })->values()->all();
     }

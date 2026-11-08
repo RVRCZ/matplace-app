@@ -2126,5 +2126,18 @@
     "farm.admin.shop.no_position": "Karta nemá pozici tiskárny; uložte jen barvu.",
     "farm.admin.shop.note_settings": "Z e-shopu :host :date: tryska :nozzle, podložka :bed:flow",
     "farm.admin.shop.note_price": "Cena z e-shopu :host :date: :price",
-    "farm.admin.shop.materials_hint": "Nebo vložte odkaz na stránku produktu v e-shopu: agent připraví kartu barvy."
+    "farm.admin.shop.materials_hint": "Nebo vložte odkaz na stránku produktu v e-shopu: agent připraví kartu barvy.",
+    "farm.admin.shop.proposals.header": "Fotky výtisků k odsouhlasení: :n",
+    "farm.admin.shop.proposals.title": "Fotky k odsouhlasení (:n)",
+    "farm.admin.shop.proposals.hint": "Odsouhlasená fotka se stane fotkou barvy a uvidí ji zákazník; fotka z e-shopu se zákazníkům nikdy neukazuje.",
+    "farm.admin.shop.proposals.from_order": "ze zakázky :number",
+    "farm.admin.shop.proposals.use": "Použít jako fotku barvy",
+    "farm.admin.shop.proposals.reject": "Zamítnout",
+    "farm.admin.shop.proposals.approved": "Fotka barvy :color je teď z výtisku.",
+    "farm.admin.shop.proposals.rejected": "Návrh fotky zamítnut.",
+    "farm.admin.shop.proposals.decided": "O tomto návrhu už bylo rozhodnuto.",
+    "farm.admin.shop.photo_source.drive": "fotka z Drive",
+    "farm.admin.shop.photo_source.upload": "fotka nahraná",
+    "farm.admin.shop.photo_source.eshop": "fotka z e-shopu (zákazník nevidí)",
+    "farm.admin.shop.photo_source.print": "fotka z výtisku"
 }

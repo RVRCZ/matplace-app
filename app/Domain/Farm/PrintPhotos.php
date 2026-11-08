@@ -188,6 +188,12 @@ final class PrintPhotos
         $rel = fn (string $abs): string => $dir.'/'.basename($abs);
         $meta = ['bg' => $r['bg'], 'cut' => $r['cut'], 'coverage' => $r['coverage'], 'cut_error' => $r['cut_error'], 'at' => now()->toIso8601String(), 'source' => $sourceRel, 'files' => array_map($rel, $r['files'])];
         $order->forceFill(['photo_path' => $rel($r['files']['web']), 'photo_meta' => $meta])->save();
+        // the photo offered as the picture of every colour of the order, for the admin's yes (docs/AL.md §21.7); never breaks the photo
+        try {
+            app(ColorPhotoProposals::class)->proposeFor($order);
+        } catch (\Throwable $e) {
+            Log::warning('Colour photo proposals were not made', ['order' => $order->id, 'error' => $e->getMessage()]);
+        }
 
         return $meta;
     }

@@ -20,6 +20,7 @@
 @endphp
 <section class="mt-4 rounded-xl border border-slate-200 bg-white p-4 text-sm">
     <h2 class="font-bold">Katalog barev: {{ $allColors->count() }} cívek</h2>
+    @if($pendingPhotos)<p class="mt-1 text-sm font-semibold text-amber-800" data-pending-photos="{{ $pendingPhotos }}">{{ __('farm.admin.shop.proposals.header', ['n' => $pendingPhotos]) }}</p>@endif
     <p class="mt-1 text-slate-600">Chybí hex: <strong class="{{ $noHex ? 'text-amber-700' : '' }}">{{ $noHex }}</strong> · chybí anglický název: <strong class="{{ $noEn ? 'text-amber-700' : '' }}">{{ $noEn }}</strong>. Hex se čte z fotky výtisku (bez pozadí, střed vzorku), anglický název se přeloží z českého. Duhové, dřevěné a svítící filamenty dostanou převládající barvu a poznámku „zkontrolovat“.</p>
     <div class="mt-3 flex flex-wrap items-end gap-4">
         <form method="post" action="{{ route('admin.farm.colors.fill') }}">@csrf<button class="btn-quiet text-sm">Doplnit hex a anglické názvy</button></form>
@@ -109,7 +110,7 @@
                                     </div>
                                 @endif
                                 <details class="sm:col-span-8 text-xs">
-                                    <summary class="cursor-pointer text-slate-500">{{ $c->code ?? 'nastavení' }}@if($c->exists && $c->manufacturer) · {{ $c->manufacturer }}@endif {{ '' }}@if($c->drive_folder) · <a class="underline" target="_blank" href="https://drive.google.com/drive/folders/{{ $c->drive_folder }}">fotky na Drive</a>@endif · vlastní nastavení tisku {{ $c->print_overrides ? '✓' : '–' }}@if($c->exists) · přeřadit / fotka @endif</summary>
+                                    <summary class="cursor-pointer text-slate-500">{{ $c->code ?? 'nastavení' }}@if($c->exists && $c->manufacturer) · {{ $c->manufacturer }}@endif {{ '' }}@if($c->drive_folder) · <a class="underline" target="_blank" href="https://drive.google.com/drive/folders/{{ $c->drive_folder }}">fotky na Drive</a>@endif · vlastní nastavení tisku {{ $c->print_overrides ? '✓' : '–' }}@if($c->photo_source) · {{ __('farm.admin.shop.photo_source.'.$c->photo_source) }}@endif {{ '' }}@if($c->exists) · přeřadit / fotka @endif</summary>
                                     <div class="mt-1 grid gap-2 sm:grid-cols-3">
                                         @if($c->exists)
                                             <label class="{{ $lb }}">Druh materiálu (přeřazení špatně zařazené barvy)
@@ -127,6 +128,24 @@
                                     </div>
                                 </details>
                             </form>
+                            @if($c->exists && isset($proposals[$c->id]))
+                                {{-- photos of our prints in this colour, waiting for the admin's yes (ColorPhotoProposals, docs/AL.md §21.7) --}}
+                                <div class="-mt-1 rounded-xl border border-amber-200 bg-amber-50 p-2 text-xs" data-photo-proposals="{{ $c->id }}">
+                                    <p class="font-semibold text-amber-900">{{ __('farm.admin.shop.proposals.title', ['n' => $proposals[$c->id]->count()]) }} <span class="font-normal text-slate-600">· {{ __('farm.admin.shop.proposals.hint') }}</span></p>
+                                    <div class="mt-1 flex flex-wrap gap-3">
+                                        @foreach($proposals[$c->id] as $pp)
+                                            <div class="flex items-center gap-2">
+                                                <img src="{{ $pp->url() }}" data-zoom="{{ $pp->url() }}" alt="" class="h-16 w-24 cursor-zoom-in rounded-lg object-cover">
+                                                <div class="space-y-1">
+                                                    <p class="text-slate-600">@if($pp->order?->number){{ __('farm.admin.shop.proposals.from_order', ['number' => $pp->order->number]) }} · @endif{{ $pp->created_at?->format('j. n. Y') }}</p>
+                                                    <form method="post" action="{{ route('admin.farm.colors.proposals.approve', $pp) }}" class="inline">@csrf<button class="btn-quiet text-xs">{{ __('farm.admin.shop.proposals.use') }}</button></form>
+                                                    <form method="post" action="{{ route('admin.farm.colors.proposals.reject', $pp) }}" class="inline">@csrf<button class="text-xs text-red-700 underline">{{ __('farm.admin.shop.proposals.reject') }}</button></form>
+                                                </div>
+                                            </div>
+                                        @endforeach
+                                    </div>
+                                </div>
+                            @endif
                             @if($c->exists)
                                 @if(isset($usedColors[$c->id]))
                                     <p class="-mt-1 px-2 text-right text-[11px] text-slate-400">{{ __('farm.admin.color_in_use', ['color' => $c->name, 'where' => __('farm.admin.usage.slots_or_orders')]) }}</p>

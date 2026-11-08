@@ -33,7 +33,7 @@ class FarmImportPhotos extends Command
             foreach (glob(rtrim($dir, '\\/').'/*', GLOB_ONLYDIR) ?: [] as $folder) {
                 $color = $colors->get($this->key(basename($folder)));
                 if (! $color) {
-                    $this->line("<comment>no colour for</comment> ".basename($folder));
+                    $this->line('<comment>no colour for</comment> '.basename($folder));
                     $missing++;
 
                     continue;
@@ -45,7 +45,7 @@ class FarmImportPhotos extends Command
                 }
                 $photo = $this->pick($folder);
                 if (! $photo) {
-                    $this->line("<comment>no jpeg in</comment> ".basename($folder));
+                    $this->line('<comment>no jpeg in</comment> '.basename($folder));
                     $missing++;
 
                     continue;
@@ -55,7 +55,7 @@ class FarmImportPhotos extends Command
                 if ($color->photo_path && $color->photo_path !== $rel) {
                     Storage::disk('public')->delete($color->photo_path);
                 }
-                $color->update(['photo_path' => $rel]);
+                $color->update(['photo_path' => $rel, 'photo_source' => FarmColor::PHOTO_DRIVE]);
                 $done++;
             }
         }
@@ -102,7 +102,9 @@ class FarmImportPhotos extends Command
         // camera JPEGs carry their orientation in EXIF
         $exif = function_exists('exif_read_data') && ! preg_match('/\.png$/i', $path) ? @exif_read_data($path) : false;
         if (! empty($exif['Orientation'])) {
-            $src = match ((int) $exif['Orientation']) { 3 => imagerotate($src, 180, 0), 6 => imagerotate($src, -90, 0), 8 => imagerotate($src, 90, 0), default => $src };
+            $src = match ((int) $exif['Orientation']) {
+                3 => imagerotate($src, 180, 0), 6 => imagerotate($src, -90, 0), 8 => imagerotate($src, 90, 0), default => $src
+            };
         }
         $w = imagesx($src);
         $h = imagesy($src);

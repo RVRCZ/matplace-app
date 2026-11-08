@@ -495,6 +495,9 @@ Route::middleware(['auth', 'role:admin'])->prefix('admin/farm')->name('admin.far
     Route::get('/colors/from-url/{id}/image/{n}', [$shop, 'image'])->where(['id' => '[0-9a-f-]{36}', 'n' => '[0-9]{1,2}'])->name('colors.from_url.image');
     Route::post('/colors/from-url/{id}/save', [$shop, 'save'])->where('id', '[0-9a-f-]{36}')->name('colors.from_url.save');
     Route::post('/colors/from-url/{id}/cancel', [$shop, 'cancel'])->where('id', '[0-9a-f-]{36}')->name('colors.from_url.cancel');
+    // photos of our prints offered as the pictures of their colours: the admin's yes or no (docs/AL.md §21.7)
+    Route::post('/colors/proposals/{proposal}/approve', [$catalog, 'approveProposal'])->name('colors.proposals.approve');
+    Route::post('/colors/proposals/{proposal}/reject', [$catalog, 'rejectProposal'])->name('colors.proposals.reject');
     Route::post('/colors/new', [$catalog, 'saveColor'])->name('colors.create');
     Route::post('/colors/{color}', [$catalog, 'saveColor'])->name('colors.update');
     Route::post('/colors/{color}/delete', [$catalog, 'deleteColor'])->name('colors.delete');

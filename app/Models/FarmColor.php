@@ -96,4 +96,14 @@ class FarmColor extends Model
     {
         return $this->photo_path ? Storage::disk('public')->url($this->photo_path) : null;
     }
+
+    /**
+     * The photo a customer may see: ours (the Drive export, an upload, a photo of our print), never the e-shop's
+     * (Roman, 7 Nov 2026; docs/AL.md §21). A row without a source (the catalogue before TODO #71) counts as ours.
+     * Every place that shows a colour's photo to a customer goes through here; the admin's pages use photoUrl().
+     */
+    public function customerPhoto(): ?string
+    {
+        return $this->photo_source === self::PHOTO_ESHOP ? null : $this->photoUrl();
+    }
 }
