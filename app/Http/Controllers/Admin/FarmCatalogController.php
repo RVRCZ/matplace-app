@@ -513,7 +513,16 @@ class FarmCatalogController extends Controller
             'admin_email' => ['nullable', 'email'],
             'qualities' => ['required', 'json'],
             'strengths' => ['required', 'json'],
+            // the home page's router (docs/AN.md §22): an empty date takes the Christmas line off the page
+            'christmas_deadline' => ['nullable', 'date_format:Y-m-d'],
+            'intake_reply_hours' => ['nullable', 'integer', 'min:1', 'max:168'],
         ]);
+        if ($request->has('christmas_deadline')) {
+            $data['christmas_deadline'] = (string) ($data['christmas_deadline'] ?? '');
+        }
+        if (! isset($data['intake_reply_hours'])) {
+            unset($data['intake_reply_hours']);
+        }
         $data['topup_amounts'] = array_values(array_filter(array_map('intval', preg_split('/[\s,;]+/', $data['topup_amounts']))));
         $data['qualities'] = json_decode($data['qualities'], true);
         $data['strengths'] = json_decode($data['strengths'], true);

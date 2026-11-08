@@ -97,7 +97,11 @@ return [
         'notify_done' => true,              // the last plate came off, with the camera's last picture
         'notify_problem' => true,           // print failed, cancelled by the customer, start failed, printer offline, error pending, currency
         'notify_paused' => true,            // the printer paused a print by itself (with its reason, when it gave one); once per pause
+        'notify_inquiry' => true,           // somebody left an e-mail on the home page's router: a person has to answer (docs/AN.md §22)
         'video_prices' => true,             // false: videos built from now on show no price (FarmVideos::showsPrices, docs/AL.md §13.8; Roman, 1 Nov 2026)
+        // ── the home page's router (TODO #78, docs/AN.md §22; Roman's numbers, changed at /admin/farm/settings) ──
+        'christmas_deadline' => '2026-12-15',   // the last day an order still arrives before Christmas (YYYY-MM-DD); empty = the page says nothing about Christmas
+        'intake_reply_hours' => 24,             // within how many hours a person answers a request the router could not decide
 
         // ── product switches (the admin's value wins over .env; see App\Providers\AppServiceProvider) ──
         'marketplace' => (bool) env('FEATURE_MARKETPLACE', false),   // printers' marketplace: price lists, inquiries, quotes

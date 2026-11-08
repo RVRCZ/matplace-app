@@ -56,10 +56,15 @@
             <label class="{{ $lb }}">Verze podmínek<input name="terms_version" required value="{{ old('terms_version', $settings['terms_version']) }}" class="{{ $in }}"></label>
             <label class="{{ $lb }}">E-mail obsluhy (upozornění)<input type="email" name="admin_email" value="{{ old('admin_email', $settings['admin_email']) }}" class="{{ $in }}"></label>
         </div>
+        {{-- the home page's router (docs/AN.md §22): the Christmas promise and the reply time are the operator's numbers, not the code's --}}
+        <div class="mt-3 grid gap-3 sm:grid-cols-3" id="farm-router">
+            <label class="{{ $lb }}">Do Vánoc stihneme objednávky přijaté do (prázdné = hlavní strana o Vánocích mlčí)<input type="date" name="christmas_deadline" value="{{ old('christmas_deadline', $settings['christmas_deadline']) }}" class="{{ $in }}"></label>
+            <label class="{{ $lb }}">Poptávka z rozcestníku: ozveme se do (hodin)<input type="number" name="intake_reply_hours" min="1" max="168" value="{{ old('intake_reply_hours', $settings['intake_reply_hours']) }}" class="{{ $in }}"></label>
+        </div>
         {{-- what goes to that address: one mail per event of an order (OrderFlow::alertAdmin); problems also cover a printer offline or a start that failed --}}
         <div class="mt-3 flex flex-wrap items-center gap-4 text-sm" id="farm-notify">
             <span class="text-xs font-semibold text-slate-600">E-maily obsluze:</span>
-            @foreach(['paid' => 'zaplaceno (nová zakázka)', 'printing' => 'tiskne se', 'done' => 'dotištěno (se snímkem z kamery)', 'problem' => 'problémy (selhání, zrušení, tiskárna offline)', 'paused' => 'pauza tiskárny (s hláškou, jeden e‑mail na pauzu)'] as $kind => $label)
+            @foreach(['paid' => 'zaplaceno (nová zakázka)', 'printing' => 'tiskne se', 'done' => 'dotištěno (se snímkem z kamery)', 'problem' => 'problémy (selhání, zrušení, tiskárna offline)', 'paused' => 'pauza tiskárny (s hláškou, jeden e‑mail na pauzu)', 'inquiry' => 'poptávka z rozcestníku (fotka a popis pro modeláře)'] as $kind => $label)
                 <label class="flex items-center gap-2"><input type="checkbox" name="notify_{{ $kind }}" value="1" @checked($settings['notify_'.$kind]) class="h-4 w-4 accent-action"> {{ $label }}</label>
             @endforeach
             <span class="text-xs text-slate-500">Jeden e-mail na událost; bez e-mailu obsluhy nechodí nic.</span>
