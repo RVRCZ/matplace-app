@@ -1003,11 +1003,12 @@ class OrderController extends Controller
                 if (abs($s['z'] - $c['z']) < 0.005) {
                     $spool = $spools->get($s['slot_id']);
 
-                    return $c + ['slot_id' => $s['slot_id'], 'name' => $spool?->color?->displayName(), 'slot_code' => $admin ? $spool?->placeLabel() : null];
+                    // the page paints the queued model in the spools' colours (`spool_hex`); the design's `hex` stays for the nearest-spool pick
+                    return $c + ['slot_id' => $s['slot_id'], 'name' => $spool?->color?->displayName(), 'spool_hex' => $spool?->color?->hex, 'slot_code' => $admin ? $spool?->placeLabel() : null];
                 }
             }
 
-            return $c + ['slot_id' => null, 'name' => null, 'slot_code' => null];
+            return $c + ['slot_id' => null, 'name' => null, 'spool_hex' => null, 'slot_code' => null];
         }, $order->wantedChanges());
 
         // an order printed by parts: every part, the colour the design names for it, and the spool chosen so far

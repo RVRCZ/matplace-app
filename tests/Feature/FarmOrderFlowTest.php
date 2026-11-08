@@ -424,6 +424,9 @@ class FarmOrderFlowTest extends TestCase
         $this->assertSame([['slot' => (int) $free[0]->slot, 'z' => 3.0], ['slot' => (int) $free[1]->slot, 'z' => 3.4]], $order->colorChanges());
         $state = $this->actingAs($this->user)->getJson("/farm/orders/{$order->token}/status")->assertOk()->json();
         $this->assertSame([$free[0]->id, $free[1]->id], array_column($state['changes'], 'slot_id'));
+        // the page paints the queued model in the spools' colours, the design's stay for the nearest-spool pick (F26-000145, 8 Nov 2026)
+        $this->assertSame([$red->hex, $black->hex], array_column($state['changes'], 'spool_hex'));
+        $this->assertSame(['#c81c1c', '#141418'], array_column($state['changes'], 'hex'));
         $this->assertSame(4, $state['max_colors']);
         $this->assertSame(FarmOrder::STATUS_SLICED, $order->status);
 

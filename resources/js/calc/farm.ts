@@ -40,7 +40,7 @@ const czOf = (n: number): string => ([2, 3, 4, 6, 7, 12, 13, 14, 16, 17].include
 const clampScale = (v: number, max: number) => Math.max(0.25, Math.min(max || 4, v));
 
 /** One change of the design: where (mm, as printed), the colour it was made in, and the spool chosen for it so far. */
-interface Change { z: number; hex: string; code: string | null; slot_id: number | null; name?: string | null }
+interface Change { z: number; hex: string; code: string | null; slot_id: number | null; name?: string | null; spool_hex?: string | null }
 /** One part of a design printed by parts: its plate, the colour the design names for it, and the spool chosen so far. */
 interface Part { part: string; plate: number; label: string; hex: string | null; slot_id: number | null; color_id?: number | null; name?: string | null; copies: number; minutes?: number | null; grams?: number | null; spool_hex?: string | null; model_url?: string | null }
 interface FarmState {
@@ -357,7 +357,8 @@ export function bootFarmOrder(): void {
         const first = (state.choosing ? c?.hex : state.color?.hex) ?? null;
         // every spool a change may name: the first colour here and on every machine that holds it, their other spools, the flat offer
         const spools = c ? [{ slot: c.slot, hex: c.hex }, ...(c.machines ?? []).flatMap((m) => [{ slot: m.main, hex: c.hex }, ...m.colors]), ...(c.second ?? [])] : [];
-        const picks = (state.changes ?? []).map((w, i) => (state.choosing ? spools.find((s) => s.slot === changes[i])?.hex ?? null : (w.slot_id === null ? null : w.hex)));
+        // once chosen, the spool's colour, not the design's (F26-000145, 8 Nov 2026: the queued charm showed the design's oranges)
+        const picks = (state.changes ?? []).map((w, i) => (state.choosing ? spools.find((s) => s.slot === changes[i])?.hex ?? null : (w.slot_id === null ? null : (w.spool_hex ?? w.hex))));
         viewer.paint(geom && changeHeights().length && first ? multiTone(geom, changeHeights(), first, picks) : null);
     };
     let timer = 0;
