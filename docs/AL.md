@@ -2736,8 +2736,8 @@ Tato sekce popisuje části A až C (data, karta, agent). **D (fronta fotek výt
 
 ### 21.6 Co zbývá
 
-- **D** (fronta fotek výtisků, fotka pro zákazníka) je hotové, viz §21.7. **E** `source_url` + „Načíst znovu“ u existující barvy
-  a `farm:colors-from-shop {--missing}` následuje.
+- **D** (fronta fotek výtisků, fotka pro zákazníka) je hotové, viz §21.7; **E** (odkaz u existující barvy, „Načíst znovu“,
+  `farm:colors-from-shop`) je hotové, viz §21.8. Celé #71 čeká na sloučení a nasazení řídící.
 - Sunlu: počkat na první ostrý pokus ze serveru (429 → prázdná karta s varováním, ručně).
 
 ### 21.7 Fronta fotek výtisků a fotka pro zákazníka (D, 8. 11. 2026)
@@ -2775,3 +2775,39 @@ Tato sekce popisuje části A až C (data, karta, agent). **D (fronta fotek výt
   `FarmCatalogAdminTest` a `FarmPagesTest` nově kontrolují `photo_source` `upload` a jeho smazání. Jedním během FilamentFromShop,
   ColorPhotoProposals, FarmCatalogAdmin, FarmPages, FarmColorTiles, ColorsPayload, CalcToolColors, FarmManualOnlyKinds, FarmColorsFill,
   PrinterPublicPage, PrintPhotos, ToolPhotos, YouTubeSeries, FarmOrderColors, FarmColorsPerMachine: 87 testů, 2 315 assertions, 3 přeskočené; pint.
+
+### 21.8 Zpětně: odkaz u existující barvy, „Načíst znovu“ a `farm:colors-from-shop` (E, 8. 11. 2026)
+
+- **Formulář existující barvy** v Materiálech má pole „Odkaz na e-shop (stránka produktu)“ (`source_url`, uloží `saveColor`
+  normalizovaně přes `ShopFetcher::normalize`; neplatná adresa → chyba `url_invalid`, odkaz jiné barvy → `url_taken`,
+  prázdné pole odkaz smaže) a tlačítko **Načíst znovu** (`data-shop-load data-color=<id>`): stejný skript a stejná úloha
+  jako u pozice, `POST /admin/farm/colors/from-url` s `color_id`. `FilamentFromShop::prepare()` pak zkratku „už máme“
+  přeskočí a stránku přečte znovu; odkaz, který patří **jiné** barvě, odmítne (422 „Tento odkaz už patří barvě …“,
+  `ShopRefused::TAKEN`). Stav nese `color_id` a `refresh {name, label, photo, hex, name_en, has_settings}` = co barvě chybí
+  (`refreshFlags`; fotka z e-shopu se počítá jako žádná vlastní).
+- **Karta v režimu Načíst znovu**: modrý pruh „Načíst znovu: <barva>“ + „Doplní se jen to, co barvě chybí: fotka, odstín,
+  anglický název / nic“, pole názvu, druhu, výrobce, gramů, poznámky a přepínače „nabízet“ schovaná, `name_en`/`hex`
+  editovatelné jen když chybí, fotka jen když barva nemá vlastní, přepínač **„přepsat vlastní nastavení cívky nastavením ze
+  stránky“** (vypnutý; nejde zapnout bez nastavení na stránce), tlačítko **Doplnit** (`mode` `refresh`).
+  `FilamentFromShop::refresh()` (ze `save()`, když má záznam `color_id`): fotka jen bez vlastní (stará e-shopová se smaže, nová
+  800 px `eshop`), hex jen při `UNSET_HEX` (model/duha → `CHECK_NOTE`), `name_en` jen prázdný, `print_overrides` jen s
+  `overwrite_settings` (+ řádek „Z e-shopu <host> <datum>: …“ do poznámek), cenový řádek vždy, pokud v poznámkách chybí;
+  `source_url` a `source_meta` se obnoví vždy; název, druh, výrobce a pozice se nemění. Odpověď nese `filled[]`, karta
+  řekne „Doplněno: …“ a stránka se obnoví na druh barvy.
+- **Příkaz `farm:colors-from-shop {--missing} {--dry-run} {--limit=}`** (`App\Console\Commands\FarmColorsFromShop`): barvy se
+  `source_url` (s `--missing` jen bez fotky, s `UNSET_HEX` nebo bez `name_en`; e-shopová fotka se tu počítá jako fotka, aby
+  opakované běhy konvergovaly), pro každou `FilamentFromShop::refreshNow()` = `prepare` + `run` v místě (bez fronty) +
+  `refresh` s fotkou jen pro barvu bez jakékoli fotky a **nikdy** s nastavením; `--dry-run` stránku přečte a modelu se zeptá,
+  ale nic nezapíše. Mezi dvěma požadavky na stejný host **2 s** (`GAP_MS`, `$sleeper` pro testy). Výpis jako
+  `farm:colors-fill`: `filled   KÓD   photo, hex #rrggbb, name_en` / `skipped  KÓD   nothing to fill | důvod (429, HTTP n, není
+  produkt)` a souhrn `filled n (photo a, hex b, name_en c), skipped m`. Každá barva = jedna stránka + jedno volání Claude.
+- **Testy** (`FilamentFromShopTest`, +2 testy, celkem 16 testů / 345 assertions): existující barva bez hex/fotky/name_en s
+  vlastním `print_overrides` → doplněna fotka, hex, name_en, nastavení i název nedotčené, cena v poznámce, odkaz a záznam
+  uložené; barva, která má vše → `filled []`, nic se nemění kromě odkazu; s přepínačem nastavení přepsaná + řádek v poznámce;
+  cizí odkaz → 422 s názvem barvy; `saveColor` normalizuje, odmítá cizí i neplatný, prázdný maže; příkaz: `--dry-run --limit 1`
+  nic nezapíše (model dotázán), `--missing` doplní 3 ze 3 (plná a barva bez odkazu stranou), jedna pauza 0–2000 ms mezi
+  dvěma stránkami Prusy a žádná pro majkl3d, nastavení nikdy, bez `--missing` všechny 4 „nothing to fill“, Shopify 429 →
+  `skipped … rate_limited`. Materiály nesou pole i tlačítko. `pint`, `tsc`, `npm run build` (app-vntWpv0o.js), lang 100 klíčů
+  bez duplicit. Související sady (stejný výčet jako v §21.7) jedním během: 89 testů, 2 397 assertions, 3 přeskočené.
+- **Neověřeno:** ostrý běh příkazu na produkci (cena = počet barev s odkazem × jedno volání Sonnetu; dnes má odkaz 0 barev,
+  přibývají kartou), karta „Načíst znovu“ v prohlížeči (jen tsc a HTML stránky).

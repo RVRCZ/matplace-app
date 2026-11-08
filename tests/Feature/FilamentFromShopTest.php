@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use App\Console\Commands\FarmColorsFromShop;
 use App\Domain\Farm\ColorCatalog;
 use App\Domain\Farm\FilamentFromShop;
 use App\Domain\Farm\PrintProfile;
@@ -76,6 +77,7 @@ class FilamentFromShopTest extends TestCase
     protected function tearDown(): void
     {
         ShopFetcher::$resolver = null;
+        FarmColorsFromShop::$sleeper = null;
         parent::tearDown();
     }
 
@@ -110,9 +112,9 @@ class FilamentFromShopTest extends TestCase
         ], $over);
     }
 
-    private function start(string $url, ?int $slot = 2, ?FarmPrinter $printer = null): array
+    private function start(string $url, ?int $slot = 2, ?FarmPrinter $printer = null, array $extra = []): array
     {
-        $body = ['url' => $url];
+        $body = ['url' => $url] + $extra;
         if ($slot !== null) {
             $body += ['printer_id' => ($printer ?? $this->printer)->id, 'slot' => $slot];
         }
@@ -526,5 +528,117 @@ class FilamentFromShopTest extends TestCase
             ->assertSee('data-printer="'.$this->printer->id.'" data-slot="0"', false)->assertSee('data-shop-dialog', false);
         $this->actingAs($this->admin)->get('/admin/farm/materials')->assertOk()
             ->assertSee(__('farm.admin.shop.materials_hint'))->assertSee('data-kind="'.$this->kind('PLA')->id.'"', false)->assertSee('data-filament-shop', false);
+    }
+
+    // ── a colour the catalogue has (E) ───────────────────────────────────────
+
+    public function test_an_existing_colour_is_read_again_and_only_its_blanks_are_filled(): void
+    {
+        $pla = $this->kind('PLA');
+        $bare = FarmColor::create(['farm_material_id' => $pla->id, 'code' => 'PLA_Cerna_Test', 'name' => 'černá', 'hex' => ColorCatalog::UNSET_HEX, 'enabled' => true, 'print_overrides' => ['nozzle_temp' => 200], 'test_notes' => 'ručně nastaveno']);
+        Storage::disk('public')->put('farm/colors/own.jpg', $this->spoolPhoto([10, 10, 10]));
+        $full = FarmColor::create(['farm_material_id' => $pla->id, 'code' => 'PLA_Plna', 'name' => 'plná', 'name_en' => 'full', 'hex' => '#123456', 'photo_path' => 'farm/colors/own.jpg', 'photo_source' => FarmColor::PHOTO_UPLOAD, 'enabled' => true]);
+        FakeAssistant::$answers['filament'] = $this->answer();
+        // the materials list offers the link field and "Načíst znovu" on every colour it has
+        $this->actingAs($this->admin)->get('/admin/farm/materials')->assertOk()->assertSee('data-color="'.$bare->id.'"', false)->assertSee('name="source_url"', false)->assertSee(__('farm.admin.shop.reload'));
+
+        $entry = $this->start(self::PRUSA, null, null, ['color_id' => $bare->id]);
+        $this->assertSame('done', $entry['status']);
+        $this->assertSame($bare->id, $entry['color_id']);
+        $this->assertNull($entry['existing']);
+        $this->assertSame(['photo' => true, 'hex' => true, 'name_en' => true, 'has_settings' => true], array_intersect_key($entry['refresh'], array_flip(['photo', 'hex', 'name_en', 'has_settings'])));
+        $this->assertSame('černá', $entry['refresh']['name']);
+        $this->assertNotNull($entry['card']);
+        $saved = $this->actingAs($this->admin)->postJson('/admin/farm/colors/from-url/'.$entry['id'].'/save', ['mode' => 'refresh', 'use_photo' => true, 'name_en' => $entry['card']['name_en'], 'hex' => $entry['card']['hex'], 'overwrite_settings' => false])->assertOk()->json();
+        $this->assertSame(['photo', 'hex', 'name_en'], $saved['filled']);
+        $this->assertFalse($saved['created']);
+        $bare->refresh();
+        $this->assertSame('černá', $bare->name, 'the name is never touched');
+        $this->assertSame('jet black', $bare->name_en);
+        $this->assertNotSame(ColorCatalog::UNSET_HEX, $bare->hex);
+        $this->assertSame(FarmColor::PHOTO_ESHOP, $bare->photo_source);
+        Storage::disk('public')->assertExists($bare->photo_path);
+        $this->assertSame(['nozzle_temp' => 200], $bare->print_overrides, 'the spool\'s own settings stay without the switch');
+        $this->assertStringContainsString('ručně nastaveno', $bare->test_notes);
+        $this->assertStringContainsString('Cena z e-shopu www.prusa3d.com', $bare->test_notes, 'the price is plain information and comes along');
+        $this->assertStringNotContainsString('Z e-shopu www.prusa3d.com', $bare->test_notes, 'the settings line only with the switch');
+        $this->assertSame(self::PRUSA, $bare->source_url);
+        $this->assertSame('www.prusa3d.com', $bare->source_meta['host']);
+
+        // a colour that has everything of its own gets only the link and the record of the page
+        $entry = $this->start(self::JAKE, null, null, ['color_id' => $full->id]);
+        $this->assertSame(['photo' => false, 'hex' => false, 'name_en' => false, 'has_settings' => false], array_intersect_key($entry['refresh'], array_flip(['photo', 'hex', 'name_en', 'has_settings'])));
+        $saved = $this->actingAs($this->admin)->postJson('/admin/farm/colors/from-url/'.$entry['id'].'/save', ['mode' => 'refresh', 'use_photo' => true, 'name_en' => 'avocado', 'hex' => '#00ff00'])->assertOk()->json();
+        $this->assertSame([], $saved['filled']);
+        $full->refresh();
+        $this->assertSame(['full', '#123456', 'farm/colors/own.jpg', FarmColor::PHOTO_UPLOAD, self::JAKE], [$full->name_en, $full->hex, $full->photo_path, $full->photo_source, $full->source_url]);
+
+        // with the switch the page's settings replace the spool's own, and the note says where they came from
+        $entry = $this->start(self::MAJKL, null, null, ['color_id' => $bare->id]);
+        $this->actingAs($this->admin)->postJson('/admin/farm/colors/from-url/'.$entry['id'].'/save', ['mode' => 'refresh', 'overwrite_settings' => true])->assertOk()->assertJsonPath('filled', ['settings']);
+        $bare->refresh();
+        $this->assertSame(['nozzle_temp' => 215, 'nozzle_temp_first' => 220, 'bed_temp' => 60], $bare->print_overrides);
+        $this->assertStringContainsString('Z e-shopu www.majkl3d.cz', $bare->test_notes);
+        $this->assertSame(self::MAJKL, $bare->source_url, 'the colour follows the link it was read from last');
+
+        // a link another colour owns is refused, and the colour's form stores a link normalised, one colour per link
+        $this->actingAs($this->admin)->postJson('/admin/farm/colors/from-url', ['url' => self::MAJKL, 'color_id' => $full->id])->assertStatus(422)->assertJsonPath('message', __('farm.admin.shop.refused.taken', ['color' => $bare->fullLabel()]));
+        $form = ['farm_material_id' => $pla->id, 'name' => 'plná', 'name_en' => 'full', 'hex' => '#123456', 'enabled' => 1, 'in_stock' => 1, 'code' => 'PLA_Plna'];
+        $this->actingAs($this->admin)->post("/admin/farm/colors/{$full->id}", $form + ['source_url' => 'HTTPS://www.prusa3d.com/product/prusament-pla-opal-green-1kg-nfc/?utm_source=mail#top'])->assertRedirect();
+        $this->assertSame('https://www.prusa3d.com/product/prusament-pla-opal-green-1kg-nfc/', $full->fresh()->source_url);
+        $this->actingAs($this->admin)->post("/admin/farm/colors/{$full->id}", $form + ['source_url' => self::MAJKL])->assertSessionHasErrors('source_url');
+        $this->actingAs($this->admin)->post("/admin/farm/colors/{$full->id}", $form + ['source_url' => 'not a link'])->assertSessionHasErrors('source_url');
+        $this->actingAs($this->admin)->post("/admin/farm/colors/{$full->id}", $form + ['source_url' => ''])->assertRedirect();
+        $this->assertNull($full->fresh()->source_url, 'an emptied field clears the link');
+    }
+
+    public function test_the_command_reads_the_colours_with_a_link_again_two_seconds_apart_per_shop(): void
+    {
+        $pla = $this->kind('PLA');
+        $row = fn (string $code, string $url, array $extra = []) => FarmColor::create($extra + ['farm_material_id' => $pla->id, 'code' => $code, 'name' => strtolower($code), 'hex' => ColorCatalog::UNSET_HEX, 'enabled' => true, 'source_url' => $url]);
+        $a = $row('PLA_A', self::PRUSA);
+        $b = $row('PLA_B', 'https://www.prusa3d.com/product/prusament-pla-galaxy-purple-1kg-nfc/');
+        $c = $row('PLA_C', self::MAJKL);
+        Storage::disk('public')->put('farm/colors/own.jpg', $this->spoolPhoto([10, 10, 10]));
+        $full = $row('PLA_FULL', self::JAKE, ['name_en' => 'full', 'hex' => '#123456', 'photo_path' => 'farm/colors/own.jpg', 'photo_source' => FarmColor::PHOTO_UPLOAD]);
+        $none = FarmColor::create(['farm_material_id' => $pla->id, 'code' => 'PLA_NONE', 'name' => 'bez odkazu', 'hex' => ColorCatalog::UNSET_HEX, 'enabled' => true]);
+        FakeAssistant::$answers['filament'] = $this->answer();
+        $pauses = [];
+        FarmColorsFromShop::$sleeper = function (int $ms) use (&$pauses): void {
+            $pauses[] = $ms;
+        };
+
+        // nothing is written on a dry run, the model is still asked
+        $this->artisan('farm:colors-from-shop', ['--missing' => true, '--dry-run' => true, '--limit' => 1])->expectsOutputToContain('[dry-run] filled 1 (photo 1, hex 1, name_en 1), skipped 0')->assertSuccessful();
+        $this->assertSame(ColorCatalog::UNSET_HEX, $a->fresh()->hex);
+        $this->assertCount(1, FakeAssistant::$calls);
+
+        FakeAssistant::reset();
+        FakeAssistant::$answers['filament'] = $this->answer();
+        $this->artisan('farm:colors-from-shop', ['--missing' => true])->expectsOutputToContain('filled 3 (photo 3, hex 3, name_en 3), skipped 0')->assertSuccessful();
+        $this->assertCount(3, FakeAssistant::$calls, 'one page and one model call per colour; the full one and the one without a link are left alone');
+        $this->assertCount(1, $pauses, 'the second page of the same shop waits, the other shop does not');
+        $this->assertGreaterThan(0, $pauses[0]);
+        $this->assertLessThanOrEqual(FarmColorsFromShop::GAP_MS, $pauses[0]);
+        foreach ([$a, $b, $c] as $color) {
+            $color->refresh();
+            $this->assertNotSame(ColorCatalog::UNSET_HEX, $color->hex, $color->code);
+            $this->assertSame('jet black', $color->name_en, $color->code);
+            $this->assertSame(FarmColor::PHOTO_ESHOP, $color->photo_source, $color->code);
+            $this->assertNull($color->print_overrides, 'the command never writes settings');
+            $this->assertSame(parse_url((string) $color->source_url, PHP_URL_HOST), $color->source_meta['host'], 'the record of the page comes along');
+        }
+        $this->assertSame([ColorCatalog::UNSET_HEX, null], [$none->fresh()->hex, $none->fresh()->source_url]);
+        $this->assertSame('#123456', $full->fresh()->hex);
+
+        // without --missing every linked colour is read; nothing is left to fill now
+        FakeAssistant::reset();
+        FakeAssistant::$answers['filament'] = $this->answer();
+        $this->artisan('farm:colors-from-shop')->expectsOutputToContain('nothing to fill')->expectsOutputToContain('filled 0 (photo 0, hex 0, name_en 0), skipped 4')->assertSuccessful();
+        $this->assertCount(4, FakeAssistant::$calls);
+        $this->assertSame('farm/colors/own.jpg', $full->fresh()->photo_path, 'a photo of our own is never replaced');
+        // a shop that refuses robots is reported, not fatal
+        $row('PLA_S', 'https://bots.myshopify.com/products/pla-red');
+        $this->artisan('farm:colors-from-shop', ['--missing' => true])->expectsOutputToContain('rate_limited')->expectsOutputToContain('skipped 1')->assertSuccessful();
     }
 }
