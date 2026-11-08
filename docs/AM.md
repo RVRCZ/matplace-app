@@ -462,6 +462,8 @@ kopie nepoužijí. Ověřeno místně na skutečném souboru zakázky funkcemi o
 a Moonraker řádek ignorují. Agent sám by měl příště soubor s více `T<slot>` bez řádku odmítnout před nahráním (dnes `tools_of`
 vrací `[1, 2, 0, 5, 3]` a nic s tím nedělá): úkol pro session 4 do příští verze ovladače.
 
+**Totéž odpoledne, U1 (Kobra S1) a jedna podložka s více filamenty, F26‑000144, úloha 213 (10:54):** první skutečný tisk tohoto druhu na S1; firmware odmítl soubor kódem 10116 „abnormal slice file“. Kopie `retargetMany` měla řádek `; matplace filaments` vložený za `; HEADER_BLOCK_START`, tedy uvnitř hlavičkového bloku, který stock firmware S1 kontroluje; řádek časosběru před blokem S1 bere u každého tisku. Oprava `fix/s1-filaments-line`: řádek jako první řádek souboru (agent Kobry X ho čte kdekoli v prvních 16 kB), značka kopie `.hot.map.multi…`. Ověření až tiskem na U1; pokud 10116 zůstane, další podezřelí jsou `; filament: 2,3,4,1` v hlavičce, seznamy `filament_*` v CONFIG a věž.
+
 ## 9. Konec dlouhého tisku s nulami podruhé: úloha 154 (agent 0.2.8, větev `feature/agent-stats-long`, 23. 10. 2026)
 
 Drak F26‑000097 (15 h přes noc, agent 0.2.7) skončil na serveru s `print_duration_s 0`, `filament_used_mm 0` – stejný

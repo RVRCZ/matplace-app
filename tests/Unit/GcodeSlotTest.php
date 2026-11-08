@@ -27,8 +27,9 @@ class GcodeSlotTest extends TestCase
     {
         $out = GcodeSlot::retargetMany($this->gcode(), [0 => 2, 1 => 5], [0 => ['nozzle' => 220, 'nozzle_first' => 225, 'bed' => 60], 1 => ['nozzle' => 230, 'nozzle_first' => 235, 'bed' => 60]]);
         $lines = explode("\n", $out);
-        $this->assertSame('; HEADER_BLOCK_START', $lines[0]);
-        $this->assertSame('; matplace filaments T0=2 T1=5', $lines[1], 'the map right after the first line, within the first 16 kB');
+        // the map before the slicer's header block: the S1 firmware refused it inside (10116, F26-000144, 8 Nov 2026)
+        $this->assertSame('; matplace filaments T0=2 T1=5', $lines[0], 'the map is the first line of the file');
+        $this->assertSame('; HEADER_BLOCK_START', $lines[1]);
         $this->assertStringNotContainsString("\nT0\n", $out);
         $this->assertStringNotContainsString("\nT1\n", $out);
         $this->assertSame(2, preg_match_all('/^T2 ; matplace slot for filament 0$/m', $out));
@@ -61,7 +62,7 @@ class GcodeSlotTest extends TestCase
         $src = $dir.'/print.gcode';
         file_put_contents($src, $this->gcode());
         $copy = GcodeSlot::fileForMany($src, [1 => 5, 0 => 2]);
-        $this->assertStringEndsWith('print.hot.multi0to2_1to5.gcode', $copy);
+        $this->assertStringEndsWith('print.hot.map.multi0to2_1to5.gcode', $copy);
         $this->assertStringContainsString('; matplace filaments T0=2 T1=5', (string) file_get_contents($copy));
         $time = filemtime($copy);
         $this->assertSame($copy, GcodeSlot::fileForMany($src, [0 => 2, 1 => 5]));

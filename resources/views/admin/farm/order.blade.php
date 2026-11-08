@@ -146,7 +146,7 @@
                             @php($partName = ($order->onePlate() ? 'T'.(((int) ($p['extruder'] ?? 1)) - 1) : ($i + 1).'.').' '.\App\Domain\Farm\OrderService::partLabel($order->modelFile, (string) $p['part']))
                             @if($order->absoluteGcodePath($order->onePlate() ? 1 : $i + 1))<a class="underline" href="{{ route('admin.farm.orders.gcode', [$order, 'plate' => $order->onePlate() ? 1 : $i + 1]) }}">{{ $partName }}</a>
                             @else{{ $partName }}
-                            @endif → {{ $partColors->get($p['color_id'] ?? 0)?->name ?? $order->color?->name ?? '—' }}@if(isset($p['minutes'])) ({{ $p['minutes'] }} min@if(isset($p['grams'])), {{ $p['grams'] }} g@endif)@elseif(isset($p['grams'])) ({{ $p['grams'] }} g)@endif @endforeach</dd>
+                            @endif → {{ $partColors->get($p['color_id'] ?? 0)?->name ?? $order->color?->name ?? '—' }}@if(isset($p['minutes'])) ({{ $p['minutes'] }} min{{ isset($p['grams']) ? ', '.$p['grams'].' g' : '' }})@elseif(isset($p['grams'])) ({{ $p['grams'] }} g)@endif @endforeach</dd>
                 @endif
                 <dt class="text-slate-500">{{ __('farm.quality.label') }} / {{ __('farm.strength.label') }}</dt><dd>{{ $order->quality }} / {{ $order->strength }}</dd>
                 @if($order->copies > 1)<dt class="text-slate-500">{{ __('farm.copies.label') }}</dt><dd>{{ $order->plates > 1 ? __('farm.copies.plates', ['n' => $order->copies, 'p' => $order->plates, 'layout' => implode(' + ', $order->plateLayout())]) : __('farm.copies.note', ['n' => $order->copies]) }}@if($order->plates > 1) · {{ __('farm.copies.plate_of', ['i' => $order->plates_done, 'p' => $order->plates]) }}@endif</dd>@endif

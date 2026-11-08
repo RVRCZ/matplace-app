@@ -197,10 +197,12 @@ final class GcodeSlot
                 $gcode = (string) preg_replace('/^(M1[49]0) S(?!0\b)\d+(?=\s*(?:;|$))/m', '$1 S'.$bed, $gcode);
             }
         }
-        // the map in the header: after the first line of the file, so a file with a long CONFIG block still carries it up front
-        $cut = strpos($gcode, "\n");
 
-        return $cut === false ? $header."\n".$gcode : substr($gcode, 0, $cut + 1).$header."\n".substr($gcode, $cut + 1);
+        // the map as the first line of the file, before the slicer's header block: the Kobra S1 firmware checks that block line
+        // by line and refused a copy with the map inside it (10116 "abnormal slice file", F26-000144 on U1, 8 Nov 2026); a line
+        // before the block it takes (the time-lapse line sits there on every S1 print). The Kobra X agent reads the map anywhere
+        // in the first 16 kB, so a long CONFIG block does not hide it
+        return $header."\n".$gcode;
     }
 
     /**
@@ -212,7 +214,8 @@ final class GcodeSlot
     public static function fileForMany(string $gcodePath, array $slots, array $temps = []): string
     {
         ksort($slots);
-        $tag = '.hot.multi'.implode('_', array_map(fn ($n, $s) => $n.'to'.(int) $s, array_keys($slots), $slots))
+        // "map": copies with the map inside the header block (before 8 Nov 2026) are not reused
+        $tag = '.hot.map.multi'.implode('_', array_map(fn ($n, $s) => $n.'to'.(int) $s, array_keys($slots), $slots))
             .($temps ? '-'.substr(sha1(json_encode($temps)), 0, 8) : '');
         $target = preg_replace('/\.gcode$/', '', $gcodePath).$tag.'.gcode';
         if (! is_file($target) || filemtime($target) < filemtime($gcodePath)) {

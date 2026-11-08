@@ -187,7 +187,8 @@ class FarmOnePlateTest extends TestCase
         $admin->setRole(User::ROLE_ADMIN, true);
         $this->actingAs($admin)->get(route('admin.farm.orders.show', $order))->assertOk()->assertSee('data-together="1"', false)->assertSee('data-parts=', false);
         $copy = (string) file_get_contents($this->actingAs($admin)->get("/admin/farm/orders/{$order->token}/print.gcode")->assertOk()->baseResponse->getFile()->getPathname());
-        $this->assertStringContainsString("\n".GcodeSlot::FILAMENTS_LINE." T0={$this->white->slot} T1={$this->red->slot}\n", substr($copy, 0, 16384));
+        // the map is the first line, before the slicer's header block (the S1 firmware refused it inside: 10116, F26-000144, 8 Nov 2026)
+        $this->assertStringStartsWith(GcodeSlot::FILAMENTS_LINE." T0={$this->white->slot} T1={$this->red->slot}\n; HEADER_BLOCK_START\n", $copy);
         $this->assertStringContainsString("\nT{$this->white->slot} ; matplace slot for filament 0\n", $copy);
         $this->assertStringContainsString("\nT{$this->red->slot} ; matplace slot for filament 1\n", $copy);
         $this->assertStringContainsString('; filament used [g] = ', $copy);
