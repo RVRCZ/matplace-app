@@ -31,7 +31,7 @@ export interface ToolCfg {
     artwork: { upload: string; library: string; mine: string; file: string };
     i18n: Record<string, unknown>;
 }
-export interface PriceConfig { rough: RoughConfig; orientation_profiles: Profile[]; round_to: number; materials: { code: string; density: number }[]; default_material?: string }
+export interface PriceConfig { rough: RoughConfig; orientation_profiles: Profile[]; round_to: number; materials: { code: string; density: number }[]; default_material?: string; max_colors?: number }
 export type MenuItem = { heading: string } | { label: string; hint?: string; icon?: string; href?: string; download?: string; run?: () => void | Promise<void> };
 export interface PriceOptions { material?: string; quantity?: number; vase?: boolean; infill?: number; supports?: boolean; subText?: (grams: number, time: string, qty: number) => string }
 export interface Shown { scale?: number; kind?: string | null; regions?: Region[] | null; faces?: FacePaint | null; pieces?: Piece[] | null }

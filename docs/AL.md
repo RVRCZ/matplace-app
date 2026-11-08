@@ -519,8 +519,8 @@ sám – vložený motiv ve stejných vrstvách, vícebarevná klíčenka, logo 
 
 `PrepareFarmOrder::prepareOnePlate()` běží před `prepareParts()` pro každou zakázku `by_parts` a **vrátí false**
 (nic nezměněno, jede se po dílech jako dosud), když: tiskárna není přes agenta (ruční obsluha vede jednu cívku);
-`copies > 1` (rozložení více kusů z více dílů na jednu podložku zatím není – limit); cívky dílů nejsou všechny z téže
-tiskárny; filamentů (cívek, díly téže cívky sdílejí filament) je < 2 (není co měnit → po dílech v jedné barvě jako
+cívky dílů nejsou všechny z téže tiskárny (`copies > 1` bylo důvodem do 8. 11. 2026, teď jdou kopie na jednu podložku jako
+instance, §10.13); filamentů (cívek, díly téže cívky sdílejí filament) je < 2 (není co měnit → po dílech v jedné barvě jako
 dosud) nebo > `FarmOrder::MAX_COLORS` (4) nebo víc než má stroj pozic; díly, jak je nástroj položil (jako celek,
 bez otáčení), se nevejdou na použitelnou plochu; nebo slicer selže (věž se nevejde, filamenty se nerozlišily) – pak
 se to zaloguje (`one_plate_failed` v `timings`) a tisk jde po dílech. Víc než 4 barvy odmítá už `spoolsForParts`
@@ -620,8 +620,7 @@ GcodeColorChanges, SupportLines, StlFile, MarketplaceSwitch, FarmManualOnlyKinds
 
 ### 10.7 Limity a co dál
 
-- `copies > 1` → po dílech (rozložit n kusů z více dílů se společným posunem: `PlateLayout::replicate` na slepený
-  celek + stejné transformace na díly – příští krok, když bude poptávka).
+- ~~`copies > 1` → po dílech~~ – od 8. 11. 2026 kopie na jedné podložce jako instance projektu (§10.13).
 - Díly se neotáčejí (jen jak je nástroj položil); otočení o 90°, kdyby se tak vešly, není.
 - Věž stojí tam, kam ji Orca dá (levý horní roh); u modelu přes celou podložku může kolidovat → slicer selže → po
   dílech. `prime_tower_width 25` a objemy proplachu z profilu (280 mm³ cizí, `wiping_volumes_extruders 70`) nebyly
@@ -944,6 +943,62 @@ Python na serveru musí mít `fast_simplification` a `pymeshfix` v `/opt/matplac
   podložkou) by žehlil každý díl – u medaile s `one_plate_required` to nenastane. Skutečná medaile místně (Orca 2.4,
   Kobra X): bez žehlení 1 h 28 min, s `topmost` **1 h 38 min 45 s**, žehlení jen v Z 4,4 (vršek placky) – motiv v kapse
   Orca 2.4 nežehlí ani bez per‑object vypnutí (rozdíl 1 s), takže ta pojistka je pro návrhy s odkrytým vrškem vložky.
+
+### 10.13 Kopie na jedné podložce u návrhů se zarovnanými barvami (TODO #72, větev `fix/one-plate-copies`, 8. 11. 2026)
+
+Zadání `docs/prompts/kopie-na-jedne-podlozce.md` (Roman 8. 11. 2026: „Barvy zarovno s povrchem“ + 4 ks → na stránce zakázky
+náhled jednoho kusu, po zaplacení `one_plate_needed` a kredit zpět; „proč máme pravidlo jedna podložka = jeden kus u sloučení
+do roviny“). Limit z §10.1 a §10.7 (`copies > 1` → po dílech, u návrhu s `one_plate_required` tedy `failed`) padá.
+
+- **Kopie = instance v projektu.** `ThreeMfWriter::write($path, $objects, $toolChanges, $instances)`: čtvrtý parametr je seznam
+  `[dx, dy, dz = 0, čtvrtotáčky kolem Z = 0]`; každý objekt dostane tolik `<item objectid transform="c s 0 -s c 0 0 0 1 dx dy dz"/>`,
+  kolik je položek (bez seznamu jednu s jednotkovou maticí; `ThreeMfWriter::transform`, libslic3r čte dvanáct čísel
+  transponovaně, čtvrtotáčka = `0 1 0 -1 0 0 …`). Všechny díly mají týž seznam, takže motiv zůstává zapadlý v těle. Položky
+  zipu mají pevný čas (1. 1. 2000): stejný obsah = stejné bajty (cache řezů projekt hashuje, §11.10).
+- **`prepareOnePlate`:** `skip('copies')` pryč; `copiesPlan` (byl tu už pro malovaný soubor) dává `per`, `plates`, `rest` a
+  mřížku `towerGrid` – u ACE s pásem pro věž pod sadou nebo vlevo (`towerSpot`), u měniče nástrojů bez pásu. Každý díl se
+  připraví jednou (kopie jen pro náhled: `plate-part-n.stl` je slepenec kopií jako u malovaného, díl sám zůstane vedle jako
+  `plate-part-n.stl.one`, po řezu smazaný), do `plate.3mf` jde díl (ztenčený, je-li nad prahem) s offsety `plan.full.offsets`;
+  zbytková podložka `plate-rest.3mf` s offsety posunutými o rozdíl středů obou sad a vedle ní `plate-rest.stl` (rozměr pro
+  slicer a čísla pro falešný slicer – dřív dostával zbytek `plate.stl` plné podložky). **Oprava vedle:** `$restMove` počítal
+  z `$lo`, které už mezitím neslo rohy položené podložky, ne původní rohy dílů → poslední podložka malovaného souboru byla
+  posunutá o rozdíl sad místo na střed (projevilo by se u souboru mimo počátek); teď z původního rohu (`$plateLo`).
+  Záznam jako u malovaného: `part_plates[*].copies = per`, `plates`, `plate_copies`, `rest_copies`, `rest_gcode_path`,
+  `slice_params.copies_grid`, `check.max_copies` (i u 1 ks: kolik by se vešlo, dřív 1), `timings.one_plate_instances`;
+  gramy po nástrojích z `; filament used [g]` instance sčítají samy, čas z řezu, `FarmOrder::filamentSlots()` beze změny.
+- **Platba a důvody.** `OrderFlow::pay` odmítá u `one_plate_required` už jen ruční stroj; `one_plate_skipped` nemá důvod
+  `copies`; texty `farm.error.one_plate_needed`, `farm.refuse.one_plate_needed`, `farm.order.one_plate_required`,
+  `farm.admin.mail.reason.one_plate_needed` (cs/en/es) bez „a jeden kus / po jednom kuse / víc kusů“; `one_plate_copies`
+  a `one_plate_single` zrušeny (před řezem říká stránka u kusů `farm.order.painted_copies` „co se nevejde, jde na další“ i pro
+  návrh nástroje, po řezu `farm.copies.max` + `more_plates`); nový `farm.copies.grid` „:n ks na jedné podložce (:g)“ z nového
+  `copies_grid` ve `status` (vedle `plate_copies`).
+- **Stránka nástroje.** `/api/config` (`ConfigController::payload`) nese `max_colors` = `ColorLimit::farm()` (Core One 8, S1 4);
+  `param.ts` srovnává počet filamentů s ním místo se čtyřkou; `param.shape.print.plate.many.farm` (JSON) a
+  `shape.print.many.farm` (`param.php`, starý formát, cs/en/es přímo) s `:max`, `plate.farm` a `plate.medallion.farm` bez
+  „po jednom kuse“ (`lang/src/one_plate_copies.json`).
+- **Odhad před řezem** (`BigModel::judge(copies)`, farm.ts × kusy) kopie násobil už dřív; po řezu platí řez. Beze změny.
+- **Skutečná Orca 2.4 (portable, profil S1, `ONE_PLATE_PROCESS`, věž pod sadou, dva filamenty):** deska 20 × 20 × 3 + tyčka
+  6 × 6 × 3 vedle ní jako dva objekty: 1 ks `total object counts 2, need to slice 2`, 15 výměn, 1,24 + 0,57 g, 35 min 57 s;
+  4 ks (2 × 2, mezera 5) `total object counts 8, need to slice 3`, **15 výměn** (po vrstvách, kusy je nemění), 4,42 + 0,72 g,
+  42 min 18 s, věž 31 řádků, žádný `gcode path conflicts`. Skript `scratchpad/instances72/run.php` (session 2). Měnič (Orca 2.5)
+  jen přes falešnou binárku (`FarmToolChangerPlateTest` beze změny zelený); první ostrý řez na INDX je Romanova zakázka.
+- **Testy.** `tests/Feature/FarmOnePlateCopiesTest.php` (4): 4 ks na INDX → 1 podložka, 2 objekty × 4 položky se stejnými posuny
+  (0/25/0/25, bez otočení), `plate_copies 4`, mřížka 2 × 2, gramy podle pozic, bez věže, náhled dílu 45 mm na středu 248 × 205,
+  `.one` uklizené, `status` s `plates`, `plate_copies`, `plate_layout`, `copies_grid`, `max_copies`, text bez „po jednom kuse“,
+  platba 4 ks → `queued` a start s `filaments {0:0, 1:1}`; 9 ks po 80 mm → 3 podložky (4 + 4 + 1), `plate-rest.3mf`
+  s položkou na objekt na středu, `rest_gcode_path`, gramy 2 × plná + zbytek; S1 s ACE 4 ks → věž pod sadou (y 7), 115 mm
+  kusy → 2 + 2 (pás věže bere řadu), ruční stroj → `one_plate_needed/manual`; `/api/config` `max_colors` 4 a 8.
+  `tests/Unit/ThreeMfWriterTest.php` (4): bez instancí jedna položka, s instancemi N položek a týž seznam pro každý objekt,
+  matice otočení, stejný obsah = stejné bajty. Otočená očekávání: `FarmOnePlateTest` (2 ks → jedna podložka místo
+  `failed/copies`, tři místa), `FlushDownTest` (text s `:max`). Zelené: FarmOnePlateCopies, FarmOnePlate, FarmToolChangerPlate,
+  ToolChangerPlate, GcodeSlot, OnePlateTower, ThreeMfColors (2 přeskočené, Orca), FarmOrderFlow, FarmColorsPerMachine,
+  FlushDown, ColorsPayload, FarmColorTiles, ThreeMfWriter; `pint`, `tsc`, `npm run build`, lang JSON bez duplicit.
+- **Soubory.** `app/Jobs/PrepareFarmOrder.php`, `app/Engines/Mesh/ThreeMfWriter.php`, `app/Domain/Farm/OrderFlow.php`,
+  `app/Http/Controllers/Farm/OrderController.php`, `app/Http/Controllers/Api/ConfigController.php`, `resources/js/calc/farm.ts`,
+  `resources/js/calc/param.ts`, `resources/js/calc/tool_page.ts`, `resources/views/farm/order.blade.php`,
+  `lang/{cs,en,es}/farm.php`, `lang/{cs,en,es}/param.php`, `lang/src/one_plate_copies.json`.
+- **Nechat být / neověřeno:** malovaný 3MF (kopie měl), jednobarevný zarovnaný návrh (`multi_material: false`) jde dál jako jeden
+  kus; díly se dál neotáčejí; stránka zakázky jen `tsc` a JSON stavu, ne v prohlížeči.
 
 # Zakázka velkého modelu: řez až po volbách a potvrzení barvy (TODO #41, session 2)
 

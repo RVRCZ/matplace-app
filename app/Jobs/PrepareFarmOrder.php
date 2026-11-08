@@ -150,7 +150,7 @@ class PrepareFarmOrder implements ShouldQueue
                 }
                 if ($file->onePlateRequired()) {
                     // the colours of this design share a layer: by parts the motif would come out loose – the order stops
-                    // here and says what it needs (a machine with a changer, spools of one machine, one piece)
+                    // here and says what it needs (a machine with a changer, spools of one machine, room on the plate)
                     $this->fail($flow, $order, 'one_plate_needed', (string) ($clock->toArray()['one_plate_skipped'] ?? ''));
 
                     return;
@@ -702,10 +702,13 @@ class PrepareFarmOrder implements ShouldQueue
     /**
      * An order by parts whose parts print together: one plate, one G-code, a filament per spool (`T0`…`T<n-1>` in the
      * file, the prime tower between them), the machine changing spools as it goes. Possible when the machine is run
-     * by an agent (a changer; an operator feeds one spool), there is one copy, the spools are no more than the machine
-     * has positions (FarmPrinter::colorLimit) and all of this machine, the parts as the tool laid them fit the plate,
-     * and the slicer manages it. Returns false,
-     * with nothing of the order changed, when it is not: the caller prints the parts one plate each.
+     * by an agent (a changer; an operator feeds one spool), the spools are no more than the machine has positions
+     * (FarmPrinter::colorLimit) and all of this machine, the parts as the tool laid them fit the plate, and the slicer
+     * manages it. Several copies share the plate (docs/AL.md §10.13): every part is an object of the project placed
+     * once per copy (ThreeMfWriter instances, the parts of one piece sharing the offset), as many pieces as fit a plate
+     * beside the tower's band, more on full plates one after another with the rest on the last one, like a painted
+     * file's copies (§14.8). Returns false, with nothing of the order changed, when it is not: the caller prints the
+     * parts one plate each.
      */
     private function prepareOnePlate(FarmOrder $order, PrintPreparer $preparer, Slicer $slicer, FarmSettings $settings, OrderService $orders, OrderFlow $flow, Stopwatch $clock, $disk, Dimensions $bed): bool
     {
@@ -720,12 +723,8 @@ class PrepareFarmOrder implements ShouldQueue
         if (! $printer->isAgentDriven()) {
             return $skip('manual');
         }
-        // a painted 3MF prints its copies on the same plate, the same object placed again (docs/AL.md §14.8); the parts of
-        // a tool's design one piece at a time
+        // a painted 3MF goes to the slicer as itself with its colours mapped (docs/AL.md §14.8), a tool's design as its parts
         $paintedFile = PaintedColors::painted($file);
-        if ((int) $order->copies !== 1 && ! $paintedFile) {
-            return $skip('copies');
-        }
         $slotIds = array_values(array_unique(array_filter(array_map(fn ($p) => (int) ($p['slot_id'] ?? 0), $skeleton))));
         $spools = $slotIds ? FarmPrinterSlot::with('color.material')->whereIn('id', $slotIds)->get()->keyBy('id') : collect();
         if ($spools->contains(fn (FarmPrinterSlot $s) => (int) $s->farm_printer_id !== (int) $printer->id)) {
@@ -785,8 +784,8 @@ class PrepareFarmOrder implements ShouldQueue
         // several copies: as many full plates as they need, the last one with the rest, every plate a grid that leaves
         // the tower its band (PlateLayout::towerGrid, the calculator counts the plates the same way)
         $plan = (int) $order->copies > 1 && is_finite($lo[0]) ? self::copiesPlan($size, $bed, $margin / 2, $nFilaments, (int) $order->copies, ! $toolChanger) : null;
-        // a painted 3MF ordered once may take more copies later: the page says how many fit a plate (a tool's design: one)
-        $maxCopies = $plan ? $plan['max'] : ($paintedFile && is_finite($lo[0]) ? max(1, PlateLayout::towerGrid(new Dimensions($size[0], $size[1], $size[2]), $bed, $margin / 2, $nFilaments, tower: ! $toolChanger)['max']) : 1);
+        // a design ordered once may take more copies later: the page says how many fit a plate
+        $maxCopies = $plan ? $plan['max'] : (is_finite($lo[0]) ? max(1, PlateLayout::towerGrid(new Dimensions($size[0], $size[1], $size[2]), $bed, $margin / 2, $nFilaments, tower: ! $toolChanger)['max']) : 1);
         if (! is_finite($lo[0]) || ((int) $order->copies > 1 && ! $plan) || $size[0] > $usable->x || $size[1] > $usable->y || $size[2] > $usable->z) {
             foreach ($paths as $rel) {
                 @unlink($disk->path($rel).'.raw');
@@ -853,11 +852,15 @@ class PrepareFarmOrder implements ShouldQueue
             }
             $meshes[$i] = $partMesh;
         }
-        // the plate's copies of every part, for the preview and the record (the slicer gets the painted file placed again)
+        // the plate's copies of every part, for the preview and the record; the slicer gets the painted file placed again, or
+        // the single parts as objects placed once per copy (`$single`: the part as prepared, before its copies were glued on)
         $per = $plan ? $plan['per'] : 1;
+        $single = $paths;
         if ($per > 1) {
             foreach ($paths as $i => $rel) {
                 $placed = $disk->path($rel);
+                copy($placed, $placed.'.one');
+                $single[$i] = $rel.'.one';
                 $more = [$placed];
                 foreach (array_slice($plan['full']['offsets'], 1) as $k => $offset) {
                     StlFile::translate($placed, $more[] = $placed.'.copy'.($k + 1), $offset);
@@ -875,7 +878,8 @@ class PrepareFarmOrder implements ShouldQueue
         StlFile::concat(array_map(fn ($rel) => $disk->path($rel), $paths), $disk->path($plateRel));
         $printRel = $order->dir().'/print.stl';
         copy($disk->path($plateRel), $disk->path($printRel));
-        [$lo, $hi] = StlFile::bounds($disk->path($plateRel));
+        // ($lo stays the parts' raw corner: the last plate of several is moved from it the way the full plate was)
+        [$plateLo, $plateHi] = StlFile::bounds($disk->path($plateRel));
         $all = collect($meshes);
         $mesh = new PreparedMesh(
             path: $disk->path($printRel),
@@ -883,7 +887,7 @@ class PrepareFarmOrder implements ShouldQueue
             wasWatertight: $all->every(fn (PreparedMesh $m) => $m->wasWatertight),
             repaired: $all->contains(fn (PreparedMesh $m) => $m->repaired),
             openEdges: (int) $all->sum(fn (PreparedMesh $m) => $m->openEdges),
-            bbox: new Dimensions($hi[0] - $lo[0], $hi[1] - $lo[1], $hi[2] - $lo[2]),
+            bbox: new Dimensions($plateHi[0] - $plateLo[0], $plateHi[1] - $plateLo[1], $plateHi[2] - $plateLo[2]),
             volumeMm3: (float) $all->sum(fn (PreparedMesh $m) => $m->volumeMm3) * $per,
             areaMm2: (float) $all->sum(fn (PreparedMesh $m) => $m->areaMm2) * $per,
             triangles: (int) $all->sum(fn (PreparedMesh $m) => $m->triangles) * $per,
@@ -939,7 +943,16 @@ class PrepareFarmOrder implements ShouldQueue
         // below the plaque's next layer, ironing its top would only cost minutes – its object says "no ironing" itself
         $hints = $order->modelFile?->processHints() ?? [];
         $inlay = ($hints['ironing_type'] ?? 'no ironing') !== 'no ironing' ? ['ironing_type' => 'no ironing'] : [];
-        $slicePaths = $paths;
+        $slicePaths = $single;
+        // the files of the slicer's objects alone (the single parts kept beside their glued copies, their thinned copies): gone
+        // once the projects hold them – or when the plate is given up for the parts one by one
+        $cleanup = function () use (&$slicePaths, $single, $paths, $disk): void {
+            foreach (array_unique(array_merge($slicePaths, $single)) as $i => $rel) {
+                if (! in_array($rel, $paths, true)) {
+                    @unlink($disk->path($rel));
+                }
+            }
+        };
         // a painted 3MF goes to Orca as itself, its colours mapped onto the parts' filaments (exact painting, no inlays; the
         // inlays of a painted curved surface are refused as objects of their own, docs/AL.md §14); the parts' 3MF otherwise
         $partFilament = [];
@@ -949,15 +962,15 @@ class PrepareFarmOrder implements ShouldQueue
         $painted = $paintedFile
             && $clock->measure('repaint', fn () => app(PaintedColors::class)->project($file, $disk->path($projectRel), $scale, $move, $partFilament, $plan ? $plan['full']['offsets'] : [[0.0, 0.0, 0.0]]));
         $clock->note('one_plate_project', $painted ? 'painted' : 'parts');
-        if (! $painted && $plan) {
-            return $skip('project');   // the copies are placed in the painted project only
-        }
+        // the parts' project: an object per part, placed once per copy of the plate (every part the same offsets, so the
+        // motif stays set in its body; Orca slices every object once and prints its instances)
+        $objects = [];
         if (! $painted) {
             // a part of millions of triangles is thinned for the slicer alone (MeshDecimator, docs/AL.md §10.11): the placed
             // parts stay as they are for the preview and the record, the 3MF takes the thinned copies. The painted project
             // has its own mesh: thinning its parts cost 89 s for 12 turtles and gave the slicer nothing (29 Oct 2026)
             $decimator = app(MeshDecimator::class);
-            foreach ($paths as $i => $rel) {
+            foreach ($single as $i => $rel) {
                 if ($decimator->wants($disk->path($rel))) {
                     $r = $clock->measure('decimate', fn () => $decimator->decimate($disk->path($rel), $disk->path($rel).'.thin', (float) $setup['layer']));
                     $clock->note('triangles_in_'.($i + 1), $r['before'])->note('triangles_sliced_'.($i + 1), $r['after'] ?? $r['before']);
@@ -966,12 +979,9 @@ class PrepareFarmOrder implements ShouldQueue
                     }
                 }
             }
-            ThreeMfWriter::write($disk->path($projectRel), array_map(fn ($i, $p) => ['name' => (string) $p['part'], 'stl' => $disk->path($slicePaths[$i]), 'extruder' => $filamentOf[$i] + 1, 'process' => $i > 0 ? $inlay : []], array_keys($skeleton), $skeleton));
-        }
-        foreach ($slicePaths as $i => $rel) {
-            if ($rel !== $paths[$i]) {
-                @unlink($disk->path($rel));   // the 3MF holds the thinned geometry now
-            }
+            $objects = array_map(fn ($i, $p) => ['name' => (string) $p['part'], 'stl' => $disk->path($slicePaths[$i]), 'extruder' => $filamentOf[$i] + 1, 'process' => $i > 0 ? $inlay : []], array_keys($skeleton), $skeleton);
+            ThreeMfWriter::write($disk->path($projectRel), $objects, [], $plan ? $plan['full']['offsets'] : []);
+            $clock->note('one_plate_instances', $per);
         }
         $process = $toolChanger ? self::TOOL_CHANGER_PROCESS : self::ONE_PLATE_PROCESS + ['wipe_tower_x' => [(string) $tower['x']], 'wipe_tower_y' => [(string) $tower['y']]];
         $params = $setup['params']->withFilaments(self::forSlicer($filaments), $disk->path($projectRel), $process);
@@ -981,11 +991,14 @@ class PrepareFarmOrder implements ShouldQueue
             // the slicer could not do the plate (the tower found no room, the filaments were not kept apart…): one plate each
             Log::warning('One-plate slice failed, the parts print one plate each', ['order' => $order->id, 'error' => $e->getMessage()]);
             $clock->note('one_plate_failed', mb_substr($e->getMessage(), 0, 200));
+            $cleanup();
 
             return $skip('slicer');
         }
         $clock->merge($result->timings);
         if (! $result->gcodePath || ! is_file($result->gcodePath)) {
+            $cleanup();
+
             return $skip('no_gcode');
         }
         $gcodeRel = $order->dir().'/print.gcode';
@@ -1003,31 +1016,55 @@ class PrepareFarmOrder implements ShouldQueue
             $restTower = $toolChanger ? $tower : (self::towerSpot([$last['set'][0], $last['set'][1], $size[2]], $bed, $margin / 2, $nFilaments) ?? $tower);
             $restMove = [$bed->x / 2 - $lo[0] - $last['set'][0] / 2 + $restTower['shift'][0], $bed->y / 2 - $lo[1] - $last['set'][1] / 2 + $restTower['shift'][1], -$lo[2]];
             $restProject = $order->dir().'/plate-rest.3mf';
-            if (! $clock->measure('repaint', fn () => app(PaintedColors::class)->project($file, $disk->path($restProject), $scale, $restMove, $partFilament, $last['offsets']))) {
-                @unlink($disk->path($gcodeRel));
+            // the smaller set of the last plate: its grid's offsets from its own first piece, the set as a whole moved from
+            // where the full plate's set stood
+            $shift = [$restMove[0] - $move[0], $restMove[1] - $move[1]];
+            if ($painted) {
+                if (! $clock->measure('repaint', fn () => app(PaintedColors::class)->project($file, $disk->path($restProject), $scale, $restMove, $partFilament, $last['offsets']))) {
+                    @unlink($disk->path($gcodeRel));
+                    $cleanup();
 
-                return $skip('project');
+                    return $skip('project');
+                }
+            } else {
+                // the same objects, placed where the last plate has them
+                ThreeMfWriter::write($disk->path($restProject), $objects, [], array_map(fn ($o) => [$o[0] + $shift[0], $o[1] + $shift[1]], $last['offsets']));
+            }
+            // the last plate as a mesh beside its project: the slicer takes the size from it (and the fake slicer its figures)
+            $restPlateRel = $order->dir().'/plate-rest.stl';
+            $pieces = [];
+            foreach ($single as $i => $rel) {
+                foreach ($last['offsets'] as $k => $o) {
+                    StlFile::translate($disk->path($rel), $pieces[] = $disk->path($rel).'.rest'.$k, [$o[0] + $shift[0], $o[1] + $shift[1], 0.0]);
+                }
+            }
+            $clock->measure('layout', fn () => StlFile::concat($pieces, $disk->path($restPlateRel)));
+            foreach ($pieces as $p) {
+                @unlink($p);
             }
             $restParams = $setup['params']->withFilaments(self::forSlicer($filaments, $plan['rest'] / $plan['per']),
                 $disk->path($restProject), $toolChanger ? self::TOOL_CHANGER_PROCESS : self::ONE_PLATE_PROCESS + ['wipe_tower_x' => [(string) $restTower['x']], 'wipe_tower_y' => [(string) $restTower['y']]]);
             try {
-                $restResult = $clock->measure('rest_slice', fn () => $slicer->slice($disk->path($plateRel), $restParams));
+                $restResult = $clock->measure('rest_slice', fn () => $slicer->slice($disk->path($restPlateRel), $restParams));
             } catch (\Throwable $e) {
                 Log::warning('One-plate slice of the last plate failed', ['order' => $order->id, 'error' => $e->getMessage()]);
                 $clock->note('one_plate_failed', 'rest: '.mb_substr($e->getMessage(), 0, 200));
                 @unlink($disk->path($gcodeRel));
+                $cleanup();
 
                 return $skip('slicer');
             }
             $clock->merge($restResult->timings, 'rest_');
             if (! $restResult->gcodePath || ! is_file($restResult->gcodePath)) {
                 @unlink($disk->path($gcodeRel));
+                $cleanup();
 
                 return $skip('no_gcode');
             }
             $restRel = $order->dir().'/rest.gcode';
             File::move($restResult->gcodePath, $disk->path($restRel));
         }
+        $cleanup();
         $platesCount = $plan ? $plan['plates'] : 1;
         $fullPlates = $restResult ? $platesCount - 1 : $platesCount;
         $sum = fn (float $full, ?float $rest) => $full * $fullPlates + ($rest ?? 0.0);

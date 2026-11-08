@@ -1078,7 +1078,10 @@ class OrderController extends Controller
             'max_copies' => $check['max_copies'] ?? null,
             'plates' => $order->plates,
             'plates_done' => $order->plates_done,
+            'plate_copies' => $order->plate_copies,
             'plate_layout' => $order->plateLayout(),
+            // the copies of one plate of parts in a grid [columns, rows] (docs/AL.md §10.13, §14.8); null for a single piece or a plate per part
+            'copies_grid' => $order->onePlate() && is_array($order->slice_params['copies_grid']['grid'] ?? null) ? array_map('intval', $order->slice_params['copies_grid']['grid']) : null,
             'plate_now' => $job && $job->isActive() ? $job->plate : null,
             'piece_dims' => $check['piece_dims'] ?? null,
             'unit' => array_search($order->unit_scale, ModelValidator::UNITS, false) ?: 'mm',

@@ -402,9 +402,11 @@ export function bootParam(stage: Stage): void {
         if (found) found.textContent = n.source !== 'text' && n.found && n.wanted && n.found < n.wanted ? t('shape.colors.found', { n: n.found, w: n.wanted }) : '';
         const print = document.getElementById('shape-print');
         const swaps = (n.color_changes ?? []).length;
-        // the farm loads four spools for one print: a design of more different colours is told so (a colour may come back, that costs no spool)
+        // one print on the farm takes as many spools as its machine has positions (max_colors, ColorLimit::farm: the Core One
+        // with the INDX 8, a Kobra 4): a design of more different colours is told so (a colour may come back, that costs no spool)
         const spools = n.filaments ?? 1;
-        if (print) print.textContent = n.one_plate_required ? t(spools > 4 ? 'shape.print.plate.many' : 'shape.print.plate', { c: spools }) : n.multi_material ? t('shape.print.multi') : spools > 4 ? t('shape.print.many', { n: swaps, c: spools }) : swaps > 1 ? t('shape.print.swap', { n: swaps }) : swaps ? t('shape.print.swap1') : t('shape.print.one');
+        const maxColors = cfg.config.max_colors ?? 4;
+        if (print) print.textContent = n.one_plate_required ? t(spools > maxColors ? 'shape.print.plate.many' : 'shape.print.plate', { c: spools, max: maxColors }) : n.multi_material ? t('shape.print.multi') : spools > maxColors ? t('shape.print.many', { n: swaps, c: spools, max: maxColors }) : swaps > 1 ? t('shape.print.swap', { n: swaps }) : swaps ? t('shape.print.swap1') : t('shape.print.one');
         renderRecent();
     };
 

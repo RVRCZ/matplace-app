@@ -460,7 +460,7 @@ return [
     'shape.print.swap.farm' => 'Barvy leží nad sebou a tisk :n× mění filament. Na farmě to vytiskneme najednou: cívku pro každou barvu potvrdíte při objednávce, předvybrané jsou ty z návrhu.',
     // more different colours than the farm loads for one print (FarmOrder::MAX_COLORS = 4); elsewhere it is a design like any other
     'shape.print.many' => 'Barvy leží nad sebou. Tisk se :n× zastaví a vymění se filament: zvládne to každá tiskárna, projekt ke stažení výměny obsahuje.',
-    'shape.print.many.farm' => 'Tenhle návrh má :c různých barev. Na farmě tiskneme nejvýš čtyři v jednom tisku: snižte počet barev, některé slučte, nebo si stáhněte projekt s výměnami pro svou tiskárnu.',
+    'shape.print.many.farm' => 'Tenhle návrh má :c různých barev. Na farmě tiskneme nejvýš :max v jednom tisku: snižte počet barev, některé slučte, nebo si stáhněte projekt s výměnami pro svou tiskárnu.',
     'shape.print.multi' => 'Barvy leží vedle sebe ve stejné vrstvě. To vytiskne jen tiskárna, která mění filament sama (AMS, MMU, ACE). Bez ní vypněte „Barvy zarovno“ a „Lem“: barvy pak půjdou nad sebe.',
     'shape.print.multi.farm' => 'Barvy leží vedle sebe ve stejné vrstvě. Takový tisk si zatím na farmě objednat nejde, model i projekt ale stáhnete. Pro tisk u nás vypněte „Barvy zarovno“ a „Lem“: barvy pak půjdou nad sebe.',
     'shape.each' => 'každá :w × :h × :t mm',

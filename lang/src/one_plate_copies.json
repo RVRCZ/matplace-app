@@ -1,0 +1,17 @@
+{
+    "param.shape.print.plate.farm": [
+        "Barvy leží vedle sebe v prvních vrstvách, líc se tiskne na podložce. Na farmě to vytiskneme na jedné podložce na tiskárně, která mění filament sama; víc kusů jde vedle sebe. Díly pro vlastní tiskárnu si můžete stáhnout.",
+        "The colours lie side by side in the first layers, the face prints on the bed. The farm prints that on one plate on a printer that changes filament by itself; several pieces go side by side. You can download the parts for your own printer.",
+        "Los colores van uno al lado de otro en las primeras capas y la cara se imprime sobre la cama. En la granja lo imprimimos en una sola placa, en una impresora que cambia el filamento sola; varias unidades van una junto a otra. Puede descargar las piezas para su propia impresora."
+    ],
+    "param.shape.print.plate.medallion.farm": [
+        "Motiv leží vedle desky v prvních vrstvách, líc se tiskne na podložce. Na farmě to vytiskneme na jedné podložce na tiskárně, která mění filament sama; víc kusů jde vedle sebe. Díly pro vlastní tiskárnu si můžete stáhnout.",
+        "The motif lies beside the plate in the first layers, the face prints on the bed. The farm prints that on one plate on a printer that changes filament by itself; several pieces go side by side. You can download the parts for your own printer.",
+        "El motivo va junto a la placa en las primeras capas y la cara se imprime sobre la cama. En la granja lo imprimimos en una sola placa, en una impresora que cambia el filamento sola; varias unidades van una junto a otra. Puede descargar las piezas para su propia impresora."
+    ],
+    "param.shape.print.plate.many.farm": [
+        "Tenhle návrh má :c různých barev v prvních vrstvách. Na farmě tiskneme nejvýš :max v jednom tisku: snižte počet barev, některé slučte, nebo si stáhněte díly pro svou tiskárnu.",
+        "This design has :c different colours in its first layers. The farm prints at most :max in one print: reduce the colours, merge some, or download the parts for your own printer.",
+        "Este diseño tiene :c colores distintos en sus primeras capas. La granja imprime como máximo :max en una impresión: reduzca los colores, fusione algunos o descargue las piezas para su impresora."
+    ]
+}
