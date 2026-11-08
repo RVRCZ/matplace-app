@@ -240,15 +240,40 @@ final class GcodeSlot
     public static function fileFor(string $gcodePath, int $slot, array $temps = [], ?array $changes = null): string
     {
         $changes = $changes === null ? [] : (isset($changes['slot']) ? [$changes] : array_values($changes));
-        // "hot": copies made before the heating-before-the-spool-change (12 Oct 2026) are not reused
+        // "hot": copies made before the heating-before-the-spool-change (12 Oct 2026) are not reused; "map": nor those
+        // made before the filament line the Kobra X agent needs for the changes (8 Nov 2026, F26-000142)
         $tag = '.hot.slot'.$slot.(! empty($temps['nozzle']) ? '-'.$temps['nozzle'].'-'.(int) ($temps['bed'] ?? 0) : '')
-            .($changes ? '.then'.implode('_', array_map(fn ($c) => $c['slot'].'at'.str_replace('.', '_', (string) $c['z']), $changes)) : '');
+            .($changes ? '.map.then'.implode('_', array_map(fn ($c) => $c['slot'].'at'.str_replace('.', '_', (string) $c['z']), $changes)) : '');
         $target = preg_replace('/\.gcode$/', '', $gcodePath).$tag.'.gcode';
         if (! is_file($target) || filemtime($target) < filemtime($gcodePath)) {
             $gcode = self::retarget((string) file_get_contents($gcodePath), $slot, $temps);
-            file_put_contents($target, $changes ? self::colorChanges($gcode, $changes) : $gcode);
+            file_put_contents($target, $changes ? self::withFilamentsLine(self::colorChanges($gcode, $changes)) : $gcode);
         }
 
         return $target;
+    }
+
+    /**
+     * The filament line for a file that changes spools by height: every `T<slot>` the file selects, in the order of its
+     * first appearance, named as a filament (`; matplace filaments T0=1 T1=2 T2=0`, the start slot first). The Kobra X
+     * agent maps the spools of a file only through this line: without it the printer gets one filament, the start slot,
+     * and the firmware takes every `T0` of the file as that one spool (F26-000142, 8 Nov 2026: the change to slot 1 fed
+     * the main spool of slot 2 again, then error 11850). Rinkhals and the Moonraker driver take the `T<slot>` lines as
+     * they are and ignore the line. A file that selects one slot only keeps no line: the agent's one-filament path stays.
+     */
+    public static function withFilamentsLine(string $gcode): string
+    {
+        $slots = [];
+        if (preg_match_all('/^[ \t]*T(\d+)\b/m', $gcode, $m)) {
+            foreach ($m[1] as $slot) {
+                $slots[(int) $slot] = true;
+            }
+        }
+        if (count($slots) < 2) {
+            return $gcode;
+        }
+        $line = self::FILAMENTS_LINE.' '.implode(' ', array_map(fn ($n, $slot) => 'T'.$n.'='.$slot, array_keys(array_keys($slots)), array_keys($slots)));
+
+        return $line."\n".$gcode;
     }
 }
