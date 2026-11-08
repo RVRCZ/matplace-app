@@ -33,6 +33,7 @@ use App\Models\DesignerModel;
 use App\Models\FarmOrder;
 use App\Models\FarmPrinter;
 use App\Models\FarmPrinterSlot;
+use App\Models\Intake;
 use App\Models\ModelFile;
 use App\Models\Payment;
 use App\Support\Countries;
@@ -581,7 +582,26 @@ class OrderController extends Controller
             'state' => $this->describe($order, $request),
             // the quality buttons name the layer this order's machine really prints (a finer nozzle, a finer ladder)
             'settings' => $this->withPrinterLayers($this->settings->all(), $order->printer),
+            // the words the customer wrote next to this file on the home page's router (docs/AN.md §22 F): the order's note starts with them
+            'intakeNote' => $this->intakeNote($request, $order),
         ]);
+    }
+
+    /** The latest words left with this order's file on the home page's router by the same visitor, for the note of the order. */
+    private function intakeNote(Request $request, FarmOrder $order): ?string
+    {
+        if (! $order->model_file_id) {
+            return null;
+        }
+        $user = $request->user();
+        $session = $this->session($request);
+        if (! $user && ! $session) {
+            return null;
+        }
+
+        return Intake::where('model_file_id', $order->model_file_id)->whereNotNull('text')
+            ->where(fn ($q) => $q->when($user, fn ($w) => $w->where('user_id', $user->id))->when($session, fn ($w) => $w->orWhere('anonymous_session_id', $session->id)))
+            ->latest('id')->value('text');
     }
 
     /** Polled by the order page. */
