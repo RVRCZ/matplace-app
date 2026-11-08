@@ -24,7 +24,9 @@ return [
         // a cheaper model for one kind of the assistant's work (empty = assistant_model); classifying 8 000 catalogue models adds up
         // the designer of the tool pages (a wish in words → the values of the form) understands vague wishes fast and cheaply on a Sonnet
         // the filament card from an e-shop page (TODO #71, docs/AL.md §21): one page with up to 8 pictures, a Sonnet reads it for crowns
-        'kind_models' => ['classify' => env('ANTHROPIC_CLASSIFY_MODEL'), 'design' => env('ANTHROPIC_DESIGN_MODEL', 'claude-sonnet-5-5'), 'filament' => env('ANTHROPIC_FILAMENT_MODEL', 'claude-sonnet-5-5')],
+        // the home page's router (TODO #78, docs/AN.md §22): a photo and a few words → a tool, a shape or a person; a visitor waits for it, so 20 s at most
+        'kind_models' => ['classify' => env('ANTHROPIC_CLASSIFY_MODEL'), 'design' => env('ANTHROPIC_DESIGN_MODEL', 'claude-sonnet-5-5'), 'filament' => env('ANTHROPIC_FILAMENT_MODEL', 'claude-sonnet-5-5'), 'intake' => env('ANTHROPIC_INTAKE_MODEL', 'claude-sonnet-5-5')],
+        'kind_timeouts' => ['intake' => (int) env('ANTHROPIC_INTAKE_TIMEOUT', 20)],
     ],
 
     /*
