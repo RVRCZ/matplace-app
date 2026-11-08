@@ -445,6 +445,23 @@ celku není reference. S **lokální** referencí (medián 10 sousedních snímk
 při tisku (0.2.7). Případné doladění bez kódu: `park_lead: 2.0` v configu C1 (okno 2,0–3,0 s) by odstranilo i ty tři
 rozmazané; nechávám na řídící. Časosběr Kobry X tím považuji za hotový.
 
+### 8d. Výměny podle výšky na Kobře X: řádek mapování i pro ně (řídící, 8. 11. 2026, F26‑000142)
+
+Zakázka F26‑000142 (PLA Silk Rainbow Fire Red v pozici 2, výměny 3,0 mm → oranžová pozice 3, 3,8 mm → modrá pozice 1,
+4,6 mm → zlatá pozice 6, 5,4 mm → černá pozice 4): soubor měl `T1` na startu a `T2`, `T0`, `T5`, `T3` ve vrstvách správně
+podle pozic, ale tiskárna u `T0` vzala zase pozici 2 a skončila chybou 11850 (ACE: kanál nenavedl filament). Příčina: soubor
+s výměnami podle výšky (`GcodeSlot::fileFor` → `colorChanges`) řádek `; matplace filaments` neměl, ovladač Kobry X ho tedy
+bral jako jednofilamentový (`facts.paints` prázdné): `ams_box_mapping` s jedinou barvou 0 → hlavní cívka, `prepared_gcode`
+přečísluje jen první `T` na `T0` a firmware čte `T0` v souboru jako barvu 0 = hlavní cívku; ostatní `T` zůstaly nenamapované.
+Dvoubarevná medaile 19. 10. (§8b) šla cestou jedné podložky (`retargetMany`), která řádek píše, proto fungovala.
+**Oprava na serveru** (`fix/kx-height-changes-map`): `GcodeSlot::withFilamentsLine` napíše do kopie s výměnami řádek
+`; matplace filaments T0=<start> T1=<další>…` ze všech `T<slot>` souboru v pořadí prvního výskytu (barva, která se vrací, je
+jedna položka); kopie bez výměn řádek nemá (cesta jedné barvy agenta beze změny); značka souboru `.map.then…`, ať se staré
+kopie nepoužijí. Ověřeno místně na skutečném souboru zakázky funkcemi ovladače (`facts_of`, `tools_of`, `prepared_gcode`,
+`package`): barvy `{0: 1, 1: 2, 2: 0, 3: 5, 4: 3}`, `T` přečíslované na `T0`…`T4`, balíček s pěti filamenty. Rinkhals
+a Moonraker řádek ignorují. Agent sám by měl příště soubor s více `T<slot>` bez řádku odmítnout před nahráním (dnes `tools_of`
+vrací `[1, 2, 0, 5, 3]` a nic s tím nedělá): úkol pro session 4 do příští verze ovladače.
+
 ## 9. Konec dlouhého tisku s nulami podruhé: úloha 154 (agent 0.2.8, větev `feature/agent-stats-long`, 23. 10. 2026)
 
 Drak F26‑000097 (15 h přes noc, agent 0.2.7) skončil na serveru s `print_duration_s 0`, `filament_used_mm 0` – stejný

@@ -86,4 +86,31 @@ class GcodeColorChangesTest extends TestCase
         $single = GcodeSlot::retarget("G9111 bedTemp=60 extruderTemp=220\nM117\nG90\n", 1, ['nozzle' => 215, 'nozzle_first' => 220, 'bed' => 60]);
         $this->assertStringContainsString("M117\nM104 S220 ; matplace slot: heat before the spool change\nM109 S220 ; matplace slot: wait for it\nT1 ; slot chosen by matplace farm\nG90\n", $single);
     }
+
+    public function test_the_copy_with_changes_names_every_slot_for_the_kobra_x_agent(): void
+    {
+        $dir = sys_get_temp_dir().'/mp-gcode-'.uniqid();
+        mkdir($dir);
+        $path = $dir.'/print.gcode';
+        file_put_contents($path, $this->gcode());
+        // F26-000142 (8 Nov 2026): main spool in slot 1, changes to 2, 0, 5 and 3 by height. The Kobra X agent maps spools
+        // only through the filament line: without it the printer took every T0 as the main spool
+        $copy = GcodeSlot::fileFor($path, 1, [], [['slot' => 2, 'z' => 0.3], ['slot' => 0, 'z' => 0.5], ['slot' => 5, 'z' => 0.7], ['slot' => 3, 'z' => 0.9]]);
+        $out = (string) file_get_contents($copy);
+        $this->assertStringEndsWith('print.hot.slot1.map.then2at0_3_0at0_5_5at0_7_3at0_9.gcode', $copy, 'a new tag: copies made without the line are not reused');
+        $this->assertStringStartsWith("; matplace filaments T0=1 T1=2 T2=0 T3=5 T4=3\n", $out);
+        $this->assertSame(
+            ['T1 ; slot chosen by matplace farm', 'T2 ; colour change by matplace farm', 'T0 ; colour change by matplace farm', 'T5 ; colour change by matplace farm', 'T3 ; colour change by matplace farm'],
+            array_column($this->tools($out), 0),
+            'the T lines keep the slots: Rinkhals takes them as they are, the Kobra X agent renumbers them by the line'
+        );
+        // a colour that comes back is one filament; a copy without changes has no line (the one-filament path of the agent stays)
+        $back = (string) file_get_contents(GcodeSlot::fileFor($path, 1, [], [['slot' => 2, 'z' => 0.3], ['slot' => 1, 'z' => 0.5], ['slot' => 2, 'z' => 0.7]]));
+        $this->assertStringStartsWith("; matplace filaments T0=1 T1=2\n", $back);
+        $plain = (string) file_get_contents(GcodeSlot::fileFor($path, 1));
+        $this->assertStringNotContainsString('matplace filaments', $plain);
+        $this->assertSame($plain, GcodeSlot::withFilamentsLine($plain), 'one slot only: nothing to map');
+        array_map('unlink', glob($dir.'/*'));
+        rmdir($dir);
+    }
 }
