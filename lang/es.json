@@ -2139,5 +2139,20 @@
     "farm.admin.shop.photo_source.drive": "foto de Drive",
     "farm.admin.shop.photo_source.upload": "foto subida",
     "farm.admin.shop.photo_source.eshop": "foto de la tienda (oculta a los clientes)",
-    "farm.admin.shop.photo_source.print": "foto de nuestra impresión"
+    "farm.admin.shop.photo_source.print": "foto de nuestra impresión",
+    "farm.admin.shop.field.source_url": "Enlace de la tienda (página del producto)",
+    "farm.admin.shop.reload": "Leer de nuevo",
+    "farm.admin.shop.url_invalid": "El enlace de la tienda debe ser una dirección http(s).",
+    "farm.admin.shop.url_taken": "Otro color ya tiene este enlace.",
+    "farm.admin.shop.refused.taken": "Este enlace ya pertenece al color :color.",
+    "farm.admin.shop.refresh.title": "Leer de nuevo: :color",
+    "farm.admin.shop.refresh.fills": "Solo se completa lo que le falta al color: :what. El nombre, el tipo, el fabricante y las posiciones no cambian.",
+    "farm.admin.shop.refresh.nothing": "nada (el color ya tiene foto, tono y nombre en inglés)",
+    "farm.admin.shop.refresh.photo": "foto",
+    "farm.admin.shop.refresh.hex": "tono",
+    "farm.admin.shop.refresh.name_en": "nombre en inglés",
+    "farm.admin.shop.refresh.settings": "ajustes de la bobina",
+    "farm.admin.shop.refresh.overwrite": "sobrescribir los ajustes propios de la bobina con los de la página (si no, se quedan como están)",
+    "farm.admin.shop.refresh.save": "Completar",
+    "farm.admin.shop.refresh.saved": "Completado: :what. La página se recarga."
 }

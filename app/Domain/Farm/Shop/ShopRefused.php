@@ -24,6 +24,9 @@ final class ShopRefused extends \RuntimeException
 
     public const UNREADABLE = 'unreadable';
 
+    /** The link belongs to another colour of the catalogue already (the message names it). */
+    public const TAKEN = 'taken';
+
     public function __construct(public readonly string $reason, string $message = '', public readonly int $status = 0)
     {
         parent::__construct($message !== '' ? $message : $reason);

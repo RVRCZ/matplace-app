@@ -87,7 +87,24 @@ final class FilamentFromShop
      *
      * @throws ShopRefused
      */
-    public static function start(string $url, ?int $printerId, ?int $slot, ?int $userId): array
+    public static function start(string $url, ?int $printerId, ?int $slot, ?int $userId, ?int $colorId = null): array
+    {
+        $entry = self::prepare($url, $printerId, $slot, $userId, $colorId);
+        if ($entry['status'] === self::STATUS_QUEUED) {
+            ReadFilamentPage::dispatch($entry['id']);
+        }
+
+        return self::get($entry['id']) ?? $entry;
+    }
+
+    /**
+     * The entry of a link, checked and stored, not yet read: `start()` queues the reading, `refreshNow()` runs it in
+     * place. With `$colorId` ("Načíst znovu" on a colour the catalogue has, docs/AL.md §21.8) the page is read again
+     * even when the link is known; a link that belongs to another colour is refused.
+     *
+     * @throws ShopRefused
+     */
+    private static function prepare(string $url, ?int $printerId, ?int $slot, ?int $userId, ?int $colorId): array
     {
         $normalized = ShopFetcher::normalize($url);
         if ($normalized === null) {
@@ -99,19 +116,66 @@ final class FilamentFromShop
             'id' => (string) Str::uuid(), 'status' => self::STATUS_QUEUED, 'message' => null,
             'url' => $normalized, 'host' => strtolower((string) parse_url($normalized, PHP_URL_HOST)),
             'printer_id' => $printerId, 'slot' => $slot, 'user_id' => $userId, 'created_at' => now()->toIso8601String(),
-            'warnings' => [], 'existing' => null, 'card' => null, 'images' => [], 'meta' => null,
+            'warnings' => [], 'existing' => null, 'card' => null, 'images' => [], 'meta' => null, 'color_id' => $colorId, 'refresh' => null,
         ];
-        if ($color = FarmColor::with('material')->where('source_url', $normalized)->first()) {
+        $owner = FarmColor::with('material')->where('source_url', $normalized)->first();
+        if ($colorId !== null) {
+            $color = FarmColor::with('material')->findOrFail($colorId);
+            if ($owner && $owner->id !== $color->id) {
+                throw new ShopRefused(ShopRefused::TAKEN, __('farm.admin.shop.refused.taken', ['color' => $owner->fullLabel()]));
+            }
+            $entry['refresh'] = self::refreshFlags($color);
+        } elseif ($owner) {
             $entry['status'] = self::STATUS_DONE;
-            $entry['existing'] = ['id' => $color->id, 'label' => $color->fullLabel(), 'weight_g' => $color->source_meta['weight_g'] ?? null, 'photo' => $color->photoUrl(), 'hex' => $color->hex];
-            self::put($entry);
-
-            return $entry;
+            $entry['existing'] = ['id' => $owner->id, 'label' => $owner->fullLabel(), 'weight_g' => $owner->source_meta['weight_g'] ?? null, 'photo' => $owner->photoUrl(), 'hex' => $owner->hex];
         }
         self::put($entry);
-        ReadFilamentPage::dispatch($entry['id']);
 
-        return self::get($entry['id']) ?? $entry;
+        return $entry;
+    }
+
+    /** What a refresh may fill: only what the colour lacks (a shop photo counts as none of its own). */
+    public static function refreshFlags(FarmColor $color): array
+    {
+        return [
+            'name' => $color->name, 'label' => $color->fullLabel(),
+            'photo' => ! $color->photo_path || $color->photo_source === FarmColor::PHOTO_ESHOP,
+            'hex' => ColorCatalog::hexMissing($color), 'name_en' => trim((string) $color->name_en) === '', 'has_settings' => ! empty($color->print_overrides),
+        ];
+    }
+
+    /**
+     * `farm:colors-from-shop`: a colour read from its link right now, without the queue, and its blanks filled as the
+     * admin's "Načíst znovu" would – the photo when the page has a clean one, the hex and the English name when missing,
+     * never the settings. `$dry` reads and asks the model but writes nothing.
+     *
+     * @return array{status: string, filled: list<string>, warnings: list<string>, message: ?string}
+     */
+    public function refreshNow(FarmColor $color, bool $dry = false): array
+    {
+        try {
+            $entry = self::prepare((string) $color->source_url, null, null, null, $color->id);
+        } catch (ShopRefused $e) {
+            return ['status' => self::STATUS_FAILED, 'filled' => [], 'warnings' => [], 'message' => $e->reason === ShopRefused::TAKEN ? $e->getMessage() : __('farm.admin.shop.refused.'.$e->reason, ['status' => $e->status])];
+        }
+        $this->run($entry['id']);
+        $entry = self::get($entry['id']) ?? $entry;
+        if ($entry['status'] !== self::STATUS_DONE || ! $entry['card']) {
+            self::forget($entry['id']);
+
+            return ['status' => $entry['status'] === self::STATUS_DONE ? 'skipped' : $entry['status'], 'filled' => [], 'warnings' => $entry['warnings'], 'message' => $entry['message']];
+        }
+        if ($dry) {
+            $flags = $entry['refresh'];
+            $would = array_keys(array_filter(['photo' => ! $color->photo_path && $entry['card']['photo'] !== null, 'hex' => $flags['hex'] && $entry['card']['hex'], 'name_en' => $flags['name_en'] && $entry['card']['name_en'] !== '']));
+            self::forget($entry['id']);
+
+            return ['status' => 'dry', 'filled' => $would, 'warnings' => $entry['warnings'], 'message' => null];
+        }
+        // the command takes a picture only for a colour without any (the admin's "Načíst znovu" may also replace a shop photo)
+        $r = $this->refresh($entry, ['use_photo' => $entry['card']['photo'] !== null && ! $color->photo_path, 'overwrite_settings' => false]);
+
+        return ['status' => 'done', 'filled' => $r['filled'], 'warnings' => $entry['warnings'], 'message' => null];
     }
 
     public static function get(string $id): ?array
@@ -592,6 +656,9 @@ final class FilamentFromShop
      */
     public function save(array $entry, array $input): array
     {
+        if (! empty($entry['color_id'])) {
+            return $this->refresh($entry, $input);
+        }
         $place = ($input['mode'] ?? 'color') === 'place';
         $printer = null;
         if ($place) {
@@ -661,6 +728,80 @@ final class FilamentFromShop
         self::forget((string) $entry['id']);
 
         return ['color' => $color, 'slot' => $slot, 'created' => $created, 'notices' => $notices];
+    }
+
+    /**
+     * "Načíst znovu" on a colour the catalogue has (docs/AL.md §21.8): fills only what the colour lacks – the photo when
+     * it has none of its own (or only the shop's), the hex when it is unset, the English name when empty – and the
+     * settings only with the admin's explicit `overwrite_settings` (then the page's note line comes along); the price
+     * line is added when the notes lack it; the link and the record of the page are always refreshed. The name, the
+     * kind, the maker and the positions are never touched.
+     *
+     * @return array{color: FarmColor, slot: null, created: false, notices: list<string>, filled: list<string>}
+     *
+     * @throws ValidationException
+     */
+    private function refresh(array $entry, array $input): array
+    {
+        $data = Validator::make($input, [
+            'name_en' => ['nullable', 'string', 'max:80'],
+            'hex' => ['nullable', 'regex:/^#[0-9a-fA-F]{6}$/'],
+            'use_photo' => ['nullable', 'boolean'],
+            'photo' => ['nullable', 'integer', 'min:0', 'max:'.(self::MAX_IMAGES - 1)],
+            'overwrite_settings' => ['nullable', 'boolean'],
+        ])->validate();
+        $color = FarmColor::with('material')->findOrFail((int) $entry['color_id']);
+        $card = (array) ($entry['card'] ?? []);
+        $filled = [];
+        $notes = [];
+        if ((! $color->photo_path || $color->photo_source === FarmColor::PHOTO_ESHOP) && filter_var($data['use_photo'] ?? false, FILTER_VALIDATE_BOOLEAN)) {
+            $picked = isset($data['photo']) && $data['photo'] !== null && $data['photo'] !== '' ? (int) $data['photo'] : ($card['photo'] ?? null);
+            if (is_int($picked) && ($path = self::storePhoto(self::imagePath((string) $entry['id'], $picked)))) {
+                if ($color->photo_path) {
+                    Storage::disk('public')->delete($color->photo_path);   // the shop's older picture gives way to the shop's newer one
+                }
+                $color->photo_path = $path;
+                $color->photo_source = FarmColor::PHOTO_ESHOP;
+                $filled[] = 'photo';
+            }
+        }
+        if (ColorCatalog::hexMissing($color) && ($hex = self::hex($data['hex'] ?? ($card['hex'] ?? null)))) {
+            $color->hex = $hex;
+            $filled[] = 'hex';
+            if (($card['hex_from'] ?? null) === 'model' || str_contains((string) ($card['test_notes'] ?? ''), ColorCatalog::CHECK_NOTE)) {
+                $notes[] = ColorCatalog::CHECK_NOTE;
+            }
+        }
+        $en = trim((string) (($data['name_en'] ?? '') ?: ($card['name_en'] ?? '')));
+        if (trim((string) $color->name_en) === '' && $en !== '') {
+            $color->name_en = mb_substr($en, 0, 80);
+            $filled[] = 'name_en';
+        }
+        $lines = array_values(array_filter(array_map('trim', preg_split('/\R/u', (string) ($card['test_notes'] ?? '')) ?: []), fn ($l) => $l !== '' && $l !== ColorCatalog::CHECK_NOTE));
+        $settingsLine = ! empty($card['print_overrides']) ? ($lines[0] ?? null) : null;
+        if (filter_var($data['overwrite_settings'] ?? false, FILTER_VALIDATE_BOOLEAN) && ! empty($card['print_overrides'])) {
+            $color->print_overrides = $card['print_overrides'];
+            $filled[] = 'settings';
+            $notes = array_merge($notes, $lines);
+        } else {
+            // the price line is plain information and never overwrites anything
+            $notes = array_merge($notes, array_values(array_filter($lines, fn ($l) => $l !== $settingsLine)));
+        }
+        $have = (string) $color->test_notes;
+        foreach (array_unique($notes) as $line) {
+            if (! str_contains($have, $line)) {
+                $have = trim($have."\n".$line);
+            }
+        }
+        $color->test_notes = $have !== '' ? $have : null;
+        $color->source_url = $entry['url'];
+        if (! empty($entry['meta'])) {
+            $color->source_meta = $entry['meta'];
+        }
+        $color->save();
+        self::forget((string) $entry['id']);
+
+        return ['color' => $color, 'slot' => null, 'created' => false, 'notices' => [], 'filled' => $filled];
     }
 
     /** The chosen picture as the colour's photo: 800 px JPEG on the public disk, like the Drive import makes them. */

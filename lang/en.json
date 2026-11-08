@@ -2139,5 +2139,20 @@
     "farm.admin.shop.photo_source.drive": "photo from Drive",
     "farm.admin.shop.photo_source.upload": "photo uploaded",
     "farm.admin.shop.photo_source.eshop": "photo from the shop (hidden from customers)",
-    "farm.admin.shop.photo_source.print": "photo of our print"
+    "farm.admin.shop.photo_source.print": "photo of our print",
+    "farm.admin.shop.field.source_url": "Shop link (the product page)",
+    "farm.admin.shop.reload": "Read again",
+    "farm.admin.shop.url_invalid": "The shop link must be an http(s) address.",
+    "farm.admin.shop.url_taken": "Another colour has this link already.",
+    "farm.admin.shop.refused.taken": "This link belongs to the colour :color already.",
+    "farm.admin.shop.refresh.title": "Read again: :color",
+    "farm.admin.shop.refresh.fills": "Only what the colour lacks is filled: :what. The name, the kind, the maker and the positions stay.",
+    "farm.admin.shop.refresh.nothing": "nothing (the colour has its photo, shade and English name)",
+    "farm.admin.shop.refresh.photo": "photo",
+    "farm.admin.shop.refresh.hex": "shade",
+    "farm.admin.shop.refresh.name_en": "English name",
+    "farm.admin.shop.refresh.settings": "spool settings",
+    "farm.admin.shop.refresh.overwrite": "overwrite the spool's own settings with the page's (otherwise they stay as they are)",
+    "farm.admin.shop.refresh.save": "Fill in",
+    "farm.admin.shop.refresh.saved": "Filled in: :what. The page reloads."
 }

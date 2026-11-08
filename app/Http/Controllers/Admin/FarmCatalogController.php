@@ -8,6 +8,7 @@ use App\Domain\Farm\FarmSettings;
 use App\Domain\Farm\OrderFlow;
 use App\Domain\Farm\PrinterFiles;
 use App\Domain\Farm\ProfileLibrary;
+use App\Domain\Farm\Shop\ShopFetcher;
 use App\Domain\Farm\SlotRules;
 use App\Domain\Farm\Wallet;
 use App\Http\Controllers\Controller;
@@ -444,9 +445,22 @@ class FarmCatalogController extends Controller
             'remove_photo' => ['nullable', 'boolean'],
             'print_overrides' => ['nullable', 'json'],
             'test_notes' => ['nullable', 'string', 'max:2000'],
+            'source_url' => ['nullable', 'string', 'max:500'],
         ]);
         $color = $color ?? new FarmColor;
         $kind = FarmMaterial::findOrFail((int) $data['farm_material_id']);
+        // the shop page the spool was bought on (docs/AL.md §21.8): stored in its one normalised form, one colour per link
+        if (array_key_exists('source_url', $data)) {
+            $link = trim((string) $data['source_url']);
+            $normalized = $link !== '' ? ShopFetcher::normalize($link) : null;
+            if ($link !== '' && $normalized === null) {
+                throw ValidationException::withMessages(['source_url' => __('farm.admin.shop.url_invalid')]);
+            }
+            if ($normalized !== null && FarmColor::where('source_url', $normalized)->where('id', '!=', (int) $color->id)->exists()) {
+                throw ValidationException::withMessages(['source_url' => __('farm.admin.shop.url_taken')]);
+            }
+            $color->source_url = $normalized;
+        }
         $maker = trim((string) ($data['manufacturer'] ?? ''));
         $color->fill(['farm_material_id' => $kind->id, 'name' => $data['name'], 'name_en' => $data['name_en'] ?? null, 'code' => $data['code'] ?? null,
             'manufacturer' => $maker !== '' && $maker !== $kind->maker() ? $maker : null,   // the kind's maker is not repeated on every colour

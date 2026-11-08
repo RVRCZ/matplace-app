@@ -83,5 +83,20 @@
     "farm.admin.shop.photo_source.drive": ["fotka z Drive", "photo from Drive", "foto de Drive"],
     "farm.admin.shop.photo_source.upload": ["fotka nahraná", "photo uploaded", "foto subida"],
     "farm.admin.shop.photo_source.eshop": ["fotka z e-shopu (zákazník nevidí)", "photo from the shop (hidden from customers)", "foto de la tienda (oculta a los clientes)"],
-    "farm.admin.shop.photo_source.print": ["fotka z výtisku", "photo of our print", "foto de nuestra impresión"]
+    "farm.admin.shop.photo_source.print": ["fotka z výtisku", "photo of our print", "foto de nuestra impresión"],
+    "farm.admin.shop.field.source_url": ["Odkaz na e-shop (stránka produktu)", "Shop link (the product page)", "Enlace de la tienda (página del producto)"],
+    "farm.admin.shop.reload": ["Načíst znovu", "Read again", "Leer de nuevo"],
+    "farm.admin.shop.url_invalid": ["Odkaz na e-shop musí být adresa http(s).", "The shop link must be an http(s) address.", "El enlace de la tienda debe ser una dirección http(s)."],
+    "farm.admin.shop.url_taken": ["Tento odkaz už má jiná barva.", "Another colour has this link already.", "Otro color ya tiene este enlace."],
+    "farm.admin.shop.refused.taken": ["Tento odkaz už patří barvě :color.", "This link belongs to the colour :color already.", "Este enlace ya pertenece al color :color."],
+    "farm.admin.shop.refresh.title": ["Načíst znovu: :color", "Read again: :color", "Leer de nuevo: :color"],
+    "farm.admin.shop.refresh.fills": ["Doplní se jen to, co barvě chybí: :what. Název, druh, výrobce a pozice se nemění.", "Only what the colour lacks is filled: :what. The name, the kind, the maker and the positions stay.", "Solo se completa lo que le falta al color: :what. El nombre, el tipo, el fabricante y las posiciones no cambian."],
+    "farm.admin.shop.refresh.nothing": ["nic (barva má fotku, odstín i anglický název)", "nothing (the colour has its photo, shade and English name)", "nada (el color ya tiene foto, tono y nombre en inglés)"],
+    "farm.admin.shop.refresh.photo": ["fotka", "photo", "foto"],
+    "farm.admin.shop.refresh.hex": ["odstín", "shade", "tono"],
+    "farm.admin.shop.refresh.name_en": ["anglický název", "English name", "nombre en inglés"],
+    "farm.admin.shop.refresh.settings": ["nastavení cívky", "spool settings", "ajustes de la bobina"],
+    "farm.admin.shop.refresh.overwrite": ["přepsat vlastní nastavení cívky nastavením ze stránky (jinak zůstává, jak je)", "overwrite the spool's own settings with the page's (otherwise they stay as they are)", "sobrescribir los ajustes propios de la bobina con los de la página (si no, se quedan como están)"],
+    "farm.admin.shop.refresh.save": ["Doplnit", "Fill in", "Completar"],
+    "farm.admin.shop.refresh.saved": ["Doplněno: :what. Stránka se obnoví.", "Filled in: :what. The page reloads.", "Completado: :what. La página se recarga."]
 }

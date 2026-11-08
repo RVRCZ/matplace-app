@@ -16,11 +16,13 @@ type Card = {
 };
 type Picture = { n: number; url: string; from: string; alt: string; shows: boolean | null; logo: boolean | null };
 type Existing = { id: number; label: string; weight_g: number | null; photo: string | null; hex: string | null };
+/** "Načíst znovu" on a colour the catalogue has: what it lacks (and so what the card may fill). */
+type Refresh = { name: string; label: string; photo: boolean; hex: boolean; name_en: boolean; has_settings: boolean };
 type Entry = {
     id: string; status: string; message: string | null; url: string; host: string; printer_id: number | null; slot: number | null;
-    warnings: string[]; existing: Existing | null; card: Card | null; images: Picture[];
+    warnings: string[]; existing: Existing | null; card: Card | null; images: Picture[]; color_id: number | null; refresh: Refresh | null;
 };
-type Context = { printerId: number | null; slot: number | null; kindId: number | null; status: HTMLElement | null };
+type Context = { printerId: number | null; slot: number | null; kindId: number | null; colorId: number | null; status: HTMLElement | null };
 
 const ID_MARK = '00000000-0000-0000-0000-000000000000';
 
@@ -48,7 +50,7 @@ export function bootFilamentShop(): void {
     const f = <T extends HTMLElement>(name: string) => dialog.querySelector<T>(`[data-f="${name}"]`);
 
     let current: Entry | null = null;
-    let context: Context = { printerId: null, slot: null, kindId: null, status: null };
+    let context: Context = { printerId: null, slot: null, kindId: null, colorId: null, status: null };
     let chosenPhoto: number | null = null;
 
     // ── the link → the job ───────────────────────────────────────────────────
@@ -71,6 +73,7 @@ export function bootFilamentShop(): void {
             printerId: button.dataset.printer ? Number(button.dataset.printer) : null,
             slot: button.dataset.slot !== undefined && button.dataset.slot !== '' ? Number(button.dataset.slot) : null,
             kindId: button.dataset.kind ? Number(button.dataset.kind) : null,
+            colorId: button.dataset.color ? Number(button.dataset.color) : null,
             status,
         };
         button.setAttribute('disabled', '');
@@ -80,6 +83,7 @@ export function bootFilamentShop(): void {
                 const body: Record<string, unknown> = { url };
                 if (context.printerId !== null) body.printer_id = context.printerId;
                 if (context.slot !== null) body.slot = context.slot;
+                if (context.colorId !== null) body.color_id = context.colorId;
                 const r = await postJson(startUrl, body);
                 if (!r.ok) { say(String(r.data.message ?? t('failed')), true); return; }
                 await follow(r.data as unknown as Entry, say);
@@ -139,6 +143,9 @@ export function bootFilamentShop(): void {
             place.textContent = existing ? place.dataset.labelExisting ?? '' : place.dataset.labelNew ?? '';
         }
         color?.classList.toggle('hidden', existing !== null);
+        const refresh = entry.refresh;
+        show('refresh', refresh !== null && card !== null);
+        dialog!.querySelector<HTMLButtonElement>('[data-act="refresh"]')?.classList.toggle('hidden', refresh === null || card === null);
 
         if (existing) {
             text('existing_label', t('existing', { color: existing.label }));
@@ -181,6 +188,23 @@ export function bootFilamentShop(): void {
             const enabled = f<HTMLInputElement>('enabled');
             if (enabled) enabled.checked = card.enabled;
             paintPhoto(entry);
+            // a refresh of a colour we have: only its blanks may be filled, the rest of the card is read only or hidden
+            for (const name of ['name_cs', 'material', 'manufacturer', 'remaining_g', 'test_notes', 'enabled', 'save_settings']) {
+                f(name)?.closest('label')?.classList.toggle('hidden', refresh !== null);
+            }
+            for (const name of ['name_en', 'hex', 'hex_pick']) {
+                const el = f<HTMLInputElement>(name);
+                if (el) el.disabled = refresh !== null && !(name === 'name_en' ? refresh.name_en : refresh.hex);
+            }
+            if (refresh) {
+                place?.classList.add('hidden');
+                color?.classList.add('hidden');
+                text('refresh_label', t('refresh.title', { color: refresh.label }));
+                const fills = [refresh.photo && chosenPhoto !== null ? t('refresh.photo') : '', refresh.hex && card.hex ? t('refresh.hex') : '', refresh.name_en && card.name_en ? t('refresh.name_en') : ''].filter(Boolean);
+                text('refresh_fills', t('refresh.fills', { what: fills.join(', ') || t('refresh.nothing') }));
+                const overwrite = f<HTMLInputElement>('overwrite_settings');
+                if (overwrite) { overwrite.checked = false; overwrite.disabled = !card.print_overrides; }
+            }
         }
         if (!dialog!.open) dialog!.showModal();
     }
@@ -192,7 +216,9 @@ export function bootFilamentShop(): void {
         const pic = chosenPhoto !== null ? entry.images.find((p) => p.n === chosenPhoto) ?? null : null;
         if (img) { img.classList.toggle('hidden', !pic); if (pic) img.src = pic.url; }
         none?.classList.toggle('hidden', !!pic);
-        if (use) { use.checked = pic !== null && pic.logo !== true && pic.shows !== false; use.disabled = !pic; }
+        // a refresh may take a picture only while the colour has no photo of its own
+        const allowed = !entry.refresh || entry.refresh.photo;
+        if (use) { use.checked = allowed && pic !== null && pic.logo !== true && pic.shows !== false; use.disabled = !pic || !allowed; }
         const thumbs = f('thumbs');
         if (thumbs) {
             thumbs.replaceChildren(...entry.images.map((p) => {
@@ -232,13 +258,13 @@ export function bootFilamentShop(): void {
             context.status?.classList.add('hidden');
             return;
         }
-        if (act !== 'place' && act !== 'color') return;
+        if (act !== 'place' && act !== 'color' && act !== 'refresh') return;
         const value = (name: string) => f<HTMLInputElement | HTMLTextAreaElement>(name)?.value ?? '';
         const checked = (name: string) => f<HTMLInputElement>(name)?.checked ?? false;
         const body: Record<string, unknown> = {
             mode: act, name: value('name_cs'), name_en: value('name_en'), farm_material_id: value('material') || null, manufacturer: value('manufacturer'),
             hex: value('hex') || null, use_photo: checked('use_photo'), photo: chosenPhoto, save_settings: checked('save_settings'), enabled: checked('enabled'),
-            test_notes: value('test_notes'), remaining_g: value('remaining_g') || 0,
+            test_notes: value('test_notes'), remaining_g: value('remaining_g') || 0, overwrite_settings: checked('overwrite_settings'),
         };
         const error = f('error');
         dialog.querySelectorAll<HTMLButtonElement>('[data-act]').forEach((b) => b.setAttribute('disabled', ''));
@@ -251,7 +277,9 @@ export function bootFilamentShop(): void {
                 return;
             }
             const color = r.data.color as { id: number; label: string; kind_id: number } | undefined;
-            if (error) { error.textContent = t('saved', { color: color?.label ?? '' }); error.classList.remove('text-red-700'); }
+            const filled = Array.isArray(r.data.filled) ? (r.data.filled as string[]) : [];
+            const done = act === 'refresh' ? t('refresh.saved', { what: filled.map((what) => t('refresh.' + what)).join(', ') || t('refresh.nothing') }) : t('saved', { color: color?.label ?? '' });
+            if (error) { error.textContent = done; error.classList.remove('text-red-700'); }
             const notices = Array.isArray(r.data.notices) ? (r.data.notices as string[]) : [];
             setTimeout(() => {
                 dialog.close();

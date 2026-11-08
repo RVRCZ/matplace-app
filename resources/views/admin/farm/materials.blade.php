@@ -120,6 +120,12 @@
                                         <label class="{{ $lb }}">{{ __('farm.admin.maker') }} <span class="font-normal">({{ __('farm.admin.maker_hint') }})</span><input name="manufacturer" list="farm-makers" value="{{ $c->manufacturer }}" placeholder="{{ $m->maker() }}" class="{{ $in }}"></label>
                                         @if($c->exists)
                                             <label class="flex items-center gap-2 pt-5 text-sm"><input type="checkbox" name="remove_photo" value="1" class="h-4 w-4 accent-action"> smazat současnou fotku (nová se nahraje polem „Fotka výtisku“)</label>
+                                            {{-- the shop page the spool came from; "Načíst znovu" fills what the colour lacks (docs/AL.md §21.8) --}}
+                                            <div class="sm:col-span-3 flex flex-wrap items-end gap-2" data-shop>
+                                                <label class="{{ $lb }} min-w-[16rem] flex-1">{{ __('farm.admin.shop.field.source_url') }}<input type="url" name="source_url" data-shop-url value="{{ $c->source_url }}" placeholder="https://…" class="{{ $in }} text-xs"></label>
+                                                <button type="button" data-shop-load data-color="{{ $c->id }}" class="btn-quiet text-xs">{{ __('farm.admin.shop.reload') }}</button>
+                                                <p class="hidden w-full text-[11px] text-slate-600" data-shop-status></p>
+                                            </div>
                                         @endif
                                     </div>
                                     <div class="mt-1 grid gap-2 sm:grid-cols-2">

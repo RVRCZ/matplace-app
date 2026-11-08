@@ -23,11 +23,12 @@ class FilamentShopController extends Controller
             'url' => ['required', 'string', 'max:500'],
             'printer_id' => ['nullable', 'integer', 'exists:farm_printers,id'],
             'slot' => ['nullable', 'integer', 'min:0', 'max:31'],
+            'color_id' => ['nullable', 'integer', 'exists:farm_colors,id'],   // "Načíst znovu" on a colour the catalogue has (docs/AL.md §21.8)
         ]);
         try {
-            $entry = FilamentFromShop::start($data['url'], isset($data['printer_id']) ? (int) $data['printer_id'] : null, isset($data['slot']) ? (int) $data['slot'] : null, $request->user()?->id);
+            $entry = FilamentFromShop::start($data['url'], isset($data['printer_id']) ? (int) $data['printer_id'] : null, isset($data['slot']) ? (int) $data['slot'] : null, $request->user()?->id, isset($data['color_id']) ? (int) $data['color_id'] : null);
         } catch (ShopRefused $e) {
-            return response()->json(['message' => __('farm.admin.shop.refused.'.$e->reason, ['status' => $e->status])], 422);
+            return response()->json(['message' => $e->reason === ShopRefused::TAKEN ? $e->getMessage() : __('farm.admin.shop.refused.'.$e->reason, ['status' => $e->status])], 422);
         }
 
         return response()->json($this->shape($entry));
@@ -70,7 +71,7 @@ class FilamentShopController extends Controller
         }
 
         return response()->json([
-            'ok' => true, 'created' => $r['created'], 'notices' => $r['notices'],
+            'ok' => true, 'created' => $r['created'], 'notices' => $r['notices'], 'filled' => $r['filled'] ?? [],
             'color' => ['id' => $r['color']->id, 'label' => $r['color']->fullLabel(), 'kind_id' => $r['color']->farm_material_id],
             'slot' => $r['slot'] ? ['printer_id' => $r['slot']->farm_printer_id, 'slot' => $r['slot']->slot, 'remaining_g' => $r['slot']->remaining_g, 'enabled' => $r['slot']->enabled] : null,
         ]);
@@ -91,7 +92,7 @@ class FilamentShopController extends Controller
         return [
             'id' => $id, 'status' => $entry['status'], 'message' => $entry['message'], 'url' => $entry['url'], 'host' => $entry['host'],
             'printer_id' => $entry['printer_id'], 'slot' => $entry['slot'], 'warnings' => array_values((array) $entry['warnings']),
-            'existing' => $entry['existing'], 'card' => $entry['card'],
+            'existing' => $entry['existing'], 'card' => $entry['card'], 'color_id' => $entry['color_id'] ?? null, 'refresh' => $entry['refresh'] ?? null,
             'images' => array_map(fn (array $im) => $im + ['url' => route('admin.farm.colors.from_url.image', ['id' => $id, 'n' => $im['n']])], (array) $entry['images']),
         ];
     }

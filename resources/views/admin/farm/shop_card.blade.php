@@ -5,7 +5,8 @@
     $texts = [];
     foreach (['url_missing', 'status.queued', 'status.reading', 'status.asking', 'status.done', 'status.failed', 'failed', 'error', 'existing', 'existing_hint', 'field.kind_none', 'field.suggestion',
               'field.photo_none', 'field.settings_none', 'field.nozzle', 'field.nozzle_first', 'field.bed', 'flow', 'field.drying', 'hex_from.declared', 'hex_from.photo', 'hex_from.model', 'saving', 'saved',
-              'warn.not_product', 'warn.logo', 'warn.not_spool', 'warn.no_photo', 'warn.no_images', 'warn.rate_limited', 'warn.low_confidence', 'warn.no_settings', 'warn.no_hex', 'warn.kind_unknown'] as $k) {
+              'warn.not_product', 'warn.logo', 'warn.not_spool', 'warn.no_photo', 'warn.no_images', 'warn.rate_limited', 'warn.low_confidence', 'warn.no_settings', 'warn.no_hex', 'warn.kind_unknown',
+              'refresh.title', 'refresh.fills', 'refresh.nothing', 'refresh.photo', 'refresh.hex', 'refresh.name_en', 'refresh.settings', 'refresh.saved'] as $k) {
         $texts[$k] = __('farm.admin.shop.'.$k);
     }
     $in = 'mt-1 w-full rounded-lg border border-slate-300 px-2 py-1.5 text-sm font-normal';
@@ -28,6 +29,13 @@
             <div class="mt-3 hidden rounded-xl border border-emerald-200 bg-emerald-50 p-3 text-sm" data-f="existing">
                 <p class="font-semibold" data-f="existing_label"></p>
                 <p class="mt-1 text-xs text-slate-600">{{ __('farm.admin.shop.existing_hint') }}</p>
+            </div>
+
+            {{-- "Načíst znovu" on a colour the catalogue has: only its blanks are filled (docs/AL.md §21.8) --}}
+            <div class="mt-3 hidden rounded-xl border border-sky-200 bg-sky-50 p-3 text-sm" data-f="refresh">
+                <p class="font-semibold" data-f="refresh_label"></p>
+                <p class="mt-1 text-xs text-slate-600" data-f="refresh_fills"></p>
+                <label class="mt-1 flex items-start gap-2 text-xs"><input type="checkbox" name="overwrite_settings" value="1" data-f="overwrite_settings" class="mt-0.5 h-4 w-4 shrink-0 accent-action"> {{ __('farm.admin.shop.refresh.overwrite') }}</label>
             </div>
 
             <div class="mt-3 grid gap-4 sm:grid-cols-[11rem_1fr]" data-f="fields">
@@ -69,6 +77,7 @@
                 <button type="button" data-act="cancel" class="btn-quiet text-sm">{{ __('farm.admin.shop.cancel') }}</button>
                 <button type="button" data-act="color" class="btn-quiet text-sm">{{ __('farm.admin.shop.save_color') }}</button>
                 <button type="button" data-act="place" class="btn-primary text-sm" data-label-new="{{ __('farm.admin.shop.save_place') }}" data-label-existing="{{ __('farm.admin.shop.place_only') }}">{{ __('farm.admin.shop.save_place') }}</button>
+                <button type="button" data-act="refresh" class="btn-primary text-sm hidden">{{ __('farm.admin.shop.refresh.save') }}</button>
             </div>
         </form>
     </dialog>
