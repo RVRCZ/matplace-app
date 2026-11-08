@@ -158,6 +158,72 @@ class PlateLayoutTest extends TestCase
         $this->assertNull(PlateLayout::replicate($piece, $this->dir.'/too_many.stl', $copies + 1, $usable));
     }
 
+    /**
+     * The placements (the turns and moves the project's instances take, docs/AL.md §11.10) name exactly where
+     * replicate() writes the copies: a plain grid, a grid the plate turns, and rows by the shadow, every copy's box in
+     * the written file against the piece's own box turned and moved.
+     */
+    public function test_the_placements_name_where_the_written_copies_stand(): void
+    {
+        $bed = new Dimensions(250, 250, 250);
+        $cases = [];
+        // a box off the origin (the preparer of the tests keeps a piece where its file has it)
+        StlFile::writeBox($this->dir.'/box_raw.stl', 20, 20, 10);
+        StlFile::translate($this->dir.'/box_raw.stl', $this->dir.'/box.stl', [-7.0, 3.0, 0.0]);
+        $cases['plain grid'] = [$this->dir.'/box.stl', 4, new Dimensions(246, 246, 250), 12, 'grid', false];
+        // 7 of a 30 × 80 box on a 90 × 260 plate: two by three plain is six, only the turned grid takes seven
+        StlFile::writeBox($this->dir.'/tall.stl', 30, 80, 5);
+        $cases['turned grid'] = [$this->dir.'/tall.stl', 7, new Dimensions(90, 260, 250), 12, 'grid', true];
+        self::prism($this->dir.'/tri.stl', self::shapes()['triangle'], 3.0);
+        $cases['rows'] = [$this->dir.'/tri.stl', 10, new Dimensions(246, 246, 250), 8, 'rows', false];
+        foreach ($cases as $name => [$src, $copies, $usable, $perCopy, $method, $rotated]) {
+            $piece = (new PhpPrintPreparer)->prepare($src, $this->dir.'/piece_'.md5($name).'.stl', 1.0, $bed);
+            [$min, $max] = StlFile::bounds($piece->path);
+            $lay = PlateLayout::placements($piece, $copies, $usable);
+            $this->assertNotNull($lay, $name);
+            $this->assertSame($method, $lay['method'], $name);
+            $this->assertCount($copies, $lay['placements'], $name);
+            $plate = PlateLayout::replicate($piece, $this->dir.'/plate_'.md5($name).'.stl', $copies, $usable);
+            $this->assertNotNull($plate, $name);
+            if ($method === 'grid') {
+                $this->assertSame($rotated, (bool) $plate->orientation['grid_rotated'], $name);
+                $this->assertSame($plate->orientation['grid'], $lay['grid'], $name);
+                $this->assertSame($rotated ? [1] : [0], array_values(array_unique(array_column($lay['placements'], 0))), $name.': the turn of every copy');
+            }
+            // every copy's box in the written file against the piece's box turned and moved as the placement says
+            $tris = iterator_to_array(StlFile::triangles($plate->path), false);
+            $this->assertCount($copies * $perCopy, $tris, $name);
+            $plateLo = [INF, INF];
+            foreach (array_chunk($tris, $perCopy) as $k => $copy) {
+                $lo = [INF, INF, INF];
+                $hi = [-INF, -INF, -INF];
+                foreach ($copy as $t) {
+                    foreach ($t as $v) {
+                        for ($i = 0; $i < 3; $i++) {
+                            $lo[$i] = min($lo[$i], $v[$i]);
+                            $hi[$i] = max($hi[$i], $v[$i]);
+                        }
+                    }
+                }
+                [$q, $tx, $ty] = $lay['placements'][$k];
+                $corners = [];
+                foreach ([[$min[0], $min[1]], [$max[0], $min[1]], [$max[0], $max[1]], [$min[0], $max[1]]] as [$x, $y]) {
+                    $corners[] = match ($q) {
+                        0 => [$tx + $x, $ty + $y],
+                        1 => [$tx - $y, $ty + $x],
+                        2 => [$tx - $x, $ty - $y],
+                        default => [$tx + $y, $ty - $x],
+                    };
+                }
+                $want = [min(array_column($corners, 0)), min(array_column($corners, 1)), $min[2] + $lay['lift'], max(array_column($corners, 0)), max(array_column($corners, 1)), $max[2] + $lay['lift']];
+                $this->assertEqualsWithDelta($want, [$lo[0], $lo[1], $lo[2], $hi[0], $hi[1], $hi[2]], 0.002, "$name: copy $k");
+                $plateLo = [min($plateLo[0], $lo[0]), min($plateLo[1], $lo[1])];
+            }
+            $this->assertEqualsWithDelta($plateLo, $lay['origin'], 0.002, $name.': the origin is the lowest corner the set reaches');
+            $this->assertEqualsWithDelta([$plate->bbox->x, $plate->bbox->y], $lay['size'], 0.01, $name.': the size of the set');
+        }
+    }
+
     public function test_a_round_piece_on_the_big_plate_is_laid_within_a_second(): void
     {
         $shadow = Footprint::fromPoints(self::shapes()['circle']);

@@ -23,22 +23,27 @@ final class SliceParams
         // One plate, several filaments (the farm, docs/AL.md §10): a 3MF project with an object per part, each
         // object told its filament, and a filament profile per filament. Empty = one filament, the mesh as given.
         public readonly array $filaments = [],     // list of [profile => file, overrides => [setting => value], volume_mm3 => float]
-        public readonly ?string $project = null,   // the 3MF the slicer loads instead of the mesh
+        // The 3MF the slicer loads instead of the mesh: the parts' project above, or the copies of one piece as instances of
+        // one object (docs/AL.md §11.10) with a single filament. The mesh given beside it only tells the size.
+        public readonly ?string $project = null,
         // The slicer thins a very fine mesh before it slices it (MeshDecimator, docs/AL.md §10.11) unless the caller says it
         // has done that itself: the farm thins the piece once and builds its plates of copies from the thinned piece
         // (docs/AL.md §11.9), so a plate is never thinned as a whole. Not part of toArray(): the mesh bytes tell the plates apart.
         public readonly bool $thinMesh = true,
+        // Seconds the slicer process may take; null = config engines.orca.timeout. A plate of several pieces gets more
+        // (PrepareFarmOrder::sliceTimeout). Not part of toArray(): the same plate gives the same G-code however long it may take.
+        public readonly ?int $timeout = null,
     ) {}
 
     public function withFarmProfile(array $profiles, array $overrides): self
     {
-        return new self($this->materialCode, $this->quality, $this->infillPercent, $this->supports, $this->scale, $this->vaseMode, $this->treeSupports, $profiles, $overrides, true, $this->filaments, $this->project, $this->thinMesh);
+        return new self($this->materialCode, $this->quality, $this->infillPercent, $this->supports, $this->scale, $this->vaseMode, $this->treeSupports, $profiles, $overrides, true, $this->filaments, $this->project, $this->thinMesh, $this->timeout);
     }
 
     /** The same run over a mesh the caller has thinned already, or decided not to thin: the slicer slices it as it is. */
     public function withoutThinning(): self
     {
-        return new self($this->materialCode, $this->quality, $this->infillPercent, $this->supports, $this->scale, $this->vaseMode, $this->treeSupports, $this->profiles, $this->overrides, $this->keepGcode, $this->filaments, $this->project, false);
+        return new self($this->materialCode, $this->quality, $this->infillPercent, $this->supports, $this->scale, $this->vaseMode, $this->treeSupports, $this->profiles, $this->overrides, $this->keepGcode, $this->filaments, $this->project, false, $this->timeout);
     }
 
     /** The same run with these process settings on top of any it has (what a design asks for, ModelFile::processHints). */
@@ -50,7 +55,7 @@ final class SliceParams
         $overrides = $this->overrides;
         $overrides['process'] = $process + (array) ($overrides['process'] ?? []);
 
-        return new self($this->materialCode, $this->quality, $this->infillPercent, $this->supports, $this->scale, $this->vaseMode, $this->treeSupports, $this->profiles, $overrides, $this->keepGcode, $this->filaments, $this->project, $this->thinMesh);
+        return new self($this->materialCode, $this->quality, $this->infillPercent, $this->supports, $this->scale, $this->vaseMode, $this->treeSupports, $this->profiles, $overrides, $this->keepGcode, $this->filaments, $this->project, $this->thinMesh, $this->timeout);
     }
 
     /**
@@ -65,7 +70,19 @@ final class SliceParams
         $overrides = $this->overrides;
         $overrides['process'] = $process + (array) ($overrides['process'] ?? []);
 
-        return new self($this->materialCode, $this->quality, $this->infillPercent, $this->supports, $this->scale, $this->vaseMode, $this->treeSupports, $this->profiles, $overrides, true, array_values($filaments), $project, $this->thinMesh);
+        return new self($this->materialCode, $this->quality, $this->infillPercent, $this->supports, $this->scale, $this->vaseMode, $this->treeSupports, $this->profiles, $overrides, true, array_values($filaments), $project, $this->thinMesh, $this->timeout);
+    }
+
+    /** The same run over a project of one filament (the copies of a piece as instances, docs/AL.md §11.10); null = the mesh again. */
+    public function withProject(?string $project): self
+    {
+        return new self($this->materialCode, $this->quality, $this->infillPercent, $this->supports, $this->scale, $this->vaseMode, $this->treeSupports, $this->profiles, $this->overrides, $this->keepGcode, $this->filaments, $project, $this->thinMesh, $this->timeout);
+    }
+
+    /** The same run with this many seconds for the slicer process (null: the configured limit). */
+    public function withTimeout(?int $timeout): self
+    {
+        return new self($this->materialCode, $this->quality, $this->infillPercent, $this->supports, $this->scale, $this->vaseMode, $this->treeSupports, $this->profiles, $this->overrides, $this->keepGcode, $this->filaments, $this->project, $this->thinMesh, $timeout);
     }
 
     public static function fromArray(array $a): self

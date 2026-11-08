@@ -14,9 +14,12 @@ use App\Models\ModelFile;
  * how long the farm's slice is expected to take.
  *
  * The copies of the order count (TODO #68, docs/AL.md §11.9): the farm slices one plate of all the copies, so the
- * slice grows with them, roughly in step. An order of several copies of a piece that is small on its own is big when
- * the expected slice of the plate is over engines.mesh.big_slice_s (reason `copies`); a single piece is judged as
- * before. The verdict is made once, when the order is made – a change of the copies later does not flip it.
+ * slice grows with them. Since the copies print as instances of one object (TODO #77, §11.10) Orca slices the piece
+ * once and only exports every instance's paths: a copy beyond the first adds a share of the first one's slice
+ * (farm.big_model.instance_share; the tree of 8 Nov 2026: 1 piece 31 s, 4 instances 65 s), not a whole slice. An
+ * order of several copies of a piece that is small on its own is big when the expected slice of the plate is over
+ * engines.mesh.big_slice_s (reason `copies`); a single piece is judged as before. The verdict is made once, when the
+ * order is made – a change of the copies later does not flip it.
  */
 final class BigModel
 {
@@ -46,26 +49,37 @@ final class BigModel
 
     /**
      * Seconds the farm's slice of this model is expected to take, `$copies` pieces on one plate. A measured
-     * calculation (one piece sliced without supports, in the calculator's pose) times the copies plus a fifth and a
-     * quarter of a minute for the farm's own check, orientation and supports; without one, by the triangles of all the
-     * copies (config farm.big_model.seconds_per_million); never under the floor (min_seconds).
+     * calculation (one piece sliced without supports, in the calculator's pose) times the copies' factor plus a fifth
+     * and a quarter of a minute for the farm's own check, orientation and supports; without one, by the triangles of
+     * the piece times the copies' factor (config farm.big_model.seconds_per_million); never under the floor (min_seconds).
      */
     public static function estimateSeconds(int $triangles, ?float $sliceSeconds, int $copies = 1): int
     {
         $floor = (int) config('farm.big_model.min_seconds', 120);
 
-        return max($floor, (int) ceil(self::expectedSeconds($triangles, $sliceSeconds, $copies)));
+        // whole seconds up, without a float's last bit turning 110 into 111
+        return max($floor, (int) ceil(round(self::expectedSeconds($triangles, $sliceSeconds, $copies), 6)));
     }
 
     /** The expectation itself, without the floor: what the verdict on the copies compares with big_slice_s. */
     public static function expectedSeconds(int $triangles, ?float $sliceSeconds, int $copies = 1): float
     {
-        $copies = max(1, $copies);
+        $factor = self::copiesFactor($copies);
         if ($sliceSeconds !== null && $sliceSeconds > 0) {
-            return $sliceSeconds * $copies * 1.2 + 15;
+            return $sliceSeconds * $factor * 1.2 + 15;
         }
 
-        return max(0, $triangles) * $copies / 1e6 * (int) config('farm.big_model.seconds_per_million', 150);
+        return max(0, $triangles) * $factor / 1e6 * (int) config('farm.big_model.seconds_per_million', 150);
+    }
+
+    /**
+     * How many slices of one piece a plate of `$copies` instances costs: one for the piece, instance_share of one for
+     * every further copy (the paths of every instance are still computed and written; measured 0.37–0.45 on the tree,
+     * docs/AL.md §11.10). 1 for a single piece.
+     */
+    public static function copiesFactor(int $copies): float
+    {
+        return 1.0 + max(0.0, (float) config('farm.big_model.instance_share', 0.4)) * (max(1, $copies) - 1);
     }
 
     /** "asi N minut": whole minutes, at least one. */

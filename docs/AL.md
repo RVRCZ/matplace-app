@@ -1263,6 +1263,90 @@ napoprvé 500 kvůli zastaralému `public/build` worktree – Vite manifest bez 
 zkontrolovat `farm_orders.timings` (`decimate_s` chybí u kusu pod prahem, `slice1_s` kolem 50 s u 1,55 M) a stav
 `awaiting_choices` s důvodem `copies`; po rozhodnutí o `seconds_per_million` případně `FARM_BIG_MODEL_S_PER_M` v `.env`.
 
+### 11.10 Kopie jednoho kusu jako instance jednoho objektu (TODO #77, větev `fix/one-plate-copies` za #72, 8. 11. 2026)
+
+Zadání `docs/prompts/kopie-jako-instance.md` (Roman 7.–8. 11. 2026: stromeček 187 226 trojúhelníků, 140 × 138 × 200 mm, 1 ks se
+stromovými podporami na S1 61 s, 4 ks se za 9 min nedoslicovaly; na Kobře 3 Max dva pokusy po 600 s zabity, v `job_*` zůstaly
+`plate_1.gcode.tmp` 250 a 200 MB a log plný `Influence area could not be increased`). Příčina: `PlateLayout::replicate` slepil
+4 kusy do jednoho STL a Orca počítala všechny čtyři znovu včetně organických podpor, které se navzájem ovlivňují. Řídící naměřil
+(Orca 2.4, 12 jader, Kobra 3 Max, stromové): 1 ks 31 s, slepená podložka 4 ks 253 s, 4 ks jako instance jednoho objektu ve 3MF
+**65 s** (`total object counts 4 in current print, need to slice 1`, `copy_layers_from_shared_object`); s rozestupem 12 mm
+`gcode path conflicts found between instances`, s 30 mm prošlo.
+
+- **Instance místo slepeného STL** (`PrepareFarmOrder::handle`, `instanceProject`, `sliceCopies`). U `copies > 1` bez měniče
+  nástrojů vznikne vedle `plate.stl` projekt `plate.3mf`: jeden objekt (ztenčený kus `print.thin.stl`, jinak `print.stl` – týž
+  výběr jako `$sliceRel` dřív) a `perPlate` build items tam, kam `PlateLayout` kusy klade; totéž pro zbytkovou podložku
+  (`rest.3mf`, jen když má ≥ 2 kusy – jeden kus jde dál jako síť). `PlateLayout::placements(piece, copies, usable, gap)` je
+  veřejný výpočet pozic `[čtvrtotáčky, x, y]` (mřížka umí otočit o 90° = `0 1 0 -1 0 0 …` v matici, řady podle stínu otáčejí
+  o násobky 90°), `lift` na Z = 0, `origin` (nejnižší roh sady, mřížka přesně 0) a `size`; `replicateGrid` používá týž
+  `gridFor` (StlFileBlocksTest drží stejné bajty), slepené STL se dál píše pro náhled (`print_stl_path`, `model.stl?v=`),
+  `ModelValidator::judge` a `supports.bin`. Sada je v projektu vystředěná na podložce stejně, jako slicer centruje síť
+  (`StlFile::place`): posun = `bed/2 − origin − bbox/2`. `SliceParams::withProject()` (projekt bez filamentů; `OrcaSlicer` ho
+  řeže s `--arrange 0`, síť vedle dává jen rozměr, nic se znovu neztenčuje), `SliceParams::withTimeout()`.
+  `slice_result.instances` = true (projekt), false (po kolizi drah slepené STL), null (jeden kus, měnič nástrojů, nebo kus
+  nad `farm.copies.instances_max_triangles` 1 500 000 – XML projektu se píše do paměti); `slice_result.gap_mm`;
+  `timings.project_s`, `orca_objects`/`orca_sliced` (z logu Orcy), `slice_conflict`.
+- **Kolize drah → slepené STL, ne `slicing_failed`.** `OrcaSlicer::slice` čte po každém pokusu konec `00000.log` z pracovního
+  adresáře (CLI na konzoli skoro nic neříká) a při „gcode path conflicts found“ / „found slicing result conflict“ bez G‑kódu
+  hodí `PathConflictException` (podtřída `SlicerException`); `sliceCopies` ji chytí (i podle textu) a řeže slepený `plate.stl`
+  jako dřív. Jiná chyba projektu zůstává `slicing_failed`.
+- **Rozestup s rezervou na podpory** (`PlateLayout::supportGap(výška, mohou být podpory)` = podpory možné ?
+  `max(5, min(30, 0,15 × výška))` : 5; `PrepareFarmOrder::supportsPossible`: `supports !== false` nebo přepis
+  `enable_support 1`, ne při přepisu `0`). Stejný rozestup bere `capacityOf`, `replicate` i projekt, takže `check.max_copies`
+  na stránce sedí s počtem podložek (kus 115 × 115 × 200 na S1: 4 na podložku bez podpor, 1 s rezervou 30 mm; po `reslice`
+  se `max_copies` přepočítá). Kusy do 33 mm výšky mají pořád 5 mm. **Kalkulace** (`POST /api/calc/plate`) počítá dál s 5 mm,
+  takže u vysokých kusů s podporami může slíbit víc kusů na podložku než farma položí – otevřené.
+- **Odhad velkého modelu s instancemi** (`BigModel::copiesFactor` = `1 + instance_share × (kopie − 1)`,
+  `farm.big_model.instance_share` **0,4**; zadání navrhovalo 10 %, měření níže dává 0,37–0,45): `expectedSeconds` násobí
+  faktorem místo kopiemi, `MeshDecimator::budget` totéž (ztenčení šetří jen jeden řez). Kostka 12 trojúhelníků při
+  5e6 s/M: 1 ks 60 s, 4 ks 132 s (dřív 240), 8 ks 228 s; kalkulace 30 s × 4 ks → 95 s (dřív 159; stránka slíbí 120, spodní
+  hranice). `estimateSeconds` zaokrouhluje na 6 míst před `ceil` (110,00000000000001 → 111 už ne).
+- **Limit sliceru podle kusů** (`PrepareFarmOrder::sliceTimeout(kusy)` = `min(timeout_max, timeout + timeout_per_piece ×
+  (kusy − 1))`, `engines.orca.timeout_per_piece` **60**, `engines.orca.timeout_max` **1200**; 0 = vypnuto): na produkci
+  (`ORCA_TIMEOUT` 600) 2 ks 660 s, 4 ks 780 s, 11+ ks 1200 s; zbytková podložka podle svých kusů; jeden kus beze změny.
+  Timeout jobu `PrepareFarmOrder::$timeout` = `max(900, timeout_max + 300)` = 1500 s (dřív 900), aby fronta nezabila řez,
+  který slicer smí dokončit. **Roman rozhodne:** (A) nechat všude 600 s (`ORCA_TIMEOUT_PER_PIECE=0`, job zůstane 1500 s),
+  nebo (B) výchozí 600 + 60 × (kusy − 1) se stropem 1200 s – s instancemi by 4 ks stromečku měly na serveru trvat 4–5 min,
+  takže (A) by stačilo; (B) je pojistka pro víc kusů. Pozor: `retry_after` fronty (config/queue.php 90 s) je proti oběma
+  variantám krátký už dnes – `WithoutOverlapping` to zachytí (druhý běh se pouští na zámek a po skončení prvního nic nedělá).
+- **Cache řezů** (`CachedSlicer::key`): u projektu nově otisk **obsahu** 3MF (`projectHash`: názvy a bajty položek zipu, ne čas
+  zipu – `ThreeMfWriter` píše pevný čas, repaint z Pythonu ne), ne jen cesta; jiný rozestup = jiný klíč, stejný obsah pod jinou
+  cestou (každá zakázka má své `plate.3mf`) = trefa; `timeout` do klíče nevstupuje. Týká se i podložky dílů z §10 a malovaného
+  projektu z §14.8 (dřív by přeřez se změněnou mapou extruderů nad stejným `plate.stl` trefil starý G‑kód).
+- **Čísla před/po na stromečku** (session 2, 8. 11. 2026 večer, Orca 2.4 portable přes farmní `OrcaSlicer`, profil Kobra 3 Max,
+  `process_standard`, stromové podpory vynucené, bez věže, PHP preparátor; skript `scratchpad/instances77/tree.php`):
+
+  | co | čas | gramy / minuty tisku | poznámka |
+  |---|---|---|---|
+  | 1 kus | 28,1 s | 203,9 g / 10 h 56 min | G‑kód 99,6 MB |
+  | **před:** slepená podložka 4 ks, rozestup 30 (`PlateLayout::replicate`) | **165,2 s** | 798,5 g / 43 h 10 min | `orca_objects 1`, G‑kód 389 MB (řídící s rozestupem 12: 253 s) |
+  | **po:** 4 instance jednoho objektu, rozestup 30 (`instanceProject`) | **60,5 s** | 809,8 g / 43 h 20 min | `orca_objects 4, orca_sliced 1`, G‑kód 395 MB; příprava: layout 1,3 s + projekt 2,3 s (2,3 MB) |
+  | 4 instance, rozestup 12 | 51,7 s → **kolize drah chycena** (`PathConflictException`) | – | farma by pokračovala slepenou podložkou |
+
+  Poměr 60,5 / 28,1 = 2,15 → podíl na instanci (2,15 − 1) / 3 = **0,38** (odtud `instance_share` 0,4). Server je proti PC asi
+  4× pomalejší: 4 ks stromečku se stromovými podporami tedy odhadem 4–5 min místo přes 10 (dřív zabito v 600 s).
+- **Co se nemění:** měnič nástrojů (`toolChangerParams` dál slepená síť na středu + výměny podle výšky – instance tam zatím
+  nejsou, kandidát na další krok), malovaný 3MF (instance měl), díly nástroje (§10.13), časosběr, `supports.bin`.
+- **Testy.** `tests/Feature/FarmCopiesInstancesTest.php` (6): 4 kostky → slicer dostane `plate.stl` + projekt `plate.3mf` s jedním
+  objektem a 4 položkami na středu 250 (102,5/127,5), `timeout` 180 + 3 × 60, `instances true`, `gap_mm 5`, náhled 48
+  trojúhelníků jako dřív, 1 ks bez projektu; kolize drah (`PathConflictException` i holý text „found slicing result conflict“)
+  → druhý běh slepeného STL, `instances false`, `slice_conflict`; jiná chyba → `slicing_failed` bez druhého běhu; kus
+  115 × 115 × 200: auto podpory → rozestup 30, `max_copies 1`, 4 podložky; `supports off` přes `reslice` → 5 mm, 1 podložka
+  instancí, stránka `max_copies 4`; 9 kostek 100 → plná podložka projektem, zbytek 1 ks sítí, 6 ks → `rest.3mf` se 2 položkami;
+  `sliceTimeout` a timeout jobu; skutečná Orca (`ORCA_LOCAL`): 4 kostky 30 mm `orca_objects 4 / orca_sliced 1`, gramy 4×,
+  minuty 23 → 52 (start a čisticí čára jednou). `PlateLayoutTest` (+1): pozice z rovné mřížky, otočené mřížky (7 × 30 × 80 na
+  90 × 260) i řad odpovídají obálkám kopií ve slepeném STL, `origin` a `size` sedí. `SliceCacheTest` (+1): klíč s obsahem
+  projektu. `ThreeMfWriterTest` sdílený s #72. Otočená očekávání: `FarmDecimateCopiesTest` (132/228/95→120),
+  `MeshDecimatorTest` (rozpočet 110/220/240). Zelené: FarmCopiesInstances, PlateLayout, StlFileBlocks, MeshDecimator,
+  SliceCache, FarmDecimateCopies, FarmOrderFlow, FarmBigModelFlow, OrcaBinToolchanger, FarmToolChangerPlate, PlateLayoutFarm,
+  FarmOnePlateCopies, ThreeMfColors, FarmOnePlate; `pint`.
+- **Soubory.** `app/Jobs/PrepareFarmOrder.php`, `app/Domain/Farm/PlateLayout.php`, `app/Domain/Farm/BigModel.php`,
+  `app/Engines/DTO/SliceParams.php`, `app/Engines/Slicer/OrcaSlicer.php`, `app/Engines/Slicer/CachedSlicer.php`,
+  `app/Engines/Exceptions/PathConflictException.php`, `app/Engines/Mesh/MeshDecimator.php`, `config/engines.php`
+  (`timeout_per_piece`, `timeout_max`), `config/farm.php` (`big_model.instance_share`, `copies.instances_max_triangles`).
+  Nasazení: nic v `.env` nutné; rozhodnutí Romana o limitu sliceru (`ORCA_TIMEOUT_PER_PIECE`, `ORCA_TIMEOUT_MAX`) a o rezervě
+  na podpory (`PlateLayout::SUPPORT_GAP_SHARE` 0,15 / `SUPPORT_GAP_MAX_MM` 30 jsou konstanty).
+
 # Prodejní cesta, část farma: platba bez povinného kreditu, celek s dopravou hned, čísla farmy, měření (session 2)
 
 Větev `feature/sales-path-farm` (z `main` bf112cb), 25. 10. 2026. Zadání `docs/prompts/prodejni-cesta-farma.md`

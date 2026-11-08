@@ -63,14 +63,15 @@ final class MeshDecimator
     /**
      * Seconds a thinning may take: the expected slice of the mesh (and of the copies that will be sliced from it), never
      * more than config decimate_timeout, never less than a second. The slice of a plate of copies is what a thinned piece
-     * saves, so the piece's budget grows with the copies; the floor of the estimate (farm.big_model.min_seconds) is the
-     * least any thinning gets.
+     * saves, so the piece's budget grows with the copies – as instances of one object they cost a share of a slice each
+     * (BigModel::copiesFactor, docs/AL.md §11.10); the floor of the estimate (farm.big_model.min_seconds) is the least
+     * any thinning gets.
      */
     public function budget(int $triangles, int $copies = 1): int
     {
         $cap = max(1, (int) $this->config['decimate_timeout']);
 
-        return max(1, min($cap, BigModel::estimateSeconds(max(0, $triangles) * max(1, $copies), null)));
+        return max(1, min($cap, BigModel::estimateSeconds(max(0, $triangles), null, max(1, $copies))));
     }
 
     /**

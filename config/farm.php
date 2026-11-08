@@ -24,6 +24,9 @@ return [
     'big_model' => [
         'seconds_per_million' => (int) env('FARM_BIG_MODEL_S_PER_M', 150),
         'min_seconds' => (int) env('FARM_BIG_MODEL_MIN_S', 120),
+        // a copy beyond the first adds this share of one piece's slice when the copies print as instances of one object
+        // (App\Domain\Farm\BigModel::copiesFactor, docs/AL.md §11.10; measured 0.37–0.45 on the tree of 8 Nov 2026)
+        'instance_share' => (float) env('FARM_BIG_MODEL_INSTANCE_SHARE', 0.4),
         // an order of a big model nobody asked the exact price for is cancelled after this many days (matplace:prune)
         'waiting_days' => (int) env('FARM_BIG_MODEL_WAITING_DAYS', 7),
     ],
@@ -38,6 +41,13 @@ return [
     // Orca props every face flatter than this many degrees from the horizontal, so a higher number means more supports
     // (docs/AL.md §17): above the slicer profile, below a printer's overrides; a test print may only lower it (TuningAdvisor)
     'support_threshold_angle' => (int) env('FARM_SUPPORT_THRESHOLD_ANGLE', 25),
+
+    // Several copies of a piece print as instances of one object in a 3MF project (PrepareFarmOrder::instanceProject,
+    // docs/AL.md §11.10). The project holds the piece's mesh as XML: a piece of more triangles than this (one that could not
+    // be thinned under decimate_above) is glued into one mesh as before instead
+    'copies' => [
+        'instances_max_triangles' => (int) env('FARM_INSTANCES_MAX_TRIANGLES', 1500000),
+    ],
 
     // extra slicer profiles uploaded for new printers/materials; looked up before engines/orca/profiles
     'profiles_dir' => storage_path('app/farm/profiles'),

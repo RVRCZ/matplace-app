@@ -18,11 +18,15 @@ use App\Engines\Contracts\Slicer;
 use App\Engines\DTO\Dimensions;
 use App\Engines\DTO\PreparedMesh;
 use App\Engines\DTO\SliceParams;
+use App\Engines\DTO\SliceResult;
+use App\Engines\Exceptions\PathConflictException;
+use App\Engines\Exceptions\SlicerException;
 use App\Engines\Farm\PhpPrintPreparer;
 use App\Engines\Gcode\SupportLines;
 use App\Engines\Mesh\MeshDecimator;
 use App\Engines\Mesh\StlFile;
 use App\Engines\Mesh\ThreeMfWriter;
+use App\Engines\Slicer\OrcaSlicer;
 use App\Models\FarmOrder;
 use App\Models\FarmPrinter;
 use App\Models\FarmPrinterSlot;
@@ -49,6 +53,8 @@ use Illuminate\Support\Facades\Storage;
  *
  * A piece of very many triangles is thinned here, once, before its copies are laid out (thinPiece, docs/AL.md §11.9):
  * the plates are built from the thinned piece and the slicer is told not to thin them again (SliceParams::thinMesh).
+ * The copies go to the slicer as instances of one object in a project (instanceProject, docs/AL.md §11.10), the glued
+ * plate only beside it; when their paths conflict the glued plate is sliced as before (sliceCopies).
  */
 class PrepareFarmOrder implements ShouldQueue
 {
@@ -62,6 +68,7 @@ class PrepareFarmOrder implements ShouldQueue
 
     public int $backoff = 3;
 
+    /** Seconds the whole run may take: the longest slice a plate of copies is allowed (engines.orca.timeout_max) and room for the rest, never under 900. */
     public int $timeout = 900;
 
     /** When it was put in the queue (epoch): the wait in the queue is part of the customer's wait. */
@@ -72,6 +79,84 @@ class PrepareFarmOrder implements ShouldQueue
     {
         $this->onQueue(config('queue.interactive'));
         $this->queuedAt = microtime(true);
+        $this->timeout = max(900, (int) config('engines.orca.timeout_max', 1200) + 300);
+    }
+
+    /**
+     * Seconds the slicer may take over a plate of `$pieces` copies: the configured limit for one piece, engines.orca.timeout_per_piece
+     * more for every further one, never over timeout_max (docs/AL.md §11.10; null = the configured limit as it is).
+     */
+    public static function sliceTimeout(int $pieces): ?int
+    {
+        $per = (int) config('engines.orca.timeout_per_piece', 0);
+        if ($pieces <= 1 || $per <= 0) {
+            return null;
+        }
+        $base = (int) config('engines.orca.timeout', 180);
+
+        return min(max($base, (int) config('engines.orca.timeout_max', 1200)), $base + $per * ($pieces - 1));
+    }
+
+    /** May this slice build supports (the customer's "auto" or "on", an admin forcing them) – or are they off for sure? */
+    public static function supportsPossible(SliceParams $params): bool
+    {
+        $forced = $params->overrides['process']['enable_support'] ?? null;
+
+        return $forced === '1' || ($params->supports !== false && $forced !== '0');
+    }
+
+    /**
+     * The project of a plate of copies (docs/AL.md §11.10): the piece as one object and a build item per copy where
+     * PlateLayout laid them, the set centred on the bed as the slicer centres a mesh (StlFile::place), so Orca slices the
+     * piece once and prints every instance ("need to slice 1"). Null when there is nothing to gain (one piece) or the piece
+     * has more triangles than the project's XML should hold (farm.copies.instances_max_triangles): the glued plate then
+     * goes as a mesh, as before.
+     *
+     * @param  array{placements: list<array{0: int, 1: float, 2: float}>, lift: float, origin: array{0: float, 1: float}}|null  $lay
+     */
+    private function instanceProject(FarmOrder $order, $disk, string $pieceRel, PreparedMesh $piece, PreparedMesh $plate, ?array $lay, Dimensions $bed, Stopwatch $clock, string $name = 'plate.3mf'): ?string
+    {
+        if ($lay === null || count($lay['placements']) < 2) {
+            return null;
+        }
+        if ($piece->triangles > (int) config('farm.copies.instances_max_triangles', 1500000)) {
+            $clock->note('instances_skipped', 'triangles');
+
+            return null;
+        }
+        // the slicer puts a mesh's box in the middle of the bed: the set of instances goes there too
+        $cx = $bed->x / 2 - $lay['origin'][0] - $plate->bbox->x / 2;
+        $cy = $bed->y / 2 - $lay['origin'][1] - $plate->bbox->y / 2;
+        $items = array_map(fn ($p) => [round($p[1] + $cx, 4), round($p[2] + $cy, 4), $lay['lift'], $p[0]], $lay['placements']);
+        $path = $disk->path($order->dir().'/'.$name);
+        $clock->measure('project', fn () => ThreeMfWriter::write($path, [['name' => 'print', 'stl' => $disk->path($pieceRel), 'extruder' => 1]], [], $items));
+
+        return $path;
+    }
+
+    /**
+     * The plate sliced as a project of instances when there is one, else (or when the slicer finds the paths of two instances
+     * crossing – the supports of one in the other, PathConflictException) as the glued mesh.
+     *
+     * @return array{0: SliceResult, 1: ?bool} the result and how it went: true = instances, false = glued after a conflict, null = no project
+     */
+    private function sliceCopies(Slicer $slicer, string $meshPath, SliceParams $params, ?string $project, Stopwatch $clock, string $phase): array
+    {
+        if ($project !== null) {
+            try {
+                return [$clock->measure($phase, fn () => $slicer->slice($meshPath, $params->withProject($project))), true];
+            } catch (SlicerException $e) {
+                if (! $e instanceof PathConflictException && ! OrcaSlicer::pathConflict($e->getMessage())) {
+                    throw $e;
+                }
+                Log::warning('The instances of the plate conflict, sliced as one mesh instead', ['order' => $this->orderId, 'error' => mb_substr($e->getMessage(), -300)]);
+                $clock->note($phase.'_conflict', mb_substr($e->getMessage(), -200));
+            }
+
+            return [$clock->measure($phase, fn () => $slicer->slice($meshPath, $params)), false];
+        }
+
+        return [$clock->measure($phase, fn () => $slicer->slice($meshPath, $params)), null];
     }
 
     /** The order asked for another slice since this run was dispatched: this run's result would be for choices nobody wants. */
@@ -192,11 +277,16 @@ class PrepareFarmOrder implements ShouldQueue
             // prepared stays the order's print.stl: the preview and the record show the customer's own geometry
             $thinRel = $order->dir().'/print.thin.stl';
             $piece = $this->thinPiece($mesh, $disk->path($thinRel), (float) ($setup['params']->overrides['process']['layer_height'] ?? $setup['layer']), $clock, max(1, (int) $order->copies));
-            $sliceRel = $piece === $mesh ? $stlRel : $thinRel;
-            $capacity = PlateLayout::capacityOf($piece, $usable);
+            $pieceRel = $piece === $mesh ? $stlRel : $thinRel;
+            $sliceRel = $pieceRel;
+            // the copies of a piece that may need supports stand further apart (tree supports lean out beyond its shadow, two
+            // instances whose paths cross stop the slicer, docs/AL.md §11.10): the capacity, the plate and the project agree on it
+            $gap = PlateLayout::supportGap((float) $piece->bbox->z, self::supportsPossible($setup['params']));
+            $capacity = PlateLayout::capacityOf($piece, $usable, $gap);
             $plates = 1;
             $perPlate = $order->copies;
             $rest = null;
+            $lay = null;   // where the copies of a full plate stand (PlateLayout::placements), for the project of instances
             if ($order->copies > 1 && ! $order->isTest() && $capacity['max'] >= 1) {
                 // several copies on one plate: the oriented piece repeated in a grid or in rows by its shadow, sliced and priced as one print;
                 // more than a plate takes → full plates one after another, the last one holding what is left
@@ -209,10 +299,12 @@ class PrepareFarmOrder implements ShouldQueue
                     }
                 }
                 $plateRel = $order->dir().'/plate.stl';
-                $mesh = $clock->measure('layout', fn () => PlateLayout::replicate($piece, $disk->path($plateRel), $perPlate, $usable)) ?? throw new \RuntimeException('Plate layout failed although the capacity allowed it.');
+                $lay = $clock->measure('layout', fn () => PlateLayout::placements($piece, $perPlate, $usable, $gap)) ?? throw new \RuntimeException('Plate layout failed although the capacity allowed it.');
+                $mesh = $clock->measure('layout', fn () => PlateLayout::replicate($piece, $disk->path($plateRel), $perPlate, $usable, $gap)) ?? throw new \RuntimeException('Plate layout failed although the capacity allowed it.');
                 $stlRel = $plateRel;
                 $sliceRel = $plateRel;
             }
+            $clock->note('gap_mm', $gap);
             $order->fill(['plates' => $plates, 'plates_done' => 0, 'plate_copies' => $perPlate, 'rest_copies' => $rest, 'rest_gcode_path' => null]);
             $verdict = ModelValidator::judge($mesh, $bed, [
                 'min_model_mm' => (float) $settings->get('min_model_mm'),
@@ -239,7 +331,12 @@ class PrepareFarmOrder implements ShouldQueue
             // plate goes to the slicer as a project that names them (docs/AM.md §12j); every other machine takes the mesh
             $toolPlan = $printer->isToolChanger() ? self::toolPlan($order) : null;
             [$params, $toolFilaments] = $toolPlan ? $this->toolChangerParams($printer, $disk->path($sliceRel), $disk->path($order->dir().'/plate.3mf'), $base, $setup['profile'], $bed, $toolPlan, (float) $mesh->volumeMm3, (float) $layer, $clock) : [$base, []];
-            $result = $clock->measure('slice', fn () => $slicer->slice($disk->path($sliceRel), $params));
+            // several copies on any other machine: the piece once in a project, placed per copy, so the slicer slices it once and
+            // prints the instances (docs/AL.md §11.10); the glued plate stays beside it for the size, the preview and the record.
+            // A plate of several pieces gets the slicer more time (sliceTimeout)
+            $project = $toolPlan ? null : $this->instanceProject($order, $disk, $pieceRel, $piece, $mesh, $lay, $bed, $clock);
+            $params = $params->withTimeout(self::sliceTimeout($perPlate));
+            [$result, $instances] = $this->sliceCopies($slicer, $disk->path($sliceRel), $params, $project, $clock, 'slice');
             $clock->merge($result->timings);
             $postStart = hrtime(true);
             if ($this->overtaken($order)) {
@@ -270,12 +367,15 @@ class PrepareFarmOrder implements ShouldQueue
             // the last plate of a multi-plate order holds fewer pieces: its own layout and G-code
             $restRel = null;
             $restResult = null;
+            $restInstances = null;
             if ($rest !== null) {
                 $restStl = $disk->path($order->dir().'/rest.stl');
-                PlateLayout::replicate($piece, $restStl, $rest, $usable) ?? throw new \RuntimeException('Rest plate layout failed.');
+                $restLay = PlateLayout::placements($piece, $rest, $usable, $gap) ?? throw new \RuntimeException('Rest plate layout failed.');
+                $restMesh = PlateLayout::replicate($piece, $restStl, $rest, $usable, $gap) ?? throw new \RuntimeException('Rest plate layout failed.');
                 $clock->add('post', (hrtime(true) - $postStart) / 1e9);
                 $restParams = $toolPlan ? $this->toolChangerParams($printer, $restStl, $disk->path($order->dir().'/rest.3mf'), $base, $setup['profile'], $bed, $toolPlan, (float) $piece->volumeMm3 * $rest, (float) $layer, $clock)[0] : $params;
-                $restResult = $clock->measure('rest_slice', fn () => $slicer->slice($restStl, $restParams));
+                $restProject = $toolPlan ? null : $this->instanceProject($order, $disk, $pieceRel, $piece, $restMesh, $restLay, $bed, $clock, 'rest.3mf');
+                [$restResult, $restInstances] = $this->sliceCopies($slicer, $restStl, $restParams->withTimeout(self::sliceTimeout($rest)), $restProject, $clock, 'rest_slice');
                 $clock->merge($restResult->timings, 'rest_');
                 $postStart = hrtime(true);
                 if (! $restResult->gcodePath || ! is_file($restResult->gcodePath)) {
@@ -306,7 +406,10 @@ class PrepareFarmOrder implements ShouldQueue
                     // a tool changer: the tool and the tool changes this file was sliced for (the payment slices again when they differ)
                     'tool' => $toolPlan, 'filaments' => $toolPlan ? self::filamentRecord($toolFilaments) : null,
                 ],
-                'slice_result' => $result->toArray() + ['plates' => $plates, 'plate_copies' => $perPlate, 'rest_copies' => $rest, 'rest' => $restResult?->toArray()],
+                // instances: true = the copies went to the slicer as instances of one object, false = glued into one mesh after a path
+                // conflict, null = one piece, a tool changer's project or a piece too fine for the project (docs/AL.md §11.10)
+                'slice_result' => $result->toArray() + ['plates' => $plates, 'plate_copies' => $perPlate, 'rest_copies' => $rest, 'instances' => $instances, 'gap_mm' => $gap,
+                    'rest' => $restResult ? $restResult->toArray() + ['instances' => $restInstances] : null],
                 // the whole order: every full plate, plus the last one when it differs
                 'est_minutes' => (int) round($sum($result->minutes, $restResult?->minutes)) + $parking,
                 'est_grams' => round($sum($result->grams, $restResult?->grams), 1),

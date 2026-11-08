@@ -108,7 +108,31 @@ final class CachedSlicer implements Slicer
 
         return sha1(implode('|', [
             $this->inner->name(), md5_file($meshPath), json_encode($params->toArray()), json_encode($profiles), implode(',', $code), $bin,
+            // a project beside the mesh: its content, not its path (every order writes plate.3mf; another gap between the
+            // instances or another filament per part is another G-code, docs/AL.md §11.10)
+            $params->project && is_file($params->project) ? self::projectHash($params->project) : '',
         ]));
+    }
+
+    /**
+     * A fingerprint of a 3MF's content: the entries' names and bytes, not the zip's own timestamps (ThreeMfWriter writes
+     * a fixed time, a project from Python may not). A file that is no zip hashes as it is.
+     */
+    public static function projectHash(string $path): string
+    {
+        $zip = new \ZipArchive;
+        if ($zip->open($path) !== true) {
+            return (string) md5_file($path);
+        }
+        $entries = [];
+        for ($i = 0; $i < $zip->numFiles; $i++) {
+            $name = (string) $zip->getNameIndex($i);
+            $entries[$name] = md5((string) $zip->getFromIndex($i));
+        }
+        $zip->close();
+        ksort($entries);
+
+        return sha1(json_encode($entries));
     }
 
     /** Now and then: what was not used for a week goes, and the oldest goes while the cache is over its size. */

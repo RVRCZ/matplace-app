@@ -193,8 +193,10 @@ final class MeshDecimatorTest extends TestCase
         // the expected slice of what is thinned (BigModel::estimateSeconds), with its floor, capped by the timeout
         $this->assertSame(30, $d->budget(12));
         $this->assertSame(100, $d->budget(1_000_000));
-        $this->assertSame(200, $d->budget(500_000, 4), 'a piece sliced four times on one plate saves four slices');
-        $this->assertSame(240, $d->budget(1_000_000, 4), 'never more than the timeout');
+        // four copies print as instances of one object: the piece's slice and 0.4 of it per further copy (BigModel::copiesFactor, docs/AL.md §11.10)
+        $this->assertSame(110, $d->budget(500_000, 4), 'a piece placed four times on one plate saves 1 + 3 × 0.4 slices');
+        $this->assertSame(220, $d->budget(1_000_000, 4));
+        $this->assertSame(240, $d->budget(2_000_000, 4), 'never more than the timeout');
 
         // the script is killed at the budget: the original is sliced, and the file is not tried again
         MeshFixtures::cubeStl($this->dir.'/cube.stl', 10);

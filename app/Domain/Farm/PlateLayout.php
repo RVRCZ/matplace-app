@@ -19,6 +19,15 @@ final class PlateLayout
 {
     public const GAP_MM = 5.0;
 
+    /**
+     * The gap between copies that may need supports (docs/AL.md §11.10): tree supports lean out beyond the piece's
+     * shadow, and two instances whose paths cross stop the slicer ("gcode path conflicts", the tree of 8 Nov 2026:
+     * 12 mm apart refused, 30 mm fine). This share of the piece's height, at least GAP_MM, at most SUPPORT_GAP_MAX_MM.
+     */
+    public const SUPPORT_GAP_SHARE = 0.15;
+
+    public const SUPPORT_GAP_MAX_MM = 30.0;
+
     public const MAX_COPIES = 64;
 
     /** A shadow filling more than this share of its rectangle keeps the grid (the rows win too little to bother). */
@@ -26,6 +35,12 @@ final class PlateLayout
 
     /** How many earlier pieces of a row (and of a row below) a new piece is checked against while sliding. */
     private const REACH = 3;
+
+    /** The gap between the copies of a piece this tall: the support reserve when supports may be built, else GAP_MM. */
+    public static function supportGap(float $height, bool $supportsPossible): float
+    {
+        return $supportsPossible ? max(self::GAP_MM, min(self::SUPPORT_GAP_MAX_MM, round(self::SUPPORT_GAP_SHARE * $height, 2))) : self::GAP_MM;
+    }
 
     /**
      * How many copies of the prepared piece fit the usable plate, by its shadow when it has one.
@@ -35,6 +50,87 @@ final class PlateLayout
     public static function capacityOf(PreparedMesh $piece, Dimensions $usable, float $gap = self::GAP_MM): array
     {
         return self::plan(Footprint::fromArray($piece->footprint), $piece->bbox, $usable, null, $gap);
+    }
+
+    /**
+     * Where `copies` of the piece stand on the plate, without writing anything (docs/AL.md §11.10): `placements`
+     * [quarter turns about Z, x, y] move the piece's own coordinates onto the plate (turned first, then moved; the set
+     * starts at the origin), `lift` is added to Z so the pieces stand on Z = 0, `origin` is the lowest corner the set's
+     * vertices reach (the grid starts exactly at 0; the rows by the shadow may leave a hair), `size` the set's [width,
+     * depth], `grid` [cols, rows] of a grid (null for rows). Exactly what replicate() writes. Null when they do not fit.
+     *
+     * @return array{method: string, placements: list<array{0: int, 1: float, 2: float}>, lift: float, origin: array{0: float, 1: float}, size: array{0: float, 1: float}, grid: ?array{0: int, 1: int}}|null
+     */
+    public static function placements(PreparedMesh $piece, int $copies, Dimensions $usable, float $gap = self::GAP_MM): ?array
+    {
+        $plan = self::plan(Footprint::fromArray($piece->footprint), $piece->bbox, $usable, $copies, $gap);
+        [$min, $max] = StlFile::bounds($piece->path);
+        if ($plan['method'] === 'rows') {
+            if ($plan['max'] < $copies) {
+                return null;
+            }
+            $placed = $plan['placements'];
+            $set = ['method' => 'rows', 'size' => [(float) $plan['size'][0], (float) $plan['size'][1]], 'grid' => null];
+        } else {
+            $g = self::gridFor($piece->bbox, $copies, $usable, $gap);
+            if ($g === null) {
+                return null;
+            }
+            $placed = [];
+            $d = $piece->bbox;
+            for ($r = 0; $r < $g['rows'] && count($placed) < $copies; $r++) {
+                for ($c = 0; $c < $g['cols'] && count($placed) < $copies; $c++) {
+                    $ox = $c * $g['stepX'];
+                    $oy = $r * $g['stepY'];
+                    // as replicateGrid writes a copy: x' = ox + (X − mx), y' = oy + (Y − my); turned, x' = ox + dy − (Y − my), y' = oy + (X − mx)
+                    $placed[] = $g['rotated'] ? [1, round($ox + $d->y + $min[1], 4), round($oy - $min[0], 4)] : [0, round($ox - $min[0], 4), round($oy - $min[1], 4)];
+                }
+            }
+            $set = ['method' => 'grid', 'size' => [$g['cols'] * $g['stepX'] - $gap, $g['rows'] * $g['stepY'] - $gap], 'grid' => [$g['cols'], $g['rows']]];
+        }
+        // the lowest corner the turned, moved pieces reach: the box of a piece turned q quarters, from its own box
+        $origin = [INF, INF];
+        foreach ($placed as [$q, $tx, $ty]) {
+            [$lx, $ly] = match ($q) {
+                0 => [$tx + $min[0], $ty + $min[1]],
+                1 => [$tx - $max[1], $ty + $min[0]],
+                2 => [$tx - $max[0], $ty - $max[1]],
+                default => [$tx + $min[1], $ty - $max[0]],
+            };
+            $origin = [min($origin[0], $lx), min($origin[1], $ly)];
+        }
+
+        return $set + ['placements' => $placed, 'lift' => -$min[2], 'origin' => [round($origin[0], 4), round($origin[1], 4)]];
+    }
+
+    /**
+     * The grid `copies` pieces go in (replicateGrid, since before the rows): the piece as prepared unless only a turned
+     * grid takes all copies, as square as the plate allows. Null when they do not fit.
+     *
+     * @return array{cols: int, rows: int, rotated: bool, stepX: float, stepY: float}|null
+     */
+    private static function gridFor(Dimensions $d, int $copies, Dimensions $usable, float $gap): ?array
+    {
+        $plain = self::capacity($d, $usable, $gap);
+        $layout = ['cols' => 0, 'rows' => 0, 'rotated' => false];
+        foreach ([['cols' => (int) floor(($usable->x + $gap) / ($d->x + $gap)), 'rows' => (int) floor(($usable->y + $gap) / ($d->y + $gap)), 'rotated' => false],
+            ['cols' => (int) floor(($usable->x + $gap) / ($d->y + $gap)), 'rows' => (int) floor(($usable->y + $gap) / ($d->x + $gap)), 'rotated' => true]] as $try) {
+            if ($copies <= $try['cols'] * $try['rows']) {
+                $layout = $try;
+                break;
+            }
+        }
+        if ($layout['cols'] === 0 || $plain['max'] < $copies) {
+            return null;
+        }
+        // as square a grid as the plate allows: fewer long rows, the set sits in the middle of the plate
+        $cols = min($layout['cols'], max(1, (int) ceil(sqrt($copies))));
+        while ($cols < $layout['cols'] && (int) ceil($copies / $cols) > $layout['rows']) {
+            $cols++;
+        }
+
+        return ['cols' => $cols, 'rows' => (int) ceil($copies / $cols), 'rotated' => (bool) $layout['rotated'],
+            'stepX' => ($layout['rotated'] ? $d->y : $d->x) + $gap, 'stepY' => ($layout['rotated'] ? $d->x : $d->y) + $gap];
     }
 
     /**
@@ -130,35 +226,19 @@ final class PlateLayout
         return self::replicateGrid($piece, $outPath, $copies, $usable, $gap);
     }
 
-    /** The grid, unchanged since before the rows (StlFileBlocksTest holds it to the same bytes). */
+    /** The grid, unchanged since before the rows (StlFileBlocksTest holds it to the same bytes; placements() names the same cells). */
     private static function replicateGrid(PreparedMesh $piece, string $outPath, int $copies, Dimensions $usable, float $gap): ?PreparedMesh
     {
         $d = $piece->bbox;
-        $plain = self::capacity($d, $usable, $gap);
-        // the piece as prepared (its orientation was chosen for printing) unless only a turned grid takes all copies
-        $layout = ['cols' => 0, 'rows' => 0, 'rotated' => false];
-        foreach ([['cols' => (int) floor(($usable->x + $gap) / ($d->x + $gap)), 'rows' => (int) floor(($usable->y + $gap) / ($d->y + $gap)), 'rotated' => false],
-            ['cols' => (int) floor(($usable->x + $gap) / ($d->y + $gap)), 'rows' => (int) floor(($usable->y + $gap) / ($d->x + $gap)), 'rotated' => true]] as $try) {
-            if ($copies <= $try['cols'] * $try['rows']) {
-                $layout = $try;
-                break;
-            }
-        }
-        if ($layout['cols'] === 0 || $plain['max'] < $copies) {
+        $g = self::gridFor($d, $copies, $usable, $gap);
+        if ($g === null) {
             return null;
         }
-        // as square a grid as the plate allows: fewer long rows, the set sits in the middle of the plate
-        $cols = min($layout['cols'], max(1, (int) ceil(sqrt($copies))));
-        while ($cols < $layout['cols'] && (int) ceil($copies / $cols) > $layout['rows']) {
-            $cols++;
-        }
-        $rows = (int) ceil($copies / $cols);
+        ['cols' => $cols, 'rows' => $rows, 'rotated' => $rotated, 'stepX' => $stepX, 'stepY' => $stepY] = $g;
+        $layout = ['rotated' => $rotated];
 
         // the piece's own footprint (min corner) so every copy starts at its cell's origin
         [$min] = StlFile::bounds($piece->path);
-        $stepX = ($layout['rotated'] ? $d->y : $d->x) + $gap;
-        $stepY = ($layout['rotated'] ? $d->x : $d->y) + $gap;
-        $rotated = (bool) $layout['rotated'];
         $dy = $d->y;
         [$mx, $my, $mz] = $min;
         $fh = StlFile::beginBinary($outPath);
