@@ -328,6 +328,7 @@ class FarmPagesTest extends TestCase
         $this->assertSame($silk->id, $color->farm_material_id, 'the spool now belongs to PLA Silk');
         $first = $color->photo_path;
         Storage::disk('public')->assertExists($first);
+        $this->assertSame(FarmColor::PHOTO_UPLOAD, $color->photo_source, 'the admin\'s upload is ours (docs/AL.md §21)');
 
         // a new photo replaces the old file, the checkbox removes it
         $this->actingAs($this->admin)->post("/admin/farm/colors/{$color->id}", ['farm_material_id' => $silk->id, 'name' => $color->name, 'hex' => $color->hex, 'enabled' => 1, 'in_stock' => 1, 'photo' => UploadedFile::fake()->image('b.jpg', 300, 300)])->assertRedirect();
@@ -336,6 +337,7 @@ class FarmPagesTest extends TestCase
         Storage::disk('public')->assertExists($color->photo_path);
         $this->actingAs($this->admin)->post("/admin/farm/colors/{$color->id}", ['farm_material_id' => $silk->id, 'name' => $color->name, 'hex' => $color->hex, 'enabled' => 1, 'in_stock' => 1, 'remove_photo' => 1])->assertRedirect();
         $this->assertNull($color->fresh()->photo_path);
+        $this->assertNull($color->fresh()->photo_source);
 
         // the customer's colour list follows the kind, and every page carries the lightbox
         $order = $this->order();

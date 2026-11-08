@@ -2736,8 +2736,42 @@ Tato sekce popisuje části A až C (data, karta, agent). **D (fronta fotek výt
 
 ### 21.6 Co zbývá
 
-- **D** fronta fotek výtisků (`PrintPhotos` → `farm_color_photo_proposals`, proužek v Materiálech, `FarmColor::customerPhoto()`
-  a jedna podmínka všude, kde zákazník fotku barvy vidí; `eshop` nikdy), **E** `source_url` + „Načíst znovu“ u existující barvy
-  a `farm:colors-from-shop {--missing}`. D a E následují.
-- Zákazník dnes fotku `eshop` vidět **může** (dlaždice #69, kalkulačka): dokud není D, správce buď fotku z e-shopu
-  nepoužije (přepínač v kartě), nebo počítá s tím, že se ukáže. Sunlu: počkat na první ostrý pokus ze serveru.
+- **D** (fronta fotek výtisků, fotka pro zákazníka) je hotové, viz §21.7. **E** `source_url` + „Načíst znovu“ u existující barvy
+  a `farm:colors-from-shop {--missing}` následuje.
+- Sunlu: počkat na první ostrý pokus ze serveru (429 → prázdná karta s varováním, ručně).
+
+### 21.7 Fronta fotek výtisků a fotka pro zákazníka (D, 8. 11. 2026)
+
+- **Původ fotky se zapisuje všude:** `FarmCatalogController::saveColor` dává nahrané fotce `photo_source` `upload` a při
+  `remove_photo` ho maže, nová barva z formuláře tiskárny (`savePrinter`, cívka „nová“) `upload`, `farm:import-photos`
+  (`FarmImportPhotos`) `drive`, karta z e-shopu `eshop`, odsouhlasený výtisk `print`.
+- **`FarmColor::customerPhoto()`** = jediná cesta k fotce barvy pro zákazníka: `photo_source` `eshop` → null, cokoli jiného
+  **včetně NULL** (katalog před #71, a co by proklouzlo) → `photoUrl()`. Přepnuto v `OrderController::describe` (dlaždice
+  `colors[].photo`, `second[].photo`, `machines[].colors[].photo`; #69), `OrderService::positionsOf` (`positions[].photo`) a
+  `Palette::all` (`/api/config` `colors.items[].photo` = kalkulačka i katalog/okno barev). Administrace (`materials.blade.php`)
+  dál `photoUrl()`, v řádku barvy je původ („fotka z e-shopu (zákazník nevidí)“, `farm.admin.shop.photo_source.*`).
+  Stránky tiskáren (`printer/public`, `profile`) nesou `PrinterPortfolioItem::photo_path`, ne fotky barev – beze změny.
+- **Návrhy** `App\Domain\Farm\ColorPhotoProposals`: `PrintPhotos::attach()` po zápisu `photo_path` zakázky zavolá
+  `proposeFor($order)` (v try/catch, fotku nikdy nerozbije): pro každou barvu zakázky (`farm_color_id`, `second_color_id`,
+  `colorSlots()`, `partPlates()`), která nemá fotku `print` a nemá čekající návrh **z téže zakázky**, zkopíruje web JPEG
+  (1200×800) do `farm/colors/proposals/<token>-<color>-<rnd>.jpg` na public disku a založí řádek
+  `farm_color_photo_proposals` (`pending`, `farm_order_id`, poznámka „zakázka <číslo>“). Zamítnutý návrh dovolí další fotce
+  téže zakázky navrhnout barvu znovu. `matplace:prune` maže složky zakázek na farm disku a `PrintPhotos::remove` složku
+  `prints/<token>`; `farm/colors/proposals/` se nedotýká ani jeden (test to ověřuje přes `remove`).
+- **Materiály:** v hlavičce katalogu „Fotky výtisků k odsouhlasení: n“ (`data-pending-photos`), u barvy s čekajícími návrhy
+  proužek (`data-photo-proposals`) s náhledy (zoom), „ze zakázky <číslo> · datum“, **Použít** (`POST
+  /admin/farm/colors/proposals/{proposal}/approve`: 800px JPEG do `farm/colors/<uuid>.jpg`, `photo_source` `print`;
+  předchozí e-shopová fotka zůstane v `source_meta.eshop_photo`, předchozí vlastní (drive/upload) v `source_meta.previous_photo`
+  – soubory zůstávají, jen starší fotka `print` se smaže; ostatní čekající návrhy téže barvy čekají dál) a **Zamítnout**
+  (`…/reject`: řádek `rejected`, kopie smazána). O rozhodnutém návrhu podruhé → chyba „už bylo rozhodnuto“.
+- **Gramy u opakovaného odkazu** (otázka 1 z předání A–C): karta předvyplní `remaining_g` z `source_meta.weight_g`
+  existující barvy, jinak 1000; správce přepíše (bylo už v C, `existing.weight_g`, test `test_the_same_link_again…`).
+- **Testy:** `tests/Feature/ColorPhotoProposalsTest.php` (3 testy, 85 assertions): vyfocená zakázka navrhne první barvu a
+  barvu výměny (jednou), podruhé nic, barva s fotkou `print` nic, `PrintPhotos::remove` nechá kopie, po zamítnutí další
+  fotka navrhne znovu, `PrintPhotos::attach` (fake remover + `photo_compose.py`) založí návrh sám; Použít/Zamítnout přes
+  stránku (hlavička, proužek, 800 px, `eshop_photo`, `decided_by`, soubory, rozhodnutý podruhé = chyba, zákazník
+  přesměrován); zákazník: NULL zdroj vidí, `eshop` nevidí, `print` vidí – dlaždice `/farm/orders/{token}/status`
+  (i správcův pohled), HTML stránky zakázky bez `eshop.jpg`, `/api/config` `colors.items`, administrace vidí vše.
+  `FarmCatalogAdminTest` a `FarmPagesTest` nově kontrolují `photo_source` `upload` a jeho smazání. Jedním během FilamentFromShop,
+  ColorPhotoProposals, FarmCatalogAdmin, FarmPages, FarmColorTiles, ColorsPayload, CalcToolColors, FarmManualOnlyKinds, FarmColorsFill,
+  PrinterPublicPage, PrintPhotos, ToolPhotos, YouTubeSeries, FarmOrderColors, FarmColorsPerMachine: 87 testů, 2 315 assertions, 3 přeskočené; pint.
