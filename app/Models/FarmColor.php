@@ -14,9 +14,21 @@ class FarmColor extends Model
     /** Override keys that go into the finished G-code; every other key changes the slice itself. */
     public const TEMP_KEYS = ['nozzle_temp', 'nozzle_temp_first', 'bed_temp'];
 
-    protected $fillable = ['farm_material_id', 'code', 'name', 'name_en', 'manufacturer', 'hex', 'photo_path', 'drive_folder', 'print_overrides', 'test_notes', 'enabled', 'in_stock', 'sort'];
+    /**
+     * Where the photo came from (TODO #71, docs/AL.md §21): the Drive export, an upload by the admin, the e-shop page the
+     * colour was read from, or a photo of our own print. An e-shop photo is for the admin alone (Roman, 7 Nov 2026).
+     */
+    public const PHOTO_DRIVE = 'drive';
 
-    protected $casts = ['enabled' => 'bool', 'in_stock' => 'bool', 'sort' => 'int', 'print_overrides' => 'array'];
+    public const PHOTO_UPLOAD = 'upload';
+
+    public const PHOTO_ESHOP = 'eshop';
+
+    public const PHOTO_PRINT = 'print';
+
+    protected $fillable = ['farm_material_id', 'code', 'name', 'name_en', 'manufacturer', 'hex', 'photo_path', 'photo_source', 'drive_folder', 'source_url', 'source_meta', 'print_overrides', 'test_notes', 'enabled', 'in_stock', 'sort'];
+
+    protected $casts = ['enabled' => 'bool', 'in_stock' => 'bool', 'sort' => 'int', 'print_overrides' => 'array', 'source_meta' => 'array'];
 
     /** "PLA+, modrá/blue, Matplace": kind, both names and the maker – how the admin tells spools apart in every list. */
     public function fullLabel(): string
