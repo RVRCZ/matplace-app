@@ -41,6 +41,12 @@
                             <label class="{{ $lb }}">g<input type="number" step="1" min="0" name="slots[{{ $p->id }}][{{ $i }}][remaining_g]" data-grams value="{{ $s ? round($s->remaining_g) : 0 }}" class="{{ $in }}"></label>
                             <label class="flex items-center gap-1 pb-2 text-xs"><input type="checkbox" name="slots[{{ $p->id }}][{{ $i }}][enabled]" value="1" data-enabled @checked($s?->enabled) class="h-4 w-4 accent-action"> {{ __('farm.admin.slots_offer') }}</label>
                         </div>
+                        {{-- a spool bought on the web: the link of its product page, read by the agent into a card (TODO #71, docs/AL.md §21) --}}
+                        <div class="mt-1 flex items-end gap-1" data-shop>
+                            <label class="{{ $lb }} min-w-0 flex-1">{{ __('farm.admin.shop.link') }}<input type="url" data-shop-url placeholder="https://…" class="{{ $in }} text-xs"></label>
+                            <button type="button" data-shop-load data-printer="{{ $p->id }}" data-slot="{{ $i }}" class="btn-quiet shrink-0 text-xs">{{ __('farm.admin.shop.load') }}</button>
+                        </div>
+                        <p class="mt-1 hidden text-[11px] text-slate-600" data-shop-status></p>
                         @if($want && ! $want['id'])<p class="mt-1 text-[11px] text-amber-700">{{ __('farm.admin.slots_plan_unknown', ['want' => $want['want']]) }}</p>@endif
                         @error("slots.{$p->id}.{$i}.color")<p class="mt-1 text-[11px] text-red-700">{{ $message }}</p>@enderror
                     </div>
@@ -54,6 +60,8 @@
         <button class="btn-primary" onclick="return confirm(@js(__('farm.admin.slots_confirm')))">{{ __('farm.admin.slots_save') }}</button>
     </div>
 </form>
+
+@include('admin.farm.shop_card')
 
 <script>
     // "Předvyplnit podle rozpisu": every slot that the plan knows takes the planned colour, is offered, and gets 1000 g

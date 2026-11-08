@@ -100,6 +100,14 @@
                                 <label class="flex items-center gap-2 pb-2 text-sm"><input type="checkbox" name="enabled" value="1" @checked($c->enabled) class="h-4 w-4 accent-action"> nabízet</label>
                                 <button class="btn-quiet text-sm">Uložit</button>
                                 @if($c->code)<input type="hidden" name="code" value="{{ $c->code }}">@endif
+                                @if(! $c->exists)
+                                    {{-- a spool bought on the web: the agent reads its product page into a card (TODO #71, docs/AL.md §21) --}}
+                                    <div class="sm:col-span-8 flex flex-wrap items-end gap-2 text-xs" data-shop>
+                                        <label class="{{ $lb }} min-w-[16rem] flex-1">{{ __('farm.admin.shop.link') }} <span class="font-normal text-slate-500">· {{ __('farm.admin.shop.materials_hint') }}</span><input type="url" data-shop-url placeholder="https://…" class="{{ $in }} text-xs"></label>
+                                        <button type="button" data-shop-load data-kind="{{ $m->id }}" class="btn-quiet text-xs">{{ __('farm.admin.shop.load') }}</button>
+                                        <p class="hidden w-full text-[11px] text-slate-600" data-shop-status></p>
+                                    </div>
+                                @endif
                                 <details class="sm:col-span-8 text-xs">
                                     <summary class="cursor-pointer text-slate-500">{{ $c->code ?? 'nastavení' }}@if($c->exists && $c->manufacturer) · {{ $c->manufacturer }}@endif {{ '' }}@if($c->drive_folder) · <a class="underline" target="_blank" href="https://drive.google.com/drive/folders/{{ $c->drive_folder }}">fotky na Drive</a>@endif · vlastní nastavení tisku {{ $c->print_overrides ? '✓' : '–' }}@if($c->exists) · přeřadit / fotka @endif</summary>
                                     <div class="mt-1 grid gap-2 sm:grid-cols-3">
@@ -133,6 +141,7 @@
         </section>
     @endforeach
 </div>
+@include('admin.farm.shop_card')
 {{-- the kind (and its colours) the address points at opens, the rest stays folded --}}
 <script>
     (function () {
