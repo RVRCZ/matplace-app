@@ -20,7 +20,8 @@ final class ColorCatalog
 
     public const CSV_COLUMNS = ['code', 'material', 'name', 'name_en', 'hex', 'in_stock', 'sort'];
 
-    private const CHECK_NOTE = 'hex z fotky, zkontrolovat';
+    /** The note a colour gets when its hex is a guess a person should look at (a rainbow's dominant tone, a model's estimate). */
+    public const CHECK_NOTE = 'hex z fotky, zkontrolovat';
 
     public function __construct(private readonly Translator $translator) {}
 

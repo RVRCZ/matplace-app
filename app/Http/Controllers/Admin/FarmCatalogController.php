@@ -7,6 +7,7 @@ use App\Domain\Farm\FarmSettings;
 use App\Domain\Farm\OrderFlow;
 use App\Domain\Farm\PrinterFiles;
 use App\Domain\Farm\ProfileLibrary;
+use App\Domain\Farm\SlotRules;
 use App\Domain\Farm\Wallet;
 use App\Http\Controllers\Controller;
 use App\Models\CreditTransaction;
@@ -133,28 +134,8 @@ class FarmCatalogController extends Controller
      */
     private function manualOnlyRule(FarmPrinter $printer, string $mode, array $rows, string $field): array
     {
-        if ($mode !== FarmPrinter::MODE_AGENT) {
-            return [$rows, []];
-        }
-        $ids = array_filter(array_map(fn ($r) => is_numeric($r['color'] ?? null) ? (int) $r['color'] : 0, $rows));
-        $colors = $ids ? FarmColor::with('material')->whereIn('id', $ids)->get()->keyBy('id') : collect();
-        $stored = $printer->exists ? $printer->slots()->pluck('farm_color_id', 'slot') : collect();
-        $notices = [];
-        foreach ($rows as $i => $r) {
-            $color = $colors->get((int) ($r['color'] ?? 0));
-            if (! $color || ! $color->material?->isManualOnly()) {
-                continue;
-            }
-            if ((int) ($stored[(int) $i] ?? 0) !== (int) $color->id) {
-                throw ValidationException::withMessages([sprintf($field, $i) => __('farm.admin.manual_only_refused', ['color' => $color->fullLabel(), 'printer' => $printer->name])]);
-            }
-            if (! empty($r['enabled'])) {
-                $notices[] = __('farm.admin.manual_only_disabled', ['n' => (int) $i + 1, 'color' => $color->fullLabel(), 'printer' => $printer->name]);
-            }
-            $rows[$i]['enabled'] = 0;
-        }
-
-        return [$rows, $notices];
+        // shared with the card of a spool read from an e-shop (FilamentFromShop::save), so both doors apply the one rule
+        return SlotRules::manualOnly($printer, $mode, $rows, $field);
     }
 
     /** Every maker named so far, ours first: the suggestions under the "výrobce" fields. */

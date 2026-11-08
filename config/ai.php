@@ -23,7 +23,8 @@ return [
         'assistant_effort' => env('ANTHROPIC_ASSISTANT_EFFORT', 'low'),
         // a cheaper model for one kind of the assistant's work (empty = assistant_model); classifying 8 000 catalogue models adds up
         // the designer of the tool pages (a wish in words → the values of the form) understands vague wishes fast and cheaply on a Sonnet
-        'kind_models' => ['classify' => env('ANTHROPIC_CLASSIFY_MODEL'), 'design' => env('ANTHROPIC_DESIGN_MODEL', 'claude-sonnet-5-5')],
+        // the filament card from an e-shop page (TODO #71, docs/AL.md §21): one page with up to 8 pictures, a Sonnet reads it for crowns
+        'kind_models' => ['classify' => env('ANTHROPIC_CLASSIFY_MODEL'), 'design' => env('ANTHROPIC_DESIGN_MODEL', 'claude-sonnet-5-5'), 'filament' => env('ANTHROPIC_FILAMENT_MODEL', 'claude-sonnet-5-5')],
     ],
 
     /*
