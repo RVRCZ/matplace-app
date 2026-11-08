@@ -17,6 +17,7 @@ use App\Models\ModelFile;
 use App\Support\Track;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
@@ -28,7 +29,6 @@ class UploadController extends Controller
     public function store(Request $request, ConverterChain $converters): JsonResponse
     {
         $maxKb = (int) config('uploads.max_mb', 120) * 1024;
-        $formats = $converters->inputFormats();
 
         try {
             $request->validate([
@@ -42,7 +42,20 @@ class UploadController extends Controller
             throw $e;
         }
 
-        $upload = $request->file('file');
+        $file = self::accept($request->file('file'), $request, $converters);
+
+        return response()->json(['file' => self::describe($file)], 201);
+    }
+
+    /**
+     * A model file as the calculator takes it: checked by its extension, stored, processed and measured. The home page's
+     * router hands its 3D file in here too (App\Domain\Intake\IntakeService, docs/AN.md §22), so both ways are one.
+     *
+     * @throws ValidationException a format the converters do not read
+     */
+    public static function accept(UploadedFile $upload, Request $request, ConverterChain $converters): ModelFile
+    {
+        $formats = $converters->inputFormats();
         $ext = strtolower($upload->getClientOriginalExtension());
         if (! in_array($ext, $formats, true)) {
             Track::event('failed', null, ['step' => 'upload', 'kind' => 'format']);
@@ -72,7 +85,7 @@ class UploadController extends Controller
         Track::event('upload', $file, ['kind' => $ext]);
         self::measure($file->refresh());
 
-        return response()->json(['file' => self::describe($file)], 201);
+        return $file;
     }
 
     public function show(ModelFile $modelFile): JsonResponse
