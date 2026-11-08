@@ -20,6 +20,7 @@
 @endphp
 <section class="mt-4 rounded-xl border border-slate-200 bg-white p-4 text-sm">
     <h2 class="font-bold">Katalog barev: {{ $allColors->count() }} cívek</h2>
+    @if($pendingPhotos)<p class="mt-1 text-sm font-semibold text-amber-800" data-pending-photos="{{ $pendingPhotos }}">{{ __('farm.admin.shop.proposals.header', ['n' => $pendingPhotos]) }}</p>@endif
     <p class="mt-1 text-slate-600">Chybí hex: <strong class="{{ $noHex ? 'text-amber-700' : '' }}">{{ $noHex }}</strong> · chybí anglický název: <strong class="{{ $noEn ? 'text-amber-700' : '' }}">{{ $noEn }}</strong>. Hex se čte z fotky výtisku (bez pozadí, střed vzorku), anglický název se přeloží z českého. Duhové, dřevěné a svítící filamenty dostanou převládající barvu a poznámku „zkontrolovat“.</p>
     <div class="mt-3 flex flex-wrap items-end gap-4">
         <form method="post" action="{{ route('admin.farm.colors.fill') }}">@csrf<button class="btn-quiet text-sm">Doplnit hex a anglické názvy</button></form>
@@ -100,8 +101,16 @@
                                 <label class="flex items-center gap-2 pb-2 text-sm"><input type="checkbox" name="enabled" value="1" @checked($c->enabled) class="h-4 w-4 accent-action"> nabízet</label>
                                 <button class="btn-quiet text-sm">Uložit</button>
                                 @if($c->code)<input type="hidden" name="code" value="{{ $c->code }}">@endif
+                                @if(! $c->exists)
+                                    {{-- a spool bought on the web: the agent reads its product page into a card (TODO #71, docs/AL.md §21) --}}
+                                    <div class="sm:col-span-8 flex flex-wrap items-end gap-2 text-xs" data-shop>
+                                        <label class="{{ $lb }} min-w-[16rem] flex-1">{{ __('farm.admin.shop.link') }} <span class="font-normal text-slate-500">· {{ __('farm.admin.shop.materials_hint') }}</span><input type="url" data-shop-url placeholder="https://…" class="{{ $in }} text-xs"></label>
+                                        <button type="button" data-shop-load data-kind="{{ $m->id }}" class="btn-quiet text-xs">{{ __('farm.admin.shop.load') }}</button>
+                                        <p class="hidden w-full text-[11px] text-slate-600" data-shop-status></p>
+                                    </div>
+                                @endif
                                 <details class="sm:col-span-8 text-xs">
-                                    <summary class="cursor-pointer text-slate-500">{{ $c->code ?? 'nastavení' }}@if($c->exists && $c->manufacturer) · {{ $c->manufacturer }}@endif {{ '' }}@if($c->drive_folder) · <a class="underline" target="_blank" href="https://drive.google.com/drive/folders/{{ $c->drive_folder }}">fotky na Drive</a>@endif · vlastní nastavení tisku {{ $c->print_overrides ? '✓' : '–' }}@if($c->exists) · přeřadit / fotka @endif</summary>
+                                    <summary class="cursor-pointer text-slate-500">{{ $c->code ?? 'nastavení' }}@if($c->exists && $c->manufacturer) · {{ $c->manufacturer }}@endif {{ '' }}@if($c->drive_folder) · <a class="underline" target="_blank" href="https://drive.google.com/drive/folders/{{ $c->drive_folder }}">fotky na Drive</a>@endif · vlastní nastavení tisku {{ $c->print_overrides ? '✓' : '–' }}@if($c->photo_source) · {{ __('farm.admin.shop.photo_source.'.$c->photo_source) }}@endif {{ '' }}@if($c->exists) · přeřadit / fotka @endif</summary>
                                     <div class="mt-1 grid gap-2 sm:grid-cols-3">
                                         @if($c->exists)
                                             <label class="{{ $lb }}">Druh materiálu (přeřazení špatně zařazené barvy)
@@ -111,6 +120,12 @@
                                         <label class="{{ $lb }}">{{ __('farm.admin.maker') }} <span class="font-normal">({{ __('farm.admin.maker_hint') }})</span><input name="manufacturer" list="farm-makers" value="{{ $c->manufacturer }}" placeholder="{{ $m->maker() }}" class="{{ $in }}"></label>
                                         @if($c->exists)
                                             <label class="flex items-center gap-2 pt-5 text-sm"><input type="checkbox" name="remove_photo" value="1" class="h-4 w-4 accent-action"> smazat současnou fotku (nová se nahraje polem „Fotka výtisku“)</label>
+                                            {{-- the shop page the spool came from; "Načíst znovu" fills what the colour lacks (docs/AL.md §21.8) --}}
+                                            <div class="sm:col-span-3 flex flex-wrap items-end gap-2" data-shop>
+                                                <label class="{{ $lb }} min-w-[16rem] flex-1">{{ __('farm.admin.shop.field.source_url') }}<input type="url" name="source_url" data-shop-url value="{{ $c->source_url }}" placeholder="https://…" class="{{ $in }} text-xs"></label>
+                                                <button type="button" data-shop-load data-color="{{ $c->id }}" class="btn-quiet text-xs">{{ __('farm.admin.shop.reload') }}</button>
+                                                <p class="hidden w-full text-[11px] text-slate-600" data-shop-status></p>
+                                            </div>
                                         @endif
                                     </div>
                                     <div class="mt-1 grid gap-2 sm:grid-cols-2">
@@ -119,6 +134,24 @@
                                     </div>
                                 </details>
                             </form>
+                            @if($c->exists && isset($proposals[$c->id]))
+                                {{-- photos of our prints in this colour, waiting for the admin's yes (ColorPhotoProposals, docs/AL.md §21.7) --}}
+                                <div class="-mt-1 rounded-xl border border-amber-200 bg-amber-50 p-2 text-xs" data-photo-proposals="{{ $c->id }}">
+                                    <p class="font-semibold text-amber-900">{{ __('farm.admin.shop.proposals.title', ['n' => $proposals[$c->id]->count()]) }} <span class="font-normal text-slate-600">· {{ __('farm.admin.shop.proposals.hint') }}</span></p>
+                                    <div class="mt-1 flex flex-wrap gap-3">
+                                        @foreach($proposals[$c->id] as $pp)
+                                            <div class="flex items-center gap-2">
+                                                <img src="{{ $pp->url() }}" data-zoom="{{ $pp->url() }}" alt="" class="h-16 w-24 cursor-zoom-in rounded-lg object-cover">
+                                                <div class="space-y-1">
+                                                    <p class="text-slate-600">@if($pp->order?->number){{ __('farm.admin.shop.proposals.from_order', ['number' => $pp->order->number]) }} · @endif{{ $pp->created_at?->format('j. n. Y') }}</p>
+                                                    <form method="post" action="{{ route('admin.farm.colors.proposals.approve', $pp) }}" class="inline">@csrf<button class="btn-quiet text-xs">{{ __('farm.admin.shop.proposals.use') }}</button></form>
+                                                    <form method="post" action="{{ route('admin.farm.colors.proposals.reject', $pp) }}" class="inline">@csrf<button class="text-xs text-red-700 underline">{{ __('farm.admin.shop.proposals.reject') }}</button></form>
+                                                </div>
+                                            </div>
+                                        @endforeach
+                                    </div>
+                                </div>
+                            @endif
                             @if($c->exists)
                                 @if(isset($usedColors[$c->id]))
                                     <p class="-mt-1 px-2 text-right text-[11px] text-slate-400">{{ __('farm.admin.color_in_use', ['color' => $c->name, 'where' => __('farm.admin.usage.slots_or_orders')]) }}</p>
@@ -133,6 +166,7 @@
         </section>
     @endforeach
 </div>
+@include('admin.farm.shop_card')
 {{-- the kind (and its colours) the address points at opens, the rest stays folded --}}
 <script>
     (function () {

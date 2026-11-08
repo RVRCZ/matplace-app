@@ -8,6 +8,7 @@ import { bootMeasure } from './measure';
 import { bootMenu } from './menu';
 import { bootBar } from './bar';
 import { mountActionBars } from './sticky';
+import { bootFilamentShop } from './filament_shop';
 
 export function bootSite(): void {
     bootThumbs();
@@ -19,4 +20,5 @@ export function bootSite(): void {
     bootMenu();
     bootBar();
     mountActionBars();   // the bars fixed to the bottom with the price and the main action (docs/AN.md §18)
+    bootFilamentShop();  // admin: the filament card from an e-shop link (docs/AL.md §21)
 }

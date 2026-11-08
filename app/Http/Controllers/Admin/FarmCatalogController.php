@@ -3,15 +3,19 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Domain\Farm\ColorCatalog;
+use App\Domain\Farm\ColorPhotoProposals;
 use App\Domain\Farm\FarmSettings;
 use App\Domain\Farm\OrderFlow;
 use App\Domain\Farm\PrinterFiles;
 use App\Domain\Farm\ProfileLibrary;
+use App\Domain\Farm\Shop\ShopFetcher;
+use App\Domain\Farm\SlotRules;
 use App\Domain\Farm\Wallet;
 use App\Http\Controllers\Controller;
 use App\Models\CreditTransaction;
 use App\Models\FarmAgent;
 use App\Models\FarmColor;
+use App\Models\FarmColorPhotoProposal;
 use App\Models\FarmMaterial;
 use App\Models\FarmOrder;
 use App\Models\FarmPrinter;
@@ -133,28 +137,8 @@ class FarmCatalogController extends Controller
      */
     private function manualOnlyRule(FarmPrinter $printer, string $mode, array $rows, string $field): array
     {
-        if ($mode !== FarmPrinter::MODE_AGENT) {
-            return [$rows, []];
-        }
-        $ids = array_filter(array_map(fn ($r) => is_numeric($r['color'] ?? null) ? (int) $r['color'] : 0, $rows));
-        $colors = $ids ? FarmColor::with('material')->whereIn('id', $ids)->get()->keyBy('id') : collect();
-        $stored = $printer->exists ? $printer->slots()->pluck('farm_color_id', 'slot') : collect();
-        $notices = [];
-        foreach ($rows as $i => $r) {
-            $color = $colors->get((int) ($r['color'] ?? 0));
-            if (! $color || ! $color->material?->isManualOnly()) {
-                continue;
-            }
-            if ((int) ($stored[(int) $i] ?? 0) !== (int) $color->id) {
-                throw ValidationException::withMessages([sprintf($field, $i) => __('farm.admin.manual_only_refused', ['color' => $color->fullLabel(), 'printer' => $printer->name])]);
-            }
-            if (! empty($r['enabled'])) {
-                $notices[] = __('farm.admin.manual_only_disabled', ['n' => (int) $i + 1, 'color' => $color->fullLabel(), 'printer' => $printer->name]);
-            }
-            $rows[$i]['enabled'] = 0;
-        }
-
-        return [$rows, $notices];
+        // shared with the card of a spool read from an e-shop (FilamentFromShop::save), so both doors apply the one rule
+        return SlotRules::manualOnly($printer, $mode, $rows, $field);
     }
 
     /** Every maker named so far, ours first: the suggestions under the "výrobce" fields. */
@@ -282,6 +266,7 @@ class FarmCatalogController extends Controller
         $color->code = ColorCatalog::codeFor($kind, $color->name_en ?: $color->name, $maker ?: null);
         if ($photo = $request->file("slots.$slot.new.photo")) {
             $color->photo_path = $photo->storeAs('farm/colors', Str::uuid().'.'.$photo->extension(), 'public');
+            $color->photo_source = FarmColor::PHOTO_UPLOAD;
         }
         $color->save();
 
@@ -323,10 +308,35 @@ class FarmCatalogController extends Controller
             ->merge(FarmOrder::query()->whereNotNull('farm_color_id')->distinct()->pluck('farm_color_id'))
             ->merge(FarmOrder::query()->whereNotNull('second_color_id')->distinct()->pluck('second_color_id'))->map(fn ($id) => (int) $id)->unique()->flip();
 
+        // photos of our prints waiting for the admin's yes as the pictures of their colours (ColorPhotoProposals, docs/AL.md §21.7)
+        $proposals = ColorPhotoProposals::pending();
+
         return view('admin.farm.materials', [
             'materials' => $materials, 'template' => $template, 'makers' => $this->makers(),
             'usedColors' => $used, 'usedKinds' => FarmOrder::query()->distinct()->pluck('farm_material_id')->map(fn ($id) => (int) $id)->flip(),
+            'proposals' => $proposals, 'pendingPhotos' => $proposals->flatten()->count(),
         ]);
+    }
+
+    /** "Použít": a photo of our print becomes the colour's photo (FarmColor::customerPhoto shows it to customers). */
+    public function approveProposal(Request $request, FarmColorPhotoProposal $proposal, ColorPhotoProposals $proposals): RedirectResponse
+    {
+        if ($proposal->status !== FarmColorPhotoProposal::STATUS_PENDING) {
+            return back()->with('error', __('farm.admin.shop.proposals.decided'));
+        }
+        $color = $proposals->approve($proposal, $request->user()?->id);
+
+        return redirect()->route('admin.farm.materials')->withFragment('kind-'.$color->farm_material_id)->with('status', __('farm.admin.shop.proposals.approved', ['color' => $color->name]));
+    }
+
+    public function rejectProposal(Request $request, FarmColorPhotoProposal $proposal, ColorPhotoProposals $proposals): RedirectResponse
+    {
+        if ($proposal->status !== FarmColorPhotoProposal::STATUS_PENDING) {
+            return back()->with('error', __('farm.admin.shop.proposals.decided'));
+        }
+        $proposals->reject($proposal, $request->user()?->id);
+
+        return redirect()->route('admin.farm.materials')->withFragment('kind-'.$proposal->color?->farm_material_id)->with('status', __('farm.admin.shop.proposals.rejected'));
     }
 
     public function saveMaterial(Request $request, ?FarmMaterial $material = null): RedirectResponse
@@ -435,9 +445,22 @@ class FarmCatalogController extends Controller
             'remove_photo' => ['nullable', 'boolean'],
             'print_overrides' => ['nullable', 'json'],
             'test_notes' => ['nullable', 'string', 'max:2000'],
+            'source_url' => ['nullable', 'string', 'max:500'],
         ]);
         $color = $color ?? new FarmColor;
         $kind = FarmMaterial::findOrFail((int) $data['farm_material_id']);
+        // the shop page the spool was bought on (docs/AL.md §21.8): stored in its one normalised form, one colour per link
+        if (array_key_exists('source_url', $data)) {
+            $link = trim((string) $data['source_url']);
+            $normalized = $link !== '' ? ShopFetcher::normalize($link) : null;
+            if ($link !== '' && $normalized === null) {
+                throw ValidationException::withMessages(['source_url' => __('farm.admin.shop.url_invalid')]);
+            }
+            if ($normalized !== null && FarmColor::where('source_url', $normalized)->where('id', '!=', (int) $color->id)->exists()) {
+                throw ValidationException::withMessages(['source_url' => __('farm.admin.shop.url_taken')]);
+            }
+            $color->source_url = $normalized;
+        }
         $maker = trim((string) ($data['manufacturer'] ?? ''));
         $color->fill(['farm_material_id' => $kind->id, 'name' => $data['name'], 'name_en' => $data['name_en'] ?? null, 'code' => $data['code'] ?? null,
             'manufacturer' => $maker !== '' && $maker !== $kind->maker() ? $maker : null,   // the kind's maker is not repeated on every colour
@@ -449,9 +472,12 @@ class FarmCatalogController extends Controller
         if (($request->boolean('remove_photo') || $request->hasFile('photo')) && $color->photo_path) {
             Storage::disk('public')->delete($color->photo_path);
             $color->photo_path = null;
+            $color->photo_source = null;
         }
         if ($request->hasFile('photo')) {
+            // where the photo came from: the admin's upload is ours and customers see it (FarmColor::customerPhoto, docs/AL.md §21)
             $color->photo_path = $request->file('photo')->storeAs('farm/colors', Str::uuid().'.'.$request->file('photo')->extension(), 'public');
+            $color->photo_source = FarmColor::PHOTO_UPLOAD;
         }
         $color->save();
 

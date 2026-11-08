@@ -87,6 +87,7 @@ class FarmCatalogAdminTest extends TestCase
         $this->assertSame('#fa8072', $color->hex);
         $this->assertTrue($color->enabled && $color->in_stock, 'offered at once');
         Storage::disk('public')->assertExists($color->photo_path);
+        $this->assertSame(FarmColor::PHOTO_UPLOAD, $color->photo_source, 'an uploaded photo is ours: customers see it (docs/AL.md §21)');
         $this->assertSame([], $color->sliceOverrides(), 'prints with the settings of its kind until it gets its own');
         $slot = $printer->slots()->where('slot', 3)->firstOrFail();
         $this->assertSame($color->id, $slot->farm_color_id);

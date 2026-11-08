@@ -14,9 +14,21 @@ class FarmColor extends Model
     /** Override keys that go into the finished G-code; every other key changes the slice itself. */
     public const TEMP_KEYS = ['nozzle_temp', 'nozzle_temp_first', 'bed_temp'];
 
-    protected $fillable = ['farm_material_id', 'code', 'name', 'name_en', 'manufacturer', 'hex', 'photo_path', 'drive_folder', 'print_overrides', 'test_notes', 'enabled', 'in_stock', 'sort'];
+    /**
+     * Where the photo came from (TODO #71, docs/AL.md §21): the Drive export, an upload by the admin, the e-shop page the
+     * colour was read from, or a photo of our own print. An e-shop photo is for the admin alone (Roman, 7 Nov 2026).
+     */
+    public const PHOTO_DRIVE = 'drive';
 
-    protected $casts = ['enabled' => 'bool', 'in_stock' => 'bool', 'sort' => 'int', 'print_overrides' => 'array'];
+    public const PHOTO_UPLOAD = 'upload';
+
+    public const PHOTO_ESHOP = 'eshop';
+
+    public const PHOTO_PRINT = 'print';
+
+    protected $fillable = ['farm_material_id', 'code', 'name', 'name_en', 'manufacturer', 'hex', 'photo_path', 'photo_source', 'drive_folder', 'source_url', 'source_meta', 'print_overrides', 'test_notes', 'enabled', 'in_stock', 'sort'];
+
+    protected $casts = ['enabled' => 'bool', 'in_stock' => 'bool', 'sort' => 'int', 'print_overrides' => 'array', 'source_meta' => 'array'];
 
     /** "PLA+, modrá/blue, Matplace": kind, both names and the maker – how the admin tells spools apart in every list. */
     public function fullLabel(): string
@@ -83,5 +95,15 @@ class FarmColor extends Model
     public function photoUrl(): ?string
     {
         return $this->photo_path ? Storage::disk('public')->url($this->photo_path) : null;
+    }
+
+    /**
+     * The photo a customer may see: ours (the Drive export, an upload, a photo of our print), never the e-shop's
+     * (Roman, 7 Nov 2026; docs/AL.md §21). A row without a source (the catalogue before TODO #71) counts as ours.
+     * Every place that shows a colour's photo to a customer goes through here; the admin's pages use photoUrl().
+     */
+    public function customerPhoto(): ?string
+    {
+        return $this->photo_source === self::PHOTO_ESHOP ? null : $this->photoUrl();
     }
 }

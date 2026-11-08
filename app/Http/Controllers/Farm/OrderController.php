@@ -958,7 +958,7 @@ class OrderController extends Controller
                 $places = $r['spools']->map($place)->unique()->values()->all();
 
                 return [
-                    'slot' => $r['slot']->id, 'name' => $r['color']->displayName(), 'kind' => $r['color']->material->label(), 'hex' => $r['color']->hex, 'finish' => $r['color']->material->finish, 'photo' => $r['color']->photoUrl(),
+                    'slot' => $r['slot']->id, 'name' => $r['color']->displayName(), 'kind' => $r['color']->material->label(), 'hex' => $r['color']->hex, 'finish' => $r['color']->material->finish, 'photo' => $r['color']->customerPhoto(),
                     // the page shows one tile per colour, its kinds of plastic as a switch inside: the colours of one tile share this key
                     'group' => Str::lower($r['color']->displayName()).'|'.(string) $r['color']->material->finish,
                     'enough' => $r['enough'],
@@ -971,7 +971,7 @@ class OrderController extends Controller
                     // machine that holds this colour (the order goes where both spools are, machineFor); every colour once
                     'second' => ($multi ? $this->orders->secondSpoolsAcross($r['slot'], $order) : collect())
                         ->filter(fn ($s) => ! $required || $s->printer->isAgentDriven())->values()
-                        ->map(fn ($s) => ['slot' => $s->id, 'name' => $s->color->displayName(), 'kind' => $s->color->material->label(), 'hex' => $s->color->hex, 'finish' => $s->color->material->finish, 'photo' => $s->color->photoUrl(), 'main' => $s->main_slot_id] + $where($s))->values()->all(),
+                        ->map(fn ($s) => ['slot' => $s->id, 'name' => $s->color->displayName(), 'kind' => $s->color->material->label(), 'hex' => $s->color->hex, 'finish' => $s->color->material->finish, 'photo' => $s->color->customerPhoto(), 'main' => $s->main_slot_id] + $where($s))->values()->all(),
                     'color_id' => $r['color']->id,
                     // more colours than one: every machine that holds this colour, with its first-colour slot and its other spools –
                     // the page offers each change or part the colours one machine holds together with the first colour and the other
@@ -983,7 +983,7 @@ class OrderController extends Controller
                             // empty and the unfit ones too, each with its reason), for the chooser's machine card (docs/AL.md §19)
                             'limit' => $f->printer->colorLimit(), 'changer' => $f->printer->isAgentDriven(), 'positions' => $positions($f),
                             'colors' => $this->orders->secondSpools($f)
-                                ->map(fn ($s) => ['slot' => $s->id, 'color_id' => $s->farm_color_id, 'name' => $s->color->displayName(), 'kind' => $s->color->material->label(), 'hex' => $s->color->hex, 'finish' => $s->color->material->finish, 'photo' => $s->color->photoUrl()] + $where($s))->values()->all()]
+                                ->map(fn ($s) => ['slot' => $s->id, 'color_id' => $s->farm_color_id, 'name' => $s->color->displayName(), 'kind' => $s->color->material->label(), 'hex' => $s->color->hex, 'finish' => $s->color->material->finish, 'photo' => $s->color->customerPhoto()] + $where($s))->values()->all()]
                             + ($admin ? ['code' => $place($f), 'printer_code' => $f->printer->shortCode()] : []))
                         ->values()->all() : [],
                     // the time, the weight and the price on the page were computed for this colour's machine and kind

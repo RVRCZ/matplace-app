@@ -11,6 +11,7 @@ use App\Http\Controllers\Admin\FarmFileController;
 use App\Http\Controllers\Admin\FarmOrderController;
 use App\Http\Controllers\Admin\FarmTestPhotoController;
 use App\Http\Controllers\Admin\FarmTuningController;
+use App\Http\Controllers\Admin\FilamentShopController;
 use App\Http\Controllers\Admin\MetaController as AdminMetaController;
 use App\Http\Controllers\Admin\SearchConsoleController;
 use App\Http\Controllers\Admin\StatsController as AdminStatsController;
@@ -487,6 +488,16 @@ Route::middleware(['auth', 'role:admin'])->prefix('admin/farm')->name('admin.far
     Route::post('/materials/{material}/delete', [$catalog, 'deleteMaterial'])->name('materials.delete');
     Route::post('/colors/fill', [$catalog, 'fillColors'])->name('colors.fill');
     Route::post('/colors/import', [$catalog, 'importColors'])->name('colors.import');
+    // a spool read from an e-shop link: the job, its state, the pictures it looked at, the admin's yes (TODO #71, docs/AL.md §21)
+    $shop = FilamentShopController::class;
+    Route::post('/colors/from-url', [$shop, 'start'])->name('colors.from_url');
+    Route::get('/colors/from-url/{id}', [$shop, 'status'])->where('id', '[0-9a-f-]{36}')->name('colors.from_url.status');
+    Route::get('/colors/from-url/{id}/image/{n}', [$shop, 'image'])->where(['id' => '[0-9a-f-]{36}', 'n' => '[0-9]{1,2}'])->name('colors.from_url.image');
+    Route::post('/colors/from-url/{id}/save', [$shop, 'save'])->where('id', '[0-9a-f-]{36}')->name('colors.from_url.save');
+    Route::post('/colors/from-url/{id}/cancel', [$shop, 'cancel'])->where('id', '[0-9a-f-]{36}')->name('colors.from_url.cancel');
+    // photos of our prints offered as the pictures of their colours: the admin's yes or no (docs/AL.md §21.7)
+    Route::post('/colors/proposals/{proposal}/approve', [$catalog, 'approveProposal'])->name('colors.proposals.approve');
+    Route::post('/colors/proposals/{proposal}/reject', [$catalog, 'rejectProposal'])->name('colors.proposals.reject');
     Route::post('/colors/new', [$catalog, 'saveColor'])->name('colors.create');
     Route::post('/colors/{color}', [$catalog, 'saveColor'])->name('colors.update');
     Route::post('/colors/{color}/delete', [$catalog, 'deleteColor'])->name('colors.delete');
