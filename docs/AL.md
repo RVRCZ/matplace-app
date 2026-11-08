@@ -2590,3 +2590,154 @@ a pozici řeší farma.** Volba barvy před druhem plastu zůstává (druh je fi
 - **Neověřeno:** živý přepočet a platba v prohlížeči (kryje PHPUnit: přepočet se slotem druhu, platba výměny přes slot
   stroje), produkce (skutečné názvy strojů a pozic Romanovy farmy, fotky cívek na dlaždicích), Kobra X se 7 pozicemi u
   výměn (jen díly v §19), stránka v angličtině a španělštině (texty přes `lang_add`, klíče v `i18n` Blade).
+
+## 21. Filament do tiskárny z odkazu na e-shop: karta od agenta, správce potvrdí (TODO #71, 8. 11. 2026, feature/filament-from-shop)
+
+Zadání `docs/prompts/agent-filament-eshop.md` (Roman 7. 11. 2026: u pozice tiskárny odkaz na e-shop, agent stáhne nejlepší
+obrázek a odstín, převezme doporučená nastavení, jinak obecný profil, uloží do seznamu filamentů; 11 rozhodnutí v zadání).
+Tato sekce popisuje části A až C (data, karta, agent). **D (fronta fotek výtisků) a E (zpětné doplnění) následují.**
+
+### 21.1 Tok
+
+- **Kde:** `/admin/farm/printers/load` má u každé pozice pole „Odkaz na e-shop“ + tlačítko „Načíst z e-shopu“
+  (`slots.blade.php`, `data-shop-load` s `data-printer`/`data-slot`); totéž u formuláře „+ Nová barva“ každého druhu
+  v `/admin/farm/materials` (`data-kind`, bez pozice). Formulář `saveSlots` se nemění: tlačítko je `type="button"` a
+  skript `resources/js/site/filament_shop.ts` (bootovaný z `site/boot.ts`, jen když stránka nese `[data-filament-shop]`)
+  pošle `POST /admin/farm/colors/from-url` `{url, printer_id?, slot?}`, dostane id úlohy a ptá se `GET …/from-url/{id}`
+  každé 2 s; stav píše do `[data-shop-status]` u pozice (ve frontě → čtu stránku → ptám se Claude → hotovo). Hotová
+  karta otevře jeden `<dialog data-shop-dialog>` stránky (`admin/farm/shop_card.blade.php`, texty `farm.admin.shop.*`
+  přes `lang/src/filament_shop.json`).
+- **Úloha** `App\Jobs\ReadFilamentPage` (fronta `config('queue.interactive')`, 1 pokus, 240 s) volá
+  `FilamentFromShop::run(id)`. Stav úlohy a karta leží v **cache** pod `filament_shop:<uuid>` (2 h; produkce má
+  `CACHE_STORE=database`, takže web i worker čtou totéž), zmenšené kopie obrázků v `storage/app/filament-shop/<uuid>/img-N.jpg`
+  (po uložení nebo zrušení karty smazané, složky starší než den zametá `start()`). Stavy `queued`, `reading`, `asking`,
+  `done`, `failed` + `message`; `warnings[]` (`not_product`, `logo`, `not_spool`, `no_photo`, `no_images`, `rate_limited`,
+  `low_confidence`, `no_settings`, `no_hex`, `kind_unknown`).
+- **Opakovaný nákup:** `FilamentFromShop::start()` nejdřív normalizuje adresu (`ShopFetcher::normalize`: http(s), host
+  malými, bez `utm_*`/`fbclid`/`gclid`/`ref`/… a bez kotvy, zbytek dotazu seřazený; Shopify `?variant=` zůstává, je to
+  barva) a hledá `farm_colors.source_url`. Shoda → stav `done` rovnou s `existing {id, label, weight_g, photo, hex}`, žádná
+  úloha, žádné volání Claude; karta říká „Už máme: …“ a nabídne jen „Vložit cívku do pozice“ s gramy.
+- **Uložení** `POST …/from-url/{id}/save` (`FilamentFromShop::save`): `mode` `place` (barva + cívka do pozice, jen z pozice)
+  nebo `color` (jen barva). Nová barva = logika `saveColor`: kód `ColorCatalog::codeFor`, `manufacturer` jen když se liší
+  od výrobce druhu, `in_stock` true, `enabled` podle přepínače, `hex` (prázdný = `UNSET_HEX`), `print_overrides` jen
+  s přepínačem „uložit jako nastavení cívky“, `test_notes` z karty (správce může přepsat), `source_url`, `source_meta`,
+  fotka 800 px JPEG do `farm/colors/<uuid>.jpg` s `photo_source` `eshop` (správce může v kartě kliknout na jiný obrázek
+  stránky, `photo` index). Cívka: `FarmPrinterSlot` `firstOrNew(slot)`, `farm_color_id`, `remaining_g`, `enabled`,
+  pak `ProfileLibrary::sync()`. Pravidlo měniče (`manual_only`) je vytažené do **`App\Domain\Farm\SlotRules::manualOnly`**
+  (`FarmCatalogController::manualOnlyRule` na něj jen deleguje): existující barva jde přes stejnou kontrolu jako
+  `saveSlots`, nová barva druhu `manual_only` do stroje v režimu agent je odmítnuta ještě před zápisem (422, nic se nezapíše).
+  Po uložení se stránka obnoví (`#kind-<id>` v Materiálech).
+- **Zrušit** = `POST …/cancel` (zapomene kartu i obrázky). Obrázky pro kartu jdou přes `GET …/from-url/{id}/image/{n}`
+  z našeho disku, nikdy z adresy e-shopu.
+
+### 21.2 Data (A)
+
+- Migrace `2026_11_08_100000_farm_colors_source_url_and_photo_proposals`: `farm_colors.source_url` (string 500, index),
+  `source_meta` (json: host, fetched_at, title, weight_g, price {amount, currency}, settings jak byla přečtena vč. `declared`,
+  image {url, logo, shows, used}, confidence, model, hex_from, material_suggestion, notes, warnings), `photo_source`
+  (string 16: `drive` | `upload` | `eshop` | `print`; migrace doplní `drive` dnešním fotkám s `drive_folder`, `upload` ostatním
+  s fotkou). `FarmColor::PHOTO_*` konstanty, `source_meta` cast array.
+- Tabulka `farm_color_photo_proposals` (farm_color_id, farm_order_id nullable, path, status pending/approved/rejected,
+  note, decided_at, decided_by) + model `FarmColorPhotoProposal`; plní ji až část D.
+
+### 21.3 Agent (C)
+
+- **`App\Domain\Farm\Shop\ShopFetcher`:** jen `http(s)`, host veřejný: `localhost`, `.local`, `.internal`, `.lan`, `.home`,
+  `.intranet`, `.corp`, `.arpa`, `.test`, `.invalid`, `.example`/`example.com` odmítnuté rovnou; IP literál i každá adresa
+  z DNS (`gethostbynamel` + `dns_get_record` AAAA; v testech `ShopFetcher::$resolver`) musí projít `isPublicAddress`
+  (`FILTER_FLAG_NO_PRIV_RANGE | NO_RES_RANGE`, k tomu `::ffff:` mapované IPv4 a 100.64/10). Přesměrování se sledují
+  **ručně** (`allow_redirects` false, max 5), každý skok znovu přes `assertPublic`. 20 s na požadavek, HTML do 3 MB (čteno po
+  64 kB, `Content-Length` navíc předem), obrázek do 6 MB, UA prohlížeče s `matplace-filament/1.0` na konci. Výjimka
+  `ShopRefused {reason, status}` → texty `farm.admin.shop.refused.*`.
+- **`ShopPageReader::read(url, html)`** (parser `masterminds/html5` z vendoru, bez nové závislosti; záloha `DOMDocument`):
+  JSON-LD `Product`/`ProductGroup` i v `@graph` (name, brand, images, offers, weight, sku, color, description), všechny
+  `@type` (`ItemList`/`CollectionPage`/`OfferCatalog`/`SearchResultsPage` bez `Product` = `signals.listing`), metas `og:*`,
+  `product:*`, `description`; `signals.product` = JSON-LD Product, `og:type` product, microdata `itemtype` Product/Offer
+  nebo Upgates `"pageType":"product"` ve skriptu, nebo Shopify stránka. Viditelný text po textových uzlech bez
+  `script/style/noscript/svg/template/iframe/nav/header/footer/aria-hidden`, mezera mezi inline kusy („Nozzle temperature
+  215 °C“), nový řádek u bloků, do 20 000 znaků. **Kandidátní obrázky** (max 8): `Product.image` → `og:image` → galerie
+  (`<img>`/`<source>` těla mimo `nav/header/footer/aside` a mimo kontejnery `related|recommend|…|variant[-_]?item|variants|swatch`;
+  kontejnery `gallery|product-image|swiper|slider|pd-pics|images-ajax|…` první), největší adresa ze `srcset` (dělené
+  mezerami, Prusa má v adresách čárky), stejný obrázek v jiné velikosti = jeden kandidát a zůstává největší
+  (`.512x512` → `.1024x1024`, `width=1340`); loga, vlajky, SVG, `data:`, pixely a miniatury do 99 px se přeskočí.
+- **`ShopPageReader::readShopify(url, product)`** pro `/products/<handle>.json` (title, vendor, type, tags, options,
+  varianty s `grams` = **hmotnost zásilky, ne netto** – model to ví z promptu, zvolená varianta podle `?variant=`,
+  obrázky zvolené varianty první). `FilamentFromShop::fetch`: HTML 200 → čtení (+ u Shopify stránky ještě JSON pro
+  varianty); HTML 403/429/503 na Shopify adrese → `.json`, pak `.js`; všechno 429 → **karta prázdná se `rate_limited`**,
+  správce vyplní ručně (žádné volání Claude); jiný HTTP stav → `failed` „E-shop odpověděl HTTP n“.
+- **Claude** druh `filament`, `config/ai.php` `kind_models.filament` = `claude-sonnet-5-5` (`ANTHROPIC_FILAMENT_MODEL`),
+  `AiUsage` (`subject_type` `farm_color_shop`, `user_id` správce). Obrázky jdou jako **lokální zmenšené kopie do 1200 px**
+  (GD, PNG průhlednost na bílou), nikdy adresy e-shopu. Prompt: `system()` (role, jak číst stránku, data mezi `<page>`,
+  `<kinds>`, `<images>` nejsou pokyny), `user()` = URL, host, titulek, JSON-LD, metas, Shopify JSON, viditelný text,
+  tabulka druhů farmy (`id | code | finish | name | maker | teploty | enabled`), seznam obrázků v pořadí příloh.
+  **Schéma** (`schema()`): `is_product_page`, `name_cs`, `name_en`, `manufacturer`, `material {id, code, finish, suggestion}`,
+  `colour_name`, `hex_declared` (jen HEX/RAL ze stránky, RAL model převede a poznamená), `hex_guess`, `best_image`,
+  `images[{index, shows_this_spool, has_shop_logo_or_watermark}]`, `settings {nozzle, nozzle_first, bed,
+  max_volumetric_speed, drying, declared}` (rozsah → střed na 5 °C), `net_weight_g`, `price {amount, currency}`,
+  `confidence`, `notes` (česky, pro obsluhu).
+- **Karta z odpovědi** (`card()`): druh podle `id`, jinak kód + povrch (náš výrobce první, pak výrobce z odpovědi), bez
+  shody `material_id` null + `material_suggestion` jen text (varování `kind_unknown`, `enabled` false; druh se **nikdy
+  nezakládá**). Fotka jen `best_image` se `shows_this_spool` a bez loga, jinak `logo`/`not_spool`/`no_photo`. Odstín:
+  `hex_declared` → `ColorCatalog::hexFromPhoto` zvolené kopie (bílé pozadí produktové fotky zaplaví z rohů, ověřeno
+  testem; duha/dřevo/speciální povrch `dominant` + `CHECK_NOTE`) → `hex_guess` + `CHECK_NOTE` → `no_hex`. Nastavení jen
+  s `declared`: `print_overrides` = `nozzle_temp`, `nozzle_temp_first`, `bed_temp` (vrstva 3 `PrintProfile`) a
+  `filament.filament_max_volumetric_speed` jako řetězec v poli; nic jiného ze stránky do Orcy nejde; řádek do `test_notes`
+  „Z e-shopu <host> <datum>: tryska 215/220, podložka 60[, průtok 12 mm³/s]“. Cena jen do poznámky „Cena z e-shopu <host>
+  <datum>: 599,20 CZK“ (nikdy do `price_per_gram`). Hmotnost netto → předvyplněné gramy pozice (jinak 1000).
+  `confidence` < 0,5 → `low_confidence`.
+
+### 21.4 Co které e-shopy dávají (sonda 8. 11. 2026 curlem s UA prohlížeče, fixtures `tests/fixtures/shops/`)
+
+- **prusa3d.com** (`/product/prusament-pla-jet-black-1kg-nfc/`, 977 kB): JSON-LD `Product` (name, brand Prusament, 1 obrázek,
+  offers 599,20 CZK; bez weight) + `FAQPage`, `og:image`, metas `product:price:*`; 103 `<img>` (menu, vlajky, 180px vzorníky
+  barev variant v `VariantItem__VariantLink` – přeskočené); teploty v bloku „Technical Parameters“ („Nozzle temperature 215 °C“,
+  „Heatbed temperature 50-60 °C“); hmotnost jen v názvu „1kg“; HEX/RAL nikde. Styled-components dávají názvy tříd i do
+  `<style>`, fixture bere elementy z těla. Odkazy s `/product/<slug>/`; moje tipnutá adresa bez `-nfc` dala 404.
+- **3djake.cz** (`/bambu-lab/petg-matte-avocado-green`, 95 kB): JSON-LD `BreadcrumbList` + `Product` (name „…, Cívka“, brand
+  Bambu Lab, sku, gtin13, jeden obrázek ve 4 velikostech 128–1024, offers 480 CZK), `og:type` `og:product`, `og:image`;
+  teploty **v pruhu vlastností** `p-attributesBanner` („Doporučená teplota tisku: 230 - 260 °C“, „…vyhřívané podložky:
+  65 - 75 °C“), hmotnost v h1 „(1.000 g)“ a „Obsah: 1.000 g“ – oprava sondy řídící (teploty tam jsou, v textu). Miniatury
+  ostatních barev ve swiperu zůstávají kandidáty (alt jiné barvy; model je má poznat).
+- **majkl3d.cz** (`/p/majkl3d-filaments-pla-1-75mm-1kg-cervena`, 462 kB, platforma Upgates): **žádné JSON-LD**, `og:type`
+  `article`, `og:image` 1000×1000, microdata `itemtype` Offer/AggregateRating a `var upgates = {"pageType":"product",…}`
+  ve skriptu (oba signály bereme). Teploty i hmotnost v textu a v tabulce („Teplota trysky 190-220 °C“, „Teplota podložky
+  35-60 °C“, „Hmotnost cívky 1 kg (netto)“, „Rychlost tisku 40-250 mm/s“, „Sušení před tiskem 45 °C / 6-8 hodin“); varianty
+  barev jako boxy `variant-item-related` (přeskočené). Adresy produktů `/p/<slug>`, kategorie `/filamenty`.
+- **store.sunlu.com** (Shopify): `products.json?limit=5` prošel jednou (155 kB), **hned další požadavek (kolekce
+  `/collections/new-fdm-filaments/products.json`) 429 `local_rate_limited`**, po půl hodině `/products/<handle>.json` 429 (JSON
+  `errors[].code TOO_MANY_REQUESTS`) i HTML 429. „19 B“ ze sondy řídící = `local_rate_limited` + nový řádek, tedy také 429.
+  Limit je na IP a drží desítky minut; ze serveru může první požadavek projít, jinak karta s `rate_limited` k ručnímu
+  doplnění. Fixture `sunlu.json` je položka z `products.json` (stejný tvar jako `/products/<handle>.json`: title, vendor
+  „SUNLU Official Store“, body_html, options Shipment/Type/Color, varianty `grams` 2000 = zásilka 8 cívek, 6 obrázků).
+- **Výpis/kategorie:** `category.html` = hlavička skutečné kategorie Prusa + JSON-LD `ItemList` (skutečná kategorie Prusa
+  žádné JSON-LD nemá); bez `Product` a s `ItemList` agent odmítne před voláním modelu, jinak rozhodne `is_product_page`.
+
+### 21.5 Testy a kontrola
+
+- `tests/Feature/FilamentFromShopTest.php` (14 testů, 263 assertions): karta z pozice → barva + cívka + gramy (kód
+  `PLA_Jet_Black_Prusament`, fotka 800 px `eshop`, `print_overrides` 215/220/60, poznámky, `source_meta`, `PrintProfile`
+  vrstva `spool`, `AiUsage` druh `filament`, obrázky modelu jako lokální `img-0.jpg`, po uložení 404 a složka pryč); logo →
+  bez fotky (a ruční výběr jiného obrázku `photo`); výpis → `not_product` bez volání modelu, i `is_product_page` false;
+  `ftp`/`javascript:`/bez schématu/s heslem → `refused.scheme`, `localhost`/192.168/10./127./169.254/`[::1]`/`.local`/host
+  s DNS 10.0.0.5 → `refused.private_host` bez jediného požadavku, přesměrování do LAN → `failed`, 4 MB → `too_big`, `http://`
+  veřejný projde; normalizace adresy a max 8 obrázků z 12 (9 požadavků); stejný odkaz podruhé → `existing`, jen cívka,
+  žádný druhý dotaz; jen klíče vrstvy 3 (+ `filament_max_volumetric_speed`, cizí klíče zahozené, `declared` false = nic);
+  návrh druhu bez založení (422 bez druhu, počet druhů stejný); `manual_only` do stroje agenta → 422 a nic zapsáno; Shopify
+  429 → `.json` (zvolená varianta, 6 obrázků, 250 g, duha = `hexFromPhoto` dominant + `CHECK_NOTE`) a vše 429 → prázdná karta
+  `rate_limited` ručně uložená; majkl bez JSON-LD (text s teplotami, `og:image` první), 3DJake (brand, teploty, 1024 px);
+  `hexFromPhoto` modrá cívka na bílé; data A; stránky nesou pole a kartu, host 401, zákazník přesměrován.
+- `pint`, `tsc`, `npm run build` (app-BD2w6hZh.js), `lang/src/filament_shop.json` 72 klíčů a `sunlu.json` přes `json.load`
+  s kontrolou duplicit, `lang/{cs,en,es}.json` po `lang_add` totéž. Související sady FarmCatalogAdmin, FarmColorTiles, ColorsPayload,
+  CalcColors, FarmManualOnlyKinds, FarmColorsFill, FarmPages, PrinterPublicPage, PrintPhotos, ToolPhotos, YouTubeSeries (vše, co grep na
+  `photo_path` najde) v jednom běhu: 59 testů, 1 782 assertions, 2 přeskočené.
+- **Neověřeno:** skutečné volání Claude (lokálně `ENGINE_ASSISTANT=fake`; na serveru klíč je), skutečné stránky přes
+  produkční worker (fronta `interactive`), kvalita verdiktů modelu o logu a „je to tato cívka“, GD s WebP na serveru
+  (lokálně ano), karta v prohlížeči (jen PHPUnit na HTML stránek a `tsc`).
+
+### 21.6 Co zbývá
+
+- **D** fronta fotek výtisků (`PrintPhotos` → `farm_color_photo_proposals`, proužek v Materiálech, `FarmColor::customerPhoto()`
+  a jedna podmínka všude, kde zákazník fotku barvy vidí; `eshop` nikdy), **E** `source_url` + „Načíst znovu“ u existující barvy
+  a `farm:colors-from-shop {--missing}`. D a E následují.
+- Zákazník dnes fotku `eshop` vidět **může** (dlaždice #69, kalkulačka): dokud není D, správce buď fotku z e-shopu
+  nepoužije (přepínač v kartě), nebo počítá s tím, že se ukáže. Sunlu: počkat na první ostrý pokus ze serveru.

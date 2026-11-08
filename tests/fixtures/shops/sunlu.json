@@ -1,0 +1,176 @@
+{
+  "product": {
+    "id": 10442294001946,
+    "title": "250g Spool 3D PRINTING FILAMENTS 0.25KG PER ROLL",
+    "handle": "250g-spool-3d-printing-filaments-0-25kg-per-roll",
+    "body_html": "<p data-start=\"180\" data-end=\"236\"><strong>[The Perfect Companion for Young Creative Makers] </strong>SUNLU 250g filament spool, giving young inventors plenty of material to experiment, explore ideas, and create freely—turning imagination into reality.</p>\n<p data-start=\"421\" data-end=\"458\"><strong>[Space-Saving &amp; Easy to Store] </strong>Each mini spool is only <strong data-start=\"483\" data-end=\"527\">one-quarter the size of a standard spool</strong>, keeping workspaces and storage areas neat, organized, and efficient—ideal for homes and classrooms.</p>\n<p data-start=\"635\" data-end=\"676\"><strong>[Creative Color Freedom, No Waste] </strong>Enjoy a versatile multi-color selection for small models and creative projects. Easily switch colors without the waste of large spools that often go unfinished.</p>\n<p data-start=\"844\" data-end=\"893\"><strong>[Stable Compatibility for Smooth Printing] </strong>With a precisely controlled diameter of <strong data-start=\"934\" data-end=\"952\">1.75mm ±0.02mm</strong>, the filament ensures smooth feeding and consistent extrusion for reliable printing results.</p>\n<p data-start=\"1052\" data-end=\"1091\"><strong>[Safe, Non-Toxic &amp; Eco-Friendly] </strong>Made from <strong data-start=\"1102\" data-end=\"1127\">plant-based materials</strong>, this filament emits minimal odor during printing and is <strong data-start=\"1185\" data-end=\"1207\">non-toxic and safe</strong> for home and classroom use. The <strong data-start=\"1240\" data-end=\"1273\">low shrinkage rate (0.1–0.3%)</strong> helps reduce warping and deformation, ensuring accurate dimensions. Eco-friendly manufacturing further minimizes environmental impact.</p>",
+    "published_at": "2026-10-08T00:46:47+08:00",
+    "created_at": "2026-09-30T02:32:16+08:00",
+    "updated_at": "2026-11-08T15:17:23+08:00",
+    "vendor": "SUNLU Official Store",
+    "product_type": "3D Printer Filaments",
+    "tags": [
+      "moq 4"
+    ],
+    "variants": [
+      {
+        "id": 52971063214362,
+        "title": "Ship to Europe / PLA Rainbow / 01",
+        "option1": "Ship to Europe",
+        "option2": "PLA Rainbow",
+        "option3": "01",
+        "sku": null,
+        "available": false,
+        "price": "7.49",
+        "grams": 2000,
+        "product_id": 10442294001946
+      },
+      {
+        "id": 53031802863898,
+        "title": "Ship to Europe / PLA Rainbow / 02",
+        "option1": "Ship to Europe",
+        "option2": "PLA Rainbow",
+        "option3": "02",
+        "sku": null,
+        "available": false,
+        "price": "7.49",
+        "grams": 2000,
+        "product_id": 10442294001946
+      },
+      {
+        "id": 53031802929434,
+        "title": "Ship to Europe / PLA Rainbow / 04",
+        "option1": "Ship to Europe",
+        "option2": "PLA Rainbow",
+        "option3": "04",
+        "sku": null,
+        "available": false,
+        "price": "7.49",
+        "grams": 2000,
+        "product_id": 10442294001946
+      },
+      {
+        "id": 52971063148826,
+        "title": "Ship to Europe / SILK Rainbow / 01",
+        "option1": "Ship to Europe",
+        "option2": "SILK Rainbow",
+        "option3": "01",
+        "sku": null,
+        "available": false,
+        "price": "7.99",
+        "grams": 2000,
+        "product_id": 10442294001946
+      },
+      {
+        "id": 53031802765594,
+        "title": "Ship to Europe / SILK Rainbow / 03",
+        "option1": "Ship to Europe",
+        "option2": "SILK Rainbow",
+        "option3": "03",
+        "sku": null,
+        "available": false,
+        "price": "7.99",
+        "grams": 2000,
+        "product_id": 10442294001946
+      },
+      {
+        "id": 53031802831130,
+        "title": "Ship to Europe / SILK Rainbow / 05",
+        "option1": "Ship to Europe",
+        "option2": "SILK Rainbow",
+        "option3": "05",
+        "sku": null,
+        "available": false,
+        "price": "7.99",
+        "grams": 2000,
+        "product_id": 10442294001946
+      }
+    ],
+    "images": [
+      {
+        "id": 58341132271898,
+        "position": 1,
+        "product_id": 10442294001946,
+        "variant_ids": [],
+        "src": "https://cdn.shopify.com/s/files/1/0152/6507/1190/files/250g_c13ae3fa-b09e-4cb0-8cd4-a0cd234068f7.jpg?v=1794030332",
+        "width": 1500,
+        "height": 1500
+      },
+      {
+        "id": 57909891989786,
+        "position": 2,
+        "product_id": 10442294001946,
+        "variant_ids": [],
+        "src": "https://cdn.shopify.com/s/files/1/0152/6507/1190/files/SUNLU250GFILAMENT8ROLLSENGLISHMOBILE_5.png?v=1791391763",
+        "width": 1000,
+        "height": 1000
+      },
+      {
+        "id": 57909889761562,
+        "position": 3,
+        "product_id": 10442294001946,
+        "variant_ids": [],
+        "src": "https://cdn.shopify.com/s/files/1/0152/6507/1190/files/SUNLU250GFILAMENT8ROLLSENGLISHMOBILE_1.png?v=1791391727",
+        "width": 1000,
+        "height": 1000
+      },
+      {
+        "id": 54728171946266,
+        "position": 4,
+        "product_id": 10442294001946,
+        "variant_ids": [],
+        "src": "https://cdn.shopify.com/s/files/1/0152/6507/1190/files/SUNLU250GFILAMENT8ROLLSENGLISHMOBILE_6.jpg?v=1773391464",
+        "width": 1000,
+        "height": 1000
+      },
+      {
+        "id": 54728171815194,
+        "position": 5,
+        "product_id": 10442294001946,
+        "variant_ids": [],
+        "src": "https://cdn.shopify.com/s/files/1/0152/6507/1190/files/SUNLU250GFILAMENT8ROLLSENGLISHMOBILE_2.jpg?v=1773391464",
+        "width": 1000,
+        "height": 1000
+      },
+      {
+        "id": 54728171847962,
+        "position": 6,
+        "product_id": 10442294001946,
+        "variant_ids": [],
+        "src": "https://cdn.shopify.com/s/files/1/0152/6507/1190/files/SUNLU250GFILAMENT8ROLLSENGLISHMOBILE_3.jpg?v=1773391464",
+        "width": 1000,
+        "height": 1000
+      }
+    ],
+    "options": [
+      {
+        "name": "Shipment",
+        "position": 1,
+        "values": [
+          "Ship to USA",
+          "Ship to Europe"
+        ]
+      },
+      {
+        "name": "Type",
+        "position": 2,
+        "values": [
+          "PLA Rainbow",
+          "SILK Rainbow",
+          "Transparent PLA Rainbow"
+        ]
+      },
+      {
+        "name": "Color",
+        "position": 3,
+        "values": [
+          "01",
+          "02",
+          "04",
+          "03",
+          "05"
+        ]
+      }
+    ]
+  }
+}
