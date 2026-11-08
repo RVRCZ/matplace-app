@@ -732,6 +732,26 @@ export function bootParam(stage: Stage): void {
             if (file && !(e.target as HTMLElement | null)?.closest('input, textarea, dialog')) { e.preventDefault(); void sendFile(file); }
         });
     }
+    // the hidden picture field of the shape tools (the window has its own fields): a file put there is uploaded like a
+    // picked one; the home page's router hands its photo over this way (intake_preload.ts, docs/AN.md §22)
+    const hiddenArt = document.getElementById('param-artwork') as HTMLInputElement | null;
+    if (hiddenArt && !fileInput) {
+        hiddenArt.onchange = async () => {
+            const file = hiddenArt.files?.[0];
+            if (!file) return;
+            const state = document.getElementById('param-artwork-state');
+            if (state) state.textContent = t('param.artwork.uploading');
+            try {
+                const picked = await uploadArtwork(file);
+                setArtwork(picked);
+                strawPicked();
+                void refresh().then(commit);
+            } catch (e) {
+                if (state) state.textContent = (e as Error).message || t('param.artwork.failed');
+            }
+            hiddenArt.value = '';
+        };
+    }
 
     // ── modular organizer: bins on the customer's own grid ─────────────────
     const grid = document.getElementById('bin-grid');

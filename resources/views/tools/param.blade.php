@@ -165,7 +165,8 @@
                     </div>
                 </div>
                 <p class="hint mt-1 !text-xs">{{ __('param.shape.picture.hint') }}</p>
-                <input id="param-artwork" type="file" accept=".svg,image/svg+xml,image/png,image/jpeg,image/webp" class="sr-only" tabindex="-1" aria-hidden="true">
+                {{-- data-intake-photo: the field the home page's router hands its photo to (resources/js/calc/intake_preload.ts) --}}
+                <input id="param-artwork" data-intake-photo type="file" accept=".svg,image/svg+xml,image/png,image/jpeg,image/webp" class="sr-only" tabindex="-1" aria-hidden="true">
             </fieldset>
             @foreach($flagsAt('input') as $flag)
                 <label class="flex items-start gap-3 text-sm text-ink" {!! $whenOf($flag) !!}>

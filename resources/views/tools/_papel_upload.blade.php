@@ -5,6 +5,6 @@
         <span class="block text-sm font-semibold text-ink">{{ __('param.papel.upload') }}</span>
         <span class="block text-xs text-muted">{{ __('param.papel.upload.hint') }}</span>
     </span>
-    <input id="param-artwork-file" type="file" accept="image/png,image/jpeg,image/webp,.svg,image/svg+xml" class="sr-only">
+    <input id="param-artwork-file" data-intake-photo type="file" accept="image/png,image/jpeg,image/webp,.svg,image/svg+xml" class="sr-only">
 </label>
 <p id="param-artwork-msg" class="hidden text-sm" role="status" aria-live="polite"></p>
