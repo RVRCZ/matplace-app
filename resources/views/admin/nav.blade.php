@@ -3,6 +3,7 @@
     $sections = [
         'Statistiky' => ['admin.stats.funnel', ['admin.stats.*', 'admin.search_console.*']],
         'Farma' => ['admin.farm.dashboard', ['admin.farm.*', 'admin.youtube.*']],
+        'Rozcestník' => ['admin.intake.index', ['admin.intake.*']],
         'Katalog' => ['admin.catalog.index', ['admin.catalog.*']],
         'Nástroje' => ['admin.tools.index', ['admin.tools.*']],
         'Kolekce' => ['admin.collections.index', ['admin.collections.*']],

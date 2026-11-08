@@ -469,6 +469,10 @@ return [
             'offline_order' => ':number: printer :printer is offline',
             'error_pending' => ':number: printer :printer reports an error, waiting to see whether it stays',
             'paused' => ':number: :printer paused the print',
+            // the home page's router (docs/AN.md §22): somebody left an e-mail, a person answers
+            'intake' => 'Request from the home page router: :what',
+            'intake_line' => 'Intake: :kind, decision :route, confidence :confidence',
+            'intake_shape' => 'The customer wants a shape made from the photo (by hand through the figurine tool or Tripo).',
             'line_pause_reason' => 'Printer message: :message',
             'line_pause_none' => 'Printer message: :none',
             'line_next_paused' => 'Next: have a look at the printer and the spool. Resume on the screen or with the Resume button in the admin; the next mail comes only with the next pause.',
