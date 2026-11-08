@@ -45,6 +45,10 @@ return [
         'xvfb' => env('ORCA_XVFB', true),
         'work_dir' => env('ORCA_WORK_DIR', storage_path('app/slicer')),
         'timeout' => (int) env('ORCA_TIMEOUT', 180),
+        // a plate of several pieces may take longer: this many seconds more per piece beyond the first, never over timeout_max
+        // (PrepareFarmOrder::sliceTimeout, docs/AL.md §11.10); 0 = every plate gets `timeout`. The job's own timeout follows timeout_max
+        'timeout_per_piece' => (int) env('ORCA_TIMEOUT_PER_PIECE', 60),
+        'timeout_max' => (int) env('ORCA_TIMEOUT_MAX', 1200),
         // the same mesh + parameters + profiles + slicer = the same G-code: kept in work_dir/cache (App\Engines\Slicer\CachedSlicer)
         'cache' => (bool) env('ORCA_CACHE', true),
         'cache_mb' => (int) env('ORCA_CACHE_MB', 3000),

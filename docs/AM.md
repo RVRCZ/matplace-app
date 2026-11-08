@@ -867,7 +867,9 @@ použitých, `G427 R2 P3` kalibruje jen použité). Gramy: Orca 2.5 píše `; fi
 (zástupné označené), `FarmOrder::filamentSlots()` dává `{pozice: pozice}` jen pro použité (např. `{0:0, 1:1, 4:4}`), start pro
 agenta (`Dispatcher`) totéž, agent i správce dostanou **originál řezu** (12d). `OrcaSlicer::slice` počítá hlavičku proti počtu
 skutečně použitých filamentů (zástupné nepočítá), `FakeSlicer` dělá výměny jen mezi filamenty s objemem a `T<n>` jen pro ně.
-Stroje s ACE beze změny (`GcodeSlot::fileForMany` dál přemapovává; FarmOnePlate zelený).
+Stroje s ACE beze změny (`GcodeSlot::fileForMany` dál přemapovává; FarmOnePlate zelený). Od 8. 11. 2026 (TODO #72, AL.md
+§10.13) nese projekt pro měnič u více kusů každý díl jako objekt s build item na kus (instance, `ThreeMfWriter` čtvrtý
+parametr), bez pásu pro věž; `plate_copies`, `copies_grid` a zbytková podložka jako u malovaného souboru.
 
 **B. Věž u měniče pryč.** `PrepareFarmOrder::TOOL_CHANGER_PROCESS = ['enable_prime_tower' => '0']` místo `ONE_PLATE_PROCESS`,
 žádné `wipe_tower_x/y`, `slice_params.tower` null, `copiesPlan` a `PlateLayout::towerGrid(..., tower: false)` pás pro věž

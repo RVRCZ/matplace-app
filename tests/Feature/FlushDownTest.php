@@ -376,7 +376,9 @@ class FlushDownTest extends TestCase
         $this->assertStringNotContainsString('lícem dolů', __('param.flag.flush.hint'));
         $this->assertStringContainsString('jedné podložce', __('param.shape.print.plate.farm'));
         $this->assertStringContainsString('jedné podložce', __('param.shape.print.plate.medallion.farm'));
-        $this->assertStringContainsString('nejvýš čtyři', __('param.shape.print.plate.many.farm', ['c' => 5]));
+        // the limit is the farm's (max_colors of the page's config, ColorLimit::farm: 8 with the Core One), no longer "four"
+        $this->assertStringContainsString('nejvýš 8 v jednom tisku', __('param.shape.print.plate.many.farm', ['c' => 9, 'max' => 8]));
+        $this->assertStringNotContainsString('jednom kuse', __('param.shape.print.plate.farm'), 'several pieces share the plate (docs/AL.md §10.13)');
         // what prints as one piece in one colour still cannot be ordered in colours (a rim over raised colours, a straw)
         $this->assertStringContainsString('nejde', __('param.shape.print.multi.farm'));
         $this->get('/tools/charm')->assertOk()->assertSee('lícem dolů')->assertSee('shape.print.plate', false);

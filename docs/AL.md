@@ -519,8 +519,8 @@ sám – vložený motiv ve stejných vrstvách, vícebarevná klíčenka, logo 
 
 `PrepareFarmOrder::prepareOnePlate()` běží před `prepareParts()` pro každou zakázku `by_parts` a **vrátí false**
 (nic nezměněno, jede se po dílech jako dosud), když: tiskárna není přes agenta (ruční obsluha vede jednu cívku);
-`copies > 1` (rozložení více kusů z více dílů na jednu podložku zatím není – limit); cívky dílů nejsou všechny z téže
-tiskárny; filamentů (cívek, díly téže cívky sdílejí filament) je < 2 (není co měnit → po dílech v jedné barvě jako
+cívky dílů nejsou všechny z téže tiskárny (`copies > 1` bylo důvodem do 8. 11. 2026, teď jdou kopie na jednu podložku jako
+instance, §10.13); filamentů (cívek, díly téže cívky sdílejí filament) je < 2 (není co měnit → po dílech v jedné barvě jako
 dosud) nebo > `FarmOrder::MAX_COLORS` (4) nebo víc než má stroj pozic; díly, jak je nástroj položil (jako celek,
 bez otáčení), se nevejdou na použitelnou plochu; nebo slicer selže (věž se nevejde, filamenty se nerozlišily) – pak
 se to zaloguje (`one_plate_failed` v `timings`) a tisk jde po dílech. Víc než 4 barvy odmítá už `spoolsForParts`
@@ -620,8 +620,7 @@ GcodeColorChanges, SupportLines, StlFile, MarketplaceSwitch, FarmManualOnlyKinds
 
 ### 10.7 Limity a co dál
 
-- `copies > 1` → po dílech (rozložit n kusů z více dílů se společným posunem: `PlateLayout::replicate` na slepený
-  celek + stejné transformace na díly – příští krok, když bude poptávka).
+- ~~`copies > 1` → po dílech~~ – od 8. 11. 2026 kopie na jedné podložce jako instance projektu (§10.13).
 - Díly se neotáčejí (jen jak je nástroj položil); otočení o 90°, kdyby se tak vešly, není.
 - Věž stojí tam, kam ji Orca dá (levý horní roh); u modelu přes celou podložku může kolidovat → slicer selže → po
   dílech. `prime_tower_width 25` a objemy proplachu z profilu (280 mm³ cizí, `wiping_volumes_extruders 70`) nebyly
@@ -945,6 +944,62 @@ Python na serveru musí mít `fast_simplification` a `pymeshfix` v `/opt/matplac
   Kobra X): bez žehlení 1 h 28 min, s `topmost` **1 h 38 min 45 s**, žehlení jen v Z 4,4 (vršek placky) – motiv v kapse
   Orca 2.4 nežehlí ani bez per‑object vypnutí (rozdíl 1 s), takže ta pojistka je pro návrhy s odkrytým vrškem vložky.
 
+### 10.13 Kopie na jedné podložce u návrhů se zarovnanými barvami (TODO #72, větev `fix/one-plate-copies`, 8. 11. 2026)
+
+Zadání `docs/prompts/kopie-na-jedne-podlozce.md` (Roman 8. 11. 2026: „Barvy zarovno s povrchem“ + 4 ks → na stránce zakázky
+náhled jednoho kusu, po zaplacení `one_plate_needed` a kredit zpět; „proč máme pravidlo jedna podložka = jeden kus u sloučení
+do roviny“). Limit z §10.1 a §10.7 (`copies > 1` → po dílech, u návrhu s `one_plate_required` tedy `failed`) padá.
+
+- **Kopie = instance v projektu.** `ThreeMfWriter::write($path, $objects, $toolChanges, $instances)`: čtvrtý parametr je seznam
+  `[dx, dy, dz = 0, čtvrtotáčky kolem Z = 0]`; každý objekt dostane tolik `<item objectid transform="c s 0 -s c 0 0 0 1 dx dy dz"/>`,
+  kolik je položek (bez seznamu jednu s jednotkovou maticí; `ThreeMfWriter::transform`, libslic3r čte dvanáct čísel
+  transponovaně, čtvrtotáčka = `0 1 0 -1 0 0 …`). Všechny díly mají týž seznam, takže motiv zůstává zapadlý v těle. Položky
+  zipu mají pevný čas (1. 1. 2000): stejný obsah = stejné bajty (cache řezů projekt hashuje, §11.10).
+- **`prepareOnePlate`:** `skip('copies')` pryč; `copiesPlan` (byl tu už pro malovaný soubor) dává `per`, `plates`, `rest` a
+  mřížku `towerGrid` – u ACE s pásem pro věž pod sadou nebo vlevo (`towerSpot`), u měniče nástrojů bez pásu. Každý díl se
+  připraví jednou (kopie jen pro náhled: `plate-part-n.stl` je slepenec kopií jako u malovaného, díl sám zůstane vedle jako
+  `plate-part-n.stl.one`, po řezu smazaný), do `plate.3mf` jde díl (ztenčený, je-li nad prahem) s offsety `plan.full.offsets`;
+  zbytková podložka `plate-rest.3mf` s offsety posunutými o rozdíl středů obou sad a vedle ní `plate-rest.stl` (rozměr pro
+  slicer a čísla pro falešný slicer – dřív dostával zbytek `plate.stl` plné podložky). **Oprava vedle:** `$restMove` počítal
+  z `$lo`, které už mezitím neslo rohy položené podložky, ne původní rohy dílů → poslední podložka malovaného souboru byla
+  posunutá o rozdíl sad místo na střed (projevilo by se u souboru mimo počátek); teď z původního rohu (`$plateLo`).
+  Záznam jako u malovaného: `part_plates[*].copies = per`, `plates`, `plate_copies`, `rest_copies`, `rest_gcode_path`,
+  `slice_params.copies_grid`, `check.max_copies` (i u 1 ks: kolik by se vešlo, dřív 1), `timings.one_plate_instances`;
+  gramy po nástrojích z `; filament used [g]` instance sčítají samy, čas z řezu, `FarmOrder::filamentSlots()` beze změny.
+- **Platba a důvody.** `OrderFlow::pay` odmítá u `one_plate_required` už jen ruční stroj; `one_plate_skipped` nemá důvod
+  `copies`; texty `farm.error.one_plate_needed`, `farm.refuse.one_plate_needed`, `farm.order.one_plate_required`,
+  `farm.admin.mail.reason.one_plate_needed` (cs/en/es) bez „a jeden kus / po jednom kuse / víc kusů“; `one_plate_copies`
+  a `one_plate_single` zrušeny (před řezem říká stránka u kusů `farm.order.painted_copies` „co se nevejde, jde na další“ i pro
+  návrh nástroje, po řezu `farm.copies.max` + `more_plates`); nový `farm.copies.grid` „:n ks na jedné podložce (:g)“ z nového
+  `copies_grid` ve `status` (vedle `plate_copies`).
+- **Stránka nástroje.** `/api/config` (`ConfigController::payload`) nese `max_colors` = `ColorLimit::farm()` (Core One 8, S1 4);
+  `param.ts` srovnává počet filamentů s ním místo se čtyřkou; `param.shape.print.plate.many.farm` (JSON) a
+  `shape.print.many.farm` (`param.php`, starý formát, cs/en/es přímo) s `:max`, `plate.farm` a `plate.medallion.farm` bez
+  „po jednom kuse“ (`lang/src/one_plate_copies.json`).
+- **Odhad před řezem** (`BigModel::judge(copies)`, farm.ts × kusy) kopie násobil už dřív; po řezu platí řez. Beze změny.
+- **Skutečná Orca 2.4 (portable, profil S1, `ONE_PLATE_PROCESS`, věž pod sadou, dva filamenty):** deska 20 × 20 × 3 + tyčka
+  6 × 6 × 3 vedle ní jako dva objekty: 1 ks `total object counts 2, need to slice 2`, 15 výměn, 1,24 + 0,57 g, 35 min 57 s;
+  4 ks (2 × 2, mezera 5) `total object counts 8, need to slice 3`, **15 výměn** (po vrstvách, kusy je nemění), 4,42 + 0,72 g,
+  42 min 18 s, věž 31 řádků, žádný `gcode path conflicts`. Skript `scratchpad/instances72/run.php` (session 2). Měnič (Orca 2.5)
+  jen přes falešnou binárku (`FarmToolChangerPlateTest` beze změny zelený); první ostrý řez na INDX je Romanova zakázka.
+- **Testy.** `tests/Feature/FarmOnePlateCopiesTest.php` (4): 4 ks na INDX → 1 podložka, 2 objekty × 4 položky se stejnými posuny
+  (0/25/0/25, bez otočení), `plate_copies 4`, mřížka 2 × 2, gramy podle pozic, bez věže, náhled dílu 45 mm na středu 248 × 205,
+  `.one` uklizené, `status` s `plates`, `plate_copies`, `plate_layout`, `copies_grid`, `max_copies`, text bez „po jednom kuse“,
+  platba 4 ks → `queued` a start s `filaments {0:0, 1:1}`; 9 ks po 80 mm → 3 podložky (4 + 4 + 1), `plate-rest.3mf`
+  s položkou na objekt na středu, `rest_gcode_path`, gramy 2 × plná + zbytek; S1 s ACE 4 ks → věž pod sadou (y 7), 115 mm
+  kusy → 2 + 2 (pás věže bere řadu), ruční stroj → `one_plate_needed/manual`; `/api/config` `max_colors` 4 a 8.
+  `tests/Unit/ThreeMfWriterTest.php` (4): bez instancí jedna položka, s instancemi N položek a týž seznam pro každý objekt,
+  matice otočení, stejný obsah = stejné bajty. Otočená očekávání: `FarmOnePlateTest` (2 ks → jedna podložka místo
+  `failed/copies`, tři místa), `FlushDownTest` (text s `:max`). Zelené: FarmOnePlateCopies, FarmOnePlate, FarmToolChangerPlate,
+  ToolChangerPlate, GcodeSlot, OnePlateTower, ThreeMfColors (2 přeskočené, Orca), FarmOrderFlow, FarmColorsPerMachine,
+  FlushDown, ColorsPayload, FarmColorTiles, ThreeMfWriter; `pint`, `tsc`, `npm run build`, lang JSON bez duplicit.
+- **Soubory.** `app/Jobs/PrepareFarmOrder.php`, `app/Engines/Mesh/ThreeMfWriter.php`, `app/Domain/Farm/OrderFlow.php`,
+  `app/Http/Controllers/Farm/OrderController.php`, `app/Http/Controllers/Api/ConfigController.php`, `resources/js/calc/farm.ts`,
+  `resources/js/calc/param.ts`, `resources/js/calc/tool_page.ts`, `resources/views/farm/order.blade.php`,
+  `lang/{cs,en,es}/farm.php`, `lang/{cs,en,es}/param.php`, `lang/src/one_plate_copies.json`.
+- **Nechat být / neověřeno:** malovaný 3MF (kopie měl), jednobarevný zarovnaný návrh (`multi_material: false`) jde dál jako jeden
+  kus; díly se dál neotáčejí; stránka zakázky jen `tsc` a JSON stavu, ne v prohlížeči.
+
 # Zakázka velkého modelu: řez až po volbách a potvrzení barvy (TODO #41, session 2)
 
 Větev `feature/order-flow-big` (z `main` b74f733), 25. 10. 2026. Zadání `docs/prompts/flow-objednavky.md`; první stránku
@@ -1207,6 +1262,90 @@ napoprvé 500 kvůli zastaralému `public/build` worktree – Vite manifest bez 
 **Neověřeno / co zbývá:** produkce (Orca 2.4.0‑beta na Linuxu, pomalejší Python) – u první zakázky s kopiemi po nasazení
 zkontrolovat `farm_orders.timings` (`decimate_s` chybí u kusu pod prahem, `slice1_s` kolem 50 s u 1,55 M) a stav
 `awaiting_choices` s důvodem `copies`; po rozhodnutí o `seconds_per_million` případně `FARM_BIG_MODEL_S_PER_M` v `.env`.
+
+### 11.10 Kopie jednoho kusu jako instance jednoho objektu (TODO #77, větev `fix/one-plate-copies` za #72, 8. 11. 2026)
+
+Zadání `docs/prompts/kopie-jako-instance.md` (Roman 7.–8. 11. 2026: stromeček 187 226 trojúhelníků, 140 × 138 × 200 mm, 1 ks se
+stromovými podporami na S1 61 s, 4 ks se za 9 min nedoslicovaly; na Kobře 3 Max dva pokusy po 600 s zabity, v `job_*` zůstaly
+`plate_1.gcode.tmp` 250 a 200 MB a log plný `Influence area could not be increased`). Příčina: `PlateLayout::replicate` slepil
+4 kusy do jednoho STL a Orca počítala všechny čtyři znovu včetně organických podpor, které se navzájem ovlivňují. Řídící naměřil
+(Orca 2.4, 12 jader, Kobra 3 Max, stromové): 1 ks 31 s, slepená podložka 4 ks 253 s, 4 ks jako instance jednoho objektu ve 3MF
+**65 s** (`total object counts 4 in current print, need to slice 1`, `copy_layers_from_shared_object`); s rozestupem 12 mm
+`gcode path conflicts found between instances`, s 30 mm prošlo.
+
+- **Instance místo slepeného STL** (`PrepareFarmOrder::handle`, `instanceProject`, `sliceCopies`). U `copies > 1` bez měniče
+  nástrojů vznikne vedle `plate.stl` projekt `plate.3mf`: jeden objekt (ztenčený kus `print.thin.stl`, jinak `print.stl` – týž
+  výběr jako `$sliceRel` dřív) a `perPlate` build items tam, kam `PlateLayout` kusy klade; totéž pro zbytkovou podložku
+  (`rest.3mf`, jen když má ≥ 2 kusy – jeden kus jde dál jako síť). `PlateLayout::placements(piece, copies, usable, gap)` je
+  veřejný výpočet pozic `[čtvrtotáčky, x, y]` (mřížka umí otočit o 90° = `0 1 0 -1 0 0 …` v matici, řady podle stínu otáčejí
+  o násobky 90°), `lift` na Z = 0, `origin` (nejnižší roh sady, mřížka přesně 0) a `size`; `replicateGrid` používá týž
+  `gridFor` (StlFileBlocksTest drží stejné bajty), slepené STL se dál píše pro náhled (`print_stl_path`, `model.stl?v=`),
+  `ModelValidator::judge` a `supports.bin`. Sada je v projektu vystředěná na podložce stejně, jako slicer centruje síť
+  (`StlFile::place`): posun = `bed/2 − origin − bbox/2`. `SliceParams::withProject()` (projekt bez filamentů; `OrcaSlicer` ho
+  řeže s `--arrange 0`, síť vedle dává jen rozměr, nic se znovu neztenčuje), `SliceParams::withTimeout()`.
+  `slice_result.instances` = true (projekt), false (po kolizi drah slepené STL), null (jeden kus, měnič nástrojů, nebo kus
+  nad `farm.copies.instances_max_triangles` 1 500 000 – XML projektu se píše do paměti); `slice_result.gap_mm`;
+  `timings.project_s`, `orca_objects`/`orca_sliced` (z logu Orcy), `slice_conflict`.
+- **Kolize drah → slepené STL, ne `slicing_failed`.** `OrcaSlicer::slice` čte po každém pokusu konec `00000.log` z pracovního
+  adresáře (CLI na konzoli skoro nic neříká) a při „gcode path conflicts found“ / „found slicing result conflict“ bez G‑kódu
+  hodí `PathConflictException` (podtřída `SlicerException`); `sliceCopies` ji chytí (i podle textu) a řeže slepený `plate.stl`
+  jako dřív. Jiná chyba projektu zůstává `slicing_failed`.
+- **Rozestup s rezervou na podpory** (`PlateLayout::supportGap(výška, mohou být podpory)` = podpory možné ?
+  `max(5, min(30, 0,15 × výška))` : 5; `PrepareFarmOrder::supportsPossible`: `supports !== false` nebo přepis
+  `enable_support 1`, ne při přepisu `0`). Stejný rozestup bere `capacityOf`, `replicate` i projekt, takže `check.max_copies`
+  na stránce sedí s počtem podložek (kus 115 × 115 × 200 na S1: 4 na podložku bez podpor, 1 s rezervou 30 mm; po `reslice`
+  se `max_copies` přepočítá). Kusy do 33 mm výšky mají pořád 5 mm. **Kalkulace** (`POST /api/calc/plate`) počítá dál s 5 mm,
+  takže u vysokých kusů s podporami může slíbit víc kusů na podložku než farma položí – otevřené.
+- **Odhad velkého modelu s instancemi** (`BigModel::copiesFactor` = `1 + instance_share × (kopie − 1)`,
+  `farm.big_model.instance_share` **0,4**; zadání navrhovalo 10 %, měření níže dává 0,37–0,45): `expectedSeconds` násobí
+  faktorem místo kopiemi, `MeshDecimator::budget` totéž (ztenčení šetří jen jeden řez). Kostka 12 trojúhelníků při
+  5e6 s/M: 1 ks 60 s, 4 ks 132 s (dřív 240), 8 ks 228 s; kalkulace 30 s × 4 ks → 95 s (dřív 159; stránka slíbí 120, spodní
+  hranice). `estimateSeconds` zaokrouhluje na 6 míst před `ceil` (110,00000000000001 → 111 už ne).
+- **Limit sliceru podle kusů** (`PrepareFarmOrder::sliceTimeout(kusy)` = `min(timeout_max, timeout + timeout_per_piece ×
+  (kusy − 1))`, `engines.orca.timeout_per_piece` **60**, `engines.orca.timeout_max` **1200**; 0 = vypnuto): na produkci
+  (`ORCA_TIMEOUT` 600) 2 ks 660 s, 4 ks 780 s, 11+ ks 1200 s; zbytková podložka podle svých kusů; jeden kus beze změny.
+  Timeout jobu `PrepareFarmOrder::$timeout` = `max(900, timeout_max + 300)` = 1500 s (dřív 900), aby fronta nezabila řez,
+  který slicer smí dokončit. **Roman rozhodne:** (A) nechat všude 600 s (`ORCA_TIMEOUT_PER_PIECE=0`, job zůstane 1500 s),
+  nebo (B) výchozí 600 + 60 × (kusy − 1) se stropem 1200 s – s instancemi by 4 ks stromečku měly na serveru trvat 4–5 min,
+  takže (A) by stačilo; (B) je pojistka pro víc kusů. Pozor: `retry_after` fronty (config/queue.php 90 s) je proti oběma
+  variantám krátký už dnes – `WithoutOverlapping` to zachytí (druhý běh se pouští na zámek a po skončení prvního nic nedělá).
+- **Cache řezů** (`CachedSlicer::key`): u projektu nově otisk **obsahu** 3MF (`projectHash`: názvy a bajty položek zipu, ne čas
+  zipu – `ThreeMfWriter` píše pevný čas, repaint z Pythonu ne), ne jen cesta; jiný rozestup = jiný klíč, stejný obsah pod jinou
+  cestou (každá zakázka má své `plate.3mf`) = trefa; `timeout` do klíče nevstupuje. Týká se i podložky dílů z §10 a malovaného
+  projektu z §14.8 (dřív by přeřez se změněnou mapou extruderů nad stejným `plate.stl` trefil starý G‑kód).
+- **Čísla před/po na stromečku** (session 2, 8. 11. 2026 večer, Orca 2.4 portable přes farmní `OrcaSlicer`, profil Kobra 3 Max,
+  `process_standard`, stromové podpory vynucené, bez věže, PHP preparátor; skript `scratchpad/instances77/tree.php`):
+
+  | co | čas | gramy / minuty tisku | poznámka |
+  |---|---|---|---|
+  | 1 kus | 28,1 s | 203,9 g / 10 h 56 min | G‑kód 99,6 MB |
+  | **před:** slepená podložka 4 ks, rozestup 30 (`PlateLayout::replicate`) | **165,2 s** | 798,5 g / 43 h 10 min | `orca_objects 1`, G‑kód 389 MB (řídící s rozestupem 12: 253 s) |
+  | **po:** 4 instance jednoho objektu, rozestup 30 (`instanceProject`) | **60,5 s** | 809,8 g / 43 h 20 min | `orca_objects 4, orca_sliced 1`, G‑kód 395 MB; příprava: layout 1,3 s + projekt 2,3 s (2,3 MB) |
+  | 4 instance, rozestup 12 | 51,7 s → **kolize drah chycena** (`PathConflictException`) | – | farma by pokračovala slepenou podložkou |
+
+  Poměr 60,5 / 28,1 = 2,15 → podíl na instanci (2,15 − 1) / 3 = **0,38** (odtud `instance_share` 0,4). Server je proti PC asi
+  4× pomalejší: 4 ks stromečku se stromovými podporami tedy odhadem 4–5 min místo přes 10 (dřív zabito v 600 s).
+- **Co se nemění:** měnič nástrojů (`toolChangerParams` dál slepená síť na středu + výměny podle výšky – instance tam zatím
+  nejsou, kandidát na další krok), malovaný 3MF (instance měl), díly nástroje (§10.13), časosběr, `supports.bin`.
+- **Testy.** `tests/Feature/FarmCopiesInstancesTest.php` (6): 4 kostky → slicer dostane `plate.stl` + projekt `plate.3mf` s jedním
+  objektem a 4 položkami na středu 250 (102,5/127,5), `timeout` 180 + 3 × 60, `instances true`, `gap_mm 5`, náhled 48
+  trojúhelníků jako dřív, 1 ks bez projektu; kolize drah (`PathConflictException` i holý text „found slicing result conflict“)
+  → druhý běh slepeného STL, `instances false`, `slice_conflict`; jiná chyba → `slicing_failed` bez druhého běhu; kus
+  115 × 115 × 200: auto podpory → rozestup 30, `max_copies 1`, 4 podložky; `supports off` přes `reslice` → 5 mm, 1 podložka
+  instancí, stránka `max_copies 4`; 9 kostek 100 → plná podložka projektem, zbytek 1 ks sítí, 6 ks → `rest.3mf` se 2 položkami;
+  `sliceTimeout` a timeout jobu; skutečná Orca (`ORCA_LOCAL`): 4 kostky 30 mm `orca_objects 4 / orca_sliced 1`, gramy 4×,
+  minuty 23 → 52 (start a čisticí čára jednou). `PlateLayoutTest` (+1): pozice z rovné mřížky, otočené mřížky (7 × 30 × 80 na
+  90 × 260) i řad odpovídají obálkám kopií ve slepeném STL, `origin` a `size` sedí. `SliceCacheTest` (+1): klíč s obsahem
+  projektu. `ThreeMfWriterTest` sdílený s #72. Otočená očekávání: `FarmDecimateCopiesTest` (132/228/95→120),
+  `MeshDecimatorTest` (rozpočet 110/220/240). Zelené: FarmCopiesInstances, PlateLayout, StlFileBlocks, MeshDecimator,
+  SliceCache, FarmDecimateCopies, FarmOrderFlow, FarmBigModelFlow, OrcaBinToolchanger, FarmToolChangerPlate, PlateLayoutFarm,
+  FarmOnePlateCopies, ThreeMfColors, FarmOnePlate; `pint`.
+- **Soubory.** `app/Jobs/PrepareFarmOrder.php`, `app/Domain/Farm/PlateLayout.php`, `app/Domain/Farm/BigModel.php`,
+  `app/Engines/DTO/SliceParams.php`, `app/Engines/Slicer/OrcaSlicer.php`, `app/Engines/Slicer/CachedSlicer.php`,
+  `app/Engines/Exceptions/PathConflictException.php`, `app/Engines/Mesh/MeshDecimator.php`, `config/engines.php`
+  (`timeout_per_piece`, `timeout_max`), `config/farm.php` (`big_model.instance_share`, `copies.instances_max_triangles`).
+  Nasazení: nic v `.env` nutné; rozhodnutí Romana o limitu sliceru (`ORCA_TIMEOUT_PER_PIECE`, `ORCA_TIMEOUT_MAX`) a o rezervě
+  na podpory (`PlateLayout::SUPPORT_GAP_SHARE` 0,15 / `SUPPORT_GAP_MAX_MM` 30 jsou konstanty).
 
 # Prodejní cesta, část farma: platba bez povinného kreditu, celek s dopravou hned, čísla farmy, měření (session 2)
 

@@ -6,6 +6,7 @@ use App\Engines\Contracts\Slicer;
 use App\Engines\DTO\Dimensions;
 use App\Engines\DTO\SliceParams;
 use App\Engines\DTO\SliceResult;
+use App\Engines\Exceptions\PathConflictException;
 use App\Engines\Exceptions\SlicerException;
 use App\Engines\Mesh\MeshDecimator;
 use App\Engines\Mesh\StlFile;
@@ -113,31 +114,39 @@ final class OrcaSlicer implements Slicer
                 $slot = $this->slot($clock);
                 try {
                     $result = Process::path($work)->env(['HOME' => $work, 'TMPDIR' => $work])
-                        ->timeout($this->config['timeout'])->run($cmd);
+                        ->timeout((int) ($params->timeout ?? $this->config['timeout']))->run($cmd);
                 } finally {
                     if ($slot) {
                         flock($slot, LOCK_UN);
                         fclose($slot);
                     }
                 }
+                // the CLI says next to nothing on the console: the reasons are in its log in the working directory (00000.log)
+                $log = $this->logOf($work, $clock);
 
-                return ['gcodes' => File::glob($out.'/*.gcode'), 'raw' => $result->output().$result->errorOutput()];
+                return ['gcodes' => File::glob($out.'/*.gcode'), 'raw' => $result->output().$result->errorOutput().$log];
             };
 
             $forced = ($params->overrides['process']['enable_support'] ?? null) === '1';
             $wantSupports = $forced || ($params->supports ?? false);
             $r = $clock->measure('slice1', fn () => $attempt($wantSupports));
             $autoSupports = false;
+            $raws = [$r['raw']];
             if (! $r['gcodes'] && $params->supports === null && ! $params->vaseMode) {
                 // what the slicer said to the run without supports: the data for deciding on supports up front
                 $clock->note('double', true)->note('slice1_error', mb_substr(trim($r['raw']), -300));
                 $r2 = $clock->measure('slice2', fn () => $attempt(true));
+                $raws[] = $r2['raw'];
                 if ($r2['gcodes']) {
                     $r = $r2;
                     $autoSupports = true;
                 }
             }
             if (! $r['gcodes']) {
+                if (self::pathConflict(implode("\n", $raws))) {
+                    // the paths of two objects cross (the supports of one instance reach into another): the caller may glue them into one
+                    throw new PathConflictException('Slice failed (no gcode): gcode path conflicts between the objects of the plate: '.mb_substr(end($raws), -600));
+                }
                 throw new SlicerException('Slice failed (no gcode): '.mb_substr($r['raw'], -600));
             }
 
@@ -202,6 +211,44 @@ final class OrcaSlicer implements Slicer
     public function measure(string $meshPath): Dimensions
     {
         return StlFile::stats($meshPath)->bbox;
+    }
+
+    /** Does the slicer's output say the paths of two objects crossed (its CLI_GCODE_PATH_CONFLICTS)? */
+    public static function pathConflict(string $raw): bool
+    {
+        return stripos($raw, 'gcode path conflicts found') !== false || stripos($raw, 'slicing result conflict') !== false;
+    }
+
+    /**
+     * The tail of the CLI's own log (00000.log in the working directory; up to 8 KB), plus what it says about the objects
+     * of a project ("total object counts 4 in current print, need to slice 1": the instances share one slice, docs/AL.md
+     * §11.10) in the timings. Empty when there is no log.
+     */
+    private function logOf(string $work, Stopwatch $clock): string
+    {
+        $path = $work.'/00000.log';
+        if (! is_file($path) || ! ($size = filesize($path))) {
+            return '';
+        }
+        $text = $size <= 32 * 1048576 ? (string) file_get_contents($path) : '';
+        if ($text === '') {
+            $fh = fopen($path, 'rb');
+            fseek($fh, -min($size, 8192), SEEK_END);
+            $tail = (string) fread($fh, 8192);
+            fclose($fh);
+
+            return "\n".$tail;
+        }
+        if (preg_match_all('/total object counts (\d+) in current print, need to slice (\d+)/', $text, $m) && $m[1]) {
+            $clock->note('orca_objects', (int) end($m[1]))->note('orca_sliced', (int) end($m[2]));
+        }
+        $tail = substr($text, -8192);
+        // the marks the caller reads may lie above the tail
+        if (self::pathConflict($text) && ! self::pathConflict($tail)) {
+            $tail = "gcode path conflicts found (see the log above)\n".$tail;
+        }
+
+        return "\n".$tail;
     }
 
     private function prepareMesh(string $meshPath, SliceParams $params, string $work, ?Stopwatch $clock = null): string

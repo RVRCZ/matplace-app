@@ -460,7 +460,7 @@ return [
     'shape.print.swap.farm' => 'The colours lie one on another and the print changes filament :n times. On the farm we print that in one go: you confirm a spool for each colour when ordering, those of the design are preselected.',
     // more different colours than the farm loads for one print (FarmOrder::MAX_COLORS = 4); elsewhere it is a design like any other
     'shape.print.many' => 'The colours lie one on another. The print stops :n times and the filament is changed: any printer can do it, and the downloadable project contains the changes.',
-    'shape.print.many.farm' => 'This design has :c different colours. The farm prints four at most in one print: use fewer colours, join some of them, or download the project with the changes for your own printer.',
+    'shape.print.many.farm' => 'This design has :c different colours. The farm prints :max at most in one print: use fewer colours, join some of them, or download the project with the changes for your own printer.',
     'shape.print.multi' => 'The colours lie side by side in the same layer. Only a printer that changes filament by itself (AMS, MMU, ACE) can print that. Without one, turn off "Colours flush with the surface" and "Rim in its own colour": the colours then go one on another.',
     'shape.print.multi.farm' => 'The colours lie side by side in the same layer. Such a print cannot be ordered from the farm yet, but you can download the model and the project. For a print with us, turn off "Colours flush with the surface" and "Rim in its own colour": the colours then go one on another.',
     'shape.each' => 'each :w × :h × :t mm',

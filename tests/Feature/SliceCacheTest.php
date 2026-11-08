@@ -7,6 +7,8 @@ use App\Engines\Contracts\Slicer;
 use App\Engines\DTO\Dimensions;
 use App\Engines\DTO\SliceParams;
 use App\Engines\DTO\SliceResult;
+use App\Engines\Mesh\StlFile;
+use App\Engines\Mesh\ThreeMfWriter;
 use App\Engines\Slicer\CachedSlicer;
 use App\Engines\Slicer\FakeSlicer;
 use App\Models\Calculation;
@@ -110,6 +112,38 @@ class SliceCacheTest extends TestCase
         }
         $cached->slice($mesh, $farm);
         $this->assertSame(6, $inner->calls);
+    }
+
+    public function test_a_project_beside_the_mesh_is_part_of_the_key_by_its_content(): void
+    {
+        $inner = $this->counting();
+        $cached = new CachedSlicer($inner, $this->dir.'/cache', $this->dir.'/work/gcode', [$this->dir.'/profiles'], null);
+        $mesh = $this->dir.'/plate.stl';
+        MeshFixtures::cubeStl($mesh, 20);
+        StlFile::writeBox($this->dir.'/piece.stl', 20, 20, 20);
+        $farm = (new SliceParams('PLA', 'standard', 15, null))->withFarmProfile(['machine' => 'machine_x.json'], ['process' => ['layer_height' => '0.2']])->withoutThinning();
+        // the copies of a piece as instances (docs/AL.md §11.10): the same glued plate beside a project of another gap is another slice
+        $piece = [['name' => 'print', 'stl' => $this->dir.'/piece.stl', 'extruder' => 1]];
+        ThreeMfWriter::write($this->dir.'/a.3mf', $piece, [], [[0.0, 0.0], [25.0, 0.0]]);
+        ThreeMfWriter::write($this->dir.'/b.3mf', $piece, [], [[0.0, 0.0], [30.0, 0.0]]);
+        copy($this->dir.'/a.3mf', $this->dir.'/c.3mf');
+        $plain = $cached->key($mesh, $farm);
+        $a = $cached->key($mesh, $farm->withProject($this->dir.'/a.3mf'));
+        $b = $cached->key($mesh, $farm->withProject($this->dir.'/b.3mf'));
+        $c = $cached->key($mesh, $farm->withProject($this->dir.'/c.3mf'));
+        $this->assertNotSame($plain, $a, 'the mesh alone and the mesh beside a project');
+        $this->assertNotSame($a, $b, 'another gap between the instances');
+        $this->assertSame($a, $c, 'the same content under another path (every order writes its own plate.3mf)');
+        $this->assertSame(CachedSlicer::projectHash($this->dir.'/a.3mf'), CachedSlicer::projectHash($this->dir.'/c.3mf'));
+        $this->assertSame($cached->key($mesh, $farm), $cached->key($mesh, $farm->withTimeout(900)), 'how long the slicer may take changes no G-code');
+
+        $cached->slice($mesh, $farm->withProject($this->dir.'/a.3mf'));
+        $cached->slice($mesh, $farm->withProject($this->dir.'/c.3mf'));
+        $this->assertSame(1, $inner->calls, 'the same project again is a hit');
+        $cached->slice($mesh, $farm->withProject($this->dir.'/b.3mf'));
+        $this->assertSame(2, $inner->calls);
+        $cached->slice($mesh, $farm);
+        $this->assertSame(3, $inner->calls, 'the glued plate without the project (a path conflict) is its own slice');
     }
 
     public function test_a_calculation_for_another_quantity_reuses_the_slice(): void

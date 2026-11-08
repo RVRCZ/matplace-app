@@ -206,7 +206,8 @@ final class FarmDecimateCopiesTest extends TestCase
 
     public function test_the_verdict_on_a_big_model_counts_the_copies(): void
     {
-        // a cube of 12 triangles made to weigh 5 s per triangle-million would slice in 60 s alone, 240 s four times
+        // a cube of 12 triangles made to weigh 5 s per triangle-million would slice in 60 s alone; four copies print as instances of
+        // one object (docs/AL.md §11.10), every further one costing instance_share (0.4) of a slice: 60 × (1 + 0.4 × 3) = 132 s
         config(['farm.big_model.seconds_per_million' => 5_000_000]);
         $uuid = $this->upload(20.0);
         $file = ModelFile::where('uuid', $uuid)->firstOrFail();
@@ -214,8 +215,11 @@ final class FarmDecimateCopiesTest extends TestCase
         $one = BigModel::judge($file, null, 1);
         $this->assertSame([false, null, 12, 1, 120], [$one['big'], $one['reason'], $one['triangles'], $one['copies'], $one['estimate_s']], 'one piece under the threshold is small, as before (the floor of two minutes)');
         $four = BigModel::judge($file, null, 4);
-        $this->assertSame([true, 'copies', 4, 240], [$four['big'], $four['reason'], $four['copies'], $four['estimate_s']], 'four pieces: the expected slice of the plate, four times the piece');
-        $this->assertSame(2 * $four['estimate_s'], BigModel::estimateSeconds(12, null, 8), 'the estimate grows in step with the copies');
+        $this->assertSame([true, 'copies', 4, 132], [$four['big'], $four['reason'], $four['copies'], $four['estimate_s']], 'four pieces: the expected slice of the plate, the piece and a share per instance');
+        $this->assertSame(228, BigModel::estimateSeconds(12, null, 8), 'eight copies: 60 × (1 + 0.4 × 7), not eight slices');
+        config(['farm.big_model.instance_share' => 1.0]);
+        $this->assertSame(240, BigModel::estimateSeconds(12, null, 4), 'a share of one is a whole slice per copy, as the glued plate took');
+        config(['farm.big_model.instance_share' => 0.4]);
 
         // the order: one piece is sliced at once, four wait for the choices and promise the minutes of all four
         $single = $this->order(['file' => $uuid, 'copies' => 1]);
@@ -225,8 +229,8 @@ final class FarmDecimateCopiesTest extends TestCase
         $many = $this->order(['file' => $uuid, 'copies' => 4]);
         $this->assertSame(FarmOrder::STATUS_AWAITING_CHOICES, $many->status);
         $this->assertTrue($many->big_model);
-        $this->assertSame(240, $many->slice_estimate_s);
-        $this->assertSame(4, $this->state($many)['slice_minutes']);
+        $this->assertSame(132, $many->slice_estimate_s);
+        $this->assertSame(3, $this->state($many)['slice_minutes']);
         $this->assertStringContainsString('the slice waits for the choices', (string) $many->events()->first()->note);
 
         // the threshold is the same setting as for a single big piece; a change of the copies later does not flip the verdict
@@ -245,6 +249,7 @@ final class FarmDecimateCopiesTest extends TestCase
         $this->assertSame(FarmOrder::STATUS_SLICED, $this->order(['calc' => $token, 'copies' => 1])->status, '30 s is a quick slice: one piece is sliced at once');
         $fourOfCalc = $this->order(['calc' => $token, 'copies' => 4]);
         $this->assertSame(FarmOrder::STATUS_AWAITING_CHOICES, $fourOfCalc->status);
-        $this->assertSame((int) ceil(30.0 * 4 * 1.2 + 15), $fourOfCalc->slice_estimate_s, 'four slices of the calculation\'s 30 s, the farm\'s margin once');
+        $this->assertSame(95, (int) ceil(BigModel::expectedSeconds(12, 30.0, 4)), 'the calculation\'s 30 s once and 0.4 of it per further instance, the farm\'s margin once: over the 60 s limit');
+        $this->assertSame(120, $fourOfCalc->slice_estimate_s, 'what the page promises never goes under the floor of two minutes');
     }
 }

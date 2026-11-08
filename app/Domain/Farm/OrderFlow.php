@@ -93,8 +93,9 @@ final class OrderFlow
         if (! $offer['enough']) {
             throw new FarmRefusal('filament_low');
         }
-        // a design whose colours share a layer prints on one plate of a machine with a changer, one piece at a time, or not at all
-        if ($order->modelFile?->onePlateRequired() && (! $offer['printer']->isAgentDriven() || (int) $order->copies !== 1)) {
+        // a design whose colours share a layer prints on one plate of a machine with a changer (its copies together on it,
+        // docs/AL.md §10.13), or not at all
+        if ($order->modelFile?->onePlateRequired() && ! $offer['printer']->isAgentDriven()) {
             throw new FarmRefusal('one_plate_needed');
         }
         // a painted 3MF in its colours prints on one plate of a machine with a changer (any number of copies), never by parts

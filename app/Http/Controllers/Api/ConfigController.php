@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api;
 
 use App\Domain\Calculation\MaterialCatalog;
+use App\Domain\Farm\ColorLimit;
 use App\Domain\Farm\FarmPricingProfile;
 use App\Domain\Farm\FarmSettings;
 use App\Domain\Farm\Palette;
@@ -10,6 +11,7 @@ use App\Engines\Contracts\ModelGenerator;
 use App\Engines\Converter\ConverterChain;
 use App\Engines\DTO\SliceParams;
 use App\Http\Controllers\Controller;
+use App\Models\FarmOrder;
 use App\Support\CalculatorTexts;
 use App\Support\Locales;
 use App\Support\NextStep;
@@ -74,6 +76,9 @@ class ConfigController extends Controller
             'qualities' => SliceParams::QUALITIES,
             'formats' => $converters->inputFormats(),
             'max_upload_mb' => (int) config('uploads.max_mb', 120),
+            // how many colours one print on the farm takes at most (the machine with the most spool positions, ColorLimit; docs/AL.md §19):
+            // a tool page says when a design of flush colours asks for more
+            'max_colors' => config('farm.enabled') ? ColorLimit::farm() : FarmOrder::MAX_COLORS,
             'vision' => (string) config('ai.anthropic.api_key') !== '',
             'generator' => app(ModelGenerator::class)->name() !== 'null',
             'lay' => collect(['home', 'decor', 'hand', 'strong', 'outdoor', 'outdoor_light', 'flexible', 'technical', 'detail'])

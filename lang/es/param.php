@@ -460,7 +460,7 @@ return [
     'shape.print.swap.farm' => 'Los colores van uno encima de otro y la impresión cambia de filamento :n veces. En la granja lo imprimimos de una vez: usted confirma una bobina para cada color al hacer el pedido; las del diseño vienen preseleccionadas.',
     // more different colours than the farm loads for one print (FarmOrder::MAX_COLORS = 4); elsewhere it is a design like any other
     'shape.print.many' => 'Los colores van uno encima de otro. La impresión se detiene :n veces y se cambia el filamento: cualquier impresora puede hacerlo y el proyecto descargable incluye los cambios.',
-    'shape.print.many.farm' => 'Este diseño tiene :c colores distintos. La granja imprime como máximo cuatro en una impresión: use menos colores, una algunos o descargue el proyecto con los cambios para su impresora.',
+    'shape.print.many.farm' => 'Este diseño tiene :c colores distintos. La granja imprime como máximo :max en una impresión: use menos colores, una algunos o descargue el proyecto con los cambios para su impresora.',
     'shape.print.multi' => 'Los colores van uno al lado de otro en la misma capa. Eso solo lo imprime una impresora que cambia el filamento sola (AMS, MMU, ACE). Sin ella, desactive «Colores a ras de la superficie» y «Reborde en su propio color»: los colores irán entonces uno sobre otro.',
     'shape.print.multi.farm' => 'Los colores van uno al lado de otro en la misma capa. Esa impresión aún no se puede pedir a la granja, pero el modelo y el proyecto sí se pueden descargar. Para imprimir con nosotros, desactive «Colores a ras de la superficie» y «Reborde en su propio color»: los colores irán entonces uno sobre otro.',
     'shape.each' => 'cada uno :w × :h × :t mm',

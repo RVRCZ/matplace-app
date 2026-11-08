@@ -218,14 +218,18 @@ class FarmOnePlateTest extends TestCase
         $this->assertSame(FarmOrder::STATUS_DONE, $order->refresh()->status);
     }
 
-    public function test_the_parts_print_one_plate_each_when_the_machine_cannot_change_spools_or_there_are_several_copies(): void
+    public function test_the_parts_print_one_plate_each_when_the_machine_cannot_change_spools_and_several_copies_share_the_plate(): void
     {
         $file = $this->design();
-        // several copies: the plate layout of parts is not done yet – one plate per part, as before
+        // several copies share the plate: every part an object placed twice in the project, the pieces side by side (docs/AL.md §10.13)
         $copies = $this->order($file, ['part_color' => ['color_2' => $this->red->farm_color_id], 'copies' => 2]);
-        $this->assertFalse($copies->onePlate());
-        $this->assertSame(2, $copies->plates);
-        $this->assertFileExists($copies->absoluteGcodePath(2));
+        $this->assertTrue($copies->onePlate(), json_encode($copies->timings));
+        $this->assertSame([1, 2, null], [$copies->plates, $copies->plate_copies, $copies->rest_copies]);
+        $this->assertSame([2, 2], array_column($copies->partPlates(), 'copies'));
+        $this->assertSame([2, 1], $copies->slice_params['copies_grid']['grid']);
+        $this->assertSame(2, $copies->timings['one_plate_instances']);
+        $this->assertFileExists($copies->absoluteGcodePath(1));
+        $this->assertSame($copies->absoluteGcodePath(1), $copies->absoluteGcodePath(2), 'one file for the plate');
         // a machine run by hand: the operator feeds one spool at a time
         $this->s1->update(['mode' => FarmPrinter::MODE_MANUAL]);
         $manual = $this->order($file, ['part_color' => ['color_2' => $this->red->farm_color_id]]);
@@ -422,14 +426,18 @@ class FarmOnePlateTest extends TestCase
         $this->assertContains($max->slots()->where('slot', 0)->firstOrFail()->placeLabel(), $places($other), 'an ordinary design may go to the Max');
         $this->assertContains('Kobra 3 Max #1 · ACE 1', $places($other));
 
-        // two copies: stopped, not printed by parts; the customer reads why
+        // two copies: side by side on the same plate (docs/AL.md §10.13), no longer a reason to stop
         $two = $this->order($file, ['part_color' => ['color_2' => $this->red->farm_color_id], 'copies' => 2]);
-        $this->assertSame(FarmOrder::STATUS_FAILED, $two->status);
-        $this->assertSame('one_plate_needed', $two->error);
-        $this->assertSame('copies', $two->error_detail);
-        $this->assertNull($two->gcode_path);
-        $this->assertSame('one_plate_needed', $this->actingAs($this->user)->getJson("/farm/orders/{$two->token}/status")->json('error'));
+        $this->assertSame(FarmOrder::STATUS_SLICED, $two->status, (string) $two->error.' '.json_encode($two->timings));
+        $this->assertTrue($two->onePlate());
+        $this->assertSame([1, 2], [$two->plates, $two->plate_copies]);
+        $this->assertNotNull($two->gcode_path);
         $this->assertStringContainsString('jedné vrstvě', __('farm.error.one_plate_needed'));
+        foreach (['farm.error.one_plate_needed', 'farm.refuse.one_plate_needed', 'farm.order.one_plate_required', 'farm.admin.mail.reason.one_plate_needed'] as $key) {
+            $this->assertStringNotContainsString('jeden kus', __($key), $key);
+            $this->assertStringNotContainsString('jednom kuse', __($key), $key);
+            $this->assertStringNotContainsString('víc kusů', __($key), $key);
+        }
 
         // a machine run by hand: stopped as well, with the reason for the operator
         $this->s1->update(['mode' => FarmPrinter::MODE_MANUAL]);
@@ -475,9 +483,9 @@ class FarmOnePlateTest extends TestCase
         $this->assertTrue($file->onePlateRequired());
         $this->assertSame(['body', 'color_1'], OrderService::designParts($file));
 
-        // by parts it is refused with the reason: two copies, then a machine run by hand
+        // two copies go on one plate together (docs/AL.md §10.13); a machine run by hand is refused with the reason
         $two = $this->order($file, ['part_color' => ['color_1' => $this->red->farm_color_id], 'copies' => 2]);
-        $this->assertSame([FarmOrder::STATUS_FAILED, 'one_plate_needed', 'copies'], [$two->status, $two->error, $two->error_detail]);
+        $this->assertSame([FarmOrder::STATUS_SLICED, true, 2], [$two->status, $two->onePlate(), $two->plate_copies], (string) $two->error.' '.json_encode($two->timings));
         $this->s1->update(['mode' => FarmPrinter::MODE_MANUAL]);
         $manual = $this->order($file, ['part_color' => ['color_1' => $this->red->farm_color_id]]);
         $this->assertSame([FarmOrder::STATUS_FAILED, 'one_plate_needed', 'manual'], [$manual->status, $manual->error, $manual->error_detail]);

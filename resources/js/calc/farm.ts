@@ -52,6 +52,8 @@ interface FarmState {
     /** a big model: sliced only on the customer's word (awaiting_choices), the rough price until then; `choosing` = the colours are on offer right now */
     big?: boolean; choosing?: boolean; slice_minutes?: number | null; slice_run?: number; estimate?: EstimateCfg | null;
     quality: string; strength: string; copies: number; max_copies: number | null; plates: number; plates_done: number; plate_layout: number[]; plate_now: number | null;
+    /** the copies of one plate of parts in a grid [columns, rows] (the parts of a design with flush colours, a painted 3MF); null otherwise */
+    copies_grid?: [number, number] | null;
     scale: number; raw_bbox: { x: number; y: number; z: number } | null; slot: number | null; printer: { name: string; bed: string } | null;
     unit: string; unit_guess: { unit: string; confident: boolean } | null; second_slot?: number | null; changes?: Change[]; max_colors?: number; colors_over?: { text: string; link: string; url: string | null } | null; by_parts?: boolean; parts?: Part[]; part_count?: number; one_plate?: boolean; filament_changes?: number; one_plate_required?: boolean; painted_colors?: boolean; offer_one_color?: boolean; repeatable?: boolean;
     settings?: Record<string, number> | null; admin_overrides?: Record<string, string> | null;
@@ -683,9 +685,7 @@ export function bootFarmOrder(): void {
             if (hint0) hint0.textContent = (noMachine() ? `${tr('farm.order.colors_no_machine')} ` : '')
                 + (state.one_plate ? tr('farm.order.parts_one_plate', { n: String(state.filament_changes ?? 0) }) : tr('farm.order.parts_hint', { max: String(limit) }))
                 + (state.one_plate_required ? ` ${tr(state.painted_colors ? 'farm.order.painted_plate' : 'farm.order.one_plate_required')}` : '') + (machines.length > 1 ? ` ${tr('farm.order.parts_one_machine')}` : '')
-                + ` ${tr('farm.order.machine_hint')}`
-                // a painted 3MF's copies share the plate (docs/AL.md §14.8): one piece at a time is the tool's designs alone
-                + (state.one_plate_required && !state.painted_colors && (state.copies ?? 1) > 1 ? ` ${tr('farm.order.one_plate_copies')}` : '');
+                + ` ${tr('farm.order.machine_hint')}`;
             if (list0 && any && machine) {
                 const reasonText = (r: string): string => tr(`farm.order.pos_reason.${r}`);
                 const mainPos = (machine.positions ?? []).find((x) => x.main) ?? null;
@@ -886,8 +886,11 @@ export function bootFarmOrder(): void {
             if (shipLine) { shipLine.textContent = shippingLine(); show(shipLine, shipLine.textContent !== ''); }
             const copiesLine = $('farm-copies-line');
             if (copiesLine) {
-                // "9 pieces on 2 plates (5 + 4), printed one after another" when one plate is not enough
-                copiesLine.textContent = s.plates > 1 && (!s.by_parts || s.one_plate) ? tr('farm.copies.plates', { n: s.copies, p: s.plates, layout: (s.plate_layout ?? []).join(' + ') }) : s.copies > 1 ? tr('farm.copies.note', { n: s.copies }) : '';
+                // "9 pieces on 2 plates (5 + 4), printed one after another" when one plate is not enough; the parts of a design
+                // on one plate say their grid ("4 pieces on one plate (2 × 2)", docs/AL.md §10.13)
+                copiesLine.textContent = s.plates > 1 && (!s.by_parts || s.one_plate) ? tr('farm.copies.plates', { n: s.copies, p: s.plates, layout: (s.plate_layout ?? []).join(' + ') })
+                    : s.copies > 1 && s.one_plate && s.copies_grid ? tr('farm.copies.grid', { n: s.copies, g: `${s.copies_grid[0]} × ${s.copies_grid[1]}` })
+                        : s.copies > 1 ? tr('farm.copies.note', { n: s.copies }) : '';
                 show(copiesLine, s.copies > 1);
             }
             $('farm-time')!.textContent = duration(s.minutes!);
@@ -922,11 +925,11 @@ export function bootFarmOrder(): void {
         const copiesNote = $('farm-copies-note');
         if (copiesNote) {
             const more = s.max_copies && wanted.copies > s.max_copies ? ` ${tr('farm.copies.more_plates', { p: Math.ceil(wanted.copies / s.max_copies) })}` : '';
-            // a design that must print on one plate goes one piece at a time: said here before the price is asked for
-            // a painted 3MF's copies share the plate: how many fit, or before the slice that the rest goes on the next one
-            copiesNote.textContent = s.one_plate_required && !s.painted_colors ? tr(wanted.copies > 1 ? 'farm.order.one_plate_copies' : 'farm.order.one_plate_single')
-                : s.max_copies ? tr('farm.copies.max', { n: s.max_copies }) + more : s.painted_colors ? tr('farm.order.painted_copies') : '';
-            show(copiesNote, !!s.max_copies || !!s.one_plate_required);
+            // how many fit the plate once the slice has measured it; before that, a design whose copies share one plate (a painted
+            // 3MF, a tool's design with flush colours, docs/AL.md §10.13) says that the rest goes on the next plate
+            copiesNote.textContent = s.max_copies ? tr('farm.copies.max', { n: s.max_copies }) + more
+                : (s.painted_colors || s.one_plate_required) && wanted.copies > 1 ? tr('farm.order.painted_copies') : '';
+            show(copiesNote, copiesNote.textContent !== '');
         }
         const note = $('farm-unit-note')!;
         const guess = s.unit_guess;
