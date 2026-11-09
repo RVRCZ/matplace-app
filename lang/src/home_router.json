@@ -125,9 +125,9 @@
     "Una ruedecilla rota del cesto del lavavajillas, 3 cm de diámetro, necesito 4 piezas, debe aguantar agua caliente."
   ],
   "router.submit": [
-    "Navrhnout",
-    "Get a suggestion",
-    "Proponer"
+    "Vytvořit",
+    "Create",
+    "Crear"
   ],
   "router.submit.hint": [
     "Zdarma a bez registrace. Během minuty navrhneme, jak to vyrobit a kolik to bude stát.",
