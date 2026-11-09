@@ -9,9 +9,9 @@ import { shrinkPhoto, overLimit } from '../calc/photo';
 type Words = Record<string, string>;
 interface Decision {
     token: string; route: 'tool' | 'shape' | 'human' | 'file' | null; tool_key: string | null; tool: string | null; summary: string;
-    params: Record<string, unknown>; questions: string[]; wants_shape: boolean; has_photo: boolean; hours: number;
+    params: Record<string, unknown>; questions: string[]; alternatives?: string[]; wants_shape: boolean; has_photo: boolean; rerouted?: boolean; hours: number;
     file: { uuid: string; name: string } | null;
-    actions: { tool: string | null; calc: string | null; request: string };
+    actions: { tool: string | null; calc: string | null; request: string; reroute?: string | null };
 }
 
 const csrf = (): string => document.querySelector<HTMLMetaElement>('meta[name="csrf-token"]')?.content ?? '';
@@ -137,22 +137,42 @@ export function bootIntake(): void {
         bubble.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
     }
 
-    /** "A person takes it over": the e-mail, the consent, one post. */
+    /**
+     * "A person takes it over": the e-mail, the consent, one post. Next to it, where a person was offered, "try it now
+     * without a designer": the decision is made again with a person ruled out and the bubble is replaced (round 2).
+     */
     function human(d: Decision, after: HTMLElement): void {
         if (assist.querySelector('#intake-request')) return;
         const box = document.createElement('form');
         box.id = 'intake-request';
         box.className = 'mt-3 grid gap-3 rounded-2xl border border-line bg-card p-4';
         box.noValidate = true;
+        const again = d.actions.reroute && !d.rerouted ? `<button type="button" data-reroute class="btn-secondary w-full sm:w-auto">${esc(t('router.act.without_designer'))}</button>` : '';
         box.innerHTML = `
             <div><p class="font-semibold text-ink">${esc(t('router.request.title'))}</p><p class="text-sm text-muted">${esc(t('router.request.lead', { hours: d.hours }))}</p></div>
             <label class="block text-sm font-semibold text-ink">${esc(words['auth.email'] ?? 'E-mail')}<input name="email" type="email" required autocomplete="email" inputmode="email" class="field"></label>
             <label class="flex items-start gap-3 text-sm text-ink"><input name="consent" type="checkbox" value="1" class="mt-0.5 h-5 w-5 shrink-0 accent-action"><span>${esc(t('router.request.consent'))}</span></label>
             <p data-request-error class="hidden rounded-lg bg-danger-soft px-3 py-2 text-sm text-danger" role="alert"></p>
-            <button type="submit" class="btn-primary w-full sm:w-auto">${esc(t('router.act.send_request'))}</button>`;
+            <div class="flex flex-wrap gap-2"><button type="submit" class="btn-primary w-full sm:w-auto">${esc(t('router.act.send_request'))}</button>${again}</div>`;
         after.insertAdjacentElement('afterend', box);
         const err = box.querySelector<HTMLElement>('[data-request-error]')!;
         const tell = (m: string): void => { err.textContent = m; err.classList.toggle('hidden', m === ''); };
+        box.querySelector<HTMLButtonElement>('[data-reroute]')?.addEventListener('click', async (e) => {
+            const b = e.currentTarget as HTMLButtonElement;
+            const go = box.querySelector<HTMLButtonElement>('button[type=submit]')!;
+            tell('');
+            b.disabled = true; go.disabled = true; b.textContent = t('router.act.rerouting'); b.setAttribute('aria-busy', 'true');
+            try {
+                const res = await fetch(d.actions.reroute!, { method: 'POST', credentials: 'same-origin', headers: { Accept: 'application/json', 'X-CSRF-TOKEN': csrf() } });
+                const answer = await res.json().catch(() => ({})) as Partial<Decision> & { message?: string; errors?: Record<string, string[]> };
+                if (res.status === 429) { tell(t('router.too_many')); }
+                else if (!res.ok || !answer.token) { tell(Object.values(answer.errors ?? {})[0]?.[0] ?? answer.message ?? t('router.error')); }
+                else { render(answer as Decision); return; }
+            } catch {
+                tell(t('router.error'));
+            }
+            b.disabled = false; go.disabled = false; b.textContent = t('router.act.without_designer'); b.removeAttribute('aria-busy');
+        });
         box.addEventListener('submit', async (e) => {
             e.preventDefault();
             const email = (box.querySelector<HTMLInputElement>('[name=email]')!).value.trim();

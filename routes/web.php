@@ -89,6 +89,8 @@ $pages = function () {
     Route::post('/intake', [IntakeController::class, 'store'])->middleware('throttle:intake')->name('intake.store');
     Route::get('/intake/{intake}/file', [IntakeController::class, 'file'])->name('intake.file');
     Route::post('/intake/{intake}/request', [IntakeController::class, 'request'])->middleware('throttle:10,60,intake-request')->name('intake.request');
+    // "try it now without a designer" (round 2, §22.11): one more decision, counted in the same five an hour
+    Route::post('/intake/{intake}/reroute', [IntakeController::class, 'reroute'])->middleware('throttle:intake')->name('intake.reroute');
 
     // Marketplace (config/features.php): public printer pages, quotes, customer inquiries — 404 while switched off
     Route::middleware('feature:marketplace')->group(function () {

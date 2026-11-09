@@ -230,7 +230,8 @@
                         <p id="param-artwork-state" class="text-sm text-muted" aria-live="polite"></p>
                     </div>
                     <p class="hint mt-1 !text-xs">{{ __(\Illuminate\Support\Facades\Lang::has('param.'.$kind.'.artwork.hint') ? 'param.'.$kind.'.artwork.hint' : 'param.artwork.hint') }}</p>
-                    <input id="param-artwork" type="file" accept=".svg,image/svg+xml,image/png,image/jpeg,image/webp" class="sr-only" tabindex="-1" aria-hidden="true">
+                    {{-- data-intake-photo: the home page's router hands its picture here too (the cookie cutter; a sign gets none, IntakeRouter::TOOLS input = text) --}}
+                    <input id="param-artwork" data-intake-photo type="file" accept=".svg,image/svg+xml,image/png,image/jpeg,image/webp" class="sr-only" tabindex="-1" aria-hidden="true">
                 @endif
             </fieldset>
         @endif

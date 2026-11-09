@@ -90,6 +90,40 @@ class IntakeToolPreloadTest extends TestCase
         }
     }
 
+    /** Round 2 (docs/AN.md §22.11): the picture tools added to the catalogue take the photo, the tools of words alone get none. */
+    public function test_the_picture_tools_of_round_two_mark_their_photo_field_and_the_words_tools_get_none(): void
+    {
+        $intake = $this->intake(['tool_key' => 'filament_art']);
+        $art = (string) $this->get('/tools/filament-art?intake='.$intake->token)->assertOk()->getContent();
+        $this->assertMatchesRegularExpression('~<input id="art-artwork" data-intake-photo~', $art);
+        $this->assertSame(url('/intake/'.$intake->token.'/file'), $this->shared($art)['intake']['file']);
+        $this->assertSame('filament_art', $this->shared($art)['intake']['tool']);
+
+        $papel = (string) $this->get('/tools/papel-picado?intake='.$intake->token)->assertOk()->getContent();
+        $this->assertMatchesRegularExpression('~<input id="param-artwork-file" data-intake-photo~', $papel);
+        $this->assertSame(url('/intake/'.$intake->token.'/file'), $this->shared($papel)['intake']['file']);
+
+        $cutter = (string) $this->get('/tools/cookie-cutter?intake='.$intake->token)->assertOk()->getContent();
+        $this->assertMatchesRegularExpression('~<input id="param-artwork" data-intake-photo~', $cutter);
+        $this->assertSame('cutter', $this->shared($cutter)['intake']['tool']);
+
+        // the key ring: its plain address is the composer (no picture field), the hand-over opens the quick form with one
+        $composer = (string) $this->get('/tools/keychain?intake='.$intake->token)->assertOk()->getContent();
+        $this->assertDoesNotMatchRegularExpression('~<input id="param-artwork" data-intake-photo~', $composer);
+        $quick = (string) $this->get('/tools/keychain?intake='.$intake->token.'&form=1')->assertOk()->getContent();
+        $this->assertMatchesRegularExpression('~<input id="param-artwork" data-intake-photo~', $quick);
+        $this->assertSame('keychain', $this->shared($quick)['intake']['tool']);
+
+        // a sign and standing letters take words: the photo stays home, the parameters go
+        foreach (['/tools/sign', '/tools/text'] as $path) {
+            $shared = $this->shared((string) $this->get($path.'?intake='.$intake->token)->assertOk()->getContent());
+            $this->assertNull($shared['intake']['file'], "$path gets no photo");
+            $this->assertSame(120, $shared['intake']['params']['size_mm'], $path);
+            $this->assertSame('Busta táty, 12 cm', $shared['intake']['text'], $path);
+        }
+        $this->assertSame(1, Event::where('type', 'intake_tool_opened')->count(), 'opened once, by the first page');
+    }
+
     public function test_a_token_nobody_knows_and_a_page_that_is_no_tool_change_nothing(): void
     {
         $intake = $this->intake();

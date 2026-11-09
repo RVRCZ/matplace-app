@@ -20,7 +20,7 @@
     $mainFormats = strtoupper(implode(', ', array_intersect(['stl', '3mf', 'step', 'obj'], $config['formats']))) ?: $formats;
     $routerTexts = collect(['router.kind.photo', 'router.kind.file', 'router.need_input', 'router.error', 'router.too_many', 'router.sending', 'router.submit.hint', 'router.assistant',
         'router.tag.tool', 'router.tag.human', 'router.tag.shape', 'router.tag.file', 'router.act.open_tool', 'router.act.open_tool_text', 'router.act.rather_human', 'router.act.open_calc',
-        'router.act.send_request', 'router.act.sending', 'router.questions', 'router.request.title', 'router.request.lead', 'router.request.consent', 'router.request.sent',
+        'router.act.send_request', 'router.act.sending', 'router.act.without_designer', 'router.act.rerouting', 'router.questions', 'router.request.title', 'router.request.lead', 'router.request.consent', 'router.request.sent',
         'router.request.need_consent', 'router.request.need_email', 'router.request.failed'])
         ->mapWithKeys(fn ($k) => [$k => __($k, ['hours' => ':hours', 'email' => ':email', 'tool' => ':tool'])])->all()
         + ['photo.too_big' => __('photo.too_big', ['mb' => ':mb']), 'auth.email' => __('auth.email')];

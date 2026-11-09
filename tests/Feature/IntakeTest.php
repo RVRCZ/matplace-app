@@ -113,7 +113,8 @@ class IntakeTest extends TestCase
         $this->assertSame('intake', $call['kind']);
         $this->assertStringContainsString("<words>\nBusta mého táty, asi 12 cm.\n</words>", $call['user']);
         $this->assertStringContainsString('<lang>cs</lang>', $call['user']);
-        $this->assertStringContainsString('figure | a photo of a person', $call['user']);
+        // the catalogue names every tool by its public names in the three languages, then what it takes (round 2)
+        $this->assertStringContainsString("\nfigure | ".__('tools.figure.title', [], 'cs').' / '.__('tools.figure.title', [], 'en').' / '.__('tools.figure.title', [], 'es').' | a photo of a person: the face', $call['user']);
         $this->assertSame([], $call['images']);
         $this->assertSame('intake', $call['context']['subject_type']);
         // measured: sent and decided, with numbers and codes only
@@ -200,16 +201,29 @@ class IntakeTest extends TestCase
 
     public function test_a_low_confidence_a_shape_and_a_broken_answer_end_with_a_person(): void
     {
-        $this->withoutMiddleware(ThrottleRequests::class);   // seven decisions in one test; the limit has its own test
-        // the assistant names a tool but is not sure: a person, its questions kept, the sentence of the house (not its promise of a tool)
+        $this->withoutMiddleware(ThrottleRequests::class);   // nine decisions in one test; the limit has its own test
+        // the assistant names a tool but is not sure (round 2): the tool stays, its questions with it; a person is no longer the answer to a low number
         FakeAssistant::$answers['intake'] = $this->toolAnswer('figure', 0.4);
-        $r = $this->send(['text' => 'něco'])->assertCreated()->assertJsonPath('route', 'human')->assertJsonPath('tool_key', null)->assertJsonPath('actions.tool', null)
-            ->assertJsonPath('summary', __('router.summary.fallback', ['hours' => 24]))->assertJsonPath('questions.0', 'Jakou barvu?')->assertJsonPath('wants_shape', false);
-        $this->assertSame('tool', Intake::where('token', $r->json('token'))->firstOrFail()->answer['route'], 'what the model said stays for the admin');
+        $r = $this->send(['text' => 'něco'])->assertCreated()->assertJsonPath('route', 'tool')->assertJsonPath('tool_key', 'figure')->assertJsonPath('questions', ['Jakou barvu?'])
+            ->assertJsonPath('summary', 'Na fotce je člověk, navrhuji bustu 12 cm.')->assertJsonPath('actions.reroute', null)->assertJsonPath('wants_shape', false);
+        $this->assertSame(0.4, Intake::where('token', $r->json('token'))->firstOrFail()->confidence);
+        // without questions of its own, the house asks how big and how many colours; a sure tool asks nothing
+        FakeAssistant::$answers['intake'] = ['questions' => []] + $this->toolAnswer('charm', 0.2);
+        $this->send(['text' => 'něco'])->assertCreated()->assertJsonPath('route', 'tool')->assertJsonPath('tool_key', 'charm')
+            ->assertJsonPath('questions', [__('router.question.size'), __('router.question.colors')]);
+        FakeAssistant::$answers['intake'] = ['questions' => []] + $this->toolAnswer('charm', 0.45);
+        $this->send(['text' => 'něco'])->assertCreated()->assertJsonPath('route', 'tool')->assertJsonPath('questions', []);
+        $this->withHeaders(['User-Agent' => self::PHONE])->post('/en/intake', ['text' => 'something'], ['Accept' => 'application/json'])->assertCreated();   // the questions in the visitor's language
+        FakeAssistant::$answers['intake'] = ['questions' => []] + $this->toolAnswer('charm', 0.2);
+        $this->withHeaders(['User-Agent' => self::PHONE])->post('/en/intake', ['text' => 'something'], ['Accept' => 'application/json'])->assertCreated()->assertJsonPath('questions.0', __('router.question.size', [], 'en'));
 
-        // a shape: phase 1, a person with the wish for a shape
-        FakeAssistant::$answers['intake'] = ['route' => 'shape', 'tool_key' => null, 'params' => [], 'summary' => ['cs' => 'Tvar vytvoříme.', 'en' => 'x', 'es' => 'x'], 'questions' => [], 'confidence' => 0.9];
-        $this->send(['text' => 'soška draka'])->assertCreated()->assertJsonPath('route', 'human')->assertJsonPath('wants_shape', true)->assertJsonPath('summary', __('router.summary.shape', ['hours' => 24]));
+        // a shape: phase 1, a person with the wish for a shape, the tools that would also do kept (known keys, no doubles, three at most), the button offered
+        FakeAssistant::$answers['intake'] = ['route' => 'shape', 'tool_key' => null, 'params' => [], 'summary' => ['cs' => 'Tvar vytvoříme.', 'en' => 'x', 'es' => 'x'], 'questions' => [], 'confidence' => 0.9,
+            'alternatives' => ['coaster', 'teleport', 'charm', 'coaster', 'earrings', 'figure'], 'reason' => 'A dragon has no template.'];
+        $r = $this->send(['text' => 'soška draka'])->assertCreated()->assertJsonPath('route', 'human')->assertJsonPath('wants_shape', true)->assertJsonPath('summary', __('router.summary.shape', ['hours' => 24]))
+            ->assertJsonPath('alternatives', ['coaster', 'charm', 'earrings'])->assertJsonPath('rerouted', false);
+        $this->assertSame(url('/intake/'.$r->json('token').'/reroute'), $r->json('actions.reroute'));
+        $this->assertSame('A dragon has no template.', Intake::where('token', $r->json('token'))->firstOrFail()->answer['reason']);
 
         // the model's own "human" keeps the model's sentence
         FakeAssistant::$answers['intake'] = ['route' => 'human', 'tool_key' => null, 'params' => ['copies' => 4], 'summary' => ['cs' => 'Náhradní díl, podívá se člověk.', 'en' => 'x', 'es' => 'x'], 'questions' => [], 'confidence' => 0.95];
@@ -251,13 +265,23 @@ class IntakeTest extends TestCase
     public function test_the_golden_cases_route_by_keywords_when_no_model_is_there(): void
     {
         $cases = json_decode((string) file_get_contents(base_path('tests/fixtures/intake/cases.json')), true);
-        $this->assertGreaterThanOrEqual(15, count($cases));
+        $this->assertGreaterThanOrEqual(28, count($cases));
         foreach ($cases as $i => $case) {
             $d = IntakeRouter::guess($case['text'], (bool) $case['photo'], 'cs');
             $this->assertSame($case['route'], $d['route'], "#$i {$case['text']}");
-            $this->assertSame($case['tool'], $d['tool_key'], "#$i {$case['text']}");
+            // a case of round 2 may accept more than one tool (a known painting: a picture for the wall or a coaster)
+            $tools = array_values(array_filter((array) ($case['tools'] ?? [$case['tool'] ?? null])));
+            if ($tools) {
+                $this->assertContains($d['tool_key'], $tools, "#$i {$case['text']}");
+            } else {
+                $this->assertNull($d['tool_key'], "#$i {$case['text']}");
+            }
             if (array_key_exists('wants_shape', $case)) {
                 $this->assertSame($case['wants_shape'], $d['wants_shape'], "#$i wants_shape");
+            }
+            if (! empty($case['alternatives'])) {
+                $this->assertNotEmpty($d['answer']['alternatives'], "#$i a shape names the tools that would also do");
+                $this->assertSame([], array_diff($d['answer']['alternatives'], array_keys(IntakeRouter::TOOLS)), "#$i known keys only");
             }
             foreach ((array) ($case['params'] ?? []) as $k => $v) {
                 $this->assertSame($v, $d['params'][$k] ?? null, "#$i param $k");
@@ -269,6 +293,68 @@ class IntakeTest extends TestCase
         $this->app->instance(Assistant::class, new ClaudeAssistant(['api_key' => '']));
         $r = $this->send(['text' => 'Figurka našeho psa podle fotky, 10 cm'])->assertCreated()->assertJsonPath('route', 'tool')->assertJsonPath('tool_key', 'pet')->assertJsonPath('params.size_mm', 100);
         $this->assertSame(IntakeRouter::ENGINE_KEYWORDS, Intake::where('token', $r->json('token'))->firstOrFail()->model);
+    }
+
+    public function test_the_picture_tools_are_in_the_catalogue_and_the_sentence_carries_no_key(): void
+    {
+        FakeAssistant::$answers['intake'] = [
+            'route' => 'tool', 'tool_key' => 'filament_art', 'params' => ['size_mm' => 200, 'colors' => [], 'copies' => null, 'text' => null, 'place' => null, 'kind' => null],
+            'summary' => ['cs' => 'Známý obraz: navrhuji nástroj filament_art, 20 cm.', 'en' => 'A known painting: the tool `filament_art`, 20 cm.', 'es' => 'Un cuadro conocido: herramienta filament_art.'],
+            'questions' => [], 'alternatives' => ['coaster', 'charm', 'teleport', 'coaster', 'filament_art'], 'reason' => 'A painting for the wall.', 'confidence' => 0.9,
+        ];
+        $r = $this->send(['text' => 'Mona Lisa na zeď, 20 cm'])->assertCreated()->assertJsonPath('route', 'tool')->assertJsonPath('tool_key', 'filament_art')->assertJsonPath('tool', __('tools.filament_art.title'))
+            ->assertJsonPath('summary', 'Známý obraz: navrhuji nástroj '.__('tools.filament_art.title').', 20 cm.')->assertJsonPath('alternatives', ['coaster', 'charm'])->assertJsonPath('params.size_mm', 200);
+        $token = $r->json('token');
+        $this->assertSame(url('/tools/filament-art').'?intake='.$token, $r->json('actions.tool'));
+        $intake = Intake::where('token', $token)->firstOrFail();
+        $this->assertSame('A painting for the wall.', $intake->answer['reason']);
+        $this->assertSame('A known painting: the tool '.__('tools.filament_art.title', [], 'en').', 20 cm.', $intake->answer['summary']['en'], 'every language is cleaned');
+        $this->assertSame(['coaster', 'charm'], $intake->answer['alternatives']);
+
+        // the catalogue the model got: every tool with its public names in three languages, what it takes, what it makes, when to choose it
+        $call = FakeAssistant::$calls[0];
+        foreach (IntakeRouter::TOOLS as $key => $tool) {
+            $this->assertStringContainsString("\n$key | ".__('tools.'.$key.'.title', [], 'cs').' / '.__('tools.'.$key.'.title', [], 'en').' / '.__('tools.'.$key.'.title', [], 'es').' | '.$tool['takes'].' | '.$tool['makes'].' | '.$tool['when'].' | ', $call['user'], $key);
+        }
+        foreach (['filament_art', 'papel', 'sign', 'text', 'cutter', 'keychain', 'coaster', 'earrings', 'charm'] as $key) {
+            $this->assertArrayHasKey($key, IntakeRouter::TOOLS, 'the tools for a picture of round 2');
+        }
+        $this->assertStringContainsString('a picture is never a person\'s job', $call['system']);
+        $this->assertStringContainsString('Never write a tool\'s key', $call['system']);
+        $this->assertStringNotContainsString('without a designer', $call['system'], 'the first decision carries no reroute rule');
+        // the schema stays far under the API's limit of 16 unions (TODO #79): the two new fields are plain
+        $this->assertSame(6, IntakeRouter::unionCount());
+        $this->assertSame(['type' => 'array', 'items' => ['type' => 'string']], IntakeRouter::schema()['properties']['alternatives']);
+        $this->assertSame(['type' => 'string'], IntakeRouter::schema()['properties']['reason']);
+        $this->assertSame(0.45, IntakeRouter::MIN_CONFIDENCE);
+
+        // the key ring opens its quick form, the one with a picture field
+        FakeAssistant::$answers['intake'] = $this->toolAnswer('keychain', 0.9, ['text' => 'Jana', 'kind' => null]);
+        $this->withoutMiddleware(ThrottleRequests::class);
+        $r = $this->send(['text' => 'Klíčenka Jana'])->assertCreated()->assertJsonPath('tool_key', 'keychain')->assertJsonPath('params.text', 'Jana');
+        $this->assertSame(url('/tools/keychain').'?intake='.$r->json('token').'&form=1', $r->json('actions.tool'));
+    }
+
+    public function test_the_sanitizer_turns_keys_into_names_and_leaves_plain_words_alone(): void
+    {
+        $this->assertSame('Navrhuji nástroj '.__('tools.pet.title').'.', IntakeRouter::publicNames('Navrhuji nástroj pet.', 'cs'));
+        $this->assertSame('Nástrojem '.__('tools.figure.title').' to půjde.', IntakeRouter::publicNames('Nástrojem figure to půjde.', 'cs'));
+        $this->assertSame('We suggest the tool '.__('tools.coaster.title', [], 'en').'.', IntakeRouter::publicNames('We suggest the tool "coaster".', 'en'));
+        $this->assertSame('Proponemos '.__('tools.earrings.title', [], 'es').'.', IntakeRouter::publicNames('Proponemos `earrings`.', 'es'));
+        $this->assertSame(__('tools.filament_art.title').' na zeď.', IntakeRouter::publicNames('filament_art na zeď.', 'cs'));
+        $this->assertSame('Herramienta: '.__('tools.topper.title', [], 'es'), IntakeRouter::publicNames('Herramienta: topper', 'es'));
+        // the words of the sentence that happen to be keys stay words
+        $plain = 'A map of the town, a sign with the text HOME, a figure of a dog as a pet, a charm.';
+        $this->assertSame($plain, IntakeRouter::publicNames($plain, 'en'));
+        $this->assertSame('Mapa Prahy a nápis na cedulce.', IntakeRouter::publicNames('Mapa Prahy a nápis na cedulce.', 'cs'));
+        $this->assertSame('', IntakeRouter::publicNames('', 'cs'));
+    }
+
+    public function test_words_in_another_encoding_get_a_sentence_not_a_500(): void
+    {
+        $this->send(['text' => "Busta t\xE1ty, 12 cm"])->assertStatus(422)->assertJsonPath('errors.text.0', __('router.text_invalid'));
+        $this->assertSame(0, Intake::count());
+        $this->assertSame([], FakeAssistant::$calls);
     }
 
     public function test_a_3d_file_goes_the_calculators_way_and_the_words_reach_the_order(): void

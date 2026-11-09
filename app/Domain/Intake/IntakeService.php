@@ -46,6 +46,10 @@ final class IntakeService
      */
     public function create(Request $request): Intake
     {
+        // bytes that are no UTF-8 (a form posted from an odd encoding) would fail far later, in the database: a sentence instead (round 2)
+        if (is_string($request->input('text')) && ! mb_check_encoding($request->input('text'), 'UTF-8')) {
+            throw ValidationException::withMessages(['text' => __('router.text_invalid')]);
+        }
         $data = $request->validate([
             'text' => ['nullable', 'string', 'max:'.self::TEXT_MAX],
             'photo' => ['nullable', 'file', 'max:'.(self::PHOTO_MB * 1024)],
@@ -136,6 +140,30 @@ final class IntakeService
     }
 
     /**
+     * "Try it now without a designer" (round 2, docs/AN.md §22.11): an intake that ended with a person (or a shape) is
+     * decided again with both ruled out; the earlier decision stays in `answer.history`. An intake already at a tool
+     * changes nothing; a file has no designer to skip.
+     *
+     * @throws ValidationException
+     */
+    public function reroute(Intake $intake): Intake
+    {
+        if ($intake->route === Intake::ROUTE_FILE) {
+            throw ValidationException::withMessages(['route' => __('router.error')]);
+        }
+        if ($intake->route === Intake::ROUTE_TOOL && ! $intake->wants_shape) {
+            return $intake;
+        }
+        $from = $intake->wants_shape ? Intake::ROUTE_SHAPE : (string) $intake->route;
+        $this->router->reroute($intake);
+        Track::event('intake_rerouted', $intake, array_filter([
+            'from' => $from, 'to' => $intake->route, 'tool' => $intake->tool_key, 'confidence' => (float) $intake->confidence, 'ms' => (int) $intake->duration_ms,
+        ], fn ($v) => $v !== null));
+
+        return $intake;
+    }
+
+    /**
      * "A person takes it over": the customer's e-mail and consent, a confirmation to them, a mail to the operator
      * (switch `notify_inquiry` in the farm's settings).
      *
@@ -182,6 +210,7 @@ final class IntakeService
         $tool = $intake->route === Intake::ROUTE_TOOL && $intake->tool_key ? $intake->tool_key : null;
         $file = $intake->route === Intake::ROUTE_FILE ? $intake->modelFile : null;
         $calc = $file ? route('home').'?'.http_build_query(array_filter(['open' => $file->uuid, 'note' => $intake->text])) : null;
+        $rerouted = ($intake->answer['origin'] ?? null) === IntakeRouter::ORIGIN_REROUTE;
 
         return [
             'token' => $intake->token,
@@ -191,14 +220,19 @@ final class IntakeService
             'summary' => (string) $intake->summary,
             'params' => (array) $intake->params,
             'questions' => array_values((array) ($intake->answer['questions'] ?? [])),
+            'alternatives' => array_values((array) ($intake->answer['alternatives'] ?? [])),
             'wants_shape' => (bool) $intake->wants_shape,
             'has_photo' => $intake->hasPhoto(),
+            'rerouted' => $rerouted,
             'hours' => IntakePage::hours(),
             'file' => $file ? ['uuid' => $file->uuid, 'name' => $file->original_name] : null,
             'actions' => [
-                'tool' => $tool ? ToolSeo::url($tool).'?intake='.$intake->token : null,
+                // the key ring opens its quick form (?form=1), the one with a picture field; the rest their plain page
+                'tool' => $tool ? ToolSeo::url($tool).'?'.http_build_query(['intake' => $intake->token] + (IntakeRouter::TOOLS[$tool]['query'] ?? [])) : null,
                 'calc' => $calc,
                 'request' => route('intake.request', $intake),
+                // "try it now without a designer": only where a person was offered, and only once
+                'reroute' => $intake->route === Intake::ROUTE_HUMAN && ! $rerouted ? route('intake.reroute', $intake) : null,
             ],
         ];
     }
@@ -219,7 +253,8 @@ final class IntakeService
         return [
             'token' => $intake->token,
             'tool' => $tool,
-            'file' => $intake->hasPhoto() ? route('intake.file', $intake) : null,
+            // a tool of words alone (a sign, standing letters) gets no photo, whatever came in
+            'file' => $intake->hasPhoto() && (IntakeRouter::TOOLS[$tool]['input'] ?? 'photo') !== 'text' ? route('intake.file', $intake) : null,
             'name' => $intake->photo_path ? basename($intake->photo_path) : null,
             'params' => (array) $intake->params,
             'text' => $intake->text,

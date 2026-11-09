@@ -43,8 +43,31 @@
             @if(($intake->answer['route'] ?? null) && $intake->answer['route'] !== $intake->route) · model řekl <code>{{ $intake->answer['route'] }}</code>, pravidla rozhodla <code>{{ $intake->route }}</code>@endif
             @if(! empty($intake->answer['failed'])) · <span class="text-danger">volání selhalo: {{ $intake->answer['error'] ?? '' }}</span>@endif
         </p>
+        @if(! empty($intake->answer['reason']))<p class="mt-2 text-xs text-slate-500">Proč: {{ $intake->answer['reason'] }}</p>@endif
+        @if(! empty($intake->answer['alternatives']))<p class="mt-1 text-xs text-slate-500">Šlo by i: {{ implode(' · ', array_map(fn ($k) => __('tools.'.$k.'.title').' ('.$k.')', (array) $intake->answer['alternatives'])) }}</p>@endif
+        @if(($intake->answer['origin'] ?? null) === \App\Domain\Intake\IntakeRouter::ORIGIN_REROUTE)
+            <p class="mt-2 text-xs font-semibold text-action-dark">Po tlačítku „Zkusit hned bez návrháře“@if(! empty($intake->answer['forced'])) · model trval na člověku, nástroj vybrán podle {{ ['alternatives' => 'alternativ', 'words' => 'slov zadání', 'kind' => 'druhu vstupu'][$intake->answer['forced']] ?? $intake->answer['forced'] }}@endif</p>
+        @endif
         @if(is_array($intake->answer['summary'] ?? null) && $intake->answer['summary'])
             <details class="mt-2 text-xs text-slate-500"><summary class="cursor-pointer">Věty ve třech jazycích</summary>@foreach($intake->answer['summary'] as $l => $s)<p class="mt-1"><b>{{ $l }}</b> {{ $s }}</p>@endforeach</details>
+        @endif
+        {{-- the decisions before this one (round 2: the original, then every "without a designer") --}}
+        @if(! empty($intake->answer['history']))
+            <h3 class="mt-3 text-sm font-bold">Historie rozhodnutí</h3>
+            <ol class="mt-1 space-y-1 text-xs text-slate-600" id="intake-history">
+                @foreach((array) $intake->answer['history'] as $h)
+                    <li class="rounded-lg bg-slate-50 p-2">
+                        <span class="font-medium">{{ ['initial' => 'původní', 'reroute' => 'po tlačítku bez návrháře'][$h['origin'] ?? ''] ?? ($h['origin'] ?? '') }}</span>
+                        @if(! empty($h['at'])) · {{ \Carbon\Carbon::parse($h['at'])->format('j. n. H:i') }}@endif
+                        · {{ ['tool' => 'nástroj', 'human' => 'člověk', 'shape' => 'tvar', 'file' => 'kalkulačka'][$h['route'] ?? ''] ?? '—' }}@if(! empty($h['tool_key'])) · {{ __('tools.'.$h['tool_key'].'.title') }} (<code>{{ $h['tool_key'] }}</code>)@endif
+                        @if(! empty($h['wants_shape'])) · chtěl tvar podle fotky @endif
+                        · jistota {{ number_format((float) ($h['confidence'] ?? 0), 2) }}
+                        @if(! empty($h['answer']['reason'])) · proč: {{ $h['answer']['reason'] }}@endif
+                        @if(! empty($h['answer']['alternatives'])) · šlo by i: {{ implode(', ', (array) $h['answer']['alternatives']) }}@endif
+                        <br><span class="text-slate-500">{{ $h['summary'] ?? '' }}</span>
+                    </li>
+                @endforeach
+            </ol>
         @endif
     </section>
 </div>

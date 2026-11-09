@@ -458,5 +458,35 @@
     "Nabídka k vaší poptávce",
     "An offer for your request",
     "Oferta para su solicitud"
+  ],
+  "router.act.without_designer": [
+    "Zkusit hned bez návrháře",
+    "Try it now without a designer",
+    "Probar ahora sin diseñador"
+  ],
+  "router.act.rerouting": [
+    "Hledáme nejbližší šablonu…",
+    "Looking for the closest template…",
+    "Buscando la plantilla más cercana…"
+  ],
+  "router.summary.forced": [
+    "Zkusíme to hned bez návrháře: :tool. Co se do šablony nevejde, zjednodušíme; velikost a barvy doladíte v náhledu.",
+    "Let's try it right away without a designer: :tool. Whatever does not fit the template gets simplified; you adjust the size and the colours in the preview.",
+    "Lo probamos ahora sin diseñador: :tool. Lo que no quepa en la plantilla se simplifica; el tamaño y los colores los ajusta en la vista previa."
+  ],
+  "router.question.size": [
+    "Jak velké to má být?",
+    "How big should it be?",
+    "¿De qué tamaño debe ser?"
+  ],
+  "router.question.colors": [
+    "Kolik barev?",
+    "How many colours?",
+    "¿Cuántos colores?"
+  ],
+  "router.text_invalid": [
+    "Text se nepodařilo přečíst, zkuste ho napsat znovu.",
+    "We could not read the text, please type it again.",
+    "No pudimos leer el texto, escríbalo de nuevo."
   ]
 }
