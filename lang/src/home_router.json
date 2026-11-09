@@ -225,14 +225,14 @@
     "De su texto tomamos: «:text»."
   ],
   "router.summary.fallback": [
-    "Fotku a popis jsme uložili a předáme je našemu modeláři. Nechte nám e-mail, ozveme se do :hours hodin s návrhem a cenou.",
-    "We've saved your photo and description and will hand them to our modeller. Leave us your e-mail and we'll get back to you within :hours hours with a proposal and a price.",
-    "Hemos guardado la foto y el texto y se los pasaremos a nuestro modelador. Déjenos su correo y respondemos en :hours horas con una propuesta y un precio."
+    "Fotku a popis jsme uložili a předáme je našemu 3D návrháři. Nechte nám e-mail, ozveme se do :hours hodin s návrhem a cenou.",
+    "We've saved your photo and description and will hand them to our designer. Leave us your e-mail and we'll get back to you within :hours hours with a proposal and a price.",
+    "Hemos guardado la foto y el texto y se los pasaremos a nuestro diseñador. Déjenos su correo y respondemos en :hours horas con una propuesta y un precio."
   ],
   "router.summary.shape": [
-    "Na tohle nemáme hotovou šablonu, tvar podle fotky připraví náš modelář. Nechte nám e-mail, do :hours hodin pošleme náhled a cenu.",
-    "There's no ready template for this; our modeller makes the shape from your photo. Leave us your e-mail and within :hours hours we'll send a preview and a price.",
-    "Para esto no tenemos plantilla; nuestro modelador crea la forma a partir de la foto. Déjenos su correo y en :hours horas le enviamos una vista previa y el precio."
+    "Na tohle nemáme hotovou šablonu, tvar podle fotky připraví náš návrhář. Nechte nám e-mail, do :hours hodin pošleme náhled a cenu.",
+    "There's no ready template for this; our designer makes the shape from your photo. Leave us your e-mail and within :hours hours we'll send a preview and a price.",
+    "Para esto no tenemos plantilla; nuestro diseñador crea la forma a partir de la foto. Déjenos su correo y en :hours horas le enviamos una vista previa y el precio."
   ],
   "router.questions": [
     "Co ještě pomůže:",
@@ -250,9 +250,9 @@
     "Déjenos su correo"
   ],
   "router.request.lead": [
-    "Fotku a popis dostane náš modelář. Nabídku s cenou pošleme do :hours hodin.",
-    "Our modeller gets your photo and description. We'll send an offer with the price within :hours hours.",
-    "Nuestro modelador recibe la foto y el texto. Le enviamos una oferta con el precio en :hours horas."
+    "Fotku a popis dostane náš návrhář. Nabídku s cenou pošleme do :hours hodin.",
+    "Our designer gets your photo and description. We'll send an offer with the price within :hours hours.",
+    "Nuestro diseñador recibe la foto y el texto. Le enviamos una oferta con el precio en :hours horas."
   ],
   "router.request.consent": [
     "Souhlasím se zpracováním fotky a popisu pro přípravu nabídky. Po 30 dnech je smažete.",
@@ -315,9 +315,9 @@
     "Creamos la forma a partir de la foto"
   ],
   "router.paths.shape.text": [
-    "Soška, hračka, maskot, cokoli, co nemá hotovou šablonu. Tvar připraví náš modelář podle fotky, náhled dostanete e-mailem zdarma a pak se rozhodnete: nechat vyrobit, nebo stáhnout pro vlastní tiskárnu.",
-    "A statuette, a toy, a mascot, anything without a ready template. Our modeller makes the shape from the photo, you get a free preview by e-mail and then decide: have it made, or download it for your own printer.",
-    "Una estatuilla, un juguete, una mascota, cualquier cosa sin plantilla. Nuestro modelador crea la forma a partir de la foto, recibe una vista previa gratis por correo y luego decide: fabricarlo o descargarlo para su impresora."
+    "Soška, hračka, maskot, cokoli, co nemá hotovou šablonu. Tvar připraví náš návrhář podle fotky, náhled dostanete e-mailem zdarma a pak se rozhodnete: nechat vyrobit, nebo stáhnout pro vlastní tiskárnu.",
+    "A statuette, a toy, a mascot, anything without a ready template. Our designer makes the shape from the photo, you get a free preview by e-mail and then decide: have it made, or download it for your own printer.",
+    "Una estatuilla, un juguete, una mascota, cualquier cosa sin plantilla. Nuestro diseñador crea la forma a partir de la foto, recibe una vista previa gratis por correo y luego decide: fabricarlo o descargarlo para su impresora."
   ],
   "router.paths.shape.example": [
     "„Figurka našeho draka z kresby“ → náhled e-mailem, cena podle velikosti",
@@ -330,9 +330,9 @@
     "Lo toma una persona"
   ],
   "router.paths.human.text": [
-    "Náhradní díl, držák na míru, cokoli s rozměry a tolerancemi. Fotka a popis přijdou našemu modeláři, nabídku s cenou dostanete do :hours hodin.",
-    "A spare part, a custom holder, anything with dimensions and tolerances. Your photo and description go to our modeller; you'll get an offer with the price within :hours hours.",
-    "Una pieza de repuesto, un soporte a medida, cualquier cosa con dimensiones y tolerancias. La foto y el texto van a nuestro modelador; recibe una oferta con el precio en :hours horas."
+    "Náhradní díl, držák na míru, cokoli s rozměry a tolerancemi. Fotka a popis přijdou našemu 3D návrháři, nabídku s cenou dostanete do :hours hodin.",
+    "A spare part, a custom holder, anything with dimensions and tolerances. Your photo and description go to our designer; you'll get an offer with the price within :hours hours.",
+    "Una pieza de repuesto, un soporte a medida, cualquier cosa con dimensiones y tolerancias. La foto y el texto van a nuestro diseñador; recibe una oferta con el precio en :hours horas."
   ],
   "router.paths.human.example": [
     "„Kolečko do myčky, 4 ks“ → poptávka, nabídka do :hours hodin",
@@ -445,9 +445,9 @@
     "Tenemos su solicitud, respondemos en :hours horas"
   ],
   "router.mail.received.body": [
-    "Dobrý den,\n\nvaši fotku a popis jsme dostali a předali našemu modeláři. Do :hours hodin vám na tento e-mail pošleme návrh, jak to vyrobit, a cenu.\n\nVaše zadání: „:text“",
-    "Hello,\n\nwe've received your photo and description and handed them to our modeller. Within :hours hours we'll send a proposal of how to make it, and the price, to this e-mail.\n\nYour request: “:text”",
-    "Buenos días,\n\nhemos recibido su foto y su texto y se los hemos pasado a nuestro modelador. En :hours horas le enviamos a este correo una propuesta de cómo fabricarlo y el precio.\n\nSu solicitud: «:text»"
+    "Dobrý den,\n\nvaši fotku a popis jsme dostali a předali našemu 3D návrháři. Do :hours hodin vám na tento e-mail pošleme návrh, jak to vyrobit, a cenu.\n\nVaše zadání: „:text“",
+    "Hello,\n\nwe've received your photo and description and handed them to our designer. Within :hours hours we'll send a proposal of how to make it, and the price, to this e-mail.\n\nYour request: “:text”",
+    "Buenos días,\n\nhemos recibido su foto y su texto y se los hemos pasado a nuestro diseñador. En :hours horas le enviamos a este correo una propuesta de cómo fabricarlo y el precio.\n\nSu solicitud: «:text»"
   ],
   "router.mail.received.no_text": [
     "(bez popisu, jen fotka)",
