@@ -4,6 +4,7 @@ namespace Tests\Feature;
 
 use App\Domain\Farm\ColorPhotoProposals;
 use App\Domain\Farm\FarmSettings;
+use App\Domain\Farm\Palette;
 use App\Domain\Farm\PrintPhotos;
 use App\Engines\Photo\FakeBackgroundRemover;
 use App\Models\FarmColor;
@@ -245,6 +246,7 @@ class ColorPhotoProposalsTest extends TestCase
         $this->assertStringContainsString('eshop.jpg', (string) $items[$shop->code]['photo']);
         // switched off: the shop photo leaves the palette and the tiles, ours stay
         app(FarmSettings::class)->set('eshop_photos_public', false);
+        $this->app->forgetInstance(Palette::class);   // the palette memoises its rows per request; a test runs several requests in one process
         $off = collect($this->getJson('/api/config')->assertOk()->json('colors.items'))->keyBy('code');
         $this->assertNull($off[$shop->code]['photo']);
         $this->assertStringContainsString('print.jpg', (string) $off[$print->code]['photo']);
