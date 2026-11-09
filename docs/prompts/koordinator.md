@@ -52,20 +52,42 @@ systemctl restart php8.2-fpm matplace-worker 'matplace-worker@*'; php artisan up
 Pak `curl -s -o /dev/null -w '%{http_code}' https://matplace.com/<stránka>` na dotčené stránky. Při běžícím tisku
 spusť na pozadí smyčku `until … sleep 120` s výpisem „FARM FREE“ a nasaď po ní. Výpadek bývá 12 s.
 
-## Stav k 16. 10. 2026 (podrobně `project_coordinator_handoff.md` v paměti a `docs/TODO.md`)
+## Stav k 9. 11. 2026 večer (podrobně `project_coordinator_handoff.md` v paměti a `docs/TODO.md` řádky 71–82)
 
-- Nasazeno naposledy 14. 10. 06:18 UTC (profily Kobra X). **V main a nenasazeno** (pokud to předchozí koordinátor
-  nestihl – ověř `git log origin/main` proti serveru): hlavní stránka bez obrázku, jeden sloupec na střed, figurka
-  mazlíčka místo krabičky mezi nástroji; animace loga při generování (D). Nasaď, jakmile farma netiskne.
-- Čeká na Romana: výběr z `docs/Z.md` §4 (web kolo 2), text hlášky z displeje tiskárny s PETG, zkušební tisky
-  (deska s nohou, stuha, vlnitý plech, sloupek držáku na gumičky, skořepina formy), účet + klíč Meshy, svítivé
-  filamenty na farmě, Kobra X (výsledek quick testu, výpis `C:\Users\roman\Desktop\kobra-x-test\kobra_x_test.ps1`
-  z PC farmy; podle něj ovladač agenta `anycubic_lan`, nebo ruční režim), zveřejnit `pet` v `/admin/tools`.
-- Agent farmy 0.1.3 na obou PC (`agent/`, zip se staví `scratchpad/build_agent_zip.py`, bez config.yaml).
+- **Vše v main je nasazené** (server bf7cde3a = main c501dcec, 9. 11. 21:30). Žádná větev sessions nečeká na sloučení.
+  Nasazuje se skriptem `scripts/deploy_server.sh`: `ssh -i ~/.ssh/hetzner_matplace -o BatchMode=yes root@178.104.162.164 'bash -s' < scripts/deploy_server.sh`
+  (fetch, kontrola čistoty a konfliktu, záloha .env + mysqldump, merge origin/main do feature/farm, composer, npm, migrate,
+  optimize, reload php-fpm, queue:restart, curl na stránky). Jen na Romanovo „nasaď“.
+- **Živé od 9. 11.:** rozcestník na hlavní straně (#78 + 2. kolo #80: fotka/text/soubor → asistent Claude s viděním →
+  nástroj s předanou fotkou / tvar podle fotky / člověk / kalkulačka; tlačítko „Navrhni“ zopakuje rozhodnutí bez člověka;
+  admin `/admin/intake`, trychtýř v `/admin/stats`, zlatý soubor 30 případů `php artisan matplace:intake-cases` na serveru
+  = 28/30), kopie u zarovnaných barev (#72), kopie jako instance jednoho objektu (#77, limit sliceru 600 + 60 s/kus do 1200),
+  karta filamentu z e‑shopu opravená (#79, schéma pod 16 unií) a fotky z e‑shopu i pro zákazníky (#82, přepínač farmy).
+- **První úkol nové session: Shorts (TODO #81).** Zadání `docs/prompts/shorts-nazvy-format.md` je hotové (názvy nikdy ze
+  jména souboru, zkušební tisky ven ne, opakování námětu 30 dnů, jeden Short denně v `shorts_publish_hour`, první
+  vteřina hotová věc, text a hudba, bez ceny ve videu, UTM do trychtýře, rozsah YouTube Analytics + `youtube:analytics`,
+  záběry ze studia `turn`/`with_source`/`in_hand`). Roman ho chce nejdřív spolu doladit, pak „spusť“ pro session 2
+  (worktree `C:\matplace-gcode-wt`, větev `feature/shorts-titles-format`). Podklady pro Romana mimo repo:
+  `Documents\MatPlace\conceprt19092026\video-scenar-a-studio.md` (scénář videa konceptu, denní Shorts, studio) a
+  `stella-test-a-fotky.md` (fotky od Stelly teď, zkouška webu až na „web je připravený“ s přesným postupem, který
+  ještě nikdo nenapsal). Čísla kanálu: 44 videí, Shorts do 22. 10. medián 344 zhlédnutí, od 26. 10. medián 31;
+  8 videí 9. 11. přejmenováno (`youtube:retitle … --apply`), „Ball3“ (řádek 104) čeká v `/admin/youtube` bez názvu.
+- **Čeká na Romana:** „Ball3“ pojmenovat; fotky od Stelly (pak do karet dárků přes správu fotek nástrojů, AN.md §15);
+  datum do Vánoc (15. 12.) a lhůta 24 h v `/admin/farm/settings`; ceny „od“ u karet (jen busta 99 Kč); limit sliceru
+  varianta A/B (#77, dnes B); Hetzner CX53 (16 vCPU, 29,49 €) zkusit znovu, když bude volný (CPX/CCX odložil).
+- **Zadání čekající na „zadej“/„spusť“:** #76 opakování po selhání tisku viditelné ve frontě; agent 0.2.x: odmítnout
+  soubor s více `T<slot>` bez řádku mapování, zpráva při přerušené výměně; přesný postup zkoušky webu pro Stellu.
+- Tiskárny 9. 11.: vše z 8. 11. dotištěno (K X 145 i 149 se 7 barvami → 5 cívek, U1 HskDT3119 16 h, U2 148, Core One
+  147); K X mapování ověřené, S1 bere řádek mapování na prvním řádku (10116 pryč u změn podle výšky; jedna podložka
+  s více filamenty na S1 ještě neběžela).
+- Worktree: `C:\matplace-farmcolors-wt` = main (push `git push origin feature/farm-colors:main` a totéž na `server`),
+  `C:\matplace-suite-wt` na zkušební sloučení a testy (má build), `C:\matplace-fixes-wt` na PHP hotfixy (bez buildu,
+  testy stránek tam padají na manifestu), `C:\matplace-gcode-wt` session 2, `C:\matplace-edit-wt` session 3; všechny
+  čisté. Produkční DB: čtení jen s Romanovým výslovným svolením (dal ho 9. 11. pro tabulku videí).
 
 ## První kroky nové session
 
-1. Přečti `MEMORY.md`, `project_coordinator_handoff.md`, `docs/TODO.md`, konec `docs/prompts/opravy.md`.
+1. Přečti `MEMORY.md`, `project_coordinator_handoff.md`, `project_home_router.md`, `project_youtube_shorts.md`, `docs/TODO.md` (řádky 71–82) a `docs/prompts/shorts-nazvy-format.md`.
 2. `git -C C:\matplace-farmcolors-wt fetch` a porovnej `origin/main` se serverem (`git log --oneline -1` tam i tam).
 3. `ListAgents` – které session běží; nic jim nepiš, dokud Roman nezadá práci.
 4. Čekej na Romanovy pokyny; „zadej“ = napiš zadání a předej session, „nasad“ = nasaď, co je v main.
