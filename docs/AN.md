@@ -1093,7 +1093,7 @@ s alternativami a tlačítkem, katalog 14 nástrojů s názvy ve třech jazycíc
 s `form=1`, sanitizer vět, 422 u kódování). `IntakeToolPreloadTest` + 1 (filament-art, papel-picado, cookie-cutter a
 rychlý formulář klíčenky mají označené pole, sign/text dostanou parametry bez fotky). Prošlo po jedné sadě:
 IntakeTest 17/405, IntakeRerouteTest 6/146, IntakeToolPreloadTest 5/94, HomeRouterPageTest 5/112, StatsTest 21/273,
-AuditEventsTest 5/94, ToolPageTest (viz zpráva řídící); `npm run build` (app 39,0 kB, boot 270,3 kB), `pint --test`
+AuditEventsTest 5/94, ToolPageTest 25/4710, FilamentArtTest 7/145, LandingPagesTest 5/3665; `npm run build` (app 39,0 kB, boot 270,3 kB), `pint --test`
 čistý. Snímky s odpovědí a tlačítkem (390 a 1280 px, cs/en) v scratchpadu session 3 (`router2-shots/home-*-answer*.webp`).
 
 **Co rozhodne Roman.** Práh 0.45 (nebo jiný; už neznamená člověka, jen otázky). Zda „shape“ nechat jako cestu (dnes
