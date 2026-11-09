@@ -51,8 +51,15 @@ JSON přes `json.load` s kontrolou duplicit, PHPUnit po jedné sadě, pint, buil
 - **První vteřina = hotová věc**: do střihu na začátek vložit 1,0 s posledního snímku (hotový výtisk) před časosběr,
   u nástrojů z fotky vedle ní předlohu (fotka → výtisk), pak časosběr, na konci opět hotová věc tak, aby smyčka
   navazovala (poslední snímek = první).
-- **Text na obraze** z názvu videa (první řádek) a ceny (druhý řádek, když je `video_prices` zapnuté), velikost
-  a umístění jako u cenového Shortu (`SeriesCutter::priceShort` `$line`), bez vnitřních čísel.
+- **Text na obraze** z názvu videa (první řádek) a na konci výzva „matplace.com“ (druhý řádek), velikost a umístění
+  jako u cenového Shortu (`SeriesCutter::priceShort` `$line`), bez vnitřních čísel. **Cena ve videu ne** (Roman 9. 11.
+  večer): `video_prices` zůstává vypnuté jako výchozí, cena patří do popisu a do cenové série.
+- **Smyčka, varianta A** (Roman 9. 11. večer): stejný záběr hotové věci na začátku i na konci, aby se Short při
+  opakování slil. **Záběry ze studia:** Roman bude k výtiskům natáčet 10 s otáčení na talíři (a u věcí z fotky 3 s
+  s předlohou, u věcí do ruky 3 s v ruce), nahrané přes správu fotek nástrojů (docs/AN.md §15) k zakázce; když jsou,
+  řezač vezme úvod (1 s) a konec (2 s) z nich, jinak z posledního snímku časosběru. Postup pro Romana je
+  v `Documents\MatPlace\conceprt19092026\video-scenar-a-studio.md` (část 2 a 3), převezmi z něj názvy druhů záběrů
+  (`turn`, `with_source`, `in_hand`).
 - **Hudba** vždy (knihovna skladeb bez práv, jak ji používá cenový Short), tiché Shorts ven nejdou.
 - Délka 8 až 15 s (časosběr zrychlit podle délky tisku), svisle 1080×1920.
 - Popis: první řádek = název, pak dvě věty, pak výzva s odkazem **s UTM** (`?utm_source=youtube&utm_medium=shorts&
