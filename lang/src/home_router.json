@@ -460,9 +460,9 @@
     "Oferta para su solicitud"
   ],
   "router.act.without_designer": [
-    "Zkusit hned bez návrháře",
-    "Try it now without a designer",
-    "Probar ahora sin diseñador"
+    "Navrhni",
+    "Suggest",
+    "Proponer"
   ],
   "router.act.rerouting": [
     "Hledáme nejbližší šablonu…",

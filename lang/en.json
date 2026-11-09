@@ -2247,7 +2247,7 @@
     "router.mail.received.body": "Hello,\n\nwe've received your photo and description and handed them to our designer. Within :hours hours we'll send a proposal of how to make it, and the price, to this e-mail.\n\nYour request: “:text”",
     "router.mail.received.no_text": "(no description, a photo only)",
     "router.mail.reply.subject": "An offer for your request",
-    "router.act.without_designer": "Try it now without a designer",
+    "router.act.without_designer": "Suggest",
     "router.act.rerouting": "Looking for the closest template…",
     "router.summary.forced": "Let's try it right away without a designer: :tool. Whatever does not fit the template gets simplified; you adjust the size and the colours in the preview.",
     "router.question.size": "How big should it be?",
