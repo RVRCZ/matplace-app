@@ -1023,3 +1023,80 @@ a s klíčovou náhradou (§22.3), skutečný model tu nikdo nevolal.
 - Fotky od Stelly na karty dárků přes správu fotek nástrojů (§15), až budou.
 - Stránka nástroje s předanou fotkou v prohlížeči (lokálně bez tabulky nešlo; po nasazení projít
   `/tools/figure?intake=…` z opravdového zadání na telefonu).
+
+### 22.11 2. kolo: méně člověka, nástroje pro obrázek, „Zkusit hned bez návrháře“ (TODO #80)
+
+Zadání `docs/prompts/rozcestnik-kolo2.md` (Roman 9. 11. 2026 po prvním ostrém testu: u známých obrázků šlo zadání
+dvakrát člověku, až „bez návrháře“ v textu dostalo nástroj). Větev `feature/home-router-2` z `origin/main` d9d7b96a,
+worktree `C:/matplace-edit-wt`, 9. 11. 2026 večer. Nic nenasazeno, nic nemergováno, migrace žádná (tabulky stačí:
+historie je v `intakes.answer`). Klíč API ve worktree není: vše s `FakeAssistant` a zlatým souborem.
+
+**A. Katalog a pravidla (`IntakeRouter`).** `TOOLS` má 14 nástrojů: k původním osmi přibyly `filament_art` (obraz
+z vrstev filamentu na zeď, 50–250 mm, 8 barev), `papel` (portrét vystřihovánkou, 2 barvy), `sign` a `text` (cedulka,
+stojící nápis; velikost = výška písma 4–80 mm; `input => text`, fotku nedostanou), `cutter` (vykrajovátko z obrysu),
+`keychain` (klíčenka se jménem; `query => ['form' => 1]`, předání otevře rychlý formulář s polem pro obrázek). U každého
+`takes`, `makes`, nově `when` (kdy ho zvolit), rozsah a barvy; katalog v promptu nese i veřejné názvy cs/en/es
+(`tools.<klíč>.title`). Systémový prompt: hlavní pravidlo „obrázek nikdy člověku“ (fotka, kresba, malba, logo, známý
+motiv či postava → nejbližší nástroj pro obrázek: plochý motiv coaster / filament_art / charm / earrings / sign, portrét
+figure nebo papel, zvíře pet), člověk jen pro díly s rozměry, tolerancemi, závity, „aby pasovalo“ a věci bez smyslu
+i s otázkami, `shape` jen pro skutečně prostorovou věc bez šablony a i pak s `alternatives`; při nejistotě mezi
+nástroji zvolit nástroj a ptát se. `MIN_CONFIDENCE` 0.6 → **0.45** a jiný význam: nástroj pod prahem zůstává nástrojem,
+jen se přidají otázky (modelovy, jinak `router.question.size` „Jak velké to má být?“ a `router.question.colors`
+„Kolik barev?“ v jazyce návštěvníka); člověk je pro `human` od modelu, rozbitou odpověď a chybu API. Schéma: nová pole
+`alternatives` (pole řetězců, v `decide()` jen známé klíče bez zvoleného, max. 3) a `reason` (věta pro administraci,
+≤ 300 znaků); **unií (typ s null) je 6** (tool_key, size_mm, copies, text, place, kind; `IntakeRouter::unionCount()`),
+limit API je 16 (TODO #79).
+
+**B. Tlačítko a reroute.** Odpověď s cestou `human` (i `wants_shape`) má `actions.reroute = POST
+/intake/{token}/reroute` (`throttle:intake`, tedy v týchž 5/h; u nástroje a po přepočtu `null`) a `rerouted`.
+`site/intake.ts` kreslí v rámečku poptávky vedle „Odeslat poptávku“ tlačítko `router.act.without_designer` („Zkusit hned
+bez návrháře“ / „Try it now without a designer“ / „Probar ahora sin diseñador“); po stisku `router.act.rerouting`
+(„Hledáme nejbližší šablonu…“), odpověď vymění bublinu stejným `render()`, bez nového odeslání formuláře; 429 →
+`router.too_many`. `IntakeService::reroute()`: nástroj beze změny (nic se nevolá), soubor 422, jinak
+`IntakeRouter::reroute()`: dosavadní rozhodnutí (cesta, nástroj, parametry, jistota, věta, `wants_shape`, model,
+tokeny, Kč, odpověď modelu bez historie) do `answer.history[]` s `at` a `origin` (`initial` | `reroute`), nový dotaz se
+`system(true)` (pokyn „člověka ani tvar nenabízej, vyber nejbližší nástroj a řekni zákazníkovi, co se změní: zploštění
+do reliéfu, jen obrys, zjednodušení“) a řádkem v uživatelské části. Když model přesto vrátí `human`/`shape` (nebo
+volání selže): `force()` vezme první známou alternativu (nejdřív z nové odpovědi, pak z původní; busta a mazlíček bez
+fotky se přeskočí), jinak nástroj podle slov zadání (`WORDS`), jinak podle druhu vstupu: fotka → `coaster`, jen text →
+`sign`; věta domu `router.summary.forced` („Zkusíme to hned bez návrháře: :tool. Co se do šablony nevejde,
+zjednodušíme…“), `answer.forced` = `alternatives` | `words` | `kind`. `route`/`tool_key`/`params`/`confidence`/`summary`
+se přepíšou, `wants_shape` = false, `status` zůstává, tokeny a Kč se sčítají (model = poslední volání). Událost
+`intake_rerouted {from: human|shape, to, tool, confidence, ms}` (`Track::META` nově `from`, `to`).
+
+**C. Věty bez vnitřních názvů.** V promptu „nikdy nepiš klíč nástroje, jmenuj ho veřejným názvem z katalogu v jazyce
+věty“. Pojistka `IntakeRouter::publicNames()` nad každou ze tří vět: klíč v uvozovkách nebo zpětných apostrofech
+(`figure`, „pet“), klíč hned za slovem nástroj/tool/herramienta (i s dvojtečkou: „nástroj figure“ → „nástroj Busta
+nebo figurka z fotky“) a klíč, který není slovem žádného jazyka (`filament_art`), se nahradí `tools.<klíč>.title`
+v jazyce věty; jedním průchodem, aby se vložený název znovu nečetl jako klíč. Obyčejná slova shodná s klíči (map, sign,
+text, figure, pet, charm) zůstávají slovy.
+
+**D. Drobnosti.** Text mimo UTF‑8 → 422 `router.text_invalid` („Text se nepodařilo přečíst, zkuste ho napsat znovu.“;
+`mb_check_encoding` před validací, dřív by to padlo až v databázi). `/admin/intake/{token}`: „Proč“ (`reason`), „Šlo
+by i“ (alternativy s názvy), řádek „Po tlačítku Zkusit hned bez návrháře“ (+ podle čeho byl nástroj vynucen) a
+„Historie rozhodnutí“ (původní + každý přepočet: čas, cesta, nástroj, jistota, důvod, alternativy, věta); seznam má
+u řádku „bez návrháře (z člověka/tvaru)“. Trychtýř `/admin/stats`: řádek „Rozcestník bez návrháře“ =
+`Funnel::reroutes()` (člověk nabídnut = `intake_routed` s `route = human`, tlačítko stisknuto = `intake_rerouted`,
+kam to šlo podle `tool`). Blade pozor: `fotky@endif` se nepřeloží, před `@endif` musí být mezera.
+
+**E. Testy.** `tests/fixtures/intake/cases.json` 18 → 30 případů (nové: známý obraz → filament_art/coaster cs/en/es,
+logo oddílu → charm/keychain, dětská kresba → earrings/charm, portrét → figure/papel, papel picado → papel/figure,
+cedulka → sign, nápis HOME → text/sign, vykrajovátko → cutter, klíčenka se jménem → keychain/sign/charm; `tools` =
+více přijatelných nástrojů, `alternatives: true` = tvar musí jmenovat alternativy); `guess()` zná slova pro papel,
+cutter, filament_art (před charm, jehož „obráz“ bral i „obraz“), keychain, text, sign. `matplace:intake-cases` bere
+`tools` a trvá na `wants_shape`. Nový `IntakeRerouteTest` (6 testů: člověk → tlačítko → nástroj s historií, událostí a
+součtem tokenů, opakovaný stisk nic nevolá; tvar → tlačítko, model trvá → alternativy původní i nové odpovědi; bez
+alternativ slova (pes + fotka → pet) a druh vstupu (fotka → coaster, text → sign), busta bez fotky se přeskočí, pád
+druhého volání → první alternativa + `failed`; 5/h včetně tlačítka; nástroj beze změny a soubor 422; admin vidí
+historii, trychtýř počítá). `IntakeTest` upraven a rozšířen (17 testů: práh 0.45 s otázkami v jazyce stránky, tvar
+s alternativami a tlačítkem, katalog 14 nástrojů s názvy ve třech jazycích a pravidly v promptu, 6 unií, klíčenka
+s `form=1`, sanitizer vět, 422 u kódování). `IntakeToolPreloadTest` + 1 (filament-art, papel-picado, cookie-cutter a
+rychlý formulář klíčenky mají označené pole, sign/text dostanou parametry bez fotky). Prošlo po jedné sadě:
+IntakeTest 17/405, IntakeRerouteTest 6/146, IntakeToolPreloadTest 5/94, HomeRouterPageTest 5/112, StatsTest 21/273,
+AuditEventsTest 5/94, ToolPageTest (viz zpráva řídící); `npm run build` (app 39,0 kB, boot 270,3 kB), `pint --test`
+čistý. Snímky s odpovědí a tlačítkem (390 a 1280 px, cs/en) v scratchpadu session 3 (`router2-shots/home-*-answer*.webp`).
+
+**Co rozhodne Roman.** Práh 0.45 (nebo jiný; už neznamená člověka, jen otázky). Zda „shape“ nechat jako cestu (dnes
+člověk + `wants_shape` + alternativy + tlačítko), nebo ji ve fázi 2 schovat úplně za nástroje. Text tlačítka („Zkusit
+hned bez návrháře“) a věty `router.summary.forced`, `router.question.*`. Po nasazení: první skutečná rozhodnutí
+s novým katalogem v `/admin/intake` („Proč“), `matplace:intake-cases` nad 30 případy s klíčem.
