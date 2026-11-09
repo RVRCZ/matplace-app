@@ -35,6 +35,12 @@ class IntakeController extends Controller
         return response()->file($path, ['X-Robots-Tag' => 'noindex, nofollow', 'Content-Disposition' => 'inline; filename="photo.jpg"'])->setPrivate()->setMaxAge(600);
     }
 
+    /** POST /intake/{token}/reroute: "try it now without a designer", the decision made again without a person (round 2). 200 with the new decision. */
+    public function reroute(Intake $intake, IntakeService $service): JsonResponse
+    {
+        return response()->json($service->describe($service->reroute($intake)));
+    }
+
     /** POST /intake/{token}/request {email, consent, name?, phone?}: a person takes it over. */
     public function request(Request $request, Intake $intake, IntakeService $service): JsonResponse
     {
