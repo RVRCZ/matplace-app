@@ -40,6 +40,7 @@ class IntakeCases extends Command
             $intake = new Intake(['text' => $case['text'], 'locale' => 'cs', 'photo_model_path' => null]);
             $images = $case['photo'] && $photo !== '' && is_file($photo) ? [$photo] : [];
             $started = microtime(true);
+            $d = null;
             try {
                 $answer = $assistant->ask(IntakeRouter::KIND, IntakeRouter::system(), IntakeRouter::user($intake).($case['photo'] && ! $images ? "\n(The photo is not attached in this dry run.)" : ''), IntakeRouter::schema(), $images);
                 $d = IntakeRouter::decide($answer, (bool) $case['photo'], 'cs');
@@ -52,8 +53,10 @@ class IntakeCases extends Command
                 $sentence = '';
             }
             $ms = (int) round((microtime(true) - $started) * 1000);
-            $want = $case['route'].($case['tool'] ? ':'.$case['tool'] : '').(! empty($case['wants_shape']) ? ' (shape)' : '');
-            $ok = $got === $want;
+            // a case may accept more than one tool (`tools`: a known painting is a picture for the wall or a coaster)
+            $tools = array_values(array_filter((array) ($case['tools'] ?? [$case['tool'] ?? null])));
+            $want = $case['route'].($tools ? ':'.implode('|', $tools) : '').(! empty($case['wants_shape']) ? ' (shape)' : '');
+            $ok = isset($d) && $d['route'] === $case['route'] && ($tools ? in_array($d['tool_key'], $tools, true) : $d['tool_key'] === null) && $d['wants_shape'] === ! empty($case['wants_shape']);
             $agree += $ok ? 1 : 0;
             $n++;
             $call = AiCall::where('kind', IntakeRouter::KIND)->latest('id')->first();

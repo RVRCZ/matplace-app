@@ -2246,5 +2246,11 @@
     "router.mail.received.subject": "Tenemos su solicitud, respondemos en :hours horas",
     "router.mail.received.body": "Buenos días,\n\nhemos recibido su foto y su texto y se los hemos pasado a nuestro diseñador. En :hours horas le enviamos a este correo una propuesta de cómo fabricarlo y el precio.\n\nSu solicitud: «:text»",
     "router.mail.received.no_text": "(sin texto, solo la foto)",
-    "router.mail.reply.subject": "Oferta para su solicitud"
+    "router.mail.reply.subject": "Oferta para su solicitud",
+    "router.act.without_designer": "Probar ahora sin diseñador",
+    "router.act.rerouting": "Buscando la plantilla más cercana…",
+    "router.summary.forced": "Lo probamos ahora sin diseñador: :tool. Lo que no quepa en la plantilla se simplifica; el tamaño y los colores los ajusta en la vista previa.",
+    "router.question.size": "¿De qué tamaño debe ser?",
+    "router.question.colors": "¿Cuántos colores?",
+    "router.text_invalid": "No pudimos leer el texto, escríbalo de nuevo."
 }

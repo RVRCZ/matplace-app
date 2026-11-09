@@ -10,7 +10,7 @@ import { STLLoader } from 'three/examples/jsm/loaders/STLLoader.js';
 import type { Piece } from './viewer';
 import type { Stage, MenuItem, PriceConfig } from './tool_page';
 import { colorOf, spoolCode, paintSwatch, pickColor, rememberColor, materialLabel } from './colors';
-import { pickArtwork, PickedArtwork } from './artwork';
+import { pickArtwork, uploadArtwork, PickedArtwork } from './artwork';
 import { icon } from '../site/icon';
 import { FileInfo, modelMeta } from './api';
 
@@ -341,6 +341,26 @@ export function bootArt(stage: Stage): void {
         await propose();
         void refresh().then(commit);
     };
+    // the hidden picture field: a file put there is uploaded like a picked one; the home page's router hands its
+    // photo over this way (intake_preload.ts, docs/AN.md §22.11)
+    const hiddenArt = document.getElementById('art-artwork') as HTMLInputElement | null;
+    if (hiddenArt) {
+        hiddenArt.onchange = async () => {
+            const file = hiddenArt.files?.[0];
+            if (!file) return;
+            $('art-artwork-state').textContent = stage.t('param.artwork.uploading');
+            try {
+                const picked = await uploadArtwork(file);
+                setArtwork(picked);
+                lookChosen = false;
+                await propose();
+                void refresh().then(commit);
+            } catch (e) {
+                $('art-artwork-state').textContent = (e as Error).message || stage.t('param.artwork.failed');
+            }
+            hiddenArt.value = '';
+        };
+    }
     $('art-poster-build').onclick = () => { window.clearTimeout(timer); void refresh().then(commit); };
 
     // ── the form ─────────────────────────────────────────────────────────────────────────────────────

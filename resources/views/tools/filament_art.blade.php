@@ -1,7 +1,7 @@
 @php
     $integer = fn (array $f) => $f[3] === 1;
     $unit = fn (string $k) => in_array($k, ['colors_n', 'bg_strength'], true) ? '' : (in_array($k, ['contrast', 'brightness', 'saturation'], true) ? '%' : 'mm');
-    $i18n = collect(['param.working', 'param.failed', 'param.too_fast', 'param.creating', 'param.artwork.failed', 'toolpage.color.out'])->mapWithKeys(fn ($k) => [$k => __($k)])
+    $i18n = collect(['param.working', 'param.failed', 'param.too_fast', 'param.creating', 'param.artwork.failed', 'param.artwork.uploading', 'toolpage.color.out'])->mapWithKeys(fn ($k) => [$k => __($k)])
         ->merge(collect(['art.part.body', 'art.part.frame', 'art.part.plate', 'art.part.color', 'art.found', 'art.print.layered', 'art.print.stack', 'art.print.stack1', 'art.print.one', 'art.depth',
             'art.guide', 'art.guide.hint', 'art.guide.back', 'art.guide.front', 'art.guide.posts', 'art.guide.flat', 'art.guide.frame', 'art.guide.led', 'art.guide.glue', 'art.frame.size',
             'colors.share', 'colors.up', 'colors.down', 'colors.merge', 'colors.merge.into', 'colors.split', 'colors.picture',
@@ -51,6 +51,8 @@
                     <p id="art-artwork-state" class="mt-1 text-sm text-muted" aria-live="polite"></p>
                 </div>
             </div>
+            {{-- data-intake-photo: the field the home page's router hands its photo to (resources/js/calc/intake_preload.ts); the window has fields of its own --}}
+            <input id="art-artwork" data-intake-photo type="file" accept="image/png,image/jpeg,image/webp,.svg,image/svg+xml" class="sr-only" tabindex="-1" aria-hidden="true">
             <p class="hint mt-1 !text-xs">{{ __('edit.art.picture.hint') }}</p>
         </fieldset>
         {{-- how the picture is read: a drawing as it is, a photo or a painting simplified to areas that can be printed --}}
