@@ -215,9 +215,14 @@ class ColorPhotoProposalsTest extends TestCase
         $this->load(1, $shop);
         $this->load(3, $print);
         $this->assertStringContainsString('legacy.jpg', (string) $legacy->customerPhoto());
-        $this->assertNull($shop->customerPhoto());
-        $this->assertStringContainsString('eshop.jpg', (string) $shop->photoUrl(), 'the admin\'s view still has it');
+        // since 9 Nov 2026 the shop's photo shows to customers too (farm setting eshop_photos_public, on by default)
+        $this->assertStringContainsString('eshop.jpg', (string) $shop->customerPhoto());
         $this->assertStringContainsString('print.jpg', (string) $print->customerPhoto());
+        app(\App\Domain\Farm\FarmSettings::class)->set('eshop_photos_public', false);
+        $this->assertNull($shop->fresh()->customerPhoto(), 'switched off: admin only, as before');
+        $this->assertStringContainsString('eshop.jpg', (string) $shop->photoUrl(), 'the admin\'s view still has it');
+        $this->assertStringContainsString('legacy.jpg', (string) $legacy->fresh()->customerPhoto());
+        app(\App\Domain\Farm\FarmSettings::class)->set('eshop_photos_public', true);
 
         // the colour tiles of an order (#69): photo per colour
         $order = $this->orderForCube();

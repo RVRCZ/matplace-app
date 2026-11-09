@@ -531,6 +531,7 @@ class FarmCatalogController extends Controller
         $data['farm_open'] = $request->boolean('farm_open');
         $data['farm_public'] = $request->boolean('farm_public');
         $data['video_prices'] = $request->boolean('video_prices');
+        $data['eshop_photos_public'] = $request->boolean('eshop_photos_public');
         // which events the operator is mailed about (OrderFlow::alertAdmin); a box left empty switches that kind off
         foreach (OrderFlow::ADMIN_KINDS as $kind) {
             $data['notify_'.$kind] = $request->boolean('notify_'.$kind);
