@@ -34,6 +34,8 @@
 @include('admin.stats.overview')
 {{-- "print again" on the order page and in My prints (docs/AL.md §15) --}}
 <p class="mt-3 text-sm text-slate-600">Zakázky přes Opakovat tisk za {{ $stats['days'] }} dní: <strong>{{ $stats['repeats']['made'] }}</strong>, zaplacené {{ $stats['repeats']['paid'] }}.</p>
+{{-- "without a designer" on the home page's router (docs/AN.md §22.11) --}}
+<p class="mt-1 text-sm text-slate-600" id="stats-reroutes">Rozcestník bez návrháře za {{ $stats['days'] }} dní: člověk nabídnut <strong>{{ $stats['reroutes']['offered'] }}×</strong>, tlačítko stisknuto <strong>{{ $stats['reroutes']['pressed'] }}×</strong>@if($stats['reroutes']['to']), pak šlo do: {{ implode(', ', array_map(fn ($k, $n) => (\Illuminate\Support\Facades\Lang::has('tools.'.$k.'.title') ? __('tools.'.$k.'.title') : $k).' '.$n.'×', array_keys($stats['reroutes']['to']), $stats['reroutes']['to'])) }}@endif.</p>
 
 <div class="mt-3 flex flex-wrap items-center gap-x-5 gap-y-2 text-sm">
     <form method="get" class="flex flex-wrap items-center gap-2">

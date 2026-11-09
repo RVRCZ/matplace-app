@@ -33,6 +33,7 @@
                         <span class="font-medium">{{ ['tool' => 'nástroj', 'human' => 'člověk', 'shape' => 'tvar', 'file' => 'kalkulačka'][$i->route] ?? '—' }}</span>
                         @if($i->tool_key)<br><span class="text-xs text-slate-500">{{ __('tools.'.$i->tool_key.'.title') }}</span>@endif
                         @if($i->wants_shape)<br><span class="text-xs text-warn">chce tvar podle fotky</span>@endif
+                        @if(($i->answer['origin'] ?? null) === \App\Domain\Intake\IntakeRouter::ORIGIN_REROUTE)<br><span class="text-xs text-action-dark">bez návrháře (z {{ ['tool' => 'nástroje', 'human' => 'člověka', 'shape' => 'tvaru'][collect($i->answer['history'] ?? [])->last()['route'] ?? ''] ?? '?' }})</span>@endif
                         <br><span class="text-xs text-slate-400">{{ ['new' => 'nové', 'opened' => 'nástroj otevřen', 'human' => 'u člověka', 'closed' => 'uzavřeno'][$i->status] ?? $i->status }}</span>
                     </td>
                     <td class="px-3 py-2">

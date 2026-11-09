@@ -129,8 +129,30 @@ final class Funnel
             'days' => $days, 'sessions' => count($sessions), 'paths' => $paths,
             'by_source' => $breakdown('source'), 'by_locale' => $breakdown('locale'),
             'tools' => $tools, 'designers' => $this->designers($days), 'audit' => $this->audit($sessions),
-            'repeats' => $this->repeats($days),
+            'repeats' => $this->repeats($days), 'reroutes' => $this->reroutes($days),
         ];
+    }
+
+    /**
+     * "Without a designer" on the home page's router (docs/AN.md §22.11): how many decisions offered a person, how many
+     * times the button was pressed, and which tool it then went to; the admin's own tries are not tracked.
+     *
+     * @return array{offered: int, pressed: int, to: array<string, int>}
+     */
+    public function reroutes(int $days): array
+    {
+        $since = now()->subDays($days);
+        $offered = Event::where('type', 'intake_routed')->where('created_at', '>=', $since)->get(['meta'])
+            ->filter(fn (Event $e) => (($e->meta['route'] ?? null) === 'human'))->count();
+        $pressed = Event::where('type', 'intake_rerouted')->where('created_at', '>=', $since)->get(['meta']);
+        $to = [];
+        foreach ($pressed as $e) {
+            $key = (string) ($e->meta['tool'] ?? $e->meta['to'] ?? 'other');
+            $to[$key] = ($to[$key] ?? 0) + 1;
+        }
+        arsort($to);
+
+        return ['offered' => $offered, 'pressed' => $pressed->count(), 'to' => $to];
     }
 
     /**
