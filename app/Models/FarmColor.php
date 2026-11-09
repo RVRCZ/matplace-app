@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Domain\Farm\FarmSettings;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
@@ -104,6 +105,11 @@ class FarmColor extends Model
      */
     public function customerPhoto(): ?string
     {
-        return $this->photo_source === self::PHOTO_ESHOP ? null : $this->photoUrl();
+        // an e-shop's photo goes to customers only while the farm setting allows it (Roman 9 Nov 2026: yes by default)
+        if ($this->photo_source === self::PHOTO_ESHOP && ! app(FarmSettings::class)->get('eshop_photos_public')) {
+            return null;
+        }
+
+        return $this->photoUrl();
     }
 }

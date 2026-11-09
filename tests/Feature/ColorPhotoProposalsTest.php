@@ -3,6 +3,8 @@
 namespace Tests\Feature;
 
 use App\Domain\Farm\ColorPhotoProposals;
+use App\Domain\Farm\FarmSettings;
+use App\Domain\Farm\Palette;
 use App\Domain\Farm\PrintPhotos;
 use App\Engines\Photo\FakeBackgroundRemover;
 use App\Models\FarmColor;
@@ -215,28 +217,41 @@ class ColorPhotoProposalsTest extends TestCase
         $this->load(1, $shop);
         $this->load(3, $print);
         $this->assertStringContainsString('legacy.jpg', (string) $legacy->customerPhoto());
-        $this->assertNull($shop->customerPhoto());
-        $this->assertStringContainsString('eshop.jpg', (string) $shop->photoUrl(), 'the admin\'s view still has it');
+        // since 9 Nov 2026 the shop's photo shows to customers too (farm setting eshop_photos_public, on by default)
+        $this->assertStringContainsString('eshop.jpg', (string) $shop->customerPhoto());
         $this->assertStringContainsString('print.jpg', (string) $print->customerPhoto());
+        app(FarmSettings::class)->set('eshop_photos_public', false);
+        $this->assertNull($shop->fresh()->customerPhoto(), 'switched off: admin only, as before');
+        $this->assertStringContainsString('eshop.jpg', (string) $shop->photoUrl(), 'the admin\'s view still has it');
+        $this->assertStringContainsString('legacy.jpg', (string) $legacy->fresh()->customerPhoto());
+        app(FarmSettings::class)->set('eshop_photos_public', true);
 
         // the colour tiles of an order (#69): photo per colour
         $order = $this->orderForCube();
         $state = $this->actingAs($this->user)->getJson("/farm/orders/{$order->token}/status")->assertOk()->json();
         $tiles = collect($state['colors'])->keyBy('color_id');
         $this->assertStringContainsString('legacy.jpg', (string) $tiles[$legacy->id]['photo']);
-        $this->assertNull($tiles[$shop->id]['photo']);
+        $this->assertStringContainsString('eshop.jpg', (string) $tiles[$shop->id]['photo'], 'since 9 Nov 2026 the shop photo is shown while the switch is on');
         $this->assertStringContainsString('print.jpg', (string) $tiles[$print->id]['photo']);
         $html = (string) $this->actingAs($this->user)->get("/farm/orders/{$order->token}")->assertOk()->getContent();
-        $this->assertStringNotContainsString('eshop.jpg', $html);
+        $this->assertStringContainsString('eshop.jpg', $html);
         $this->assertStringContainsString('legacy.jpg', $html);
-        // the admin's view of the same order carries the same colours and still no shop photo for the tiles
+        // the admin's view of the same order carries the same colours and the same photos
         $his = $this->actingAs($this->admin)->getJson("/farm/orders/{$order->token}/status")->assertOk()->json();
-        $this->assertNull(collect($his['colors'])->keyBy('color_id')[$shop->id]['photo']);
+        $this->assertStringContainsString('eshop.jpg', (string) collect($his['colors'])->keyBy('color_id')[$shop->id]['photo']);
 
         // the calculator's and the catalogue's palette (/api/config)
         $items = collect($this->getJson('/api/config')->assertOk()->json('colors.items'))->keyBy('code');
         $this->assertStringContainsString('legacy.jpg', (string) $items[$legacy->code]['photo']);
-        $this->assertNull($items[$shop->code]['photo']);
+        $this->assertStringContainsString('eshop.jpg', (string) $items[$shop->code]['photo']);
+        // switched off: the shop photo leaves the palette and the tiles, ours stay
+        app(FarmSettings::class)->set('eshop_photos_public', false);
+        $this->app->forgetInstance(Palette::class);   // the palette memoises its rows per request; a test runs several requests in one process
+        $off = collect($this->getJson('/api/config')->assertOk()->json('colors.items'))->keyBy('code');
+        $this->assertNull($off[$shop->code]['photo']);
+        $this->assertStringContainsString('print.jpg', (string) $off[$print->code]['photo']);
+        $this->assertNull(collect($this->actingAs($this->user)->getJson("/farm/orders/{$order->token}/status")->assertOk()->json('colors'))->keyBy('color_id')[$shop->id]['photo']);
+        app(FarmSettings::class)->set('eshop_photos_public', true);
         $this->assertStringContainsString('print.jpg', (string) $items[$print->code]['photo']);
 
         // the admin's materials list shows every photo, the shop's marked

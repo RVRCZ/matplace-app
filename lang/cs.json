@@ -2247,7 +2247,7 @@
     "router.mail.received.body": "Dobrý den,\n\nvaši fotku a popis jsme dostali a předali našemu 3D návrháři. Do :hours hodin vám na tento e-mail pošleme návrh, jak to vyrobit, a cenu.\n\nVaše zadání: „:text“",
     "router.mail.received.no_text": "(bez popisu, jen fotka)",
     "router.mail.reply.subject": "Nabídka k vaší poptávce",
-    "router.act.without_designer": "Zkusit hned bez návrháře",
+    "router.act.without_designer": "Navrhni",
     "router.act.rerouting": "Hledáme nejbližší šablonu…",
     "router.summary.forced": "Zkusíme to hned bez návrháře: :tool. Co se do šablony nevejde, zjednodušíme; velikost a barvy doladíte v náhledu.",
     "router.question.size": "Jak velké to má být?",
