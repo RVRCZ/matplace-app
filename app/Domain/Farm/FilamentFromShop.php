@@ -572,7 +572,7 @@ final class FilamentFromShop
             '- `images`: one row for every attached picture, in order (index 0 is the first). `shows_this_spool`: the picture shows the filament (spool or printed sample) in THIS colour, not a different colour, a diagram, a size chart, a printer or packaging alone. `has_shop_logo_or_watermark`: the picture carries the shop\'s logo, watermark, badge, price tag or promotional text (the maker\'s own logo on the spool label is fine). `best_image`: the index of the cleanest picture that shows this spool, null when none does.',
             '- `settings`: the maker\'s recommended values from the page: nozzle temperature (°C), first-layer nozzle temperature if given, bed temperature (°C), maximum volumetric speed (mm³/s), drying (as text, e.g. "45 °C / 6 h"). For a range give the middle rounded to 5 °C (190–220 → 205). `declared` is true only when the page states at least one of them; when it says nothing, all null and declared false. Never make settings up.',
             '- `net_weight_g`: the net weight of the filament on the spool in grams (1 kg → 1000, 800 g → 800, 250 g → 250). A Shopify "shipping weight" is the parcel, not the filament. Null when unknown.',
-            '- `price`: the price of one spool and its ISO currency (CZK, EUR, USD), the one the page shows for the chosen variant; null when the page shows none.',
+            '- `price`: the price of one spool and its ISO currency (CZK, EUR, USD), the one the page shows for the chosen variant; amount null and currency empty when the page shows none.',
             '- `confidence`: 0 to 1, how sure you are about the whole card (the kind, the colour, the settings).',
             '- `notes`: at most three short sentences in Czech for the operator: what was unclear, what you converted, what the page did not say.',
             '',
@@ -621,6 +621,8 @@ final class FilamentFromShop
     /** The answer the model must give. */
     public static function schema(): array
     {
+        // the API compiles the schema and refuses more than 16 union-typed (nullable) properties (HTTP 400 on the first
+        // production card, 8 Nov 2026): the strings that may be unknown come back empty instead of null, the numbers stay nullable
         $nullable = fn (string $type) => ['type' => [$type, 'null']];
         $object = fn (array $props) => ['type' => 'object', 'properties' => $props, 'required' => array_keys($props), 'additionalProperties' => false];
 
@@ -629,7 +631,7 @@ final class FilamentFromShop
             'name_cs' => ['type' => 'string'],
             'name_en' => ['type' => 'string'],
             'manufacturer' => $nullable('string'),
-            'material' => $object(['id' => $nullable('integer'), 'code' => $nullable('string'), 'finish' => $nullable('string'), 'suggestion' => $nullable('string')]),
+            'material' => $object(['id' => $nullable('integer'), 'code' => $nullable('string'), 'finish' => $nullable('string'), 'suggestion' => ['type' => 'string']]),
             'colour_name' => $nullable('string'),
             'hex_declared' => $nullable('string'),
             'hex_guess' => $nullable('string'),
@@ -637,7 +639,7 @@ final class FilamentFromShop
             'images' => ['type' => 'array', 'items' => $object(['index' => ['type' => 'integer'], 'shows_this_spool' => ['type' => 'boolean'], 'has_shop_logo_or_watermark' => ['type' => 'boolean']])],
             'settings' => $object(['nozzle' => $nullable('integer'), 'nozzle_first' => $nullable('integer'), 'bed' => $nullable('integer'), 'max_volumetric_speed' => $nullable('number'), 'drying' => $nullable('string'), 'declared' => ['type' => 'boolean']]),
             'net_weight_g' => $nullable('integer'),
-            'price' => $object(['amount' => $nullable('number'), 'currency' => $nullable('string')]),
+            'price' => $object(['amount' => $nullable('number'), 'currency' => ['type' => 'string']]),
             'confidence' => ['type' => 'number'],
             'notes' => ['type' => 'string'],
         ]);
