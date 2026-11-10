@@ -54,19 +54,19 @@ spusť na pozadí smyčku `until … sleep 120` s výpisem „FARM FREE“ a nas
 
 ## Stav po dokončení Shorts #81 (podrobně `docs/TODO.md` řádky 71–82)
 
-- **Produkce je stále bf7cde3a = main c501dcec z 9. 11. 21:30. Shorts #81 je nově v main a NENASAZENÝ.**
+- **Shorts #81 NASAZENÝ 10. 11. 2026 06:31: server e27e456e, migrace proběhla, workery restartovány, stránky 200.**
   Nasazuje se skriptem `scripts/deploy_server.sh`: `ssh -i ~/.ssh/hetzner_matplace -o BatchMode=yes root@178.104.162.164 'bash -s' < scripts/deploy_server.sh`
   (fetch, kontrola čistoty a konfliktu, záloha .env + mysqldump, merge origin/main do feature/farm, composer, npm, migrate,
   optimize, reload php-fpm, queue:restart, curl na stránky). Jen na Romanovo „nasaď“.
 - **Živé od 9. 11.:** rozcestník na hlavní straně (#78 + 2. kolo #80), kopie u zarovnaných barev (#72), kopie jako instance
   jednoho objektu (#77), opravená karta filamentu z e‑shopu (#79) a fotky z e‑shopu i pro zákazníky (#82).
-- **Shorts (TODO #81) hotové a sloučené:** session 2 odevzdala `feature/shorts-titles-format` commit `6bba0b8a`, merge do main
+- **Shorts (TODO #81) hotové, sloučené a nasazené:** session 2 odevzdala `feature/shorts-titles-format` commit `6bba0b8a`, merge
   `0ce6c33e`. Dokončeno A–F: AI/katalogové názvy bez jmen souborů, fronta a 30denní opakování, pět klipů s mobilním natočením
-  nebo nahráním v `/admin/youtube`, automatický střih se zvukem `removal`, UTM trychtýř, Analytics a CSV. Nad sloučeným main
-  47 PHP testů/1004 asercí, 2 JS testy, Pint, TypeScript a build prošly; 4 reálné rendery v tomto běhu přeskočené bez
-  `FFMPEG_BIN`, agent předtím ověřil reálné Short rendery 10 testů/269 asercí. Fyzický mobil a samostatný reálný render všech
-  klipů zůstávají k ověření po deployi. Nesouvisející starý reálný test měsíční délky čeká 98 s, pravidla dávají 74 s; neměnit
-  v rámci #81. Dokumentace `docs/AL.md` §13.9. **Čeká na „nasaď“, migraci, znovu připojení Analytics a Romanovy volby.**
+  nebo nahráním v `/admin/youtube`, automatický střih se zvukem `removal`, UTM trychtýř, Analytics a CSV. Při deployi opravena
+  blokace mikrofonu v Permissions-Policy (`95e24eb6`, nyní `microphone=(self)`; SecurityHeadersTest 8/43). Nad sloučeným main
+  47 PHP testů/1004 asercí, 2 JS testy, Pint, TypeScript a build prošly; agent ověřil reálné Short rendery 10 testů/269 asercí.
+  Fyzický mobil a samostatný reálný render všech klipů zůstávají k ověření. Nesouvisející starý reálný test měsíční délky čeká
+  98 s, pravidla dávají 74 s; neměnit v rámci #81. Dokumentace `docs/AL.md` §13.9. **Roman znovu připojí Analytics a potvrdí volby.**
   Podklady mimo repo: `video-scenar-a-studio.md`, `stella-test-a-fotky.md`. Ball3 zůstává `pending` bez videa na YouTube
   a název mu Roman doplní před zveřejněním.
 - **Čeká na Romana:** „Ball3“ pojmenovat; fotky od Stelly (pak do karet dárků přes správu fotek nástrojů, AN.md §15);
