@@ -19,12 +19,15 @@
     @elseif($account)
         <p class="mt-1 text-sm">Připojeno: <a href="{{ $account->url() }}" target="_blank" rel="noopener" class="font-semibold underline">{{ $account->channel_title }}</a>
             <span class="text-xs text-slate-500">· {{ $account->created_at->format('j. n. Y H:i') }}</span></p>
-        <form method="post" action="{{ route('admin.youtube.disconnect') }}" class="mt-2" onsubmit="return confirm('Odpojit kanál? Nová videa se přestanou nahrávat. Oprávnění u Googlu zůstane, pokud ho používá i Search Console.')">@csrf<button class="btn-quiet text-sm">Odpojit</button></form>
+        <div class="mt-2 flex flex-wrap gap-2">
+            <form method="post" action="{{ route('admin.youtube.connect') }}">@csrf<button class="btn-primary text-sm">{{ __('youtube.analytics.reconnect') }}</button></form>
+            <form method="post" action="{{ route('admin.youtube.disconnect') }}" onsubmit="return confirm('Odpojit kanál? Nová videa se přestanou nahrávat. Oprávnění u Googlu zůstane, pokud ho používá i Search Console.')">@csrf<button class="btn-quiet text-sm">Odpojit</button></form>
+        </div>
     @else
         <p class="mt-1 text-sm text-slate-600">Kanál není připojený. Přihlaste se účtem, pod kterým kanál je (r.v@matplace.cz), a povolte přístup.</p>
         <form method="post" action="{{ route('admin.youtube.connect') }}" class="mt-2">@csrf<button class="btn-primary text-sm">Připojit YouTube kanál</button></form>
     @endif
-    <p class="mt-2 text-xs text-slate-500">Z každého tisku vzniká čtvercový Short a klasické video 16:9, každou neděli v 18:00 týdenní sestřih; všechna mají hudbu. Video čeká tady, jen u zakázek, kde zákazník dal souhlas. Na YouTube se nahraje až po schválení a hned je veřejné; co zamítnete, se nikam nenahrává (YouTube počítá každé nahrání do denního limitu kanálu).</p>
+    <p class="mt-2 text-xs text-slate-500">Z každého tisku vzniká svislý Short 9:16 a klasické video 16:9, každou neděli v 18:00 týdenní sestřih; všechna mají hudbu. Video čeká tady, jen u zakázek, kde zákazník dal souhlas. Na YouTube se nahraje až po schválení a hned je veřejné; co zamítnete, se nikam nenahrává (YouTube počítá každé nahrání do denního limitu kanálu).</p>
 </section>
 
 {{-- how the channel does --}}
@@ -67,6 +70,7 @@
                     <li class="flex flex-wrap justify-between gap-2">
                         <span><a href="{{ $v->watchUrl() }}" target="_blank" rel="noopener" class="underline">{{ $v->title }}</a> <span class="text-xs text-slate-500">· {{ $v->order?->number ?? $kindNames[$v->kind] }}</span></span>
                         <span class="text-slate-600">{{ $n($v->views) }} zhlédnutí · {{ $n($v->likes) }} lajků</span>
+                        @if($v->analytics)<span class="w-full text-xs text-slate-500">{{ __('youtube.analytics.summary', ['views' => $v->analytics['views'] ?? 0, 'retention' => $v->analytics['averageViewPercentage'] ?? 0, 'seconds' => $v->analytics['averageViewDuration'] ?? 0]) }}</span>@endif
                     </li>
                 @endforeach
             </ol>
@@ -163,7 +167,10 @@
         @foreach($missing as $o)
             <div class="flex flex-wrap items-center justify-between gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm">
                 <span><a href="{{ route('admin.farm.orders.show', $o) }}" class="underline">{{ $o->number }}</a> · {{ $o->color?->material?->label() }} {{ $o->color?->displayName() }}</span>
-                <form method="post" action="{{ route('admin.youtube.queue', $o) }}">@csrf<button class="btn-quiet text-sm">Nahrát na YouTube</button></form>
+                <form method="post" action="{{ route('admin.youtube.queue', $o) }}">@csrf
+                    @if($o->isTest())<input type="hidden" name="allow_test" value="1"><span class="mr-2 text-xs text-action-dark">{{ __('youtube.queue.allow_test') }}</span>@endif
+                    <button class="btn-quiet text-sm">{{ $o->isTest() ? __('youtube.queue.allow_test_button') : 'Nahrát na YouTube' }}</button>
+                </form>
             </div>
         @endforeach
     </div>

@@ -14,7 +14,7 @@
         'intake_submitted' => 'Odeslal fotku, soubor nebo popis', 'intake_routed|intake_file_to_calc' => 'Rozhodnuto (asistent, nebo soubor do kalkulačky)',
         'intake_tool_opened|intake_human_created|intake_file_to_calc' => 'Otevřel nástroj, nechal e-mail, nebo soubor v kalkulačce',
     ];
-    $paths = ['sales' => 'Prodejní cesta', 'customer' => 'Zákazník', 'owner' => 'Majitel tiskárny', 'designer' => 'Designér', 'order' => 'Objednávka (audit)', 'intake' => 'Rozcestník (odesláno → rozhodnuto → nástroj / poptávka / soubor → zaplaceno)'];
+    $paths = ['sales' => 'Prodejní cesta', 'customer' => 'Zákazník', 'owner' => 'Majitel tiskárny', 'designer' => 'Designér', 'order' => 'Objednávka (audit)', 'intake' => 'Rozcestník (odesláno → rozhodnuto → nástroj / poptávka / soubor → zaplaceno)', 'youtube' => 'z YouTube → odesláno → Vytvořit → zaplaceno'];
     $sources = ['google' => 'Google', 'seznam' => 'Seznam', 'bing' => 'Bing', 'facebook' => 'Facebook', 'instagram' => 'Instagram', 'youtube' => 'YouTube', 'designer' => 'Odkaz designéra', 'embed' => 'Vložená kalkulačka', 'direct' => 'Přímo', 'other' => 'Ostatní'];
 @endphp
 

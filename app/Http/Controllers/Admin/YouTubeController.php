@@ -8,6 +8,7 @@ use App\Domain\Farm\TestPhotos;
 use App\Domain\Social\VideoSharer;
 use App\Domain\YouTube\FarmVideos;
 use App\Domain\YouTube\ShowcasePrints;
+use App\Domain\YouTube\VideoClips;
 use App\Domain\YouTube\YouTubeClient;
 use App\Domain\YouTube\YouTubeError;
 use App\Engines\Social\MetaClient;
@@ -42,8 +43,9 @@ class YouTubeController extends Controller
 
     public function index(): View
     {
-        $videos = FarmVideo::with(['order.color.material', 'order.printer', 'order.user'])->latest('id')->limit(300)->get();
-        $waiting = $videos->whereIn('status', [FarmVideo::STATUS_PENDING, FarmVideo::STATUS_UPLOADED, FarmVideo::STATUS_QUEUED, FarmVideo::STATUS_UPLOADING, FarmVideo::STATUS_FAILED])->sortByDesc(fn ($v) => $v->score ?? -1)->values();
+        $videos = FarmVideo::with(['order.color.material', 'order.printer', 'order.user', 'order.modelFile', 'order.catalogModel', 'clips'])->latest('id')->limit(300)->get();
+        $waiting = $videos->whereIn('status', [FarmVideo::STATUS_PENDING, FarmVideo::STATUS_UPLOADED, FarmVideo::STATUS_QUEUED, FarmVideo::STATUS_UPLOADING, FarmVideo::STATUS_FAILED])
+            ->sort(fn ($a, $b) => $this->videos->queueRank($a) <=> $this->videos->queueRank($b) ?: ($b->score ?? -1) <=> ($a->score ?? -1))->values();
 
         return view('admin.youtube.index', [
             'configured' => $this->youtube->configured(),
@@ -69,7 +71,7 @@ class YouTubeController extends Controller
             'totals' => ['views' => (int) $videos->sum('views'), 'likes' => (int) $videos->sum('likes'), 'comments' => (int) $videos->sum('comments'),
                 'published' => $videos->where('status', FarmVideo::STATUS_PUBLISHED)->count(), 'at' => $videos->max('stats_at')],
             // agreed and filmed, but never queued (e.g. finished before the channel was connected)
-            'missing' => FarmOrder::with(['color.material'])->where('kind', FarmOrder::KIND_PRINT)->where('video_consent', true)
+            'missing' => FarmOrder::with(['color.material'])->whereIn('kind', [FarmOrder::KIND_PRINT, FarmOrder::KIND_TEST])->where('video_consent', true)
                 ->whereNotNull('timelapse_path')->whereDoesntHave('videos')->latest('id')->limit(50)->get(),
         ]);
     }
@@ -141,11 +143,28 @@ class YouTubeController extends Controller
         return redirect()->route('admin.youtube.index')->with('status', 'Kanál je odpojený. Nová videa se nahrávat nebudou.');
     }
 
-    public function queue(FarmOrder $order): RedirectResponse
+    public function queue(Request $request, FarmOrder $order): RedirectResponse
     {
-        $video = $this->videos->queueFor($order);
+        $video = $this->videos->queueFor($order, $request->boolean('allow_test'));
 
         return back()->with($video ? 'status' : 'error', $video ? 'Video je ve frontě na nahrání.' : 'Tuhle zakázku teď nahrát nejde (chybí souhlas, video nebo připojený kanál).');
+    }
+
+    public function storeClip(Request $request, FarmVideo $video, string $kind, VideoClips $clips): RedirectResponse
+    {
+        $data = $request->validate(['clip' => ['required', 'file', 'max:102400']]);
+        $clips->store($video, $kind, $data['clip']);
+
+        return back()->with('status', __('youtube.clips.stored'));
+    }
+
+    public function fileClip(FarmVideo $video, string $kind, VideoClips $clips): BinaryFileResponse
+    {
+        $path = $clips->path($video, $kind);
+        abort_unless($path !== null, 404);
+        $clip = $video->clips->firstWhere('kind', $kind);
+
+        return response()->file($path, ['Content-Type' => $clip?->mime ?: 'video/mp4', 'Cache-Control' => 'no-cache']);
     }
 
     public function publish(Request $request, FarmVideo $video): RedirectResponse

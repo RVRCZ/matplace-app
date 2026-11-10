@@ -33,33 +33,36 @@ class FarmVideos
     /** Models made from photos (busts and figures, lithophanes, reliefs): may show a person, so the consent box starts empty. */
     public const PRIVATE_KINDS = ['generated', 'lithophane', 'relief'];
 
+    /** @var array<int, array<string, mixed>|null> */
+    private array $titleProposals = [];
+
     public function __construct(private readonly YouTubeClient $youtube) {}
 
     /** A finished customer print whose owner agreed to share it, with the file of that kind (Short or 16:9) built. */
-    public function eligible(FarmOrder $order, string $kind = FarmVideo::KIND_SHORT): bool
+    public function eligible(FarmOrder $order, string $kind = FarmVideo::KIND_SHORT, bool $allowTest = false): bool
     {
         $path = $kind === FarmVideo::KIND_WIDE ? $order->timelapse_wide_path : $order->timelapse_path;
+        $kindAllowed = in_array($order->kind, [FarmOrder::KIND_PRINT, FarmOrder::KIND_SHOWCASE], true) || ($allowTest && $order->isTest());
 
-        return in_array($order->kind, [FarmOrder::KIND_PRINT, FarmOrder::KIND_SHOWCASE], true)
-            && $order->video_consent
-            && $path
-            && Storage::disk(config('farm.disk'))->exists($path);
+        return $kindAllowed && $order->video_consent && $path && Storage::disk(config('farm.disk'))->exists($path);
     }
 
     /**
      * Called when the videos are ready and when the customer agrees later: the Short and the 16:9 each wait for the
      * admin as their own video. Rejected videos stay rejected. Returns the Short's row (the 16:9's when there is no Short).
      */
-    public function queueFor(FarmOrder $order): ?FarmVideo
+    public function queueFor(FarmOrder $order, bool $allowTest = false): ?FarmVideo
     {
-        if (! YouTubeAccount::current()) {
+        if (! YouTubeAccount::current() || ($order->isTest() && ! $allowTest && ! $order->videos()->where('meta->allow_test', true)->exists())) {
             return null;
         }
+        $allowTest = $allowTest || $order->videos()->where('meta->allow_test', true)->exists();
+        $text = $this->titleData($order);
         $rows = [];
         $fresh = false;
         // the 16:9 of the same print goes up only when youtube.wide_uploads says so (the audit of 27 Oct 2026: duplicates split the views)
         foreach (config('youtube.wide_uploads') ? [FarmVideo::KIND_SHORT, FarmVideo::KIND_WIDE] : [FarmVideo::KIND_SHORT] as $kind) {
-            if (! $this->eligible($order, $kind)) {
+            if (! $this->eligible($order, $kind, $allowTest)) {
                 continue;
             }
             $video = $order->videos()->where('kind', $kind)->first();
@@ -69,13 +72,16 @@ class FarmVideos
                 continue;
             }
             $video ??= new FarmVideo(['farm_order_id' => $order->id, 'kind' => $kind]);
+            $needsTitle = ! $video->title && $text['needs_title'];
             $video->fill([
-                'status' => FarmVideo::STATUS_PENDING, 'youtube_id' => null, 'error' => null, 'approved_at' => null,
-                'title' => $video->title ?: $this->defaultTitle($order, $kind),
+                'status' => FarmVideo::STATUS_PENDING, 'youtube_id' => null, 'error' => $needsTitle ? __('youtube.video.missing_title') : null, 'approved_at' => null,
+                'title' => $video->title ?: $text['title'], 'subject' => $video->subject ?: $text['subject'],
+                'meta' => array_filter(['allow_test' => $allowTest && $order->isTest() ? true : null, 'title_needed' => $needsTitle ? true : null,
+                    'title_en' => $text['title_en'] ?: null, 'title_confidence' => $text['confidence']]) + (array) $video->meta,
                 'score' => $video->score ?? $this->score($order),
                 // one track for all versions of the order: the one the videos were built with
                 'music' => $music = $video->music ?? $order->videos()->whereNotNull('music')->value('music') ?? $this->pickMusic($order),
-                'description' => $video->description ?: $this->defaultDescription($order, $music, $kind),
+                'description' => $video->description ?: $this->defaultDescription($order, $music, $kind, title: $text['title'], summary: $text['summary']),
             ])->save();
             $rows[$kind] = $video;
             $fresh = true;
@@ -173,7 +179,7 @@ class FarmVideos
             return $video->path && Storage::disk(config('farm.disk'))->exists($video->path) && $this->consented($video);
         }
 
-        return $video->order && $this->eligible($video->order, $video->kind ?? FarmVideo::KIND_SHORT);
+        return $video->order && $this->eligible($video->order, $video->kind ?? FarmVideo::KIND_SHORT, ! empty($video->meta['allow_test']));
     }
 
     /** The queue job: send an approved time-lapse to YouTube and make it public. */
@@ -189,9 +195,14 @@ class FarmVideos
 
             return;
         }
+        if ($video->kind === FarmVideo::KIND_SHORT && (! $video->music || ! in_array($video->music, $this->tracks(), true))) {
+            $video->update(['status' => FarmVideo::STATUS_PENDING, 'approved_at' => null, 'scheduled_at' => null, 'error' => __('youtube.video.missing_music')]);
+
+            return;
+        }
         $video->update(['status' => FarmVideo::STATUS_UPLOADING, 'error' => null]);
         // the slot the admin's approval got; a wait for the quota may have carried the video past it
-        $at = $video->approved_at && $video->scheduled_at ? ($video->scheduled_at->gt(now()->addMinutes(5)) ? $video->scheduled_at : $this->nextSlot()) : null;
+        $at = $video->approved_at && $video->scheduled_at ? ($video->scheduled_at->gt(now()->addMinutes(5)) ? $video->scheduled_at : $this->nextSlot($video)) : null;
 
         try {
             // the music is in the file already (TimelapseCutter)
@@ -245,12 +256,23 @@ class FarmVideos
      */
     public function publish(FarmVideo $video, string $title, string $description, int $adminId, bool $now = false, ?array $share = null): FarmVideo
     {
+        if ($video->kind === FarmVideo::KIND_SHORT && (! $video->music || ! in_array($video->music, $this->tracks(), true))) {
+            throw new YouTubeError('missing_music', __('youtube.video.missing_music'));
+        }
+        if (! empty($video->meta['title_needed']) && $title === $video->title) {
+            throw new YouTubeError('title_needed', __('youtube.video.missing_title'));
+        }
+        $fileName = (string) ($video->order?->modelFile?->original_name ?? '');
+        if ($fileName !== '' && app(VideoTitles::class)->containsFileName($title.' '.$description, $fileName)) {
+            throw new YouTubeError('file_name', __('youtube.video.file_name_forbidden'));
+        }
+        $meta = ! empty($video->meta['title_needed']) && $title !== $video->title ? array_diff_key((array) $video->meta, ['title_needed' => true]) : $video->meta;
         if ($share !== null) {
             $video->share = array_values(array_intersect(VideoSharer::PLATFORMS, $share));   // where else it goes (VideoSharer), once public
         }
         if (! $video->youtube_id && in_array($video->status, [FarmVideo::STATUS_PENDING, FarmVideo::STATUS_QUEUED, FarmVideo::STATUS_FAILED], true)) {
-            $video->update(['title' => $title, 'description' => $description, 'status' => FarmVideo::STATUS_QUEUED, 'error' => null,
-                'approved_at' => now(), 'scheduled_at' => $now ? null : $this->nextSlot(), 'decided_by' => $adminId, 'decided_at' => now()]);
+            $video->update(['title' => $title, 'description' => $description, 'meta' => $meta, 'status' => FarmVideo::STATUS_QUEUED, 'error' => null,
+                'approved_at' => now(), 'scheduled_at' => $now ? null : $this->nextSlot($video), 'decided_by' => $adminId, 'decided_at' => now()]);
             UploadFarmVideo::dispatch($video->id);
 
             return $video;
@@ -264,12 +286,12 @@ class FarmVideos
         $description = self::withVideoId($description, $video->youtube_id);
         if (! $now && $video->status === FarmVideo::STATUS_UPLOADED) {
             // private on YouTube: give it the slot and let YouTube flip it
-            $at = $this->nextSlot();
+            $at = $this->nextSlot($video);
             $r = $this->youtube->publish($video->youtube_id, $title, $description, $at);
             if ($r['publishAt'] === '') {
                 throw new YouTubeError('not_scheduled', 'YouTube did not take the publishing time.');
             }
-            $video->update(['title' => $title, 'description' => $description, 'status' => FarmVideo::STATUS_SCHEDULED, 'scheduled_at' => $at,
+            $video->update(['title' => $title, 'description' => $description, 'meta' => $meta, 'status' => FarmVideo::STATUS_SCHEDULED, 'scheduled_at' => $at,
                 'approved_at' => $video->approved_at ?? now(), 'decided_by' => $adminId, 'decided_at' => now(), 'error' => null]);
 
             return $video;
@@ -277,7 +299,7 @@ class FarmVideos
         $privacy = $this->youtube->publish($video->youtube_id, $title, $description)['privacy'];
         $public = $privacy === 'public';
         $video->update([
-            'title' => $title, 'description' => $description,
+            'title' => $title, 'description' => $description, 'meta' => $meta,
             'status' => $public ? FarmVideo::STATUS_PUBLISHED : FarmVideo::STATUS_UPLOADED,
             'published_at' => $public ? now() : null, 'scheduled_at' => null, 'decided_by' => $adminId, 'decided_at' => now(),
             // an API project YouTube has not audited yet keeps every uploaded video locked private
@@ -341,7 +363,7 @@ class FarmVideos
     }
 
     /**
-     * "Postavit znovu": what the button of a waiting Short can do. Only a Short carries a price in its picture; null =
+     * "Postavit znovu": what the button of a waiting Short can do. Rebuilding also replaces an older price card; null =
      * no button, `running` = being built, `no_frames` = the frames are gone (BuildFarmTimelapse::KEEP_FRAMES_DAYS).
      */
     public function rebuildState(FarmVideo $video): ?string
@@ -537,10 +559,12 @@ class FarmVideos
      * youtube.max_per_day videos a day, never within the next ten minutes. Videos already holding a slot (approved,
      * scheduled) and ones published on a day count against it, so approvals spread out over the days by themselves.
      */
-    public function nextSlot(): Carbon
+    public function nextSlot(?FarmVideo $video = null): Carbon
     {
         $tz = (string) config('youtube.publish_timezone', 'Europe/Prague');
-        $times = (array) config('youtube.publish_times', ['18:00']) ?: ['18:00'];
+        $times = $video?->kind === FarmVideo::KIND_SHORT
+            ? [(string) app(FarmSettings::class)->get('shorts_publish_hour')]
+            : ((array) config('youtube.publish_times', ['18:00']) ?: ['18:00']);
         sort($times);
         $max = max(1, (int) config('youtube.max_per_day', 1));
         $earliest = now()->addMinutes(10);
@@ -591,7 +615,7 @@ class FarmVideos
         return $pool[$order->id % count($pool)];
     }
 
-    /** The square Short when it was built (it grows the channel), else the customer's time-lapse. */
+    /** The portrait Short when it was built (it grows the channel), else the customer's time-lapse. */
     public function file(FarmOrder $order): string
     {
         $short = $order->timelapse_short_path;
@@ -643,8 +667,15 @@ class FarmVideos
             $url .= '/';
         }
 
-        // utm_content = the YouTube video id, so the statistics say which video sent the visitor (known after the upload)
-        return $url.(str_contains($url, '?') ? '&' : '?').http_build_query(array_filter(['utm_source' => $source, 'utm_medium' => 'social', 'utm_campaign' => 'video_'.$kind, 'utm_content' => $content]));
+        $short = $source === 'youtube' && $kind === FarmVideo::KIND_SHORT;
+
+        // Before upload a Short names its order; withVideoId replaces that temporary mark by the YouTube id.
+        return $url.(str_contains($url, '?') ? '&' : '?').http_build_query(array_filter([
+            'utm_source' => $source,
+            'utm_medium' => $short ? 'shorts' : 'social',
+            'utm_campaign' => $short ? 'short' : 'video_'.$kind,
+            'utm_content' => $content ?? ($short ? $order?->number : null),
+        ]));
     }
 
     /** A video row's link on a channel: its print's tool page, the how-to spec's target (meta.link), the weekly cut the home page; marked with the video's id once it has one. */
@@ -661,16 +692,13 @@ class FarmVideos
         return $this->link(in_array($kind, FarmVideo::OF_MANY, true) ? null : $video->order, $kind, $source, $target, $video->youtube_id ?: null);
     }
 
-    /**
-     * Our links in a text written before the video had an id, marked with it now (`utm_content=<id>` after the
-     * campaign); links that carry a content mark already stay. The description is written when the video is queued and
-     * the id arrives with the upload.
-     */
+    /** Add a newly known video id, replacing the temporary order mark of a Short but never another video's id. */
     public static function withVideoId(string $text, ?string $id): string
     {
         if ($id === null || $id === '') {
             return $text;
         }
+        $text = (string) preg_replace('/(utm_source=youtube&utm_medium=shorts&utm_campaign=short&utm_content=)[^\s&"\'<>]*/', '$1'.rawurlencode($id), $text);
 
         return (string) preg_replace('/(utm_campaign=video_[a-z]+)(?![^\s"\'<>]*utm_content=)/', '$1&utm_content='.rawurlencode($id), $text);
     }
@@ -678,7 +706,13 @@ class FarmVideos
     /** A text written for YouTube with our links marked for another channel: the same pages, that channel's utm_source. */
     public function forChannel(string $text, string $source): string
     {
-        return str_replace('utm_source=youtube&', 'utm_source='.$source.'&', $text);
+        return str_replace([
+            'utm_source=youtube&utm_medium=shorts&utm_campaign=short',
+            'utm_source=youtube&',
+        ], [
+            'utm_source='.$source.'&utm_medium=social&utm_campaign=video_short',
+            'utm_source='.$source.'&',
+        ], $text);
     }
 
     /**
@@ -738,7 +772,7 @@ class FarmVideos
         return $file->origin === 'tool' ? (in_array($file->origin_ref, ['lithophane', 'relief'], true) ? 'relief' : (string) $file->kind()) : null;
     }
 
-    /** What the print cost, rounded to whole crowns or euros, as the Short's end and the comment say it; null for a free print. */
+    /** What the print cost, rounded to whole crowns or euros, as the description and comment say it; null for a free print. */
     public function price(FarmOrder $order, ?string $locale = null): ?string
     {
         if ($order->price_total === null || (float) $order->price_total <= 0) {
@@ -748,13 +782,13 @@ class FarmVideos
         return Money::of(round((float) $order->price_total), (string) ($order->currency ?: Money::CZK))->format($locale ?? (string) config('youtube.language'));
     }
 
-    /** The admin's switch (/admin/farm/settings): do the videos built from now on show what a print cost? */
+    /** The admin's switch (/admin/farm/settings): may the price series and comments show what a print cost? */
     public function showsPrices(): bool
     {
         return (bool) app(FarmSettings::class)->get('video_prices');
     }
 
-    /** "Cena: 99 Kč" on the Short's end; '' without a price (a showcase) or with the prices switched off. */
+    /** "Cena: 99 Kč" on a price-series card; '' without a price (a showcase) or with the prices switched off. */
     public function priceLine(FarmOrder $order, ?string $locale = null): string
     {
         $price = $this->showsPrices() ? $this->price($order, $locale) : null;
@@ -804,63 +838,100 @@ class FarmVideos
             'line' => __($name !== null && $material !== '' ? 'youtube.video.card' : 'youtube.video.card_time', ['material' => $material, 'time' => $facts['time']], $locale)];
     }
 
-    /**
-     * "Busta z jedné fotky – 1 h 33 min tisku": what came out (the tool's hook, else the model's name) and the print
-     * time; never how short the video is (the viewer sees that). Unique on the channel: a second print of the same kind
-     * and time names its colour, a third its order.
-     */
+    /** The public title: tool template, catalogue name, then a confident visual proposal; never the uploaded file name. */
     public function defaultTitle(FarmOrder $order, string $kind = FarmVideo::KIND_SHORT): string
     {
-        $locale = (string) config('youtube.language');
-        $facts = $this->facts($order);
-        $tool = $this->toolKind($order);
-        $key = 'youtube.title.'.($tool ?? 'default');
-        if ($tool !== null && __($key, [], $locale) !== $key) {
-            $title = __('youtube.video.title_plain', ['name' => __($key, [], $locale), 'time' => $facts['time']], $locale);
-        } elseif (($name = $this->modelName($order, $locale)) !== null) {
-            $title = __('youtube.video.title_plain', ['name' => $name, 'time' => $facts['time']], $locale);
-        } else {
-            $title = __('youtube.video.title_unnamed', ['time' => $facts['time']], $locale);
-        }
-        $taken = fn (string $t) => FarmVideo::where('title', $t)->where('farm_order_id', '!=', $order->id)->whereNotIn('status', [FarmVideo::STATUS_REJECTED, FarmVideo::STATUS_WITHDRAWN, FarmVideo::STATUS_FAILED])->exists();
-        if ($taken($title) && trim($facts['color']) !== '') {
-            $title .= ' ('.trim($facts['color']).')';
-        }
-        if ($taken($title) && $order->number) {
-            $title .= ' · '.$order->number;
-        }
-
-        return mb_substr($title, 0, 100);
+        return (string) $this->titleData($order)['title'];
     }
 
-    /** What the customer printed, in words: the tool's name, or the uploaded file's name tidied up. Null when nothing readable is left. */
+    /** @return array{title: string, title_en: string, summary: string, subject: ?string, confidence: ?float, needs_title: bool} */
+    private function titleData(FarmOrder $order): array
+    {
+        $locale = (string) config('youtube.language');
+        $order->loadMissing(['modelFile', 'catalogModel']);
+        $tool = $this->toolKind($order);
+        $key = 'youtube.title.'.($tool ?? 'default');
+        $name = null;
+        $subject = null;
+        if ($tool !== null && __($key, [], $locale) !== $key) {
+            $name = __($key, [], $locale);
+            $subject = 'tool:'.$tool.':'.($order->catalog_model_id ?: $order->model_file_id);
+        } elseif ($order->catalogModel?->title) {
+            $name = trim((string) $order->catalogModel->title);
+            $subject = 'catalog:'.$order->catalogModel->id;
+        }
+        if ($name !== null) {
+            $title = __('youtube.video.title_plain', ['name' => $name, 'time' => $this->roundedTime($order)], $locale);
+
+            return ['title' => mb_substr($title, 0, 100), 'title_en' => '', 'summary' => '', 'subject' => $subject, 'confidence' => null, 'needs_title' => false];
+        }
+        if (! array_key_exists($order->id, $this->titleProposals)) {
+            $this->titleProposals[$order->id] = app(VideoTitles::class)->propose($order);
+        }
+        $proposal = $this->titleProposals[$order->id];
+        if ($proposal) {
+            return ['title' => $proposal['title_cs'], 'title_en' => $proposal['title_en'], 'summary' => $proposal['description_cs'],
+                'subject' => $proposal['subject'], 'confidence' => $proposal['confidence'], 'needs_title' => false];
+        }
+
+        return ['title' => __('youtube.video.title_needed', [], $locale), 'title_en' => '', 'summary' => '', 'subject' => null, 'confidence' => null, 'needs_title' => true];
+    }
+
+    /** A print time rounded to half an hour, without the Short's own duration or an internal order number. */
+    public function roundedTime(FarmOrder $order): string
+    {
+        $minutes = (int) ($order->actual_minutes ?: $order->est_minutes);
+        if ($minutes < 60) {
+            return trans_choice('youtube.video.minutes', max(1, (int) round($minutes / 5) * 5), ['n' => max(1, (int) round($minutes / 5) * 5)], (string) config('youtube.language'));
+        }
+        $hours = max(1, round($minutes / 30) / 2);
+        $whole = floor($hours) === $hours;
+        $n = $whole ? (int) $hours : $hours;
+
+        return ($whole ? (string) $n : str_replace('.', ',', (string) $n)).' '.trans_choice('youtube.video.hours', $whole ? (int) $hours : ($hours < 5 ? 2 : 5), [], (string) config('youtube.language'));
+    }
+
+    /** The last public video of the same subject in the last 30 days; such a waiting video goes to the end of the queue. */
+    public function repeated(FarmVideo $video): ?FarmVideo
+    {
+        if (! $video->order || ! in_array($video->kind, [FarmVideo::KIND_SHORT, FarmVideo::KIND_WIDE], true)) {
+            return null;
+        }
+        $recent = FarmVideo::where('id', '!=', $video->id)->where('status', FarmVideo::STATUS_PUBLISHED)->where('published_at', '>=', now()->subDays(30));
+        if ($video->subject) {
+            return $recent->where('subject', $video->subject)->latest('published_at')->first();
+        }
+        $tool = $this->toolKind($video->order);
+
+        return $tool ? $recent->whereHas('order', fn ($q) => $q->where('model_file_id', $video->order->model_file_id))->get()
+            ->first(fn (FarmVideo $v) => $v->order && $this->toolKind($v->order) === $tool) : null;
+    }
+
+    /** Lower goes first: tool/catalogue subjects, then visual proposals; repeats and explicitly allowed tests wait. */
+    public function queueRank(FarmVideo $video): int
+    {
+        if ($video->order?->isTest() || $this->repeated($video)) {
+            return 2;
+        }
+
+        return $video->subject && str_starts_with($video->subject, 'tool:') || $video->subject && str_starts_with($video->subject, 'catalog:') ? 0 : 1;
+    }
+
+    /** What the customer printed: the tool's or catalogue's public name. An uploaded file name is deliberately not a fallback. */
     public function modelName(FarmOrder $order, ?string $locale = null): ?string
     {
+        $order->loadMissing(['modelFile', 'catalogModel']);
+        if ($order->catalogModel?->title) {
+            return trim((string) $order->catalogModel->title);
+        }
         $file = $order->modelFile;
         if (! $file) {
             return null;
         }
         $kind = $file->kind();
         $tool = $kind === 'generated' ? 'figure' : ($file->origin === 'tool' ? $kind : null);
-        if ($tool && ($title = __('tools.'.$tool.'.title', [], $locale)) !== 'tools.'.$tool.'.title') {
-            return $title;
-        }
-        $name = pathinfo((string) $file->original_name, PATHINFO_FILENAME);
-        $name = preg_replace('/\(\d+\)|\bcopy\b/i', ' ', $name);             // "louskacek (1)", "part copy"
-        $name = preg_replace('/\d+(?:[.,]\d+)?\s*(?:mm|cm)\b/i', ' ', (string) $name);   // "felpa100mm"
-        $words = [];
-        foreach (preg_split('/[\s_\-.]+/u', (string) $name, -1, PREG_SPLIT_NO_EMPTY) as $w) {
-            // sizes, versions, numbers and body parts of an export say nothing to a viewer
-            if (preg_match('/^(\d+([.,]\d+)?(mm|cm|m)?|\d+x\d+(x\d+)?|v\d+|body\d*|part\d*|[0-9a-f]{12,})$/i', $w)) {
-                continue;
-            }
-            if (! in_array(mb_strtolower($w), array_map('mb_strtolower', $words), true)) {
-                $words[] = $w;
-            }
-        }
-        $clean = trim(implode(' ', $words));
 
-        return mb_strlen($clean) >= 3 ? mb_strtoupper(mb_substr($clean, 0, 1)).mb_substr($clean, 1, 60) : null;
+        return $tool && ($title = __('tools.'.$tool.'.title', [], $locale)) !== 'tools.'.$tool.'.title' ? $title : null;
     }
 
     /** Length of a video on the farm disk in whole seconds (ffmpeg reads it), null when unknown. */
@@ -895,16 +966,35 @@ class FarmVideos
         return $name;
     }
 
-    /** The call with the link first (the tool's page or the home page, the kind's campaign), what was printed and how, the music credit; the Short gets its hashtags. */
-    public function defaultDescription(FarmOrder $order, ?string $music = null, string $kind = FarmVideo::KIND_SHORT, ?string $videoId = null): string
+    /** A Short starts with its title and two plain sentences; the other kinds keep the established description. */
+    public function defaultDescription(FarmOrder $order, ?string $music = null, string $kind = FarmVideo::KIND_SHORT, ?string $videoId = null, ?string $title = null, ?string $summary = null): string
     {
         $locale = (string) config('youtube.language');
+        if ($kind === FarmVideo::KIND_SHORT) {
+            $title ??= $this->defaultTitle($order, $kind);
+            $summary = trim((string) $summary) ?: __('youtube.video.short_summary', [], $locale);
+            $lines = [$title, $summary, $this->callLine($this->link($order, $kind, 'youtube', null, $videoId), $locale)];
+            $facts = $this->facts($order);
+            $material = trim($facts['material'].' '.$facts['color']);
+            if ($material !== '') {
+                $lines[] = __('youtube.video.short_material', ['material' => $material], $locale);
+            }
+            if (($price = $this->price($order, $locale)) !== null) {
+                $lines[] = __('youtube.video.short_price', ['price' => $price], $locale);
+            }
+            $text = implode("\n\n", $lines);
+            if ($music) {
+                $text .= "\n\n".__('youtube.video.music', ['track' => self::musicCredit($music)], $locale);
+            }
+
+            return $text."\n\n".$this->hashtags($order, $locale);
+        }
         $text = __('youtube.video.description', $this->facts($order) + ['shown' => $this->shownAtEnd($this->showsPrices(), $locale), 'cta' => $this->callLine($this->link($order, $kind, 'youtube', null, $videoId), $locale)], $locale);
         if ($music) {
             $text .= "\n\n".__('youtube.video.music', ['track' => self::musicCredit($music)], $locale);
         }
 
-        return $kind === FarmVideo::KIND_SHORT && $order->timelapse_short_path ? $text."\n\n".$this->hashtags($order, $locale) : $text;
+        return $text;
     }
 
     /** The description's words for what the end of the video shows. */

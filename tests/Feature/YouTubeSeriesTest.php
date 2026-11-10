@@ -92,6 +92,7 @@ final class YouTubeSeriesTest extends TestCase
 
     public function test_the_price_short_takes_photographed_prints_of_different_tools_at_random_and_waits_for_the_admin(): void
     {
+        app(FarmSettings::class)->set('video_prices', true);
         $vase = $this->print('vase', 490);
         $box = $this->print('box', 320);
         $qr = $this->print('qr', 890);
@@ -209,6 +210,7 @@ final class YouTubeSeriesTest extends TestCase
 
     public function test_with_the_prices_off_the_price_short_is_not_built_and_the_page_says_why(): void
     {
+        app(FarmSettings::class)->set('video_prices', true);
         foreach (['vase', 'box', 'qr'] as $tool) {
             $this->print($tool, 490);
         }
@@ -323,6 +325,7 @@ final class YouTubeSeriesTest extends TestCase
             $this->markTestSkipped('FFMPEG_BIN not set: rendering needs a real ffmpeg');
         }
         config(['farm.ffmpeg' => $ffmpeg, 'youtube.cut.monthly.min_prints' => 3]);
+        app(FarmSettings::class)->set('video_prices', true);
         Process::run([$ffmpeg, '-y', '-loglevel', 'error', '-f', 'lavfi', '-i', 'sine=frequency=330:duration=20', $this->music.'/Artist - Song.mp3'])->throw();
         $cutter = app(TimelapseCutter::class);
         $disk = Storage::disk('farm');

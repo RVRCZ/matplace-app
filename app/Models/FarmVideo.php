@@ -5,6 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 /**
  * A print video on YouTube: the Short or the 16:9 of one farm order, or a cut of many (the weekly cut, the price Short, the
@@ -41,7 +42,7 @@ class FarmVideo extends Model
 
     public const STATUS_MISSING = 'missing';
 
-    /** The square Short (Reels and the Facebook page take it too) */
+    /** The portrait Short (Reels and the Facebook page take it too) */
     public const KIND_SHORT = 'short';
 
     /** The classic 16:9 of the same print, its own video on the channel */
@@ -64,14 +65,19 @@ class FarmVideo extends Model
     /** The kinds cut from many prints: no order of their own, the orders in them in meta.orders (every customer must still agree). */
     public const OF_MANY = [self::KIND_WEEKLY, self::KIND_PRICE, self::KIND_MONTHLY];
 
-    protected $fillable = ['farm_order_id', 'kind', 'path', 'meta', 'status', 'youtube_id', 'title', 'description', 'error', 'uploaded_at', 'published_at', 'decided_by', 'decided_at', 'approved_at', 'scheduled_at', 'share', 'views', 'likes', 'comments', 'stats_at', 'score', 'music'];
+    protected $fillable = ['farm_order_id', 'kind', 'path', 'meta', 'status', 'youtube_id', 'title', 'subject', 'description', 'error', 'uploaded_at', 'published_at', 'decided_by', 'decided_at', 'approved_at', 'scheduled_at', 'share', 'views', 'likes', 'comments', 'stats_at', 'analytics', 'score', 'music'];
 
-    protected $casts = ['uploaded_at' => 'datetime', 'published_at' => 'datetime', 'decided_at' => 'datetime', 'approved_at' => 'datetime', 'scheduled_at' => 'datetime', 'share' => 'array', 'meta' => 'array', 'stats_at' => 'datetime',
+    protected $casts = ['uploaded_at' => 'datetime', 'published_at' => 'datetime', 'decided_at' => 'datetime', 'approved_at' => 'datetime', 'scheduled_at' => 'datetime', 'share' => 'array', 'meta' => 'array', 'stats_at' => 'datetime', 'analytics' => 'array',
         'views' => 'int', 'likes' => 'int', 'comments' => 'int', 'score' => 'int'];
 
     public function order(): BelongsTo
     {
         return $this->belongsTo(FarmOrder::class, 'farm_order_id');
+    }
+
+    public function clips(): HasMany
+    {
+        return $this->hasMany(FarmVideoClip::class);
     }
 
     public function watchUrl(): ?string

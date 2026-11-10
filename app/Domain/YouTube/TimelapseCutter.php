@@ -7,6 +7,7 @@ use App\Domain\Farm\TestPhotos;
 use App\Domain\Farm\TimelapseFrames;
 use App\Models\FarmOrder;
 use App\Models\FarmVideo;
+use App\Models\FarmVideoClip;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Log;
@@ -17,8 +18,8 @@ use Illuminate\Support\Facades\Storage;
  * Plans and renders the farm videos from the frames the agent sent during a print (settings in config youtube.cut):
  *
  *   customer  the order page: black, the logo, 3 2 1, the print grows, the finished piece, the photo, thank you
- *   short     vertical 9:16 for Shorts and Reels: the hook card, the print growing, the piece held, the photographed piece
- *             with the price and the tool's address, the question (docs/AL.md §13.4)
+ *   short     vertical 9:16 for Shorts and Reels: the finished piece, 4–6 s of growth, supplementary clips,
+ *             then the opening shot again; its public title and matplace.com, never a price (docs/AL.md §13.9)
  *   wide      classic 16:9 at 1920×1080: title, the print, the piece held, the photo, the tool's address (under 45 s)
  *   weekly    "Tento týden na farmě": every print of a week with its name, 2 to 4 minutes, with chapters
  *
@@ -154,74 +155,73 @@ class TimelapseCutter
             [$thanks => __('farm.timelapse.thanks', [], $order->user?->locale ?? config('app.locale'))], $inputs, implode(';', $graph), $seconds, $growth, $fps, null, 26), $music);
     }
 
-    /**
-     * The vertical Short (the YouTube audit of 27 Oct 2026): the first second is a card with the hook ("Z jedné fotky →
-     * busta") over the first frame, then the print grows (the square of the bed across the width, the same picture
-     * blurred behind it), the last frame is held, and the end shows the photographed piece (PrintPhotos' 9:16 render;
-     * without a photo the finished print stays on the plate) with the price, the address of the tool and the question
-     * that asks for a comment. A small logo sits in the corner throughout.
-     */
+    /** Finished piece first, 4–6 s of growth, available supplementary clips, then the same opening shot as a loop. */
     public function short(FarmOrder $order): VideoCut
     {
         $c = (array) config('youtube.cut.short');
-        [$fps, $w, $h] = [(int) $c['fps'], (int) ($c['width'] ?? 1080), (int) ($c['height'] ?? 1920)];
+        [$fps, $w, $h] = [(int) $c['fps'], 1080, 1920];
         [$frames, $per] = $this->paced($this->frames($order), $c['growth'], $fps);
         $dir = $this->dir($order);
-        $locale = (string) config('youtube.language');
-        [$hook, $hold, $end] = [(float) $c['hook'], (float) $c['hold'], (float) $c['end']];
-        $first = (string) $frames->first();
         $last = (string) $frames->last();
-        [$fw, $fh] = @getimagesize($first) ?: [1280, 720];
-        [$cx, $cy, $side] = $this->crop($order, (int) $fw, (int) $fh);
-        $photo = $this->finishPhoto($order, 'short');
-        $font = $this->font();
-        $growth = $frames->count() * $per;
-        $printSeconds = $hook + $growth + $hold;
-        $hookSize = (int) round($h * 0.038);
+        $video = $order->videos()->where('kind', FarmVideo::KIND_SHORT)->latest('id')->first();
+        $clips = app(VideoClips::class);
+        $paths = $video ? collect(FarmVideoClip::KINDS)->mapWithKeys(fn (string $kind) => [$kind => $clips->path($video, $kind)])->all() : array_fill_keys(FarmVideoClip::KINDS, null);
+        $used = array_filter([
+            'removal' => 2.5,
+            'turn' => $paths['turn'] ? 2.0 : null,
+            'detail' => $paths['detail'] ? 1.0 : null,
+            'extra' => $paths['with_source'] || $paths['in_hand'] ? 1.0 : null,
+        ], fn ($duration, $kind) => $kind === 'removal' ? (bool) $paths['removal'] : $duration !== null, ARRAY_FILTER_USE_BOTH);
+        $fixed = 2.0 + array_sum($used);
+        $growth = min(6.0, max($frames->count() * $per, 8.0 - $fixed));
+        $per = $growth / max(1, $frames->count());
+        $seconds = $fixed + $growth;
         $texts = [
-            // the hook on as many lines as the width takes (drawtext does not wrap by itself)
-            $dir.'/short_hook.txt' => implode('
-', $this->wrap($this->videos->hook($order, $locale), $hookSize, $w)),
-            $dir.'/short_price.txt' => $this->videos->priceLine($order, $locale),
-            $dir.'/short_url.txt' => $this->videos->address($order),
-            $dir.'/short_ask.txt' => __('youtube.video.ask_short', [], $locale),
+            $dir.'/short_title.txt' => implode("\n", $this->wrap($video?->title ?: $this->videos->defaultTitle($order), (int) round($h * 0.045), $w)),
+            $dir.'/short_url.txt' => 'matplace.com',
         ];
-        $timed = [[$first, $hook], ...$this->timed($frames, $per), [$last, $hold]];
-        $inputs = ['-f', 'concat', '-safe', '0', '-i', $dir.'/short.txt', '-i', public_path('img/logo.png')];
-        $top = (int) round(($h - $w) / 2 - $h * 0.04);   // the square a little above the middle: the hook above it, the price below
-        $line = fn (string $file, int $size, string $y, string $color, string $enable, bool $box = true) => sprintf("drawtext=fontfile='%s':textfile='%s':expansion=none:text_align=C:fontsize=%d:fontcolor=%s%s:x=(w-text_w)/2:y=%s:enable='%s'",
-            $font, $this->path($file), $size, $color, $box ? ':box=1:boxcolor=black@0.55:boxborderw='.(int) round($h * 0.012) : '', $y, $enable);
-        $graph = [
-            '[0:v]split[bg_src][fg_src]',
-            sprintf('[bg_src]scale=%d:%d:force_original_aspect_ratio=increase,crop=%d:%d,boxblur=20:4,eq=brightness=-0.15,fps=%d,format=yuv420p,setsar=1[bg]', $w, $h, $w, $h, $fps),
-            sprintf('[fg_src]crop=%d:%d:%d:%d,scale=%d:%d:flags=lanczos,fps=%d,format=yuv420p,setsar=1[fg]', $side, $side, $cx, $cy, $w, $w, $fps),
-            sprintf('[bg][fg]overlay=0:%d[stage]', $top),
-            // the hook: the first second darkened, the sentence in the middle
-            sprintf("[stage]drawbox=x=0:y=0:w=iw:h=ih:color=black@0.55:t=fill:enable='lt(t,%s)',%s:line_spacing=%d,settb=AVTB[print]", VideoCut::number($hook), $line($dir.'/short_hook.txt', $hookSize, '(h-text_h)/2', 'white', 'lt(t,'.VideoCut::number($hook).')', false), (int) round($hookSize * 0.3)),
-            sprintf('[1:v]scale=%d:-2[logo]', (int) round($w * 0.16)),
-        ];
-        if ($photo) {
-            array_push($inputs, '-loop', '1', '-t', VideoCut::number($end + 1), '-i', $photo);
-            // the photographed piece crossfades in after the finished print and stays to the end
-            $graph[] = sprintf('[2:v]scale=%d:%d:force_original_aspect_ratio=increase,crop=%d:%d,setsar=1,fps=%d,format=yuv420p,trim=duration=%s,settb=AVTB[piece]', $w, $h, $w, $h, $fps, VideoCut::number($end));
-            $graph[] = sprintf('[print][piece]xfade=transition=fade:duration=0.4:offset=%s[body]', VideoCut::number($printSeconds - 0.4));
-            $seconds = $printSeconds + $end - 0.4;
-            $endAt = $printSeconds - 0.4;
-        } else {
-            // no photo yet: the finished print stays on the plate and the words come over it (never an empty plate)
-            $graph[] = sprintf('[print]tpad=stop_mode=clone:stop_duration=%s[body]', VideoCut::number($end));
-            $seconds = $printSeconds + $end;
-            $endAt = $printSeconds;
+        $lists = [$dir.'/short.txt' => $this->timed($frames, $per)];
+        $inputs = $paths['turn'] ? ['-i', $paths['turn']] : ['-loop', '1', '-t', '3', '-i', $last];
+        array_push($inputs, '-f', 'concat', '-safe', '0', '-i', $dir.'/short.txt');
+        $fit = fn (int $input, float $duration, string $label) => sprintf('[%d:v]scale=%d:%d:force_original_aspect_ratio=increase:flags=lanczos,crop=%d:%d,fps=%d,trim=duration=%s,setpts=PTS-STARTPTS,format=yuv420p,setsar=1[%s]',
+            $input, $w, $h, $w, $h, $fps, VideoCut::number($duration), $label);
+        $graph = ['[0:v]split='.($paths['turn'] ? 3 : 2).'[finish_open][finish_close]'.($paths['turn'] ? '[finish_turn]' : '')];
+        $normal = fn (string $source, float $duration, string $label) => sprintf('[%s]scale=%d:%d:force_original_aspect_ratio=increase:flags=lanczos,crop=%d:%d,fps=%d,trim=duration=%s,setpts=PTS-STARTPTS,format=yuv420p,setsar=1[%s]',
+            $source, $w, $h, $w, $h, $fps, VideoCut::number($duration), $label);
+        $graph[] = $normal('finish_open', 1.0, 'opening');
+        $graph[] = $normal('finish_close', 1.0, 'closing');
+        $graph[] = sprintf('[1:v]%s,fps=%d,trim=duration=%s,setpts=PTS-STARTPTS,format=yuv420p,setsar=1[growth]', $this->fit($w, $h), $fps, VideoCut::number($growth));
+        $sequence = ['[opening]', '[growth]'];
+        $input = 2;
+        $removal = null;
+        if ($paths['removal']) {
+            array_push($inputs, '-i', $paths['removal']);
+            $graph[] = $fit($input, 2.5, 'removal');
+            $sequence[] = '[removal]';
+            $removal = ['input' => $input, 'start' => 1.0 + $growth, 'duration' => 2.5];
+            $input++;
         }
-        $show = 'gte(t,'.VideoCut::number($endAt).')';
-        $graph[] = '[body]'.implode(',', array_filter([
-            $texts[$dir.'/short_price.txt'] !== '' ? $line($dir.'/short_price.txt', (int) round($h * 0.05), 'h*0.70', 'white', $show) : null,
-            $line($dir.'/short_url.txt', (int) round($h * 0.032), 'h*0.785', 'white', $show),
-            $line($dir.'/short_ask.txt', (int) round($h * 0.03), 'h*0.86', '0xe2e8f0', $show, false),
-        ])).'[texted]';
-        $graph[] = sprintf('[texted][logo]overlay=%d:%d,format=yuv420p[v]', (int) round($w * 0.03), (int) round($w * 0.03));
+        if ($paths['turn']) {
+            $graph[] = $normal('finish_turn', 2.0, 'turning');
+            $sequence[] = '[turning]';
+        }
+        foreach (['detail', 'with_source', 'in_hand'] as $kind) {
+            if (! $paths[$kind] || ($kind === 'in_hand' && $paths['with_source'])) {
+                continue;
+            }
+            array_push($inputs, '-i', $paths[$kind]);
+            $graph[] = $fit($input, 1.0, $kind);
+            $sequence[] = '['.$kind.']';
+            $input++;
+        }
+        $sequence[] = '[closing]';
+        $graph[] = implode('', $sequence).'concat=n='.count($sequence).':v=1:a=0[body]';
+        $line = fn (string $file, int $size, string $y, string $enable) => sprintf("drawtext=fontfile='%s':textfile='%s':expansion=none:text_align=C:line_spacing=%d:fontsize=%d:fontcolor=white:box=1:boxcolor=black@0.55:boxborderw=%d:x=(w-text_w)/2:y=%s:enable='%s'",
+            $this->font(), $this->path($file), (int) round($size * 0.3), $size, (int) round($h * 0.012), $y, $enable);
+        $graph[] = '[body]'.$line($dir.'/short_title.txt', (int) round($h * 0.045), 'h*0.16', 'lt(t,1)').','
+            .$line($dir.'/short_url.txt', (int) round($h * 0.04), 'h*0.78', 'gte(t,'.VideoCut::number($seconds - 1).')').',settb=AVTB[v]';
 
-        return $this->withMusic(new VideoCut('short', $dir.'/short.mp4', [$dir.'/short.txt' => $timed], $texts, $inputs, implode(';', $graph), $seconds, $growth, $fps, null), $this->music($order));
+        return $this->withMusic(new VideoCut('short', $dir.'/short.mp4', $lists, $texts, $inputs, implode(';', $graph), $seconds, $growth, $fps, null), $this->music($order), removal: $removal);
     }
 
     /**
@@ -466,16 +466,25 @@ class TimelapseCutter
         return null;
     }
 
-    /** The track under the whole video at youtube.music_volume (or $volume), cut to its length (looped when shorter), faded out at the end. */
-    public function withMusic(VideoCut $cut, ?string $music, ?float $volume = null): VideoCut
+    /** Music under the whole video; a removal clip keeps its live sound while the music is ducked. */
+    public function withMusic(VideoCut $cut, ?string $music, ?float $volume = null, ?array $removal = null): VideoCut
     {
         if (! $music) {
             return $cut;
         }
         $input = count(array_keys($cut->inputs, '-i', true));
         $fade = min((float) config('youtube.music_fade_out', 1.5), $cut->seconds / 2);
-        $audio = sprintf('[%d:a]atrim=duration=%s,asetpts=PTS-STARTPTS,volume=%s,afade=t=in:st=0:d=0.5,afade=t=out:st=%s:d=%s[a]',
+        $audio = sprintf('[%d:a]atrim=duration=%s,asetpts=PTS-STARTPTS,volume=%s,afade=t=in:st=0:d=0.5,afade=t=out:st=%s:d=%s',
             $input, VideoCut::number($cut->seconds), VideoCut::number($volume ?? (float) config('youtube.music_volume', 0.8)), VideoCut::number($cut->seconds - $fade), VideoCut::number($fade));
+        if ($removal) {
+            $from = VideoCut::number($removal['start']);
+            $to = VideoCut::number($removal['start'] + $removal['duration']);
+            $delay = (int) round($removal['start'] * 1000);
+            $audio .= sprintf(",volume='if(between(t,%s,%s),0.18,1)':eval=frame[music];[%d:a]atrim=duration=%s,asetpts=PTS-STARTPTS,adelay=%d|%d,volume=1[removal_sound];[music][removal_sound]amix=inputs=2:duration=first:dropout_transition=0[a]",
+                $from, $to, $removal['input'], VideoCut::number($removal['duration']), $delay, $delay);
+        } else {
+            $audio .= '[a]';
+        }
 
         return new VideoCut($cut->kind, $cut->out, $cut->lists, $cut->texts, [...$cut->inputs, '-stream_loop', '-1', '-i', $music],
             $cut->graph.';'.$audio, $cut->seconds, $cut->growth, $cut->fps, $music, $cut->crf, $cut->chapters);
@@ -543,8 +552,8 @@ class TimelapseCutter
     }
 
     /**
-     * The cleaned piece: the photo made presentable (PrintPhotos, the render that fits the video – the square for the
-     * square Short, the 3:2 web one elsewhere), else a photo of the photo box as it is (TestPhotos::finishIndex says which).
+     * The cleaned piece: the photo made presentable (PrintPhotos, the 3:2 web render), else a photo of the photo box
+     * as it is (TestPhotos::finishIndex says which). Supplementary video clips, not this photo, finish the new Short.
      */
     private function finishPhoto(FarmOrder $order, string $variant = 'web'): ?string
     {

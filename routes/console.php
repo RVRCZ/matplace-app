@@ -7,6 +7,7 @@ Schedule::command('queue:prune-failed --hours=168')->daily();
 Schedule::command('matplace:prune')->dailyAt('03:30');
 Schedule::command('farm:watch')->everyMinute()->withoutOverlapping();
 Schedule::command('youtube:stats')->hourlyAt(20);   // numbers, and scheduled videos YouTube made public meanwhile (1 quota unit)
+Schedule::command('youtube:analytics')->dailyAt('20:30')->timezone('Europe/Prague');   // 28-day retention and traffic, after the stats run
 Schedule::command('social:videos')->everyFiveMinutes()->withoutOverlapping();   // approved videos to the Facebook page / Instagram at their slot
 // "Tento týden na farmě": the week's prints in one video, waiting for the admin in /admin/youtube (never published by itself)
 Schedule::command('farm:weekly-video')->weeklyOn(0, '18:00')->timezone('Europe/Prague')->withoutOverlapping()->runInBackground();

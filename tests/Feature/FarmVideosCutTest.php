@@ -60,7 +60,7 @@ class FarmVideosCutTest extends TestCase
     {
         $cutter = app(TimelapseCutter::class);
         $frames = fn (int $n) => collect(range(1, $n))->map(fn ($i) => "f{$i}.jpg");
-        foreach (['short' => [15, 25, 24], 'wide' => [20, 28, 30], 'weekly' => [8.5, 10, 30]] as $kind => [$min, $max, $fps]) {
+        foreach (['short' => [4, 6, 24], 'wide' => [20, 28, 30], 'weekly' => [8.5, 10, 30]] as $kind => [$min, $max, $fps]) {
             foreach ([200, 600, 5000] as $n) {
                 [$shown, $seconds] = $cutter->paced($frames($n), config("youtube.cut.$kind.growth"), $fps);
                 $growth = $shown->count() * $seconds;
@@ -87,22 +87,19 @@ class FarmVideosCutTest extends TestCase
         $cuts = (new BuildFarmTimelapse($order->id))->cuts($order);
         $this->assertSame(['customer', 'short', 'wide'], array_keys($cuts));
 
-        // the Short: the hook card, 25 s of growing, the piece held, the end with the price (no photo yet: the print stays); the 16:9: 28 s of growing, under 45 s
-        $this->assertEqualsWithDelta(25.0, $cuts['short']->growth, 0.05);
-        $this->assertEqualsWithDelta(1 + 25 + 1.5 + 3, $cuts['short']->seconds, 0.05);
+        // the Short: the finished piece, 6 s of growth and the opening shot again; the 16:9: 28 s of growing, under 45 s
+        $this->assertEqualsWithDelta(6.0, $cuts['short']->growth, 0.05);
+        $this->assertEqualsWithDelta(8.0, $cuts['short']->seconds, 0.05);
         $this->assertSame([1080, 1920, 24], [config('youtube.cut.short.width'), config('youtube.cut.short.height'), $cuts['short']->fps]);
-        $this->assertStringContainsString('crop=1080:1920,boxblur', $cuts['short']->graph, 'the camera picture blurred behind the square of the bed');
-        $this->assertSame(app(FarmVideos::class)->hook($order), str_replace('
-', ' ', $cuts['short']->texts[array_key_first(array_filter($cuts['short']->texts, fn ($k) => str_ends_with($k, 'short_hook.txt'), ARRAY_FILTER_USE_KEY))]), 'the hook card, wrapped to the width');
-        $this->assertContains(app(FarmVideos::class)->address($order), $cuts['short']->texts, 'the address of the tool at the end');
-        $this->assertContains('Co vytisknout příště?', $cuts['short']->texts, 'the question at the end');
+        $this->assertStringContainsString('pad=1080:1920', $cuts['short']->graph, 'the whole camera picture fits into the portrait frame');
+        $this->assertContains(app(FarmVideos::class)->defaultTitle($order), array_map(fn (string $text) => str_replace("\n", ' ', $text), $cuts['short']->texts), 'the public title opens the Short, wrapped to the frame');
+        $this->assertContains('matplace.com', $cuts['short']->texts, 'the site address closes the loop');
         $this->assertEqualsWithDelta(28.0, $cuts['wide']->growth, 0.05);
         $this->assertEqualsWithDelta(1.5 + 28 + 2 + 3, $cuts['wide']->seconds, 0.05);
         $this->assertEqualsWithDelta(7 + 28 + 3 + 5, $cuts['customer']->seconds, 0.05);
         foreach ($cuts as $kind => $cut) {
-            // the frame lists add up to the planned growth (the Short also holds the first frame under the hook and the last one)
             $listed = array_sum(array_column(array_merge(...array_values($cut->lists)), 1));
-            $this->assertEqualsWithDelta($cut->growth + ($kind === 'short' ? 2.5 : 0), $listed, 0.01, $kind);
+            $this->assertEqualsWithDelta($cut->growth, $listed, 0.01, $kind);
             $this->assertStringEndsWith('Artist - Song.mp3', (string) $cut->music, $kind);
             $this->assertStringContainsString(sprintf('atrim=duration=%s,', rtrim(rtrim(sprintf('%.6F', $cut->seconds), '0'), '.')), $cut->graph);
             $this->assertStringContainsString(sprintf('afade=t=out:st=%s:d=1.5[a]', rtrim(rtrim(sprintf('%.6F', $cut->seconds - 1.5), '0'), '.')), $cut->graph);
@@ -148,7 +145,7 @@ class FarmVideosCutTest extends TestCase
         $this->assertSame($host.'/tools/figure', $videos->address($order->refresh()));
     }
 
-    public function test_with_the_prices_off_a_short_ends_without_one_and_the_other_cuts_never_had_one(): void
+    public function test_a_short_never_shows_a_price_in_its_picture_and_the_other_cuts_keep_their_rules(): void
     {
         $order = $this->order();
         $order->forceFill(['price_total' => 1190, 'currency' => 'CZK'])->save();
@@ -158,39 +155,29 @@ class FarmVideosCutTest extends TestCase
         $video = FarmVideo::create(['farm_order_id' => $order->id, 'kind' => FarmVideo::KIND_SHORT, 'status' => FarmVideo::STATUS_PENDING, 'title' => 'T', 'youtube_id' => 'vid1']);
         $priced = fn (array $texts) => array_filter($texts, fn ($t) => str_contains($t, 'Kč'));
 
-        // on, the default: as ever
-        $this->assertTrue(app(FarmSettings::class)->get('video_prices'));
-        $on = $cutter->short($order->refresh());
-        $this->assertMatchesRegularExpression('/^Cena: \d/u', $videos->priceLine($order));
-        $this->assertStringContainsString('short_price.txt', $on->graph);
-        $this->assertStringContainsString('Cena tohoto výtisku: ', $videos->commentText($video));
-        $this->assertStringContainsString('hotový kus a cenu vidíte na konci', $videos->defaultDescription($order));
-
-        // off: no line on the card, the rest of the card where it was; the comment is the call alone; the description says nothing of a price
-        app(FarmSettings::class)->set('video_prices', false);
-        $off = $cutter->short($order);
+        $this->assertFalse(app(FarmSettings::class)->get('video_prices'));
+        $off = $cutter->short($order->refresh());
         $this->assertSame('', $videos->priceLine($order));
         $this->assertStringNotContainsString('short_price.txt', $off->graph);
-        foreach (['short_url.txt', 'short_ask.txt'] as $file) {
-            $at = fn (string $graph) => preg_match('/'.preg_quote($file, '/')."':[^,]*(?:,[^,]*)*?:y=([^:]+):/", $graph, $m) ? $m[1] : null;
-            $this->assertNotNull($at($on->graph));
-            $this->assertSame($at($on->graph), $at($off->graph), $file);
-        }
-        $this->assertSame($on->seconds, $off->seconds);
+        $this->assertSame([], $priced($off->texts));
         $this->assertStringNotContainsString('Kč', $videos->commentText($video));
-        $this->assertStringNotContainsString('Cena', $videos->commentText($video));
         $this->assertStringContainsString('utm_content=vid1', $videos->commentText($video));
-        $description = $videos->defaultDescription($order);
-        $this->assertStringNotContainsString('cenu', str_replace('hned uvidíte cenu', '', $description));
-        $this->assertStringContainsString('hotový kus vidíte na konci.', $description);
-        $this->assertStringContainsString('Video zveřejňujeme se souhlasem zákazníka.', $description);
+        $this->assertStringContainsString('Cena tohoto výtisku: ', $videos->defaultDescription($order));
+
+        app(FarmSettings::class)->set('video_prices', true);
+        $on = $cutter->short($order);
+        $this->assertMatchesRegularExpression('/^Cena: \d/u', $videos->priceLine($order));
+        $this->assertStringNotContainsString('short_price.txt', $on->graph);
+        $this->assertSame([], $priced($on->texts));
+        $this->assertSame($off->seconds, $on->seconds);
+        $this->assertStringContainsString('Cena tohoto výtisku: ', $videos->commentText($video));
 
         // the other cuts show no amount, whichever way the switch stands
         $week = $cutter->weekly(collect([$order]), Carbon::parse('2026-10-12', 'Europe/Prague'), Storage::disk('farm')->path('weekly/w.mp4'));
         foreach ([$cutter->customer($order), $cutter->wide($order), $week] as $cut) {
             $this->assertSame([], $priced($cut->texts), $cut->kind);
         }
-        app(FarmSettings::class)->set('video_prices', true);
+        app(FarmSettings::class)->set('video_prices', false);
         foreach ([$cutter->customer($order), $cutter->wide($order), $cutter->weekly(collect([$order]), Carbon::parse('2026-10-12', 'Europe/Prague'), Storage::disk('farm')->path('weekly/w.mp4'))] as $cut) {
             $this->assertSame([], $priced($cut->texts), $cut->kind);
         }
@@ -201,6 +188,7 @@ class FarmVideosCutTest extends TestCase
         $admin = User::factory()->create();
         $admin->setRole(User::ROLE_ADMIN, true);
         $order = $this->order();
+        app(FarmSettings::class)->set('video_prices', true);
         $disk = Storage::disk('farm');
         foreach (['timelapse.mp4' => 'customer', 'short.mp4' => 'old'] as $file => $content) {
             $disk->put($order->dir().'/'.$file, $content);
@@ -227,7 +215,7 @@ class FarmVideosCutTest extends TestCase
         $this->assertStringContainsString('Postavit znovu se nepovedlo', (string) $video->refresh()->error);
         $this->assertSame('ready', $videos->rebuildState($video));
 
-        // it works: the new file in place, the customer's video untouched, the waiting text without the price and with the admin's words
+        // it works: the new file in place, the customer's video and the admin's edited Short description untouched
         Process::fake(fn (PendingProcess $p) => file_put_contents(end($p->command), 'new') ? Process::result() : Process::result(exitCode: 1));
         $this->actingAs($admin)->post($action)->assertRedirect()->assertSessionHas('status');
         Process::assertRan(fn (PendingProcess $p) => ! str_contains(implode(' ', $p->command), 'short_price.txt') && str_ends_with(end($p->command), 'short.mp4.new.mp4'));
@@ -236,9 +224,7 @@ class FarmVideosCutTest extends TestCase
         $this->assertSame('customer', $disk->get($order->dir().'/timelapse.mp4'));
         $video->refresh();
         $this->assertSame([FarmVideo::STATUS_PENDING, null], [$video->status, $video->error]);
-        $this->assertStringContainsString('Moje věta. ', (string) $video->description);
-        $this->assertStringContainsString('hotový kus vidíte na konci', (string) $video->description);
-        $this->assertStringNotContainsString('a cenu vidíte', (string) $video->description);
+        $this->assertSame($edited, $video->description);
 
         // while it runs a second press builds nothing
         Cache::put(RebuildFarmShort::lockKey($video->id), true, 60);
@@ -343,20 +329,20 @@ class FarmVideosCutTest extends TestCase
         $this->assertSame([1080, 1920], [$report['short']['width'], $report['short']['height']]);
         $this->assertSame([1920, 1080], [$report['wide']['width'], $report['wide']['height']]);
         $this->assertSame([1280, 720], [$report['customer']['width'], $report['customer']['height']]);
-        $this->samples($report, [[$order->timelapse_short_path, 8, 'short'], [$order->timelapse_wide_path, 0.8, 'wide-title'], [$order->timelapse_wide_path, 14, 'wide'],
+        $this->samples($report, [[$order->timelapse_short_path, $report['short']['seconds'] - 1, 'short'], [$order->timelapse_wide_path, 0.8, 'wide-title'], [$order->timelapse_wide_path, 14, 'wide'],
             [$order->timelapse_wide_path, $report['wide']['seconds'] - 1, 'wide-end'], [$order->timelapse_path, 20, 'customer']], $disk);
 
-        // the photo of the cleaned piece: the Short crossfades into it instead of holding the plate (0.4 s shorter), the 16:9 and the customer's + 3 s
+        // the photo of the cleaned piece: the new Short does not use it; the 16:9 and the customer's cut gain 3 s
         $disk->put($order->dir().'/photos/left.jpg', $this->picture(200, 'photo'));
         $order->forceFill(['test_params' => ['photos' => [['file' => $order->dir().'/photos/left.jpg', 'view' => 'left']]]])->save();
         $this->artisan('farm:timelapse', ['number' => $order->number])->assertSuccessful();
         $order->refresh();
-        $this->assertEqualsWithDelta($report['short']['seconds'] - 0.4, $this->probe($disk->path($order->timelapse_short_path))['seconds'], 0.3);
+        $this->assertEqualsWithDelta($report['short']['seconds'], $this->probe($disk->path($order->timelapse_short_path))['seconds'], 0.3);
         $this->assertEqualsWithDelta($report['wide']['seconds'] + 3.0, $this->probe($disk->path($order->timelapse_wide_path))['seconds'], 0.3);
         $this->assertEqualsWithDelta($report['customer']['seconds'] + 3.0, $this->probe($disk->path($order->timelapse_path))['seconds'], 0.3);
     }
 
-    public function test_a_real_short_built_again_without_the_price_has_the_same_length(): void
+    public function test_a_real_short_built_again_has_the_same_length_regardless_of_the_price_switch(): void
     {
         $this->ffmpeg();
         $order = $this->order();
@@ -367,18 +353,16 @@ class FarmVideosCutTest extends TestCase
         $order->forceFill(['test_params' => ['photos' => [['file' => $order->dir().'/photos/left.jpg', 'view' => 'left']]]])->save();
         (new BuildFarmTimelapse($order->id, rebuild: true))->handle();
         $order->refresh();
-        $with = $this->probe($disk->path($order->timelapse_short_path));
-        $this->samples([], [[$order->timelapse_short_path, $with['seconds'] - 1, 'short-with-price']], $disk);
-        $before = md5_file($disk->path($order->timelapse_short_path));
+        $before = $this->probe($disk->path($order->timelapse_short_path));
+        $this->samples([], [[$order->timelapse_short_path, $before['seconds'] - 1, 'short-before-rebuild']], $disk);
 
         app(FarmSettings::class)->set('video_prices', false);
         $video = FarmVideo::create(['farm_order_id' => $order->id, 'kind' => FarmVideo::KIND_SHORT, 'status' => FarmVideo::STATUS_PENDING, 'title' => 'T']);
         $this->assertTrue(app(FarmVideos::class)->rebuild($video));
-        $without = $this->probe($disk->path($order->refresh()->timelapse_short_path));
-        $this->assertNotSame($before, md5_file($disk->path($order->timelapse_short_path)));
-        $this->assertEqualsWithDelta($with['seconds'], $without['seconds'], 0.05);
-        $this->assertSame([1080, 1920], [$without['width'], $without['height']]);
-        $this->samples([], [[$order->timelapse_short_path, $without['seconds'] - 1, 'short-no-price']], $disk);
+        $after = $this->probe($disk->path($order->refresh()->timelapse_short_path));
+        $this->assertEqualsWithDelta($before['seconds'], $after['seconds'], 0.05);
+        $this->assertSame([1080, 1920], [$after['width'], $after['height']]);
+        $this->samples([], [[$order->timelapse_short_path, $after['seconds'] - 1, 'short-after-rebuild']], $disk);
     }
 
     public function test_a_real_weekly_cut_of_three_prints(): void
