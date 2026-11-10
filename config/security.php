@@ -15,8 +15,8 @@
 return [
     // always, on every page
     'headers' => [
-        // camera: the photo tools take a picture on the phone; geolocation: Packeta's widget finds the nearest point
-        'Permissions-Policy' => 'camera=(self), microphone=(), geolocation=(self "https://widget.packeta.com"), payment=(), usb=(), display-capture=()',
+        // camera/microphone: photo tools and Shorts clips record on the phone; geolocation: Packeta's nearest point
+        'Permissions-Policy' => 'camera=(self), microphone=(self), geolocation=(self "https://widget.packeta.com"), payment=(), usb=(), display-capture=()',
     ],
     // only once the policy is enforced (the old header has no report-only mode)
     'headers_enforced' => [

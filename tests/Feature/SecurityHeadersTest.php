@@ -23,6 +23,7 @@ class SecurityHeadersTest extends TestCase
         $this->assertStringContainsString('report-uri /csp-report; report-to csp', $csp);
         $this->assertStringContainsString('csp="', (string) $r->headers->get('Reporting-Endpoints'));
         $this->assertStringContainsString('camera=(self)', (string) $r->headers->get('Permissions-Policy'));
+        $this->assertStringContainsString('microphone=(self)', (string) $r->headers->get('Permissions-Policy'));
         // report-only blocks nothing: the enforcing header and the frame header stay away
         $this->assertFalse($r->headers->has('Content-Security-Policy'));
         $this->assertFalse($r->headers->has('X-Frame-Options'));
