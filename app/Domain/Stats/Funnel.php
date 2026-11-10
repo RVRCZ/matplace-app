@@ -44,6 +44,7 @@ final class Funnel
         'sales' => [['visit'], ['upload', 'failed:upload'], ['upload'], ['calculation'], ['price_shown'], ['order_started'], ['register', 'register_visit', 'order_created'], ['order_created'], ['checkout_started', 'topup_started'], ['order_paid']],
         // the home page's router (TODO #78, docs/AN.md §22): sent → decided → a tool opened, a request left or the file in the calculator → paid
         'intake' => [['visit'], ['intake_submitted'], ['intake_routed', 'intake_file_to_calc'], ['intake_tool_opened', 'intake_human_created', 'intake_file_to_calc'], ['order_paid']],
+        'youtube' => [['visit'], ['intake_submitted'], ['order_started', 'order_created'], ['order_paid']],
     ];
 
     /** How visitors are split for the audit: by the kind of device, new or returning, and the way they came in. */
@@ -88,7 +89,7 @@ final class Funnel
 
         $paths = [];
         foreach (self::PATHS as $path => $steps) {
-            $alive = $sessions;
+            $alive = $path === 'youtube' ? array_filter($sessions, fn (array $s) => $s['source'] === 'youtube') : $sessions;
             $previous = null;
             foreach ($steps as $marks) {
                 $alive = array_filter($alive, fn (array $s) => (bool) array_intersect_key(array_flip($marks), $s['marks']));

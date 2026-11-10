@@ -510,7 +510,7 @@ final class Track
         $ref = self::ref($request);
         $stored = $request->hasSession() ? $request->session()->get('origin') : null;
         if (! is_array($stored)) {
-            $utm = array_filter(array_map(fn ($v) => is_string($v) ? mb_substr($v, 0, 80) : null, $request->only(['utm_source', 'utm_medium', 'utm_campaign'])));
+            $utm = array_filter(array_map(fn ($v) => is_string($v) ? mb_substr($v, 0, 80) : null, $request->only(['utm_source', 'utm_medium', 'utm_campaign', 'utm_content'])));
             $stored = ['source' => self::classify((string) ($utm['utm_source'] ?? ''), (string) $request->headers->get('referer'), $request->getHost()), 'utm' => $utm];
             if ($request->hasSession()) {
                 $request->session()->put('origin', $stored);

@@ -10,6 +10,7 @@ import { bootBar } from './bar';
 import { mountActionBars } from './sticky';
 import { bootFilamentShop } from './filament_shop';
 import { bootIntake } from './intake';
+import { bootClipRecorders } from './clip_recorder';
 
 export function bootSite(): void {
     bootThumbs();
@@ -23,4 +24,5 @@ export function bootSite(): void {
     mountActionBars();   // the bars fixed to the bottom with the price and the main action (docs/AN.md §18)
     bootFilamentShop();  // admin: the filament card from an e-shop link (docs/AL.md §21)
     bootIntake();        // the home page's router: a photo, a file or words → a tool, a person or the calculator (docs/AN.md §22)
+    bootClipRecorders(); // admin: five supplementary clips for a print Short (docs/AL.md §13.9)
 }

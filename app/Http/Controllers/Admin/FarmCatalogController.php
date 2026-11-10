@@ -516,6 +516,7 @@ class FarmCatalogController extends Controller
             // the home page's router (docs/AN.md §22): an empty date takes the Christmas line off the page
             'christmas_deadline' => ['nullable', 'date_format:Y-m-d'],
             'intake_reply_hours' => ['nullable', 'integer', 'min:1', 'max:168'],
+            'shorts_publish_hour' => ['required', 'date_format:H:i'],
         ]);
         if ($request->has('christmas_deadline')) {
             $data['christmas_deadline'] = (string) ($data['christmas_deadline'] ?? '');

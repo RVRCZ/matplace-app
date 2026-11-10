@@ -56,6 +56,7 @@
             <label class="{{ $lb }}">Nabízené částky dobití ({{ $czk }}, oddělené čárkou)<input name="topup_amounts" required value="{{ old('topup_amounts', implode(', ', $settings['topup_amounts'])) }}" class="{{ $in }}"></label>
             <label class="{{ $lb }}">Verze podmínek<input name="terms_version" required value="{{ old('terms_version', $settings['terms_version']) }}" class="{{ $in }}"></label>
             <label class="{{ $lb }}">E-mail obsluhy (upozornění)<input type="email" name="admin_email" value="{{ old('admin_email', $settings['admin_email']) }}" class="{{ $in }}"></label>
+            <label class="{{ $lb }}">{{ __('youtube.settings.shorts_hour') }}<input type="time" name="shorts_publish_hour" required value="{{ old('shorts_publish_hour', $settings['shorts_publish_hour']) }}" class="{{ $in }}"></label>
         </div>
         {{-- the home page's router (docs/AN.md §22): the Christmas promise and the reply time are the operator's numbers, not the code's --}}
         <div class="mt-3 grid gap-3 sm:grid-cols-3" id="farm-router">

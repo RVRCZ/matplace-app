@@ -29,6 +29,10 @@ class YouTubeClient
 
     public const SCOPE = 'https://www.googleapis.com/auth/youtube';
 
+    public const SCOPE_ANALYTICS = 'https://www.googleapis.com/auth/yt-analytics.readonly';
+
+    private const ANALYTICS = 'https://youtubeanalytics.googleapis.com/v2/reports';
+
     /** commentThreads.insert takes only this one (YOUTUBE_PIN_COMMENT); asking for it means a new consent on connecting. */
     public const SCOPE_COMMENTS = 'https://www.googleapis.com/auth/youtube.force-ssl';
 
@@ -53,7 +57,7 @@ class YouTubeClient
 
     public function scopes(): string
     {
-        return self::SCOPE.(config('youtube.pin_comment') ? ' '.self::SCOPE_COMMENTS : '');
+        return self::SCOPE.' '.self::SCOPE_ANALYTICS.(config('youtube.pin_comment') ? ' '.self::SCOPE_COMMENTS : '');
     }
 
     /** OAuth callback: keep the refresh token and remember which channel it belongs to. Replaces an earlier connection. */
@@ -180,6 +184,39 @@ class YouTubeClient
         }
 
         return $out;
+    }
+
+    /** Last 28 days of retention and traffic sources for one video. */
+    public function analytics(string $videoId, bool $short = false): array
+    {
+        $query = [
+            'ids' => 'channel==MINE', 'startDate' => now()->subDays(28)->toDateString(), 'endDate' => now()->toDateString(),
+            'dimensions' => 'video', 'filters' => 'video=='.$videoId,
+        ];
+        $metrics = 'views,averageViewPercentage,averageViewDuration'.($short ? ',engagedViews' : '');
+        $r = $this->api()->get(self::ANALYTICS, $query + ['metrics' => $metrics]);
+        if (! $r->successful()) {
+            throw YouTubeError::from($r, 'Analytics');
+        }
+        $columns = array_column((array) $r->json('columnHeaders'), 'name');
+        $row = (array) ($r->json('rows.0') ?? []);
+        $values = array_combine($columns, array_pad($row, count($columns), null)) ?: [];
+        unset($values['video']);
+        $sources = $this->api()->get(self::ANALYTICS, $query + ['metrics' => 'views', 'dimensions' => 'video,insightTrafficSourceType']);
+        if (! $sources->successful()) {
+            throw YouTubeError::from($sources, 'Analytics traffic sources');
+        }
+        $traffic = [];
+        foreach ((array) $sources->json('rows') as $source) {
+            $traffic[(string) ($source[1] ?? 'UNKNOWN')] = (int) ($source[2] ?? 0);
+        }
+        $views = (float) ($values['views'] ?? 0);
+        if ($short && $views > 0 && isset($values['engagedViews'])) {
+            $values['engagedRatio'] = round((float) $values['engagedViews'] / $views, 4);
+            $values['skippedRatio'] = round(1 - $values['engagedRatio'], 4);
+        }
+
+        return $values + ['trafficSources' => $traffic, 'from' => $query['startDate'], 'to' => $query['endDate'], 'updatedAt' => now()->toIso8601String()];
     }
 
     /**

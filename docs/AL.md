@@ -1980,6 +1980,18 @@ U naplánovaných videí přibylo „Nahradit novou verzí“, server to uměl, 
 - Fronta a ffmpeg na produkci, tedy doba stavby a oprávnění k zápisu.
 - Mazání z YouTube přes „Nahradit“ na ostrém kanálu (v testech je Google falešný, nic jsem na YouTube nevolal).
 
+### 13.9 Popisné Shorts, doplňkové klipy a Analytics (TODO #81, 9. 11. 2026)
+
+**Názvy a fronta.** `FarmVideos::titleData` používá nejprve veřejný název nástroje, potom katalogového modelu a teprve potom vizuální návrh `VideoTitles` (`ClaudeAssistant`, druh `video_title`). Návrh musí mít jistotu alespoň 0,6; jinak zůstane video `pending` s `meta.title_needed`. Původní jméno souboru není názvem ani jeho součástí a kontrola je i při ručním schválení. `subject` slouží ke kontrole stejného námětu za posledních 30 dní; opakování a výslovně povolené testy končí na konci fronty. Běžný test se nezařadí, v administraci ho lze zařadit jen akcí s `allow_test=1`.
+
+Shorty mají vlastní denní slot `shorts_publish_hour` (výchozí 18:00, Europe/Prague) v /admin/farm/settings. `video_prices` je výchozí vypnuté. Popis Shortu začíná názvem, pokračuje dvěma větami a CTA s `utm_source=youtube&utm_medium=shorts&utm_campaign=short`; `utm_content` nese před nahráním číslo zakázky a potom YouTube ID. `Track::origin` uchovává i `utm_content`. Trychtýř /admin/stats má samostatný řádek „z YouTube → odesláno → Vytvořit → zaplaceno“.
+
+**Klipy a střih.** Migrace přidává `farm_video_clips` a `farm_videos.subject`/`analytics`. U každého Shortu je pět karet: `removal`, `turn`, `detail`, `with_source`, `in_hand`; upload a vazba na video/zakázku jsou admin-only. Rekordér v `resources/js/site/clip_recorder.ts` používá kameru i mikrofon, nabídne dostupná zařízení, automaticky skončí po 10/3 s a umožní náhled, přetočení, nový záznam a uložení. Náhrada smaže starý soubor až po úspěšném uložení nového.
+
+`TimelapseCutter::short` staví 1080×1920 a 8–15 s: 1 s hotové věci z `turn` (jinak poslední snímek), 4–6 s časosběru, dostupné klipy v zadaném pořadí a 1 s stejného úvodního záběru s `matplace.com`. První vteřina nese název videa, nikoli interní číslo nebo cenu. Chybějící klip se přeskočí. Hudba je povinná pro nahrání i zveřejnění; při `removal` se stáhne a namixuje původní zvuk. Změněné klipy se použijí po **Postavit znovu**, schválení zůstává ruční.
+
+**Analytics a zpětné názvy.** OAuth žádá trvale i `yt-analytics.readonly`; v /admin/youtube je **Znovu připojit s rozsahem Analytics**, bez odpojování či rušení sdíleného grantu. `youtube:analytics` běží denně po statistikách a pro 28 dní ukládá zhlédnutí, sledování, průměrnou dobu, u Shorts `engagedViews`/poměr přeskočení a zdroje návštěv. Hodnoty ukazuje administrace a `youtube:titles`. Připravená tabulka `docs/data/youtube-titles-2026-11.csv` obsahuje deset návrhů k Romanovu schválení. V této session se nespustil `--apply`, migrace ani nasazení; na ostrém kanálu se nic nepřejmenovalo.
+
 ## 14. Import 3MF s namalovanými barvami (TODO #50, 28. 10. 2026)
 
 Zadání `docs/prompts/import-3mf-barvy.md`, větev `feature/import-3mf-colors` z main 78f4e203. Roman: želva

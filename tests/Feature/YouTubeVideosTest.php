@@ -5,6 +5,7 @@ namespace Tests\Feature;
 use App\Domain\Farm\FarmSettings;
 use App\Domain\YouTube\FarmVideos;
 use App\Domain\YouTube\YouTubeClient;
+use App\Engines\Ai\FakeAssistant;
 use App\Engines\Social\FakeMetaClient;
 use App\Jobs\UploadFarmVideo;
 use App\Mail\FarmAdminAlert;
@@ -54,6 +55,12 @@ class YouTubeVideosTest extends TestCase
         $this->admin = User::factory()->create(['email' => 'admin@example.com']);
         $this->admin->setRole(User::ROLE_ADMIN, true);
         app(FarmSettings::class)->set('admin_email', 'farm@example.com');
+        $music = sys_get_temp_dir().'/mp_youtube_music_'.uniqid();
+        mkdir($music);
+        touch($music.'/Artist - Song.mp3');
+        config(['youtube.music_dir' => $music]);
+        FakeAssistant::reset();
+        FakeAssistant::$answers['video_title'] = ['title_cs' => 'Popisný výtisk z 3D tiskárny', 'title_en' => 'Descriptive 3D print', 'description_cs' => 'Takto vznikl výtisk na naší farmě. Prohlédněte si hotovou věc z blízka.', 'subject' => 'výtisk', 'confidence' => 0.9];
     }
 
     /** A paid customer order (fake slicer, fake gateway), optionally with the YouTube checkbox ticked. */
@@ -146,10 +153,10 @@ class YouTubeVideosTest extends TestCase
         $this->assertSame(FarmVideo::STATUS_PENDING, $video->status);
         $this->assertNull($video->youtube_id);
         Http::assertNotSent(fn (HttpRequest $r) => str_contains($r->url(), 'uploadType=resumable'));
-        $this->assertStringContainsString('3D tisku', $video->title);      // no readable name in "part.stl": material and colour, then the print time
+        $this->assertSame('Popisný výtisk z 3D tiskárny', $video->title); // a visual proposal, never "part.stl"
         Mail::assertQueued(FarmAdminAlert::class, fn ($m) => str_contains($m->subjectLine, 'Video ke schválení') && $m->url === route('admin.youtube.index'));
 
-        // the customer can download the square Short once it exists
+        // the customer can download the portrait Short once it exists
         $this->actingAs($this->user)->get("/farm/orders/{$order->token}/short.mp4")->assertNotFound();
         Storage::disk('farm')->put($order->dir().'/short.mp4', 'mp4');
         $order->forceFill(['timelapse_short_path' => $order->dir().'/short.mp4'])->save();
@@ -246,18 +253,15 @@ class YouTubeVideosTest extends TestCase
 
             return $videos->modelName($order->refresh(), 'cs');
         };
-        $this->assertSame('Louskacek', $name('louskacek (1).stl'));
-        $this->assertSame('Greek godess statue', $name('greek-godess-statue_0.16.3mf'));
-        $this->assertSame('Felpa', $name('felpa100mm.stl'));
-        $this->assertSame('Desk organizer', $name('desk-organizer-v3_desk-organizer-v3_body1.stl'));
+        $this->assertNull($name('louskacek (1).stl'));
+        $this->assertNull($name('greek-godess-statue_0.16.3mf'));
+        $this->assertNull($name('felpa100mm.stl'));
+        $this->assertNull($name('desk-organizer-v3_desk-organizer-v3_body1.stl'));
         $this->assertSame(__('tools.holder.title', [], 'cs'), $name('holder-52x35x84.stl', 'tool', 'holder'));
         $this->assertSame(__('tools.figure.title', [], 'cs'), $name('bust.stl', 'generated', 'abc'));
         $this->assertNull($name('part.stl'));
-        $this->assertStringStartsWith('Louskacek – ', (function () use ($name, $order, $videos) {
-            $name('louskacek.stl');
-
-            return $videos->defaultTitle($order->refresh());
-        })());
+        $name('louskacek.stl');
+        $this->assertSame('Popisný výtisk z 3D tiskárny', $videos->defaultTitle($order->refresh()));
     }
 
     public function test_a_showcase_print_costs_nothing_goes_to_the_queue_and_counts_for_youtube(): void
@@ -280,7 +284,7 @@ class YouTubeVideosTest extends TestCase
         $this->assertNull($order->price_total);
         $this->assertTrue($order->video_consent);
         $this->assertNotNull($printer->refresh()->timelapseFor($order), 'the head parks for the showcase');
-        $this->assertSame('Gear reducer', app(FarmVideos::class)->modelName($order, 'cs'));
+        $this->assertNull(app(FarmVideos::class)->modelName($order, 'cs'), 'an uploaded file name is not public metadata');
         $this->actingAs($this->user)->post('/admin/youtube/showcase', ['model' => $uuid, 'slot' => $slot->id, 'quality' => 'fine'])->assertRedirect();
         $this->assertSame(1, FarmOrder::where('kind', FarmOrder::KIND_SHOWCASE)->count(), 'admins only');
     }
@@ -323,7 +327,7 @@ class YouTubeVideosTest extends TestCase
         $wide = $order->videos()->where('kind', FarmVideo::KIND_WIDE)->firstOrFail();
         $this->assertSame([FarmVideo::KIND_SHORT, FarmVideo::STATUS_PENDING, FarmVideo::STATUS_PENDING], [$short->kind, $short->status, $wide->status]);
         $this->assertSame(['Artist - Song.mp3', 'Artist - Song.mp3'], [$short->music, $wide->music], 'one track for both versions');
-        $this->assertStringContainsString('utm_campaign=video_short', (string) $short->description);
+        $this->assertStringContainsString('utm_medium=shorts&utm_campaign=short&utm_content='.$order->number, (string) $short->description);
         $this->assertStringContainsString('#Shorts', (string) $short->description);
         $this->assertStringContainsString('utm_campaign=video_wide', (string) $wide->description);
         $this->assertStringNotContainsString('#Shorts', (string) $wide->description);
@@ -532,7 +536,9 @@ class YouTubeVideosTest extends TestCase
         $order = $this->paidOrder(consent: true);
         $videos = app(FarmVideos::class);
         $home = url('/').'/';
-        $tag = fn (string $source, string $kind) => '?utm_source='.$source.'&utm_medium=social&utm_campaign=video_'.$kind;
+        $tag = fn (string $source, string $kind) => $source === 'youtube' && $kind === 'short'
+            ? '?utm_source=youtube&utm_medium=shorts&utm_campaign=short&utm_content='.$order->number
+            : '?utm_source='.$source.'&utm_medium=social&utm_campaign=video_'.$kind;
 
         // a customer's own file: the home page (the calculator) everywhere
         foreach (['youtube', 'facebook', 'instagram'] as $source) {
@@ -552,10 +558,10 @@ class YouTubeVideosTest extends TestCase
         $this->assertSame(rtrim((string) preg_replace('#^https?://#', '', url('/tools/relief')), '/'), $videos->address($order), 'the end card names the page the link opens');
 
         // a YouTube text for another channel: the same pages, that channel's mark
-        $this->assertSame('Vlastní: '.url('/tools/relief').$tag('facebook', 'short'), $videos->forChannel('Vlastní: '.url('/tools/relief').$tag('youtube', 'short'), 'facebook'));
+        $this->assertSame('Vlastní: '.url('/tools/relief').$tag('facebook', 'short').'&utm_content='.$order->number, $videos->forChannel('Vlastní: '.url('/tools/relief').$tag('youtube', 'short'), 'facebook'));
     }
 
-    public function test_the_link_is_in_the_first_two_lines_of_every_description(): void
+    public function test_the_short_description_starts_with_its_title_and_other_descriptions_keep_the_early_link(): void
     {
         $order = $this->paidOrder(consent: true);
         $order->forceFill(['timelapse_short_path' => $order->dir().'/short.mp4'])->save();
@@ -564,19 +570,19 @@ class YouTubeVideosTest extends TestCase
 
         foreach (['cs', 'en', 'es'] as $locale) {
             config(['youtube.language' => $locale]);
-            foreach (['short', 'wide'] as $kind) {
-                $text = $videos->defaultDescription($order, 'Artist - Song.mp3', $kind);
-                $this->assertStringContainsString(url('/').'/?utm_source=youtube&utm_medium=social&utm_campaign=video_'.$kind, $firstTwo($text), "$locale $kind");
-                $this->assertStringNotContainsString(':cta', $text);
-            }
+            $short = $videos->defaultDescription($order, 'Artist - Song.mp3', 'short');
+            $this->assertStringStartsWith('Popisný výtisk z 3D tiskárny', $short);
+            $this->assertStringContainsString('utm_medium=shorts&utm_campaign=short&utm_content='.$order->number, $short);
+            $wide = $videos->defaultDescription($order, 'Artist - Song.mp3', 'wide');
+            $this->assertStringContainsString('utm_medium=social&utm_campaign=video_wide', $firstTwo($wide));
+            $this->assertStringNotContainsString(':cta', $short.$wide);
             $weekly = $videos->weeklyDescription('12.–18. 10.', [[0.0, 'Váza', null]], null);
             $this->assertStringContainsString('utm_campaign=video_weekly', $firstTwo($weekly), "$locale weekly");
             $this->assertStringContainsString('0:00 Váza', $weekly, 'the chapters stay');
         }
         config(['youtube.language' => 'cs']);
         $short = $videos->defaultDescription($order, 'Artist - Song.mp3', 'short');
-        $this->assertStringStartsWith('Nahrajte model a hned uvidíte cenu: http', $short);
-        $this->assertStringEndsWith("Hudba: Artist – Song (YouTube Audio Library)\n\n#Shorts #3dtisk #3dtiskarna #dárek #3dprinting", $short, 'the music credit, then the hashtags last: the channel\'s three and one to the subject');
+        $this->assertStringEndsWith("Hudba: Artist – Song (YouTube Audio Library)\n\n#Shorts #3dtisk #3dtiskarna #dárek #3dprinting", $short);
         $order->modelFile->forceFill(['origin' => 'tool', 'origin_ref' => 'vase'])->save();
         $this->assertStringStartsWith('Udělejte si vlastní: '.url('/tools/vase').'?utm_source=youtube', $videos->defaultDescription($order->refresh(), null, 'wide'));
     }
@@ -604,6 +610,7 @@ class YouTubeVideosTest extends TestCase
 
     public function test_the_link_comment_waits_behind_its_switch_and_its_scope(): void
     {
+        app(FarmSettings::class)->set('video_prices', true);
         $this->connectedChannel();
         $client = app(YouTubeClient::class);
         $this->assertStringNotContainsString('force-ssl', urldecode($client->authUrl('https://x/cb', 's')), 'today: the scope the channel was connected with');
@@ -619,7 +626,7 @@ class YouTubeVideosTest extends TestCase
 
         // on: connecting asks for youtube.force-ssl too; a video that turns public gets the call with the link, once
         config(['youtube.pin_comment' => true]);
-        $this->assertStringContainsString('https://www.googleapis.com/auth/youtube https://www.googleapis.com/auth/youtube.force-ssl', urldecode($client->authUrl('https://x/cb', 's')));
+        $this->assertStringContainsString('https://www.googleapis.com/auth/youtube https://www.googleapis.com/auth/yt-analytics.readonly https://www.googleapis.com/auth/youtube.force-ssl', urldecode($client->authUrl('https://x/cb', 's')));
         $video->update(['status' => FarmVideo::STATUS_UPLOADED]);
         app(FarmVideos::class)->refreshStats();   // made public in Studio
         app(FarmVideos::class)->commentLink($video->refresh());
@@ -629,7 +636,7 @@ class YouTubeVideosTest extends TestCase
         $this->assertStringEndsWith('/commentThreads?part=snippet', $request->url());
         $this->assertSame(['channelId' => 'UC123', 'videoId' => 'vid123'], ['channelId' => $request['snippet']['channelId'], 'videoId' => $request['snippet']['videoId']]);
         $comment = (string) $request['snippet']['topLevelComment']['snippet']['textOriginal'];
-        $this->assertStringStartsWith('Nahrajte model a hned uvidíte cenu: '.url('/').'/?utm_source=youtube&utm_medium=social&utm_campaign=video_short&utm_content=vid123', $comment, 'the link names the video');
+        $this->assertStringStartsWith('Nahrajte model a hned uvidíte cenu: '.url('/').'/?utm_source=youtube&utm_medium=shorts&utm_campaign=short&utm_content=vid123', $comment, 'the link names the video');
         $this->assertStringContainsString('Cena tohoto výtisku: ', $comment);
         $this->assertSame([FarmVideo::STATUS_PUBLISHED, 'thread-1'], [$video->status, $video->meta['comment_id']]);
 
@@ -665,7 +672,7 @@ class YouTubeVideosTest extends TestCase
         $go = $this->actingAs($this->admin)->post('/admin/youtube/connect');
         $go->assertRedirect();
         parse_str((string) parse_url($go->headers->get('Location'), PHP_URL_QUERY), $q);
-        $this->assertSame('https://www.googleapis.com/auth/youtube', $q['scope']);
+        $this->assertSame('https://www.googleapis.com/auth/youtube https://www.googleapis.com/auth/yt-analytics.readonly', $q['scope']);
         $this->assertSame('offline', $q['access_type']);
 
         // a forged state is refused

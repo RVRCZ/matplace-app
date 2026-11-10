@@ -16,6 +16,14 @@
         @if($v->studioUrl())<a href="{{ $v->studioUrl() }}" target="_blank" rel="noopener" class="ml-2 text-xs font-normal underline">otevřít v YouTube Studiu</a>@endif
     </p>
     @if($v->error)<p class="mt-1 text-xs text-red-700">{{ $v->error }}</p>@endif
+    @if($v->order?->isTest())<p class="mt-1 text-xs font-semibold text-action-dark">{{ __('youtube.queue.test') }}</p>@endif
+    @if($repeat = app(\App\Domain\YouTube\FarmVideos::class)->repeated($v))
+        <p class="mt-1 text-xs font-semibold text-action-dark">{{ __('youtube.queue.repeated', ['date' => $repeat->published_at?->format('j. n. Y')]) }}</p>
+    @endif
+    @if($v->analytics)
+        <p class="mt-1 text-xs text-slate-600">{{ __('youtube.analytics.summary', ['views' => $v->analytics['views'] ?? 0, 'retention' => $v->analytics['averageViewPercentage'] ?? 0, 'seconds' => $v->analytics['averageViewDuration'] ?? 0]) }}
+            @if(isset($v->analytics['engagedViews'])) · {{ __('youtube.analytics.engaged', ['views' => $v->analytics['engagedViews']]) }}@endif</p>
+    @endif
     @if($v->music)<p class="mt-1 text-xs text-slate-500">♪ {{ pathinfo($v->music, PATHINFO_FILENAME) }} (hudba je ve videu, i v tom zákaznickém)</p>@endif
 
     @if(in_array($v->status, ['pending', 'uploaded'], true))
@@ -42,6 +50,44 @@
             @endif
             <button class="btn-primary text-sm">{{ $v->status === 'pending' ? 'Nahrát na YouTube a zveřejnit' : 'Zveřejnit na YouTube' }}</button>
         </form>
+    @endif
+    @if($v->kind === 'short' && $v->farm_order_id)
+        @php($clipRows = $v->clips->keyBy('kind'))
+        <section class="mt-4 rounded-xl border border-slate-200 p-3" aria-label="{{ __('youtube.clips.title') }}">
+            <h4 class="text-sm font-bold">{{ __('youtube.clips.title') }}</h4>
+            <p class="mt-1 text-xs text-slate-500">{{ __('youtube.clips.help') }}</p>
+            @if($clipRows->count() < 5)<p class="mt-1 text-xs font-semibold text-action-dark">{{ __('youtube.clips.missing', ['kinds' => $clipRows->count() === 0 ? __('youtube.clips.all') : collect(\App\Models\FarmVideoClip::KINDS)->diff($clipRows->keys())->map(fn ($kind) => __('youtube.clips.kinds.'.$kind))->implode(', ')]) }}</p>@endif
+            <div class="mt-3 space-y-3">
+                @foreach(\App\Models\FarmVideoClip::KINDS as $clipKind)
+                    @php($clip = $clipRows->get($clipKind))
+                    <div class="border-t border-slate-100 pt-3" data-clip-recorder data-kind="{{ $clipKind }}"
+                         data-upload-url="{{ route('admin.youtube.clips.store', [$v, $clipKind]) }}"
+                         data-camera-label="{{ __('youtube.clips.camera') }}" data-microphone-label="{{ __('youtube.clips.microphone') }}"
+                         data-default-camera="{{ __('youtube.clips.default_camera') }}" data-default-microphone="{{ __('youtube.clips.default_microphone') }}"
+                         data-start-label="{{ __('youtube.clips.start') }}" data-again-label="{{ __('youtube.clips.again') }}" data-upload-label="{{ __('youtube.clips.save') }}"
+                         data-rewind-label="{{ __('youtube.clips.rewind') }}" data-guide="{{ __('youtube.clips.guides.'.$clipKind) }}"
+                         data-remaining-label="{{ __('youtube.clips.remaining') }}" data-ready-label="{{ __('youtube.clips.ready') }}"
+                         data-error-label="{{ __('youtube.clips.camera_error') }}" data-upload-error-label="{{ __('youtube.clips.upload_error') }}">
+                        <h5 class="text-xs font-bold">{{ __('youtube.clips.kinds.'.$clipKind) }} <span class="font-normal text-slate-500">· {{ __('youtube.clips.seconds.'.$clipKind) }}</span></h5>
+                        @if($clip)
+                            <video src="{{ route('admin.youtube.clips.file', [$v, $clipKind]) }}?v={{ $clip->updated_at?->timestamp }}" controls playsinline preload="metadata" class="mt-2 max-h-64 w-full rounded-lg"></video>
+                        @else
+                            <p class="mt-1 text-xs text-slate-500">{{ __('youtube.clips.not_recorded') }}</p>
+                        @endif
+                        <div class="mt-2 flex flex-wrap gap-2">
+                            <button type="button" class="btn-quiet text-sm" data-record>{{ __('youtube.clips.record') }}</button>
+                        </div>
+                        <form method="post" action="{{ route('admin.youtube.clips.store', [$v, $clipKind]) }}" enctype="multipart/form-data" class="mt-2 flex flex-wrap items-center gap-2">
+                            @csrf
+                            <label class="text-xs"><span class="sr-only">{{ __('youtube.clips.upload') }}</span><input type="file" name="clip" accept="video/mp4,video/webm,video/quicktime,video/x-m4v" required class="max-w-full text-xs"></label>
+                            <button class="btn-quiet text-sm">{{ __('youtube.clips.upload') }}</button>
+                        </form>
+                        <div data-recorder-panel hidden class="mt-2 space-y-2"></div>
+                    </div>
+                @endforeach
+            </div>
+            <p class="mt-3 text-xs text-slate-500">{{ __('youtube.clips.rebuild') }}</p>
+        </section>
     @endif
     @php($rebuild = app(\App\Domain\YouTube\FarmVideos::class)->rebuildState($v))
     @if($rebuild === 'running')

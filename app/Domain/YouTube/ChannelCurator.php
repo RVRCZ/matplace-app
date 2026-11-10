@@ -14,7 +14,7 @@ use Illuminate\Support\Facades\Storage;
 final class ChannelCurator
 {
     /** The columns of the table, in this order (a CSV with semicolons, the way docs/data keeps its tables). */
-    public const COLUMNS = ['id', 'druh', 'zakazka', 'nastroj', 'zverejneno', 'dnesni_titulek', 'zhlednuti', 'novy_titulek', 'novy_popis', 'playlist', 'duplikat', 'navrh'];
+    public const COLUMNS = ['id', 'druh', 'zakazka', 'nastroj', 'zverejneno', 'dnesni_titulek', 'zhlednuti', 'novy_titulek', 'novy_popis', 'playlist', 'duplikat', 'navrh', 'analytics'];
 
     /** Where the ids of the channel's playlists are kept once made (name => id). */
     public const PLAYLISTS_FILE = 'youtube/playlists.json';
@@ -53,6 +53,7 @@ final class ChannelCurator
                 'playlist' => (string) ($this->playlistFor($video) ?? ''),
                 'duplikat' => $twin ? (empty($video->meta['unlisted_at']) ? 'ano' : 'ano (unlisted)') : 'ne',
                 'navrh' => $twin && empty($video->meta['unlisted_at']) ? 'unlisted' : '',
+                'analytics' => $video->analytics ? sprintf('%s zhl.; %s %% sledování; %s s%s', $video->analytics['views'] ?? '–', $video->analytics['averageViewPercentage'] ?? '–', $video->analytics['averageViewDuration'] ?? '–', isset($video->analytics['engagedRatio']) ? '; engaged '.round(100 * $video->analytics['engagedRatio']).' %' : '') : '',
             ];
         }
         if ($api) {
