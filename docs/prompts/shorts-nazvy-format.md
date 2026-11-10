@@ -48,19 +48,33 @@ JSON přes `json.load` s kontrolou duplicit, PHPUnit po jedné sadě, pint, buil
 
 ### C. Formát Shortu (řezač `TimelapseCutter` / `SeriesCutter`)
 
-- **První vteřina = hotová věc**: do střihu na začátek vložit 1,0 s posledního snímku (hotový výtisk) před časosběr,
-  u nástrojů z fotky vedle ní předlohu (fotka → výtisk), pak časosběr, na konci opět hotová věc tak, aby smyčka
-  navazovala (poslední snímek = první).
+- **První vteřina = hotová věc**: do střihu na začátek vložit 1,0 s hotového výtisku před časosběr, přednostně z klipu
+  `turn`. Na konci znovu hotová věc tak, aby smyčka navazovala. Když klip chybí, použije se poslední snímek časosběru.
+- **Nahrání a natočení doplňkových klipů v `/admin/youtube`:** u konkrétního videa, vedle dnešního nahrání fotky
+  z fotoboxu, přidat pět samostatných položek, každou s akcemi **Natočit** a **Nahrát soubor**. Na mobilu Natočit
+  otevře kameru a mikrofon přímo v prohlížeči, s výběrem zadní kamery nebo připojené kamery, pokud ji telefon
+  a prohlížeč zpřístupní jako videosignál. Natáčení je svislé a průvodce ukáže druh klipu, doporučenou délku a časovač;
+  nahrávání automaticky skončí po 10 s u `removal` a `turn`, po 3 s u ostatních. Klip jde přehrát, natočit znovu
+  nebo nahradit souborem. Každý klip je svázaný s videem a jeho zakázkou a administrace u videa ukáže, které klipy
+  ještě chybí. Nově nahrané nebo nahrazené klipy se použijí při dalším postavení videa. Roman nic nestříhá v CapCutu,
+  řezač sestaví video automaticky a Roman jen zkontroluje a schválí výsledek.
+  - `removal`: sundání výtisku z podložky hned po dotištění, 5 až 10 s, s původním zvukem.
+  - `turn`: otáčení hotové věci na talíři, 10 s.
+  - `detail`: detail výtisku nebo vyzkoušení jeho funkce, 3 s.
+  - `with_source`: výtisk vedle fotky nebo kresby, 3 s, jen u věcí vytvořených z předlohy.
+  - `in_hand`: výtisk v ruce, 3 s, u vhodných malých věcí.
+- **Pořadí střihu:** hotová věc a název → zrychlený časosběr → `removal` se slyšitelným původním zvukem → `turn` →
+  `detail` → podle druhu výtisku `with_source` nebo `in_hand` → hotová věc, výzva „matplace.com“ a smyčka. Délky
+  použitých úseků přizpůsobit celkové délce Shortu níže. Chybějící klip přeskočit a pro úvod a konec použít dosavadní
+  náhradu z posledního snímku časosběru, automatické generování se kvůli němu nezastaví.
 - **Text na obraze** z názvu videa (první řádek) a na konci výzva „matplace.com“ (druhý řádek), velikost a umístění
   jako u cenového Shortu (`SeriesCutter::priceShort` `$line`), bez vnitřních čísel. **Cena ve videu ne** (Roman 9. 11.
   večer): `video_prices` zůstává vypnuté jako výchozí, cena patří do popisu a do cenové série.
 - **Smyčka, varianta A** (Roman 9. 11. večer): stejný záběr hotové věci na začátku i na konci, aby se Short při
-  opakování slil. **Záběry ze studia:** Roman bude k výtiskům natáčet 10 s otáčení na talíři (a u věcí z fotky 3 s
-  s předlohou, u věcí do ruky 3 s v ruce), nahrané přes správu fotek nástrojů (docs/AN.md §15) k zakázce; když jsou,
-  řezač vezme úvod (1 s) a konec (2 s) z nich, jinak z posledního snímku časosběru. Postup pro Romana je
-  v `Documents\MatPlace\conceprt19092026\video-scenar-a-studio.md` (část 2 a 3), převezmi z něj názvy druhů záběrů
-  (`turn`, `with_source`, `in_hand`).
-- **Hudba** vždy (knihovna skladeb bez práv, jak ji používá cenový Short), tiché Shorts ven nejdou.
+  opakování slil. Postup pro Romana je v `Documents\MatPlace\conceprt19092026\video-scenar-a-studio.md` (část 2 a 3),
+  názvy druhů záběrů jsou `removal`, `turn`, `detail`, `with_source`, `in_hand`.
+- **Hudba** vždy (knihovna skladeb bez práv, jak ji používá cenový Short), tiché Shorts ven nejdou. Při `removal` hudbu
+  stáhnout do pozadí, aby byl slyšet původní zvuk sundání.
 - Délka 8 až 15 s (časosběr zrychlit podle délky tisku), svisle 1080×1920.
 - Popis: první řádek = název, pak dvě věty, pak výzva s odkazem **s UTM** (`?utm_source=youtube&utm_medium=shorts&
   utm_campaign=<kind>&utm_content=<youtube_id|order>`) na rozcestník (`/`) u dárkových věcí a na stránku nástroje
@@ -99,9 +113,13 @@ JSON přes `json.load` s kontrolou duplicit, PHPUnit po jedné sadě, pint, buil
 ### F. Testy a zpráva
 
 - Testy: název z nástroje / katalogu / modelu (fake) / bez jistoty → pending; zákaz jména souboru; opakování námětu
-  odloží; plánování na `shorts_publish_hour`; střih s první vteřinou hotové věci (kontrola pořadí vstupů ffmpeg,
-  ne skutečný render) a s hudbou; UTM v popisu a jeho zachycení v auditu; `youtube:analytics` s `Http::fake`;
-  CSV pro retitle. Stávající YouTube testy zelené (`YouTubeSeriesTest` je známý jako občas náhodný).
+  odloží; plánování na `shorts_publish_hour`; natočení všech pěti klipů v mobilním prohlížeči s fake `MediaStream`,
+  výběr dostupné kamery a mikrofonu, automatické ukončení, přehrání a přetočení; nahrání souboru a vazba na video
+  a zakázku, nahrazení klipu a kontrola chybějících klipů; střih s první vteřinou hotové věci, pořadím časosběru
+  a doplňkových klipů
+  (kontrola pořadí vstupů ffmpeg, ne skutečný render), původním zvukem u `removal`, hudbou a náhradou při chybějících
+  klipech; UTM v popisu a jeho zachycení v auditu; `youtube:analytics` s `Http::fake`; CSV pro retitle. Stávající
+  YouTube testy zelené (`YouTubeSeriesTest` je známý jako občas náhodný).
 - Zpráva řídící: větev a SHA, co je hotové, CSV s názvy, co má rozhodnout Roman (hodina zveřejnění, zda zkušební
   tisky ven vůbec, názvy z tabulky), a jak znovu připojit kanál s Analytics. Dokumentace do `docs/AL.md` §13 (nová
   podsekce).

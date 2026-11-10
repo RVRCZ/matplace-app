@@ -52,26 +52,23 @@ systemctl restart php8.2-fpm matplace-worker 'matplace-worker@*'; php artisan up
 Pak `curl -s -o /dev/null -w '%{http_code}' https://matplace.com/<stránka>` na dotčené stránky. Při běžícím tisku
 spusť na pozadí smyčku `until … sleep 120` s výpisem „FARM FREE“ a nasaď po ní. Výpadek bývá 12 s.
 
-## Stav k 9. 11. 2026 večer (podrobně `project_coordinator_handoff.md` v paměti a `docs/TODO.md` řádky 71–82)
+## Stav po dokončení Shorts #81 (podrobně `docs/TODO.md` řádky 71–82)
 
-- **Vše v main je nasazené** (server bf7cde3a = main c501dcec, 9. 11. 21:30). Žádná větev sessions nečeká na sloučení.
+- **Produkce je stále bf7cde3a = main c501dcec z 9. 11. 21:30. Shorts #81 je nově v main a NENASAZENÝ.**
   Nasazuje se skriptem `scripts/deploy_server.sh`: `ssh -i ~/.ssh/hetzner_matplace -o BatchMode=yes root@178.104.162.164 'bash -s' < scripts/deploy_server.sh`
   (fetch, kontrola čistoty a konfliktu, záloha .env + mysqldump, merge origin/main do feature/farm, composer, npm, migrate,
   optimize, reload php-fpm, queue:restart, curl na stránky). Jen na Romanovo „nasaď“.
-- **Živé od 9. 11.:** rozcestník na hlavní straně (#78 + 2. kolo #80: fotka/text/soubor → asistent Claude s viděním →
-  nástroj s předanou fotkou / tvar podle fotky / člověk / kalkulačka; tlačítko „Navrhni“ zopakuje rozhodnutí bez člověka;
-  admin `/admin/intake`, trychtýř v `/admin/stats`, zlatý soubor 30 případů `php artisan matplace:intake-cases` na serveru
-  = 28/30), kopie u zarovnaných barev (#72), kopie jako instance jednoho objektu (#77, limit sliceru 600 + 60 s/kus do 1200),
-  karta filamentu z e‑shopu opravená (#79, schéma pod 16 unií) a fotky z e‑shopu i pro zákazníky (#82, přepínač farmy).
-- **První úkol nové session: Shorts (TODO #81).** Zadání `docs/prompts/shorts-nazvy-format.md` je hotové (názvy nikdy ze
-  jména souboru, zkušební tisky ven ne, opakování námětu 30 dnů, jeden Short denně v `shorts_publish_hour`, první
-  vteřina hotová věc, text a hudba, bez ceny ve videu, UTM do trychtýře, rozsah YouTube Analytics + `youtube:analytics`,
-  záběry ze studia `turn`/`with_source`/`in_hand`). Roman ho chce nejdřív spolu doladit, pak „spusť“ pro session 2
-  (worktree `C:\matplace-gcode-wt`, větev `feature/shorts-titles-format`). Podklady pro Romana mimo repo:
-  `Documents\MatPlace\conceprt19092026\video-scenar-a-studio.md` (scénář videa konceptu, denní Shorts, studio) a
-  `stella-test-a-fotky.md` (fotky od Stelly teď, zkouška webu až na „web je připravený“ s přesným postupem, který
-  ještě nikdo nenapsal). Čísla kanálu: 44 videí, Shorts do 22. 10. medián 344 zhlédnutí, od 26. 10. medián 31;
-  8 videí 9. 11. přejmenováno (`youtube:retitle … --apply`), „Ball3“ (řádek 104) čeká v `/admin/youtube` bez názvu.
+- **Živé od 9. 11.:** rozcestník na hlavní straně (#78 + 2. kolo #80), kopie u zarovnaných barev (#72), kopie jako instance
+  jednoho objektu (#77), opravená karta filamentu z e‑shopu (#79) a fotky z e‑shopu i pro zákazníky (#82).
+- **Shorts (TODO #81) hotové a sloučené:** session 2 odevzdala `feature/shorts-titles-format` commit `6bba0b8a`, merge do main
+  `0ce6c33e`. Dokončeno A–F: AI/katalogové názvy bez jmen souborů, fronta a 30denní opakování, pět klipů s mobilním natočením
+  nebo nahráním v `/admin/youtube`, automatický střih se zvukem `removal`, UTM trychtýř, Analytics a CSV. Nad sloučeným main
+  47 PHP testů/1004 asercí, 2 JS testy, Pint, TypeScript a build prošly; 4 reálné rendery v tomto běhu přeskočené bez
+  `FFMPEG_BIN`, agent předtím ověřil reálné Short rendery 10 testů/269 asercí. Fyzický mobil a samostatný reálný render všech
+  klipů zůstávají k ověření po deployi. Nesouvisející starý reálný test měsíční délky čeká 98 s, pravidla dávají 74 s; neměnit
+  v rámci #81. Dokumentace `docs/AL.md` §13.9. **Čeká na „nasaď“, migraci, znovu připojení Analytics a Romanovy volby.**
+  Podklady mimo repo: `video-scenar-a-studio.md`, `stella-test-a-fotky.md`. Ball3 zůstává `pending` bez videa na YouTube
+  a název mu Roman doplní před zveřejněním.
 - **Čeká na Romana:** „Ball3“ pojmenovat; fotky od Stelly (pak do karet dárků přes správu fotek nástrojů, AN.md §15);
   datum do Vánoc (15. 12.) a lhůta 24 h v `/admin/farm/settings`; ceny „od“ u karet (jen busta 99 Kč); limit sliceru
   varianta A/B (#77, dnes B); Hetzner CX53 (16 vCPU, 29,49 €) zkusit znovu, když bude volný (CPX/CCX odložil).
