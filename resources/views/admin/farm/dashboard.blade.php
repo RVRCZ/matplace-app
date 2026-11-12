@@ -57,6 +57,17 @@
                 @php $c = $row['command']; @endphp
                 <p class="mt-1 text-xs text-slate-500" data-last-command>{{ __('farm.admin.last_command') }}: {{ __('farm.admin.command_type.'.$c->type) }} · {{ __('farm.admin.command_status.'.$c->status) }} {{ ($c->finished_at ?? $c->created_at)->format('H:i') }}@if($c->result) · {{ $c->resultText() }}@endif</p>
             @endif
+            @if($row['cancel'])
+                {{-- the order is cancelled on the web, the printer has not let go of its print (agent 0.2.13, docs/AM.md §13) --}}
+                @php $cc = $row['cancel']; $refused = $cc->cancel_state === \App\Models\FarmCommand::CANCEL_REFUSED; $co = $cc->printJob?->order; @endphp
+                <div class="mt-2 rounded-xl {{ $refused ? 'bg-red-50 text-red-800' : 'bg-amber-50 text-amber-900' }} p-3 text-sm" data-cancel-state="{{ $cc->cancel_state }}">
+                    <p class="font-semibold">{{ __('farm.admin.cancel.'.$cc->cancel_state) }}@if($co) · <a class="underline" href="{{ route('admin.farm.orders.show', $co) }}">{{ $co->number }}</a>@endif <span class="font-normal text-xs">{{ ($cc->finished_at ?? $cc->created_at)->format('j. n. H:i') }}</span></p>
+                    <p class="mt-1 text-xs">{{ $refused ? ($cc->resultText() ?? __('farm.admin.cancel.refused_hint')) : __('farm.admin.cancel.waiting_hint') }}</p>
+                    @if($refused)
+                        <form method="post" action="{{ route('admin.farm.printers.command', $p) }}" data-ajax class="mt-2">@csrf<button name="type" value="cancel" class="btn-quiet text-sm">{{ __('farm.admin.cancel.again') }}</button></form>
+                    @endif
+                </div>
+            @endif
             @if($p->snapshot_path)
                 <img src="{{ route('admin.farm.printers.snapshot', $p) }}?t={{ $p->snapshot_at?->timestamp }}" alt="{{ __('farm.order.camera') }}" class="mt-2 w-full rounded-xl border border-slate-200">
                 <p class="text-xs text-slate-500">{{ $p->snapshot_at?->format('j. n. H:i:s') }}</p>

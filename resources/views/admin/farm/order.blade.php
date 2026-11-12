@@ -11,6 +11,10 @@
     <h1 class="text-xl font-extrabold">{{ $order->number ?? '#'.$order->id }} · {{ $order->modelFile?->original_name }}</h1>
     <span class="rounded-full bg-action-soft px-3 py-1 text-sm font-bold text-action-dark">{{ __('farm.status.'.$order->status) }}</span>
 </div>
+@if($cancelState = $order->cancelState())
+    {{-- cancelled on the web, not on the printer: not a finished matter until the printer says so (docs/AM.md §13) --}}
+    <p class="mt-2 rounded-lg {{ $cancelState === \App\Models\FarmCommand::CANCEL_REFUSED ? 'bg-red-50 text-red-800' : 'bg-amber-50 text-amber-900' }} px-3 py-2 text-sm" data-cancel-state="{{ $cancelState }}"><strong>{{ __('farm.admin.cancel.'.$cancelState) }}</strong> · {{ __('farm.admin.cancel.'.$cancelState.'_hint') }}</p>
+@endif
 @if($order->error)<p class="mt-2 rounded-lg bg-red-50 px-3 py-2 text-sm text-red-800">{{ $order->error }}@if($order->error_detail) · {{ $order->error_detail }}@endif</p>@endif
 
 <div class="mt-4 grid gap-4 lg:grid-cols-[1.2fr_1fr]">

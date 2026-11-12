@@ -968,3 +968,137 @@ toolChangerParams, filamentRecord), `app/Engines/Mesh/ThreeMfWriter.php`, `app/D
 Kalkulačka počítá podložky malovaného 3MF dál s pásem věže (`CalculationController`, stroj nezná) – konzervativní. Zástupný
 profil u `machineVariant` je vždy INDX varianta hlavní cívky; dva druhy na jedné podložce měnič zvládne, nabídka dílů je ale dál
 jedna rodina plastu. Agent 0.2.12 zip pro PC farmy nedělán (jen ovladač; verze navazuje na 0.2.11).
+
+## 13. Zrušení a pauza potvrzené stavem tiskárny (agent 0.2.13, větev `fix/agent-cancel-confirm`, 12. 11. 2026)
+
+Zadání `docs/prompts/agent-zruseni-pauza.md` (F26‑000158 na U2, 11. 11. 2026: zakázka na webu zrušená, tiskárna 15 minut
+v pauze se souborem zrušené zakázky, nikde to nebylo vidět). Bez tiskáren: na 192.168.8.x se nesahalo ani čtením, log
+agenta leží na PC domácí farmy. Podklady: tabulka událostí v zadání, uložené výpisy U2 z 3.–4. 11. v `C:\tmp\u2`
+a ověřený řádek z `agent/README.md` (start S1: `progress` 0, `print_duration` se nuluje se začátkem první vrstvy).
+
+### 13a. Zrušení (agent)
+
+- `agent.py` `_control` → `_cancel`: zrušení je hotové, až když to řekne stav tiskárny. Po volání ovladače (ať odpověděl
+  `ok`, nebo chybou) agent čte stav hned a pak po 2 s až 60 s (`CONFIRM_WAIT_SECONDS`). Hotovo = stav není `printing`
+  ani `paused`, nebo úloha hlásí `cancelled` (stejná podmínka jako dřív).
+- Tisk, který zůstal: druhý krok ovladače `cancel_fallback()` a dalších 20 s čtení (`FALLBACK_WAIT_SECONDS`).
+  Moonraker: `POST /printer/gcode/script?script=SDCARD_RESET_FILE` (na U2 11. 11. převedl `paused` na `standby`;
+  GoKlipper ho má i ve výpisu `/printer/gcode/help`, `C:\tmp\u2\u2-gcode-help.json`). Výsledek příkazu pak říká, co
+  pomohlo: „cancel was answered ok, but the printer stayed paused for 60 s; SDCARD_RESET_FILE ended the print“.
+- Nepomohlo ani to (stav se nezměnil, tiskárna krok odmítla, ovladač druhý krok nemá, tiskárna 60 s neodpovídá): příkaz
+  končí `failed` s větou „cancel not confirmed: …; stop the print on the printer's screen“ a server pošle e‑mail (13c).
+- Soubor, který není z farmy (`mp<id>-matplace-…` ani soubor sledované úlohy), druhý krok nikdy nedostane: tisk spuštěný
+  na displeji se odsud silou neukončuje, příkaz selže s názvem souboru.
+- Potvrzené zrušení agent hlásí jako `cancelled` hned v dalším hlášení (`Tracked.cancelled`, přežije restart agenta),
+  i když tiskárna po `SDCARD_RESET_FILE` žádný soubor nejmenuje. Dřív by taková úloha po osmi hlášeních skončila jako
+  `failed` („the printer no longer reports this print“), což u zrušení z administrace znamenalo zakázku „nepodařilo se“.
+- Topení po zrušení (`_cool`): byl‑li před zrušením tisk nebo pauza, mají cíle trysky a podložky do 10 s spadnout na
+  nulu. Jinak `heaters_off()` ovladače (Moonraker: `TURN_OFF_HEATERS`, při odmítnutí `M104 S0` a `M140 S0`) a poznámka
+  „the heaters were left on (nozzle 220, bed 55), switched off with TURN_OFF_HEATERS“. Ovladač, který to neumí, nebo
+  topení, které zůstalo: „the heaters are still on (…); switch them off at the printer“ a e‑mail provozovateli.
+  `SDCARD_RESET_FILE` žádné makro zrušení nespouští, proto ta kontrola.
+- Ostatní ovladače: `anycubic_lan` (Kobra X), `prusalink` i `mock` jdou stejným ověřením stavu. Druhý krok ani vypnutí
+  topení `anycubic_lan` a `prusalink` nemají (nic bezpečného a ověřeného v protokolu není), nepotvrzené zrušení u nich
+  selže s větou „has no second way to end a print“. `mock`: `cancel_stuck` (cancel odpoví ok, stav zůstane `paused`),
+  `cancel_fallback` `works|fails|refused|none`, `heaters_stay`, `heaters_off` `works|none`.
+- Výsledek příkazu se před odesláním krátí na 300 znaků (server delší odmítne 422 a příkaz by zůstal „u agenta“); z chyby
+  samotného volání se do věty o zrušení bere nejvýš 110 znaků.
+
+### 13b. Pauza a zrušení během přípravy tisku
+
+**Zvoleno: pauzu při přípravě odmítnout hned, neodkládat.** Důvody: odložená pauza by držela zámek tiskárny (jeden
+příkaz najednou), takže by za ní čekalo i zrušení, tedy přesně to, co má v té chvíli projít; musela by přežít restart
+agenta a obsluha by neměla jak ji odvolat; a přišla by nečekaně o minuty později, kdy ji už nikdo nechce. Odmítnutí je
+jedna podmínka před voláním: agent tiskárně nic neposílá a příkaz do jednoho hlášení selže s větou „the printer is
+getting ready (heating, levelling); a pause will work once the first layer has started“, kterou administrace ukáže česky
+(13c). Obsluha klikne znovu, až tisk poběží.
+
+**Jak se příprava pozná.** `JobStatus.starting` nastavuje ovladač. Moonraker: stav `printing` a zároveň
+`virtual_sdcard.progress` 0, `print_stats.info.current_layer` 0 nebo chybí, `print_stats.filament_used` 0. Musí platit
+všechny tři, takže běžící tisk se za přípravu nevydává (nejpozději čisticí linka dá `filament_used` > 0).
+`print_duration == 0` znak není: podle ověřeného řádku README během přípravy běží a nuluje se až s první vrstvou. Teploty
+pod cílem znak také nejsou (při LeviQ je tryska na mezicíli 170 °C). Když příprava rozpoznána není, pauza jde jako dřív:
+volání, 60 s čtení stavu, `failed`, jen s českou větou místo technické. Kobra X a PrusaLink `starting` neposílají (nikdo
+nezměřil, zda pauzu při přípravě berou). Agent při každé pauze zapíše do `agent.log` řádek `pause asked: state, progress,
+print_duration, filament_used, nozzle, bed, layer, starting`: z první zkoušky na U2 půjde ty tři znaky potvrdit nebo
+opravit. **Tohle rozpoznání je odhad z dokumentace, na tiskárně neměřený** (zadání chtělo čtení z U2/U1 a z logu agenta;
+obojí bylo této session zakázané, respektive nedostupné).
+
+**Zrušení při přípravě** projde stejnou cestou jako každé jiné: volání, stav, případně `SDCARD_RESET_FILE`, potom kontrola
+topení (tisk zrušený při nahřívání je přesně případ, kdy cíle zůstanou) a hlášení `cancelled`.
+
+### 13c. Server (bez migrace)
+
+- Stav „nepotvrzeno“ se nikam neukládá, čte se z příkazu `cancel` a ze stavu tiskárny (`FarmCommand::cancelState()`):
+  `waiting` = příkaz čeká na agenta nebo je u agenta; `refused` = příkaz selhal a tiskárna je `printing`, `paused` nebo
+  `unknown`. Konec: příkaz splněn, tiskárna hlásí jiný stav (obsluha zastavila na displeji), pozdější start nebo zrušení
+  na téže tiskárně, nebo stáří 7 dní. Žádný nový stav ve sloupcích, `FarmStatusColumnsTest` se netýká.
+- Administrace: na kartě tiskárny (`/admin/farm`) žlutý rámeček „Zrušeno, čeká na potvrzení tiskárny“ nebo červený
+  „Tiskárna tisk nezrušila“ s číslem zakázky, českou větou a tlačítkem **Zkusit zrušit znovu** (příkaz `cancel` pro tutéž
+  úlohu, i když je zakázka už zrušená); totéž pod stavem na stránce zakázky a v seznamu zakázek. Fronta na takovou
+  tiskárnu dál nic nepošle (stav není `idle`), teď je ale vidět proč.
+- E‑mail provozovateli (`alertAdmin`, druh `problem`, přepínač `notify_problem`): selhaný `cancel` → „F26‑…: <tiskárna>
+  tisk nezrušila“ s řádky zakázky, českou větou, větou agenta a „Co dál“; splněný `cancel` s „the heaters are still on“ →
+  „… má po zrušení zapnuté topení“. Obojí i do `Log::warning` (produkce loguje od warning).
+- `FarmCommand::resultText()` překládá věty agenta o pauze, pokračování a zrušení (cs, en, es, `lang/src/agent_cancel.json`):
+  pauza při přípravě, pauza nebo pokračování, které tiskárna nevzala (bez `TimeoutError`), nezrušený tisk, druhý krok,
+  topení. Neznámé věty zůstávají, jak je agent napsal.
+- Starý agent (do 0.2.12) hlásí `cancel` jako hotový hned jako dosud; server s tím počítá, jen nic neověří.
+- Co server nedělá: příkaz `cancel`, na který agent nikdy neodpoví (agent spadl uprostřed), zůstane „čeká na potvrzení“
+  bez e‑mailu; o tiskárně bez spojení píše dál jen `farm:watch`.
+
+### 13d. Testy
+
+- Agent: 126 testů (`python -m pytest tests` v `agent/`; venv s `requirements.txt`, `pytest` a `Pillow`); nový
+  `tests/test_cancel_confirm.py` (18): cancel ok + stav paused → druhý krok → potvrzeno a úloha `cancelled`; druhý krok
+  nic nezmění, je odmítnut, neexistuje → `failed` s důvodem; cizí soubor; restart po potvrzeném zrušení; pauza při
+  přípravě odmítnuta do čtvrt vteřiny a po startu projde; zrušení při přípravě s vypnutím topení; skutečný ovladač
+  `moonraker` proti falešnému Moonrakeru včetně přehrání incidentu (stop na displeji → `paused`, cancel `ok`,
+  `SDCARD_RESET_FILE` → `standby`, `TURN_OFF_HEATERS`). Falešný Moonraker umí `cancel_ends`, `reset_ends`,
+  `knows_heaters_off` a cíle teplot.
+- Server: `tests/Feature/FarmCancelConfirmTest.php` (6 testů, 134 asercí): čekání na potvrzení na kartě, zakázce i v seznamu;
+  nezrušený tisk (jeden e‑mail, červený rámeček, další zakázka nestartuje, zrušení znovu); konec varování; topení;
+  věty o pauze česky a anglicky; věty o zrušení.
+
+### 13e. Neověřeno na skutečných tiskárnách
+
+- Že `SDCARD_RESET_FILE` pomůže i ze stavu `printing` a z pauzy, která nevznikla stopem na displeji (ověřen jediný případ
+  z 11. 11.: `paused` po stopu na displeji).
+- Že `TURN_OFF_HEATERS` GoKlipper provede (je ve výpisu příkazů U2, nikdy poslán) a v jakém stavu topení
+  `SDCARD_RESET_FILE` nechá; kde po něm zůstane hlava a jestli se filament vrátí do ACE (makro zrušení se nespouští).
+- Tři znaky přípravy na S1 (`progress` 0 po celou přípravu je z kalibračního tisku 22. 9.; `current_layer` a
+  `filament_used` během přípravy nikdo nečetl, mimo jiné zda zavádění z ACE nepočítá do `filament_used`).
+- Jak dlouho S1 po běžném zrušení drží stav `printing`/`paused` (makro zrušení, odjezd, vytažení filamentu): je‑li to
+  déle než 60 s, přijde druhý krok zbytečně brzy.
+- Kobra X a Core One: zda zrušení vždy skončí stavem mimo `printing`/`paused` do 60 s; pauza při přípravě.
+- Farma B (jiná síť): nic z toho.
+
+### 13f. Zkouška na U2 (Roman, po instalaci 0.2.13 a nasazení serveru)
+
+1. Malý tisk na U2 z farmy (zkušební zakázka), potvrdit podložku, počkat na start.
+2. **Pauza při přípravě:** do půl minuty po startu (nahřívání, vyrovnání) v `/admin/farm` kliknout Pauza. Čekáme: do pár
+   vteřin u „Poslední příkaz“ věta „Tiskárna se připravuje…, pauza půjde za chvíli“, tisk běží dál. Kdyby místo ní po
+   minutě přišlo „Tiskárna pauzu nepřijala…“, příprava se nepoznala: pošlete řádek `pause asked:` z `agent.log`.
+3. Počkat na první vrstvu, **zastavit tisk na displeji tiskárny** (stop). Tiskárna zůstane v pauze.
+4. **Zrušit zakázku na webu** jako zákazník. Čekáme: na kartě U2 žlutě „Zrušeno, čeká na potvrzení tiskárny“, asi po
+   minutě rámeček zmizí, „Poslední příkaz: zrušení tisku · hotovo · Tiskárna na zrušení odpověděla, ale tisk 60 s držela
+   dál… Ukončil ho až druhý krok (SDCARD_RESET_FILE)“, případně věta o vypnutém topení. Tiskárna „volná“, na displeji bez
+   souboru, tryska i podložka chladnou. Žádný e‑mail.
+5. Kdyby se objevil červený rámeček „Tiskárna tisk nezrušila“ a přišel e‑mail: druhý krok nepomohl. Zastavit na displeji
+   a poslat `agent.log`.
+6. Na konec: podívat se, kde stojí hlava a jestli je filament vytažený (13e), sundat výtisk, potvrdit podložku.
+
+### 13g. Instalace 0.2.13 (řídící)
+
+Zip `matplace-farm-agent-0.2.13.zip` (19 souborů, bez `config.yaml`, stavěno `build_agent_zip.py` jako dřív) leží ve
+scratchpadu session (cesta v závěrečné zprávě); na plochu a na D: ho dá řídící. Na PC obou farem podle §5 a §10g: zastavit
+úlohu `matplace-farm-agent`, přehrát složku `farm_agent/` (žádné nové knihovny, `requirements.txt` beze změny, `config.yaml`
+beze změny), spustit úlohu. Server: jen kód, pohledy a texty (`lang/*.json`); **žádná migrace**, žádný build (bez TS), po
+nasazení `view:clear` a `optimize` jako vždy. Pořadí je volné: nový agent se starým serverem funguje (věty anglicky), starý
+agent s novým serverem také (zrušení se neověřuje).
+
+**Soubory.** `agent/farm_agent/agent.py`, `drivers/base.py`, `drivers/moonraker.py`, `drivers/mock.py`, `__init__.py`
+(0.2.13), `agent/README.md`, `agent/config.example.yaml`, `agent/tests/test_cancel_confirm.py`, `agent/tests/test_moonraker.py`;
+`app/Models/FarmCommand.php`, `FarmPrinter.php`, `FarmOrder.php`, `app/Domain/Farm/AgentService.php`,
+`app/Http/Controllers/Admin/FarmOrderController.php`, `resources/views/admin/farm/{dashboard,order,orders}.blade.php`,
+`lang/src/agent_cancel.json` (+ `lang/{cs,en,es}.json`), `tests/Feature/FarmCancelConfirmTest.php`.

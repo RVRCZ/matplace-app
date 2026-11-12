@@ -301,6 +301,23 @@ class FarmPrinter extends Model
         return $this->isAgentDriven() && $this->isOnline() && in_array($this->state, [self::STATE_PRINTING, self::STATE_PAUSED], true);
     }
 
+    /**
+     * The cancel this printer has not confirmed or did not carry out (FarmCommand::cancelState), with its state in
+     * `cancel_state`; null when there is none. The order is "cancelled" on the web meanwhile, so this is the one place
+     * the operator sees that the machine still holds the print (F26-000158, docs/AM.md §13).
+     */
+    public function unconfirmedCancel(): ?FarmCommand
+    {
+        $command = FarmCommand::with('printJob.order')->where('farm_printer_id', $this->id)->where('type', FarmCommand::TYPE_CANCEL)->latest('id')->first();
+        $state = $command?->setRelation('printer', $this)->cancelState();
+        if ($state === null) {
+            return null;
+        }
+        $command->cancel_state = $state;
+
+        return $command;
+    }
+
     public function activeJob(): ?FarmPrintJob
     {
         return $this->printJobs()->whereIn('status', FarmPrintJob::ACTIVE)->latest('id')->first();

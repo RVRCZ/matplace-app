@@ -51,6 +51,8 @@ class FarmOrderController extends Controller
                 // the last thing the agent was told to do with this machine today, and what came of it (a resume that was
                 // confirmed by the printer's state, a start refused for an empty slot...)
                 'command' => FarmCommand::where('farm_printer_id', $p->id)->where('created_at', '>', now()->subDay())->latest('id')->first(),
+                // a cancel the printer has not confirmed or did not carry out: the order is cancelled, the machine is not free
+                'cancel' => $p->isAgentDriven() ? $p->unconfirmedCancel() : null,
             ];
         });
 
@@ -341,6 +343,10 @@ class FarmOrderController extends Controller
             return $this->answer($request, true, __('farm.admin.command_sent'));
         }
         $job = $printer->activeJob();
+        if (! $job && $data['type'] === 'cancel') {
+            // the order is cancelled already, the printer has not let go of its print: the cancel may be sent again
+            $job = $printer->unconfirmedCancel()?->printJob;
+        }
         if (! $job) {
             return $this->answer($request, false, __('farm.admin.no_job'));
         }

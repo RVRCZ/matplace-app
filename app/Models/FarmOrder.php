@@ -389,6 +389,20 @@ class FarmOrder extends Model
         return $this->hasMany(FarmOrderEvent::class)->orderBy('id');
     }
 
+    /**
+     * Cancelled on the web, not (yet) on the printer: FarmCommand::CANCEL_WAITING while the agent has not answered the
+     * cancel of this order's print, CANCEL_REFUSED when the printer did not carry it out; null otherwise.
+     */
+    public function cancelState(): ?string
+    {
+        if ($this->status !== self::STATUS_CANCELLED) {
+            return null;
+        }
+
+        return FarmCommand::with('printer')->where('type', FarmCommand::TYPE_CANCEL)
+            ->whereIn('farm_print_job_id', FarmPrintJob::where('farm_order_id', $this->id)->select('id'))->latest('id')->first()?->cancelState();
+    }
+
     public function printJobs(): HasMany
     {
         return $this->hasMany(FarmPrintJob::class)->orderBy('id');
