@@ -7,8 +7,16 @@
  * for a filament nothing prints from, `T<n> S1 L0 D0` for every tool used, the change count – so the whole path from
  * PrepareFarmOrder through OrcaSlicer::slice to GcodeStats runs against the command really built. With MP_FAKE_ORCA_DIR
  * set it leaves a copy of the process file, the filament files and the project there for the test to look at.
+ * MP_FAKE_ORCA_PID names a file it writes its process id to, MP_FAKE_ORCA_SLEEP seconds it waits before it does anything.
  */
 $args = array_slice($argv, 1);
+// a slicer that takes its time, for the tests that stop it (SupersededSliceTest): it says who it is, then sleeps
+if ($pidFile = getenv('MP_FAKE_ORCA_PID')) {
+    file_put_contents($pidFile, (string) getmypid());
+}
+if (($sleep = (int) getenv('MP_FAKE_ORCA_SLEEP')) > 0) {
+    sleep($sleep);
+}
 $opt = [];
 for ($i = 0; $i < count($args); $i++) {
     if (str_starts_with($args[$i], '--') && isset($args[$i + 1])) {

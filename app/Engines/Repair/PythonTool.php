@@ -3,6 +3,7 @@
 namespace App\Engines\Repair;
 
 use App\Engines\Exceptions\EngineException;
+use App\Support\RunGuard;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Process;
 
@@ -27,8 +28,8 @@ final class PythonTool implements ScriptRunner
     /** @return array<string,mixed> */
     public function run(array $args): array
     {
-        $r = Process::timeout($this->config['timeout'])->env(self::switches())
-            ->run(array_merge([$this->config['bin'], base_path('engines/python/mesh_tool.py')], $args));
+        $r = RunGuard::run(Process::timeout($this->config['timeout'])->env(self::switches()),
+            array_merge([$this->config['bin'], base_path('engines/python/mesh_tool.py')], $args));
         $json = json_decode(trim($r->output()), true);
         if (! is_array($json)) {
             throw new EngineException('mesh_tool.py returned no JSON: '.mb_substr($r->output().$r->errorOutput(), -500));
@@ -44,7 +45,8 @@ final class PythonTool implements ScriptRunner
      */
     public function runScript(string $script, array $args, int $timeout = 90): array
     {
-        $r = Process::timeout($timeout)->env(self::switches())->run(array_merge([$this->config['bin'], base_path('engines/python/'.$script)], $args));
+        // a farm order's run that was overtaken is stopped here, with the script killed (RunGuard, docs/AL.md §22)
+        $r = RunGuard::run(Process::timeout($timeout)->env(self::switches()), array_merge([$this->config['bin'], base_path('engines/python/'.$script)], $args));
         $json = json_decode(trim($r->output()), true);
         if (! is_array($json)) {
             throw new EngineException($script.' returned no JSON: '.mb_substr($r->output().$r->errorOutput(), -500));

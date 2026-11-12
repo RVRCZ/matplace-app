@@ -37,6 +37,7 @@ use App\Engines\Mail\FakeMailbox;
 use App\Engines\Mail\GmailMailbox;
 use App\Engines\Mail\Mailbox;
 use App\Engines\Mesh\MeshDecimator;
+use App\Engines\Mesh\SupportsCheck;
 use App\Engines\Payment\FakeGateway;
 use App\Engines\Payment\StripeGateway;
 use App\Engines\Photo\BackgroundRemover;
@@ -77,6 +78,9 @@ class EngineServiceProvider extends ServiceProvider
     {
         $this->app->singleton(PythonTool::class, fn () => new PythonTool(config('engines.python')));
         $this->app->singleton(MeshDecimator::class, fn ($app) => new MeshDecimator($app->make(PythonTool::class), (array) config('engines.mesh')));
+        // asked only where the Python engines run at all (the tests and a machine without them slice as before)
+        $this->app->singleton(SupportsCheck::class, fn ($app) => new SupportsCheck($app->make(PythonTool::class),
+            (bool) config('engines.mesh.supports_check', true) && config('engines.repair') === 'trimesh', (int) config('engines.mesh.supports_check_timeout', 20)));
         // the background off a photo of a finished print (PrintPhotos, docs/AL.md §13): rembg asks the interpreter whether it is installed
         $this->app->singleton(BackgroundRemover::class, fn ($app) => match (config('engines.photo')) {
             'rembg' => new RembgBackgroundRemover((array) config('engines.python') + ['photo_home' => (string) config('engines.photo_home'), 'photo_numba_cache' => (string) config('engines.photo_numba_cache')]),

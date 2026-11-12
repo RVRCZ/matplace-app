@@ -106,6 +106,103 @@ final class Speed
         return $max;
     }
 
+    /**
+     * How often slices really meet and what it costs them (docs/AL.md §22, part C), from the timings alone. A run "slices"
+     * when the slicer process ran for it (slice1_s + slice2_s, not served from a cache); it is "heavy" from `$heavy`
+     * seconds of that on. For every heavy run: with how many other slicing runs its job shared the time, and for how
+     * long. The cost is read off the pace – seconds of slicer per 100 000 triangles sliced – of the heavy runs that ran
+     * alone against those that shared half their time or more; it is only as good as the runs are alike, so the number
+     * of runs behind each pace is given with it.
+     *
+     * @return array{days:int, heavy_s:int, slicing:int, heavy:int, met:int, met_half:int, overlap_s:float, slicer_s:float,
+     *     peak:int, pace_alone:?float, pace_alone_n:int, pace_met:?float, pace_met_n:int, slot_wait_s:float,
+     *     queued_over_5s:int, queue_max_s:float, worst: list<array<string,mixed>>}
+     */
+    public function overlap(int $days = 30, int $heavy = 20): array
+    {
+        $since = now()->subDays($days);
+
+        return self::overlapOf(['calc' => $this->timings(Calculation::query(), $since), 'farm' => $this->timings(FarmOrder::query(), $since)], $days, $heavy);
+    }
+
+    /**
+     * overlap() over timings already read: `$timings` = kind => the rows' timings.
+     *
+     * @param  array<string, list<array<string,mixed>>>  $timings
+     * @return array<string,mixed>
+     */
+    public static function overlapOf(array $timings, int $days, int $heavy): array
+    {
+        $rows = [];
+        foreach ($timings as $kind => $list) {
+            foreach ($list as $t) {
+                $slicer = (float) ($t['slice1_s'] ?? 0) + (float) ($t['slice2_s'] ?? 0) + (float) ($t['rest_slice1_s'] ?? 0) + (float) ($t['rest_slice2_s'] ?? 0);
+                if (! isset($t['started'], $t['finished']) || $slicer <= 0 || ! empty($t['slice_cached']) || ! empty($t['cache'])) {
+                    continue;
+                }
+                $rows[] = ['kind' => $kind, 'from' => (float) $t['started'], 'to' => (float) $t['finished'], 'slicer_s' => $slicer,
+                    'triangles' => (int) ($t['triangles_sliced'] ?? $t['triangles'] ?? 0), 'queue_s' => (float) ($t['queue_s'] ?? 0), 'wait_s' => (float) ($t['orca_wait_s'] ?? 0)];
+            }
+        }
+        usort($rows, fn ($a, $b) => $a['from'] <=> $b['from']);
+        $out = ['days' => $days, 'heavy_s' => $heavy, 'slicing' => count($rows), 'heavy' => 0, 'met' => 0, 'met_half' => 0, 'overlap_s' => 0.0, 'slicer_s' => 0.0,
+            'peak' => self::peak(array_map(fn ($r) => ['started' => $r['from'], 'finished' => $r['to']], $rows)),
+            'slot_wait_s' => round(array_sum(array_column($rows, 'wait_s')), 1),
+            'queued_over_5s' => count(array_filter($rows, fn ($r) => $r['queue_s'] > 5)), 'queue_max_s' => $rows ? round(max(array_column($rows, 'queue_s')), 1) : 0.0, 'worst' => []];
+        $alone = $shared = [];
+        foreach ($rows as $i => $r) {
+            if ($r['slicer_s'] < $heavy) {
+                continue;
+            }
+            $out['heavy']++;
+            $out['slicer_s'] += $r['slicer_s'];
+            // the stretches of this job's time another slicing job was running too, merged
+            $cuts = [];
+            $others = 0;
+            foreach ($rows as $j => $o) {
+                if ($j !== $i && $o['from'] < $r['to'] && $o['to'] > $r['from']) {
+                    $cuts[] = [max($o['from'], $r['from']), min($o['to'], $r['to'])];
+                    $others++;
+                }
+            }
+            usort($cuts, fn ($a, $b) => $a[0] <=> $b[0]);
+            $met = 0.0;
+            $end = null;
+            foreach ($cuts as [$a, $b]) {
+                if ($end === null || $a > $end) {
+                    $met += $b - $a;
+                    $end = $b;
+                } elseif ($b > $end) {
+                    $met += $b - $end;
+                    $end = $b;
+                }
+            }
+            $share = $r['to'] > $r['from'] ? $met / ($r['to'] - $r['from']) : 0.0;
+            if ($others > 0) {
+                $out['met']++;
+                $out['overlap_s'] += $met;
+                $out['worst'][] = ['kind' => $r['kind'], 'at' => date('Y-m-d H:i', (int) $r['from']), 'slicer_s' => round($r['slicer_s'], 1), 'others' => $others, 'shared_s' => round($met, 1), 'share' => round($share, 2), 'triangles' => $r['triangles']];
+            }
+            if ($share >= 0.5) {
+                $out['met_half']++;
+            }
+            if ($r['triangles'] > 0) {
+                $pace = $r['slicer_s'] / ($r['triangles'] / 100000);
+                if ($others === 0) {
+                    $alone[] = $pace;
+                } elseif ($share >= 0.5) {
+                    $shared[] = $pace;
+                }
+            }
+        }
+        usort($out['worst'], fn ($a, $b) => $b['shared_s'] <=> $a['shared_s']);
+        $out['worst'] = array_slice($out['worst'], 0, 10);
+        $out['overlap_s'] = round($out['overlap_s'], 1);
+        $out['slicer_s'] = round($out['slicer_s'], 1);
+
+        return $out + ['pace_alone' => $alone ? self::percentile($alone, 50) : null, 'pace_alone_n' => count($alone), 'pace_met' => $shared ? self::percentile($shared, 50) : null, 'pace_met_n' => count($shared)];
+    }
+
     /** @return list<array<string,mixed>> */
     private function timings(Builder $query, $since): array
     {

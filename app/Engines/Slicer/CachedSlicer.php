@@ -73,17 +73,19 @@ final class CachedSlicer implements Slicer
         try {
             File::ensureDirectoryExists($this->dir);
             if ($result->gcodePath && is_file($result->gcodePath)) {
-                File::copy($result->gcodePath, $gcode.'.tmp');
-                rename($gcode.'.tmp', $gcode);
+                File::copy($result->gcodePath, $gcode.'.'.getmypid().'.tmp');
+                rename($gcode.'.'.getmypid().'.tmp', $gcode);
             }
             // the timings of the run that made it, so a hit still says what slicing it took (double slice…)
             $timings = array_intersect_key($result->timings, array_flip(['slice1_s', 'slice2_s', 'double']));
-            File::put($json, json_encode([
+            // the record whole or not at all (another worker may read it at any moment), and last: a G-code without it is no hit
+            File::put($json.'.'.getmypid().'.tmp', json_encode([
                 'grams' => $result->grams, 'minutes' => $result->minutes, 'dims' => [$result->dims->x, $result->dims->y, $result->dims->z],
                 'supports_used' => $result->supportsUsed, 'gcode' => (bool) $result->gcodePath, 'warnings' => $result->warnings, 'raw' => $result->raw,
                 'meters' => $result->meters, 'minutes_by_mode' => $result->minutesByMode, 'layers' => $result->layers,
                 'timings' => array_combine(array_map(fn ($k) => 'made_'.$k, array_keys($timings)), $timings),
             ]));
+            rename($json.'.'.getmypid().'.tmp', $json);
             $this->prune();
         } catch (\Throwable) {
             // a full disk or a race with another worker: the slice is there, only the shortcut is missing
@@ -102,8 +104,9 @@ final class CachedSlicer implements Slicer
         }
         ksort($profiles);
         $code = array_map(fn (string $f) => @md5_file(__DIR__.'/'.$f), self::CODE);
-        // the binary this slice runs with: a tool changer may have its own (OrcaSlicer::binFor)
-        $binary = $this->inner instanceof OrcaSlicer ? $this->inner->binFor($params->profiles['machine'] ?? null) : $this->binary;
+        // the binary this slice runs with: a tool changer may have its own, ORCA_SLICER or a trial order another version
+        // (OrcaSlicer::binFor) – a switch of the slicer never hands out the other one's G-code
+        $binary = $this->inner instanceof OrcaSlicer ? $this->inner->binFor($params->profiles['machine'] ?? null, $params->slicer) : $this->binary;
         $bin = $binary && is_file($binary) ? filesize($binary).':'.filemtime($binary) : '';
 
         return sha1(implode('|', [

@@ -10,8 +10,10 @@ use App\Engines\Exceptions\PathConflictException;
 use App\Engines\Exceptions\SlicerException;
 use App\Engines\Mesh\MeshDecimator;
 use App\Engines\Mesh\StlFile;
+use App\Support\RunGuard;
 use App\Support\Stopwatch;
 use Illuminate\Support\Facades\File;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Process;
 use Illuminate\Support\Str;
 
@@ -38,10 +40,10 @@ final class OrcaSlicer implements Slicer
 
     public function slice(string $meshPath, SliceParams $params): SliceResult
     {
-        $bin = $this->binFor($params->profiles['machine'] ?? null);
+        $bin = $this->binFor($params->profiles['machine'] ?? null, $params->slicer);
         $this->assertAvailable($bin);
         $work = $this->workDir('job');
-        $clock = new Stopwatch;
+        $clock = (new Stopwatch)->note('orca', $this->slicerFor($params->profiles['machine'] ?? null, $params->slicer));
         try {
             $mesh = $clock->measure('mesh', fn () => $this->prepareMesh($meshPath, $params, $work, $clock));
             $placed = null;
@@ -101,8 +103,10 @@ final class OrcaSlicer implements Slicer
                 $out = $work.'/out_'.$tag;
                 File::ensureDirectoryExists($out);
 
-                $cmd = array_merge($this->prefix(), [
-                    $bin,
+                // the stable 2.5.0 writes next to nothing into its log unless told (2.4 and the 2.5 alpha wrote it all): the
+                // reason of a failure, the path conflict between copies and "need to slice 1" are read from there (logOf)
+                $debug = (int) ($this->config['debug'] ?? 3);
+                $cmd = array_merge($this->prefix(), [$bin], $debug > 0 ? ['--debug', (string) $debug] : [], [
                     '--datadir', $work.'/data',
                     '--arrange', $placed ? '0' : '1',
                     '--load-settings', $machine.';'.$procFile,
@@ -113,8 +117,9 @@ final class OrcaSlicer implements Slicer
                 ]);
                 $slot = $this->slot($clock);
                 try {
-                    $result = Process::path($work)->env(['HOME' => $work, 'TMPDIR' => $work])
-                        ->timeout((int) ($params->timeout ?? $this->config['timeout']))->run($cmd);
+                    // a farm order's run that was overtaken is stopped here, with the slicer killed (RunGuard, docs/AL.md §22)
+                    $result = RunGuard::run(Process::path($work)->env(['HOME' => $work, 'TMPDIR' => $work])
+                        ->timeout((int) ($params->timeout ?? $this->config['timeout'])), $cmd);
                 } finally {
                     if ($slot) {
                         flock($slot, LOCK_UN);
@@ -195,7 +200,7 @@ final class OrcaSlicer implements Slicer
                 supportsUsed: $supportsUsed,
                 gcodePath: $keep,
                 warnings: $warnings,
-                raw: ['engine' => 'orca', 'tree_supports' => ($wantSupports || $autoSupports) && $params->treeSupports, 'filament' => implode(';', array_map('basename', explode(';', $filament))), 'process' => basename($process), 'machine' => basename($machine)],
+                raw: ['engine' => 'orca', 'slicer' => $this->slicerFor($params->profiles['machine'] ?? null, $params->slicer), 'tree_supports' => ($wantSupports || $autoSupports) && $params->treeSupports, 'filament' => implode(';', array_map('basename', explode(';', $filament))), 'process' => basename($process), 'machine' => basename($machine)],
                 meters: $meters,
                 minutesByMode: $byMode,
                 layers: $layers,
@@ -453,13 +458,46 @@ final class OrcaSlicer implements Slicer
 
     /**
      * The slicer binary for a machine profile: a tool changer takes `bin_toolchanger` when it is set (Orca 2.5 reads the
-     * INDX profiles, Orca 2.4 crashes on them, docs/AM.md §12e), every other machine the usual `bin`.
+     * INDX profiles, Orca 2.4 crashes on them, docs/AM.md §12e); every other machine and the calculator take the version
+     * asked for (`$slicer`, a trial order) or the configured one (`slicer`, ORCA_SLICER, docs/AL.md §22): `bin` itself
+     * when that is its version (`bin_version`) or nothing is asked, else the version's binary out of `bins`, and `bin`
+     * again when that version has no binary here.
      */
-    public function binFor(?string $machineProfile): string
+    public function binFor(?string $machineProfile, ?string $slicer = null): string
     {
         $other = (string) ($this->config['bin_toolchanger'] ?? '');
+        if ($other !== '' && self::isToolChangerProfile($machineProfile)) {
+            return $other;
+        }
+        $version = $this->versionAsked($slicer);
+        $bin = $version === (string) ($this->config['bin_version'] ?? '') ? '' : (string) ($this->config['bins'][$version] ?? '');
 
-        return $other !== '' && self::isToolChangerProfile($machineProfile) ? $other : (string) $this->config['bin'];
+        return $bin !== '' ? $bin : (string) $this->config['bin'];
+    }
+
+    /**
+     * What the slice is recorded with (timings `orca`, slice_result.raw.slicer): the version whose binary runs ("2.5",
+     * "2.4"), or "toolchanger" for a tool changer's own binary.
+     */
+    public function slicerFor(?string $machineProfile, ?string $slicer = null): string
+    {
+        if ((string) ($this->config['bin_toolchanger'] ?? '') !== '' && self::isToolChangerProfile($machineProfile)) {
+            return 'toolchanger';
+        }
+        $version = $this->versionAsked($slicer);
+        $own = (string) ($this->config['bin_version'] ?? '');
+        if ($version === '' || $version === $own || (string) ($this->config['bins'][$version] ?? '') !== '') {
+            return $version !== '' ? $version : ($own !== '' ? $own : 'default');
+        }
+        // a switch to a version nobody installed must not pass for the switch having happened
+        Log::warning('OrcaSlicer: no binary for the version asked for, the usual one runs', ['version' => $version, 'runs' => $own]);
+
+        return $own !== '' ? $own : 'default';
+    }
+
+    private function versionAsked(?string $slicer): string
+    {
+        return trim((string) ($slicer ?: ($this->config['slicer'] ?? '')));
     }
 
     /** A machine that changes whole tools (Prusa INDX): its machine profile is named after it (FarmPrinter::isToolChanger). */

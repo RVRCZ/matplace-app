@@ -258,7 +258,11 @@ final class OrderService
             $order->save();
             PrepareFarmOrder::dispatch($order->id);
         } else {
+            // a slice is waiting or running with the old overrides: it is overtaken (and stopped, docs/AL.md §22) and a
+            // new run slices with these
+            $order->slice_run = (int) $order->slice_run + 1;
             $order->save();
+            PrepareFarmOrder::dispatch($order->id, (int) $order->slice_run);
         }
 
         return $order;

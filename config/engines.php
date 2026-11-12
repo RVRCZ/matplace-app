@@ -38,10 +38,27 @@ return [
 
     'orca' => [
         'bin' => env('ORCA_BIN', '/opt/orca/squashfs-root/AppRun'),
-        // a tool changer (a machine profile named "indx") slices with this binary when it is set (Orca 2.5, docs/AM.md §12e);
-        // the rest of the farm keeps `bin`. Empty = one slicer for everything.
+        // a tool changer (a machine profile named "indx") slices with this binary when it is set (Orca 2.5, docs/AM.md §12e),
+        // whatever `slicer` below says. Empty = one slicer for everything.
         'bin_toolchanger' => env('ORCA_BIN_TOOLCHANGER') ?: null,
+        // Which slicer slices everything but a tool changer – the calculator and every farm printer (docs/AL.md §22): `bin`
+        // above is version `bin_version`, `bins` are the other versions installed here. ORCA_SLICER=2.5 moves all of it to
+        // Orca 2.5, ORCA_SLICER=2.4 (or no line) back: one line of .env, then `php artisan optimize` and a restart of php-fpm
+        // and the queue workers, no deploy. Without its own ORCA_BIN_25 the 2.5 is the tool changer's binary; a version
+        // without a binary falls back on `bin` (and says so in the log). The slice cache keys on the binary, so a switch
+        // never hands out the other slicer's G-code.
+        'slicer' => (string) env('ORCA_SLICER', ''),
+        'bin_version' => (string) env('ORCA_BIN_VERSION', '2.4'),
+        'bins' => [
+            '2.5' => env('ORCA_BIN_25') ?: (env('ORCA_BIN_TOOLCHANGER') ?: null),
+        ],
+        // the farm orders of an admin are sliced with this version instead (trial prints before the switch); empty = no trial
+        'slicer_trial' => env('ORCA_SLICER_TRIAL') ?: null,
         'profiles' => env('ORCA_PROFILES', base_path('engines/orca/profiles')),
+        // the CLI's log level (3 = info): what OrcaSlicer::logOf reads the reason of a failure, a path conflict between the
+        // copies of a plate and the shared slice of instances from. Orca 2.4 and the 2.5 alpha logged at this level by
+        // themselves, the stable 2.5.0 logs nothing without it (docs/AL.md §22). 0 = the slicer's own default
+        'debug' => (int) env('ORCA_DEBUG', 3),
         'xvfb' => env('ORCA_XVFB', true),
         'work_dir' => env('ORCA_WORK_DIR', storage_path('app/slicer')),
         'timeout' => (int) env('ORCA_TIMEOUT', 180),
@@ -112,6 +129,14 @@ return [
         // skips the minute of Python; empty switches it off
         'decimate_cache' => env('MESH_DECIMATE_CACHE', storage_path('app/mesh-cache')),
         'max_triangles' => (int) env('MESH_MAX_TRIANGLES', 6000000),
+        // "Automatic" supports of a farm order: the model's triangles are asked first whether anything of it can hang in the
+        // air (engines/python/supports_tool.py, docs/AL.md §22); when nothing can, the slice runs with supports off. Off by
+        // default: measured on 12 Nov 2026, Orca 2.5 loses next to nothing on a model that needs no supports (two meshes of
+        // 350 000 triangles: 6.6 s with supports on against 6.2 s off, 20.4 s against 20.0 s) – the time the brief hoped to
+        // save goes into building supports a model really needs – while the check itself takes 0.4 to 0.65 s. On = asked
+        // for every automatic order of one piece
+        'supports_check' => (bool) env('MESH_SUPPORTS_CHECK', false),
+        'supports_check_timeout' => (int) env('MESH_SUPPORTS_CHECK_TIMEOUT', 20),
         // the check after an upload (mesh_tool.py check): a binary STL of at least this many triangles is measured with
         // numpy alone instead of trimesh (23 s of a 2.7 M upload's wait on the server, 24 Oct 2026); 0 = always trimesh
         'fast_check_above' => (int) env('MESH_FAST_CHECK_ABOVE', 400000),

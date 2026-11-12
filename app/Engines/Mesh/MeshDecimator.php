@@ -3,6 +3,7 @@
 namespace App\Engines\Mesh;
 
 use App\Domain\Farm\BigModel;
+use App\Engines\Exceptions\SupersededException;
 use App\Engines\Repair\ScriptRunner;
 use Illuminate\Support\Facades\Log;
 use Symfony\Component\Process\Exception\ProcessTimedOutException;
@@ -105,6 +106,10 @@ final class MeshDecimator
             }
 
             return $result + ['seconds' => round(microtime(true) - $start, 2), 'limits' => $limits, 'budget_s' => $budget];
+        } catch (SupersededException $e) {
+            // the order asked for another slice: the half-written file goes, nothing is remembered, the run ends
+            @unlink($out);
+            throw $e;
         } catch (\Throwable $e) {
             Log::warning('Mesh decimation failed, slicing the original', ['file' => basename($path), 'error' => $e->getMessage()]);
 
@@ -187,7 +192,11 @@ final class MeshDecimator
                     return;
                 }
             }
-            @file_put_contents($key.'.json', json_encode($result));
+            // the answer whole or not at all: another worker may read it at any moment
+            $tmp = $key.'.'.getmypid().'.json.tmp';
+            if (@file_put_contents($tmp, json_encode($result)) === false || ! @rename($tmp, $key.'.json')) {
+                @unlink($tmp);
+            }
             $this->forgetOld(dirname($key));
         } catch (\Throwable $e) {
             Log::info('Mesh decimation could not be remembered', ['error' => $e->getMessage()]);

@@ -2962,3 +2962,223 @@ Tato sekce popisuje části A až C (data, karta, agent). **D (fronta fotek výt
   bez duplicit. Související sady (stejný výčet jako v §21.7) jedním během: 89 testů, 2 397 assertions, 3 přeskočené.
 - **Neověřeno:** ostrý běh příkazu na produkci (cena = počet barev s odkazem × jedno volání Sonnetu; dnes má odkaz 0 barev,
   přibývají kartou), karta „Načíst znovu“ v prohlížeči (jen tsc a HTML stránky).
+
+## 22. Vše na OrcaSliceru 2.5, rušení překonaného řezání, souběh, kontrola podpěr (12. 11. 2026, feature/orca25-all)
+
+Zadání `docs/prompts/orca25-a-ruseni-rezani.md` (části A až D). Nic není nasazeno ani sloučeno, na server, produkční data a tiskárny
+jsem nesahal. Všechna měření jsou z Romanova PC (Windows, 12 vláken) třemi sestaveními: Orca **2.4.0-beta** portable, **2.5.0-alpha**
+(stejná řada jako serverová `250a`) a **stabilní 2.5.0** vydaná 7. 11. 2026 (portable stažená z GitHubu). Řezy šly přes farmářskou třídu
+`OrcaSlicer` (stejné párování profilů, barvy filamentů a soubor procesu jako na produkci), profily z `engines/orca/profiles`, nastavení
+tiskárny ze seedu a z `slice_params` zakázky 341.
+
+### 22.1 Přepínač sliceru (A)
+
+- **Jeden řádek `.env`:** `ORCA_SLICER=2.5` přesune kalkulačku i všechny tiskárny na Orcu 2.5, `ORCA_SLICER=2.4` (nebo řádek pryč) je
+  vrátí. Po změně `php artisan optimize` a restart php-fpm a front, kód se nenasazuje. Bez řádku se po nasazení větve nic nemění.
+- `config/engines.php` `orca`: `bin` (`ORCA_BIN`) je verze `bin_version` (`ORCA_BIN_VERSION`, výchozí 2.4), `bins['2.5']` je `ORCA_BIN_25`
+  a když chybí, binárka měniče `ORCA_BIN_TOOLCHANGER`. Dnešní produkční `.env` tedy stačí doplnit o ten jeden řádek. Verze bez binárky
+  spadne na `bin` a napíše varování do logu.
+- **Prusa beze změny:** stroj s profilem `indx` bere dál `ORCA_BIN_TOOLCHANGER`, ať přepínač říká cokoli (`OrcaSlicer::binFor`).
+- **Zkouška před přepnutím:** `ORCA_SLICER_TRIAL=2.5` řeže verzí 2.5 jen farmářské zakázky účtu s rolí admin
+  (`SliceParams::$slicer`, `PrepareFarmOrder::sliceSetup`). Zákazníci zůstávají na `ORCA_SLICER`.
+- **Záznam:** `timings.orca` a `slice_result.raw.slicer` říkají, která verze řezala (`2.4`, `2.5`, `toolchanger`).
+- **Cache řezů** má v klíči binárku, která opravdu běží (`CachedSlicer::key`), takže po přepnutí nikdy nevydá G-code druhé verze.
+- **`--debug 3`** (`ORCA_DEBUG`, výchozí 3): stabilní 2.5.0 bez něj do `00000.log` nenapíše skoro nic (189 bajtů), 2.4 i alfa psaly vše samy.
+  Z logu čteme důvod chyby a „need to slice 1“ u kopií. Konflikt drah mezi kopiemi (`PathConflictException`) poznají všechny tři verze
+  i bez přepínače, ověřeno dvěma kopiemi postavenými do sebe.
+
+Co v kódu předpokládalo 2.4 a jak dopadlo na 2.5:
+
+| Místo | Výsledek |
+|---|---|
+| `GcodeStats` (čas, gramy, gramy po filamentech, výměny, vrstvy, podpěry) | čte všechny tři verze stejně |
+| `GcodeSlot::retarget` (řádek `T<slot>` za `M117`, předehřev, `G9111`) | stejný řádek souboru (26 až 28), stejné okolí |
+| `GcodeSlot::retargetMany` + mapa `; matplace filaments` před `HEADER_BLOCK_START` | stejné: mapa na 1. řádku, hlavička na 2., 51/101/151 přepsaných `T`, žádné holé `T` |
+| `GcodeSlot::colorChanges` + `withFilamentsLine` (změny podle výšky) | stejné výšky 3,2 až 18,2 mm, vždy za `; AFTER_LAYER_CHANGE` |
+| `TimelapseGcode` (parkování po vrstvě) | stejná hlavička, 119 snímků, +7 min |
+| `ONE_PLATE_PROCESS`, `towerSpot`, `filamentColours` | věž na stejném místě, stejný počet řádků věže, filamenty zůstaly oddělené |
+| kopie jako instance (`instanceProject`, §11.10) | „total object counts 4, need to slice 2“ ve všech třech (u 2.5.0 jen s `--debug 3`) |
+| agent Kobry X (`anycubic_pkg.facts_of`, `package`) | stejné nástroje, barvy, materiály, vrstvy, model tiskárny; balík vznikne |
+| `SupportLines::extract` (náhled podpěr) | funguje na všech třech |
+| hrubý odhad doby řezání velkých modelů (`BigModel::estimateSeconds`) | 2.5.0 řeže o 45 až 53 % rychleji než 2.4 (alfa o 25 až 41 %), odhad je tedy na bezpečné straně; neladil jsem ho |
+| profily | všech 628 položek nastavení má v G-code 2.4 i 2.5 stejnou hodnotu, 2.5 přidává 96 nových na výchozích hodnotách |
+
+### 22.2 Kontrolní řezy
+
+Hodnoty jsou vždy **2.4 / 2.5.0-alpha / 2.5.0**. „Úpravy farmy“ = výstup `GcodeSlot` a `TimelapseGcode` nad všemi třemi soubory je shodný
+(stejné vložené řádky na stejných místech).
+
+| Případ | nástroje × řádky `T` | výměny | pořadí `T` | řádky věže | čekání u výměny (`G4` ; `M400`) | odhad tisku | gramy | vrstvy | úpravy farmy |
+|---|---|---|---|---|---|---|---|---|---|
+| S1 jednobarevně s časosběrem (hřib s podpěrami) | 0 | 0 | – | 0 | 0 ; 0 | 31 min 23 s / 29 min 0 s / 29 min 55 s | 8,29 / 8,23 / 8,24 | 120 | shodné |
+| S1 změny podle výšky (7 pater) | 0 | 0 | – | 0 | 0 ; 0 | 16:15 / 16:13 / 16:18 | 4,81 / 4,81 / 4,82 | 105 | shodné |
+| S1 dvě barvy na podložce | 2 × 51 | 50 | shodné | 101 | 154 / 0 / 0 ; 0 / 154 / 53 | 1 h 58 / 2 h 02 / 2 h 02 | 6,14 / 6,17 / 6,17 | 50 | shodné |
+| S1 tři barvy | 3 × 101 | 100 | shodné | 151 | 305 / 0 / 0 ; 0 / 305 / 104 | 3 h 52 / 3 h 58 / 3 h 59 | 10,14 / 10,31 / 10,31 | 50 | shodné |
+| S1 čtyři barvy | 4 × 151 | 150 | shodné | 201 | 456 / 0 / 0 ; 0 / 456 / 155 | 5 h 47 / 5 h 55 / 5 h 55 | 14,24 | 50 | shodné |
+| S1 čtyři kopie jako instance | 0 | 0 | – | 0 | 0 ; 0 | 1 h 58 / 1 h 43 / 1 h 47 | 32,82 / 32,91 / 32,91 | 120 | shodné |
+| Kobra X jednobarevně | 0 | 0 | – | 0 | 0 ; 1 | 38:09 / 33:06 / 34:21 | 8,10 / 8,04 / 8,05 | 120 | shodné |
+| Kobra X změny podle výšky | 0 | 0 | – | 0 | 0 ; 1 | 16:50 / 16:32 / 16:38 | 4,69 / 4,69 / 4,70 | 105 | shodné |
+| Kobra X sedm barev (`vzorek-7-barev-nad-sebou.3mf`) | 7 × 7 | 6 | 0 1 2 3 4 5 6 | 98 / 97 / 97 | 21 / 0 / 0 ; 1 / 20 / 8 | 23:13 / 22:39 / 22:50 | 6,52 / 6,53 / 6,53 | 105 | shodné |
+| Kobra 3 Max jednobarevně | 0 | 0 | – | 0 | 0 ; 1 | 32:22 / 30:09 / 31:04 | 8,12 / 8,17 / 8,18 | 120 | shodné |
+| Prusa Core One INDX | – / 1 × 2 / 1 × 2 | 0 | – | 0 | – / 2 / 2 ; – / 1 / 1 | – / 46:46 / 44:29 | 8,63 | 120 | shodné |
+
+- Prusa na 2.4 spadne jako dřív (docs/AM.md §12e), proto pomlčky.
+- **Jediný rozdíl v těle G-code je čekání u výměny filamentu.** Orca 2.4 píše v bloku výměny třikrát `G4 S0`, alfa na stejných místech
+  třikrát `M400`, stabilní 2.5.0 jen jednou (poznámky k vydání: „Klipper printers no longer stop over the wipe tower at every tool
+  change“). Počet výměn, pořadí `T`, věž a hlavička jsou stejné. Blok výměny jinak obsahuje totéž (`T<n>`, zakomentovaný proplach
+  `;;;`, `M106`, `SET_PRESSURE_ADVANCE`).
+- Dráhy, rychlosti a zrychlení jsou u hřibu ve 2.4 a 2.5 stejné (délky podle typu dráhy do 1,5 %, stejné posuvy, stejné počty
+  `SET_VELOCITY_LIMIT`). Liší se jen odhad času v hlavičce, viz 22.3.
+
+### 22.3 Odhad času a cena
+
+| Velký model (farmářský profil S1, PLA, stromové podpěry) | řezáno trojúhelníků | odhad 2.4 | 2.5.0-alpha | 2.5.0 | 2.5.0 proti 2.4 | slicer s (2.4 / alfa / 2.5.0) | gramy |
+|---|---|---|---|---|---|---|---|
+| stínidlo `lampshadev2-hollow.stl` (958 tis.) | 350 tis. | 15 h 42 | 13 h 15 | 13 h 34 | −13,6 % | 66,9 / 39,3 / 36,4 | 267,9 / 267,9 / 262,3 |
+| drak `Dragon_v4.3mf` (974 tis., není uzavřený, neztenčuje se) | 974 tis. | 7 h 10 | 6 h 03 | 6 h 21 | −11,4 % | 72,7 / 49,4 / 40,2 | 95,1 / 95,0 / 95,0 |
+| svícen `Swiecznik2` (1,09 mil.) | 700 tis. | 1 h 58 | 1 h 56 | 2 h 04 | +5,1 % | 9,0 / 6,5 / 4,6 | 27,2 / 27,5 / 27,5 |
+| král `King` (2,37 mil.) | 700 tis. | 5 h 28 | 4 h 32 | 4 h 45 | −13,1 % | 26,2 / 19,7 / 12,2 | 80,6 / 80,6 / 80,5 |
+
+- Slicer je ve 2.5.0 o 45 až 53 % rychlejší než 2.4 (samotný proces, `slice1_s`, bez ztenčování).
+- **Odhad tisku je u modelů s hodně podpěrami ve 2.5 o 11 až 16 % kratší**, bez podpěr se neliší (±0,5 %), u vícebarevných je o 2 až 3 %
+  delší. G-code přitom říká tiskárně totéž, takže **tisk potrvá stejně a liší se jen počítadlo sliceru**. Který odhad je blíž, nevím.
+- **Cena** = hodiny × `time_factor` × hodinová sazba + gramy × cena za gram + poplatek (`PriceCalculator`). Stínidlo při sazbě 35 Kč/h
+  a faktoru 1,07: časová část 588 Kč (2.4) proti 508 Kč (2.5.0), tedy asi o 80 Kč bez DPH méně. U modelů bez podpěr se cena nezmění.
+- **`time_factor`** tiskáren (S1 1,07 z Benchy na 2.4) neměním. Kdyby zkušební tisk velkého modelu ukázal, že pravdu má 2.4, musel by
+  faktor pro 2.5 vzrůst asi na 1,24, a tím by se předražily modely bez podpěr. Rozhodne až skutečný čas tisku, viz 22.9.
+- Fronta farmy a termíny (`Dispatcher`) berou stejný odhad, takže se u modelů s podpěrami zkrátí o stejných 11 až 16 %.
+
+### 22.4 Kterou 2.5 nasadit
+
+Doporučuji **stabilní 2.5.0** místo alfy `250a`: `OrcaSlicer_Linux_AppImage_Ubuntu2404_V2.5.0.AppImage` (214,6 MB,
+github.com/OrcaSlicer/OrcaSlicer, vydání v2.5.0 ze 7. 11. 2026), rozbalit vedle dnešních, třeba `/opt/orca/squashfs-root-250`,
+a nastavit `ORCA_BIN_25`. Důvody: jedno `M400` na výměnu místo tří, opravy z vydání, a alfa se dál nevyvíjí. Proti alfě se liší odhadem
+(o 2 až 5 % delší) a tím, že bez `--debug 3` nepíše log (kód ho už předává).
+
+Z poznámek k vydání se nás týká ještě: „a feature left on Default now always prints with the object's own filament“. Naše profily mají
+`support_filament` a `support_interface_filament` 0 (výchozí), takže podpěry vícebarevné podložky se tisknou filamentem svého dílu.
+Výchozí výplň Grid se týká jen předvoleb Bambu Lab.
+
+**Neověřeno:** linuxové sestavení. Řezal jsem windowsovými. Jméno souboru říká Ubuntu 24.04; jaký systém má server a zda na něm
+AppImage naběhne, jsem nezjišťoval (na server nesmím). Po rozbalení stačí jeden kontrolní řez kostky pod `xvfb-run`.
+
+### 22.5 Rušení překonaného řezání (B)
+
+- **Co se děje:** `PrepareFarmOrder` po dobu, kdy běží některý jeho podproces (oprava a poloha `farm_tool.py`, ztenčování
+  `decimate_tool.py`, slicer), se jednou za sekundu zeptá, zda je ještě aktuálním během zakázky (`slice_run`). Když není, podproces
+  zabije i se vším, co spustil, a skončí bez verdiktu. `App\Support\RunGuard` (hlídání), `App\Support\ProcessTree` (zabití stromu),
+  `SupersededException`. Bez hlídače je `RunGuard::run()` obyčejné `Process::run()`, kalkulačky a ostatního se to netýká.
+- **Strom procesů:** na Linuxu se potomci hledají v `/proc`; nejdřív dostane SIGKILL vše kromě `Xvfb`, aby `xvfb-run` doběhl sám
+  a uklidil po sobě zámek v `/tmp`, co zbude po 2 s, se zabije také. Na Windows `taskkill /F /T`.
+- **Nový běh hned:** čekání na zámek zakázky je 2 s místo 5 (`WithoutOverlapping::releaseAfter`), `tries` 1000. Starý běh pozná změnu
+  do 1 s, zabití trvá nejvýš další 2 s, nový běh tedy začne do zhruba 5 s. U zakázky 341 čekal 172,8 s. Na produkci neměřeno.
+- **Výsledek starého běhu se nezapíše:** žádný G-code, cena, `timings` ani „failed“. Zakázka zůstává `uploaded` s `error = null`,
+  stránka ukazuje přípravu nové verze. Pracovní složka sliceru se smaže.
+- **Běh bez čísla** (`ProcessModelFile`, administrátor) se nově váže na `slice_run` platný při svém startu, takže ho pozdější běh
+  také překoná.
+- **„Přeřezat“ administrátorem během řezání** (`OrderService::overrideByAdmin` u zakázky `uploaded`) dřív jen uložil nastavení a běžící
+  řez dojel se starým. Teď zvýší `slice_run` a pustí nový běh.
+- **`KillMode=mixed`, `TimeoutStopSec=960`:** nic se nesignalizuje zvenčí. Ptá se sám job ve svém procesu, takže restart jednotek front
+  (SIGTERM jen workerovi, který job dokončí) chování nemění a mezi workery se nesdílí žádné PID.
+- **Sdílené mezivýsledky:** zabíjí se podproces, ne PHP, a do cache se zapisuje až po jeho úspěchu. Navíc se teď záznamy píší přes
+  dočasný soubor a `rename`: zjednodušení (`MeshDecimator::remember`, i JSON), cache řezů (`CachedSlicer`, i JSON), cache připravených
+  modelů (`CachedPrintPreparer`). Zrušené ztenčování smaže rozepsaný výstup a nic si nezapamatuje.
+- **Mez:** kroky čistě v PHP (rozložení podložky, zápis 3MF, čtení G-code) se nepřerušují, kontrola je mezi kroky jako dřív. Jsou to
+  sekundy.
+- Jen farmářské zakázky. Kalkulace se nepřerušuje (nemá `slice_run`).
+
+### 22.6 Souběh (C)
+
+**Na serveru jsem neměřil**, protože na něj nesmím. Připravil jsem příkaz jen pro čtení:
+`php artisan matplace:slice-overlap --days=30 [--heavy=20] [--json]` (`Speed::overlap`). Z `timings` kalkulací a zakázek spočítá, kolik
+těžkých řezů (slicer aspoň 20 s) se potkalo s jiným řezem, jak dlouho, nejvíc řezů v jednu chvíli, tempo (sekundy sliceru na
+100 000 trojúhelníků) samotných řezů proti těm, které sdílely aspoň půlku času, čekání ve frontě a na `ORCA_PARALLEL`.
+
+Místní náhrada: ztenčené stínidlo (350 tis., stromové podpěry, Orca 2.5.0-alpha), slicery připoutané na stejná 4 jádra:
+
+| najednou | každý hotov za | všechny hotové za | po sobě by trvaly |
+|---|---|---|---|
+| 1 | 35 až 41 s | 41 s | – |
+| 2 | 60 s | 61 s | asi 78 s |
+| 3 | 81 až 82 s | 83 s | asi 117 s |
+
+Souběžné řezy se zpomalí 1,5× a 2,1×, ale celá dávka skončí dřív než po sobě, protože část řezu běží v jednom vlákně. Průměrné čekání
+zákazníka vychází stejně (2 řezy: 61 s proti 58 s). **Omezení počtu řezů (`ORCA_PARALLEL`) ani vláken proto zatím nedoporučuji.**
+Rozhodnout mají čísla ze serveru. Co místní pokus neříká: paměť (8 GB a tři velké řezy) a skutečná 4 jádra EPYC. Omezení vláken jednoho
+řezu jsem nezkoušel.
+
+### 22.7 Podpěry jen tam, kde jsou potřeba (D)
+
+**Závěr měření: úspora není, kontrola je proto ve výchozím stavu vypnutá** (`MESH_SUPPORTS_CHECK=true` ji zapne).
+
+- Zadání vycházelo z toho, že stromové podpěry stojí třetinu řezu (stínidlo 35 až 39 s proti 22 s). Ten čas ale jde na stavbu podpěr,
+  které stínidlo opravdu potřebuje (7 700 mm² vodorovných stropů). U modelu, který podpěry nepotřebuje, Orca 2.5 se zapnutými podpěrami
+  skoro nic neztrácí: váza 348 tis. trojúhelníků 6,6 s proti 6,2 s (opakování 6,2 proti 7,1 s), žebrovaný kelímek 349 tis. 20,4 s proti
+  20,0 s. Kontrola sama trvá 0,42 až 0,65 s (z toho výpočet 0,27 s na 350 tis., 0,2 s na 974 tis., zbytek start Pythonu).
+- **Co je hotové:** `engines/python/supports_tool.py check <stl> <práh> <vrstva>` (jen numpy), `App\Engines\Mesh\SupportsCheck`,
+  `PrepareFarmOrder::withoutNeedlessSupports`. Při volbě „Automaticky“ u zakázky jednoho dílu (ne díly na jedné podložce) se zeptá
+  na ztenčený kus; když podpěry nejsou potřeba, vyjme `enable_support` z nastavení a slicer řeže bez nich, s vlastním pokusem
+  s podpěrami, kdyby bez nich neuspěl. `timings`: `supports_check_s`, `supports_needed`, `supports_check` (důvod). Zákazník i administrace
+  vidí „podpěry: ne“. Volba „Bez podpěr“, „on“, vlastní nastavení a přepsání administrátorem se neptají.
+- **Pravidlo „nejsou potřeba“** (vše musí platit): žádná plocha mimo podložku nesměřuje dolů plošeji než práh + 5°; každá plocha, která
+  dolů směřuje aspoň trochu, navazuje přes takové plochy až na podložku; a tam, kde na podložku dosedá, stojí model na rovné základně
+  aspoň 45 mm² a 7,5 mm široké. Vše ostatní je „potřeba“ a řeže se jako dnes.
+- **Proč základna:** stromové (auto) podpěry Orcy podpírají i strmé věci, které začínají tence („sharp tail“). Změřeno: nakloněná
+  stěna tloušťky 6 mm od podložky dostane podpěry při 45° i 60°, tloušťky 7 mm ne; kužel na špičce ano; sloupek o průměru 3 a 5 mm,
+  který se nahoře rozšiřuje, ano, 8 mm ne. Co začne široké a zúží se později, podpěry nedostane.
+- **Odchylka od zadání, mosty:** zadání chtělo mosty do `max_bridge_length` nepočítat. Orca 2.5 i 2.4 s naším profilem
+  (`max_bridge_length` 10, `bridge_no_support` 0) ale pod mostem 8 mm i nad oknem 8 mm podpěry staví. Každý vodorovný strop je tedy
+  „potřeba“.
+- **Ověření bezpečné strany:** 94 zkušebních tvarů, každý řezaný se zapnutými podpěrami Orcou 2.4, 2.5.0-alpha i stabilní 2.5.0.
+  Kontrola řekla „nejsou potřeba“ u 35 tvarů a **ani jednou tam Orca podpěry nepostavila** (0 z 35 na všech třech verzích). Opatrná
+  navíc byla u 19 tvarů (2.5.0 i alfa) a 21 (2.4), kde Orca nic nepostavila. Jeden tvar žádná verze neuřezala.
+- **Skutečné modely** (`Documents\MODELS`, 161 souborů do 25 MB): u všech „potřeba“ kvůli vodorovným stropům, kontrola do 0,63 s.
+  Sada je slabá: většina jsou sítě složené z G-code tiskáren, skutečné modely jen čtyři (drak, vajíčko, klíčenka, malé stínidlo).
+  Orca 2.5.0-alpha řezala 17 z nich: u 4 podpěry postavila, u 13 ne.
+- Kontrola by pomohla jen čistým tvarům (krabičky, vázy, kelímky), a tam není co ušetřit. Vedlejší užitek by byl menší rozestup kopií
+  (`PlateLayout::supportGap`), ten jsem nezapojoval.
+
+### 22.8 Testy
+
+- `OrcaSlicerSwitchTest` (9): výchozí stav beze změny, přepnutí všech strojů i kalkulačky tam a zpět, měnič drží svou binárku, dnešní
+  produkční `.env` + jeden řádek, verze bez binárky, zkušební verze v parametrech, klíč cache, skutečné spuštění binárky zvolené verze,
+  zakázka admina proti zákazníkovi.
+- `SupersededSliceTest` (8): skutečné procesy, které se dají zabít. Obal, který spustí potomka a čeká (jako `xvfb-run`), zmizí i s ním;
+  farmářský `OrcaSlicer` nad falešnou binárkou (`tests/Support/fake_orca.php`, nově `MP_FAKE_ORCA_SLEEP`, `MP_FAKE_ORCA_PID`), která by
+  řezala dvě minuty, je po změně voleb pryč, zakázka zůstane `uploaded` bez chyby a bez `failed`, nový běh dořeže; běh bez čísla;
+  přepsání administrátorem; zrušené ztenčování.
+- `FarmSupportsCheckTest` (8): odpovědi kontroly, zakázka bez podpěr a s nimi, rozbitá kontrola, volby, které se neptají, vypnuto ve
+  výchozím stavu, a nástroj sám na 15 tvarech (potřebuje Python s numpy, jinak se přeskočí).
+- `SliceOverlapTest` (2): výpočet souběhu a příkaz.
+- Běhy 12. 11. 2026 (Windows, PHP 8.2): nové čtyři soubory 27 testů / 222 assertions; s nimi sady kolem sliceru a farmy
+  (`Orca*`, `SliceCacheTest`, `FarmToolChangerPlateTest`, `FarmCopiesInstancesTest`, `FarmBigModelFlowTest`, `PerfTimingsTest`,
+  `FarmDecimateCopiesTest`, `FarmPreparedCacheTest`, `FarmOnePlateTest`, `FarmOrderFlowTest`) 115 testů / 1 912 assertions, 1 přeskočený.
+  Širší filtr farmy a kalkulací 448 testů: 447 prošlo, 9 přeskočených, **1 selhal a není z této větve**:
+  `FarmPagesTest::test_admin_adds_petg_a_colour_a_second_printer_and_changes_prices_without_code` („The shorts publish hour field is
+  required“, pole `shorts_publish_hour` z #81 je ve `FarmCatalogController` povinné a test ho neposílá). `pint --dirty` prošel.
+  Linux, `tsc` a `npm run build` jsem nespouštěl (žádný JavaScript ani texty se neměnily).
+
+### 22.9 Co zůstává neověřené a co má vytisknout Roman
+
+Neověřeno na skutečných tiskárnách:
+
+1. `M400` v bloku výměny filamentu místo `G4 S0` na Kobře S1 (Rinkhals) a Kobře X. Kobra X `M400` zná z časosběru, uvnitř výměny ho ale
+   ještě neviděla. Jedno `M400` na výměnu má jen stabilní 2.5.0, alfa `250a` tři.
+2. Vícebarevná podložka z 2.5 na S1 (podle koordinátorových poznámek na S1 neběžela ani z 2.4) a sedm barev na Kobře X z 2.5.
+3. Změny podle výšky z 2.5: řádky `T` jsou na stejných místech, tisk jsem neviděl.
+4. Skutečná doba tisku velkého modelu s podpěrami proti odhadu 2.4 a 2.5.
+5. Kobra 3 Max z 2.5 (jen kontrolní řez).
+6. Zabití stromu procesů na Linuxu pod `xvfb-run` (psáno podle `/proc`, spuštěno jen na Windows) a chování na produkční frontě.
+7. Linuxové sestavení stabilní 2.5.0 na serveru a Prusa INDX se stabilní 2.5.0 (dnes tiskne z alfy).
+
+Zkušební tisky před zapnutím pro zákazníky (nejsnáz přes `ORCA_SLICER_TRIAL=2.5` z účtu admina):
+
+1. **S1, tři barvy na jedné podložce** (malý kus, pár desítek výměn): sledovat výměny nad věží, zda `M400` nedělá zastávky s kapkou.
+2. **Kobra X, vzorek sedmi barev** `vzorek-7-barev-nad-sebou.3mf` (23 min, 6 výměn).
+3. **Změna podle výšky** na S1 nebo Kobře X (deska s nápisem, dvě barvy).
+4. **Velký model s podpěrami** na S1 (stínidlo nebo jiný na 6 a víc hodin): zapsat skutečný čas. Odhad stínidla je 15 h 42 (2.4) proti
+   13 h 34 (2.5.0); podle výsledku se nechá nebo upraví `time_factor`.
+
+Nasazení (koordinátor): rozbalit stabilní 2.5.0 na server, do `.env` `ORCA_BIN_25=<cesta>/AppRun`, pro zkoušku `ORCA_SLICER_TRIAL=2.5`,
+po zkušebních tiscích `ORCA_SLICER=2.5` (a `ORCA_BIN_TOOLCHANGER` na stejnou cestu, až projde řez pro INDX). Zpět: `ORCA_SLICER=2.4`.
+Žádná migrace, žádné texty, žádný JavaScript.
