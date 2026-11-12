@@ -32,8 +32,8 @@ vyplněná ulice) a počet tiskáren. Blok „Čeká na vás“ zůstal nahoře 
 | název | kód, název (proklik na detail), model a agent |
 | stav | jedno slovo a barva (§3); u problému pod zakázkou důvod |
 | zakázka | běžící: číslo (proklik na zakázku), %, „hotovo asi HH:MM“ a proužek; jinak poslední dotištěná a kdy skončila |
-| další | první zakázka ve frontě tiskárny (stav `queued`, pořadí `queued_at`) a „a dalších N“ |
-| podložka | jedno tlačítko: „Uvolnit podložku“ (obsazená → volná), nebo „✓ Volná · zablokovat“ (volná → obsazená); při běžícím tisku jen text, tlačítko není |
+| další | první čekající zakázka tiskárny a „a dalších N“. Čekající = fronta (stav `queued`, pořadí `queued_at`) a za ní zaplacené zakázky čekající na schválení správcem (stav `paid`, pořadí `paid_at`). Je-li první z nich zaplacená, má štítek **čeká na schválení** (tiskárnu nezdržuje fronta, ale správce); kolik dalších čeká na schválení, říká závorka „na schválení čeká: N“ |
+| podložka | jedno tlačítko: „Uvolnit podložku“ (obsazená → volná), nebo „✓ Volná · zablokovat“ (volná → obsazená); při běžícím tisku jen text, tlačítko není; u tiskárny Offline nebo Vypnutá také jen text (jak podložka stojí, „Změna v detailu“), tlačítko zůstává v detailu tiskárny |
 | detail | odkaz na detail tiskárny |
 
 - Tlačítko podložky posílá dnešní `POST /admin/farm/printers/{id}/bed` s `clear=1/0` (oba směry už existovaly, nic
@@ -106,5 +106,7 @@ Všechny tři stránky jsou ve skupině `auth` + `role:admin`.
 - Starší testy, které hledaly kartu tiskárny na `/admin/farm` nebo soubory v nastavení tiskárny, teď čtou detail.
 - Snímky: `docs/img/admin-farm-{overview,printer,filament,farms}-{390,1280}.png` (místní server, soukromá kopie
   sqlite s ukázkovými daty).
-- Otevřené: pojmenování stavů a tlačítka podložky podle Romana; má-li se u offline nebo vypnuté tiskárny tlačítko
-  podložky skrýt; jestli do „další čekající“ počítat i zaplacené zakázky čekající na schválení.
+- Rozhodl Roman 12. 11. 2026: názvy stavů a tlačítka podložky zůstávají; u offline a vypnuté tiskárny se tlačítko
+  podložky v přehledu skrývá; do „další čekající“ se počítají i zaplacené zakázky čekající na schválení.
+- `FarmPagesTest::test_admin_adds_petg_…` padal už na `origin/main` (od `6bba0b8a` je `shorts_publish_hour` v nastavení
+  farmy povinné a test ho neposílal); opraveno jedním klíčem v datech testu.

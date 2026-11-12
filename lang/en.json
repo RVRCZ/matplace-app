@@ -2403,5 +2403,9 @@
     "farm.admin.farms.sort": "Order",
     "farm.admin.farms.enabled": "in operation",
     "farm.admin.farms.note": "Note",
-    "farm.admin.farms.save": "Save"
+    "farm.admin.farms.save": "Save",
+    "farm.admin.ov.next_approval": "waits for approval",
+    "farm.admin.ov.more_approval": "waiting for approval: :n",
+    "farm.admin.ov.bed_away_clear": "The plate is clear. Change it on the detail.",
+    "farm.admin.ov.bed_away_blocked": "The plate is occupied. Change it on the detail."
 }

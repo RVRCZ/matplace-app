@@ -2403,5 +2403,9 @@
     "farm.admin.farms.sort": "Pořadí",
     "farm.admin.farms.enabled": "v provozu",
     "farm.admin.farms.note": "Poznámka",
-    "farm.admin.farms.save": "Uložit"
+    "farm.admin.farms.save": "Uložit",
+    "farm.admin.ov.next_approval": "čeká na schválení",
+    "farm.admin.ov.more_approval": "na schválení čeká: :n",
+    "farm.admin.ov.bed_away_clear": "Podložka je volná. Změna v detailu.",
+    "farm.admin.ov.bed_away_blocked": "Podložka je obsazená. Změna v detailu."
 }

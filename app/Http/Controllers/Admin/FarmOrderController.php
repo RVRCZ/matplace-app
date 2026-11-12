@@ -82,7 +82,7 @@ class FarmOrderController extends Controller
      * prints with the hour it should end, the last order printed, how many wait.
      *
      * @param  array{printer: FarmPrinter, job: FarmPrintJob|null, queue: Collection}  $row
-     * @return array{status: array, running: FarmOrder|null, finish_at: Carbon|null, last: FarmOrder|null}
+     * @return array{status: array, running: FarmOrder|null, finish_at: Carbon|null, last: FarmOrder|null, waiting: Collection<int, FarmOrder>}
      */
     private function overview(array $row): array
     {
@@ -95,6 +95,9 @@ class FarmOrderController extends Controller
             'status' => PrinterStatus::of($p, $row['job'], $running),
             'running' => $running,
             'finish_at' => $eta ? now()->addMinutes((int) $eta['finish_in']) : null,
+            // what waits for this printer: its queue in its order, then the paid orders that wait for the admin's approval
+            // (those hold the printer up by the admin, not by the queue; the row says which kind the first one is)
+            'waiting' => $row['queue']->pluck('order')->concat(FarmOrder::where('farm_printer_id', $p->id)->where('status', FarmOrder::STATUS_PAID)->orderBy('paid_at')->orderBy('id')->get())->values(),
             'last' => $running ? null : FarmOrder::where('farm_printer_id', $p->id)->whereIn('status', [FarmOrder::STATUS_DONE, FarmOrder::STATUS_HANDED_OVER])
                 ->whereNotNull('finished_at')->orderByDesc('finished_at')->first(),
         ];

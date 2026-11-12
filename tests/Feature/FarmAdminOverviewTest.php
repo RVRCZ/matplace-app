@@ -215,6 +215,21 @@ class FarmAdminOverviewTest extends TestCase
 
         $this->actingAs($this->user)->post(route('admin.farm.printers.bed', $p), ['clear' => 1])->assertRedirect();
         $this->assertFalse($p->fresh()->bed_clear);
+
+        // a printer that is silent or switched off: the list says where the plate stands and leaves the button to the detail
+        $away = $this->printer('kobra-3-max-01', ['last_seen_at' => now()->subHour()]);
+        $row = $this->row($away);
+        $this->assertStringContainsString('data-status="offline"', $row);
+        $this->assertStringContainsString('data-bed="away"', $row);
+        $this->assertStringContainsString(__('farm.admin.ov.bed_away_blocked'), $row);
+        $this->assertStringNotContainsString('name="clear"', $row);
+        $away->update(['enabled' => false, 'last_seen_at' => now(), 'bed_clear' => true]);
+        $row = $this->row($away);
+        $this->assertStringContainsString('data-status="disabled"', $row);
+        $this->assertStringContainsString(__('farm.admin.ov.bed_away_clear'), $row);
+        $this->assertStringNotContainsString('name="clear"', $row);
+        // the detail keeps the button for both
+        $this->actingAs($this->admin)->get(route('admin.farm.printers.show', $away))->assertOk()->assertSee('name="clear" value="0"', false);
     }
 
     public function test_a_row_names_the_order_that_prints_or_the_last_one_printed_and_the_next_one_waiting(): void
@@ -235,14 +250,33 @@ class FarmAdminOverviewTest extends TestCase
         $this->assertStringContainsString(__('farm.admin.ov.finished_at', ['time' => $last->finished_at->format('H:i')]), $row);
         $this->assertStringNotContainsString('F26-000120', $row);
 
-        // the queue: the first order by its turn, and how many more wait
+        // a paid order that waits for the admin's approval is what waits next, and the row says it is held up by the admin
+        $paid = $this->order($p, FarmOrder::STATUS_PAID, 'F26-000126', ['paid_at' => now()->subMinutes(40)]);
+        $row = $this->row($p);
+        $this->assertStringContainsString(route('admin.farm.orders.show', $paid), $row);
+        $this->assertStringContainsString('data-next-approval', $row);
+        $this->assertStringContainsString(__('farm.admin.ov.next_approval'), $row);
+        $this->assertStringNotContainsString(__('farm.admin.ov.next_none'), $row);
+        $this->assertStringNotContainsString('data-more-approval', $row);
+        // two of them: the older first, the other counted and named as waiting for approval too
+        $this->order($p, FarmOrder::STATUS_PAID, 'F26-000127', ['paid_at' => now()->subMinutes(35)]);
+        $row = $this->row($p);
+        $this->assertStringContainsString('F26-000126', $row);
+        $this->assertStringContainsString(__('farm.admin.ov.next_more', ['n' => 1]), $row);
+        $this->assertStringContainsString(__('farm.admin.ov.more_approval', ['n' => 1]), $row);
+        FarmOrder::where('number', 'F26-000127')->delete();
+
+        // the queue comes first: the first order by its turn, how many more wait, and how many of those wait for approval
         $next = $this->order($p, FarmOrder::STATUS_QUEUED, 'F26-000123', ['queued_at' => now()->subMinutes(30)]);
         $this->order($p, FarmOrder::STATUS_QUEUED, 'F26-000124', ['queued_at' => now()->subMinutes(20)]);
         $this->order($p, FarmOrder::STATUS_QUEUED, 'F26-000125', ['queued_at' => now()->subMinutes(10)]);
         $row = $this->row($p);
         $this->assertStringContainsString(route('admin.farm.orders.show', $next), $row);
-        $this->assertStringContainsString(__('farm.admin.ov.next_more', ['n' => 2]), $row);
+        $this->assertStringContainsString(__('farm.admin.ov.next_more', ['n' => 3]), $row);
+        $this->assertStringContainsString(__('farm.admin.ov.more_approval', ['n' => 1]), $row);
+        $this->assertStringNotContainsString('data-next-approval', $row);
         $this->assertStringNotContainsString('F26-000124', $row);
+        $this->assertStringNotContainsString('F26-000126', $row);
 
         // a running print: its number, the progress, about when it ends (60 min × 1.07, 40 % done → 39 min); the last one steps back
         $running = $this->order($p, FarmOrder::STATUS_PRINTING, 'F26-000122', ['started_at' => now()]);

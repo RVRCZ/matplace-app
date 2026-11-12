@@ -43,8 +43,12 @@
                     $p = $row['printer'];
                     $st = $row['status'];
                     $job = $row['job'];
-                    $next = $row['queue']->first();
-                    $more = $row['queue']->count() - 1;
+                    $next = $row['waiting']->first();
+                    $more = $row['waiting']->count() - 1;
+                    // paid orders that wait for the admin's approval, not for their turn
+                    $approval = $row['waiting']->where('status', \App\Models\FarmOrder::STATUS_PAID)->count();
+                    // nobody can vouch for the plate of a machine that is switched off or silent: the button is on its detail
+                    $away = in_array($st['key'], [\App\Domain\Farm\PrinterStatus::OFFLINE, \App\Domain\Farm\PrinterStatus::DISABLED], true);
                 @endphp
                 <li class="grid gap-x-4 gap-y-2 px-4 py-3 lg:grid-cols-[minmax(0,17rem)_minmax(0,1.2fr)_minmax(0,1fr)_12.5rem_auto] lg:items-center" data-printer-row="{{ $p->id }}" data-status="{{ $st['key'] }}">
                     <div class="flex min-w-0 items-start justify-between gap-2">
@@ -75,12 +79,18 @@
                         @endif
                     </div>
 
-                    {{-- the first order of this printer's queue and how many more wait behind it --}}
+                    {{-- the first order that waits for this printer (its queue, then the paid ones that wait for approval) and how many more --}}
                     <p class="min-w-0 break-words text-sm" data-next><span class="text-slate-500">{{ __('farm.admin.ov.next') }}:</span>
                         @if($next)
-                            <a class="font-semibold underline" href="{{ route('admin.farm.orders.show', $next['order']) }}">{{ $next['order']->number }}</a>
+                            <a class="font-semibold underline" href="{{ route('admin.farm.orders.show', $next) }}">{{ $next->number ?? $next->token }}</a>
+                            @if($next->status === \App\Models\FarmOrder::STATUS_PAID)
+                                <span class="whitespace-nowrap rounded-full bg-amber-100 px-2 py-0.5 text-xs font-semibold text-amber-900" data-next-approval>{{ __('farm.admin.ov.next_approval') }}</span>
+                            @endif
                             @if($more > 0)
                                 <span class="text-slate-500">{{ __('farm.admin.ov.next_more', ['n' => $more]) }}</span>
+                            @endif
+                            @if($approval > 0 && ($more > 0 || $next->status !== \App\Models\FarmOrder::STATUS_PAID) && $approval - ($next->status === \App\Models\FarmOrder::STATUS_PAID ? 1 : 0) > 0)
+                                <span class="text-xs text-amber-900" data-more-approval>({{ __('farm.admin.ov.more_approval', ['n' => $approval - ($next->status === \App\Models\FarmOrder::STATUS_PAID ? 1 : 0)]) }})</span>
                             @endif
                         @else
                             <span class="text-slate-500">{{ __('farm.admin.ov.next_none') }}</span>
@@ -90,6 +100,8 @@
                     {{-- one button that turns the plate's mark over; while something prints the plate is occupied by definition --}}
                     @if($st['busy'])
                         <p class="text-xs text-slate-500" data-bed="busy">{{ __('farm.admin.ov.bed_printing') }}</p>
+                    @elseif($away)
+                        <p class="text-xs text-slate-500" data-bed="away">{{ $p->bed_clear ? __('farm.admin.ov.bed_away_clear') : __('farm.admin.ov.bed_away_blocked') }}</p>
                     @else
                         <form method="post" action="{{ route('admin.farm.printers.bed', $p) }}" data-ajax data-bed="{{ $p->bed_clear ? 'clear' : 'blocked' }}">
                             @csrf

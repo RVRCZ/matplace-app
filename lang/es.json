@@ -2403,5 +2403,9 @@
     "farm.admin.farms.sort": "Orden",
     "farm.admin.farms.enabled": "en funcionamiento",
     "farm.admin.farms.note": "Nota",
-    "farm.admin.farms.save": "Guardar"
+    "farm.admin.farms.save": "Guardar",
+    "farm.admin.ov.next_approval": "espera aprobación",
+    "farm.admin.ov.more_approval": "esperan aprobación: :n",
+    "farm.admin.ov.bed_away_clear": "La base está libre. Cámbielo en el detalle.",
+    "farm.admin.ov.bed_away_blocked": "La base está ocupada. Cámbielo en el detalle."
 }
