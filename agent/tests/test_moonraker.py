@@ -32,6 +32,12 @@ class FakeMoonraker:
         self.start_answers = True       # False: print/start never answers (the test moves the state itself)
         self.knows_reset = True         # False: GoKlipper, SDCARD_RESET_FILE is an unknown command
         self.cancel_clears = True       # a cancel after a failed print goes to "cancelled" (False: stays in error)
+        self.cancel_ends = True         # a cancel of a running or paused print goes to "cancelled" and cools down
+                                        # (False: answered ok, nothing changes - U2 after a stop on its screen, F26-000158)
+        self.reset_ends = True          # SDCARD_RESET_FILE lets go of the file (False: answered ok, nothing changes)
+        self.knows_heaters_off = True   # False: TURN_OFF_HEATERS is an unknown command, M104 S0 / M140 S0 work
+        self.targets = {"extruder": 0.0, "heater_bed": 0.0}
+        self.sd = {"progress": 0.0}
         self.uploaded, self.started, self.scripts, self.restarts, self.cancels = [], [], [], [], 0
         self.runner = None
         self.url = ""
@@ -65,8 +71,8 @@ class FakeMoonraker:
 
     async def query(self, request):
         status = {
-            "print_stats": dict(self.print_stats), "virtual_sdcard": {"progress": 0.0},
-            "extruder": {"temperature": 25.0, "target": 0.0}, "heater_bed": {"temperature": 24.0, "target": 0.0},
+            "print_stats": dict(self.print_stats), "virtual_sdcard": dict(self.sd),
+            "extruder": {"temperature": 25.0, "target": self.targets["extruder"]}, "heater_bed": {"temperature": 24.0, "target": self.targets["heater_bed"]},
             "webhooks": dict(self.webhooks), "display_status": dict(self.display),
         }
         if self.filament_hub is not None:
@@ -133,7 +139,16 @@ class FakeMoonraker:
         if script == "SDCARD_RESET_FILE":
             if not self.knows_reset:
                 return web.json_response({"error": {"code": 400, "message": "Unknown command:\"SDCARD_RESET_FILE\""}}, status=400)
-            self.print_stats.update(state="standby", filename="", message="")
+            if self.reset_ends:
+                self.print_stats.update(state="standby", filename="", message="")
+        if script == "TURN_OFF_HEATERS":
+            if not self.knows_heaters_off:
+                return web.json_response({"error": {"code": 400, "message": "Unknown command:\"TURN_OFF_HEATERS\""}}, status=400)
+            self.targets.update(extruder=0.0, heater_bed=0.0)
+        if script == "M104 S0":
+            self.targets["extruder"] = 0.0
+        if script == "M140 S0":
+            self.targets["heater_bed"] = 0.0
         return web.json_response({"result": "ok"})
 
     async def firmware_restart(self, request):
@@ -146,6 +161,9 @@ class FakeMoonraker:
         self.cancels += 1
         if self.print_stats["state"] == "error" and self.cancel_clears:
             self.print_stats.update(state="cancelled")
+        if self.print_stats["state"] in ("printing", "paused") and self.cancel_ends:
+            self.print_stats.update(state="cancelled")
+            self.targets.update(extruder=0.0, heater_bed=0.0)
         return web.json_response({"result": "ok"})
 
 

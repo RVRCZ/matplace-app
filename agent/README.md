@@ -210,6 +210,22 @@ Celý tok od zákazníka po „hotovo“ jde projít se simulovanou tiskárnou:
   server), `delete` (soubor běžící úlohy se nikdy nesmaže), `cleanup` (smaže jen naše soubory `mp<id>-matplace-*.gcode`,
   které nepatří běžící úloze ani úlohám, které server řekl nechat). Kobra X seznam odmítá (10112), zůstává bez.
 
+## Zrušení potvrzené stavem tiskárny, pauza při přípravě (agent 0.2.13)
+
+- Zrušení je hotové, až když to řekne stav tiskárny, ne když tiskárna na volání odpoví. Agent čte stav až 60 s; tisk,
+  který zůstal (`printing`, `paused`), dostane druhý krok ovladače (Moonraker: `SDCARD_RESET_FILE`) a dalších 20 s.
+  Když pomůže, výsledek příkazu to řekne („SDCARD_RESET_FILE ended the print“); když ne, příkaz selže s důvodem
+  („cancel not confirmed: …“) a server pošle provozovateli e‑mail. Soubor, který není z farmy, druhý krok nikdy nedostane.
+  Kobra X a PrusaLink druhý krok nemají: nepotvrzené zrušení u nich selže s větou „has no second way to end a print“.
+- Po zrušení agent zkontroluje topení: cíle trysky a podložky mají do 10 s spadnout na nulu, jinak je vypne
+  (`TURN_OFF_HEATERS`, případně `M104 S0` a `M140 S0`) a napíše to do výsledku. Tiskárna, která to odsud neumí, dostane
+  do výsledku „the heaters are still on“ a provozovatel e‑mail.
+- Pauza, když se tiskárna teprve připravuje (nahřívání, vyrovnání; Moonraker: soubor se nepohnul, žádná vrstva, nic
+  nevytlačeno), se na tiskárnu vůbec neposílá a příkaz hned selže s větou „the printer is getting ready…“, kterou
+  administrace ukáže česky. Zrušení v téže chvíli projde. Hodnoty, podle kterých se příprava pozná, agent při každé
+  pauze zapíše do `agent.log` (řádek `pause asked: …`).
+- Zkušební tiskárna: `cancel_stuck`, `cancel_fallback`, `heaters_stay`, `heaters_off` (popis v `drivers/mock.py`).
+
 ## Co agent dělá při potížích
 
 | Situace | Chování |
@@ -254,7 +270,7 @@ python -m pytest tests                      # 108 testů proti simulované tisk�
 ```
 
 Nový ovladač: třída odvozená z `PrinterDriver` (`drivers/base.py`: `status`, `start`, `pause`, `resume`, `cancel`,
-volitelně `snapshot`, `connect`, `close`), zápis do `DRIVERS` v `drivers/__init__.py`. Agent ani matplace se nemění.
+volitelně `snapshot`, `connect`, `close`, `cancel_fallback`, `heaters_off`), zápis do `DRIVERS` v `drivers/__init__.py`. Agent ani matplace se nemění.
 
 ### První kalibrační tisk (Benchy ze Sliceru Next, 22. 9. 2026)
 

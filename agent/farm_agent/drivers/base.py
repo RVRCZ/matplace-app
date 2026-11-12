@@ -31,6 +31,7 @@ class JobStatus:
     print_duration: int = 0           # seconds the printer was actually printing
     filament_used: float = 0.0        # millimetres
     message: str = ""
+    starting: bool = False            # the printer is still getting ready (heating, levelling): nothing is laid down yet
 
 
 @dataclass
@@ -118,6 +119,18 @@ class PrinterDriver(abc.ABC):
 
     @abc.abstractmethod
     async def cancel(self) -> None: ...
+
+    async def cancel_fallback(self) -> Optional[str]:
+        """A second, safe way to end a print the printer kept although cancel() was answered (a Kobra S1 under Rinkhals
+        stays "paused" after a stop on its screen and answers print/cancel with ok all the same, F26-000158). Returns
+        the name of the step for the command's result, None when this printer has none. Raises DriverError when the
+        printer refused the step."""
+        return None
+
+    async def heaters_off(self) -> Optional[str]:
+        """Switch the nozzle and the bed heating off after a cancelled print that left them on. Returns the name of the
+        step, None when this printer cannot be told from here. Raises DriverError when the printer refused."""
+        return None
 
     async def snapshot(self) -> Optional[bytes]:
         """JPEG from the printer's camera, or None when there is none."""
