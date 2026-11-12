@@ -36,9 +36,6 @@ final class PrinterStatus
         self::STANDBY => 'bg-ok-soft text-ok',
     ];
 
-    /** A cancel that the job outlived by this long counts as not confirmed by the printer. */
-    public const CANCEL_GRACE_S = 120;
-
     /**
      * @param  FarmPrintJob|null  $job  the printer's active job (FarmPrinter::activeJob)
      * @param  FarmOrder|null  $running  the order that prints on it (a manual printer has an order in "printing" and no job)
@@ -68,11 +65,17 @@ final class PrinterStatus
         if ($printer->isAgentDriven() && $printer->state === FarmPrinter::STATE_ERROR) {
             return $message !== '' ? $message : __('farm.admin.ov.reason.error');
         }
+        // before the unknown state: a printer the agent cannot see after a refused cancel still holds the cancelled print,
+        // and the box on its card says so (FarmCommand::cancelState counts `unknown` as refused)
+        $cancel = self::cancelUnconfirmed($printer);
+        if ($cancel !== null) {
+            // the words of the box on the printer's card, with the order the cancel belongs to
+            $number = $cancel->printJob?->order?->number;
+
+            return __('farm.admin.cancel.'.$cancel->cancel_state).($number ? ' · '.$number : '');
+        }
         if (($printer->isAgentDriven() && $printer->state === FarmPrinter::STATE_UNKNOWN) || $job?->status === FarmPrintJob::STATUS_UNKNOWN) {
             return __('farm.admin.ov.reason.unknown');
-        }
-        if (self::cancelUnconfirmed($printer, $job)) {
-            return __('farm.admin.ov.reason.cancel');
         }
         // a paused print waits for a person whoever paused it (Roman, 12 Nov 2026); the printer's own words say why when it has any
         if ($job?->status === FarmPrintJob::STATUS_PAUSED || ($printer->isAgentDriven() && $printer->state === FarmPrinter::STATE_PAUSED)) {
@@ -89,17 +92,13 @@ final class PrinterStatus
     }
 
     /**
-     * A cancel was sent for the running job and the job is still there: the command failed, or the printer has not
-     * confirmed it within CANCEL_GRACE_S. (Branch fix/agent-cancel-confirm adds its own mark of "the printer did not
-     * confirm the cancel"; this is the one place where the overview should ask for it.)
+     * The cancel this printer has not confirmed (FarmCommand::CANCEL_WAITING) or did not carry out (CANCEL_REFUSED),
+     * with the state in `cancel_state`; null when there is none. One source of truth with the box on the printer's
+     * card, the order page and the order list: FarmCommand::cancelState() through FarmPrinter::unconfirmedCancel()
+     * (docs/AM.md §13c). The order may be cancelled and its job closed already, so this does not look at the job.
      */
-    public static function cancelUnconfirmed(FarmPrinter $printer, ?FarmPrintJob $job = null): bool
+    public static function cancelUnconfirmed(FarmPrinter $printer): ?FarmCommand
     {
-        if (! $job || ! $job->isActive()) {
-            return false;
-        }
-        $cancel = FarmCommand::where('farm_printer_id', $printer->id)->where('farm_print_job_id', $job->id)->where('type', FarmCommand::TYPE_CANCEL)->latest('id')->first();
-
-        return $cancel !== null && ($cancel->status === 'failed' || $cancel->created_at->lt(now()->subSeconds(self::CANCEL_GRACE_S)));
+        return $printer->isAgentDriven() ? $printer->unconfirmedCancel() : null;
     }
 }

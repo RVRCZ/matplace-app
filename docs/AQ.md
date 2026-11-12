@@ -54,7 +54,7 @@ Jen zobrazení, v databázi nic nepřibylo. Platí první pravidlo, které sedí
 |---|---|
 | **Vypnutá** (`disabled`) | tiskárna není „v provozu“ |
 | **Offline** (`offline`) | tiskárna řízená agentem se neozvala déle než `offline_after_seconds` (nastavení farmy, výchozí 120 s) |
-| **Problém** (`problem`) | (a) agent hlásí stav `error` (důvod = poslední hláška tiskárny); (b) stav `unknown` nebo úloha ve stavu `unknown`; (c) **nepotvrzené zrušení**: k běžící úloze existuje příkaz `cancel`, který selhal, nebo je starší než 120 s a úloha stále běží; (d) **pozastavený tisk** (úloha nebo tiskárna `paused`; důvod = živá hláška tiskárny, jinak „Tisk je pozastavený“); (e) živá hláška tiskárny (`telemetry.message` = `message`), pokud tiskárna právě netiskne |
+| **Problém** (`problem`) | (a) agent hlásí stav `error` (důvod = poslední hláška tiskárny); (b) **nepotvrzené zrušení** podle `FarmCommand::cancelState()` (`waiting` = příkaz `cancel` čeká na agenta nebo je u agenta, `refused` = selhal a tiskárna tisk dál drží nebo není vidět; důvod = slova rámečku na kartě tiskárny a číslo zakázky); (c) stav `unknown` nebo úloha ve stavu `unknown`; (d) **pozastavený tisk** (úloha nebo tiskárna `paused`; důvod = živá hláška tiskárny, jinak „Tisk je pozastavený“); (e) živá hláška tiskárny (`telemetry.message` = `message`), pokud tiskárna právě netiskne |
 | **Tisk** (`printing`) | tiskárna má aktivní úlohu (i odesílanou a nahřívanou), nebo sama hlásí tisk; ruční tiskárna: má zakázku ve stavu `printing` |
 | **Uklidit podložku** (`bed`) | volná, ale podložka není potvrzená jako uklizená (`bed_clear = false`) |
 | **Standby** (`standby`) | volná a podložka je čistá: další zakázka se může spustit |
@@ -62,8 +62,13 @@ Jen zobrazení, v databázi nic nepřibylo. Platí první pravidlo, které sedí
 - „Online“ není zvláštní slovo: všechno kromě Offline a Vypnutá znamená, že je tiskárna online. Ruční tiskárna je
   online vždy (stojí u ní člověk), stav má podle zakázek a podložky.
 - Hláška během tisku je jen poznámka (není to problém); stará hláška (už není v telemetrii) je historie.
-- **Souběh s `fix/agent-cancel-confirm`:** jediné místo, kde se přehled ptá na nepotvrzené zrušení, je
-  `PrinterStatus::cancelUnconfirmed()`. Až ta větev přinese vlastní značku, stačí ji tam přidat (`||`).
+- **Sloučeno s `fix/agent-cancel-confirm` (release/2026-11-13):** `PrinterStatus::cancelUnconfirmed()` už nemá vlastní
+  odhad (selhaný příkaz nebo 120 s). Vrací příkaz z `FarmPrinter::unconfirmedCancel()`, tedy `FarmCommand::cancelState()`
+  (docs/AM.md §13c), stejný zdroj jako rámeček na kartě tiskárny, stránka zakázky a seznam zakázek. Na úlohu se nedívá
+  (zakázka zrušená zákazníkem už aktivní úlohu nemá). Platí i pro `waiting`: zrušení, které agent teprve ověřuje, je
+  v přehledu „Problém“ hned, bez dvouminutové lhůty, protože i karta v té chvíli ukazuje žlutý rámeček. Řádek přehledu
+  nese tentýž rámeček v jedné řádce (odkaz na kartu `#cancel-<id>`, číslo zakázky, u `refused` tlačítko „Zkusit zrušit
+  znovu“). Klíč `farm.admin.ov.reason.cancel` se už nepoužívá.
 
 ## 4. Detail tiskárny (`/admin/farm/printers/{id}/detail`, `admin.farm.printers.show`)
 

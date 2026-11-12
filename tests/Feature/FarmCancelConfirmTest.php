@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use App\Domain\Farm\PrinterStatus;
 use App\Mail\FarmAdminAlert;
 use App\Models\FarmAgent;
 use App\Models\FarmCommand;
@@ -127,8 +128,13 @@ class FarmCancelConfirmTest extends TestCase
         $this->assertSame(FarmOrder::STATUS_CANCELLED, $order->status);
         // the command has not even reached the agent: cancelled on the web, not on the printer
         $this->assertSame(FarmCommand::CANCEL_WAITING, $order->cancelState());
-        $this->actingAs($this->admin)->get(route('admin.farm.dashboard'))->assertOk()
+        // the printer's card (its detail since docs/AQ.md) and its row of the overview, which calls it a problem in the same words
+        $this->actingAs($this->admin)->get(route('admin.farm.printers.show', $printer))->assertOk()
             ->assertSee('Zrušeno, čeká na potvrzení tiskárny')->assertSee('data-cancel-state="waiting"', false)->assertSee($order->number);
+        $this->actingAs($this->admin)->get(route('admin.farm.dashboard'))->assertOk()
+            ->assertSee('Zrušeno, čeká na potvrzení tiskárny')->assertSee('data-cancel-state="waiting"', false)->assertSee($order->number)
+            ->assertSee('data-printer-row="'.$printer->id.'" data-status="problem"', false);
+        $this->assertSame('Zrušeno, čeká na potvrzení tiskárny · '.$order->number, PrinterStatus::of($printer->refresh())['reason']);
         $this->actingAs($this->admin)->get(route('admin.farm.orders.show', $order))->assertOk()->assertSee('Zrušeno, čeká na potvrzení tiskárny');
         $this->actingAs($this->admin)->get(route('admin.farm.orders', ['status' => 'cancelled']))->assertOk()->assertSee('data-cancel-state="waiting"', false);
 
@@ -141,7 +147,9 @@ class FarmCancelConfirmTest extends TestCase
         $this->sync($auth, 'idle');
         $this->assertNull($order->cancelState());
         $this->assertNull($printer->refresh()->unconfirmedCancel());
-        $this->actingAs($this->admin)->get(route('admin.farm.dashboard'))->assertOk()
+        $this->actingAs($this->admin)->get(route('admin.farm.dashboard'))->assertOk()->assertDontSee('data-cancel-state', false)
+            ->assertDontSee('data-status="problem"', false);
+        $this->actingAs($this->admin)->get(route('admin.farm.printers.show', $printer))->assertOk()
             ->assertDontSee('data-cancel-state', false)
             ->assertSee('Tiskárna na zrušení odpověděla, ale tisk 60 s držela dál (pozastaveno). Ukončil ho až druhý krok (SDCARD_RESET_FILE).');
         $this->actingAs($this->admin)->get(route('admin.farm.orders.show', $order))->assertOk()->assertDontSee('data-cancel-state', false);
@@ -170,9 +178,14 @@ class FarmCancelConfirmTest extends TestCase
 
         // the admin: not a finished matter, on the printer's card, on the order and in the list
         $this->assertSame(FarmCommand::CANCEL_REFUSED, $order->cancelState());
+        $this->actingAs($this->admin)->get(route('admin.farm.printers.show', $printer))->assertOk()
+            ->assertSee('data-cancel-state="refused"', false)->assertSee('Tiskárna tisk nezrušila')->assertSee('Zkusit zrušit znovu')
+            ->assertSee('Tiskárna tisk nezrušila ani druhým krokem (SDCARD_RESET_FILE)')->assertDontSee('cancel not confirmed');
+        // the overview: a problem with the card's words, the order and the retry button
         $this->actingAs($this->admin)->get(route('admin.farm.dashboard'))->assertOk()
             ->assertSee('data-cancel-state="refused"', false)->assertSee('Tiskárna tisk nezrušila')->assertSee('Zkusit zrušit znovu')
-            ->assertDontSee('cancel not confirmed');
+            ->assertSee('data-printer-row="'.$printer->id.'" data-status="problem"', false)->assertDontSee('cancel not confirmed');
+        $this->assertSame('Tiskárna tisk nezrušila · '.$order->number, PrinterStatus::of($printer->refresh())['reason']);
         $this->actingAs($this->admin)->get(route('admin.farm.orders.show', $order))->assertOk()
             ->assertSee('data-cancel-state="refused"', false)->assertSee('farma na ni nic dalšího nepošle');
         $this->actingAs($this->admin)->get(route('admin.farm.orders', ['status' => 'cancelled']))->assertOk()->assertSee('data-cancel-state="refused"', false);
@@ -259,7 +272,7 @@ class FarmCancelConfirmTest extends TestCase
         $this->actingAs($this->admin)->post(route('admin.farm.printers.command', $printer), ['type' => 'pause'])->assertRedirect();
         $id = $this->sync($auth, 'printing', ['id' => $job->id, 'status' => 'printing', 'progress' => 0])->json('commands.0.id');
         $this->postJson("/api/agent/commands/{$id}/result", ['ok' => false, 'message' => FarmCommand::PAUSE_WHILE_STARTING], $auth)->assertOk();
-        $this->actingAs($this->admin)->get(route('admin.farm.dashboard'))->assertOk()
+        $this->actingAs($this->admin)->get(route('admin.farm.printers.show', $printer))->assertOk()
             ->assertSee('Tiskárna se připravuje (nahřívá a vyrovnává podložku), pauza půjde za chvíli, až začne první vrstva.')
             ->assertDontSee('getting ready');
         $this->assertSame('The printer is getting ready (heating and levelling), a pause will work in a moment, once the first layer starts.', FarmCommand::findOrFail($id)->resultText('en'));

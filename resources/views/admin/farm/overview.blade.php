@@ -74,8 +74,27 @@
                         @else
                             <p class="text-slate-500">{{ __('farm.admin.ov.no_order') }}</p>
                         @endif
-                        @if($st['reason'])
+                        @php
+                            // a cancel the printer has not confirmed or did not carry out (docs/AM.md §13): the same command the box
+                            // on the printer's card shows, here in one line with the way to the box and, when refused, the retry
+                            $cc = $row['cancel'];
+                            $refused = $cc?->cancel_state === \App\Models\FarmCommand::CANCEL_REFUSED;
+                            $co = $cc?->printJob?->order;
+                            $cancelReason = $cc && $st['reason'] && str_starts_with($st['reason'], __('farm.admin.cancel.'.$cc->cancel_state));
+                        @endphp
+                        @if($st['reason'] && ! $cancelReason)
                             <p class="mt-0.5 break-words text-xs text-red-800" data-status-reason>{{ \Illuminate\Support\Str::limit($st['reason'], 160) }}</p>
+                        @endif
+                        @if($cc)
+                            <div class="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1 rounded-lg {{ $refused ? 'bg-red-50 text-red-800' : 'bg-amber-50 text-amber-900' }} px-2 py-1 text-xs" data-cancel-state="{{ $cc->cancel_state }}" @if($cancelReason) data-status-reason @endif>
+                                <a class="font-semibold underline" href="{{ route('admin.farm.printers.show', $p) }}#cancel-{{ $p->id }}">{{ __('farm.admin.cancel.'.$cc->cancel_state) }}</a>
+                                @if($co)
+                                    <a class="underline" href="{{ route('admin.farm.orders.show', $co) }}">{{ $co->number }}</a>
+                                @endif
+                                @if($refused)
+                                    <form method="post" action="{{ route('admin.farm.printers.command', $p) }}" data-ajax>@csrf <button name="type" value="cancel" class="btn-quiet text-xs">{{ __('farm.admin.cancel.again') }}</button></form>
+                                @endif
+                            </div>
                         @endif
                     </div>
 

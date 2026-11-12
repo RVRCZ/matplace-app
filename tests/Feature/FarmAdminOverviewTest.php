@@ -153,18 +153,47 @@ class FarmAdminOverviewTest extends TestCase
         $this->assertStringContainsString('data-status="problem"', $row);
         $this->assertStringContainsString('Filament runout, slot 2', $row);
 
-        // a cancel the job outlived: failed at once, or not confirmed within the grace time
+        // a cancel the printer has not confirmed: the same source of truth as the box on the printer's card
+        // (FarmCommand::cancelState, docs/AM.md §13c), in the same words, with the order
         $p->update(['state' => FarmPrinter::STATE_PRINTING, 'message' => null, 'telemetry' => []]);
         $job->update(['status' => FarmPrintJob::STATUS_PRINTING]);
         $cancel = FarmCommand::create(['farm_printer_id' => $p->id, 'farm_print_job_id' => $job->id, 'type' => FarmCommand::TYPE_CANCEL, 'created_by' => $this->admin->id]);
-        $this->assertSame(PrinterStatus::PRINTING, $status($job)['key']);   // just sent
-        $this->travel(PrinterStatus::CANCEL_GRACE_S + 5)->seconds();
-        $p->update(['last_seen_at' => now()]);
-        $this->assertSame([PrinterStatus::PROBLEM, __('farm.admin.ov.reason.cancel')], [$status($job)['key'], $status($job)['reason']]);
-        $this->travelBack();
-        $p->update(['last_seen_at' => now()]);
-        $cancel->update(['status' => 'failed']);
-        $this->assertSame(PrinterStatus::PROBLEM, $status($job)['key']);
+        $this->assertSame(FarmCommand::CANCEL_WAITING, $cancel->refresh()->cancelState());
+        $this->assertSame(FarmCommand::CANCEL_WAITING, PrinterStatus::cancelUnconfirmed($p->refresh())?->cancel_state);
+        $this->assertSame([PrinterStatus::PROBLEM, __('farm.admin.cancel.waiting').' · F26-000101'], [$status($job)['key'], $status($job)['reason']]);
+        $row = $this->row($p);
+        $this->assertStringContainsString('data-status="problem"', $row);
+        $this->assertStringContainsString('data-cancel-state="waiting"', $row);
+        $this->assertStringContainsString(route('admin.farm.printers.show', $p).'#cancel-'.$p->id, $row);
+        $this->assertStringNotContainsString(__('farm.admin.cancel.again'), $row);
+        $this->actingAs($this->admin)->get(route('admin.farm.printers.show', $p))->assertOk()
+            ->assertSee('id="cancel-'.$p->id.'" data-cancel-state="waiting"', false);
+
+        // the printer did not carry it out: the red box of the card, and the retry right in the row
+        $cancel->update(['status' => 'failed', 'result' => 'cancel not confirmed: the printer is still printing after 60 s; stop the print on the printer\'s screen']);
+        $this->assertSame(FarmCommand::CANCEL_REFUSED, $cancel->refresh()->cancelState());
+        $this->assertSame([PrinterStatus::PROBLEM, __('farm.admin.cancel.refused').' · F26-000101'], [$status($job)['key'], $status($job)['reason']]);
+        $row = $this->row($p);
+        $this->assertStringContainsString('data-cancel-state="refused"', $row);
+        $this->assertStringContainsString(__('farm.admin.cancel.again'), $row);
+        $this->assertStringContainsString(route('admin.farm.printers.command', $p), $row);
+        $this->assertStringNotContainsString('cancel not confirmed', $row);
+        $this->actingAs($this->admin)->get(route('admin.farm.printers.show', $p))->assertOk()
+            ->assertSee('data-cancel-state="refused"', false)->assertSee(__('farm.admin.cancel.again'));
+        // the agent loses the printer: the overview keeps saying what the card says, not "unknown state"
+        $p->update(['state' => FarmPrinter::STATE_UNKNOWN]);
+        $this->assertSame(__('farm.admin.cancel.refused').' · F26-000101', $status($job)['reason']);
+        // the retry from the row: a new cancel for the same job, waiting again
+        $this->actingAs($this->admin)->post(route('admin.farm.printers.command', $p), ['type' => 'cancel'])->assertRedirect();
+        $this->assertSame(FarmCommand::CANCEL_WAITING, PrinterStatus::cancelUnconfirmed($p->refresh())?->cancel_state);
+        FarmCommand::where('type', FarmCommand::TYPE_CANCEL)->where('id', '>', $cancel->id)->delete();
+        // the operator stopped the print on the screen: the printer let go, neither the card nor the overview warns
+        $p->update(['state' => FarmPrinter::STATE_IDLE]);
+        $this->assertNull(PrinterStatus::cancelUnconfirmed($p->refresh()));
+        $this->assertSame(PrinterStatus::PRINTING, $status($job)['key']);
+        $this->assertStringNotContainsString('data-cancel-state', $this->row($p));
+        // a manual printer has no agent and no such state
+        $this->assertNull(PrinterStatus::cancelUnconfirmed(FarmPrinter::where('key', 'kobra-3-max-01')->firstOrFail()));
         $cancel->delete();
 
         // the printer's error, with what it said; an unknown state
