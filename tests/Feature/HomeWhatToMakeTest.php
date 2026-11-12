@@ -293,6 +293,65 @@ class HomeWhatToMakeTest extends TestCase
         $this->assertSame('mikulas.1', IntakeHints::chips('cs', now())[0]['code']);
     }
 
+    // ── the live test of 13 Nov 2026: "Chci medaili s reliéfem z fotky" ───────────────────────────────────────────
+
+    public function test_the_prompt_forbids_promising_or_asking_for_what_the_chosen_tool_does_not_take(): void
+    {
+        $system = IntakeRouter::system();
+        foreach (['Never promise the customer, and never ask them for, an input that the chosen tool\'s `takes` does not list', 'do not ask for a photo for a tool that takes no photo',
+            'a combination no single tool makes', 'say plainly in `summary` what that tool makes and what it does not', 'put the tools that DO take the photo into `alternatives`',
+            'relief, coaster, charm, filament_art', 'name the best of them in `summary` by its public name', 'a picture is still not a person\'s job', 'a photo as a relief or a lithophane → relief'] as $rule) {
+            $this->assertStringContainsString($rule, $system, $rule);
+        }
+        $this->assertStringContainsString('a picture is never a person\'s job', $system, 'the main rule of round 2 stays');
+        $this->assertStringContainsString('Never promise the customer', IntakeRouter::system(true), 'the rule holds for "without a designer" too');
+
+        // the catalogue the model sees has the relief tool (it was missing), with a photo as what it takes; the medal takes none
+        $this->assertArrayHasKey('relief', IntakeRouter::TOOLS);
+        $this->assertStringContainsString('a photo', IntakeRouter::TOOLS['relief']['takes']);
+        $this->assertStringNotContainsString('photo', IntakeRouter::TOOLS['medallion']['takes']);
+        $user = IntakeRouter::user(new Intake(['text' => 'Chci medaili s reliéfem z fotky', 'locale' => 'cs']));
+        $this->assertStringContainsString("\nrelief | ".__('tools.relief.title', [], 'cs').' / '.__('tools.relief.title', [], 'en').' / '.__('tools.relief.title', [], 'es').' | a photo', $user);
+        $this->assertTrue((bool) config('tools.relief.available'));
+        $this->assertSame(6, IntakeRouter::unionCount(), 'the schema did not change');
+
+        // the tool's page takes the photo the router hands over
+        $this->get('/tools/relief')->assertOk()->assertSee('<input id="relief-photo" name="photo" data-intake-photo type="file"', false);
+        // an answer of the model that names the relief tool goes there with the token
+        FakeAssistant::$answers['intake'] = ['route' => 'tool', 'tool_key' => 'medallion', 'params' => [], 'summary' => ['cs' => 'Medaili umíme s číslem, motivem nebo textem; reliéf z fotky na ni zatím neumíme. Fotku zvládne Reliéf a litofanie z fotky.', 'en' => 'x', 'es' => 'x'],
+            'questions' => [], 'confidence' => 0.6, 'alternatives' => ['relief', 'coaster', 'teleport']];
+        $r = $this->send(['text' => 'Chci medaili s reliéfem z fotky'])->assertCreated()->assertJsonPath('tool_key', 'medallion')->assertJsonPath('alternatives', ['relief', 'coaster']);
+        $this->assertStringContainsString('reliéf z fotky na ni zatím neumíme', $r->json('summary'));
+    }
+
+    public function test_the_keyword_fallback_says_the_tool_it_chose_not_the_designer(): void
+    {
+        foreach ([false, true] as $photo) {
+            foreach (['cs', 'en', 'es'] as $lang) {
+                $d = IntakeRouter::guess('Chci medaili s reliéfem z fotky', $photo, $lang);
+                $this->assertSame(['tool', 'medallion', ['relief']], [$d['route'], $d['tool_key'], $d['answer']['alternatives']]);
+                // the sentence names the tool and the one that takes the photo, and is not the designer's
+                $this->assertSame(__('router.summary.tool', ['tool' => __('tools.medallion.title', [], $lang)], $lang).' '.__('router.summary.tool_also', ['tools' => __('tools.relief.title', [], $lang)], $lang), $d['summary']);
+                foreach (['router.summary.fallback', 'router.summary.fallback_text', 'router.summary.shape', 'router.summary.shape_text'] as $key) {
+                    $this->assertNotSame(__($key, ['hours' => 24], $lang), $d['summary']);
+                }
+            }
+        }
+        // every tool the words choose says its own name; a person and a shape keep the designer's sentences
+        foreach (json_decode((string) file_get_contents(base_path('tests/fixtures/intake/cases.json')), true) as $case) {
+            $d = IntakeRouter::guess($case['text'], (bool) $case['photo'], 'cs');
+            if ($d['route'] === 'tool') {
+                $this->assertStringStartsWith(__('router.summary.tool', ['tool' => __('tools.'.$d['tool_key'].'.title')]), $d['summary'], $case['text']);
+            } else {
+                $this->assertContains($d['summary'], array_map(fn ($k) => __($k, ['hours' => 24]), ['router.summary.fallback', 'router.summary.fallback_text', 'router.summary.shape', 'router.summary.shape_text']), $case['text']);
+            }
+        }
+        $this->assertSame('tool', IntakeRouter::guess('Reliéf z fotky naší rodiny, 15 cm', true)['route']);
+        $this->assertSame('relief', IntakeRouter::guess('Litofanie z fotky jako lampička', true)['tool_key']);
+        // without a key the page gets the same sentence
+        $this->assertSame([], IntakeRouter::alsoNamed('busta mého táty', 'figure'));
+    }
+
     // ── 2: advertising ───────────────────────────────────────────────────────────────────────────────────────────
 
     public function test_the_rules_hold_the_advertising_of_november_and_let_honest_wishes_through(): void
@@ -317,9 +376,9 @@ class HomeWhatToMakeTest extends TestCase
         // missed; of 19 honest texts one is held (Ukrainian without a photo) and one price question gets the answer about prices
         $this->assertSame([13, 0, 19, 1], [$caught, $missed, $honest, $wrong]);
 
-        // the golden cases of the router (30) and every example of the first screen (110): none is held, none is taken for a bare price question
+        // the golden cases of the router (32) and every example of the first screen (110): none is held, none is taken for a bare price question
         $golden = json_decode((string) file_get_contents(base_path('tests/fixtures/intake/cases.json')), true);
-        $this->assertCount(30, $golden);
+        $this->assertCount(32, $golden);
         foreach (array_merge($golden, IntakeCases::hintCases()) as $case) {
             $this->assertSame('pass', $verdict((string) $case['text'], (bool) $case['photo']), (string) $case['text']);
         }

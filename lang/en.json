@@ -2399,5 +2399,7 @@
     "router.hint.halloween.2": "A bat charm",
     "router.hint.halloween.2.fill": "A bat charm for a backpack, 5 cm, black.",
     "router.hint.halloween.3": "A Beware of ghosts sign",
-    "router.hint.halloween.3.fill": "A door sign Beware of ghosts, 15 cm, orange and black."
+    "router.hint.halloween.3.fill": "A door sign Beware of ghosts, 15 cm, orange and black.",
+    "router.summary.tool": "Our tool :tool makes this. Open it and adjust the size and the colours in the preview.",
+    "router.summary.tool_also": "These could also do: :tools."
 }

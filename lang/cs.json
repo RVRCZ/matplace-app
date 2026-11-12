@@ -2399,5 +2399,7 @@
     "router.hint.halloween.2": "Přívěsek netopýr",
     "router.hint.halloween.2.fill": "Přívěsek netopýr na batoh, 5 cm, černý.",
     "router.hint.halloween.3": "Cedulka Pozor, straší",
-    "router.hint.halloween.3.fill": "Cedulka na dveře Pozor, tady straší, 15 cm, oranžová a černá."
+    "router.hint.halloween.3.fill": "Cedulka na dveře Pozor, tady straší, 15 cm, oranžová a černá.",
+    "router.summary.tool": "Tohle umí náš nástroj :tool. Otevřete ho, velikost a barvy doladíte v náhledu.",
+    "router.summary.tool_also": "Hodit se může i: :tools."
 }

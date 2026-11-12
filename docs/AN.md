@@ -1307,3 +1307,27 @@ něco jiného než své kroky; `FAQPage` a `Organization` beze změny. H2 a text
   „obecnou“ angličtinu a Španělsko.
 - Tlačítko „bez návrháře“ u přání bez fotky (čelenka) dnes vynutí cedulku se jménem; schovat ho tam?
 - Věta u pole pro e-mail a souhlas mluví o „fotce a popisu“ i bez fotky (texty 1. kola, neměnil jsem).
+
+### 23.8 „Chci medaili s reliéfem z fotky“ (ostrá zkouška řídící 13. 11. 2026)
+
+Ostrý model dal nástroj medaile (jistota 0,6) a bez fotky o ni žádal, s fotkou sliboval „medaili s reliéfem podle
+fotky“; nástroj medaile přitom fotku nebere (místo, číslo, motiv, text).
+
+- **Prompt** (`IntakeRouter::system()`, i pro „bez návrháře“): nový odstavec „What a tool takes is all it takes“: nikdy
+  neslibovat ani nežádat vstup, který `takes` zvoleného nástroje neuvádí; u kombinace, kterou neumí jeden nástroj,
+  platí dál „obrázek není práce pro člověka“, ale věta má říct, co nástroj umí a co ne, do `alternatives` patří
+  nástroje, které fotku berou (relief, coaster, charm, filament_art), nejlepší z nich jménem ve větě; otázky jen
+  takové, které zvolený nástroj využije.
+- **Katalog**: `relief` („Reliéf a litofanie z fotky“, veřejný nástroj `/tools/relief`) v `IntakeRouter::TOOLS`
+  chyběl, model ho nemohl nabídnout. Doplněn (bere fotku, 40–250 mm, 1 barva), klíčová náhrada zná „reliéf“,
+  „litofanie“, „lithophane“, „relieve“. Stránka nástroje dostane předanou fotku (`#relief-photo` má
+  `data-intake-photo`) a šířku (`#relief-w`); v prohlížeči neověřeno (lokálně není tabulka `intakes`).
+- **Klíčová náhrada** (`guess()`): nástroj zvolený bez věty modelu už nedostane větu návrháře, ale větu domu
+  `router.summary.tool` („Tohle umí náš nástroj :tool. Otevřete ho, velikost a barvy doladíte v náhledu.“) a když
+  slova jmenují i jiný nástroj, `router.summary.tool_also` („Hodit se může i: …“) + tyto nástroje v `alternatives`
+  (`alsoNamed()`). Pro toto přání: medaile, „Hodit se může i: Reliéf a litofanie z fotky“. Náhrada neumí říct, co
+  nástroj neumí; to je na modelu.
+- **Zlaté případy**: 30 → 32 (toto přání s fotkou i bez: `tool`, medallion nebo relief, s alternativami). Hájím obojí:
+  hlavní věc je medaile, ale jediný nástroj, který z fotky udělá reliéf, je relief.
+- **Skutečný model tu neběžel** (klíč není, kredit se neutrácí): pravidlo je ověřené jen testem nad textem promptu.
+  Po nasazení: `php artisan matplace:intake-cases --only=31,32` (dvě volání) a ostrá zkouška řídící.

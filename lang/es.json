@@ -2399,5 +2399,7 @@
     "router.hint.halloween.2": "Un colgante de murciélago",
     "router.hint.halloween.2.fill": "Un colgante de murciélago para la mochila, 5 cm, negro.",
     "router.hint.halloween.3": "Un letrero Cuidado, fantasmas",
-    "router.hint.halloween.3.fill": "Un letrero para la puerta Cuidado, aquí hay fantasmas, 15 cm, naranja y negro."
+    "router.hint.halloween.3.fill": "Un letrero para la puerta Cuidado, aquí hay fantasmas, 15 cm, naranja y negro.",
+    "router.summary.tool": "Esto lo hace nuestra herramienta :tool. Ábrala y ajuste el tamaño y los colores en la vista previa.",
+    "router.summary.tool_also": "También puede servir: :tools."
 }
