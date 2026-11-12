@@ -59,7 +59,7 @@ return [
     ],
     'og' => [
         'title' => '3D tisk na zakázku',
-        'line' => 'Nahrajte model nebo si ho vytvořte. Cenu vidíte hned, vytiskneme ho a pošleme.',
+        'line' => 'Napište, co chcete vyrobit, nebo přidejte fotku. Cenu vidíte předem, vytiskneme a pošleme.',
         'print_from' => 'Vytiskneme od :price',
         'print_it' => 'Vytiskneme a pošleme',
     ],

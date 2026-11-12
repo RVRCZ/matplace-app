@@ -12,6 +12,23 @@
 <a href="{{ route('admin.intake.index') }}" class="inline-flex min-h-11 items-center gap-1 text-sm text-slate-500 hover:text-ink"><x-icon name="arrow-left" class="h-4 w-4" />Rozcestník</a>
 <h1 class="text-2xl font-extrabold text-ink">Zadání z {{ $intake->created_at->format('j. n. Y H:i') }} <span class="text-base font-normal text-slate-500">· {{ $intake->locale }} · {{ ['photo' => 'fotka', 'file' => 'soubor', 'text' => 'text'][$intake->kind] ?? $intake->kind }}</span></h1>
 
+{{-- the rules against advertising (docs/AN.md §23.2): why it was held, and the way back; any other wish can be held by hand --}}
+@if($intake->status === 'spam')
+    <section class="mt-4 rounded-2xl border border-amber-300 bg-amber-50 p-4 text-sm" id="intake-spam">
+        <p class="font-bold text-ink">Zadrženo jako spam, modelu se neposlalo.</p>
+        <p class="mt-1 text-slate-600">Pravidla: {{ implode(', ', array_map(fn ($r) => \App\Domain\Intake\IntakeSpam::LABELS[$r] ?? $r, (array) ($intake->answer['spam']['rules'] ?? []))) ?: '—' }}
+            · bodů {{ (int) ($intake->answer['spam']['points'] ?? 0) }} · odesílatel dostal {{ ($intake->answer['spam']['reply'] ?? 'held') === 'price' ? 'odpověď o ceně' : 'neutrální odpověď' }}: „{{ $intake->summary }}“</p>
+        <form method="post" action="{{ route('admin.intake.spam', $intake) }}" class="mt-3">@csrf<input type="hidden" name="spam" value="0">
+            <button class="btn-secondary">Není to spam: vrátit{{ $intake->route === null && $intake->kind !== 'file' ? ' a nechat vyhodnotit' : '' }}</button>
+            @if($intake->route === null && $intake->kind !== 'file')<span class="ml-2 text-xs text-slate-500">Vyhodnocení je jedno placené volání modelu.</span>@endif
+        </form>
+    </section>
+@else
+    <form method="post" action="{{ route('admin.intake.spam', $intake) }}" class="mt-2 text-right">@csrf<input type="hidden" name="spam" value="1">
+        <button class="text-xs text-slate-500 underline hover:text-ink">Označit jako spam</button>
+    </form>
+@endif
+
 <div class="mt-4 grid gap-4 lg:grid-cols-[1fr_1.2fr]">
     <section class="rounded-2xl border border-slate-200 bg-white p-4">
         <h2 class="font-bold">Co přišlo</h2>
@@ -27,7 +44,7 @@
         <dl class="mt-3 grid grid-cols-2 gap-x-3 gap-y-1 text-xs text-slate-500">
             <dt>Účet</dt><dd>{{ $intake->user?->email ?? 'host' }}</dd>
             <dt>Token</dt><dd class="font-mono">{{ $intake->token }}</dd>
-            <dt>Stav</dt><dd>{{ ['new' => 'nové', 'opened' => 'nástroj otevřen', 'human' => 'u člověka', 'closed' => 'uzavřeno'][$intake->status] ?? $intake->status }}@if($intake->opened_at) · otevřeno {{ $intake->opened_at->format('j. n. H:i') }}@endif</dd>
+            <dt>Stav</dt><dd>{{ ['new' => 'nové', 'opened' => 'nástroj otevřen', 'human' => 'u člověka', 'closed' => 'uzavřeno', 'spam' => 'spam'][$intake->status] ?? $intake->status }}@if($intake->opened_at) · otevřeno {{ $intake->opened_at->format('j. n. H:i') }}@endif</dd>
         </dl>
     </section>
 

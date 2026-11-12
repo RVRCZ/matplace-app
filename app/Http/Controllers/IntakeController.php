@@ -5,8 +5,11 @@ namespace App\Http\Controllers;
 use App\Domain\Intake\IntakePage;
 use App\Domain\Intake\IntakeService;
 use App\Models\Intake;
+use App\Support\Bots;
+use App\Support\Track;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Http\Response;
 use Illuminate\Support\Facades\Storage;
 use Symfony\Component\HttpFoundation\BinaryFileResponse;
 
@@ -16,12 +19,31 @@ use Symfony\Component\HttpFoundation\BinaryFileResponse;
  */
 class IntakeController extends Controller
 {
+    /** What POST /intake/event may say; the event is `intake_<type>`. */
+    public const EVENTS = ['view', 'chip', 'photo', 'voice'];
+
     /** POST /intake: multipart photo | model | text (at least one). 201 with the decision, 422 with a sentence. */
     public function store(Request $request, IntakeService $service): JsonResponse
     {
         $intake = $service->create($request);
 
         return response()->json($service->describe($intake), 201);
+    }
+
+    /**
+     * POST /intake/event {type, code?}: what a visitor did on the first screen before sending (docs/AN.md §23.4):
+     * `view` the page was shown, `chip` an example was clicked (code = which), `photo` a picture was added, `voice`
+     * dictation was used. Numbers only; the staff's browsers and robots are left out by Track itself. Always 204.
+     */
+    public function event(Request $request): Response
+    {
+        $type = (string) $request->input('type');
+        $code = (string) $request->input('code');
+        if (in_array($type, self::EVENTS, true) && ! Bots::is($request)) {
+            Track::event('intake_'.$type, null, $type === 'chip' && preg_match('/^[a-z_]{1,24}\.[1-9]$/', $code) ? ['code' => $code] : [], 'intake');
+        }
+
+        return response()->noContent();
     }
 
     /** GET /intake/{token}/file: the picture for the tool's page (the normalised JPEG), only by the token, never indexed. */
@@ -44,6 +66,7 @@ class IntakeController extends Controller
     /** POST /intake/{token}/request {email, consent, name?, phone?}: a person takes it over. */
     public function request(Request $request, Intake $intake, IntakeService $service): JsonResponse
     {
+        abort_if($intake->status === Intake::STATUS_SPAM, 404);
         $data = $request->validate([
             'email' => ['required', 'email', 'max:190'],
             'consent' => ['accepted'],

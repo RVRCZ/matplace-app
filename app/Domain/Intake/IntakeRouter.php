@@ -92,7 +92,7 @@ final class IntakeRouter
         'earrings' => '/n[áa]u[šs]nic|\bearring|pendiente/u',
         'cutter' => '/vykrajov|cookie cutter|cortador/u',
         'filament_art' => '/\bobraz(u|em|y|ů|ech)?\b|\bmalb|malovan|\bpainting|\bcanvas\b|\bposter|plak[áa]t|na ze[ďd]\b|\bwall\b|\bcuadro\b|pintura|\bcartel\b/u',
-        'charm' => '/p[řr][íi]v[ěe]s|kresb|kresl|obr[áa]z|\blogo\b|pendant|\bcharm\b|drawing|colgante|dibujo/u',
+        'charm' => '/p[řr][íi]v[ěe]s|ozdob[auy]? na strom|\bornament|adorno (de|para el) [áa]rbol|kresb|kresl|obr[áa]z|\blogo\b|pendant|\bcharm\b|drawing|colgante|dibujo/u',
         'keychain' => '/kl[íi][čc]enk|kl[íi][čc]e\b|keychain|key ?ring|llavero/u',
         'text' => '/n[áa]pis|3d text|p[íi]smen|\bletters?\b|\bletras\b|\bhome\b|\blove\b/u',
         'sign' => '/cedulk|jmenovk|\bdve[řr]|\bsign\b|name ?(tag|plate)|\blabel\b|\bjm[ée]n[oa]\b|\bnombre\b|\bplaca\b|letrero|etiqueta/u',
@@ -250,7 +250,8 @@ final class IntakeRouter
         $summary = trim((string) ($summaries[$locale] ?? $summaries[Locales::DEFAULT] ?? $summaries['en'] ?? ''));
         if ($summary === '' || ($route === Intake::ROUTE_HUMAN && ($answer['route'] ?? null) !== Intake::ROUTE_HUMAN)) {
             // the assistant said a tool or a shape and the rules said a person: its sentence would promise the wrong thing
-            $summary = self::sentence($wantsShape ? 'router.summary.shape' : 'router.summary.fallback', $locale);
+            // without a photo the sentence does not speak of one (docs/AN.md §23.1: words alone are a wish too)
+            $summary = self::sentence(($wantsShape ? 'router.summary.shape' : 'router.summary.fallback').($hasPhoto ? '' : '_text'), $locale);
         }
 
         return [
@@ -293,6 +294,19 @@ final class IntakeRouter
             'route' => $hasPhoto && $t === '' ? Intake::ROUTE_SHAPE : Intake::ROUTE_HUMAN, 'params' => self::paramsFromWords($t), 'confidence' => 0.3, 'summary' => [],
             'alternatives' => $hasPhoto && $t === '' ? self::nearest($t, true) : [],
         ], $hasPhoto, $locale);
+    }
+
+    /** True when the words name something the router knows (any family of self::WORDS): a wish, whatever else it says. */
+    public static function knows(?string $text): bool
+    {
+        $t = mb_strtolower(trim((string) $text));
+        foreach (self::WORDS as $pattern) {
+            if ($t !== '' && preg_match($pattern, $t)) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     /**
@@ -367,7 +381,7 @@ final class IntakeRouter
     {
         return [
             'route' => Intake::ROUTE_HUMAN, 'tool_key' => null, 'params' => [], 'confidence' => 0.0,
-            'summary' => self::sentence('router.summary.fallback', $locale),
+            'summary' => self::sentence('router.summary.fallback'.($hasPhoto ? '' : '_text'), $locale),
             'answer' => ['route' => null, 'failed' => true, 'has_photo' => $hasPhoto, 'alternatives' => [], 'reason' => ''] + $why,
             'wants_shape' => false,
         ];

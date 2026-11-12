@@ -1,6 +1,7 @@
 {{--
-    Homepage for customers. The first screen is the router (TODO #78, docs/AN.md §22): a photo, a 3D file or words →
-    the assistant says which tool makes it, whether a person has to look at it, or the calculator takes the file.
+    Homepage for customers. The first screen asks "Co chcete vyrobit?" (docs/AN.md §23, the router of §22 behind it):
+    words first, a photo as an addition, a 3D file as a small link → the assistant says which tool makes it, whether
+    a person has to look at it, or the calculator takes the file.
     Under it the three ways it can go, the gifts made from a photo, the farm's photographed prints, the file's own
     entrance (the calculator's drop zone, which its scripts need on the page), then the page as it was: the five ways in,
     the tools people use most, the examples and the three steps. Everything here hides once a model is open.
@@ -16,12 +17,15 @@
     $christmas = \App\Domain\Intake\IntakePage::christmas();
     $gifts = \App\Domain\Intake\IntakePage::gifts(auth()->user(), (bool) ($config['generator'] ?? false));
     $prints = \App\Domain\Intake\IntakePage::prints(3);
+    // the examples under the field: the season's and the steady ones (config/home.php, /admin/intake/hints)
+    $hints = \App\Domain\Intake\IntakeHints::chips();
     $pickup = in_array('pickup', (array) app(\App\Domain\Farm\FarmSettings::class)->get('delivery_modes'), true);
     $mainFormats = strtoupper(implode(', ', array_intersect(['stl', '3mf', 'step', 'obj'], $config['formats']))) ?: $formats;
     $routerTexts = collect(['router.kind.photo', 'router.kind.file', 'router.need_input', 'router.error', 'router.too_many', 'router.sending', 'router.submit.hint', 'router.assistant',
         'router.tag.tool', 'router.tag.human', 'router.tag.shape', 'router.tag.file', 'router.act.open_tool', 'router.act.open_tool_text', 'router.act.rather_human', 'router.act.open_calc',
         'router.act.send_request', 'router.act.sending', 'router.act.without_designer', 'router.act.rerouting', 'router.questions', 'router.request.title', 'router.request.lead', 'router.request.consent', 'router.request.sent',
-        'router.request.need_consent', 'router.request.need_email', 'router.request.failed'])
+        'router.request.need_consent', 'router.request.need_email', 'router.request.failed', 'router.tag.held', 'router.tag.price', 'router.tag.design', 'router.example_nudge',
+        'router.mic', 'router.mic.on', 'router.mic.denied'])
         ->mapWithKeys(fn ($k) => [$k => __($k, ['hours' => ':hours', 'email' => ':email', 'tool' => ':tool'])])->all()
         + ['photo.too_big' => __('photo.too_big', ['mb' => ':mb']), 'auth.email' => __('auth.email')];
     $eyebrow = 'text-xs font-bold uppercase tracking-[0.14em] text-action';
@@ -29,65 +33,70 @@
 @endphp
 
 <section id="hero">
-    {{-- ── the router: the words on the left, the card on the right (one column on a phone, the card right under the title) ── --}}
-    <div class="grid gap-6 pt-2 lg:grid-cols-[1.05fr_1fr] lg:items-start lg:gap-10 lg:pt-8" id="router">
-        <div class="min-w-0 max-w-xl">
-            <p class="flex items-center gap-2 {{ $eyebrow }}"><span class="h-1.5 w-1.5 rounded-full bg-action" aria-hidden="true"></span>{{ __('router.eyebrow') }}</p>
-            @php $titleTag = empty($initial) ? 'h1' : 'p'; @endphp{{-- a calculation (/c/<code>) has the model's name as its h1 --}}
-            <{{ $titleTag }} class="mt-3 break-words text-[2.1rem] font-extrabold leading-[1.08] tracking-tight text-ink sm:text-5xl lg:text-[3.1rem]">{{ __('router.title') }}</{{ $titleTag }}>
-            <p class="mt-4 max-w-lg text-base leading-relaxed text-muted sm:text-lg">{{ __('router.lead') }}</p>
-            <ul class="mt-4 flex flex-wrap gap-x-4 gap-y-1.5 text-sm text-muted" aria-label="{{ __('router.trust.preview') }}">
-                @foreach(array_filter(['preview' => __('router.trust.preview'), 'no_signup' => __('router.trust.no_signup'), 'christmas' => $christmas ? __('router.trust.christmas', ['date' => $christmas]) : null]) as $k => $line)
-                    <li class="flex items-center gap-1.5" data-trust="{{ $k }}"><svg class="h-3.5 w-3.5 shrink-0 text-ok" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2.4" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M4 10.5l4 4 8-9"/></svg>{{ $line }}</li>
-                @endforeach
-            </ul>
-        </div>
+    {{-- ── the first screen (docs/AN.md §23.1): the question, the field for words, the examples, the one action; a photo is an addition, a 3D file a small link ── --}}
+    <div class="mx-auto max-w-2xl pt-1 sm:pt-6 lg:pt-10" id="router">
+        @php $titleTag = empty($initial) ? 'h1' : 'p'; @endphp{{-- a calculation (/c/<code>) has the model's name as its h1 --}}
+        <{{ $titleTag }} class="break-words text-center text-[1.85rem] font-extrabold leading-[1.1] tracking-tight text-ink sm:text-5xl">{{ __('router.title') }}</{{ $titleTag }}>
 
-        <form id="intake-form" class="card grid gap-4 p-4 shadow-sm sm:p-5" novalidate enctype="multipart/form-data" method="post" action="{{ route('intake.store') }}"
-              data-url="{{ route('intake.store') }}" data-max-mb="{{ \App\Domain\Intake\IntakeService::PHOTO_MB }}" data-i18n="{{ json_encode($routerTexts, JSON_UNESCAPED_UNICODE) }}">
+        <form id="intake-form" class="mt-3 grid gap-3 sm:mt-6" novalidate enctype="multipart/form-data" method="post" action="{{ route('intake.store') }}"
+              data-url="{{ route('intake.store') }}" data-event-url="{{ route('intake.event') }}" data-max-mb="{{ \App\Domain\Intake\IntakeService::PHOTO_MB }}" data-i18n="{{ json_encode($routerTexts, JSON_UNESCAPED_UNICODE) }}">
             @csrf
-            {{-- the photo or the file: one area, a preview with "remove" once something is picked --}}
-            <div id="intake-drop" class="rounded-2xl border-2 border-dashed border-action/60 bg-action-soft/60 p-4 text-center">
-                <div id="intake-empty">
-                    <p class="font-semibold text-ink">{{ __('router.drop.title') }}</p>
-                    <p class="text-sm text-muted">{{ __('router.drop.or_file', ['formats' => $mainFormats]) }}</p>
-                    <div class="mt-3 flex flex-wrap justify-center gap-2">
-                        <label for="intake-photo" class="btn-primary cursor-pointer gap-2"><x-icon name="camera" class="h-5 w-5" />{{ __('router.photo_button') }}</label>
-                        <label for="intake-model" class="btn-secondary cursor-pointer">{{ __('router.file_button') }}</label>
+            {{-- against advertising (IntakeSpam, §23.2): the stamp of this page, and a field no person sees or fills --}}
+            <input type="hidden" name="{{ \App\Domain\Intake\IntakeSpam::STAMP_FIELD }}" id="intake-started" value="{{ \App\Domain\Intake\IntakeSpam::stamp() }}">
+            <div class="absolute -left-[9999px] h-px w-px overflow-hidden" aria-hidden="true">
+                <label>Topic <input type="text" name="{{ \App\Domain\Intake\IntakeSpam::honeypot() }}" id="intake-trap" tabindex="-1" autocomplete="off" value=""></label>
+            </div>
+
+            {{-- the field first; the photo and the dictation sit in its own bottom row --}}
+            <div id="intake-box" class="rounded-2xl border-2 border-ink/60 bg-card shadow-sm transition focus-within:border-action">
+                <label class="sr-only" for="intake-text">{{ __('router.text_label') }}</label>
+                <textarea id="intake-text" name="text" maxlength="{{ \App\Domain\Intake\IntakeService::TEXT_MAX }}" rows="3" placeholder="{{ __('router.text_placeholder') }}"
+                          class="block min-h-[9.5rem] w-full resize-none sm:min-h-[7.5rem] rounded-t-2xl border-0 bg-transparent px-4 pb-1 pt-3 text-lg leading-relaxed text-ink placeholder:text-slate-400 focus:outline-none focus:ring-0"></textarea>
+                <div id="intake-preview" class="mx-3 mb-2 hidden items-center gap-3 rounded-xl bg-studio p-2 text-left">
+                    <img id="intake-thumb" src="" alt="" class="hidden h-14 w-14 shrink-0 rounded-lg border border-line object-cover">
+                    <div class="min-w-0 flex-1">
+                        <div id="intake-file-name" class="truncate text-sm font-semibold text-ink"></div>
+                        <div id="intake-file-kind" class="text-xs text-muted"></div>
                     </div>
+                    <button type="button" id="intake-clear" class="inline-flex min-h-11 items-center px-2 text-sm text-muted underline hover:text-ink">{{ __('router.remove') }}</button>
+                </div>
+                <div class="flex items-center gap-1 border-t border-line px-2 py-1.5" id="intake-tools">
                     {{-- no `capture`: a phone then offers the camera and the gallery both; with it Android and iOS open the camera alone --}}
+                    <label for="intake-photo" id="intake-photo-btn" title="{{ __('router.photo_title') }}" class="inline-flex min-h-11 cursor-pointer items-center gap-2 rounded-xl px-3 text-sm font-semibold text-ink hover:bg-studio"><x-icon name="camera" class="h-5 w-5" />{{ __('router.photo_button') }}</label>
+                    {{-- dictation: shown by the script only where the browser can do it (SpeechRecognition) --}}
+                    <button type="button" id="intake-mic" aria-pressed="false" class="hidden min-h-11 items-center gap-2 rounded-xl px-3 text-sm font-semibold text-ink hover:bg-studio">
+                        <svg class="h-5 w-5 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0014 0M12 18v3"/></svg>
+                        <span data-mic-label>{{ __('router.mic') }}</span>
+                    </button>
                     <input id="intake-photo" name="photo" type="file" accept="image/*,.heic,.heif" class="sr-only">
                     <input id="intake-model" name="model" type="file" accept="{{ implode(',', array_map(fn ($f) => '.'.$f, $config['formats'])) }}" class="sr-only">
-                    <p class="mt-3 text-xs text-muted">{{ __('router.privacy') }}</p>
-                </div>
-                <div id="intake-preview" class="hidden items-center gap-3 text-left">
-                    <img id="intake-thumb" src="" alt="" class="hidden h-[72px] w-[72px] shrink-0 rounded-xl border border-line object-cover">
-                    <div class="min-w-0 flex-1">
-                        <div id="intake-file-name" class="break-all font-semibold text-ink"></div>
-                        <div id="intake-file-kind" class="text-sm text-muted"></div>
-                        <button type="button" id="intake-clear" class="mt-1 inline-flex min-h-11 items-center text-sm text-muted underline hover:text-ink">{{ __('router.remove') }}</button>
-                    </div>
                 </div>
             </div>
 
-            <label class="block text-sm text-muted" for="intake-text">{{ __('router.text_label') }}
-                <textarea id="intake-text" name="text" maxlength="{{ \App\Domain\Intake\IntakeService::TEXT_MAX }}" rows="4" placeholder="{{ __('router.text_placeholder') }}" class="field mt-1 min-h-28 resize-y leading-relaxed"></textarea>
-            </label>
-
-            <div class="flex flex-wrap gap-2" aria-label="{{ __('router.examples') }}">
-                @foreach(['bust', 'pet', 'charm', 'part'] as $chip)
-                    <button type="button" class="chip min-h-11 hover:border-action hover:text-action-dark" data-fill="{{ __('router.chip.'.$chip.'.fill') }}">{{ __('router.chip.'.$chip) }}</button>
+            {{-- the examples (IntakeHints, §23.3): the season's first, then the steady ones; a click writes the wish into the field, nothing is sent.
+                 On a phone two rows that scroll sideways, so the action stays on the first screen --}}
+            <div id="intake-hints" class="-mx-4 grid auto-cols-max grid-flow-col grid-rows-2 gap-2 overflow-x-auto px-4 pb-1 sm:mx-0 sm:flex sm:flex-wrap sm:justify-center sm:overflow-visible sm:px-0" aria-label="{{ __('router.examples') }}">
+                @foreach($hints as $chip)
+                    <button type="button" class="chip min-h-11 whitespace-nowrap hover:border-action hover:text-action-dark {{ $chip['seasonal'] ? 'border-action/70' : '' }}" data-hint="{{ $chip['code'] }}" data-fill="{{ $chip['fill'] }}" @if($chip['seasonal']) data-seasonal @endif>{{ $chip['label'] }}</button>
                 @endforeach
             </div>
 
-            <div class="flex flex-col items-center gap-2 text-center">
+            <div class="flex flex-col items-center gap-1 text-center">
                 {{-- the one orange action of the screen: at least 60 px tall, the whole width on a phone --}}
-                <button type="submit" id="intake-submit" class="btn-primary min-h-[60px] w-full rounded-2xl px-8 text-lg shadow-sm lg:w-auto lg:min-w-[320px]">{{ __('router.submit') }}</button>
+                <button type="submit" id="intake-submit" class="btn-primary min-h-[60px] w-full rounded-2xl px-8 text-lg shadow-sm sm:w-auto sm:min-w-[320px]">{{ __('router.submit') }}</button>
+                <label for="intake-model" id="intake-file-link" class="inline-flex min-h-11 cursor-pointer items-center text-sm font-medium text-muted underline underline-offset-4 hover:text-ink">{{ __('router.file_link') }}</label>
                 <p id="intake-hint" class="max-w-md text-sm text-muted" aria-live="polite">{{ __('router.submit.hint') }}</p>
             </div>
             <p id="intake-error" class="note-error hidden text-sm" role="alert"></p>
             <div id="intake-assist" class="hidden border-t border-line pt-4" aria-live="polite"></div>
         </form>
+
+        <ul class="mt-4 flex flex-wrap justify-center gap-x-4 gap-y-1.5 text-sm text-muted" aria-label="{{ __('router.trust.preview') }}">
+            @foreach(array_filter(['preview' => __('router.trust.preview'), 'no_signup' => __('router.trust.no_signup'), 'christmas' => $christmas ? __('router.trust.christmas', ['date' => $christmas]) : null]) as $k => $line)
+                <li class="flex items-center gap-1.5" data-trust="{{ $k }}"><svg class="h-3.5 w-3.5 shrink-0 text-ok" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2.4" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M4 10.5l4 4 8-9"/></svg>{{ $line }}</li>
+            @endforeach
+        </ul>
+        <p class="mt-2 text-center text-xs text-muted">{{ __('router.privacy') }}</p>
     </div>
 
     {{-- ── what happens after sending: the three ways it can go ── --}}

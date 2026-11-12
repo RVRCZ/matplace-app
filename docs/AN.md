@@ -1100,3 +1100,210 @@ AuditEventsTest 5/94, ToolPageTest 25/4710, FilamentArtTest 7/145, LandingPagesT
 člověk + `wants_shape` + alternativy + tlačítko), nebo ji ve fázi 2 schovat úplně za nástroje. Text tlačítka („Zkusit
 hned bez návrháře“) a věty `router.summary.forced`, `router.question.*`. Po nasazení: první skutečná rozhodnutí
 s novým katalogem v `/admin/intake` („Proč“), `matplace:intake-cases` nad 30 případy s klíčem.
+
+## 23. Úvodní strana „Co chcete vyrobit?“: text první, ochrana proti spamu, sezonní nápověda
+
+Zadání `docs/prompts/uvodni-strana-co-chcete-vyrobit.md` (Roman 12. 11. 2026: Stella chtěla „čelenku s rohy na
+Mikuláše“ bez fotky; z 13 přání cizích návštěvníků 9.–12. 11. bylo 8 spam a 3 beze změny odeslané příklady). Větev
+`feature/home-what-to-make` z `origin/main` 328f7b25, worktree `C:/matplace-edit-wt`, 12. 11. 2026. Nic nenasazeno,
+nic nemergováno. **Migrace žádná**: stav `spam` se vejde do `intakes.status` (varchar 16), důvod zadržení je
+v `intakes.answer.spam`, úpravy událostí v tabulce `farm_settings` pod klíčem `home.hints`. Skutečný model tu nikdo
+nevolal (ve worktree není klíč): vše s `FakeAssistant` a s klíčovou náhradou.
+
+### 23.1 Stránka
+
+- `resources/views/calculator/home.blade.php`, první obrazovka (`#router`, jeden sloupec uprostřed, max. 672 px):
+  H1 „Co chcete vyrobit?“ (`router.title`; en „What would you like to make?“, es „¿Qué quiere fabricar?“), pod ním
+  rámeček `#intake-box` s polem `#intake-text` (velké písmo, na telefonu 152 px vysoké, aby se vešla celá nápověda)
+  a ve spodním řádku téhož rámečku „Přidat fotku“ (`label#intake-photo-btn` → `#intake-photo`, dál bez `capture`:
+  telefon nabídne foťák i galerii) a „Diktovat“ (`#intake-mic`, v HTML skryté, ukáže ho až skript). Vybraná fotka
+  nebo soubor se ukáže v rámečku pod textem (`#intake-preview` s náhledem a „odebrat“). Pod rámečkem štítky
+  `#intake-hints` (§23.3), tlačítko `#intake-submit` „Vytvořit“ (60 px, na telefonu přes celou šířku), malý odkaz
+  `#intake-file-link` „Mám hotový 3D soubor“ (`label` pro `#intake-model`; nahrání souboru jde dál dnešní cestou do
+  kalkulačky), věta „Zdarma a bez registrace…“, řádek důvěry a věta o smazání fotky. Původní levý sloupec (eyebrow,
+  podnadpis) a plocha pro fotku `#intake-drop` jsou pryč; vše pod tím (tři cesty, dárky, Vánoce, vlastní model, pět
+  cest, nástroje, kroky) zůstalo ve stejném pořadí níž. Přetažení souboru na formulář funguje dál.
+- Štítky na telefonu: dva řádky, které se posouvají do strany (`grid-rows-2 grid-flow-col overflow-x-auto`), od
+  640 px zalomený řádek uprostřed. Důvod: šest štítků pod sebou by tlačítko vytlačilo z první obrazovky.
+  `scripts/review_round2.mjs --pages=home --widths=390,1280 --langs=cs,en,es`: H1 i tlačítko na první obrazovce ve
+  všech šesti kombinacích, `hScroll: false`, bez chyb konzole. Snímky `docs/img/home-what/home-{390,1280}-{cs,en,es}-1.webp`
+  a `home-390-cs-chip.webp` (po kliknutí na štítek a prvním stisku „Vytvořit“).
+- Diktování (`site/intake.ts dictation()`): `SpeechRecognition` / `webkitSpeechRecognition` (Chrome, Edge, Safari;
+  Firefox ho nemá, tam se tlačítko neukáže). Stisk začne poslouchat v jazyce stránky (cs-CZ, en-US, es-ES), slyšené
+  se připisuje za to, co v poli už je, další stisk nebo ticho skončí; odmítnutý mikrofon → `router.mic.denied`.
+  `Permissions-Policy: microphone=(self)` platí od Shorts (#81). V Chrome rozpoznávání běží na serverech Googlu:
+  na skutečném telefonu neověřeno.
+- Štítek po kliknutí jen vepíše vzorové přání do pole. Když ho návštěvník pošle beze změny a bez fotky, první stisk
+  „Vytvořit“ nic neodešle a pod tlačítkem řekne „To je náš příklad. Upravte ho podle sebe (jméno, velikost, barvy),
+  nebo ho odešlete znovu tak, jak je.“; druhý stisk odešle (nad rámec zadání, kvůli třem odeslaným příkladům).
+- Přání bez fotky, které neumí žádný nástroj: cesty se nemění (`human`, případně `wants_shape`), ale věta domu už
+  nemluví o fotce, kterou nikdo neposlal: `router.summary.fallback_text` („Tohle si raději prohlédne náš 3D návrhář.
+  Nechte nám e-mail, ozveme se do :hours hodin s návrhem a cenou. Fotka nebo náčrt pomůže, nutná není.“)
+  a `router.summary.shape_text`; štítek odpovědi „Navrhne náš návrhář“ místo „Tvar podle fotky“. Pod odpovědí je
+  pole pro e-mail jako dosud. Model, který sám řekne `human`, si svou větu nechává.
+
+### 23.2 Ochrana proti spamu (`App\Domain\Intake\IntakeSpam`, `config/home.php intake.spam`)
+
+Vše běží v `IntakeService::create()` po uložení řádku a **před** `IntakeRouter::route()`: co pravidla zadrží, dostane
+`status = spam`, `route` zůstane prázdná, `cost_czk` prázdné, v `answer.spam` jsou `rules`, `points`, `reply`, `at`;
+událost `intake_spam {kind, code = první pravidlo}` místo `intake_submitted` (ta by potvrdila návštěvu jako lidskou).
+Odesílatel dostane 201 s `held` a větou `router.held` („Děkujeme, zprávu jsme přijali. Pokud jde o přání k výrobě,
+popište prosím, co má vzniknout…“), bez nástroje, bez pole pro e-mail, bez „bez návrháře“; token zadrženého přání
+neotevře `/request` (404) ani `/reroute` (422).
+
+| pravidlo | co hlídá | váha |
+|---|---|---|
+| `honeypot` | neviditelné pole `topic` (mimo obrazovku, `tabindex=-1`, `aria-hidden`) je vyplněné | zadrží samo |
+| `no_stamp` | chybí nebo nesedí razítko stránky `started` (čas vykreslení + HMAC klíčem aplikace); posílá ho jen skript stránky, holý POST formuláře ho nemá | zadrží samo (`require_stamp`) |
+| `too_fast` | od vykreslení stránky uběhlo méně než `min_seconds` (3 s) | zadrží samo |
+| `markup` | HTML značka, `href=`, `[url=…]` | 3 |
+| `links` / `link` | dva a více odkazů / jeden odkaz mimo `link_hosts` (Printables, Thingiverse, MakerWorld, Thangs, Cults3D, MyMiniFactory, YouTube, matplace) | 3 / 2 |
+| `strong` | fráze, kterou říká jen reklama (`fantastic post`, `writer for your`, `improve your posture`, `rent a car`, `seo`, `backlink`, `click here`…) jako celá slova | 3 |
+| `weak` | slova, která reklama říká často (`blog`, `your website`, `we offer`, `free shipping`, `discount`, `best price`…) | 1 za každé, nejvýš 2 |
+| `script` | víc než polovina písmen je v jiném písmu než `scripts` (Latin) a není fotka | 3 |
+| `language` | aspoň 4 slova, žádná číslice, žádné slovo z `known_words` (malá slova cs, sk, en, es, de, pl) ani slovo, které zná rozcestník (`IntakeRouter::knows`), a není fotka | 3 |
+| `long` | delší než 600 znaků bez fotky | 1 |
+
+Zadrží `threshold` = 3 body. Text u 3D souboru se nečte (je to poznámka pro kalkulačku, model se nevolá), past
+a razítko platí i tam. Limit počtu: `throttle:intake` = 5 za hodinu na relaci i na IP a nově 20 za den na IP
+(`intake.limits`), zadržená přání se do limitu počítají.
+
+**„Chtěl jsem znát vaši cenu“** (`price_only`): krátký text (do 12 slov, bez číslice, bez fotky), který obsahuje slovo
+o ceně a nejmenuje nic, co rozcestník zná. Není to reklama, ale model nemá co rozhodnout: přání se uloží jako
+zadržené (pravidlo `price_only`), model se nevolá a odesílatel místo neutrální věty dostane odpověď o ceně
+(`router.price_only`: „Cena záleží na tom, co má vzniknout… Napište, co chcete vyrobit, a cenu uvidíte předem…
+Máte hotový 3D soubor? Nahrajte ho…“). Skutečný návštěvník tak dostane, na co se ptal, a může napsat přání; robot nic
+nestojí. Dotaz na cenu, který jmenuje věc („Kolik stojí busta z fotky 12 cm?“), jde modelu. Islandská a maďarská
+verze téže věty padají na pravidlo `language` a dostanou neutrální větu.
+
+**Čísla** (test `HomeWhatToMakeTest::test_the_rules_hold…`, vzorky `tests/fixtures/intake/spam.json`): z 10 vzorků
+podle produkčních typů 9.–12. 11. zadrženo 10 (9 neutrální věta, 1 odpověď o ceně); doslova jsem měl jen věty citované
+v zadání, odstavec půjčovny aut, pokračování reklamy na držení těla a oba arabské odstavce jsou dopsané podle popisu
+typu. Tři další vymyšlené reklamy (dva odkazy, `[url]` s fotkou, azbuka) zadrženy také. Poctivé: 4 z produkce („Busta
+mého táty…“, „Figurka našeho psa…“ s fotkou, „A broken wheel…“ s fotkou, „mia“) a Stellina čelenka prošly všechny; 30
+zlatých případů rozcestníku prošlo 30; 110 příkladů ze štítků (všechny události × jazyky) prošlo 110; ze 14 dalších
+vymyšlených poctivých textů (odkaz na Printables, odkaz na e-shop, slovensky, německy, polsky, arabsky s fotkou, dotaz
+na cenu věci…) prošlo 12, jeden dotaz „Dobrý den, chtěl bych znát cenu.“ dostal odpověď o ceně (záměr) a **jeden je zadržen
+neprávem**: ukrajinsky psané přání azbukou bez fotky („Потрібна фігурка собаки 10 см“). To je cena pravidla „cizí
+písmo bez fotky“ ze zadání; s fotkou projde. Viz otázky.
+
+**Administrace** (`/admin/intake`): oba pohledy („Poptávky člověku“, „Všechna zadání“) spam neukazují; přepínač
+„Ukázat i spam (N)“ ho přidá (šedé řádky s důvodem). Detail zadrženého: proč (pravidla, body, co dostal odesílatel)
+a tlačítko „Není to spam: vrátit a nechat vyhodnotit“ → stav `new`, jedno placené volání modelu, v `answer.released`
+zůstane, co ho zadrželo. Opačně „Označit jako spam“ u každého jiného zadání (pravidlo `manual`; rozhodnutí zůstane,
+vrácení už model nevolá).
+
+**Kdyby pravidla nestačila, další stupeň** (nic z toho není hotové): (1) nechat model v téže odpovědi říct `spam:
+true` (bez dalšího volání, jen pole ve schématu; takové přání pak nepůjde do poptávek člověku), (2) neviditelná
+kontrola prohlížeče Cloudflare Turnstile (bez obrázků, ale třetí strana a souhlas), (3) přísnější limit pro relace
+bez potvrzené návštěvy (`meta.js`).
+
+Slabá místa, o kterých vím: záložka otevřená přes nasazení pošle formulář starým skriptem bez razítka → zadrženo
+(`no_stamp`), odesílatel dostane neutrální větu; správce to vrátí. Reklama psaná latinkou, bez odkazu a bez známé
+fráze projde k modelu (0,25 Kč) a skončí u člověka.
+
+### 23.3 Sezonní nápověda (`App\Domain\Intake\IntakeHints`, `config/home.php intake.hints`)
+
+Štítek = krátký název + vzorové přání (`data-fill`), kód `<událost>.<n>` (`data-hint`) pro měření. Ukáže se `total`
+= 6: nejvýš `seasonal` = 3 z událostí, jejichž okno je dnes v jazyce stránky otevřené (nejdřív ta, která končí
+nejdřív, od každé jeden příklad, pak druhé), zbytek stálé (`always`): nejdřív „Stálé příklady“ (busta, pes,
+náhradní díl, cedulka), pak po jednom z narozenin a svatby. Bez otevřené události jen stálé. Okno = od `lead` dní
+před dnem události do `stop` dní před ním (výroba a doprava), den je `MM-DD`, `easter`, nebo `sunday:N:M` (N-tá neděle
+měsíce M), jeden pro všechny jazyky, nebo po jazycích; jazyk, který den nemá, událost nenabízí. Vánoce končí dnem
+z nastavení farmy `christmas_deadline`, když je nastavený. `:year` v textu = rok události (+ `year_offset`).
+
+| událost | jazyky | den | nabízí se (nejbližší) | příklady (cs štítky) → kam vedou |
+|---|---|---|---|---|
+| Stálé příklady | cs en es | celý rok | | Busta z fotky → figure · Figurka našeho psa → pet · Náhradní díl → člověk · Cedulka se jménem → sign |
+| Narozeniny | cs en es | celý rok | | Zápich do dortu → topper · Klíčenka se jménem → keychain |
+| Svatba | cs en es | celý rok | | Zápich na svatební dort → topper · Jmenovky na svatební stůl → sign |
+| Mikuláš | cs | 5. 12. | 5. 11. – 1. 12. 2026 | Čelenka s rohy na Mikuláše → člověk · Přívěsek čert a anděl → charm · Jmenovka na balíček → sign |
+| Vánoce | cs (24. 12.), en es (25. 12.) | | 4. 11. (en es 5. 11.) – 15. 12. 2026 (nastavení farmy; bez něj cs 15. 12., en es 16. 12.) | Ozdoba na stromek se jménem → charm · Podtácky s rodinnou fotkou → coaster · Vykrajovátko na cukroví → cutter · 3D mapa našeho města → map |
+| Silvestr | cs en es | 31. 12. | 1. 12. – 27. 12. 2026 | Nápis 2027 na stůl → text · Zápich do dortu na Nový rok → topper |
+| Tři králové | es | 6. 1. | 1. 12. 2026 – 1. 1. 2027 | Un llavero con nombre → keychain · Una figura de nuestra mascota → pet |
+| Valentýn | cs en es | 14. 2. | 10. 1. – 10. 2. 2027 | Přívěsek srdce se jmény → charm · Nápis LOVE na poličku → text · Podtácek s naší fotkou → coaster |
+| Velikonoce | cs en es | neděle (28. 3. 2027) | 21. 2. – 23. 3. 2027 | Vykrajovátko zajíček → cutter · Jmenovka na košík → sign · Přívěsek kuřátko → charm |
+| Den matek | cs en 2. neděle května (9. 5. 2027), es 1. neděle (2. 5.) | | cs en 9. 4. – 4. 5., es 2. 4. – 27. 4. 2027 | Přívěsek z dětské kresby → charm · Nápis MAMINKA na poličku → text · Podtácek s fotkou dětí → coaster |
+| Den otců | cs en 3. neděle června (20. 6. 2027), es 19. 3. | | cs en 21. 5. – 15. 6., es 17. 2. – 14. 3. 2027 | Klíčenka pro tatínka → keychain · Medaile pro tatínka → medallion · Podtácek pod pivo se jménem → coaster |
+| Konec školního roku | cs 30. 6., en es 20. 6. | | cs 26. 5. – 25. 6., en es 16. 5. – 15. 6. 2027 | Medaile za vysvědčení → medallion · Cedulka pro paní učitelku → sign · Přívěsek s logem třídy → charm |
+| Začátek školy | cs en 1. 9., es 10. 9. | | cs en 1. 8. – 29. 8., es 10. 8. – 7. 9. 2027 | Jmenovka na aktovku → sign · Klíčenka ke skříňce → keychain · Zápich do dortu pro prvňáčka → topper |
+| Halloween a Dušičky | cs en es | 31. 10. | 26. 9. – 27. 10. 2027 | Vykrajovátko dýně → cutter · Přívěsek netopýr → charm · Cedulka Pozor, straší → sign |
+
+Dnes (12. 11. 2026) tedy cs: Čelenka s rohy na Mikuláše · Ozdoba na stromek se jménem · Přívěsek čert a anděl · Busta
+z fotky · Figurka našeho psa · Náhradní díl; en a es: tři vánoční + tytéž tři stálé. Texty všech příkladů ve třech
+jazycích: `lang/src/home_what.json` (`router.hint.<událost>.<n>` a `.fill`).
+
+**Kam příklady vedou.** `config/home.php` má u každého příkladu očekávanou cestu (`examples`). Ověřeno je jen
+klíčovou náhradou (`IntakeRouter::guess`, tedy to, co by se stalo bez modelu): `php artisan matplace:intake-cases
+--hints --keywords` → 110 ze 110 podle očekávání, a totéž drží test. **Skutečným modelem neověřeno** (klíč tu není
+a kredit se neutrácí): `php artisan matplace:intake-cases --hints` požene všech 110 příkladů přes model (asi 110
+volání ≈ 28 Kč), s `--only` jen vybrané. Jediný příklad, který úmyslně končí u člověka mimo náhradní díl, je čelenka
+s rohy (Stellino přání): žádný nástroj ji neumí, dostane větu §23.1 a pole pro e-mail. Kvůli ozdobě na stromek zná
+klíčová náhrada nově „ozdoba na strom…“, `ornament`, `adorno de/para el árbol` → charm; prompt modelu jsem neměnil.
+
+**Administrace** `/admin/intake/hints` (odkaz „Příklady pod polem“ na `/admin/intake`): nahoře co je dnes na hlavní
+straně ve třech jazycích; u každé události zaškrtávátko (vypnout), „nabízet od / do“ (den.měsíc., každý rok; prázdné
+= podle kalendáře; správcovo „do“ má přednost i před termínem farmy) a pro každý jazyk pole s řádky `Štítek |
+Vzorové přání` (nejvýš 4; prázdné pole vrátí texty ze slovníku). Uloží se jen to, co se liší od konfigurace
+(`farm_settings`, klíč `home.hints`), takže pozdější změna slovníku se projeví u všeho, co správce nepřepsal. Jazyky
+události a pravidlo dne (pohyblivé svátky) jsou v konfiguraci, ne v administraci. Přepsaný příklad si správce musí
+vyzkoušet sám (stránka to říká).
+
+### 23.4 Měření
+
+- Prohlížeč hlásí `POST /intake/event {type, code}` (`throttle:60,1`, vždy 204): `intake_view` (první obrazovka
+  ukázána skriptem; ne když se stránka otevřela s `?open=` do kalkulačky), `intake_chip {code: mikulas.1}` (každé
+  kliknutí), `intake_photo` (první přidaná fotka), `intake_voice` (první použití diktování). Podmět `intake`, do
+  `meta` jde jen kód tvaru `<událost>.<číslo>`.
+- Odeslání: `intake_submitted` má nově `code` = `text` | `text_photo` | `photo` | `file` a u přání ze štítku
+  `hint` (který) a `edited` (true = upraveno, false = posláno tak, jak bylo); `Track::META` + `hint`, `edited`.
+  Zadržené: `intake_spam {kind, code}` (kód = první pravidlo, `price_only` u dotazu na cenu).
+- Provozní relace: vše jde přes `Track::event`, takže prohlížeč, ze kterého se kdy přihlásil správce
+  (`anonymous_sessions.staff`), a naše testovací běhy (`mp_test`) se nepočítají; roboti podle user-agenta také ne.
+- Za měsíc: `Event::where('type', 'intake_submitted')` po `meta->code` řekne, čím lidé začínají; `intake_chip` po
+  `meta->code`, které štítky táhnou; `intake_view` → `intake_submitted` je konverze první obrazovky. Do trychtýře
+  `/admin/stats` jsem nové události nepřidával (cesta „Rozcestník“ začíná návštěvou jako dosud).
+
+### 23.5 Testy
+
+- Nový `HomeWhatToMakeTest` (12 testů): titulek, popis, og a strukturovaná data ve třech jazycích (§23.6); pořadí a přítomnost prvků první obrazovky ve třech jazycích (H1, pole, fotka
+  a diktování v rámečku pole, štítky, tlačítko, odkaz na soubor, zbytek níž; razítko a past ve formuláři); štítky podle
+  pevného data a jazyka (12. 11., 2. 12., 1. 1., 15. 7., pohyblivé svátky, termín farmy); každý příklad někam vede
+  a není spam; přání bez fotky bez nástroje → poctivá věta a e-mail; úprava událostí v administraci (vypnout, data,
+  texty, chybný řádek, návrat k výchozím); pravidla nad vzorky; spam se uloží a model se nevolá (past, rychlost,
+  razítko, cena); administrace spam skrývá a umí ho vrátit; limity z konfigurace; měřené události; provozní relace.
+- Upraveno: `IntakeTest`, `IntakeRerouteTest` (posílají bez stránky → `require_stamp` vypnuté, pravidla nad textem
+  běží dál; nová pole události; věta bez fotky), `HomeRouterPageTest` (příklad ze štítku), `CalculationFlowTest`
+  (nový nadpis).
+
+### 23.6 Titulek, popis a strukturovaná data (dodatek řídící 12. 11. 2026)
+
+Titulek hlavní strany říkal „Cena 3D tisku online: kalkulačka z vašeho modelu“, obsah mluví o výrobě z fotky nebo
+popisu. Nově (`lang/{cs,en,es}/tools_seo/calc.php`, `title` + „ · matplace“, délky v závorce):
+
+- cs (58): „3D tisk na zakázku: dárek z fotky, díl z popisu · matplace“; popis (148): „Napište, co chcete vyrobit, nebo
+  přidejte fotku. Výroba podle fotky nebo popisu: busta, figurka, dárek se jménem i náhradní díl. Cenu vidíte předem.“
+- en (59): „Custom 3D printing from a photo or a description · matplace“; popis (150): „Tell us what you want made, or
+  add a photo. Custom 3D prints from a photo or a description: busts, figurines, name gifts, spare parts. Price up front.“
+- es (58): „Impresión 3D a medida desde una foto o un texto · matplace“; popis (149): „Escriba qué quiere fabricar o
+  añada una foto. Impresión 3D a medida: bustos, figuras, regalos con nombre y piezas de repuesto. Precio antes de pagar.“
+
+`og:title` a `og:description` jdou z téhož (layout), takže sedí samy. Obrázek náhledu odkazu hlavní strany je nově
+karta webu `/og/site/home.png` („3D tisk na zakázku“ + nová věta `site.og.line` „Napište, co chcete vyrobit, nebo
+přidejte fotku. Cenu vidíte předem, vytiskneme a pošleme.“) místo karty nástroje s nadpisem „Cena ze souboru“.
+Strukturovaná data: `WebSite` má nově `description` = popis stránky; `HowTo` zůstává návodem kalkulačky (kroky jsou
+o nahrání souboru a ta část je na stránce níž) a má vlastní větu `howto_description` (dřívější popis), aby neříkal
+něco jiného než své kroky; `FAQPage` a `Organization` beze změny. H2 a texty části o kalkulačce níž na stránce (`h1`,
+`intro`, `steps`, `faq` v `calc.php`) jsem neměnil. Položka menu „Cena ze souboru“ zůstává.
+
+### 23.7 Co rozhodne Roman
+
+- Azbuka: pustit ji k modelu (`intake.spam.scripts` + `Cyrillic`)? Ukrajinsky psané přání bez fotky se dnes zadrží;
+  cenou by byla ruská reklama u modelu (0,25 Kč kus).
+- `min_seconds` 3 s a „žádné razítko = spam“: nechat, nebo po nasazení první den jen značit a nezadržovat?
+- Dotaz jen na cenu: odpověď o ceně bez modelu (dnes), nebo ho posílat modelu.
+- Upozornění „To je náš příklad…“ před odesláním nezměněného příkladu: nechat?
+- Texty příkladů a data oken (tabulka §23.3); en/es Den matek, Den otců a školní data jsou odhad pro
+  „obecnou“ angličtinu a Španělsko.
+- Tlačítko „bez návrháře“ u přání bez fotky (čelenka) dnes vynutí cedulku se jménem; schovat ho tam?
+- Věta u pole pro e-mail a souhlas mluví o „fotce a popisu“ i bez fotky (texty 1. kola, neměnil jsem).

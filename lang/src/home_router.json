@@ -5,9 +5,9 @@
     "Impresión 3D a medida, Praga"
   ],
   "router.title": [
-    "Z fotky vyrobíme dárek. Z nápadu věc.",
-    "A gift from your photo. An object from your idea.",
-    "De una foto, un regalo. De una idea, un objeto."
+    "Co chcete vyrobit?",
+    "What would you like to make?",
+    "¿Qué quiere fabricar?"
   ],
   "router.lead": [
     "Busta z fotky, figurka vašeho psa, přívěsek z dětské kresby, nebo náhradní díl podle popisu. Napište, co má vzniknout, a my navrhneme jak a za kolik.",
@@ -40,9 +40,9 @@
     "o un archivo 3D: :formats"
   ],
   "router.photo_button": [
-    "Vyfotit nebo vybrat fotku",
-    "Take or choose a photo",
-    "Hacer o elegir una foto"
+    "Přidat fotku",
+    "Add a photo",
+    "Añadir foto"
   ],
   "router.file_button": [
     "Nahrát 3D soubor",
@@ -70,19 +70,19 @@
     "quitar"
   ],
   "router.text_label": [
-    "Co z toho má být? Pro koho, jak velké, jaké barvy.",
-    "What should it become? For whom, how big, which colours.",
-    "¿Qué debe ser? Para quién, de qué tamaño, qué colores."
+    "Popište, co chcete vyrobit",
+    "Describe what you would like to make",
+    "Describa qué quiere fabricar"
   ],
   "router.text_placeholder": [
-    "Např.: Busta našeho dědy z téhle fotky, asi 12 cm, jako dárek k Vánocům. Nebo: Ulomené kolečko z koše myčky Bosch, průměr 3 cm, potřebuji 4 kusy.",
-    "E.g.: A bust of our grandpa from this photo, about 12 cm, as a Christmas gift. Or: A broken wheel from a Bosch dishwasher basket, 3 cm across, I need 4 pieces.",
-    "P. ej.: Un busto de nuestro abuelo de esta foto, unos 12 cm, como regalo de Navidad. O: Una ruedecilla rota del cesto del lavavajillas Bosch, 3 cm de diámetro, necesito 4 piezas."
+    "Napište to svými slovy: co má vzniknout, pro koho, jak velké a v jakých barvách. Fotka pomůže, nutná není.",
+    "Say it in your own words: what it should be, for whom, how big and in which colours. A photo helps but is not needed.",
+    "Dígalo con sus palabras: qué debe ser, para quién, de qué tamaño y en qué colores. Una foto ayuda, pero no hace falta."
   ],
   "router.examples": [
-    "Příklady",
-    "Examples",
-    "Ejemplos"
+    "Příklady přání: klepnutím se vepíšou do pole",
+    "Example wishes: a tap writes one into the field",
+    "Ejemplos de deseos: un toque lo escribe en el campo"
   ],
   "router.chip.bust": [
     "Busta z fotky",

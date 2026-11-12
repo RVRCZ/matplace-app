@@ -28,7 +28,7 @@ class HomeRouterPageTest extends TestCase
                 $this->assertStringContainsString($needle, $html, "$lang: $needle");
             }
             $this->assertStringContainsString(e(__('router.submit', [], $lang)), $html, $lang);
-            $this->assertStringContainsString(e(__('router.chip.part.fill', [], $lang)), $html, $lang);
+            $this->assertStringContainsString(e(__('router.hint.steady.3.fill', [], $lang)), $html, $lang);
             $this->assertStringContainsString(e(__('router.paths.human.text', ['hours' => 24], $lang)), $html, "$lang: the reply time of the farm is in the text");
             foreach (IntakePage::GIFTS as $gift) {
                 $this->assertStringContainsString('data-gift="'.$gift.'"', $html, "$lang: $gift");
