@@ -59,7 +59,7 @@ return [
     ],
     'og' => [
         'title' => '3D printing to order',
-        'line' => 'Upload a model or make one. You see the price at once, we print it and send it.',
+        'line' => 'Tell us what you want made, or add a photo. You see the price up front, we print it and send it.',
         'print_from' => 'We print it from :price',
         'print_it' => 'We print it and send it',
     ],

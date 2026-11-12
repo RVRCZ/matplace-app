@@ -37,6 +37,8 @@ class IntakeRerouteTest extends TestCase
         Storage::fake('local');
         Mail::fake();
         FakeAssistant::reset();
+        // these tests post without the page (no stamp of it); the rules over the words still run (HomeWhatToMakeTest covers the stamp)
+        config(['home.intake.spam.require_stamp' => false]);
         config(['farm.settings.admin_email' => 'farm@example.com', 'farm.settings.intake_reply_hours' => 24]);
     }
 

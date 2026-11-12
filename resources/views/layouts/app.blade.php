@@ -53,7 +53,7 @@
     <link rel="apple-touch-icon" href="/apple-touch-icon.png">
     @vite(['resources/css/app.css', 'resources/js/app.ts'])
     @if($toolSeo)
-        @if($toolSeo['steps'])<x-jsonld :data="\App\Support\Schema::howTo($toolSeo['h1'], $toolSeo['description'], $toolSeo['steps'], \App\Support\ToolSeo::url($tool), array_column(\App\Support\ToolSeo::examples($tool), 'url'))" />@endif
+        @if($toolSeo['steps'])<x-jsonld :data="\App\Support\Schema::howTo($toolSeo['h1'], $toolSeo['howto_description'] ?? $toolSeo['description'], $toolSeo['steps'], \App\Support\ToolSeo::url($tool), array_column(\App\Support\ToolSeo::examples($tool), 'url'))" />@endif
         {{-- one FAQPage: the tool's questions and, on a landing page, "before you order" (only what the page shows) --}}
         @php $faqAll = array_merge($toolSeo['faq'], \App\Support\LandingPage::order($tool)); @endphp
         @if($faqAll)<x-jsonld :data="\App\Support\Schema::faq($faqAll)" />@endif

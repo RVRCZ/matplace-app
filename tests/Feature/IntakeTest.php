@@ -50,6 +50,8 @@ class IntakeTest extends TestCase
         Storage::fake('farm');
         Mail::fake();
         FakeAssistant::reset();
+        // these tests post without the page (no stamp of it); the rules over the words still run (HomeWhatToMakeTest covers the stamp)
+        config(['home.intake.spam.require_stamp' => false]);
         config(['farm.settings.admin_email' => 'farm@example.com', 'farm.settings.intake_reply_hours' => 24]);
     }
 
@@ -118,7 +120,7 @@ class IntakeTest extends TestCase
         $this->assertSame([], $call['images']);
         $this->assertSame('intake', $call['context']['subject_type']);
         // measured: sent and decided, with numbers and codes only
-        $this->assertSame(['kind' => 'text', 'has_text' => true], Event::where('type', 'intake_submitted')->firstOrFail()->meta);
+        $this->assertSame(['kind' => 'text', 'has_text' => true, 'code' => 'text'], Event::where('type', 'intake_submitted')->firstOrFail()->meta);
         $routed = Event::where('type', 'intake_routed')->firstOrFail()->meta;
         $this->assertSame('tool', $routed['route']);
         $this->assertSame('figure', $routed['tool']);
@@ -156,7 +158,7 @@ class IntakeTest extends TestCase
         $this->assertStringContainsString('A photo is attached.', FakeAssistant::$calls[0]['user']);
         // the picture is served by the token only, and never indexed
         $this->get('/intake/'.$intake->token.'/file')->assertOk()->assertHeader('Content-Type', 'image/jpeg')->assertHeader('X-Robots-Tag', 'noindex, nofollow');
-        $this->assertSame(['kind' => 'photo', 'has_text' => true], Event::where('type', 'intake_submitted')->firstOrFail()->meta);
+        $this->assertSame(['kind' => 'photo', 'has_text' => true, 'code' => 'text_photo'], Event::where('type', 'intake_submitted')->firstOrFail()->meta);
     }
 
     public function test_a_heic_photo_from_a_phone_becomes_a_jpeg(): void
@@ -220,7 +222,7 @@ class IntakeTest extends TestCase
         // a shape: phase 1, a person with the wish for a shape, the tools that would also do kept (known keys, no doubles, three at most), the button offered
         FakeAssistant::$answers['intake'] = ['route' => 'shape', 'tool_key' => null, 'params' => [], 'summary' => ['cs' => 'Tvar vytvoříme.', 'en' => 'x', 'es' => 'x'], 'questions' => [], 'confidence' => 0.9,
             'alternatives' => ['coaster', 'teleport', 'charm', 'coaster', 'earrings', 'figure'], 'reason' => 'A dragon has no template.'];
-        $r = $this->send(['text' => 'soška draka'])->assertCreated()->assertJsonPath('route', 'human')->assertJsonPath('wants_shape', true)->assertJsonPath('summary', __('router.summary.shape', ['hours' => 24]))
+        $r = $this->send(['text' => 'soška draka'])->assertCreated()->assertJsonPath('route', 'human')->assertJsonPath('wants_shape', true)->assertJsonPath('summary', __('router.summary.shape_text', ['hours' => 24]))
             ->assertJsonPath('alternatives', ['coaster', 'charm', 'earrings'])->assertJsonPath('rerouted', false);
         $this->assertSame(url('/intake/'.$r->json('token').'/reroute'), $r->json('actions.reroute'));
         $this->assertSame('A dragon has no template.', Intake::where('token', $r->json('token'))->firstOrFail()->answer['reason']);
@@ -233,14 +235,14 @@ class IntakeTest extends TestCase
         FakeAssistant::$answers['intake'] = ['route' => 'tool', 'tool_key' => 'teleport', 'params' => [], 'summary' => [], 'questions' => [], 'confidence' => 0.99];
         $this->send(['text' => 'x'])->assertCreated()->assertJsonPath('route', 'human')->assertJsonPath('tool_key', null);
         FakeAssistant::$answers['intake'] = ['foo' => 'bar'];
-        $this->send(['text' => 'x'])->assertCreated()->assertJsonPath('route', 'human')->assertJsonPath('summary', __('router.summary.fallback', ['hours' => 24]));
+        $this->send(['text' => 'x'])->assertCreated()->assertJsonPath('route', 'human')->assertJsonPath('summary', __('router.summary.fallback_text', ['hours' => 24]));
         // "file" without a file is a person too
         FakeAssistant::$answers['intake'] = ['route' => 'file', 'tool_key' => null, 'params' => [], 'summary' => [], 'questions' => [], 'confidence' => 0.9];
         $this->send(['text' => 'mám STL'])->assertCreated()->assertJsonPath('route', 'human');
 
         // the API fails: a person, the sentence, the failure kept for the admin
         FakeAssistant::$fail = 'HTTP 529';
-        $r = $this->send(['text' => 'x'])->assertCreated()->assertJsonPath('route', 'human')->assertJsonPath('summary', __('router.summary.fallback', ['hours' => 24]));
+        $r = $this->send(['text' => 'x'])->assertCreated()->assertJsonPath('route', 'human')->assertJsonPath('summary', __('router.summary.fallback_text', ['hours' => 24]));
         $intake = Intake::where('token', $r->json('token'))->firstOrFail();
         $this->assertTrue($intake->answer['failed']);
         $this->assertStringContainsString('HTTP 529', $intake->answer['error']);

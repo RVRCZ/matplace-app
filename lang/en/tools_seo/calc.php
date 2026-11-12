@@ -1,8 +1,11 @@
 <?php
 
 return [
-    'title' => '3D printing price calculator: upload your model',
-    'description' => 'Upload a 3D model and see print time, weight and an estimated price right away. Choose material and quantity, then order the print or download the file.',
+    // the home page asks "Co chcete vyrobit?" (docs/AN.md §23.6): the title and the description say what the page is, a custom print from a photo or words
+    'title' => 'Custom 3D printing from a photo or a description',
+    'description' => 'Tell us what you want made, or add a photo. Custom 3D prints from a photo or a description: busts, figurines, name gifts, spare parts. Price up front.',
+    // the steps below are the calculator's (a 3D file → a price): their own sentence for the HowTo data
+    'howto_description' => 'Upload a 3D model and see print time, weight and an estimated price right away. Choose material and quantity, then order the print or download the file.',
     'h1' => 'From your 3D model straight to a print price',
     'intro' => [
         'The calculator is for anyone who has a finished 3D model and wants to know what printing it will cost. Upload an STL, 3MF, OBJ or STEP file and the model appears in a rotatable preview. You see the dimensions, the print time, the weight of material and an estimated price for printing with us right away. No sign-up is needed for the calculation.',

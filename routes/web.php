@@ -87,6 +87,8 @@ $pages = function () {
     // the home page's router (TODO #78, docs/AN.md §22): a photo, a 3D file or words → a tool, a person or the calculator;
     // the tool's page fetches the photo by the token; "a person takes it over" leaves an e-mail
     Route::post('/intake', [IntakeController::class, 'store'])->middleware('throttle:intake')->name('intake.store');
+    // what a visitor did on the first screen before sending (the page shown, an example clicked, a photo added, dictation): numbers only (§23.4)
+    Route::post('/intake/event', [IntakeController::class, 'event'])->middleware('throttle:60,1,intake-event')->name('intake.event');
     Route::get('/intake/{intake}/file', [IntakeController::class, 'file'])->name('intake.file');
     Route::post('/intake/{intake}/request', [IntakeController::class, 'request'])->middleware('throttle:10,60,intake-request')->name('intake.request');
     // "try it now without a designer" (round 2, §22.11): one more decision, counted in the same five an hour
@@ -554,10 +556,15 @@ Route::middleware(['auth', 'role:admin'])->prefix('admin')->name('admin.')->grou
 
     // the home page's router: what came in, the requests a person answers (TODO #78, docs/AN.md §22)
     Route::get('/intake', [AdminIntakeController::class, 'index'])->name('intake.index');
+    // the examples under the first screen's field: events on and off, their dates and texts (docs/AN.md §23.3)
+    Route::get('/intake/hints', [AdminIntakeController::class, 'hints'])->name('intake.hints');
+    Route::post('/intake/hints', [AdminIntakeController::class, 'saveHints'])->name('intake.hints.save');
     Route::get('/intake/{intake}', [AdminIntakeController::class, 'show'])->name('intake.show');
     Route::get('/intake/{intake}/photo', [AdminIntakeController::class, 'photo'])->name('intake.photo');
     Route::post('/intake/{intake}/reply', [AdminIntakeController::class, 'reply'])->name('intake.reply');
     Route::post('/intake/{intake}/status', [AdminIntakeController::class, 'status'])->name('intake.status');
+    // held as advertising by hand, or given back and decided after all (§23.2)
+    Route::post('/intake/{intake}/spam', [AdminIntakeController::class, 'spam'])->name('intake.spam');
 
     $catalog = AdminCatalogController::class;
     Route::get('/catalog', [$catalog, 'index'])->name('catalog.index');

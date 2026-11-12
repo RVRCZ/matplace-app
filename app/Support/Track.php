@@ -63,7 +63,7 @@ final class Track
      * ours already masked (self::pathOf). The markers bot/staff/js/act are set by this class itself.
      */
     public const META = ['kind', 'tool', 'value', 'currency', 'order', 'results', 'event_id', 'path', 'printer', 'step', 'code', 'host', 'bot', 'staff', 'js', 'act',
-        'route', 'confidence', 'ms', 'tokens', 'has_text', 'wants_shape', 'from', 'to'];   // host: the site an embedded calculator was shown on; route … to: the home page's router (docs/AN.md §22, from/to: §22.11 reroute)
+        'route', 'confidence', 'ms', 'tokens', 'has_text', 'wants_shape', 'from', 'to', 'hint', 'edited'];   // host: the site an embedded calculator was shown on; route … to: the home page's router (docs/AN.md §22, from/to: §22.11 reroute; hint, edited: the example a wish began with, §23.4)
 
     private const SITES = [
         'google' => ['google.'], 'seznam' => ['seznam.cz'], 'bing' => ['bing.com'],
