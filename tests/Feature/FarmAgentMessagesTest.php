@@ -166,8 +166,8 @@ class FarmAgentMessagesTest extends TestCase
         $this->assertCount(2, $job->messages);
         $this->assertSame('Filament is tangled', substr($job->messageHistory()[0]['m'], -19), 'newest first');
 
-        // the dashboard shows the printer's words and the job's last words, the order page the whole history
-        $html = (string) $this->actingAs($this->admin)->get('/admin/farm')->assertOk()->getContent();
+        // the printer's detail shows the printer's words and the job's last words, the order page the whole history
+        $html = (string) $this->actingAs($this->admin)->get(route('admin.farm.printers.show', $printer))->assertOk()->getContent();
         $this->assertStringContainsString('data-printer-message', $html);
         $this->assertStringContainsString('Filament is tangled', $html);
         $this->assertStringContainsString('data-job-messages', $html);
@@ -251,7 +251,7 @@ class FarmAgentMessagesTest extends TestCase
         $this->assertSame(FarmOrder::STATUS_DONE, $order->refresh()->status);
         $this->sync($auth, 'idle', null, ['bed_cleared_at' => $at + 700]);
         $this->assertTrue($printer->refresh()->bed_clear, 'the next confirmation, after the print, clears the plate again');
-        $this->actingAs($this->admin)->get('/admin/farm')->assertOk()->assertSee($printer->bed_cleared_at->format('j. n. H:i'));
+        $this->actingAs($this->admin)->get(route('admin.farm.printers.show', $printer))->assertOk()->assertSee($printer->bed_cleared_at->format('j. n. H:i'));
     }
 
     public function test_the_file_list_is_kept_and_the_admins_commands_never_touch_the_running_job(): void
@@ -273,7 +273,7 @@ class FarmAgentMessagesTest extends TestCase
         $this->assertCount(3, $printer->files['files'], 'a name with a path in it is dropped');
         $this->assertSame(2967470080, $printer->files['free']);
 
-        $page = (string) $this->actingAs($this->admin)->get(route('admin.farm.printers.edit', $printer))->assertOk()->getContent();
+        $page = (string) $this->actingAs($this->admin)->get(route('admin.farm.printers.show', $printer))->assertOk()->getContent();
         $this->assertStringContainsString('Soubory na tiskárně', $page);
         $this->assertStringContainsString('3DBenchy_PLA_0.2_1h2m.gcode', $page);
         $this->assertStringContainsString('volné místo 2,76 GB z 5,80 GB', $page);
@@ -299,7 +299,7 @@ class FarmAgentMessagesTest extends TestCase
         $this->postJson("/api/agent/commands/{$commands[3]['id']}/result", ['ok' => true, 'message' => 'deleted 1 files, 1 MB freed'], $auth)->assertOk();
         $this->postJson("/api/agent/printers/{$printer->key}/files", ['files' => [$listing['files'][0]], 'free' => 2968470080, 'total' => 6228017152,
             'deleted' => [['name' => 'mp3-matplace-F26-000003.gcode', 'size' => 1_048_576]], 'freed' => 1_048_576], $auth)->assertOk();
-        $page = (string) $this->actingAs($this->admin)->get(route('admin.farm.printers.edit', $printer))->assertOk()->getContent();
+        $page = (string) $this->actingAs($this->admin)->get(route('admin.farm.printers.show', $printer))->assertOk()->getContent();
         $this->assertStringContainsString('smazáno 1 souborů, uvolněno 1,0 MB', $page);
         $this->assertStringContainsString('Smazáno: mp3-matplace-F26-000003.gcode', $page);
         $this->assertStringContainsString('deleted 1 files, 1 MB freed', $page, 'the command\'s result is on the page');
@@ -329,7 +329,7 @@ class FarmAgentMessagesTest extends TestCase
         $this->post("/api/agent/printers/{$printer->key}/files/upload", ['name' => 'x.gcode'], $json)->assertStatus(422);
 
         // the copies are on the printer's page, downloadable to the admin's computer, and removable from the server
-        $page = (string) $this->actingAs($this->admin)->get(route('admin.farm.printers.edit', $printer))->assertOk()->getContent();
+        $page = (string) $this->actingAs($this->admin)->get(route('admin.farm.printers.show', $printer))->assertOk()->getContent();
         $this->assertStringContainsString('Kopie na serveru', $page);
         $this->assertStringContainsString('mp5-matplace-F26-000005.gcode', $page);
         $this->actingAs($this->admin)->get(route('admin.farm.printers.files.download', [$printer, 'mp5-matplace-F26-000005.gcode']))->assertOk()
@@ -353,7 +353,7 @@ class FarmAgentMessagesTest extends TestCase
         $this->postJson("/api/agent/commands/{$cmd['id']}/result", ['ok' => false, 'message' => 'slot 4 is empty: load a spool into it and confirm the plate again'], $auth)->assertOk();
         $this->assertCount(1, $this->alerts('problem'), 'the start_failed mail as before');
         $this->assertSame(FarmOrder::STATUS_QUEUED, $order->refresh()->status);
-        $html = (string) $this->actingAs($this->admin)->get('/admin/farm')->assertOk()->getContent();
+        $html = (string) $this->actingAs($this->admin)->get(route('admin.farm.printers.show', $printer))->assertOk()->getContent();
         $this->assertStringContainsString('data-last-command', $html);
         $this->assertStringContainsString('start tisku · selhal', $html);
         $this->assertStringContainsString('slot 4 is empty', $html);

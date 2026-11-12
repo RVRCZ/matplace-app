@@ -187,7 +187,7 @@ class FarmPagesTest extends TestCase
     {
         $order = $this->order();
         $printer = FarmPrinter::firstOrFail();
-        $pages = ['/admin/farm', '/admin/farm/orders', "/admin/farm/orders/{$order->token}", '/admin/farm/printers', '/admin/farm/printers/new',
+        $pages = ['/admin/farm', "/admin/farm/printers/{$printer->id}/detail", '/admin/farm/farms', '/admin/farm/orders', "/admin/farm/orders/{$order->token}", '/admin/farm/printers', '/admin/farm/printers/new',
             "/admin/farm/printers/{$printer->id}", '/admin/farm/materials', '/admin/farm/settings', '/admin/farm/agents', '/admin/farm/credit?email='.$this->user->email];
 
         foreach ($pages as $url) {
@@ -301,8 +301,8 @@ class FarmPagesTest extends TestCase
         $printer->update(['mode' => FarmPrinter::MODE_AGENT, 'farm_agent_id' => $agent->id, 'state' => FarmPrinter::STATE_ERROR, 'last_seen_at' => now(),
             'telemetry' => ['klipper_state' => 'error', 'error' => 'nozzle must be hot first']]);
 
-        // the card shows what the printer said and offers the reset
-        $this->actingAs($this->admin)->get('/admin/farm')->assertOk()->assertSee('nozzle must be hot first')->assertSee(__('farm.admin.reset_error'));
+        // the printer's detail shows what the printer said and offers the reset
+        $this->actingAs($this->admin)->get(route('admin.farm.printers.show', $printer))->assertOk()->assertSee('nozzle must be hot first')->assertSee(__('farm.admin.reset_error'));
         $this->actingAs($this->admin)->postJson("/admin/farm/printers/{$printer->id}/command", ['type' => 'reset'])->assertOk();
         $this->assertDatabaseHas('farm_commands', ['farm_printer_id' => $printer->id, 'type' => FarmCommand::TYPE_RESET, 'farm_print_job_id' => null]);
 
@@ -311,7 +311,7 @@ class FarmPagesTest extends TestCase
             ->assertOk()->json('commands');
         $this->assertSame(['reset', 'kobra-s1-01'], [$commands[0]['type'], $commands[0]['printer']]);
         $this->postJson('/api/agent/sync', ['version' => '0.1.3', 'printers' => [['key' => 'kobra-s1-01', 'state' => 'idle', 'telemetry' => ['klipper_state' => 'standby'], 'job' => null]]], ['Authorization' => 'Bearer '.$token])->assertOk();
-        $this->actingAs($this->admin)->get('/admin/farm')->assertOk()->assertDontSee(__('farm.admin.reset_error'));
+        $this->actingAs($this->admin)->get(route('admin.farm.printers.show', $printer))->assertOk()->assertDontSee(__('farm.admin.reset_error'));
 
         // a manual printer has nobody to carry it out
         $printer->update(['mode' => FarmPrinter::MODE_MANUAL, 'state' => FarmPrinter::STATE_ERROR]);
@@ -361,7 +361,7 @@ class FarmPagesTest extends TestCase
         $job = FarmPrintJob::create(['farm_order_id' => $order->id, 'farm_printer_id' => $printer->id, 'slot' => 0, 'status' => FarmPrintJob::STATUS_PRINTING, 'progress' => 40]);
 
         // the card: "clear plate" is greyed out, the ACE dryer line shows the live temperature and the time left
-        $page = $this->actingAs($this->admin)->get('/admin/farm')->assertOk();
+        $page = $this->actingAs($this->admin)->get(route('admin.farm.printers.show', $printer))->assertOk();
         $page->assertSee(__('farm.admin.bed_locked_hint'));
         $page->assertSee('name="clear" value="1" class="btn-primary text-sm" disabled', false);
         $page->assertSee('suší 50 / 50 °C, zbývá 2 h 53 min');
@@ -378,7 +378,7 @@ class FarmPagesTest extends TestCase
 
         $job->update(['status' => FarmPrintJob::STATUS_DONE]);
         $printer->update(['state' => FarmPrinter::STATE_IDLE]);
-        $this->actingAs($this->admin)->get('/admin/farm')->assertOk()->assertDontSee('class="btn-primary text-sm" disabled', false);
+        $this->actingAs($this->admin)->get(route('admin.farm.printers.show', $printer))->assertOk()->assertDontSee('class="btn-primary text-sm" disabled', false);
         $this->actingAs($this->admin)->postJson(route('admin.farm.printers.bed', $printer), ['clear' => 1])->assertOk()->assertJson(['ok' => true]);
         $this->assertTrue($printer->fresh()->bed_clear);
 

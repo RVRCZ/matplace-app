@@ -6,19 +6,20 @@ use App\Domain\Farm\ColorCatalog;
 use App\Domain\Farm\ColorPhotoProposals;
 use App\Domain\Farm\FarmSettings;
 use App\Domain\Farm\OrderFlow;
-use App\Domain\Farm\PrinterFiles;
 use App\Domain\Farm\ProfileLibrary;
 use App\Domain\Farm\Shop\ShopFetcher;
 use App\Domain\Farm\SlotRules;
 use App\Domain\Farm\Wallet;
 use App\Http\Controllers\Controller;
 use App\Models\CreditTransaction;
+use App\Models\Farm;
 use App\Models\FarmAgent;
 use App\Models\FarmColor;
 use App\Models\FarmColorPhotoProposal;
 use App\Models\FarmMaterial;
 use App\Models\FarmOrder;
 use App\Models\FarmPrinter;
+use App\Models\FarmPrinterMaterial;
 use App\Models\User;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -42,13 +43,11 @@ class FarmCatalogController extends Controller
 
     public function editPrinter(?FarmPrinter $printer = null): View
     {
-        $files = app(PrinterFiles::class);
-
+        // the files on the printer's disk moved to the printer's detail (FarmOrderController::printer, docs/AQ.md)
         return view('admin.farm.printer_edit', [
-            // the printer's disk (docs/AM.md §10): the agent's last list, the copies on the server, what must stay, what the commands said
-            'files' => $printer && $printer->isAgentDriven() ? ['listing' => $files->listing($printer), 'fetched' => $files->fetched($printer), 'keep' => $files->keep($printer), 'commands' => $files->commands($printer)] : null,
             'printer' => $printer ?? new FarmPrinter(['mode' => FarmPrinter::MODE_MANUAL, 'bed_x' => 250, 'bed_y' => 250, 'bed_z' => 250, 'nozzle_mm' => 0.4, 'time_factor' => 1, 'weight_factor' => 1, 'enabled' => true, 'machine_profile' => 'machine.json', 'process_profiles' => ['draft' => 'process_draft.json', 'standard' => 'process_standard.json', 'fine' => 'process_fine.json']]),
             'agents' => FarmAgent::whereNull('revoked_at')->orderBy('name')->get(),
+            'farms' => Farm::orderBy('sort')->orderBy('id')->get(),
             'colors' => FarmColor::with('material')->where('enabled', true)->get()->sortBy(fn ($c) => [$c->material->sort, $c->sort])->values(),
             'materials' => FarmMaterial::orderBy('sort')->get(),   // for a spool that is not in the catalogue yet (a new colour of a known kind)
             'makers' => $this->makers(),
@@ -118,8 +117,70 @@ class FarmCatalogController extends Controller
             }
         }
         app(ProfileLibrary::class)->sync();
+        // the filaments of one machine saved on its detail (docs/AQ.md) come back to that detail
+        $detail = $request->filled('back_printer') ? FarmPrinter::find($request->integer('back_printer')) : null;
+        $to = $detail ? redirect()->to(route('admin.farm.printers.show', $detail).'#slots') : redirect()->route('admin.farm.printers');
 
-        return redirect()->route('admin.farm.printers')->with('status', __('farm.admin.slots_saved', ['n' => $changed]))->with('error', $notices ? implode(' ', $notices) : null);
+        return $to->with('status', __('farm.admin.slots_saved', ['n' => $changed]))->with('error', $notices ? implode(' ', $notices) : null);
+    }
+
+    /**
+     * One filament (docs/AQ.md): a colour of the catalogue, i.e. the spool that sits in a printer. Its own values are
+     * edited here (saveColor); what belongs to its kind – temperatures, the slicer profile and its overrides, the price
+     * per gram, manual_only, the note – is the kind's own form (saveMaterial), shown here because it is what this
+     * filament prints with; what a machine adds is a row of "Ladění" and is only linked.
+     */
+    public function filament(FarmColor $color): View
+    {
+        $color->load(['material', 'slots.printer.slots']);
+        $kind = $color->material;
+        $rows = FarmPrinterMaterial::with('printer')->where('farm_material_id', $kind->id)
+            ->where(fn ($q) => $q->whereNull('farm_color_id')->orWhere('farm_color_id', $color->id))->get()
+            ->sortBy(fn (FarmPrinterMaterial $r) => [$r->farm_printer_id, $r->farm_color_id ? 1 : 0])->values();
+
+        return view('admin.farm.filament', [
+            'color' => $color,
+            'kind' => $kind,
+            'kindColors' => $kind->colors()->count(),
+            'materials' => FarmMaterial::orderBy('sort')->get(),
+            'makers' => $this->makers(),
+            'rows' => $rows,
+            // printers that hold this spool and have no row of its own yet: "založit vlastní řádek cívky"
+            'spoolless' => $color->slots->map->printer->filter()->unique('id')->reject(fn (FarmPrinter $p) => $rows->contains(fn ($r) => $r->farm_printer_id === $p->id && $r->farm_color_id))->values(),
+        ]);
+    }
+
+    /** Where a save of a colour returns: to the filament's detail when the form came from there. */
+    private function backToFilament(Request $request, FarmColor $color): ?RedirectResponse
+    {
+        return $request->input('back') === 'filament' ? redirect()->route('admin.farm.colors.show', $color)->with('status', __('farm.admin.saved')) : null;
+    }
+
+    // ── farms: the places the printers stand at (docs/AQ.md) ─────────────────
+    public function farms(): View
+    {
+        return view('admin.farm.farms', ['farms' => Farm::withCount('printers')->orderBy('sort')->orderBy('id')->get()]);
+    }
+
+    public function saveFarm(Request $request, ?Farm $farm = null): RedirectResponse
+    {
+        $request->merge(['code' => strtoupper(trim((string) $request->input('code')))]);
+        $data = $request->validate([
+            'code' => ['required', 'regex:/^[A-Z][A-Z0-9]{0,7}$/', Rule::unique('farms', 'code')->ignore($farm?->id)],
+            'name' => ['required', 'string', 'max:80'],
+            'street' => ['nullable', 'string', 'max:120'],
+            'city' => ['nullable', 'string', 'max:80'],
+            'zip' => ['nullable', 'string', 'max:16'],
+            'country' => ['nullable', 'string', 'size:2'],
+            'note' => ['nullable', 'string', 'max:500'],
+            'sort' => ['nullable', 'integer', 'min:0', 'max:1000'],
+        ]);
+        $data['country'] = strtoupper((string) ($data['country'] ?? '')) ?: 'CZ';
+        $data['sort'] = (int) ($data['sort'] ?? 100);
+        $data['enabled'] = $request->boolean('enabled');
+        ($farm ?? new Farm)->fill($data)->save();
+
+        return redirect()->route('admin.farm.farms')->with('status', __('farm.admin.saved'));
     }
 
     /**
@@ -159,6 +220,7 @@ class FarmCatalogController extends Controller
             'model' => ['required', 'string', 'max:80'],
             'key' => ['required', 'alpha_dash', 'max:40', Rule::unique('farm_printers', 'key')->ignore($printer?->id)],
             'farm_agent_id' => ['nullable', 'exists:farm_agents,id'],
+            'farm_id' => ['nullable', 'exists:farms,id'],   // the place the machine stands at (docs/AQ.md)
             'mode' => ['required', 'in:manual,agent'],
             'enabled' => ['nullable', 'boolean'],
             'bed_x' => ['required', 'numeric', 'min:50', 'max:1000'],
@@ -446,6 +508,11 @@ class FarmCatalogController extends Controller
             'print_overrides' => ['nullable', 'json'],
             'test_notes' => ['nullable', 'string', 'max:2000'],
             'source_url' => ['nullable', 'string', 'max:500'],
+            // the filament's detail (docs/AQ.md) writes the spool's own temperatures as numbers; they live in print_overrides
+            'temps' => ['nullable', 'array'],
+            'temps.nozzle_temp' => ['nullable', 'integer', 'min:150', 'max:350'],
+            'temps.nozzle_temp_first' => ['nullable', 'integer', 'min:150', 'max:350'],
+            'temps.bed_temp' => ['nullable', 'integer', 'min:0', 'max:150'],
         ]);
         $color = $color ?? new FarmColor;
         $kind = FarmMaterial::findOrFail((int) $data['farm_material_id']);
@@ -462,10 +529,21 @@ class FarmCatalogController extends Controller
             $color->source_url = $normalized;
         }
         $maker = trim((string) ($data['manufacturer'] ?? ''));
+        $overrides = ! empty($data['print_overrides']) ? json_decode($data['print_overrides'], true) : null;
+        if ($request->has('temps')) {
+            // the three number fields win over the same keys in the JSON; an empty field = the kind's temperature
+            $overrides = array_diff_key((array) $overrides, array_flip(FarmColor::TEMP_KEYS));
+            foreach (FarmColor::TEMP_KEYS as $k) {
+                if ((int) ($data['temps'][$k] ?? 0) > 0) {
+                    $overrides[$k] = (int) $data['temps'][$k];
+                }
+            }
+            $overrides = $overrides ?: null;
+        }
         $color->fill(['farm_material_id' => $kind->id, 'name' => $data['name'], 'name_en' => $data['name_en'] ?? null, 'code' => $data['code'] ?? null,
             'manufacturer' => $maker !== '' && $maker !== $kind->maker() ? $maker : null,   // the kind's maker is not repeated on every colour
             'hex' => strtolower($data['hex'] ?? ColorCatalog::UNSET_HEX), 'enabled' => $request->boolean('enabled'), 'in_stock' => $request->boolean('in_stock', true),
-            'print_overrides' => ! empty($data['print_overrides']) ? json_decode($data['print_overrides'], true) : null, 'test_notes' => $data['test_notes'] ?? null]);
+            'print_overrides' => $overrides, 'test_notes' => $data['test_notes'] ?? null]);
         if (! $color->code) {
             $color->code = ColorCatalog::codeFor($kind, $color->name_en ?: $color->name, $maker ?: null);
         }
@@ -480,6 +558,9 @@ class FarmCatalogController extends Controller
             $color->photo_source = FarmColor::PHOTO_UPLOAD;
         }
         $color->save();
+        if ($back = $this->backToFilament($request, $color)) {
+            return $back;
+        }
 
         // back to the folded page with this colour's kind open (the address names it)
         return redirect()->route('admin.farm.materials')->withFragment('kind-'.$kind->id)->with('status', __('farm.admin.saved'));

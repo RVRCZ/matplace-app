@@ -158,7 +158,7 @@ class FarmManualOnlyKindsTest extends TestCase
         $slot = $this->manual->slots()->where('slot', 0)->firstOrFail();
         $this->assertSame([FarmPrinter::MODE_AGENT, $this->glowColor->id, false, 800.0], [$this->manual->mode, $slot->farm_color_id, $slot->enabled, $slot->remaining_g]);
         $this->assertFalse($slot->kindFitsPrinter());
-        $this->actingAs($this->admin)->get('/admin/farm')->assertOk()->assertSee('line-through');
+        $this->actingAs($this->admin)->get(route('admin.farm.printers.show', $this->manual))->assertOk()->assertSee('line-through');
         // the white spool of the same machine stays offered
         $this->assertTrue($this->manual->slots()->where('slot', 2)->firstOrFail()->enabled);
 
@@ -224,7 +224,7 @@ class FarmManualOnlyKindsTest extends TestCase
 
         $badge = __('farm.admin.manual_only_badge');
         $this->actingAs($this->admin)->get("/admin/farm/orders/{$order->token}")->assertOk()->assertSee('data-manual-only', false)->assertSee($badge);
-        $this->actingAs($this->admin)->get('/admin/farm')->assertOk()->assertSee($order->number)->assertSee('data-manual-only', false)->assertSee($badge);
+        $this->actingAs($this->admin)->get(route('admin.farm.printers.show', $order->farm_printer_id))->assertOk()->assertSee($order->number)->assertSee('data-manual-only', false)->assertSee($badge);
         // the customer's page and state carry no such word
         $this->actingAs($this->user)->get("/farm/orders/{$order->token}")->assertOk()->assertDontSee($badge)->assertDontSee('data-manual-only', false);
         $this->assertStringNotContainsString('manual', json_encode($this->actingAs($this->user)->getJson("/farm/orders/{$order->token}/status")->json('spools')));

@@ -41,7 +41,7 @@ class FarmCommandResultTextTest extends TestCase
         $printer = FarmPrinter::where('key', 'kobra-s1-01')->firstOrFail();
         $printer->update(['mode' => FarmPrinter::MODE_AGENT, 'farm_agent_id' => $agent->id, 'last_seen_at' => now(), 'state' => FarmPrinter::STATE_IDLE]);
         FarmCommand::create(['farm_printer_id' => $printer->id, 'type' => FarmCommand::TYPE_START, 'payload' => ['job_id' => 1], 'status' => 'done', 'result' => 'slot 1 not checked, the printer does not report its slots; slot 2 not checked, the printer does not report its slots', 'finished_at' => now()]);
-        $this->actingAs($admin)->get(route('admin.farm.dashboard'))->assertOk()
+        $this->actingAs($admin)->get(route('admin.farm.printers.show', $printer))->assertOk()
             ->assertSee('Pozice 1, 2 agent nekontroloval')
             ->assertDontSee('not checked');
     }

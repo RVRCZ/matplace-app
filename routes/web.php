@@ -474,6 +474,8 @@ Route::middleware(['auth', 'role:admin'])->prefix('admin/farm')->name('admin.far
     Route::post('/printers/{printer}/bed', [$orders, 'bed'])->name('printers.bed');
     Route::post('/printers/{printer}/command', [$orders, 'command'])->name('printers.command');
     Route::get('/printers/{printer}/snapshot', [$orders, 'printerSnapshot'])->name('printers.snapshot');
+    // one printer: everything the overview used to show for all of them at once, its filaments, its files (docs/AQ.md)
+    Route::get('/printers/{printer}/detail', [$orders, 'printer'])->name('printers.show');
 
     // the files on a printer's disk: list, one up to the server, delete, tidy (docs/AM.md §10)
     $files = FarmFileController::class;
@@ -508,8 +510,14 @@ Route::middleware(['auth', 'role:admin'])->prefix('admin/farm')->name('admin.far
     Route::post('/colors/proposals/{proposal}/approve', [$catalog, 'approveProposal'])->name('colors.proposals.approve');
     Route::post('/colors/proposals/{proposal}/reject', [$catalog, 'rejectProposal'])->name('colors.proposals.reject');
     Route::post('/colors/new', [$catalog, 'saveColor'])->name('colors.create');
+    // one filament (a colour = the spool in a printer): its own values, its kind's, its tuning rows (docs/AQ.md)
+    Route::get('/colors/{color}', [$catalog, 'filament'])->whereNumber('color')->name('colors.show');
     Route::post('/colors/{color}', [$catalog, 'saveColor'])->name('colors.update');
     Route::post('/colors/{color}/delete', [$catalog, 'deleteColor'])->name('colors.delete');
+    // farms: the places the printers stand at (docs/AQ.md)
+    Route::get('/farms', [$catalog, 'farms'])->name('farms');
+    Route::post('/farms/new', [$catalog, 'saveFarm'])->name('farms.create');
+    Route::post('/farms/{farm}', [$catalog, 'saveFarm'])->whereNumber('farm')->name('farms.update');
     Route::get('/settings', [$catalog, 'settings'])->name('settings');
     Route::post('/settings', [$catalog, 'saveSettings'])->name('settings.save');
     Route::get('/agents', [$catalog, 'agents'])->name('agents');

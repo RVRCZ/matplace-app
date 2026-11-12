@@ -621,6 +621,6 @@ class FarmTuningTest extends TestCase
         $this->assertSame('Textured PEI Plate', $printer->bedType());
         $this->assertSame('0', $printer->process_overrides['enable_prime_tower'], 'the other process overrides stay');
         $this->actingAs($this->admin)->post("/admin/farm/printers/{$printer->id}", $fields + ['enabled' => 1, 'process_profiles' => '{}', 'bed_type' => 'Glass'])->assertSessionHasErrors('bed_type');
-        $this->actingAs($this->admin)->get('/admin/farm')->assertOk()->assertSee('texturovaná PEI');
+        $this->actingAs($this->admin)->get(route('admin.farm.printers.show', $printer))->assertOk()->assertSee('texturovaná PEI');
     }
 }
