@@ -1263,3 +1263,9 @@ jednou barvou, věta o jedné podložce by u nich lhala. Hint `flag.flush.hint` 
 - Kapsa magnetu shora: mezi barvou a kapsou při tl. 3 mm zbývá 0,2 mm desky, při nejmenší tloušťce nezbyde nic (dno jsou jen barvy, 0,6 mm).
 
 **Neověřeno:** tažení úchytu očka myší na otočeném kuse, souhlas úchytu je ověřen čísly a snímkem; barvy skutečných cívek z produkce.
+
+## 12. Společné zdobení (13. 11. 2026)
+
+Text, reliéf z fotky a logo na přední i zadní straně medaile, klíčenky, ozdoby a podtácku: seznam `decor`
+v parametrech, panel Zdobení, `engines/python/decor.py`. Vlastní text a obrázek nástrojů zůstaly, jak jsou. Vše
+v `docs/AQ.md`.

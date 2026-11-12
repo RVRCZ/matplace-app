@@ -540,10 +540,12 @@ export function bootParam(stage: Stage): void {
             const res = await post({ kind: cfg.kind, params: params(), view: 'use', part: viewPart, pieces: true });
             if (mine !== seq) return;                       // a newer change is already on its way
             if (!res.ok) { valid = false; showError(await errorOf(res)); return; }
+            // the model first: a big one (a relief is megabytes) must not wait behind the request for the rest of its notes
+            const stl = await res.arrayBuffer();
             lastMeta = await modelMeta<Meta>(res);
             // the colours of a QR sign go by height alone, so they hold for the sign and the stand shown on their own too
             const regions = viewPart === 'all' || cfg.kind === 'qr' ? ((lastMeta?.notes as { regions?: Region[] } | undefined)?.regions ?? null) : null;
-            lastStl = await res.arrayBuffer(); lastRegions = regions;
+            lastStl = stl; lastRegions = regions;
             stage.show(new STLLoader().parse(lastStl), { kind: cfg.kind, regions: tinted(regions), pieces: lastMeta?.parts ?? null });
             valid = true; showError(null); markNamed();
             if (lastMeta) { renderDims(lastMeta); renderBom(lastMeta); if (viewPart === 'all') renderPrice(); }
@@ -1370,6 +1372,7 @@ export function bootParam(stage: Stage): void {
         viewer.select(index);
         stage.note(piece && viewer.getPieces().length > 1 ? stage.t('toolpage.status.piece', { name: partLabel(piece.name) }) : null);
         if (!piece) return;
+        if (piece.name.startsWith('decor_')) { viewer.select(-1); stage.reveal('decor'); return; }      // a decoration in its own colour: its place is the panel
         if (cfg.kind === 'modular') { stage.reveal('size', document.getElementById('bin-grid')); return; }
         if (compose) {
             // the piece is a band of the print; its layer is the one of that number among the shown ones
