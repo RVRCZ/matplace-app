@@ -107,6 +107,6 @@ class FarmFileController extends Controller
 
     private function back(FarmPrinter $printer): RedirectResponse
     {
-        return redirect()->to(route('admin.farm.printers.edit', $printer).'#files');
+        return redirect()->to(route('admin.farm.printers.show', $printer).'#files');
     }
 }

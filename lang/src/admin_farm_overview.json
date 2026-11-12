@@ -1,0 +1,507 @@
+{
+    "farm.admin.nav.farms": [
+        "Farmy",
+        "Farms",
+        "Granjas"
+    ],
+    "farm.admin.ov.status.disabled": [
+        "Vypnutá",
+        "Switched off",
+        "Apagada"
+    ],
+    "farm.admin.ov.status.offline": [
+        "Offline",
+        "Offline",
+        "Sin conexión"
+    ],
+    "farm.admin.ov.status.problem": [
+        "Problém",
+        "Problem",
+        "Problema"
+    ],
+    "farm.admin.ov.status.printing": [
+        "Tisk",
+        "Printing",
+        "Imprimiendo"
+    ],
+    "farm.admin.ov.status.bed": [
+        "Uklidit podložku",
+        "Clear the plate",
+        "Vaciar la base"
+    ],
+    "farm.admin.ov.status.standby": [
+        "Standby",
+        "Standby",
+        "En espera"
+    ],
+    "farm.admin.ov.reason.error": [
+        "Tiskárna hlásí chybu.",
+        "The printer reports an error.",
+        "La impresora indica un error."
+    ],
+    "farm.admin.ov.reason.unknown": [
+        "Stav tiskárny není známý.",
+        "The printer's state is unknown.",
+        "Se desconoce el estado de la impresora."
+    ],
+    "farm.admin.ov.reason.cancel": [
+        "Tiskárna nepotvrdila zrušení tisku.",
+        "The printer did not confirm the cancelled print.",
+        "La impresora no confirmó la cancelación de la impresión."
+    ],
+    "farm.admin.ov.reason.paused": [
+        "Tisk je pozastavený.",
+        "The print is paused.",
+        "La impresión está en pausa."
+    ],
+    "farm.admin.ov.printers": [
+        "tiskárny: :n",
+        "printers: :n",
+        "impresoras: :n"
+    ],
+    "farm.admin.ov.running": [
+        "Tiskne",
+        "Printing",
+        "Imprime"
+    ],
+    "farm.admin.ov.done_at": [
+        "hotovo asi :time",
+        "done about :time",
+        "listo hacia :time"
+    ],
+    "farm.admin.ov.last": [
+        "Poslední",
+        "Last",
+        "Último"
+    ],
+    "farm.admin.ov.finished_at": [
+        "dotištěno :time",
+        "finished :time",
+        "terminado :time"
+    ],
+    "farm.admin.ov.no_order": [
+        "Zatím nic netiskla.",
+        "Nothing printed yet.",
+        "Aún no ha impreso nada."
+    ],
+    "farm.admin.ov.next": [
+        "Další",
+        "Next",
+        "Siguiente"
+    ],
+    "farm.admin.ov.next_more": [
+        "a dalších :n",
+        "and :n more",
+        "y :n más"
+    ],
+    "farm.admin.ov.next_none": [
+        "nic nečeká",
+        "nothing waits",
+        "nada en espera"
+    ],
+    "farm.admin.ov.bed_printing": [
+        "Tiskne, podložka je obsazená.",
+        "Printing, the plate is occupied.",
+        "Imprimiendo, la base está ocupada."
+    ],
+    "farm.admin.ov.bed_free": [
+        "Podložka je volná od",
+        "The plate is clear since",
+        "La base está libre desde"
+    ],
+    "farm.admin.ov.bed_release": [
+        "Uvolnit podložku",
+        "Release the plate",
+        "Liberar la base"
+    ],
+    "farm.admin.ov.bed_block": [
+        "Volná · zablokovat",
+        "Clear · block it",
+        "Libre · bloquear"
+    ],
+    "farm.admin.ov.detail": [
+        "Detail",
+        "Detail",
+        "Detalle"
+    ],
+    "farm.admin.ov.empty": [
+        "Zatím tu není žádná tiskárna.",
+        "There is no printer yet.",
+        "Todavía no hay ninguna impresora."
+    ],
+    "farm.admin.pd.settings": [
+        "Nastavení tiskárny",
+        "Printer settings",
+        "Ajustes de la impresora"
+    ],
+    "farm.admin.pd.open": [
+        "Otevřít detail tiskárny",
+        "Open the printer's detail",
+        "Abrir el detalle de la impresora"
+    ],
+    "farm.admin.pd.moved": [
+        "Kamera, příkazy, fronta, filamenty a soubory na tiskárně jsou v detailu tiskárny.",
+        "The camera, commands, queue, filaments and the files on the printer are on the printer's detail.",
+        "La cámara, los comandos, la cola, los filamentos y los archivos de la impresora están en su detalle."
+    ],
+    "farm.admin.pd.slots_title": [
+        "Filamenty v tiskárně",
+        "Filaments in the printer",
+        "Filamentos en la impresora"
+    ],
+    "farm.admin.pd.slots_lead": [
+        "Co je založeno v které pozici, kolik zbývá a jestli se barva nabízí zákazníkům. Novou cívku, která ještě není v katalogu, a názvy pozic najdete tady:",
+        "What is loaded in which position, how much is left and whether the colour is offered to customers. A new spool that is not in the catalogue yet and the names of the positions are here:",
+        "Qué hay cargado en cada posición, cuánto queda y si el color se ofrece a los clientes. Una bobina nueva que aún no está en el catálogo y los nombres de las posiciones están aquí:"
+    ],
+    "farm.admin.pd.slot_color": [
+        "Filament",
+        "Filament",
+        "Filamento"
+    ],
+    "farm.admin.pd.slot_grams": [
+        "Zbývá (g)",
+        "Left (g)",
+        "Queda (g)"
+    ],
+    "farm.admin.pd.slots_save": [
+        "Uložit filamenty",
+        "Save filaments",
+        "Guardar filamentos"
+    ],
+    "farm.admin.pd.filament_detail": [
+        "Detail filamentu",
+        "Filament detail",
+        "Detalle del filamento"
+    ],
+    "farm.admin.fd.title": [
+        "Detail filamentu",
+        "Filament detail",
+        "Detalle del filamento"
+    ],
+    "farm.admin.fd.offered": [
+        "nabízí se",
+        "offered",
+        "se ofrece"
+    ],
+    "farm.admin.fd.not_offered": [
+        "nenabízí se",
+        "not offered",
+        "no se ofrece"
+    ],
+    "farm.admin.fd.in_stock": [
+        "skladem",
+        "in stock",
+        "en stock"
+    ],
+    "farm.admin.fd.out_of_stock": [
+        "není skladem",
+        "out of stock",
+        "sin stock"
+    ],
+    "farm.admin.fd.offer": [
+        "nabízet zákazníkům",
+        "offer to customers",
+        "ofrecer a los clientes"
+    ],
+    "farm.admin.fd.loaded_in": [
+        "Kde je založený",
+        "Where it is loaded",
+        "Dónde está cargado"
+    ],
+    "farm.admin.fd.loaded_nowhere": [
+        "Není založený v žádné tiskárně.",
+        "It is not loaded in any printer.",
+        "No está cargado en ninguna impresora."
+    ],
+    "farm.admin.fd.this": [
+        "Tento filament (barva, cívka)",
+        "This filament (colour, spool)",
+        "Este filamento (color, bobina)"
+    ],
+    "farm.admin.fd.name": [
+        "Název",
+        "Name",
+        "Nombre"
+    ],
+    "farm.admin.fd.name_en": [
+        "Anglicky",
+        "In English",
+        "En inglés"
+    ],
+    "farm.admin.fd.kind": [
+        "Druh materiálu",
+        "Material kind",
+        "Tipo de material"
+    ],
+    "farm.admin.fd.kind_off": [
+        "vypnuto",
+        "switched off",
+        "desactivado"
+    ],
+    "farm.admin.fd.own_temps": [
+        "Vlastní teploty této cívky (prázdné = podle druhu)",
+        "This spool's own temperatures (empty = the kind's)",
+        "Temperaturas propias de esta bobina (vacío = las del tipo)"
+    ],
+    "farm.admin.fd.nozzle": [
+        "Tryska (°C)",
+        "Nozzle (°C)",
+        "Boquilla (°C)"
+    ],
+    "farm.admin.fd.nozzle_first": [
+        "Tryska 1. vrstva (°C)",
+        "Nozzle, first layer (°C)",
+        "Boquilla, 1.ª capa (°C)"
+    ],
+    "farm.admin.fd.bed": [
+        "Podložka (°C)",
+        "Bed (°C)",
+        "Base (°C)"
+    ],
+    "farm.admin.fd.effective": [
+        "Tiskne se: tryska :nozzle °C, první vrstva :first °C, podložka :bed °C.",
+        "It prints with: nozzle :nozzle °C, first layer :first °C, bed :bed °C.",
+        "Se imprime con: boquilla :nozzle °C, primera capa :first °C, base :bed °C."
+    ],
+    "farm.admin.fd.effective_profile": [
+        "Teploty určuje jen profil filamentu druhu.",
+        "The temperatures come from the kind's filament profile alone.",
+        "Las temperaturas vienen solo del perfil de filamento del tipo."
+    ],
+    "farm.admin.fd.effective_note": [
+        "Řádek ladění na tiskárně je může ještě přepsat.",
+        "A tuning row of a printer may still override them.",
+        "Una fila de ajuste de una impresora aún puede cambiarlas."
+    ],
+    "farm.admin.fd.own_slice": [
+        "Další vlastní nastavení tisku (JSON; „process“ a „filament“ = nové slicování)",
+        "Other own print settings (JSON; \"process\" and \"filament\" = a new slice)",
+        "Otros ajustes propios de impresión (JSON; «process» y «filament» = nuevo laminado)"
+    ],
+    "farm.admin.fd.test_notes": [
+        "Výsledky testů a poznámky k cívce",
+        "Test results and notes on the spool",
+        "Resultados de pruebas y notas de la bobina"
+    ],
+    "farm.admin.fd.photo": [
+        "Fotka výtisku",
+        "Photo of a print",
+        "Foto de una impresión"
+    ],
+    "farm.admin.fd.remove_photo": [
+        "smazat současnou fotku",
+        "delete the current photo",
+        "borrar la foto actual"
+    ],
+    "farm.admin.fd.save": [
+        "Uložit filament",
+        "Save the filament",
+        "Guardar el filamento"
+    ],
+    "farm.admin.fd.kind_title": [
+        "Druh: :kind",
+        "Kind: :kind",
+        "Tipo: :kind"
+    ],
+    "farm.admin.fd.kind_lead": [
+        "Tyto hodnoty patří druhu materiálu a platí pro všechny jeho barvy (:n). Mění se u druhu.",
+        "These values belong to the material kind and hold for all its colours (:n). They are changed at the kind.",
+        "Estos valores pertenecen al tipo de material y valen para todos sus colores (:n). Se cambian en el tipo."
+    ],
+    "farm.admin.fd.kind_edit": [
+        "Upravit druh",
+        "Edit the kind",
+        "Editar el tipo"
+    ],
+    "farm.admin.fd.kind_state": [
+        "Druh",
+        "Kind",
+        "Tipo"
+    ],
+    "farm.admin.fd.kind_notes": [
+        "Poznámka pro obsluhu",
+        "Note for the operator",
+        "Nota para el operario"
+    ],
+    "farm.admin.fd.price": [
+        "Cena za gram (bez DPH)",
+        "Price per gram (excl. VAT)",
+        "Precio por gramo (sin IVA)"
+    ],
+    "farm.admin.fd.density": [
+        "Hustota",
+        "Density",
+        "Densidad"
+    ],
+    "farm.admin.fd.profile": [
+        "Profil filamentu",
+        "Filament profile",
+        "Perfil de filamento"
+    ],
+    "farm.admin.fd.profile_overrides": [
+        "Přepisy profilu",
+        "Profile overrides",
+        "Cambios del perfil"
+    ],
+    "farm.admin.fd.yes": [
+        "ano",
+        "yes",
+        "sí"
+    ],
+    "farm.admin.fd.no": [
+        "ne",
+        "no",
+        "no"
+    ],
+    "farm.admin.fd.tuning_title": [
+        "Na tiskárnách (ladění)",
+        "On the printers (tuning)",
+        "En las impresoras (ajuste)"
+    ],
+    "farm.admin.fd.tuning_lead": [
+        "Co ke druhu přidává která tiskárna. Vlastní řádek cívky má přednost před řádkem druhu.",
+        "What each printer adds to the kind. A row of this very spool wins over the kind's row.",
+        "Lo que cada impresora añade al tipo. Una fila propia de la bobina tiene prioridad sobre la del tipo."
+    ],
+    "farm.admin.fd.row_kind": [
+        "řádek druhu",
+        "the kind's row",
+        "fila del tipo"
+    ],
+    "farm.admin.fd.row_spool": [
+        "řádek této cívky",
+        "this spool's row",
+        "fila de esta bobina"
+    ],
+    "farm.admin.fd.tuning_open": [
+        "otevřít",
+        "open",
+        "abrir"
+    ],
+    "farm.admin.fd.tuning_none": [
+        "Tento druh nemá na žádné tiskárně řádek ladění.",
+        "This kind has no tuning row on any printer.",
+        "Este tipo no tiene fila de ajuste en ninguna impresora."
+    ],
+    "farm.admin.fd.tuning_spool": [
+        "založit vlastní řádek cívky",
+        "create a row for this spool",
+        "crear una fila para esta bobina"
+    ],
+    "farm.admin.fd.tune.untested": [
+        "nevyzkoušeno",
+        "untested",
+        "sin probar"
+    ],
+    "farm.admin.fd.tune.testing": [
+        "testuje se",
+        "testing",
+        "en prueba"
+    ],
+    "farm.admin.fd.tune.tuned": [
+        "vyladěno",
+        "tuned",
+        "ajustado"
+    ],
+    "farm.admin.farms.lead": [
+        "Farma je místo, kde stojí tiskárny, a má svou adresu. Přehled „Tiskárny a fronta“ řadí tiskárny podle farem; farmu tiskárně nastavíte v jejím nastavení.",
+        "A farm is a place where printers stand, with its own address. The \"Printers and queue\" overview groups printers by farm; a printer gets its farm in its settings.",
+        "Una granja es un lugar donde están las impresoras, con su propia dirección. El resumen «Impresoras y cola» agrupa las impresoras por granja; la granja se asigna en los ajustes de la impresora."
+    ],
+    "farm.admin.farms.farm": [
+        "Farma (místo)",
+        "Farm (place)",
+        "Granja (lugar)"
+    ],
+    "farm.admin.farms.unassigned": [
+        "nezařazená",
+        "not assigned",
+        "sin asignar"
+    ],
+    "farm.admin.farms.unassigned_group": [
+        "Nezařazené tiskárny",
+        "Printers without a farm",
+        "Impresoras sin granja"
+    ],
+    "farm.admin.farms.assign_hint": [
+        "farmu nastavíte v nastavení tiskárny",
+        "set the farm in the printer's settings",
+        "asigne la granja en los ajustes de la impresora"
+    ],
+    "farm.admin.farms.new": [
+        "Nová farma",
+        "New farm",
+        "Nueva granja"
+    ],
+    "farm.admin.farms.code": [
+        "Kód",
+        "Code",
+        "Código"
+    ],
+    "farm.admin.farms.name": [
+        "Název",
+        "Name",
+        "Nombre"
+    ],
+    "farm.admin.farms.street": [
+        "Ulice a číslo",
+        "Street and number",
+        "Calle y número"
+    ],
+    "farm.admin.farms.city": [
+        "Obec",
+        "Town",
+        "Localidad"
+    ],
+    "farm.admin.farms.zip": [
+        "PSČ",
+        "Postcode",
+        "Código postal"
+    ],
+    "farm.admin.farms.country": [
+        "Země",
+        "Country",
+        "País"
+    ],
+    "farm.admin.farms.sort": [
+        "Pořadí",
+        "Order",
+        "Orden"
+    ],
+    "farm.admin.farms.enabled": [
+        "v provozu",
+        "in operation",
+        "en funcionamiento"
+    ],
+    "farm.admin.farms.note": [
+        "Poznámka",
+        "Note",
+        "Nota"
+    ],
+    "farm.admin.farms.save": [
+        "Uložit",
+        "Save",
+        "Guardar"
+    ],
+    "farm.admin.ov.next_approval": [
+        "čeká na schválení",
+        "waits for approval",
+        "espera aprobación"
+    ],
+    "farm.admin.ov.more_approval": [
+        "na schválení čeká: :n",
+        "waiting for approval: :n",
+        "esperan aprobación: :n"
+    ],
+    "farm.admin.ov.bed_away_clear": [
+        "Podložka je volná. Změna v detailu.",
+        "The plate is clear. Change it on the detail.",
+        "La base está libre. Cámbielo en el detalle."
+    ],
+    "farm.admin.ov.bed_away_blocked": [
+        "Podložka je obsazená. Změna v detailu.",
+        "The plate is occupied. Change it on the detail.",
+        "La base está ocupada. Cámbielo en el detalle."
+    ]
+}

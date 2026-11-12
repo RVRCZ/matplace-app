@@ -1,4 +1,6 @@
-@extends('layouts.app', ['title' => __('farm.admin.nav.dashboard').' · admin', 'noindex' => true])
+{{-- One printer (docs/AQ.md): what "Tiskárny a fronta" used to show for every machine at once – camera, telemetry, the
+     printer's messages, commands, the running job, the queue – plus its filaments and the files on its disk. --}}
+@extends('layouts.app', ['title' => $printer->name.' · '.__('farm.admin.nav.dashboard').' · admin', 'noindex' => true])
 
 @php
     $dur = fn (int $m) => $m >= 60 ? intdiv($m, 60).' h '.($m % 60).' min' : $m.' min';
@@ -12,24 +14,16 @@
 @section('content')
 @include('admin.farm.nav')
 
-<div id="farm-dashboard" data-refresh="{{ route('admin.farm.dashboard') }}" data-every="30" data-error="{{ __('farm.admin.request_failed') }}">
-@if($attention->isNotEmpty())
-    <section class="mt-4 rounded-2xl border border-amber-300 bg-amber-50 p-4">
-        <div class="flex flex-wrap items-center justify-between gap-2">
-            <h2 class="font-bold text-amber-900">{{ __('farm.admin.attention') }}</h2>
-            {{-- clears the list only: the orders keep their state and nobody is mailed; an order comes back when something changes on it --}}
-            <form method="post" action="{{ route('admin.farm.attention.clear') }}" onsubmit="return confirm(@js(__('farm.admin.attention_clear_confirm', ['n' => $attention->count()])))">@csrf<button class="btn-quiet text-xs">{{ __('farm.admin.attention_clear') }}</button></form>
-        </div>
-        <ul class="mt-2 space-y-1 text-sm">
-            @foreach($attention as $o)
-                <li class="flex items-center gap-2"><span><a class="underline" href="{{ route('admin.farm.orders.show', $o) }}">{{ $o->number ?? $o->token }}</a> · {{ __('farm.status.'.$o->status) }} · {{ $o->modelFile?->original_name }} · {{ $o->user?->email }}</span>
-                    <form method="post" action="{{ route('admin.farm.attention.clear.one', $o) }}" class="inline">@csrf<button class="text-xs text-slate-500 hover:text-slate-800" title="{{ __('farm.admin.attention_clear_one') }}" aria-label="{{ __('farm.admin.attention_clear_one') }}">×</button></form></li>
-            @endforeach
-        </ul>
-    </section>
-@endif
+<div class="mt-3 flex flex-wrap items-center justify-between gap-2 text-sm">
+    <a href="{{ route('admin.farm.dashboard') }}" class="underline">← {{ __('farm.admin.nav.dashboard') }}</a>
+    <a href="{{ route('admin.farm.printers.edit', $printer) }}" class="underline">{{ __('farm.admin.pd.settings') }}</a>
+</div>
 
-<div class="mt-4 grid gap-4 lg:grid-cols-2">
+<div class="mt-3 grid gap-4 lg:grid-cols-2 lg:items-start">
+{{-- the live half: redrawn in place every 30 s and after every button, like the overview (bootFarmDashboard) --}}
+<div id="farm-dashboard" data-refresh="{{ route('admin.farm.printers.show', $printer) }}" data-every="30" data-error="{{ __('farm.admin.request_failed') }}">
+<p class="mb-2 flex flex-wrap items-center gap-2 text-sm" data-printer-status="{{ $overview['status']['key'] }}"><span class="rounded-full px-3 py-1 text-sm font-bold {{ $overview['status']['tone'] }}">{{ $overview['status']['label'] }}</span>@if($overview['status']['reason'])<span class="text-red-800">{{ $overview['status']['reason'] }}</span>@endif</p>
+<div class="grid gap-4">
     @foreach($printers as $row)
         @php
             $p = $row['printer'];
@@ -169,11 +163,23 @@
                     {{-- struck through: a kind that breaks in the changer sitting in a machine run by the agent – not offered, move the spool --}}
                     @php $fits = \App\Models\FarmPrinterSlot::kindFits($p, $s->color); @endphp
                     <span class="mr-2 inline-flex items-center gap-1 {{ $s->enabled ? '' : 'opacity-40' }} {{ $fits ? '' : 'line-through decoration-amber-700' }}" @if(! $fits) title="{{ __('farm.admin.manual_only_refused', ['color' => $s->color?->fullLabel(), 'printer' => $p->name]) }}" @endif><span class="inline-block h-3 w-3 rounded-full border border-slate-300" style="background: {{ $s->color?->hex ?? '#fff' }}"></span><span class="font-mono">{{ $s->code() }}</span>: {{ $s->color?->fullLabel() ?? '—' }} ({{ round($s->remaining_g) }} g)</span>
+                    @if($s->color)
+                        <a href="{{ route('admin.farm.colors.show', $s->color) }}" class="mr-2 underline" title="{{ __('farm.admin.pd.filament_detail') }}">→</a>
+                    @endif
                 @endforeach
                 <a href="{{ route('admin.farm.printers.edit', $p) }}" class="underline">{{ __('farm.admin.nav.printers') }}</a>
             </p>
         </section>
     @endforeach
+</div>
+</div>
+
+{{-- the half that is typed into: outside the redrawn box, so a refresh never takes a choice away --}}
+<div class="space-y-4">
+    @include('admin.farm.partials.printer_slots', ['printer' => $printer, 'colors' => $colors])
+    @if($files)
+        @include('admin.farm.partials.files', ['printer' => $printer, 'files' => $files])
+    @endif
 </div>
 </div>
 

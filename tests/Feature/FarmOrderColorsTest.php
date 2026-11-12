@@ -162,7 +162,7 @@ class FarmOrderColorsTest extends TestCase
         $his = $this->actingAs($admin)->getJson("/farm/orders/{$order->token}/status")->assertOk()->json();
         $this->assertSame('Kobra S1 #1 · ACE 4', $his['color']['code']);
         $this->assertSame('Kobra S1 #1 · ACE 4', $his['spools'][0]['code']);
-        $this->actingAs($admin)->get('/admin/farm')->assertOk()->assertSee('<span class="font-mono">K14</span>', false)->assertSee($order->spoolText());
+        $this->actingAs($admin)->get(route('admin.farm.printers.show', $order->farm_printer_id))->assertOk()->assertSee('<span class="font-mono">K14</span>', false)->assertSee($order->spoolText());
         $this->actingAs($admin)->get(route('admin.farm.orders.show', $order))->assertOk()->assertSee('K14');
     }
 }
