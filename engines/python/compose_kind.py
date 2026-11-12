@@ -155,6 +155,10 @@ def compose(M, Invalid, p):
     parts = {name: solid for name, solid in pieces}
     parts["all"] = whole
     parts["_pieces"] = {"all": pieces}
+    if bands and bands[0][0] == 0:
+        # what a decoration is laid on (decor.py): the lowest layer is the plate, its top the front, its underside the back
+        parts["_face"] = {"plate": bands[0][3], "t": t, "part": "layer_1", "centre": [(gx1 - gx0) / 2, (gy1 - gy0) / 2], "width": gx1 - gx0,
+                          "face_down": False, "code": str(given[0].get("code") or ""), "hex": str(given[0].get("hex") or "#888888")}
     notes = {"outer": [round(gx1 - gx0, 1), round(gy1 - gy0, 1), round(z, 1)], "layers": listed, "paint": paint, "parts": [name for name, _ in pieces],
              "filaments": len({c["code"] for c in listed}), "multi_material": False, "color_changes": changes, "origin": [round(-gx0, 2), round(-gy0, 2)],
              "warnings": warn, "thin_pct": thin, "missing_chars": missing, "links": links}

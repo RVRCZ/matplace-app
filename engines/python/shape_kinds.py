@@ -42,6 +42,7 @@ The tray is a little dish in the shape of the picture: a floor, a wall round it,
 """
 import math
 
+import decor
 import shape2d as S
 
 PRODUCTS = ("charm", "keychain", "earrings", "ornament", "magnet", "coaster", "gingerbread", "name_letter", "cookie", "topper", "tray", "badge", "medallion", "photo_organizer", "bag_charm", "straw", "opener")
@@ -65,6 +66,8 @@ EYE_SUNK = 1.0              # how far the hole of an eyelet reaches into the pla
 POCKET_CLOSE = 0.1          # slits in the pocket of a face-down picture narrower than twice this are not left standing
 INLAY = 0.6                 # how deep inlaid colours go: three layers, nothing of the plate shows through
 GAP = 6.0                   # between the two earrings on the bed
+DECORATED = ("medallion", "keychain", "ornament", "coaster")     # products whose faces take decorations (decor.py, ParametricGenerator::DECOR)
+PLAIN_RECT = 0.45           # a bare rectangular plate (no name, no picture, only decorations): its height to its width
 
 
 def _num(Invalid, p, key, default):
@@ -525,6 +528,13 @@ def build(M, Invalid, p, product):
     # a flat plate with its colours flush prints the same way: the first layers are the face, smooth, its colours sharply
     # apart and nothing to iron (docs/P.md §11). A cookie's round top, a letter's stand, a straw's clip stay face up
     face_down = (medal and (motif == "flush" or bool(p.get("inlay", False)))) or (flush and product in FLUSH_DOWN)
+    turned_up = False
+    if face_down and product in DECORATED and decor.needs_front_up(p):
+        # a relief from a photo on the front needs the front up: flush colours stay inlaid in the top, a medal's motif
+        # stands raised (decor.py)
+        face_down, turned_up = False, True
+        if medal:
+            motif = "raised"
     if face_down:
         bevel = False                                         # the edge on the bed cannot be chamfered; a saved design may ask for both
     border = medal and bool(p.get("border", True))
@@ -536,8 +546,12 @@ def build(M, Invalid, p, product):
     warn = []
     lines = [str(x).strip() for x in (p.get("lines") or []) if str(x).strip()]
     art_path = p.get("artwork_path")
-    if not cookie and not art_path and not lines:
+    # no motif of the tool's own, only decorations: a bare plate in one of the tool's plain shapes
+    plain = not cookie and not art_path and not lines and product in DECORATED and decor.wanted(p)
+    if not cookie and not art_path and not lines and not plain:
         raise Invalid("no_text")
+    if plain and body_kind == "image":
+        raise Invalid("decor_needs_body")
     is_text = not art_path and not cookie
     if product == "straw" and p.get("text_dir", "across") not in TEXT_DIRS:
         raise Invalid("bad_choice", "text_dir")
@@ -569,6 +583,9 @@ def build(M, Invalid, p, product):
     try:
         if cookie:
             layers, info = {"gingerbread": _gingerbread, "name_letter": _name_letter, "topper": _topper}[product](M, Invalid, p, width, lines, warn)
+        elif plain:
+            layers = []
+            info = {"source": "plain", "silhouette": C(), "size": [0.0, 0.0] if geometric else [art_w, round(art_w * PLAIN_RECT, 2)], "found": 0, "wanted": 0, "background": "alpha"}
         elif is_text:
             art, tinfo = S.text(M, lines[:2], p.get("font"), 10, scales=[1.0, 0.7])
             w0, h0 = S.size(art)
@@ -616,7 +633,7 @@ def build(M, Invalid, p, product):
         for layer in layers:
             layer["own"], layer["stack"] = layer["own"] ^ clip, layer["stack"] ^ clip
         layers = [layer for layer in layers if layer["own"].area() >= S.MIN_ISLAND_MM2]
-        if not layers:
+        if not layers and not plain:
             raise Invalid("empty_result")
         body2d = shape2d
     elif body_kind == "rect":
@@ -681,6 +698,7 @@ def build(M, Invalid, p, product):
     hole2d = None
     ring_out = None
     medal2d = body2d                                         # the medal without its eyelet: its rim follows this
+    face2d = body2d                                          # the face decorations are measured on: the plate without its eyelet
     if eyelet:
         hole_d, wall = n("eye_hole", 3), n("eye_wall", 2)
         travel = S.dense(S.outer_ring(body2d))
@@ -793,7 +811,7 @@ def build(M, Invalid, p, product):
         t = round(mag_h + 0.8, 2)                             # a floor of four layers over the magnet
         notes["thickened"] = t
     depth = n("depth", 0.6) if medal else INLAY
-    if medal and not ribbon and not face_down and int(n("links", 40)) > 0:
+    if medal and not ribbon and not face_down and int(n("links", 40)) > 0 and count:
         tall = math.ceil(_link_profile(LINK[2])[0] / 0.2 - 1e-6) * 0.2
         if t < tall - 1e-6:
             # a change of filament by height colours everything above it on the bed, links too: they stay under the plate's top
@@ -1118,6 +1136,17 @@ def build(M, Invalid, p, product):
         notes["ribbon"]["x"], notes["ribbon"]["y"] = round(notes["ribbon"]["x"] - x0, 2), round(notes["ribbon"]["y"] - y0, 2)
     if "magnet" in notes:
         notes["magnet"]["x"], notes["magnet"]["y"] = round(notes["magnet"]["x"] - x0, 2), round(notes["magnet"]["y"] - y0, 2)
+    if product in DECORATED:
+        # what a decoration is laid on (decor.py): the plate as it is printed, the middle and the width of the face
+        # without its eyelet, and whether the front lies on the bed
+        fx0, fy0, fx1, fy1 = face2d.bounds()
+        fcx = (fx0 + fx1) / 2
+        if face_down and not medal:
+            fcx = mx0 + mx1 - fcx                            # the plate was turned over with its picture
+        parts["_face"] = {"plate": plate2d.translate([-x0, -y0]), "t": t, "part": "body", "centre": [fcx - x0, (fy0 + fy1) / 2 - y0], "width": fx1 - fx0,
+                          "face_down": face_down, "inset": (soft + 0.5) if medal else decor.MARGIN, "code": body_color[0], "hex": body_color[1]}
+        if turned_up:
+            notes["turned_up"] = True
     return parts, notes
 
 
