@@ -87,6 +87,8 @@ export function bootParam(stage: Stage): void {
     let drawing = false; let pen = spoolCode('white');
     // decorations (a text, a relief from a photo, a logo on a face of the product): one panel for every tool that takes them
     const decorHost = document.getElementById('decor-panel');
+    // a photo handed over from the home page with the wish "a relief of it" (the router's params.decor, or ?decor=photo in the address)
+    let reliefWanted = (stage.cfg.intake?.params as { decor?: unknown } | undefined)?.decor === 'photo' || new URLSearchParams(location.search).get('decor') === 'photo';
     const decor = decorHost && cfg.decor ? bootDecor(decorHost, { ...cfg.decor, library: stage.cfg.artwork.library, file: stage.cfg.artwork.file }, (k, r) => t(k, r), stage.nf, () => soon(60)) : null;
     /** A new picture has new colours: what was said about the old ones (which filament, which order) no longer holds. */
     const forgetColours = (): void => {
@@ -753,8 +755,22 @@ export function bootParam(stage: Stage): void {
             if (state) state.textContent = t('param.artwork.uploading');
             try {
                 const picked = await uploadArtwork(file);
-                setArtwork(picked);
-                strawPicked();
+                if (decor && reliefWanted) {
+                    // the wish was a relief of this photo (a medal with a face on it): the photo is a decoration of the front,
+                    // not the tool's own picture in colours; the words that came with it go on the back
+                    reliefWanted = false;
+                    const said = (stage.cfg.intake?.params as { text?: unknown } | undefined)?.text;
+                    setArtwork(null);
+                    const plain = [...form.querySelectorAll<HTMLInputElement>('[data-choice="body"]')].find((r) => r.value !== 'image');
+                    applyValues({ line1: '', line2: '', ...(plain ? { body: plain.value } : {}) });
+                    if (state) state.textContent = '';
+                    decor.add({ kind: 'photo', face: 'front', image: picked.ref, image_name: picked.name });
+                    if (typeof said === 'string' && said.trim()) decor.add({ kind: 'text', face: 'back', mode: 'engraved', lines: [said.trim()] });
+                    stage.reveal('decor');
+                } else {
+                    setArtwork(picked);
+                    strawPicked();
+                }
                 void refresh().then(commit);
             } catch (e) {
                 if (state) state.textContent = (e as Error).message || t('param.artwork.failed');

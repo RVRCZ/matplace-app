@@ -23,7 +23,8 @@ is printed with its front on the bed.
 
 What a printer can do decides the rest:
   - the face that lies on the bed is seen from below: what is on it is mirrored, and nothing can stand out of it. A
-    text or a logo asked to be raised there is sunk instead (or inlaid, when it has a filament of its own);
+    text or a logo asked to be raised there is sunk instead (or inlaid, when it has a filament of its own), and sunk
+    no deeper than two layers: the slicer bridges those, a third one made it ask for supports (control slices, AQ.md);
   - a relief from a photo needs its face up. On the front it turns a piece that would print face down face up (the
     builder asks needs_front_up() first); on the back of a piece printed face up it cannot be made;
   - a decoration in a filament of its own is a part `decor_<n>`; the others are a part of the plate.
@@ -42,6 +43,7 @@ DEPTH = {"text": (0.4, 1.2), "logo": (0.4, 1.2), "photo": (0.6, 3.0)}
 MIN_CAP = 3.0               # the smallest capital letter a 0.4 mm nozzle still writes legibly (raised or inlaid)
 MIN_CAP_SUNK = 3.5          # a sunk letter closes sooner: its strokes are bridged or filled by the neighbouring lines
 MARGIN = 0.8                # decorations keep this far from the edge of the face
+BED_SUNK = 0.4              # on the face that lies on the bed nothing is sunk deeper: two layers are bridged, three call for supports
 RELIEF_FLOOR = 0.2          # the lowest point of a relief: one layer, so the picture has an edge and no hole
 RELIEF_GRID = 300           # a relief is read on at most this many cells across
 
@@ -180,6 +182,8 @@ def apply(M, Invalid, p, parts, notes, face):
             mode = "engraved"                                         # inlaid in the plate's own filament shows nothing
         if mode == "engraved":
             color = None
+            if on_bed:
+                depth = min(depth, BED_SUNK)
         if on_bed:
             x, turn = -x, -turn
         entry = {"index": n, "kind": kind, "face": side, "mode": mode, "depth": round(depth, 2), "on_bed": on_bed}

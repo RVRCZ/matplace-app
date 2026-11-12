@@ -157,10 +157,10 @@ class DecorTest extends TestCase
         [$relief, $name] = $n['decor'];
         $this->assertEquals([3.0, 4.2], $relief['z']);
         $this->assertEqualsWithDelta(42.0, $relief['box'][2] - $relief['box'][0], 0.3);          // 70 % of 60 mm
-        // the back lies on the bed: the name is sunk three layers into it, mirrored so it reads right when the medal is turned
+        // the back lies on the bed: the name is sunk two layers into it, mirrored so it reads right when the medal is turned
         $this->assertTrue($name['on_bed']);
         $this->assertSame('engraved', $name['mode']);
-        $this->assertEquals([0.0, 0.6], $name['z']);
+        $this->assertEquals([0.0, 0.4], $name['z']);              // two layers: a third would call for supports
         $middle = ($relief['box'][0] + $relief['box'][2]) / 2;
         $this->assertLessThan($middle - 5, ($name['box'][0] + $name['box'][2]) / 2);              // 20 % to the right as it is read = to the left as it is printed
         $this->assertLessThan($front['volume_mm3'], $both['volume_mm3']);

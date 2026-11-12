@@ -24,6 +24,8 @@ export interface DecorCfg {
 export interface DecorPanel {
     read(): Record<string, unknown>[];
     write(items: unknown): void;
+    /** One more decoration, opened for the visitor to go on with (a photo handed over from the home page). */
+    add(item: Record<string, unknown>): void;
     placed(list: DecorPlaced[] | undefined, turnedUp: boolean): void;
 }
 
@@ -101,7 +103,7 @@ export function bootDecor(host: HTMLElement, cfg: DecorCfg, t: Words, nf: Intl.N
         box.innerHTML = `<legend class="text-sm font-medium text-ink">${esc(t(`decor.${key}`))}</legend>`;
         const row = document.createElement('div'); row.className = 'mt-1 flex flex-wrap gap-1.5'; row.setAttribute('role', 'radiogroup');
         values.forEach((v) => {
-            const label = document.createElement('label'); label.className = 'tool-choice';
+            const label = document.createElement('label'); label.className = 'tool-choice inline-flex min-h-11 items-center !px-3.5';
             const radio = document.createElement('input'); radio.type = 'radio'; radio.name = `decor-${key}`; radio.value = v; radio.className = 'sr-only'; radio.checked = d[key] === v;
             radio.addEventListener('change', () => { d[key] = v; after?.(); });
             label.append(radio, t(`decor.${key}.${v}`));
@@ -123,7 +125,7 @@ export function bootDecor(host: HTMLElement, cfg: DecorCfg, t: Words, nf: Intl.N
                 label.appendChild(input); box.appendChild(label);
             });
             if (d.lines.length < 3) {
-                const more = document.createElement('button'); more.type = 'button'; more.className = 'text-left text-sm font-semibold text-ink underline'; more.textContent = t('decor.line.add');
+                const more = document.createElement('button'); more.type = 'button'; more.className = 'min-h-11 text-left text-sm font-semibold text-ink underline'; more.textContent = t('decor.line.add');
                 more.onclick = () => { d.lines.push(''); render(); (list.querySelectorAll<HTMLInputElement>('[data-decor-open] input.field')[d.lines.length - 1])?.focus(); };
                 box.appendChild(more);
             }
@@ -186,13 +188,13 @@ export function bootDecor(host: HTMLElement, cfg: DecorCfg, t: Words, nf: Intl.N
         if (d.kind !== 'photo' && d.mode !== 'engraved') {
             // a filament of its own: the colour window of the page; none is the product's own colour
             const row = document.createElement('div'); row.className = 'flex flex-wrap items-center gap-2 text-sm';
-            const swatch = document.createElement('button'); swatch.type = 'button'; swatch.className = 'h-9 w-9 shrink-0 rounded-full border border-slate-300'; swatch.setAttribute('aria-label', t('decor.color'));
+            const swatch = document.createElement('button'); swatch.type = 'button'; swatch.className = 'h-11 w-11 shrink-0 rounded-full border border-slate-300'; swatch.setAttribute('aria-label', t('decor.color'));
             paintSwatch(swatch, d.color);
             const name = document.createElement('span'); name.className = 'text-ink'; name.textContent = `${t('decor.color')}: ${d.color ? (colorOf(d.color)?.name ?? d.color) : t('decor.color.same')}`;
             swatch.onclick = async () => { const got = await pickColor(d.color); if (got) { d.color = got; render(); changed(); } };
             row.append(swatch, name);
             if (d.color) {
-                const clear = document.createElement('button'); clear.type = 'button'; clear.className = 'text-sm text-muted underline'; clear.textContent = t('decor.color.clear');
+                const clear = document.createElement('button'); clear.type = 'button'; clear.className = 'min-h-11 text-sm text-muted underline'; clear.textContent = t('decor.color.clear');
                 clear.onclick = () => { d.color = null; if (d.mode === 'flush') d.mode = 'raised'; render(); changed(); };
                 row.appendChild(clear);
             }
@@ -244,6 +246,11 @@ export function bootDecor(host: HTMLElement, cfg: DecorCfg, t: Words, nf: Intl.N
             items.splice(0, items.length, ...next);
             open = Math.min(open, items.length - 1);
             render();
+        },
+        add: (raw) => {
+            const d = from(raw);
+            if (!d || items.length >= cfg.max) return;
+            items.push(d); open = items.length - 1; render();
         },
         placed: (now, turnedUp) => {
             const before = JSON.stringify([said, turned]);
