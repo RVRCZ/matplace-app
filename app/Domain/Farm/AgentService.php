@@ -233,6 +233,32 @@ final class AgentService
                 [...$this->flow->orderLines($job->order), __('farm.admin.mail.line_what', ['what' => (string) $command->result], 'cs'), __('farm.admin.mail.line_next_start_failed', [], 'cs')]);
             Log::warning('Farm start command failed', ['command' => $command->id, 'message' => $message]);
         }
+        if ($command->type === FarmCommand::TYPE_CANCEL && (! $ok || $command->heatersLeftOn())) {
+            $this->cancelUnconfirmed($command, $ok);
+        }
+    }
+
+    /**
+     * The printer did not carry out a cancel (it still holds the print although the order is cancelled on the web), or
+     * it did and the heaters stayed on: the operator is told at once, with what the agent said and what to do. Nothing
+     * else changes here; the admin shows the printer as "did not cancel" from the command itself (FarmCommand::cancelState).
+     */
+    private function cancelUnconfirmed(FarmCommand $command, bool $cancelled): void
+    {
+        $printer = $command->printer;
+        $order = $command->printJob?->order;
+        $key = $cancelled ? 'cancel_heaters' : 'cancel_unconfirmed';
+        $subject = $order
+            ? __('farm.admin.mail.'.$key, ['number' => $order->number, 'printer' => $printer->name], 'cs')
+            : __('farm.admin.mail.'.$key.'_printer', ['printer' => $printer->name], 'cs');
+        $this->flow->alertAdmin($subject, $order, [
+            ...($order ? $this->flow->orderLines($order) : []),
+            __('farm.admin.mail.line_what', ['what' => (string) $command->resultText('cs')], 'cs'),
+            __('farm.admin.mail.line_agent_said', ['said' => (string) $command->result], 'cs'),
+            __('farm.admin.mail.line_next_'.$key, [], 'cs'),
+        ]);
+        Log::warning($cancelled ? 'Farm cancel left the heaters on' : 'Farm cancel not confirmed by the printer',
+            ['command' => $command->id, 'printer' => $printer->key, 'order' => $order?->number, 'message' => $command->result]);
     }
 
     /**

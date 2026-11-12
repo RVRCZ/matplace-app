@@ -47,6 +47,8 @@ CONFIRM_POLL_SECONDS = 2.0
 # cancel: how long the second step (the driver's cancel_fallback) has to show in the printer's state, and how long
 # the heaters get to go off by themselves after a cancelled print before the agent switches them off
 FALLBACK_WAIT_SECONDS = 20.0
+RESULT_LIMIT = 300              # characters of a command's result the server accepts (AgentController::commandResult)
+SAID_LIMIT = 110                # of them, what the refused call itself said, so the reason after it still fits
 COOL_WAIT_SECONDS = 10.0
 
 # the answer to a pause asked while the printer still heats and levels: a Kobra S1 does not take it then, the call
@@ -372,7 +374,8 @@ class Agent:
                 ok, message = False, str(e)
                 log.error("%s: %s failed: %s", w.key, cmd.get("type"), e)
         try:
-            await self.server.command_result(int(cmd["id"]), ok, message)
+            # the server takes at most RESULT_LIMIT characters; a longer note would be refused and the command left open
+            await self.server.command_result(int(cmd["id"]), ok, message[:RESULT_LIMIT])
         except ServerError as e:
             log.warning("could not report the result of command %s: %s", cmd.get("id"), e)
         self._wake.set()
@@ -466,14 +469,14 @@ class Agent:
         (cancel_fallback) and FALLBACK_WAIT_SECONDS more; a print that still stays fails the command with the reason,
         and the server tells the operator. Afterwards the heaters are looked at (_cool)."""
         ended = lambda st: st.state not in (PRINTING, PAUSED) or (st.job is not None and st.job.status == JOB_CANCELLED)  # noqa: E731
-        answered = "cancel was answered ok" if said is None else f"cancel said: {said}"
+        answered = "cancel was answered ok" if said is None else f"cancel said: {said[:SAID_LIMIT]}"
         if said is not None:
             log.warning("%s: %s, watching the printer's state for %.0f s", w.key, answered, CONFIRM_WAIT_SECONDS)
         notes = []
         took, last = await self._watch(w, ended, CONFIRM_WAIT_SECONDS, at_once=True)
         if took is not None:
             if said is not None:
-                notes.append(f"confirmed by the printer's state after {took:.0f} s; the call itself said: {said}")
+                notes.append(f"confirmed by the printer's state after {took:.0f} s; the call itself said: {said[:SAID_LIMIT]}")
         else:
             if last is None:
                 raise DriverError(f"cancel not confirmed: {answered}, but the printer has not answered for {CONFIRM_WAIT_SECONDS:.0f} s; "
