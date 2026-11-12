@@ -45,8 +45,12 @@ final class CachedPrintPreparer implements PrintPreparer
         $mesh = $this->inner->prepare($stlPath, $outPath, $unitScale, $bed, $keepPose);
         try {
             File::ensureDirectoryExists($this->dir);
-            File::copy($outPath, $stl);
-            File::put($json, json_encode($mesh->toArray()));
+            // each file whole or not at all, the record last: a hit needs both, and another worker may look at any moment
+            $tmp = '.'.getmypid().'.tmp';
+            File::copy($outPath, $stl.$tmp);
+            rename($stl.$tmp, $stl);
+            File::put($json.$tmp, json_encode($mesh->toArray()));
+            rename($json.$tmp, $json);
             $this->prune();
         } catch (\Throwable) {
             // a full disk or a race with another worker: the order has its model, only the shortcut is missing

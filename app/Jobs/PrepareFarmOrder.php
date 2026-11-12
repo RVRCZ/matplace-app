@@ -21,16 +21,19 @@ use App\Engines\DTO\SliceParams;
 use App\Engines\DTO\SliceResult;
 use App\Engines\Exceptions\PathConflictException;
 use App\Engines\Exceptions\SlicerException;
+use App\Engines\Exceptions\SupersededException;
 use App\Engines\Farm\PhpPrintPreparer;
 use App\Engines\Gcode\SupportLines;
 use App\Engines\Mesh\MeshDecimator;
 use App\Engines\Mesh\StlFile;
+use App\Engines\Mesh\SupportsCheck;
 use App\Engines\Mesh\ThreeMfWriter;
 use App\Engines\Slicer\OrcaSlicer;
 use App\Models\FarmOrder;
 use App\Models\FarmPrinter;
 use App\Models\FarmPrinterSlot;
 use App\Models\ModelFile;
+use App\Support\RunGuard;
 use App\Support\Stopwatch;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Queue\Queueable;
@@ -48,8 +51,11 @@ use Illuminate\Support\Facades\Storage;
  * A big model's slice is asked for by the customer and may be asked for again while it runs (other choices,
  * docs/AL.md §11): every slice is a numbered run (`slice_run` on the order, `$run` here), the job checks between its
  * steps whether it is still the current run, and a run that was overtaken leaves the order to the next one (nothing
- * of its result moves the order on; the files it wrote are overwritten by the run that follows). The slicer itself
- * cannot be interrupted, so an overtaken run costs its minutes of Orca but no wrong price.
+ * of its result moves the order on; the files it wrote are overwritten by the run that follows). An overtaken run does
+ * not finish its slice either (docs/AL.md §22): while one of its engine processes runs – the repair and the pose, the
+ * thinning, the slicer – the job asks once a second whether it is still the current run, and when it is not, the process
+ * is killed with everything it started (RunGuard, ProcessTree) and the job ends without a verdict; the run that replaced
+ * it waits for the order's lock two seconds at a time and starts as soon as this one has let go.
  *
  * A piece of very many triangles is thinned here, once, before its copies are laid out (thinPiece, docs/AL.md §11.9):
  * the plates are built from the thinned piece and the slicer is told not to thin them again (SliceParams::thinMesh).
@@ -61,10 +67,13 @@ class PrepareFarmOrder implements ShouldQueue
     use Queueable;
 
     /**
-     * The attempts are mostly releases: a run that follows another of the same order waits for its lock five seconds
+     * The attempts are mostly releases: a run that follows another of the same order waits for its lock two seconds
      * at a time (middleware), and a big model's slice takes minutes – enough releases to outlast the job's timeout.
      */
-    public int $tries = 400;
+    public int $tries = 1000;
+
+    /** The run this job works for once it has started: its own number, or the order's current one when it was given none. */
+    private ?int $current = null;
 
     public int $backoff = 3;
 
@@ -159,10 +168,15 @@ class PrepareFarmOrder implements ShouldQueue
         return [$clock->measure($phase, fn () => $slicer->slice($meshPath, $params)), null];
     }
 
-    /** The order asked for another slice since this run was dispatched: this run's result would be for choices nobody wants. */
+    /**
+     * The order asked for another slice since this run was dispatched (or, for a job without a number, since it started):
+     * this run's result would be for choices nobody wants.
+     */
     private function overtaken(FarmOrder $order): bool
     {
-        return $this->run !== null && (int) FarmOrder::whereKey($order->id)->value('slice_run') !== $this->run;
+        $mine = $this->current ?? $this->run;
+
+        return $mine !== null && (int) FarmOrder::whereKey($order->id)->value('slice_run') !== $mine;
     }
 
     /** A verdict of this run reaches the order only while it is the current run. */
@@ -177,7 +191,8 @@ class PrepareFarmOrder implements ShouldQueue
     /** Several workers: two recalculations of one order never write its files at the same time. */
     public function middleware(): array
     {
-        return [(new WithoutOverlapping('farm-order-'.$this->orderId))->releaseAfter(5)->expireAfter($this->timeout + 60)];
+        // two seconds: a run that replaced another starts right after the old one was stopped (docs/AL.md §22)
+        return [(new WithoutOverlapping('farm-order-'.$this->orderId))->releaseAfter(2)->expireAfter($this->timeout + 60)];
     }
 
     public function handle(PrintPreparer $preparer, Slicer $slicer, FarmSettings $settings, OrderService $orders, OrderFlow $flow): void
@@ -211,6 +226,9 @@ class PrepareFarmOrder implements ShouldQueue
         if (! $reslice) {
             $clock->since('wait', $order->created_at?->getTimestamp());
         }
+        // from here on the engines' processes of this job are given up as soon as the order asks for another slice
+        $this->current = $this->run ?? (int) $order->slice_run;
+        RunGuard::watch(fn () => $this->overtaken($order));
 
         try {
             if ($order->isByParts() && ($main = $order->slot) && ($slotIds = array_filter(array_map('intval', array_column($order->partPlates(), 'slot_id'))))
@@ -278,6 +296,12 @@ class PrepareFarmOrder implements ShouldQueue
             $thinRel = $order->dir().'/print.thin.stl';
             $piece = $this->thinPiece($mesh, $disk->path($thinRel), (float) ($setup['params']->overrides['process']['layer_height'] ?? $setup['layer']), $clock, max(1, (int) $order->copies));
             $pieceRel = $piece === $mesh ? $stlRel : $thinRel;
+            // "automatic" supports, when the check is switched on: a piece of which nothing can hang in the air is sliced
+            // with supports off (docs/AL.md §22)
+            if ($setup['supports_auto']) {
+                $setup['params'] = $this->withoutNeedlessSupports($setup['params'], $piece, (float) ($setup['params']->overrides['process']['layer_height'] ?? $setup['layer']), $clock);
+                $setup['overrides'] = $setup['params']->overrides;   // the record of the slice says what it was sliced with
+            }
             $sliceRel = $pieceRel;
             // the copies of a piece that may need supports stand further apart (tree supports lean out beyond its shadow, two
             // instances whose paths cross stop the slicer, docs/AL.md §11.10): the capacity, the plate and the project agree on it
@@ -421,11 +445,15 @@ class PrepareFarmOrder implements ShouldQueue
 
             // ── 3. price ───────────────────────────────────────────────────────
             $this->price($order, $printer, $settings, $orders, $flow, $clock);
+        } catch (SupersededException $e) {
+            // the order asked for another slice and this run's process was stopped: no verdict, the next run has the order
+            $clock->note('overtaken', 'stopped');
         } catch (\Throwable $e) {
             Log::warning('PrepareFarmOrder failed', ['order' => $order->id, 'error' => $e->getMessage()]);
             $clock->note('failed', true);
             $this->fail($flow, $order, 'slicing_failed', mb_substr($e->getMessage(), 0, 1000));
         } finally {
+            RunGuard::clear();
             @unlink($disk->path($order->dir().'/print.thin.stl'));   // the thinned piece served its slices; its thinning stays remembered (MeshDecimator)
             // only the column: whatever the steps above saved stays as it is. An overtaken run leaves the timings to the
             // run that replaced it (which may have written its own already).
@@ -494,8 +522,41 @@ class PrepareFarmOrder implements ShouldQueue
         $overrides['process'] = PrintSettings::adminOverrides($order) + $overrides['process'];
         $params = (new SliceParams(materialCode: $order->material->code, quality: $quality, infillPercent: $infill, supports: $order->isTest() || $noSupports ? false : null, treeSupports: true))
             ->withFarmProfile($profiles, $overrides);
+        // trial prints before the whole farm moves to another slicer: an admin's orders take it first (docs/AL.md §22)
+        if (($trial = config('engines.orca.slicer_trial')) && $order->user?->isAdmin()) {
+            $params = $params->withSlicer((string) $trial);
+        }
+        // supports are "automatic" when nobody chose: the printer's settings switch them on, the customer left the choice
+        // alone and neither the customer's own numbers nor the admin's overrides name them
+        $supports_auto = ! $order->isTest() && ! $noSupports && $order->supports !== 'on' && ($overrides['process']['enable_support'] ?? null) === '1'
+            && ! array_key_exists('enable_support', PrintSettings::process($custom)) && ! array_key_exists('enable_support', PrintSettings::adminOverrides($order));
 
-        return compact('params', 'profiles', 'overrides', 'profile', 'layer', 'infill', 'quality');
+        return compact('params', 'profiles', 'overrides', 'profile', 'layer', 'infill', 'quality', 'supports_auto');
+    }
+
+    /**
+     * The same slice with the supports left out when the piece's shape needs none (SupportsCheck, docs/AL.md §22): the
+     * slicer is not asked to look for overhangs and still adds supports by itself if it cannot slice without. When the
+     * check is unsure, off (as shipped: the measurement of 12 Nov 2026 found no time to save), or the piece is not a
+     * closed mesh, nothing changes. What was asked and answered goes to the timings (`supports_check_s`,
+     * `supports_needed`, `supports_check`).
+     */
+    private function withoutNeedlessSupports(SliceParams $params, PreparedMesh $piece, float $layer, Stopwatch $clock): SliceParams
+    {
+        $check = app(SupportsCheck::class);
+        if (! $check->enabled()) {
+            return $params;
+        }
+        if (! $piece->watertight) {
+            $clock->note('supports_needed', true)->note('supports_check', 'open');
+
+            return $params;
+        }
+        $threshold = (float) ($params->overrides['process']['support_threshold_angle'] ?? config('farm.support_threshold_angle', 25));
+        $r = $check->check($piece->path, $threshold, $layer > 0 ? $layer : 0.2);
+        $clock->note('supports_check_s', $r['seconds'])->note('supports_needed', $r['needed'])->note('supports_check', $r['reason']);
+
+        return $r['needed'] ? $params : $params->withSupportsLeftOut();
     }
 
     /**
@@ -1090,6 +1151,9 @@ class PrepareFarmOrder implements ShouldQueue
         $params = $setup['params']->withFilaments(self::forSlicer($filaments), $disk->path($projectRel), $process);
         try {
             $result = $clock->measure('slice', fn () => $slicer->slice($disk->path($plateRel), $params));
+        } catch (SupersededException $e) {
+            $cleanup();
+            throw $e;   // the order asked for another slice: no falling back on a plate per part
         } catch (\Throwable $e) {
             // the slicer could not do the plate (the tower found no room, the filaments were not kept apart…): one plate each
             Log::warning('One-plate slice failed, the parts print one plate each', ['order' => $order->id, 'error' => $e->getMessage()]);
@@ -1149,6 +1213,10 @@ class PrepareFarmOrder implements ShouldQueue
                 $disk->path($restProject), $toolChanger ? self::TOOL_CHANGER_PROCESS : self::ONE_PLATE_PROCESS + ['wipe_tower_x' => [(string) $restTower['x']], 'wipe_tower_y' => [(string) $restTower['y']]]);
             try {
                 $restResult = $clock->measure('rest_slice', fn () => $slicer->slice($disk->path($restPlateRel), $restParams));
+            } catch (SupersededException $e) {
+                @unlink($disk->path($gcodeRel));
+                $cleanup();
+                throw $e;
             } catch (\Throwable $e) {
                 Log::warning('One-plate slice of the last plate failed', ['order' => $order->id, 'error' => $e->getMessage()]);
                 $clock->note('one_plate_failed', 'rest: '.mb_substr($e->getMessage(), 0, 200));
