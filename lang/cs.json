@@ -2306,5 +2306,19 @@
     "youtube.clips.guides.in_hand": "Ukažte výtisk v ruce",
     "youtube.analytics.reconnect": "Znovu připojit s rozsahem Analytics",
     "youtube.analytics.summary": "28 dní: :views zhlédnutí · sledování :retention % · průměr :seconds s",
-    "youtube.analytics.engaged": "zhlédnuto (engagedViews): :views"
+    "youtube.analytics.engaged": "zhlédnuto (engagedViews): :views",
+    "farm.state.pause.until": "Farma má teď odstávku. Tisk začne nejdřív :date.",
+    "farm.state.pause.open_end": "Farma má teď odstávku. Tisk začne, jakmile farmu znovu spustíme.",
+    "farm.state.pause.order": "Objednat a zaplatit můžete už teď, zakázka počká ve frontě.",
+    "farm.state.pause.faq_q": "Kdy začne tisk?",
+    "farm.state.closed.note": "Farma teď nové zakázky nepřijímá. Nástroje, náhled a stažení modelu fungují dál.",
+    "farm.mail.queued_pause.subject": "Zakázka :number je přijatá, tisk začne po odstávce",
+    "farm.mail.queued_pause.body": "Váš tisk „:name“ (:color) je zaplacený a čeká ve frontě. Dáme vědět, až se začne tisknout.",
+    "farm.guest.mail.body_pause": "Děkujeme. Tisk „:name“ je zaplacený (:total) a čeká ve frontě. Jak pokračuje, uvidíte na stránce zakázky; o každém kroku vám napíšeme.",
+    "farm.state.admin.line_queue_pause": "Fronta: farma má odstávku, zakázka čeká a spustí se, až farmu otevřete",
+    "param.go.hint.closed": "V kalkulaci uvidíte dobu tisku a spotřebu materiálu a stáhnete si model nebo projekt pro svou tiskárnu. Bez registrace.",
+    "gifts.after.closed": "Každý návrh končí stejně: náhled, rozměry a stažení souboru pro vaši tiskárnu.",
+    "footer.promise.closed": "Kontrola, náhled a soubor pro vaši tiskárnu. Zdarma.",
+    "param.go.closed": "Spočítat dobu tisku a materiál",
+    "farm.order.blocked_pause": "Farma má odstávku, tisk začne po jejím skončení."
 }

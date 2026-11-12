@@ -3,6 +3,7 @@
 namespace App\Support;
 
 use App\Domain\Farm\FarmGate;
+use App\Domain\Farm\FarmState;
 use Illuminate\Support\Facades\Lang;
 
 /**
@@ -49,7 +50,12 @@ final class NextStep
      */
     public static function text(string $key, array $replace = []): string
     {
-        $variant = $key.'.'.self::mode();
+        $mode = self::mode();
+        // a closed farm (FarmState) names no price of a print: "<key>.closed" where the download wording does
+        if ($mode === self::DOWNLOAD && FarmState::isClosed() && Lang::has($key.'.closed')) {
+            return __($key.'.closed', $replace);
+        }
+        $variant = $key.'.'.$mode;
 
         return Lang::has($variant) ? __($variant, $replace) : __($key, $replace);
     }

@@ -28,6 +28,33 @@
 
 <form method="post" action="{{ route('admin.farm.settings.save') }}" class="mt-4 space-y-4">
     @csrf
+    {{-- the state of the whole service, one choice of three (App\Domain\Farm\FarmState, docs/AL.md §23); `farm_open` is written with it --}}
+    @php
+        $farmState = old('farm_state', \App\Domain\Farm\FarmState::current());
+        $pauseNote = (array) ($settings['farm_pause_note'] ?? []);
+        $states = [
+            'open' => ['Otevřeno', 'Běžný provoz: ceny, objednávky a tisk jako vždy.'],
+            'paused' => ['Odstávka', 'Krátká pauza kvůli úpravám a opravám. Ceny zůstávají, objednat a zaplatit jde. Místo slibů rychlosti web říká „Farma má teď odstávku. Tisk začne nejdřív …“. Zaplacené zakázky zákazníků čekají ve frontě a žádná se nespustí, dokud nepřepnete na Otevřeno; vaše zkušební zakázky a tisky farmy se tisknou dál.'],
+            'closed' => ['Zavřeno', 'Delší přestávka. Tlačítko „VYTISKNOUT“, ceny tisku a texty o tisku u nás zmizí, nové zakázky nejdou založit; nástroje, náhled a stažení modelu zůstávají. Vy jako administrátor objednáte dál. Pozor: zakázky, které už ve frontě čekají, se při Zavřeno tisknou (jako dosud); mají-li čekat, nechte Odstávku.'],
+        ];
+    @endphp
+    <section id="farm-state" class="rounded-2xl border-2 border-amber-300 bg-amber-50 p-4">
+        <h2 class="font-bold">Stav farmy</h2>
+        <div class="mt-2 grid gap-3 text-sm sm:grid-cols-3">
+            @foreach($states as $value => [$name, $what])
+                <label class="flex items-start gap-2 rounded-xl border border-amber-200 bg-white p-3"><input type="radio" name="farm_state" value="{{ $value }}" @checked($farmState === $value) class="mt-1 h-4 w-4 accent-action"><span><strong>{{ $name }}</strong><br><span class="text-xs text-slate-600">{{ $what }}</span></span></label>
+            @endforeach
+        </div>
+        <div class="mt-3 grid gap-3 sm:grid-cols-4">
+            <label class="{{ $lb }}">Odstávka: tisk začne nejdřív (nepovinné; bez data web říká „jakmile farmu znovu spustíme“)<input type="date" name="farm_pause_until" value="{{ old('farm_pause_until', $settings['farm_pause_until'] ?? '') }}" class="{{ $in }}"></label>
+            @foreach(['cs' => 'česky', 'en' => 'anglicky', 'es' => 'španělsky'] as $l => $lang)
+                <label class="{{ $lb }}">Poznámka pro zákazníky {{ $lang }} (nepovinná, za větou o odstávce)<input name="farm_pause_note[{{ $l }}]" maxlength="300" value="{{ old('farm_pause_note.'.$l, $pauseNote[$l] ?? '') }}" class="{{ $in }}"></label>
+            @endforeach
+        </div>
+        <p class="mt-2 text-xs text-slate-600">Poznámka se ukáže jen v jazyce, ve kterém je vyplněná; ostatní jazyky mají standardní větu. Datum, které už uplynulo, web neukazuje. Farma se sama neotevře: stav je vidět nahoře na všech stránkách správy farmy.</p>
+        <p class="mt-2 text-sm font-semibold text-amber-900" data-ads-warning>Při odstávce nebo zavření zvažte pozastavení reklamy.</p>
+    </section>
+
     @foreach($groups as $title => $fields)
         <section class="rounded-2xl border border-slate-200 bg-white p-4">
             <h2 class="font-bold">{{ $title }}</h2>
@@ -42,7 +69,7 @@
     <section class="rounded-2xl border border-amber-200 bg-amber-50 p-4">
         <h2 class="font-bold">Přepínače webu</h2>
         <div class="mt-2 grid gap-3 text-sm">
-            <label class="flex items-start gap-2"><input type="checkbox" name="farm_open" value="1" @checked($settings['farm_open']) class="mt-1 h-4 w-4 accent-action"><span><strong>Farma přijímá zakázky</strong><br><span class="text-xs text-slate-600">Vypnuto: tlačítko „VYTISKNOUT“ zmizí a nové zakázky nejdou založit; rozjeté tisky doběhnou, kredit zůstává.</span></span></label>
+            {{-- "Farma přijímá zakázky" (farm_open) is the state above now: Zavřeno = off --}}
             <label class="flex items-start gap-2"><input type="checkbox" name="farm_public" value="1" @checked($settings['farm_public'] ?? false) class="mt-1 h-4 w-4 accent-action"><span><strong>Farma je veřejná</strong><br><span class="text-xs text-slate-600">Vypnuto: tlačítko „VYTISKNOUT“ v kalkulaci a nástrojích vidí jen administrátor.</span></span></label>
             <label class="flex items-start gap-2"><input type="checkbox" name="marketplace" value="1" @checked($settings['marketplace']) class="mt-1 h-4 w-4 accent-action"><span><strong>Tržiště tiskařů</strong><br><span class="text-xs text-slate-600">Zapnuto: ceny tiskařů v kalkulaci, poptávky „Chci to vyrobit“, nabídky, veřejné stránky a role tiskaře. Vypnuto: kalkulace ukazuje jen údaje o tisku a jedinou cenu má farma.</span></span></label>
             <label class="flex items-start gap-2"><input type="checkbox" name="video_prices" value="1" @checked($settings['video_prices']) class="mt-1 h-4 w-4 accent-action"><span><strong>Ceny ve videích</strong><br><span class="text-xs text-slate-600">Vypnuto: Short výtisku končí bez ceny, komentář a popis o ní nemluví a Short „Kolik stojí 3D tisk?“ se nestaví. Platí pro nově postavená videa; čekající přestavíte v /admin/youtube tlačítkem „Postavit znovu“, zveřejněná se nemění.</span></span></label>

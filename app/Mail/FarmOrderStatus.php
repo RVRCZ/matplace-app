@@ -3,6 +3,7 @@
 namespace App\Mail;
 
 use App\Domain\Farm\CardRefunds;
+use App\Domain\Farm\FarmState;
 use App\Models\FarmOrder;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
@@ -35,6 +36,11 @@ class FarmOrderStatus extends Mailable implements ShouldQueue
             return $this->status.'_card';
         }
 
+        // the farm is paused (FarmState): the order is accepted and waits, the mail says from when it may print
+        if ($this->status === FarmOrder::STATUS_QUEUED && FarmState::holds($this->order)) {
+            return 'queued_pause';
+        }
+
         return $this->status === FarmOrder::STATUS_HANDED_OVER && $this->order->tracking_url ? 'shipped' : $this->status;
     }
 
@@ -52,6 +58,7 @@ class FarmOrderStatus extends Mailable implements ShouldQueue
             'url' => route('farm.orders.show', $this->order),
             'trackingUrl' => $this->key() === 'shipped' ? $this->order->tracking_url : null,
             'reason' => $this->order->error ? CardRefunds::errorText($this->order) : null,
+            'pause' => $this->key() === 'queued_pause' ? FarmState::pauseLine() : null,
         ]);
     }
 }

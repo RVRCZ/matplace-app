@@ -2,6 +2,7 @@
 
 namespace App\Support;
 
+use App\Domain\Farm\FarmState;
 use App\Models\Post;
 
 /**
@@ -151,7 +152,7 @@ final class Schema
             '@type' => 'Product', 'name' => $name, 'description' => $description, 'image' => $images, 'url' => $url,
             'offers' => $prices ? [
                 '@type' => 'AggregateOffer', 'priceCurrency' => $currency, 'lowPrice' => round(min($prices), 2), 'highPrice' => round(max($prices), 2), 'offerCount' => count($prices),
-                'availability' => 'https://schema.org/InStock', 'itemCondition' => 'https://schema.org/NewCondition', 'url' => $url,
+                'availability' => FarmState::schemaAvailability(), 'itemCondition' => 'https://schema.org/NewCondition', 'url' => $url,
                 'seller' => ['@id' => url('/').'#organization'],
             ] : null,
         ];

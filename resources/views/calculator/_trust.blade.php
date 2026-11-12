@@ -34,7 +34,7 @@
     @if($printed > 0)
         <ul class="mt-2 space-y-1 text-sm text-slate-700" data-trust-numbers>
             <li>{{ trans_choice('calc.trust.printed', $printed, ['n' => $printed]) }}@if($recent > 0) {{ __('calc.trust.recent', ['n' => $recent]) }}@endif</li>
-            @if($days !== null && $days > 0)<li>{{ trans_choice('calc.trust.days', $days, ['d' => $days]) }}</li>@endif
+            @if($days !== null && $days > 0 && ! \App\Domain\Farm\FarmState::isPaused())<li>{{ trans_choice('calc.trust.days', $days, ['d' => $days]) }}</li>@endif
             @if($videos > 0)<li>{{ trans_choice('calc.trust.videos', $videos, ['n' => $videos]) }}</li>@endif
         </ul>
     @endif

@@ -266,6 +266,8 @@
             <form id="farm-pay" class="hidden rounded-2xl border border-line bg-action-soft p-4">
                 <h2 class="text-base font-bold text-slate-800">{{ __('farm.order.step_order') }}</h2>
                 <p class="mt-1 text-xs text-slate-600">{{ __('farm.order.step_order_hint') }}</p>
+                {{-- the farm is paused and this order would wait (FarmState): said before the payment, the same sentence as after it --}}
+                @include('farm._pause', ['order' => $order, 'class' => 'mt-3'])
                 <div class="mt-2 flex items-center justify-between gap-2 text-sm font-semibold text-slate-700">{{ __('farm.order.summary_colors') }}
                     <a href="#farm-material" id="farm-change-colors" class="text-xs font-semibold text-action-dark underline">{{ __('farm.order.change') }}</a></div>
                 <ul id="farm-summary" class="mt-2 flex flex-wrap gap-2 text-sm" aria-live="polite"></ul>

@@ -1,7 +1,12 @@
 <x-mail::message>
 # {{ __('farm.guest.mail.subject', ['number' => $order->number]) }}
 
-{{ __('farm.guest.mail.body', ['name' => $order->modelFile?->original_name, 'total' => $total]) }}
+@php $pause = \App\Domain\Farm\FarmState::holds($order) ? \App\Domain\Farm\FarmState::pauseLine() : null; @endphp
+{{ __($pause ? 'farm.guest.mail.body_pause' : 'farm.guest.mail.body', ['name' => $order->modelFile?->original_name, 'total' => $total]) }}
+@if($pause)
+
+{{ $pause }}
+@endif
 @if($spools = $order->spoolText(false))
 
 {{ __('farm.mail.colors', ['list' => $spools]) }}

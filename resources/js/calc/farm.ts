@@ -63,7 +63,7 @@ interface FarmState {
     min_charge?: number;
     shipping: Shipping | null; destination: string | null; tracking_url: string | null;
     colors: Color[]; color: { name: string; hex: string; finish?: string | null; code?: string | null } | null; spools?: SpoolLine[]; delivery: string; balance: number; model_url: string | null; supports_url: string | null;
-    queue: { start_in: number; finish_in: number; ahead: number; blocked: string | null } | null; cancel_keep: number | null;
+    queue: { start_in: number; finish_in: number; ahead: number; blocked: string | null } | null; pause?: string | null; cancel_keep: number | null;
     print: { status: string; progress: number; snapshot_url: string | null; snapshot_at: string | null } | null;
     timelapse_url?: string | null;
     /** the finished print photographed in the photo box, on its backdrop */
@@ -567,7 +567,8 @@ export function bootFarmOrder(): void {
         // the tile and the kinds inside it both name a slot: the colour in that kind is picked, nothing else changes
         box.querySelectorAll<HTMLButtonElement>('button[data-slot]').forEach((b) => b.addEventListener('click', () => { picked = Number(b.dataset.slot); render(); }));
         const c = state.colors.find((x) => x.slot === picked);
-        $('farm-start-note')!.textContent = c ? tr(c.starts_now ? 'farm.order.starts_now' : 'farm.order.goes_to_queue') : '';
+        // the farm is paused (FarmState): the server's sentence with the day instead of "starts now" / "goes to the queue"
+        $('farm-start-note')!.textContent = state.pause ?? (c ? tr(c.starts_now ? 'farm.order.starts_now' : 'farm.order.goes_to_queue') : '');
         viewer.setColor(c?.hex ?? null, c?.finish ?? null);   // the spool's finish: silk shines, matte does not
         const colorTitle = $('farm-color-title');
         if (colorTitle) colorTitle.textContent = colorTitle.dataset.plain ?? '';
@@ -1076,7 +1077,9 @@ export function bootFarmOrder(): void {
         const q = $('farm-queue')!;
         if (s.queue && s.status !== 'printing') {
             const lines = [s.queue.ahead > 0 ? tr('farm.order.queue_ahead', { n: s.queue.ahead }) : '', s.queue.start_in > 0 ? tr('farm.order.queue_start', { time: duration(s.queue.start_in) }) : tr('farm.order.queue_starting'), tr('farm.order.queue_finish', { time: duration(s.queue.finish_in) })];
-            if (s.queue.blocked) lines.unshift(tr(`farm.order.blocked_${s.queue.blocked}`));
+            // a paused farm: no start and finish times, they would not be true; the sentence of the pause alone
+            if (s.queue.blocked === 'pause') lines.splice(0, lines.length, s.pause ?? '');
+            else if (s.queue.blocked) lines.unshift(tr(`farm.order.blocked_${s.queue.blocked}`));
             q.innerHTML = lines.filter(Boolean).map(esc).join('<br>');
         } else if (s.queue) {
             q.textContent = tr('farm.order.queue_finish', { time: duration(s.queue.finish_in) });

@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Admin;
 use App\Domain\Farm\ColorCatalog;
 use App\Domain\Farm\ColorPhotoProposals;
 use App\Domain\Farm\FarmSettings;
+use App\Domain\Farm\FarmState;
 use App\Domain\Farm\OrderFlow;
 use App\Domain\Farm\PrinterFiles;
 use App\Domain\Farm\ProfileLibrary;
@@ -517,6 +518,11 @@ class FarmCatalogController extends Controller
             'christmas_deadline' => ['nullable', 'date_format:Y-m-d'],
             'intake_reply_hours' => ['nullable', 'integer', 'min:1', 'max:168'],
             'shorts_publish_hour' => ['required', 'date_format:H:i'],
+            // the state of the service (FarmState): one of three, with the day printing starts again and a note per language
+            'farm_state' => ['nullable', 'in:'.implode(',', FarmState::ALL)],
+            'farm_pause_until' => ['nullable', 'date_format:Y-m-d'],
+            'farm_pause_note' => ['nullable', 'array'],
+            'farm_pause_note.*' => ['nullable', 'string', 'max:300'],
         ]);
         if ($request->has('christmas_deadline')) {
             $data['christmas_deadline'] = (string) ($data['christmas_deadline'] ?? '');
@@ -529,7 +535,21 @@ class FarmCatalogController extends Controller
         $data['strengths'] = json_decode($data['strengths'], true);
         $data['require_approval'] = $request->boolean('require_approval');
         $data['marketplace'] = $request->boolean('marketplace');
-        $data['farm_open'] = $request->boolean('farm_open');
+        // one choice of three; a form without it (the old checkbox alone) is open or closed by `farm_open` and keeps a pause
+        // only while the farm stays open. `farm_open` is written with the state: closed = off, open and paused = on
+        $state = $data['farm_state'] ?? ($request->boolean('farm_open') ? ($settings->get('farm_state') === FarmState::PAUSED ? FarmState::PAUSED : FarmState::OPEN) : FarmState::CLOSED);
+        $data['farm_state'] = $state;
+        $data['farm_open'] = $state !== FarmState::CLOSED;
+        if ($request->has('farm_pause_until')) {
+            $data['farm_pause_until'] = (string) ($data['farm_pause_until'] ?? '');
+        } else {
+            unset($data['farm_pause_until']);
+        }
+        if ($request->has('farm_pause_note')) {
+            $data['farm_pause_note'] = collect(['cs', 'en', 'es'])->mapWithKeys(fn ($l) => [$l => trim((string) ($request->input('farm_pause_note.'.$l) ?? ''))])->all();
+        } else {
+            unset($data['farm_pause_note']);
+        }
         $data['farm_public'] = $request->boolean('farm_public');
         $data['video_prices'] = $request->boolean('video_prices');
         $data['eshop_photos_public'] = $request->boolean('eshop_photos_public');

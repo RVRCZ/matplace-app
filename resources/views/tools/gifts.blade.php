@@ -70,5 +70,6 @@
     @endif
 
     <p class="mt-8 text-sm text-muted">{{ \App\Support\NextStep::text('gifts.after') }}</p>
+    @if(\App\Support\NextStep::mode() === \App\Support\NextStep::FARM)@include('farm._pause', ['class' => 'mt-3'])@endif
 </div>
 @endsection

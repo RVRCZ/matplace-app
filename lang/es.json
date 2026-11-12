@@ -2306,5 +2306,19 @@
     "youtube.clips.guides.in_hand": "Muestra la pieza en la mano",
     "youtube.analytics.reconnect": "Volver a conectar con acceso a Analytics",
     "youtube.analytics.summary": "28 días: :views visualizaciones · :retention % visto · :seconds s de media",
-    "youtube.analytics.engaged": "visto (engagedViews): :views"
+    "youtube.analytics.engaged": "visto (engagedViews): :views",
+    "farm.state.pause.until": "La granja está en pausa. La impresión empezará como pronto el :date.",
+    "farm.state.pause.open_end": "La granja está en pausa. La impresión empezará en cuanto volvamos a ponerla en marcha.",
+    "farm.state.pause.order": "Puede pedir y pagar ya; el pedido espera en la cola.",
+    "farm.state.pause.faq_q": "¿Cuándo empieza la impresión?",
+    "farm.state.closed.note": "La granja no acepta pedidos nuevos por ahora. Las herramientas, la vista previa y la descarga del modelo siguen funcionando.",
+    "farm.mail.queued_pause.subject": "Pedido :number aceptado, la impresión empezará tras la pausa",
+    "farm.mail.queued_pause.body": "Su impresión «:name» (:color) está pagada y espera en la cola. Le avisaremos cuando empiece a imprimirse.",
+    "farm.guest.mail.body_pause": "Gracias. La impresión «:name» está pagada (:total) y espera en la cola. En la página del pedido verá cómo avanza; le escribiremos en cada paso.",
+    "farm.state.admin.line_queue_pause": "Cola: la granja está en pausa, el pedido espera y empezará cuando la abra",
+    "param.go.hint.closed": "En el cálculo verá el tiempo de impresión y el material necesario, y descargará el modelo o el proyecto para su impresora. Sin registro.",
+    "gifts.after.closed": "Cada diseño termina igual: vista previa, medidas y descarga del archivo para su impresora.",
+    "footer.promise.closed": "Comprobación, vista previa y archivo para su impresora. Gratis.",
+    "param.go.closed": "Calcular tiempo y material",
+    "farm.order.blocked_pause": "La granja está en pausa; la impresión empezará después."
 }
