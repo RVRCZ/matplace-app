@@ -2,8 +2,11 @@
 
 namespace App\Http\Controllers\Admin;
 
+use App\Domain\Generation\GenerationService;
+use App\Domain\Intake\IntakeDesign;
 use App\Domain\Intake\IntakeHints;
 use App\Domain\Intake\IntakeService;
+use App\Engines\Contracts\ModelGenerator;
 use App\Http\Controllers\Controller;
 use App\Mail\PlainMessage;
 use App\Models\Intake;
@@ -78,6 +81,42 @@ class IntakeController extends Controller
         IntakeHints::save($keep);
 
         return redirect()->route('admin.intake.hints')->with('status', __('farm.admin.saved'));
+    }
+
+    /** GET /admin/intake/design: the free design of the home page: the switch, the counts, the confidence a tool opens from (docs/AN.md §24.4). */
+    public function design(GenerationService $generations, ModelGenerator $generator): View
+    {
+        // what one run costs by the price list of config/ai.php (the generator's own estimate in credits is not money)
+        $cost = null;
+        foreach ((array) config('ai.prices.models') as $prefix => $price) {
+            if (str_starts_with($generator->name(), (string) $prefix) && isset($price['call'])) {
+                $cost = (float) $price['call'] * (float) config('ai.prices.usd_czk', 23);
+                break;
+            }
+        }
+
+        return view('admin.intake.design', [
+            'settings' => IntakeDesign::settings(),
+            'generator' => $generator->name(),
+            'ready' => $generations->enabled(),
+            'today' => IntakeDesign::startedToday(),
+            'costCzk' => $cost,
+        ]);
+    }
+
+    public function saveDesign(Request $request): RedirectResponse
+    {
+        $data = $request->validate([
+            'enabled' => ['nullable', 'boolean'],
+            'free_guest' => ['required', 'integer', 'min:0', 'max:1000'],
+            'free_user' => ['required', 'integer', 'min:0', 'max:1000'],
+            'price' => ['nullable', 'numeric', 'min:0', 'max:10000'],
+            'per_day' => ['required', 'integer', 'min:0', 'max:5000'],
+            'direct_confidence' => ['required', 'numeric', 'min:0', 'max:1'],
+        ]);
+        IntakeDesign::save(['enabled' => $request->boolean('enabled')] + $data);
+
+        return redirect()->route('admin.intake.design')->with('status', __('farm.admin.saved'));
     }
 
     public function show(Intake $intake): View

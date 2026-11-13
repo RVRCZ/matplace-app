@@ -1,11 +1,16 @@
 /**
- * A tool's page opened from the home page's router (`/tools/<key>?intake=<token>`, docs/AN.md §22 D): the one hook
- * that fills the page with what the visitor handed in there. The photo is fetched by the token and put into the
- * field marked `data-intake-photo` (the front photo of the bust and the pet, the picture field of the shape tools:
- * charm, coaster, earrings, medallion), as if the visitor had picked it; the module of the page then does what it
- * does for a picked file (a preview, an upload). The parameters go into the fields every module reads: the main size,
- * a text, a kind, the place of a map. Nothing here is a tool's own code: a new tool gets the hand-over by marking its
- * photo field.
+ * A tool's page opened from the home page (`/tools/<key>?intake=<token>`, docs/AN.md §22 D and §24): one press of
+ * "Vytvořit" there ends here, with the wish already in the form. The one hook that fills the page with what the visitor
+ * handed in. The photo is fetched by the token and put into the field marked `data-intake-photo` (the front photo of
+ * the bust and the pet, the picture field of the shape tools: charm, coaster, earrings, medallion), as if the visitor
+ * had picked it; the module of the page then does what it does for a picked file (a preview, an upload). The
+ * parameters go into the fields every module reads: the main size, a text, a kind, the place of a map, the number of
+ * pieces and the material. A parametric tool takes its own values itself (`values`, param.ts: texts, a shape, a
+ * preset, colours), so they are not set twice here. Nothing here is a tool's own code: a new tool gets the hand-over by
+ * marking its photo field.
+ *
+ * `showUnderstood` puts the one quiet line under the tool's name: what the assistant understood, and "I wanted
+ * something else", which leads back to the home page with the words.
  */
 export interface IntakePayload {
     token: string;
@@ -14,6 +19,11 @@ export interface IntakePayload {
     name: string | null;
     params: Record<string, unknown>;
     text: string | null;
+    values?: Record<string, unknown>;
+    understood?: string[];
+    unsure?: boolean;
+    back?: string;
+    words?: { lead: string; unsure: string; nothing: string; back: string };
 }
 
 const fire = (el: HTMLElement, type: string): void => { el.dispatchEvent(new Event(type, { bubbles: true })); };
@@ -38,15 +48,50 @@ function setText(input: HTMLInputElement | null, value: string): void {
     fire(input, 'change');
 }
 
+/** The line under the tool's name: "The assistant understood: … · I wanted something else". Built of text nodes: the words are the visitor's own. */
+export function showUnderstood(payload: IntakePayload): void {
+    const head = document.getElementById('tool-head');
+    const w = payload.words;
+    if (!head || !w || !payload.back || document.getElementById('tool-intake')) return;
+    const line = document.createElement('p');
+    line.id = 'tool-intake';
+    line.className = 'mt-2 rounded-lg bg-studio px-3 py-2 text-sm leading-snug text-ink';
+    line.setAttribute('role', 'note');
+    const got = payload.understood ?? [];
+    if (payload.unsure) {
+        line.append(w.unsure, ' ');
+    }
+    if (got.length) {
+        const lead = document.createElement('span');
+        lead.className = 'text-muted';
+        lead.textContent = `${w.lead} `;
+        const list = document.createElement('span');
+        list.dataset.understood = '';
+        list.textContent = `${got.join(' · ')}. `;
+        line.append(lead, list);
+    } else if (!payload.unsure) {
+        line.append(w.nothing, ' ');
+    }
+    const back = document.createElement('a');
+    back.href = payload.back;
+    back.id = 'tool-intake-back';
+    back.className = 'whitespace-nowrap font-semibold text-action-dark underline underline-offset-2';
+    back.textContent = w.back;
+    line.append(back);
+    (document.getElementById('tool-lead') ?? head.lastElementChild ?? head).insertAdjacentElement('afterend', line);
+}
+
 export async function preloadIntake(payload: IntakePayload): Promise<void> {
     const p = payload.params ?? {};
     const size = typeof p.size_mm === 'number' ? p.size_mm : null;
     const text = typeof p.text === 'string' ? p.text : null;
     const place = typeof p.place === 'string' ? p.place : null;
     const kind = typeof p.kind === 'string' ? p.kind : null;
+    // a parametric tool applied its own values already, as it applies a stored design (param.ts)
+    const own = payload.values !== undefined && document.getElementById('tool-page')?.dataset.module === 'param';
 
     // the parameters first: the modules read the form on every change, so the photo's upload sees them set
-    if (size !== null) {
+    if (size !== null && !own) {
         setNumber(document.getElementById('figure-size') as HTMLInputElement | null, size);        // the bust, the pet: the height
         setNumber(document.getElementById('relief-w') as HTMLInputElement | null, size);           // the relief, the lithophane: the width
         setNumber(document.querySelector<HTMLInputElement>('[data-param="width"]'), size);          // the shape tools, the picture for the wall, the cutter: the width
@@ -58,13 +103,21 @@ export async function preloadIntake(payload: IntakePayload): Promise<void> {
         if (radio) { radio.checked = true; fire(radio, 'change'); }
     }
     if (text) {
-        setText(document.querySelector<HTMLInputElement>('[data-text="line1"]'), text);              // a name or an inscription of the shape tools
+        if (!own) setText(document.querySelector<HTMLInputElement>('[data-text="line1"]'), text);    // a name or an inscription of the shape tools
         setText(document.querySelector<HTMLInputElement>('input[name="pedestal_name"]'), text);      // the name on the base of a pet or a bust
     }
     if (place) {
         setText(document.querySelector<HTMLInputElement>('[data-text="name"]'), place);              // the name on the rim of a map
         const search = document.getElementById('map-place') as HTMLInputElement | null;
         if (search) { setText(search, place); (document.getElementById('map-search') as HTMLButtonElement | null)?.click(); }
+    }
+    if (!own) {
+        // the last step of every tool's page: how many pieces, which plastic
+        const v = payload.values ?? {};
+        const qty = document.getElementById('param-qty') as HTMLInputElement | null;
+        if (qty && typeof v._qty === 'string' && Number(v._qty) >= 1) setNumber(qty, Number(v._qty));
+        const plastic = document.getElementById('param-material') as HTMLSelectElement | null;
+        if (plastic && typeof v._material === 'string' && [...plastic.options].some((o) => o.value === v._material)) { plastic.value = v._material; fire(plastic, 'change'); }
     }
 
     // then the photo, into the field the page marked for it

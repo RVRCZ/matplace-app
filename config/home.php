@@ -21,6 +21,19 @@ return [
         'limits' => ['per_hour' => 5, 'per_day' => 20],
 
         /*
+         * One press of "Vytvořit" ends on a design (docs/AN.md §24). A tool the assistant is sure of from
+         * `direct_confidence` on opens right away with the wish filled in. A wish no tool has a template for (or a tool
+         * under that confidence) gets a free design made by the model generator from the words: that costs money, so it
+         * is OFF until the admin switches it on at /admin/intake/design, where the counts, the price and the confidence
+         * are changed too (stored as `home.design` in the farm's settings; these are the defaults). Roman, 13 Nov 2026:
+         * `free_guest` designs or changes in words for a visitor without an account, `free_user` more once they sign
+         * in, after that a run costs `price` crowns from the credit; no price yet (null) = nothing is sold, the visitor
+         * is told honestly that there is no further run. `per_day` caps the whole site and day (our cost).
+         * `target_mm` is the size of a design whose wish names none.
+         */
+        'design' => ['enabled' => false, 'free_guest' => 10, 'free_user' => 10, 'price' => null, 'per_day' => 100, 'direct_confidence' => 0.6, 'target_mm' => 80],
+
+        /*
          * Advertising is held before the model is asked (the model costs money). A hard rule holds on its own: the
          * unseen field filled in, the form sent sooner than a person can, no stamp of the page at all. The rules over
          * the words give points; `threshold` points hold the wish. A held wish is stored with the status `spam`, is not

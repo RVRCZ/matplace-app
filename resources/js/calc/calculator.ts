@@ -15,6 +15,7 @@ import { bootInquiry } from './inquiry';
 import { renderCheck } from './check';
 import { price as priceText } from '../site/money';
 import { renderAdvice } from './advice';
+import { startParticles } from './particles';
 import { bootDownload, setDownload, refresh as refreshDownload, openWhenReady as openDownloadWhenReady } from './download';
 
 const routes = () => (window as unknown as { MP_ROUTES: Record<string, string> }).MP_ROUTES;
@@ -909,15 +910,29 @@ function showRefine(file: FileInfo | null): void {
     const input = $('refine-text') as HTMLInputElement; const msg = $('refine-msg'); const btn = box.querySelector('button') as HTMLButtonElement;
     const hint = msg.dataset.hint ?? (msg.dataset.hint = msg.textContent ?? '');
     input.disabled = btn.disabled = !gen.refinable;
-    msg.textContent = gen.refinable ? hint : t('refine.photo_only');
+    msg.textContent = gen.refinable ? (gen.design ? t('refine.hint.design') : hint) : t('refine.photo_only');
+    // a free design of the home page past its free changes (docs/AN.md §24.4): the next press is paid, the button names the price
+    let pay = false;
+    const label = btn.dataset.label ?? (btn.dataset.label = btn.textContent ?? '');
+    btn.textContent = label;
     box.onsubmit = async (e) => {
         e.preventDefault();
         const instruction = input.value.trim();
         if (instruction.length < 3) { input.focus(); return; }
         btn.disabled = true; msg.textContent = t('refine.working');
         try {
-            const res = await fetch(`${routes().generateShow}/${gen.token}/refine`, { method: 'POST', credentials: 'same-origin', headers: { 'Content-Type': 'application/json', Accept: 'application/json' }, body: JSON.stringify({ instruction }) });
+            const res = await fetch(`${routes().generateShow}/${gen.token}/refine`, { method: 'POST', credentials: 'same-origin', headers: { 'Content-Type': 'application/json', Accept: 'application/json' }, body: JSON.stringify({ instruction, pay }) });
             const body = await res.json();
+            if (res.status === 429 && typeof body.message === 'string') {
+                // the home page's own counts: which one was reached and what is next (sign in, the price, nothing more for now)
+                msg.textContent = `${body.message} `;
+                const more = body.login_url ? [body.login_url, t('router.act.login')] : body.error === 'credit' && body.topup_url ? [body.topup_url, t('router.act.topup')] : null;
+                if (more) { const a = document.createElement('a'); a.href = more[0]; a.className = 'font-semibold underline'; a.textContent = more[1]; msg.append(a); }
+                pay = body.can_pay === true;
+                btn.textContent = pay ? t('refine.pay', { price: body.price }) : label;
+                btn.disabled = false; return;
+            }
+            pay = false; btn.textContent = label;
             if (res.status === 429) { msg.textContent = t(body.error === 'global_limit' ? 'search.gen_global_limit' : 'search.gen_daily_limit', { n: body.limit, m: body.login_limit }); btn.disabled = false; return; }
             if (!res.ok) throw new Error(body.error ?? 'refine');
             let g = body.generation;
@@ -1236,6 +1251,69 @@ export async function openFile(uuid: string): Promise<void> {
     requestNumbers();
 }
 
+/**
+ * A free design of the home page (`/?design=<generation>&wish=<intake>`, docs/AN.md §24.4): the wish had no tool, so
+ * the model generator makes a first design from the words. The calculator opens at once with the logo of dots and the
+ * percent; when the model is here it is shown like any file: the size, the colour, the price, the order, the download
+ * and "change it in words" are the calculator's own. Above it one line: the words, what a free design is and is not,
+ * and "I wanted something else" (back to the home page with the words: other tools, a request to a designer).
+ */
+async function openDesign(token: string, wish: string | null): Promise<void> {
+    const line = document.getElementById('design-line');
+    const failed = (key: 'failed' | 'unprintable'): void => {
+        const box = document.getElementById('design-failed');
+        const text = box?.querySelector<HTMLElement>('[data-design-error]');
+        if (text) text.textContent = line?.dataset[key] ?? '';
+        box?.classList.remove('hidden');
+        line?.querySelector('[data-design-note]')?.classList.add('hidden');
+        setStatus('', false);
+    };
+    if (line) {
+        const back = wish ? `${homeUrl()}?wish=${encodeURIComponent(wish)}` : homeUrl();
+        line.querySelectorAll<HTMLAnchorElement>('[data-design-back]').forEach((a) => { a.href = back; });
+        line.classList.remove('hidden');
+        // the words of the wish, and whether the thing is worn or has to fit (then nobody promises that it will)
+        if (wish && line.dataset.showUrl) {
+            void fetch(line.dataset.showUrl.replace('__TOKEN__', wish), { credentials: 'same-origin', headers: { Accept: 'application/json' } })
+                .then((r) => (r.ok ? r.json() : null))
+                .then((d: { text?: string | null; fit?: boolean } | null) => {
+                    const said = line.querySelector<HTMLElement>('[data-design-text]');
+                    if (said && d?.text) { said.textContent = d.text.length > 160 ? `${d.text.slice(0, 160)}…` : d.text; said.parentElement?.classList.remove('hidden'); }
+                    if (d?.fit) line.querySelector('[data-design-fit]')?.classList.remove('hidden');
+                })
+                .catch(() => undefined);
+        }
+    }
+    stopPolling();
+    state.geometry = null; state.geo = null; state.calc = null; state.localFile = null;
+    showResult();
+    $('status').textContent = line?.dataset.waiting ?? '';
+    $('status-spinner').classList.remove('hidden');
+    const host = $('viewer').parentElement;
+    const dots = host ? startParticles(host) : null;
+    dots?.say(line?.dataset.waiting ?? '');
+    try {
+        let g: { status: string; progress: number; file: { uuid: string } | null } | null = null;
+        // ten minutes at most, like the job itself (120 tries, five seconds apart)
+        for (let i = 0; i < 240; i++) {
+            const res = await fetch(`${routes().generateShow}/${token}`, { credentials: 'same-origin', headers: { Accept: 'application/json' } });
+            if (res.status === 404) break;
+            g = res.ok ? (await res.json()).generation : g;
+            if (g && (g.status === 'done' || g.status === 'failed')) break;
+            dots?.say(line?.dataset.waiting ?? '', g ? Math.max(5, g.progress) : null);
+            await new Promise((r) => setTimeout(r, 3000));
+        }
+        if (!g || g.status !== 'done' || !g.file) { await dots?.fail(); failed('failed'); return; }
+        await dots?.finish();
+        await openFile(g.file.uuid);
+        // the same preparation and check as an uploaded file: a design that cannot be prepared says so, with the ways on
+        if (state.file?.status === 'failed') failed('unprintable');
+    } catch {
+        await dots?.fail();
+        failed('failed');
+    }
+}
+
 export function boot(): void {
     if (!document.getElementById('calculator')) return;
     bindControls();
@@ -1248,6 +1326,12 @@ export function boot(): void {
     });
     if (initial) { restore(initial); return; }
     const query = new URLSearchParams(location.search);
+    const design = query.get('design');
+    if (design && /^[a-z0-9]{12}$/.test(design)) {
+        const wish = query.get('wish');
+        void openDesign(design, wish && /^[A-Za-z0-9]{24}$/.test(wish) ? wish : null);
+        return;
+    }
     const open = query.get('open');
     if (open && /^[0-9a-f-]{36}$/.test(open)) {
         const m = (query.get('material') ?? '').toUpperCase();

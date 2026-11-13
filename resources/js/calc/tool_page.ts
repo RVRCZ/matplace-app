@@ -22,7 +22,7 @@ import { bootEdit } from './edit';
 import { bootMap } from './map';
 import { FileInfo } from './api';
 import { loadGeometryFromUrl } from './loaders';
-import { preloadIntake, IntakePayload } from './intake_preload';
+import { preloadIntake, showUnderstood, IntakePayload } from './intake_preload';
 
 export interface ToolCfg {
     tool: string; module: string; locale: string; next: 'inquiry' | 'farm' | 'download'; home: string; files: string; tools: string; zip: string; shared?: string;
@@ -503,5 +503,5 @@ export function bootToolPage(): void {
     const modules: Record<string, (stage: Stage) => void> = { param: bootParam, relief: bootRelief, mold: bootMoldPage, repair: bootRepairPage, check: bootCheckPage, figure: bootFigure, art: bootArt, edit: bootEdit, map: bootMap };
     modules[cfg.module]?.(stage);
     // what the visitor handed in on the home page: the one hook for every module (intake_preload.ts)
-    if (cfg.intake) void preloadIntake(cfg.intake);
+    if (cfg.intake) { showUnderstood(cfg.intake); void preloadIntake(cfg.intake); }
 }

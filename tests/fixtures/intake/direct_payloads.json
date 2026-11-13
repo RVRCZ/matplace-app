@@ -1,0 +1,448 @@
+{
+    "sign": {
+        "text": "Červená cedulka na dveře, bílé písmo, „Novákovi“, písmo 2 cm, 2 kusy",
+        "answer": {
+            "token": "rJI3eLJ1cFut2uamRbDfwp8c",
+            "route": "tool",
+            "go": "http://127.0.0.1:8017/tools/sign?intake=rJI3eLJ1cFut2uamRbDfwp8c",
+            "again": false,
+            "text": null,
+            "fit": false,
+            "unsure": false,
+            "others": [],
+            "design_note": null,
+            "login": null,
+            "held": null,
+            "tool_key": "sign",
+            "tool": "Cedulka, jmenovka, klíčenka",
+            "summary": "Věta asistenta.",
+            "params": {
+                "size_mm": 20,
+                "colors": [
+                    "red",
+                    "white"
+                ],
+                "copies": 2,
+                "text": "Novákovi"
+            },
+            "questions": [],
+            "alternatives": [],
+            "wants_shape": false,
+            "has_photo": false,
+            "rerouted": false,
+            "hours": 24,
+            "file": null,
+            "actions": {
+                "tool": "http://127.0.0.1:8017/tools/sign?intake=rJI3eLJ1cFut2uamRbDfwp8c",
+                "calc": null,
+                "design": null,
+                "start_design": null,
+                "pay_design": null,
+                "request": "http://127.0.0.1:8017/intake/rJI3eLJ1cFut2uamRbDfwp8c/request",
+                "reroute": null
+            }
+        },
+        "page": {
+            "token": "rJI3eLJ1cFut2uamRbDfwp8c",
+            "tool": "sign",
+            "file": null,
+            "name": null,
+            "params": {
+                "size_mm": 20,
+                "colors": [
+                    "red",
+                    "white"
+                ],
+                "copies": 2,
+                "text": "Novákovi"
+            },
+            "text": "Červená cedulka na dveře, bílé písmo, „Novákovi“, písmo 2 cm, 2 kusy",
+            "values": {
+                "_qty": "2",
+                "text_height": 20,
+                "line1": "Novákovi",
+                "two_color": true,
+                "part_colors": {
+                    "plate": "red",
+                    "text": "white"
+                }
+            },
+            "understood": [
+                "text „Novákovi“",
+                "výška písma 20 mm",
+                "barvy: červená, bílá",
+                "počet kusů: 2"
+            ],
+            "unsure": false,
+            "back": "http://127.0.0.1:8017?wish=rJI3eLJ1cFut2uamRbDfwp8c",
+            "words": {
+                "lead": "Asistent pochopil:",
+                "unsure": "Asistent si nebyl jistý, tohle je nejbližší nástroj.",
+                "nothing": "Nástroj jsme otevřeli podle vašeho přání; podrobnosti doladíte tady.",
+                "back": "Chtěl jsem něco jiného"
+            }
+        },
+        "again": {
+            "token": "rJI3eLJ1cFut2uamRbDfwp8c",
+            "route": "tool",
+            "go": null,
+            "again": true,
+            "text": "Červená cedulka na dveře, bílé písmo, „Novákovi“, písmo 2 cm, 2 kusy",
+            "fit": false,
+            "unsure": false,
+            "others": [
+                {
+                    "key": "sign",
+                    "title": "Cedulka, jmenovka, klíčenka",
+                    "url": "http://127.0.0.1:8017/tools/sign?intake=rJI3eLJ1cFut2uamRbDfwp8c"
+                }
+            ],
+            "design_note": null,
+            "login": null,
+            "held": null,
+            "tool_key": "sign",
+            "tool": "Cedulka, jmenovka, klíčenka",
+            "summary": "Věta asistenta.",
+            "params": {
+                "size_mm": 20,
+                "colors": [
+                    "red",
+                    "white"
+                ],
+                "copies": 2,
+                "text": "Novákovi"
+            },
+            "questions": [],
+            "alternatives": [],
+            "wants_shape": false,
+            "has_photo": false,
+            "rerouted": false,
+            "hours": 24,
+            "file": null,
+            "actions": {
+                "tool": "http://127.0.0.1:8017/tools/sign?intake=rJI3eLJ1cFut2uamRbDfwp8c",
+                "calc": null,
+                "design": null,
+                "start_design": null,
+                "pay_design": null,
+                "request": "http://127.0.0.1:8017/intake/rJI3eLJ1cFut2uamRbDfwp8c/request",
+                "reroute": null
+            }
+        }
+    },
+    "medal": {
+        "text": "Medaile za 2. místo na stužce, 6 cm, s nápisem Turnaj Stod",
+        "answer": {
+            "token": "VKL6sGZlLfhVZpQixQiQY30h",
+            "route": "tool",
+            "go": "http://127.0.0.1:8017/tools/medallion?intake=VKL6sGZlLfhVZpQixQiQY30h",
+            "again": false,
+            "text": null,
+            "fit": false,
+            "unsure": false,
+            "others": [
+                {
+                    "key": "keychain",
+                    "title": "Klíčenka se jménem nebo obrázkem",
+                    "url": "http://127.0.0.1:8017/tools/keychain?intake=VKL6sGZlLfhVZpQixQiQY30h&form=1"
+                }
+            ],
+            "design_note": null,
+            "login": null,
+            "held": null,
+            "tool_key": "medallion",
+            "tool": "Medaile pro vítěze s řetězem nebo na stužku",
+            "summary": "Věta asistenta.",
+            "params": {
+                "size_mm": 60,
+                "text": "Turnaj Stod",
+                "number": "2",
+                "hang": "ribbon"
+            },
+            "questions": [],
+            "alternatives": [
+                "keychain"
+            ],
+            "wants_shape": false,
+            "has_photo": false,
+            "rerouted": false,
+            "hours": 24,
+            "file": null,
+            "actions": {
+                "tool": "http://127.0.0.1:8017/tools/medallion?intake=VKL6sGZlLfhVZpQixQiQY30h",
+                "calc": null,
+                "design": null,
+                "start_design": null,
+                "pay_design": null,
+                "request": "http://127.0.0.1:8017/intake/VKL6sGZlLfhVZpQixQiQY30h/request",
+                "reroute": null
+            }
+        },
+        "page": {
+            "token": "VKL6sGZlLfhVZpQixQiQY30h",
+            "tool": "medallion",
+            "file": null,
+            "name": null,
+            "params": {
+                "size_mm": 60,
+                "text": "Turnaj Stod",
+                "number": "2",
+                "hang": "ribbon"
+            },
+            "text": "Medaile za 2. místo na stužce, 6 cm, s nápisem Turnaj Stod",
+            "values": {
+                "width": 60,
+                "preset": "place2",
+                "line1": "2",
+                "line2": "Turnaj Stod",
+                "hang": "ribbon"
+            },
+            "understood": [
+                "text „Turnaj Stod“",
+                "2. místo",
+                "šířka 60 mm",
+                "na stužce"
+            ],
+            "unsure": false,
+            "back": "http://127.0.0.1:8017?wish=VKL6sGZlLfhVZpQixQiQY30h",
+            "words": {
+                "lead": "Asistent pochopil:",
+                "unsure": "Asistent si nebyl jistý, tohle je nejbližší nástroj.",
+                "nothing": "Nástroj jsme otevřeli podle vašeho přání; podrobnosti doladíte tady.",
+                "back": "Chtěl jsem něco jiného"
+            }
+        },
+        "again": {
+            "token": "VKL6sGZlLfhVZpQixQiQY30h",
+            "route": "tool",
+            "go": null,
+            "again": true,
+            "text": "Medaile za 2. místo na stužce, 6 cm, s nápisem Turnaj Stod",
+            "fit": false,
+            "unsure": false,
+            "others": [
+                {
+                    "key": "medallion",
+                    "title": "Medaile pro vítěze s řetězem nebo na stužku",
+                    "url": "http://127.0.0.1:8017/tools/medallion?intake=VKL6sGZlLfhVZpQixQiQY30h"
+                },
+                {
+                    "key": "keychain",
+                    "title": "Klíčenka se jménem nebo obrázkem",
+                    "url": "http://127.0.0.1:8017/tools/keychain?intake=VKL6sGZlLfhVZpQixQiQY30h&form=1"
+                }
+            ],
+            "design_note": null,
+            "login": null,
+            "held": null,
+            "tool_key": "medallion",
+            "tool": "Medaile pro vítěze s řetězem nebo na stužku",
+            "summary": "Věta asistenta.",
+            "params": {
+                "size_mm": 60,
+                "text": "Turnaj Stod",
+                "number": "2",
+                "hang": "ribbon"
+            },
+            "questions": [],
+            "alternatives": [
+                "keychain"
+            ],
+            "wants_shape": false,
+            "has_photo": false,
+            "rerouted": false,
+            "hours": 24,
+            "file": null,
+            "actions": {
+                "tool": "http://127.0.0.1:8017/tools/medallion?intake=VKL6sGZlLfhVZpQixQiQY30h",
+                "calc": null,
+                "design": null,
+                "start_design": null,
+                "pay_design": null,
+                "request": "http://127.0.0.1:8017/intake/VKL6sGZlLfhVZpQixQiQY30h/request",
+                "reroute": null
+            }
+        }
+    },
+    "off": {
+        "text": "Čelenka s rohy na Mikuláše",
+        "answer": {
+            "token": "bqNOa4Si7lZmX0r7CDiy1gKD",
+            "route": "human",
+            "go": null,
+            "again": false,
+            "text": null,
+            "fit": false,
+            "unsure": false,
+            "others": [
+                {
+                    "key": "charm",
+                    "title": "Přívěsek z obrázku nebo jména",
+                    "url": "http://127.0.0.1:8017/tools/charm?intake=bqNOa4Si7lZmX0r7CDiy1gKD"
+                }
+            ],
+            "design_note": null,
+            "login": null,
+            "held": null,
+            "tool_key": null,
+            "tool": null,
+            "summary": "Na tohle nemáme hotovou šablonu, tvar podle vašeho popisu připraví náš návrhář. Nechte nám e-mail, do 24 hodin pošleme náhled a cenu. Fotka nebo náčrt pomůže, nutná není.",
+            "params": [],
+            "questions": [],
+            "alternatives": [
+                "charm"
+            ],
+            "wants_shape": true,
+            "has_photo": false,
+            "rerouted": false,
+            "hours": 24,
+            "file": null,
+            "actions": {
+                "tool": null,
+                "calc": null,
+                "design": null,
+                "start_design": null,
+                "pay_design": null,
+                "request": "http://127.0.0.1:8017/intake/bqNOa4Si7lZmX0r7CDiy1gKD/request",
+                "reroute": "http://127.0.0.1:8017/intake/bqNOa4Si7lZmX0r7CDiy1gKD/reroute"
+            }
+        }
+    },
+    "design": {
+        "text": "Čelenka s rohy na Mikuláše",
+        "answer": {
+            "token": "jzpVcX0HoxTitxZaHK7TPm6R",
+            "route": "design",
+            "go": "http://127.0.0.1:8017?design=tlnsk77nodtf&wish=jzpVcX0HoxTitxZaHK7TPm6R",
+            "again": false,
+            "text": null,
+            "fit": true,
+            "unsure": false,
+            "others": [
+                {
+                    "key": "charm",
+                    "title": "Přívěsek z obrázku nebo jména",
+                    "url": "http://127.0.0.1:8017/tools/charm?intake=jzpVcX0HoxTitxZaHK7TPm6R"
+                }
+            ],
+            "design_note": null,
+            "login": null,
+            "held": null,
+            "tool_key": null,
+            "tool": null,
+            "summary": "Na tohle nemáme hotový nástroj, proto vytváříme volný návrh podle vašeho popisu. Tvar je přibližný a rozměry nejsou přesné; slovy pak řeknete, co změnit. U věci, která se nosí nebo má někam pasovat, nevíme, jestli bude sedět: na míru ji umí náš návrhář.",
+            "params": [],
+            "questions": [],
+            "alternatives": [
+                "charm"
+            ],
+            "wants_shape": false,
+            "has_photo": false,
+            "rerouted": false,
+            "hours": 24,
+            "file": null,
+            "actions": {
+                "tool": null,
+                "calc": null,
+                "design": "http://127.0.0.1:8017?design=tlnsk77nodtf&wish=jzpVcX0HoxTitxZaHK7TPm6R",
+                "start_design": null,
+                "pay_design": null,
+                "request": "http://127.0.0.1:8017/intake/jzpVcX0HoxTitxZaHK7TPm6R/request",
+                "reroute": null
+            }
+        },
+        "again": {
+            "token": "jzpVcX0HoxTitxZaHK7TPm6R",
+            "route": "design",
+            "go": null,
+            "again": true,
+            "text": "Čelenka s rohy na Mikuláše",
+            "fit": true,
+            "unsure": false,
+            "others": [
+                {
+                    "key": "charm",
+                    "title": "Přívěsek z obrázku nebo jména",
+                    "url": "http://127.0.0.1:8017/tools/charm?intake=jzpVcX0HoxTitxZaHK7TPm6R"
+                }
+            ],
+            "design_note": null,
+            "login": null,
+            "held": null,
+            "tool_key": null,
+            "tool": null,
+            "summary": "Na tohle nemáme hotový nástroj, proto vytváříme volný návrh podle vašeho popisu. Tvar je přibližný a rozměry nejsou přesné; slovy pak řeknete, co změnit. U věci, která se nosí nebo má někam pasovat, nevíme, jestli bude sedět: na míru ji umí náš návrhář.",
+            "params": [],
+            "questions": [],
+            "alternatives": [
+                "charm"
+            ],
+            "wants_shape": false,
+            "has_photo": false,
+            "rerouted": false,
+            "hours": 24,
+            "file": null,
+            "actions": {
+                "tool": null,
+                "calc": null,
+                "design": "http://127.0.0.1:8017?design=tlnsk77nodtf&wish=jzpVcX0HoxTitxZaHK7TPm6R",
+                "start_design": null,
+                "pay_design": null,
+                "request": "http://127.0.0.1:8017/intake/jzpVcX0HoxTitxZaHK7TPm6R/request",
+                "reroute": null
+            }
+        }
+    },
+    "limit": {
+        "text": "Soška draka na poličku, asi 15 cm",
+        "answer": {
+            "token": "sVKdiVSEXtCTvbDcVWLTNaRD",
+            "route": "human",
+            "go": null,
+            "again": false,
+            "text": null,
+            "fit": false,
+            "unsure": false,
+            "others": [
+                {
+                    "key": "charm",
+                    "title": "Přívěsek z obrázku nebo jména",
+                    "url": "http://127.0.0.1:8017/tools/charm?intake=sVKdiVSEXtCTvbDcVWLTNaRD"
+                },
+                {
+                    "key": "coaster",
+                    "title": "Podtácek s obrázkem",
+                    "url": "http://127.0.0.1:8017/tools/coaster?intake=sVKdiVSEXtCTvbDcVWLTNaRD"
+                }
+            ],
+            "design_note": "Volné návrhy a úpravy slovy, které jsou bez účtu zdarma (1), jste už využili. Přihlaste se a dostanete dalších 10. Nebo zkuste některý nástroj, případně to předejte našemu návrháři.",
+            "login": "http://127.0.0.1:8017/login",
+            "held": null,
+            "tool_key": null,
+            "tool": null,
+            "summary": "Na tohle nemáme hotovou šablonu, tvar podle vašeho popisu připraví náš návrhář. Nechte nám e-mail, do 24 hodin pošleme náhled a cenu. Fotka nebo náčrt pomůže, nutná není.",
+            "params": {
+                "size_mm": 150
+            },
+            "questions": [],
+            "alternatives": [
+                "charm",
+                "coaster"
+            ],
+            "wants_shape": true,
+            "has_photo": false,
+            "rerouted": false,
+            "hours": 24,
+            "file": null,
+            "actions": {
+                "tool": null,
+                "calc": null,
+                "design": null,
+                "start_design": null,
+                "pay_design": null,
+                "request": "http://127.0.0.1:8017/intake/sVKdiVSEXtCTvbDcVWLTNaRD/request",
+                "reroute": "http://127.0.0.1:8017/intake/sVKdiVSEXtCTvbDcVWLTNaRD/reroute"
+            }
+        }
+    }
+}

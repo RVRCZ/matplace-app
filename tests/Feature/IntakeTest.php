@@ -325,7 +325,7 @@ class IntakeTest extends TestCase
         $this->assertStringContainsString('Never write a tool\'s key', $call['system']);
         $this->assertStringNotContainsString('without a designer', $call['system'], 'the first decision carries no reroute rule');
         // the schema stays far under the API's limit of 16 unions (TODO #79): the two new fields are plain
-        $this->assertSame(7, IntakeRouter::unionCount());
+        $this->assertSame(10, IntakeRouter::unionCount());
         $this->assertSame(['type' => 'array', 'items' => ['type' => 'string']], IntakeRouter::schema()['properties']['alternatives']);
         $this->assertSame(['type' => 'string'], IntakeRouter::schema()['properties']['reason']);
         $this->assertSame(0.45, IntakeRouter::MIN_CONFIDENCE);

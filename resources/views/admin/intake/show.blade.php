@@ -50,7 +50,7 @@
 
     <section class="rounded-2xl border border-slate-200 bg-white p-4">
         <h2 class="font-bold">Rozhodnutí asistenta</h2>
-        <p class="mt-2 text-sm"><span class="font-medium">{{ ['tool' => 'nástroj', 'human' => 'člověk', 'shape' => 'tvar', 'file' => 'kalkulačka'][$intake->route] ?? '—' }}</span>@if($intake->tool_key) · {{ __('tools.'.$intake->tool_key.'.title') }} (<code>{{ $intake->tool_key }}</code>)@endif @if($intake->wants_shape)· <span class="text-warn">chce tvar podle fotky</span>@endif</p>
+        <p class="mt-2 text-sm"><span class="font-medium">{{ ['tool' => 'nástroj', 'human' => 'člověk', 'shape' => 'tvar', 'file' => 'kalkulačka', 'design' => 'volný návrh'][$intake->route] ?? '—' }}</span>@if($intake->tool_key) · {{ __('tools.'.$intake->tool_key.'.title') }} (<code>{{ $intake->tool_key }}</code>)@endif @if($intake->wants_shape)· <span class="text-warn">chce tvar podle fotky</span>@endif</p>
         <p class="mt-2 rounded-xl bg-studio p-3 text-sm">{{ $intake->summary ?: '—' }}</p>
         @if($intake->params)<p class="mt-2 text-xs text-slate-500">Parametry: <code>{{ json_encode($intake->params, JSON_UNESCAPED_UNICODE) }}</code></p>@endif
         @if(! empty($intake->answer['questions']))<p class="mt-1 text-xs text-slate-500">Otázky: {{ implode(' · ', (array) $intake->answer['questions']) }}</p>@endif
@@ -60,6 +60,12 @@
             @if(($intake->answer['route'] ?? null) && $intake->answer['route'] !== $intake->route) · model řekl <code>{{ $intake->answer['route'] }}</code>, pravidla rozhodla <code>{{ $intake->route }}</code>@endif
             @if(! empty($intake->answer['failed'])) · <span class="text-danger">volání selhalo: {{ $intake->answer['error'] ?? '' }}</span>@endif
         </p>
+        {{-- the free design (docs/AN.md §24.4): which generation, how it was started, what the generator was asked for --}}
+        @if($design = ($intake->answer['design'] ?? null))
+            <p class="mt-2 text-xs text-slate-500" data-design>Volný návrh: generování <code>{{ $design['generation'] ?? '—' }}</code> · {{ ($design['by'] ?? '') === 'button' ? 'spustil návštěvník tlačítkem' : 'spuštěno samo' }} · {{ ($design['from'] ?? '') === 'photo' ? 'z fotky' : 'z textu' }} · zadání generátoru: „{{ $design['prompt'] ?? '' }}“ · předtím {{ ['tool' => 'nástroj', 'human' => 'člověk'][$design['was']['route'] ?? ''] ?? '—' }}@if(! empty($design['was']['tool_key'])) ({{ $design['was']['tool_key'] }})@endif</p>
+        @elseif(! empty($intake->answer['design_refused']))
+            <p class="mt-2 text-xs text-slate-500" data-design-refused>Volný návrh se nespustil: {{ ['off' => 'je vypnutý', 'closed' => 'farma je zavřená', 'words' => 'málo slov', 'person' => 'na fotce je člověk', 'guest_limit' => 'návštěvník bez účtu vyčerpal volné návrhy', 'user_limit' => 'účet vyčerpal volné návrhy, cena není nastavená', 'pay' => 'další návrh je placený', 'credit' => 'nestačí kredit', 'day_limit' => 'denní strop'][$intake->answer['design_refused']] ?? $intake->answer['design_refused'] }}</p>
+        @endif
         @if(! empty($intake->answer['reason']))<p class="mt-2 text-xs text-slate-500">Proč: {{ $intake->answer['reason'] }}</p>@endif
         @if(! empty($intake->answer['alternatives']))<p class="mt-1 text-xs text-slate-500">Šlo by i: {{ implode(' · ', array_map(fn ($k) => __('tools.'.$k.'.title').' ('.$k.')', (array) $intake->answer['alternatives'])) }}</p>@endif
         @if(($intake->answer['origin'] ?? null) === \App\Domain\Intake\IntakeRouter::ORIGIN_REROUTE)

@@ -1331,3 +1331,249 @@ fotky“; nástroj medaile přitom fotku nebere (místo, číslo, motiv, text).
   hlavní věc je medaile, ale jediný nástroj, který z fotky udělá reliéf, je relief.
 - **Skutečný model tu neběžel** (klíč není, kredit se neutrácí): pravidlo je ověřené jen testem nad textem promptu.
   Po nasazení: `php artisan matplace:intake-cases --only=31,32` (dvě volání) a ostrá zkouška řídící.
+
+## 24. Úvodní strana rovnou tvoří: nástroj s hotovým návrhem, jinak volný návrh podle textu
+
+Zadání `zadani-uvodni-strana-rovnou-tvorit.md` (Roman 13. 11. 2026: „Nemůžeme mít nástroj na vše… Pokud je jasné, že
+na to máme nástroj, ať se rovnou otevře nástroj a vygeneruje se nějaký návrh podle textu, nebo se použije fotka. Pokud
+nástroj není, tak ať se otevře editor, kde už bude vygenerovaný návrh podle textu, a ne tenhle dvojitý dialog.“) a
+rozhodnutí o počtech z téhož dne (`koncepce-jedna-dilna.md` §9: 10× zdarma, po přihlášení dalších 10×, dál placeně;
+cena zatím není). Větev `feature/home-create-direct` z `origin/main` 7dc7f357, worktree `C:/matplace-edit-wt`,
+13. 11. 2026. Nic nenasazeno, nic nemergováno, **migrace žádná**. Skutečný model ani skutečný generátor tu nikdo
+nevolal: vše s `FakeAssistant`, s klíčovou náhradou a s `FakeGenerator` (krychle).
+
+### 24.1 Jak cesta vypadá
+
+Jedno zmáčknutí „Vytvořit“ = `POST /intake` jako dosud; odpověď má nově `go` (adresa, která se otevře sama) a skript
+`site/intake.ts` na ni rovnou přejde. Pod tlačítkem se mezitím píše „Otevírám nástroj …“ / „Vytvářím návrh podle
+vašeho popisu…“ / „Otevírám kalkulačku s vaším souborem…“. Karta ASISTENT se dvěma tlačítky už není.
+
+| co asistent rozhodl | co se stane po zmáčknutí |
+|---|---|
+| nástroj, jistota ≥ práh (§24.2) | otevře se stránka nástroje s `?intake=<token>`: formulář vyplněný z textu (§24.3), fotka předaná jako vstup nebo zdobení, náhled se kreslí hned; pod názvem řádek „Asistent pochopil: … · Chtěl jsem něco jiného“ |
+| nástroj, jistota pod prahem | volný návrh zapnutý a počty dovolí → volný návrh (§24.4); jinak se nástroj otevře stejně a řádek začíná „Asistent si nebyl jistý, tohle je nejbližší nástroj.“ |
+| tvar bez šablony (`shape`; v klíčové náhradě i text, který nic nejmenuje, a není to díl) | volný návrh zapnutý → kalkulačka s logem z teček a pak s návrhem; vypnutý / vyčerpaný → **jedna** karta: věta, nástroje, které by to uměly také (odkazy rovnou s přáním), pole pro e-mail návrháři |
+| člověk (díl s rozměry, „aby pasovalo“, nesmysl, selhání volání) | karta s větou a polem pro e-mail jako dosud; je-li volný návrh zapnutý, je na ní i tlačítko „Zkusit volný návrh“ s větou, co volný návrh neumí. Sám se u dílu nespustí. |
+| 3D soubor | otevře se kalkulačka se souborem (dřív karta s tlačítkem) |
+| zadrženo jako reklama / dotaz na cenu | věta jako dosud, nic se nevolá ani negeneruje |
+
+**„Chtěl jsem něco jiného“** (v řádku nástroje i nad volným návrhem) vede na `/?wish=<token>`: skript si přání přečte
+(`GET /intake/{token}`, `noindex`), vrátí slova do pole a pod tlačítkem ukáže kartu „Zkusit jinak“: nástroje, které
+by to uměly také (i ten původní), „Zkusit volný návrh“ / „Otevřít návrh“ a **„Raději poptávka designérovi“**, která
+teprve otevře pole pro e-mail. Poptávka člověku je tedy výslovná volba; sama se nabízí jen u dílů a tam, kde není co
+otevřít. Souhlas a mazání fotek po 30 dnech beze změny. Měří se `intake_again` (návrat) a `intake_designed`
+(`code` = auto | button, `kind` = text | photo, `from` = odkud).
+
+Stav farmy: úvodní strana se řídí `FarmState` jako dosud (texty `.closed`, titulky a H1 beze změny). Zavřená farma
+volný návrh nespouští (nic se negeneruje pro věc, kterou nejde objednat), nástroje se otevírají dál.
+
+### 24.2 Práh jistoty: 0,6
+
+`IntakeRouter::DIRECT_CONFIDENCE = 0.6`, výchozí hodnota `config/home.php intake.design.direct_confidence`, mění se
+v `/admin/intake/design` bez nasazení. Od prahu se nástroj otevře bez poznámky; pod ním jde přání na volný návrh
+(je-li zapnutý), jinak se nástroj otevře s poznámkou. Dřívější práh 0,45 (`MIN_CONFIDENCE`, jen přidává otázky)
+zůstal, u nástroje se ale otázky už neukazují, protože karta není.
+
+Z čeho číslo je, poctivě: dat je málo. (1) Zlaté případy jdou jen klíčovou náhradou, která u nástroje říká vždy 0,7
+a u textu bez shody 0,3; všech 26 případů s nástrojem je tedy nad prahem a otevřou se rovnou, žádný případ bez
+nástroje nad práh nepřeleze (test `test_the_golden_cases_end_on_a_design_after_one_press`). (2) Jediné ostré číslo,
+které je zapsané: „Chci medaili s reliéfem z fotky“ dostalo správný nástroj s jistotou 0,6 (§23.8), proto práh
+nesmí být výš. (3) První ostrá zkouška 9. 11. (§22.11): u známých obrázků model dával jistotu pod 0,6 a volil
+„nejbližší šablonu“; to je přesně pásmo, kde má teď přijít volný návrh, nebo aspoň poznámka. Po nasazení je potřeba
+pustit `matplace:intake-cases` nad zlatými případy se skutečným modelem a podívat se v `/admin/intake` na jistoty
+prvních přání; práh je jedno pole v administraci.
+
+### 24.3 Co který nástroj převezme z textu (`App\Domain\Intake\IntakePrefill`)
+
+Model vrací v `params` nově i `text2` (druhý řádek), `number` (číslo samo o sobě: věk na zápichu, místo na medaili)
+a `shape` (obrys); schéma má 10 unií z 16. Co model nevyplní (a všechno, když rozhoduje klíčová náhrada), doplní
+slova přání (`IntakePrefill::fromWords`, cs/en/es): velikost („12 cm“, „40 mm“), kusy, jméno nebo nápis (v uvozovkách,
+nebo za „se jménem“, „nápis“, „with the name“, „that says“, „con el nombre“…), číslo („číslem 2“, „5 let“, „2.
+místo“), rok jako druhý řádek, barvy (16 základních barev palety), počet barev („tři barvy“), tvar (srdce, hvězda,
+kruh, čtverec, obdélník, ovál, šestiúhelník, štít, mrak, kost, domek), stužka / řetízek, materiál (PLA, PETG, TPU,
+ABS, ASA). `IntakePrefill::values()` to přepíše do hodnot formuláře daného nástroje (klíče `ParametricGenerator`
+`FIELDS`, `TEXTS`, `CHOICES`, `FLAGS`; čísla oříznutá do mezí, texty do délky pole, tvar jen takový, jaký nástroj má)
+a stránka je použije jako uložený návrh (`param.ts`, `applyValues`). `IntakePrefill::understood()` z toho skládá řádek
+„Asistent pochopil“: jen to, co se do formuláře opravdu dostalo.
+
+| nástroj | velikost | text | další |
+|---|---|---|---|
+| figure (busta, figurka) | výška | jméno na podstavec | `kind` bust / figure (jen od modelu), fotka do pole fotky; souhlas dává zákazník na stránce, generování se samo nespustí |
+| pet (mazlíček) | výška | jméno na podstavec | styl (jen od modelu), fotka; totéž |
+| charm (přívěsek) | šířka | 1. a 2. řádek | tvar (srdce, hvězda, kruh, ovál, obdélník, šestiúhelník), počet barev obrázku, fotka / obrázek |
+| ornament (ozdoba) | šířka | jméno + rok na 2. řádek | tvar (kruh, hvězda), počet barev, fotka; `decor = photo` → reliéf |
+| keychain (klíčenka, rychlý formulář) | šířka | 1. a 2. řádek | tvar (obdélník, kruh), počet barev, fotka; `decor = photo` |
+| medallion (medaile) | šířka | nápis | **místo 1–3 → předvolba place1–3** (číslo vpředu, zlatá / stříbrná / bronzová; i z jedné barvy „zlatá“), nápis pak na 2. řádek; stužka / řetízek; tvar; `decor = photo` |
+| map (mapa) | strana | — | místo (jen od modelu; hledání se spustí samo) |
+| topper (zápich) | šířka | jméno | číslo (šablona „číslo“), šablona srdce / hvězda / kruh |
+| coaster (podtácek) | šířka | 1. a 2. řádek | tvar (kruh, čtverec, šestiúhelník), počet barev, fotka; `decor = photo` |
+| relief | šířka | — | fotka |
+| filament_art (obraz) | šířka | — | fotka |
+| earrings (náušnice) | šířka | 1. a 2. řádek | tvar (kruh), počet barev, obrázek |
+| papel | šířka | — | fotka |
+| sign (cedulka) | výška písma | až 3 řádky („Jana / Nováková“) | tvar (20 tvarů cedulky), **dvě barvy = destička + písmo** (`two_color`, `part_colors`), jedna barva = celá cedulka; fotku nedostane |
+| text (stojící nápis) | výška písma | 1 řádek | jedna barva |
+| cutter (vykrajovátko) | šířka | 1. a 2. řádek | obrázek |
+| všechny se sekcí „Materiál a počet kusů“ | | | počet kusů, materiál |
+
+Co se nepřebírá: barvy u nástrojů s obrázkem (barvy jsou z obrázku; bere se jen jejich počet), písmo, zdobení textem,
+u mapy místo z klíčové náhrady, u busty a mazlíčka barvy. Test `test_every_tool_of_the_catalogue_takes_what_the_words_say`
+(21 přání v `tests/fixtures/intake/direct.json`, každý nástroj katalogu aspoň jednou; hodnoty jsou vždy pole formuláře
+a v mezích).
+
+### 24.4 Volný návrh (`App\Domain\Intake\IntakeDesign`)
+
+**Zvolená cesta: stávající generátor modelů (`GenerationService`, na produkci Tripo) z textu, výsledek v kalkulačce.**
+Proč: je to jediná cesta, která už celá existuje a je ostrá. `GenerateModel` udělá z textu síť, `ModelNormalizer` ji
+uzavře a položí, vznikne `ModelFile` (`origin = generated`) a jde stejnou přípravou a kontrolou jako nahraný soubor.
+Kalkulačka na úvodní straně už umí vše, co zadání chce od „editoru“: 3D náhled, velikost, materiál a barvu, cenu,
+objednávku, stažení a „Chcete na modelu něco změnit?“ (nová generace z původního zadání + úpravy). Zavrženo: návrhář
+stojánků (`DesignAgent`) umí jen parametry jednoho nástroje; Meshy nebylo nikdy zavoláno (Y.md §11) a přepíná se
+jednou proměnnou, kdyby zkouška vyšla líp; „recept“ z koncepce je krok 3–4, ne tohle zadání.
+
+- Model v rozhodnutí vrací `prompt_en` (věc anglicky pro generátor, bez jmen, rozměrů a barev) a `photo` (none |
+  person | animal | object | picture). Generátor dostane `prompt_en`; bez modelu slova návštěvníka. Z fotky se návrh
+  dělá jen tehdy, když model řekl `object` nebo `animal` (fotka projde stejnou kontrolou jako u busty, kopie pro běh
+  se po něm smaže, přání si svou drží 30 dnů). **Z fotky člověka se volný návrh nedělá nikdy**: použijí se jen slova;
+  busta má svůj nástroj se souhlasem.
+- Stránka: `/?design=<generování>&wish=<přání>` (`calculator.ts openDesign`). Hned se ukáže kalkulačka s logem z teček
+  a procenty, nad ní řádek „Návrh podle vašich slov: „…“ · Chtěl jsem něco jiného“ a věta „Tvar vymyslela umělá
+  inteligence podle popisu: je přibližný a rozměry nejsou přesné…“. U věci, která se nosí nebo má někam pasovat
+  (čelenka, náramek, držák, kryt…; `IntakeDesign::mustFit`), přibude „…nevíme, jestli bude sedět: na míru ji umí náš
+  návrhář.“ Nikde se neslibuje, že bude sedět. Když generování selže nebo model nejde připravit k tisku, řekne to
+  („Návrh se nepovedlo vytvořit…“ / „…nepodařilo připravit k tisku…“) s tlačítky „Popsat jinak“ a „Raději poptávka
+  designérovi“.
+- Co volné generování umí a neumí (psáno i zákazníkovi): tvar podle popisu, ozdobné a hravé věci. Neumí přesné
+  rozměry, díly na míru, závity, věci, které mají někam pasovat, text na modelu spolehlivě, podobu konkrétního
+  člověka. To patří parametrickým nástrojům nebo návrháři.
+
+**Přepínač a počty** (`/admin/intake/design`, uloženo ve `farm_settings` pod `home.design`, výchozí v
+`config/home.php intake.design`):
+
+| nastavení | výchozí | význam |
+|---|---|---|
+| Volný návrh zapnutý | **vypnuto** | dokud ho Roman nezapne, nic se negeneruje; navíc musí být nastaven generátor (`ENGINE_GENERATOR`) |
+| Zdarma bez účtu | 10 | návrhů a úprav slovy na návštěvníka, **celkem, ne za den** |
+| Dalších zdarma po přihlášení | 10 | účet má tedy 20 |
+| Cena dalšího | prázdná | Kč s DPH z kreditu; prázdné = neprodává se, placená volba se nikde neukáže |
+| Návrhů celkem za den | 100 | strop nákladů celého webu (počítá i placené) |
+| Jistota pro přímé otevření nástroje | 0,6 | §24.2 |
+
+Jak se počítá: **jedno použití = jedno spuštění generátoru** označené `description.intake` (první návrh nebo úprava
+slovy v kalkulačce). Nepočítá se kopie dřívějšího stejného výsledku (stejné zadání podruhé je zdarma a hned),
+nepovedený běh a placený běh. Návštěvník bez účtu = cookie prohlížeče `mp_sid` (anonymní relace) **nebo** IP adresa
+za posledních 30 dní, co je víc (smazaná cookie nedá dalších deset; sdílená adresa není zablokovaná navždy). Po
+přihlášení se počítají běhy účtu plus běhy téže relace prohlížeče před přihlášením, takže vyčerpaných 10 zůstává
+a přibude dalších 10; z jiného zařízení má účet svých 20 bez toho, co kdo udělal anonymně jinde. Správce se
+nepočítá. Po vyčerpání: bez účtu věta „…Přihlaste se a dostanete dalších 10…“ a tlačítko Přihlásit se; s účtem a bez
+ceny „…Další zatím nenabízíme. Zkuste některý nástroj, nebo to předejte našemu návrháři.“; s cenou „…Další stojí
+X Kč z kreditu“ a tlačítko „Další návrh za X Kč“ (v kalkulačce „Upravit za X Kč“): strhne se až tímto stiskem,
+nikdy samo; nestačí-li kredit, věta s chybějící částkou a „Dobít kredit“. Denní strop: „Dnešní volné návrhy jsou
+vyčerpané, zítra to půjde znovu…“. Před tím vším stojí ochrana úvodní strany (§23.2: zadržené přání se nedostane
+k modelu ani ke generátoru) a `throttle:intake` (5 za hodinu, 20 za den na adresu; tlačítko „Zkusit volný návrh“ se
+počítá do téhož). Stará denní kvóta generování (`generate_guest` 1/den…) pro tyto běhy neplatí, pro bustu, figurku
+a „Popsat slovy“ platí dál beze změny.
+
+**Ukládání:** nic nového se neukládá „na později“. Návrh je `ModelFile` jako každé generování: anonymní návštěvník ho
+v relaci vidí, objedná a stáhne; trvalé uložení projektu pro přihlášené je práce C z koncepce (§9), tady není.
+Pozor: adresa `/?design=…` funguje komukoli, kdo ji zná, stejně jako dnešní `/?open=<uuid>` a odkazy na generování
+(viz otázky).
+
+### 24.5 Ceny (odhad, nic neměřeno)
+
+| co | dodavatel | cena |
+|---|---|---|
+| rozhodnutí asistenta (každé přání) | Claude Sonnet 5.5 | ≈ 0,25–0,3 Kč (§22.3; prompt je o pár set tokenů delší) |
+| volný návrh z textu | Tripo, geometrie `detailed` (produkční výchozí) | 30 kreditů = 0,30 USD ≈ **6,9 Kč** |
+| | Tripo, geometrie `standard` | 10 kreditů = 0,10 USD ≈ 2,3 Kč |
+| volný návrh z fotky věci | Tripo `detailed` / `standard` | 40 / 20 kreditů ≈ 9,2 / 4,6 Kč, + kontrola fotky (Haiku, haléře) |
+| totéž | Meshy 7.1 | 20–25 kreditů; cena kreditu 0,02 USD je **předpoklad** (Y.md §11) ≈ 9–11,5 Kč; nikdy nezavoláno |
+
+Kredity Tripa podle komentáře v `TripoGenerator` (text 10, fotka 20, jemná geometrie +20; 1 kredit = 0,01 USD), kurz
+23 Kč. Deset volných návrhů jednoho návštěvníka je tedy až ≈ 69 Kč, denní strop 100 návrhů až ≈ 690 Kč. Skutečné
+částky ukáže `/admin/ai` po prvních bězích; `/admin/intake/design` ukazuje odhad podle ceníku a dnešní počet.
+
+### 24.6 Soubory
+
+- Nové: `app/Domain/Intake/IntakePrefill.php`, `IntakeDesign.php`, `resources/views/admin/intake/design.blade.php`,
+  `lang/src/home_direct.json` (68 klíčů `router.*`, `refine.*`), `tests/Feature/HomeCreateDirectTest.php`,
+  `tests/fixtures/intake/direct.json`, `scripts/shots_home_direct.mjs`.
+- `IntakeRouter`: `DIRECT_CONFIDENCE`, `PHOTO_SUBJECTS`, `technical()`, schéma (+ `text2`, `number`, `shape`,
+  `prompt_en`, `photo`), pravidlo modelu pro `shape` („volný návrh“ místo „člověk udělá tvar“), parametry; katalog
+  `TOOLS`, slova `WORDS` a nápovědy jsem **neměnil** (souběh s `feature/headband-tool`).
+- `IntakeService`: `describe()` (+ `go`, `again`, `text`, `fit`, `unsure`, `others`, `design_note`, `login`,
+  `actions.design`, `start_design`, `pay_design`), `startDesign()`, `handoff()` (+ `values`, `understood`, `unsure`,
+  `back`, `words`); `IntakeController` `show`, `design`; trasy `GET /intake/{token}`, `POST /intake/{token}/design`,
+  `/admin/intake/design`.
+- `GenerationService`: `fromIntake()`, vlastní počty pro běhy s `description.intake`, `refine(..., pay)`;
+  `GenerationController::refine` vrací u volného návrhu větu a `can_pay`.
+- Skripty: `site/intake.ts`, `calc/intake_preload.ts` (`showUnderstood`), `calc/param.ts`, `calc/tool_page.ts`,
+  `calc/calculator.ts` (`openDesign`, placená úprava slovy); `calculator/index.blade.php` (`#design-line`),
+  `calculator/home.blade.php` (texty, druhá ze tří cest podle přepínače).
+
+### 24.7 Testy a ověření
+
+- Nový `HomeCreateDirectTest` (18 testů): jasný nástroj → `go` s parametry ve formuláři a řádek cs/en; fotka jako
+  vstup i jako zdobení, klíčenka s `form=1`; nejistý nástroj při vypnutém návrhu; přání bez nástroje při vypnutém
+  návrhu (jedna karta); volný návrh z textu (generování, soubor prošel přípravou, jde upravit slovy, cesta zpět);
+  věc, která se nosí (žádný slib); nejistý nástroj → návrh, práh z administrace; díl s rozměry zůstává člověku
+  a návrh je tlačítko; fotka člověka nikdy není zdrojem návrhu, fotka věci ano; počty 10 + 10 + cena / nic (bez účtu,
+  po přihlášení, bez ceny, s cenou, málo kreditu, placený stisk, úprava slovy); denní strop, nepovedený běh, kopie,
+  správce; zadržené přání, zavřená farma, jedno slovo; klíčová náhrada → návrh; zlaté případy po jednom zmáčknutí
+  (26 s nástrojem se otevřou rovnou, díly zůstanou u člověka, zbytek při zapnutém návrhu jde na návrh); každý nástroj
+  katalogu a jeho hodnoty; prompt a schéma; úvodní strana a administrace; výchozí hodnoty (vypnuto, 10, 10, bez ceny).
+- Upraveno: `IntakeTest`, `IntakeDecorTest`, `HomeWhatToMakeTest` (počet unií ve schématu 7 → 10). Nápovědy 110/110
+  drží stávající `HomeWhatToMakeTest` beze změny.
+- `npx tsc --noEmit -p .`, `npm run build` (app 47,7 kB, boot 287 kB), `pint --dirty` čisté.
+- **Snímky** `docs/img/home-direct/` (390 a 1280 px, cs), `node scripts/shots_home_direct.mjs --base=… --payloads=tests/fixtures/intake/direct_payloads.json`:
+  `tool-*` (úvodní strana → „Otevírám nástroj…“ → cedulka s řádkem, červená destička s bílým „Novákovi“, 2 kusy →
+  „Chtěl jsem něco jiného“ → karta „Zkusit jinak“ → pole pro e-mail až po stisku), `medal-*` (2. místo: stříbrná
+  medaile, „2“ a „Turnaj Stod“, poutko na stužku), `design-*` (logo z teček s řádkem nad ním → návrh v kalkulačce
+  s cenou a polem „Chcete na modelu něco změnit?“ → cesta zpět), `off-*` (přání bez nástroje při vypnutém návrhu),
+  `limit-*` (vyčerpané volné návrhy bez účtu). **Jak snímky vznikly:** místní databáze nemá tabulku `intakes`
+  (migrace se ve worktree nespouští), proto odpovědi `POST /intake`, `GET /intake/{token}` a předání stránce nástroje
+  nejdou z místního serveru: zapsal je skutečný kód v běhu PHPUnit s podvrženým asistentem a generátorem
+  (`direct_payloads.json`) a skript je stránce podstrčí (`fetch`, `window.MP_TOOL.intake`). Úvodní strana, stránka
+  nástroje a její náhled (skutečný `param_tool.py`), generování (falešný generátor: krychle), kalkulačka a cena jsou
+  místního serveru. Na všech snímcích bez vodorovného posunu a bez chyb skriptu.
+- Místní háček: `php artisan serve` nepředá proměnné prostředí Pythonu a první dotaz na engine po startu vyprší;
+  snímky běžely proti `php -S 127.0.0.1:8020 …/server.php` s `PYTHON_BIN` na Python s knihovnami.
+
+### 24.8 Co není ověřené
+
+- **Skutečný model**: nové pravidlo `shape` → volný návrh, pole `prompt_en`, `photo`, `text2`, `number`, `shape` a to,
+  jaké jistoty model dává, jsou ověřené jen proti podvržené odpovědi a textu promptu. Po nasazení
+  `php artisan matplace:intake-cases` (32 volání ≈ 10 Kč) a první přání v `/admin/intake`.
+- **Skutečné generování z textu**: jak dobře Tripo udělá „čelenku s rohy“ nebo „sošku draka“ z anglické věty (a z české
+  bez modelu), jak dlouho to trvá a co to opravdu stojí. Kvalita volného návrhu je hlavní neznámá celé cesty.
+  Fronta: lokálně a v testech běží synchronně, na produkci přes pracovníky fronty (jako busta).
+- **Skutečný tisk** volného návrhu; tisknutelnost hlídá stejná příprava jako u nahraného souboru.
+- **Předání fotky** stránce nástroje v prohlížeči (lokálně není tabulka; platí od §22.4) a nástroje mimo cedulku
+  a medaili v prohlížeči: hodnoty ostatních jsou ověřené testem proti definici formuláře, ne pohledem. Mapa: hledání
+  místa od modelu; busta a mazlíček se nespustí samy (souhlas, placené generování).
+- Placená cesta (cena, kredit) je ověřená testem; dokud Roman cenu nenastaví, nikdo ji neuvidí.
+- Skutečný telefon (dotyk, pomalá síť, návrat tlačítkem Zpět).
+
+### 24.9 Nasazení a co rozhodne Roman
+
+Nasazení nese: žádnou migraci; `config:cache` (nové `home.intake.design`), `npm run build`. Po nasazení se **chování
+změní hned i s vypnutým návrhem**: po „Vytvořit“ se nástroj otevírá sám (karta se dvěma tlačítky zmizí), soubor jde
+rovnou do kalkulačky. Volný návrh zůstane vypnutý, dokud ho Roman nezapne v `/admin/intake/design`; na produkci je
+generátor Tripo, takže zapnutím začnou placená volání.
+
+- Práh 0,6 (§24.2) po prvních ostrých jistotách.
+- Volný návrh zapnout, a s jakou geometrií: `detailed` ≈ 6,9 Kč, `standard` ≈ 2,3 Kč za návrh z textu (dnes platí
+  produkční `TRIPO_GEOMETRY_QUALITY`, pro volný návrh se nepřepíná).
+- Cena dalšího návrhu po 20 volných (pole v administraci), a zda 10 + 10 má být napořád, nebo se obnovovat (dnes
+  napořád; anonymní adresa se počítá 30 dní).
+- Díl s rozměry: dnes zůstává u člověka a volný návrh je jen tlačítko s poctivou větou. Má se i u něj generovat
+  rovnou?
+- Přání bez nástroje při vypnutém / vyčerpaném návrhu ukazuje pole pro e-mail rovnou (záchrana). Nechat, nebo i tam
+  schovat za tlačítko?
+- Nejistý nástroj při zapnutém návrhu jde na volný návrh a nástroj je až na cestě zpět. U plochých věcí z obrázku
+  (přívěsek, podtácek) může být nástroj lepší než 3D generování; po ostré zkoušce případně obrátit.
+- Adresa návrhu `/?design=…` (a po výpočtu `/c/<kód>`) funguje komukoli, kdo ji má, jako dnes u každého modelu
+  a kalkulace. Rozhodnutí „žádné sdílení odkazem pro nepřihlášené“ by znamenalo vázat generování a soubory na relaci;
+  to je změna napříč kalkulačkou, tady není.
+- Texty: „Chtěl jsem něco jiného“, „Raději poptávka designérovi“ (jinde na webu „návrhář“), věty `router.design.*`.
+- Trychtýř `/admin/stats`: krok „dostal něco“ počítá nově i `intake_designed`.

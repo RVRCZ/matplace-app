@@ -9,6 +9,7 @@ use App\Http\Controllers\Api\UploadController;
 use App\Mail\IntakeReceived;
 use App\Models\Intake;
 use App\Models\IntakeRequest;
+use App\Support\Money;
 use App\Support\ToolSeo;
 use App\Support\Track;
 use Illuminate\Http\Request;
@@ -37,7 +38,7 @@ final class IntakeService
 
     public const DISK = 'local';
 
-    public function __construct(private readonly IntakeRouter $router, private readonly PythonTool $python, private readonly ConverterChain $converters) {}
+    public function __construct(private readonly IntakeRouter $router, private readonly PythonTool $python, private readonly ConverterChain $converters, private readonly IntakeDesign $design) {}
 
     /**
      * POST /intake: a photo, a 3D file or words (at least one), stored and decided.
@@ -123,6 +124,39 @@ final class IntakeService
             'route' => $intake->route, 'tool' => $intake->tool_key, 'confidence' => (float) $intake->confidence,
             'ms' => (int) $intake->duration_ms, 'tokens' => (int) $intake->tokens_in + (int) $intake->tokens_out,
         ], fn ($v) => $v !== null));
+
+        // no tool, or a tool the assistant was not sure about: a free design is started right away, when that is switched
+        // on and the visitor's and the day's counts allow it (IntakeDesign, docs/AN.md §24.4); why not is kept for the page
+        if (IntakeDesign::wanted($intake)) {
+            $refused = $this->design->start($intake, 'auto', $request->ip(), $request->attributes->get('anon_session'), $request->user());
+            if ($refused !== null) {
+                $intake->forceFill(['answer' => ['design_refused' => $refused] + (array) $intake->answer])->save();
+            }
+        }
+
+        return $intake;
+    }
+
+    /**
+     * "Try a free design": the visitor's own press where a person was offered, or after "I wanted something else"
+     * (docs/AN.md §24.4). An intake that has its design already changes nothing.
+     *
+     * @throws ValidationException
+     */
+    public function startDesign(Intake $intake, Request $request): Intake
+    {
+        if ($intake->route === Intake::ROUTE_FILE || $intake->status === Intake::STATUS_SPAM) {
+            throw ValidationException::withMessages(['route' => __('router.error')]);
+        }
+        if ($intake->route === Intake::ROUTE_DESIGN) {
+            return $intake;
+        }
+        // `pay` = the press on the button that names the price (an account past its free designs, a price being set)
+        $refused = $this->design->start($intake, 'button', $request->ip(), $request->attributes->get('anon_session'), $request->user(), $request->boolean('pay'));
+        if ($refused !== null) {
+            $intake->forceFill(['answer' => ['design_refused' => $refused] + (array) $intake->answer])->save();
+            throw ValidationException::withMessages(['route' => IntakeDesign::sentence($refused, $intake->locale, $this->design->last)]);
+        }
 
         return $intake;
     }
@@ -253,18 +287,44 @@ final class IntakeService
      *
      * @return array<string, mixed>
      */
-    public function describe(Intake $intake): array
+    public function describe(Intake $intake, bool $again = false): array
     {
         $tool = $intake->route === Intake::ROUTE_TOOL && $intake->tool_key ? $intake->tool_key : null;
+        $toolUrl = fn (string $key): string => ToolSeo::url($key).'?'.http_build_query(['intake' => $intake->token] + (IntakeRouter::TOOLS[$key]['query'] ?? []));
+        $generation = $intake->route === Intake::ROUTE_DESIGN ? ($intake->answer['design']['generation'] ?? null) : null;
+        $designUrl = $generation ? route('home').'?'.http_build_query(['design' => $generation, 'wish' => $intake->token]) : null;
+        // where a free design could still be started by a press: what stands in its way for this visitor right now (their
+        // free designs used up, the day's cap), so signing in or a price set meanwhile shows at once
+        $canDesign = ! $generation && $intake->route !== Intake::ROUTE_FILE && $intake->status !== Intake::STATUS_SPAM && $this->design->enabled() && IntakeDesign::prompt($intake) !== null;
+        $limit = $canDesign ? IntakeDesign::limit(request()->ip(), request()->attributes->get('anon_session')?->id, request()->user()) : null;
         $file = $intake->route === Intake::ROUTE_FILE ? $intake->modelFile : null;
         $calc = $file ? route('home').'?'.http_build_query(array_filter(['open' => $file->uuid, 'note' => $intake->text])) : null;
         $rerouted = ($intake->answer['origin'] ?? null) === IntakeRouter::ORIGIN_REROUTE;
         // held by the rules against advertising: a sentence and nothing to press (`held` = neutral, `price` = the answer about prices)
         $held = $intake->status === Intake::STATUS_SPAM ? (string) ($intake->answer['spam']['reply'] ?? 'held') : null;
 
+        // one press of "Vytvořit" ends on a design (docs/AN.md §24): the tool's page, the free design or the calculator with
+        // the file opens by itself; a card is shown only where there is nothing to open (a person, a held wish) and on
+        // the way back ("I wanted something else")
+        $go = $held || $again ? null : ($tool ? $toolUrl($tool) : ($designUrl ?? $calc));
+        // the other ways on the card: the tools that would also do (the chosen one too, on the way back)
+        $others = array_values(array_unique(array_filter(array_merge($again && $tool ? [$tool] : [], (array) ($intake->answer['alternatives'] ?? []), $again && $intake->route === Intake::ROUTE_DESIGN ? (array) ($intake->answer['design']['was']['tool_key'] ?? []) : []),
+            fn ($key) => is_string($key) && isset(IntakeRouter::TOOLS[$key]) && ($intake->hasPhoto() || ! in_array($key, ['figure', 'pet'], true)))));
+
         return [
             'token' => $intake->token,
             'route' => $intake->route,
+            'go' => $go,
+            'again' => $again,
+            'text' => $again ? (string) $intake->text : null,
+            // a thing that is worn or has to fit: the design's page says that nobody knows whether it will
+            'fit' => $intake->route === Intake::ROUTE_DESIGN && IntakeDesign::mustFit($intake->text),
+            'unsure' => $tool !== null && (float) $intake->confidence < IntakeDesign::directConfidence(),
+            'others' => array_map(fn (string $key) => ['key' => $key, 'title' => __('tools.'.$key.'.title'), 'url' => $toolUrl($key)], $others),
+            // a free design that was wanted and could not be started for a count (the switch being off is no news to the visitor)
+            'design_note' => $limit !== null ? IntakeDesign::sentence($limit, $intake->locale) : null,
+            // a visitor without an account who used their free designs: signing in gives more
+            'login' => $limit === IntakeDesign::GUEST_LIMIT ? route('login') : null,
             'held' => $held,
             'tool_key' => $tool,
             'tool' => $tool ? __('tools.'.$tool.'.title') : null,
@@ -279,8 +339,14 @@ final class IntakeService
             'file' => $file ? ['uuid' => $file->uuid, 'name' => $file->original_name] : null,
             'actions' => [
                 // the key ring opens its quick form (?form=1), the one with a picture field; the rest their plain page
-                'tool' => $tool ? ToolSeo::url($tool).'?'.http_build_query(['intake' => $intake->token] + (IntakeRouter::TOOLS[$tool]['query'] ?? [])) : null,
+                'tool' => $tool ? $toolUrl($tool) : null,
                 'calc' => $calc,
+                // the free design that is on its way (or done), and the press that starts one where none was started
+                'design' => $designUrl,
+                'start_design' => $canDesign && $limit === null ? route('intake.design', $intake) : null,
+                // past the free designs with a price set: the same press, paid from the credit, on a button that names the price
+                'pay_design' => $limit === IntakeDesign::PAY
+                    ? ['url' => route('intake.design', $intake), 'price' => Money::czk((float) IntakeDesign::settings()['price'])->format(), 'topup' => route('account.credit')] : null,
                 'request' => $held ? null : route('intake.request', $intake),
                 // "try it now without a designer": only where a person was offered, and only once
                 'reroute' => ! $held && $intake->route === Intake::ROUTE_HUMAN && ! $rerouted ? route('intake.reroute', $intake) : null,
@@ -301,14 +367,25 @@ final class IntakeService
             Track::event('intake_tool_opened', $intake, ['tool' => $tool]);
         }
 
+        // the parameters as this tool takes them (another tool than the chosen one may be opened from "I wanted something else")
+        $params = IntakePrefill::complete((array) $intake->params, $intake->text);
+        $values = IntakePrefill::values($tool, $params);
+        $locale = app()->getLocale();
+
         return [
             'token' => $intake->token,
             'tool' => $tool,
             // a tool of words alone (a sign, standing letters) gets no photo, whatever came in
             'file' => $intake->hasPhoto() && (IntakeRouter::TOOLS[$tool]['input'] ?? 'photo') !== 'text' ? route('intake.file', $intake) : null,
             'name' => $intake->photo_path ? basename($intake->photo_path) : null,
-            'params' => (array) $intake->params,
+            'params' => $params,
             'text' => $intake->text,
+            // the form's own values (IntakePrefill, docs/AN.md §24.3) and the page's one line: what the assistant understood, and the way back
+            'values' => $values,
+            'understood' => IntakePrefill::understood($tool, $params, $values, $intake->hasPhoto(), $locale),
+            'unsure' => $intake->tool_key === $tool && (float) $intake->confidence < IntakeDesign::directConfidence(),
+            'back' => route('home').'?'.http_build_query(['wish' => $intake->token]),
+            'words' => ['lead' => __('router.got.lead'), 'unsure' => __('router.got.unsure'), 'nothing' => __('router.got.nothing'), 'back' => __('router.got.back')],
         ];
     }
 

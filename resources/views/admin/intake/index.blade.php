@@ -15,6 +15,7 @@
         {{-- what the rules against advertising held (docs/AN.md §23.2): out of both lists until this is on --}}
         <a href="{{ route('admin.intake.index', array_filter(['show' => $spam ? $filter : 'all', 'spam' => $spam ? null : 1])) }}" class="chip {{ $spam ? 'chip-on' : '' }}" data-spam-toggle>{{ $spam ? 'Skrýt spam' : 'Ukázat i spam' }} ({{ $held }})</a>
         <a href="{{ route('admin.intake.hints') }}" class="chip">Příklady pod polem</a>
+        <a href="{{ route('admin.intake.design') }}" class="chip">Volný návrh</a>
     </nav>
 </div>
 
@@ -33,7 +34,7 @@
                     <td class="px-3 py-2">{{ ['photo' => 'fotka', 'file' => 'soubor', 'text' => 'text'][$i->kind] ?? $i->kind }}@if($i->hasPhoto()) <span class="text-xs text-ok">· s fotkou</span>@endif</td>
                     <td class="max-w-md px-3 py-2">{{ \Illuminate\Support\Str::limit((string) $i->text, 140) ?: '—' }}@if($i->modelFile)<br><span class="text-xs text-slate-500">{{ $i->modelFile->original_name }}</span>@endif</td>
                     <td class="px-3 py-2">
-                        <span class="font-medium">{{ ['tool' => 'nástroj', 'human' => 'člověk', 'shape' => 'tvar', 'file' => 'kalkulačka'][$i->route] ?? '—' }}</span>
+                        <span class="font-medium">{{ ['tool' => 'nástroj', 'human' => 'člověk', 'shape' => 'tvar', 'file' => 'kalkulačka', 'design' => 'volný návrh'][$i->route] ?? '—' }}</span>
                         @if($i->tool_key)<br><span class="text-xs text-slate-500">{{ __('tools.'.$i->tool_key.'.title') }}</span>@endif
                         @if($i->wants_shape)<br><span class="text-xs text-warn">chce tvar podle fotky</span>@endif
                         @if(($i->answer['origin'] ?? null) === \App\Domain\Intake\IntakeRouter::ORIGIN_REROUTE)<br><span class="text-xs text-action-dark">bez návrháře (z {{ ['tool' => 'nástroje', 'human' => 'člověka', 'shape' => 'tvaru'][collect($i->answer['history'] ?? [])->last()['route'] ?? ''] ?? '?' }})</span>@endif

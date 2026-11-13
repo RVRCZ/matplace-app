@@ -112,7 +112,7 @@ class IntakeDecorTest extends TestCase
         $schema = IntakeRouter::schema();
         $this->assertSame(['type' => ['string', 'null']], $schema['properties']['params']['properties']['decor']);
         $this->assertContains('decor', $schema['properties']['params']['required']);
-        $this->assertSame(7, IntakeRouter::unionCount(), 'far under the API\'s limit of 16');
+        $this->assertSame(10, IntakeRouter::unionCount(), 'under the API\'s limit of 16');
         $system = IntakeRouter::system();
         foreach (['A medal, a key ring, a Christmas ornament and a coaster DO take a photo as a decoration', 'set `params.decor` to "photo" and say it honestly in `summary`',
             'the photo becomes a relief in one colour on the front of the thing', 'the preview shows it before anything is ordered', 'a name or a year from the words goes on the back (`params.text`)',

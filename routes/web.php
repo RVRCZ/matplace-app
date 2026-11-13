@@ -93,6 +93,10 @@ $pages = function () {
     Route::post('/intake/{intake}/request', [IntakeController::class, 'request'])->middleware('throttle:10,60,intake-request')->name('intake.request');
     // "try it now without a designer" (round 2, §22.11): one more decision, counted in the same five an hour
     Route::post('/intake/{intake}/reroute', [IntakeController::class, 'reroute'])->middleware('throttle:intake')->name('intake.reroute');
+    // one press ends on a design (docs/AN.md §24): the way back from a tool or a design ("I wanted something else") reads the
+    // wish again by its token; "try a free design" starts the generator where it was not started by itself (the same five an hour)
+    Route::get('/intake/{intake}', [IntakeController::class, 'show'])->middleware('throttle:60,1,intake-show')->name('intake.show');
+    Route::post('/intake/{intake}/design', [IntakeController::class, 'design'])->middleware('throttle:intake')->name('intake.design');
 
     // Marketplace (config/features.php): public printer pages, quotes, customer inquiries — 404 while switched off
     Route::middleware('feature:marketplace')->group(function () {
@@ -559,6 +563,9 @@ Route::middleware(['auth', 'role:admin'])->prefix('admin')->name('admin.')->grou
     // the examples under the first screen's field: events on and off, their dates and texts (docs/AN.md §23.3)
     Route::get('/intake/hints', [AdminIntakeController::class, 'hints'])->name('intake.hints');
     Route::post('/intake/hints', [AdminIntakeController::class, 'saveHints'])->name('intake.hints.save');
+    // the free design of the home page: the switch, the counts per visitor and per day, the confidence a tool opens from (docs/AN.md §24.4)
+    Route::get('/intake/design', [AdminIntakeController::class, 'design'])->name('intake.design');
+    Route::post('/intake/design', [AdminIntakeController::class, 'saveDesign'])->name('intake.design.save');
     Route::get('/intake/{intake}', [AdminIntakeController::class, 'show'])->name('intake.show');
     Route::get('/intake/{intake}/photo', [AdminIntakeController::class, 'photo'])->name('intake.photo');
     Route::post('/intake/{intake}/reply', [AdminIntakeController::class, 'reply'])->name('intake.reply');
