@@ -1269,3 +1269,147 @@ jednou barvou, věta o jedné podložce by u nich lhala. Hint `flag.flush.hint` 
 Text, reliéf z fotky a logo na přední i zadní straně medaile, klíčenky, ozdoby a podtácku: seznam `decor`
 v parametrech, panel Zdobení, `engines/python/decor.py`. Vlastní text a obrázek nástrojů zůstaly, jak jsou. Vše
 v `docs/AR.md`.
+
+## 13. Čelenka s ozdobou (13. 11. 2026, `/tools/headband`)
+
+Větev `feature/headband-tool` z `origin/main` 7dc7f357, zadání `zadani-celenka-nastroj.md` (mimo repozitář).
+Úvodní strana nabízela jako první nápovědu „Čelenka s rohy na Mikuláše“ a po odeslání řekla, že čelenku vyrobit
+neumíme. Teď ji vyrobí nástroj. **Nikdo ji zatím nevytiskl**: vše níže je z modelu a z řezu, ne z výtisku.
+
+| | |
+|---|---|
+| adresa, kind | `/tools/headband` (cs, en, es), `headband`, otevírá se předvolbou `hb_horns` (černá čelenka, červené rohy) |
+| engine | `engines/python/headband_kind.py` (`param_tool.py` ho volá před ostatními rodinami) |
+| ozdoby | `horns`, `cat`, `bunny`, `antlers`, `crown`, `halo`, `unicorn`, `none` |
+| díly | `body` (čelenka), `details` (ozdoba; u páru dva kusy, u jednorožce tři); `mount = fused` = jeden kus bez dílů |
+| pole | `head` 44–64 cm (výchozí 52), `band` 8–25 mm (12), `thickness` 2–4 mm (2,6), `deco` 60–160 % (100), `spacing` 30–140 mm (70), `tilt` −30 až 30° (0), `deco_t` 3–8 mm (4), `fit` 0,1–0,4 mm (0,2) |
+| volby | `decoration`, `head_size` (`custom`, `child` 51, `kid` 54, `adult` 57 cm přes `FILLS`), `mount` (`slot`, `fused`), příznak `teeth` |
+| předvolby | `hb_horns`, `hb_cat`, `hb_bunny`, `hb_antlers`, `hb_crown`, `hb_halo`, `hb_unicorn`: ozdoba a dvě barvy |
+
+Obrázky: `docs/img/headband-<ozdoba>.png` (každá ozdoba nasazená), `headband-front-all.png` (všechny zepředu),
+`headband-horns-plate.png` (jak leží na podložce), `headband-horns-fused.png`, `headband-page-390.png`,
+`headband-page-1280.png`, `headband-preview-390.png`, `headband-preview-1280.png`.
+
+### 13.1 Tvar
+
+- **Oblouk podle obvodu hlavy.** Šířka hlavy = 0,27 × obvod, vnitřní šířka čelenky = 0,83 × šířka hlavy (aby držela):
+  obvod 52 cm → hlava 140 mm → čelenka uvnitř 116,5 mm široká a 111,8 mm vysoká. Nad nejširším místem je oblouk
+  půlelipsa 1,22× vyšší než kruh, pod ním nohy pokračují 38° dovnitř. Konce se na posledních 28 mm ztenčují na 72 %
+  tloušťky a končí kuličkou, aby netlačily za ušima. Poměry (0,27, 0,83, 1,22, 38°) jsou odhad z rozměrů běžných
+  čelenek, ne měření na hlavách: první výtisk je má potvrdit.
+- **Zoubky** uvnitř od konců po 25° nad nejširší místo: trojúhelníky 1 mm vysoké po 3,2 mm, jdou vypnout.
+- **Ozdoba je plochá silueta v rovině oblouku.** Kreslí ji jedna funkce (základna na y = 0, roste nahoru, pro pravou
+  stranu hlavy; levá je zrcadlová) a jeden řádek registru `DECOR` říká, kde stojí: `pair` (dvě, `spacing` od sebe
+  po oblouku) nebo `centre`, kde má čepy a jak moc sleduje sklon čelenky (zaječí uši 0,35, parohy 0,5, kočičí 0,6,
+  rohy 1 = kolmo na čelenku). **Nová ozdoba = funkce + řádek v `DECOR` + výška v `NATURAL` + barvy v `PAINT`, pak
+  hodnota v `CHOICES`/`WHEN`, v `KINDS` routeru a texty.** Siluetu pod základnou prodlužuje engine sám a ořízne ji
+  obrysem čelenky s mezerou 0,25 mm, takže každý tvar sedí na oblouku při jakékoli velikosti hlavy a náklonu.
+- Vnitřek uší, drahokamy korunky a drážky rohu jednorožce jsou zapuštěné 0,6 mm do líce (u provedení vcelku 0,4 mm,
+  protože líc leží na podložce).
+
+### 13.2 Tisknutelnost: rozhodnutí a důvody
+
+- **Čelenka leží na boku.** Oblouk je nakreslený v rovině podložky a vytažený o šířku pásku. Vrstvy běží po oblouku,
+  tedy ve směru, ve kterém se čelenka ohýbá; nic nevisí. Nastojato by se lámala mezi vrstvami a potřebovala podpěry.
+- **Ozdoba je zvlášť díl do kapsy** (`mount = slot`, výchozí). Důvod jsou barvy: čelenka i ozdoba v jedné rovině
+  vcelku by ve dvou barvách znamenaly výměnu filamentu v každé z 60 vrstev (u ACE asi 2,7 min na výměnu, `docs/AL.md`
+  §10.5). Zvlášť tištěná ozdoba je 4 mm tlustá, tiskne se naplocho vedle čelenky ve své barvě a po dílech nemá
+  žádnou výměnu. Dole má rybinový čep (krček 5 mm, kořen 7,6 mm, hloubka 3,6 mm), který se zatlačí zepředu do kapsy
+  v nálitku na čelence (stěny 2,2 mm, dno kapsy 0,2 mm pod ozdobou). Tahem od hlavy drží rybina, protlačení dozadu
+  brání dno kapsy, **dopředu drží jen tření**: stránka proto radí kapku lepidla. Vůle `fit` 0,2 mm na stranu je
+  v „další rozměry“. Je-li pásek užší než ozdoba silná + 1 mm, kapsa je průchozí a ozdoba je silná jako pásek.
+  Kolem nálitku má ozdoba patku, takže čep má nad sebou ozdobu při každém náklonu.
+- **Vcelku** (`mount = fused`): siluety vyrůstají z čelenky, líc je na podložce, jeden kus v jedné barvě, nic se
+  neskládá. `partsOf` vrací `[]`.
+- **Jedna čelenka, víc ozdob:** rohy, kočičí uši, zaječí uši a parohy mají stejný čep; při stejné rozteči a obvodu
+  hlavy sedí do stejných dvou kapes. Korunka má dvě kapsy jinde, svatozář a jednorožec uprostřed.
+- **Na podložce** (`all`): ozdoby leží uvnitř oblouku, když se tam vejdou (řada nebo sloupec, i otočené o 90°),
+  jinak vedle čelenky nebo pod ní, podle toho, co dá menší plochu. Výchozí dětská čelenka s rohy zabere
+  121,7 × 116,4 mm. Díly nesou `_shared`: `body` i `details` stojí tam, kde je má celek, takže na jedné podložce
+  se dvěma filamenty neleží na sobě. Nad 240 mm přijde upozornění `headband_plate` (díly se pak tisknou po sobě).
+- **Největší zadání** (hlava 64 cm, pásek 25 mm, 4 mm, korunka 160 %): 151 × 144 × 25 mm. Čelenka sama se na
+  250 × 250 mm vejde vždy, dělit ani natáčet se nemusí.
+- **Prasknutí při nasazení.** Engine počítá protažení krajního vlákna: půlkruh rozevřený na koncích se nejvíc ohýbá
+  nahoře, ε = (t/2) · 2δ/(πR²). Výchozí dětská čelenka (2,6 mm): 0,45 % při nošení, 1,11 % při nasazování (δ počítáno
+  1,6× rozdíl hlava − čelenka + 20 mm). PLA snese řádově 2 %, PETG zhruba dvojnásobek. Nad 1,4 % engine varuje
+  (`headband_stiff`: uberte tloušťku, nebo PETG). Je to výpočet na zjednodušeném tvaru, žádná zkouška.
+- **Materiál.** Nástroje materiál nevybírají (volí se v kalkulaci a v zakázce), proto ho říká text: tip pod náhledem,
+  nápověda u tloušťky a FAQ doporučují PETG, PLA „při 2,6 mm drží, ale je křehčí“. Výchozí materiál podle nástroje
+  by byl zásah do kalkulace a farmy; viz otevřené otázky.
+
+### 13.3 Kontrolní řezy (místně, OrcaSlicer 2.4.0-beta, profily farmy `machine.json` s plochou 250 × 250, `process_standard` 0,2 mm, 2 stěny, 15 %)
+
+| co | materiál | čas | gramy | výměny | podpěry |
+|---|---|---|---|---|---|
+| dětská (52 cm) s rohy, oba díly na jedné podložce, jedna barva | PETG | 37 min 41 s | 15,65 | 0 | žádné |
+| totéž | PLA | 29 min 22 s | 13,48 | 0 | žádné |
+| jen čelenka | PETG | 28 min 24 s | 11,61 | 0 | žádné |
+| jen rohy | PETG | 8 min 29 s | 3,57 | 0 | žádné |
+| **dvě barvy na jedné podložce** (3MF, extruder na díl, `ONE_PLATE_PROCESS`) | PETG | **1 h 21 min 13 s** | 12,01 + 4,03 = 16,04 | 20 | žádné |
+| totéž | PLA | 1 h 14 min 38 s | 10,38 + 4,01 = 14,39 | 20 | žádné |
+| vcelku s rohy (`fused`) | PETG | 34 min 53 s | 15,21 | 0 | žádné |
+| školák (54 cm), zaječí uši | PETG | 55 min 30 s | 25,07 | 0 | žádné |
+| dospělý (57 cm), parohy | PETG | 51 min 17 s | 20,73 | 0 | žádné |
+| hlava 64 cm, pásek 25 × 4 mm, korunka 160 % | PETG | 1 h 36 min 40 s | 43,25 | 0 | žádné |
+
+„Žádné podpěry“ znamená: řez se zapnutými podpěrami (`enable_support 1`, strom, práh 30°) dal stejný čas a gramy
+jako bez nich a v G-kódu není jediný úsek podpěr.
+
+**Cena** podle výchozích sazeb z `config/farm.php` a `FarmSeeder` (35 Kč/h, PETG 1,40 Kč/g, PLA+ 1,30 Kč/g, 30 Kč
+zakázka, nejméně 99 Kč, DPH 21 %, zaokrouhlení na 10 Kč; produkční sazby mohou být jiné): dětská s rohy v jedné
+barvě **120 Kč** (pod minimem zakázky), ve dvou barvách na jedné podložce **130 Kč** v PETG a 120 Kč v PLA+,
+vše bez dopravy. Po dílech na dvou podložkách (28 + 8,5 min, 15,2 g) vychází vzorcem rovněž 120 Kč. Ceny jsem počítal vzorcem `PriceCalculator` z čísel řezu, kalkulací na webu ne.
+
+Dvě barvy na jedné podložce stojí 20 výměn (ozdoba má 20 vrstev) a čas z 38 min na 1 h 21 min. Farma jednu podložku
+zvolí sama, když jsou cívky obou dílů v jednom stroji s měničem (`PrepareFarmOrder::prepareOnePlate`); jinak tiskne
+po dílech bez výměn. Tenčí ozdoba (`deco_t` 3 mm) = 15 výměn.
+
+### 13.4 Úvodní strana
+
+- `IntakeRouter::TOOLS['headband']` (velikost = obvod hlavy 440–640 mm, 2 barvy, jen slova), `KINDS['headband']`
+  (ozdoba v `params.kind`), rodina slov `headband` v `WORDS` před `pet` (kočičí a zaječí uši by vzal mazlíček),
+  `headbandKind()` čte ozdobu ze slov pro odhad bez modelu. Pravidla zadání pro model se neměnila (větev
+  `feature/home-create-direct` je má na starosti); co je `kind`, říká modelu řádek katalogu.
+- `resources/js/calc/intake_preload.ts`: obvod hlavy do pole `head` (jen nad 440 mm) a klepnutí na předvolbu `hb_<kind>`.
+- `config/home.php`: `mikulas.1` čeká `headband`; `steady.3` je 3D mapa místo náhradního dílu (jediná další
+  nápověda, která vedla na člověka); `christmas.4` čelenka s parohy místo mapy; `easter.4` zaječí uši;
+  `halloween.4` kočičí uši; nová událost `carnival` (20. 2., 40 dní předem) s korunkou a jednorožcem.
+  Texty v `lang/src/headband_hints.json`. 122 nápověd, klíčovým odhadem 122 ze 122 tam, kam config říká;
+  38 zlatých případů (6 nových pro čelenku: cs, en, es, s fotkou i bez), 38 z 38.
+
+### 13.5 Testy
+
+`HeadbandToolTest` (5): oblouk podle hlavy a na boku, zoubky, napětí a varování; každá ozdoba jako plochý díl
+v kapse (díly dávají celek, složená stojí jako nošená, překryv dílů je chyba se slovy); vcelku = jedno těleso;
+uložený návrh nese díly, barvy a `designParts`; stránka ve třech jazycích s poli, předvolbami a texty varování.
+`IntakeHeadbandTest` (2): slova tří jazyků → nástroj a ozdoba, co patří jinam, zůstává jinde, odpověď modelu,
+katalog; předání na stránku nástroje.
+
+### 13.6 Co není ověřené
+
+- **Skutečný tisk.** Nikdo čelenku nevytiskl: velikost na hlavě, přítlak, pohodlí konců a zoubků, vůle čepu v kapse
+  (0,2 mm), jak drží ozdoba bez lepidla, vzhled nálitku a patky, pevnost v PLA. Proto v katalogu není `verified`.
+- Výpočet napětí a poměry oblouku jsou odhad, ne měření.
+- Zakázka na farmě nebyla projeta: po dílech, na jedné podložce se dvěma cívkami (`_shared` drží díly na místě;
+  v testu je jen `designParts` a názvy dílů), věž vedle čelenky. Řez dvou barev jsem dělal vlastním 3MF
+  a profily farmy, ne cestou `PrepareFarmOrder`.
+- Náhled v prohlížeči jsem viděl na 390 a 1280 px v Chromu bez grafické karty; telefon ne.
+- Živý model routeru jsem nevolal (zadání); odhad klíčovými slovy je ověřen.
+
+### 13.7 Otevřené otázky
+
+1. **Text na boku (jméno) není.** Společné zdobení (`decor.py`) klade věci na rovnou plochu desky; čelenka má jen
+   svislou zakřivenou stěnu. Vystouplé písmo by na ní při tisku na boku viselo, vyryté by pásek zeslabilo v místě
+   ohybu. Cesta bez velkého zásahu: jméno jako další ozdoba do kapsy (písmena stojící na čelence), případně štítek
+   na ozdobě. Neudělal jsem.
+2. **Výchozí materiál.** Nástroj umí PETG jen doporučit slovy. Má kalkulace u čelenky předvolit PETG?
+3. **Stěny.** Pásek 2,6 mm se řeže se 2 stěnami a výplní; 4 stěny by daly plný pásek po oblouku. `wall_loops` není
+   v `ModelFile::PROCESS_HINTS` (záměrně úzký seznam), proto to návrh neumí říct.
+4. **Jedna podložka, nebo po dílech?** Dvě barvy na stroji s měničem dnes znamenají jednu podložku a 20 výměn
+   (+43 min). Po dílech je to bez výměn, ale dvě úlohy. Rozhodnutí farmy, ne nástroje.
+5. `OrderService::ASSEMBLED` + jedna podložka: ostatní skládané nástroje (krabička s víkem, stojánky) `_shared`
+   nemají a jejich díly se staví každý od nuly. Jestli se na jedné podložce nepřekryjí, jsem neověřoval; všiml jsem
+   si toho při čtení `prepareOnePlate`.
+6. Texty nápověd, které správce změnil na `/admin/intake/hints` (nastavení `home.hints`), mají přednost před
+   `lang`: kde má produkce u události vlastní texty, nové příklady (`steady.3`, `christmas.4`, `easter.4`,
+   `halloween.4`) se tam samy neobjeví, dokud je správce nepřepíše nebo nevrátí výchozí.
