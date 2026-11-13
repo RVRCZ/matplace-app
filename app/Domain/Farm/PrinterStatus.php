@@ -26,6 +26,13 @@ final class PrinterStatus
 
     public const STANDBY = 'standby';     // free and the plate is clear: the next job may start
 
+    /**
+     * How long a message of a printer that is neither paused nor in error counts as news. The ACE of an idle Kobra S1
+     * can say "busy · slot 2 unwinding" for days (U1, 12–13 Nov 2026): the agent repeats it in every report, so it is
+     * "live", but it is no reason to call the printer a problem for ever.
+     */
+    public const MESSAGE_FRESH_MINUTES = 30;
+
     /** Pill colours (Tailwind classes that the admin pages already use). */
     public const TONES = [
         self::DISABLED => 'bg-slate-100 text-slate-500',
@@ -82,13 +89,44 @@ final class PrinterStatus
             return $message !== '' && trim((string) ($printer->telemetry['message'] ?? '')) === $message ? $message : __('farm.admin.ov.reason.paused');
         }
         // what the printer says right now (the agent repeats it in the telemetry while it lasts): the reason of a pause,
-        // the ACE's complaint. While the print runs a message is only a note; an old message is history.
-        $live = $message !== '' && trim((string) ($printer->telemetry['message'] ?? '')) === $message;
-        if ($live && ! ($printer->isAgentDriven() && $printer->state === FarmPrinter::STATE_PRINTING)) {
+        // the ACE's complaint. While the print runs a message is only a note; a message that has been repeating for
+        // longer than MESSAGE_FRESH_MINUTES on a printer that neither pauses nor fails is no news any more.
+        if (self::messageFresh($printer) && ! ($printer->isAgentDriven() && $printer->state === FarmPrinter::STATE_PRINTING)) {
             return $message;
         }
 
         return null;
+    }
+
+    /** The printer's last report said these very words (AgentService::printerMessage wipes them when a report comes without). */
+    public static function messageLive(FarmPrinter $printer): bool
+    {
+        $message = trim((string) $printer->message);
+
+        return $message !== '' && trim((string) ($printer->telemetry['message'] ?? '')) === $message;
+    }
+
+    /** Live, and news: said for the first time less than MESSAGE_FRESH_MINUTES ago. */
+    public static function messageFresh(FarmPrinter $printer): bool
+    {
+        return self::messageLive($printer) && ($printer->message_at === null || $printer->message_at->gt(now()->subMinutes(self::MESSAGE_FRESH_MINUTES)));
+    }
+
+    /**
+     * How the printer's card shows its message: `fresh` (amber: said now and news, or the reason of the pause or the
+     * error that lasts), `lasting` (grey: still said, for longer than MESSAGE_FRESH_MINUTES), `last` (grey: the last
+     * words of a printer the agent cannot reach); null without a message.
+     */
+    public static function messageKind(FarmPrinter $printer): ?string
+    {
+        if (trim((string) $printer->message) === '') {
+            return null;
+        }
+        if (! self::messageLive($printer)) {
+            return 'last';
+        }
+
+        return self::messageFresh($printer) || in_array($printer->state, [FarmPrinter::STATE_PAUSED, FarmPrinter::STATE_ERROR], true) ? 'fresh' : 'lasting';
     }
 
     /**

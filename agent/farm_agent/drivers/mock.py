@@ -9,6 +9,8 @@ Options (config.yaml):
   pause_at        the printer pauses by itself at this percentage, once (optional), saying `pause_message`
   pause_message   what the paused printer says (default ""; a Kobra S1 says nothing on its screen but "resume")
   resume_timeout  true: resume works, but the call answers "TimeoutError" like a Kobra S1 under Rinkhals (default false)
+  resume_delay    seconds the printer stays "paused" after a resume before it prints on, while the call itself answers
+                  "TimeoutError" at once (a Kobra S1 heats and feeds the filament first, F26-000162); default 0
   slots           {index: word} what slot_status says ("ready", "empty"...); missing index = the printer does not tell
   files           {name: size} the printer's storage at the start (default empty); a started print adds its file
   cancel_stuck    true: cancel answers ok and the print stays "paused" (a Kobra S1 under Rinkhals after a stop on its
@@ -57,6 +59,9 @@ class MockDriver(PrinterDriver):
         self.pause_at = options.get("pause_at")
         self.pause_message = str(options.get("pause_message", ""))
         self.resume_timeout = bool(options.get("resume_timeout", False))
+        self.resume_delay = float(options.get("resume_delay", 0))
+        self._resume_at: Optional[float] = None     # when a delayed resume takes effect
+        self.resume_calls = 0                       # how many times resume was called (tests read it)
         self.cancel_stuck = bool(options.get("cancel_stuck", False))
         self.cancel_fallback_mode = str(options.get("cancel_fallback", "works"))
         self.heaters_stay = bool(options.get("heaters_stay", False))
@@ -75,6 +80,8 @@ class MockDriver(PrinterDriver):
         self.light_on = False
 
     def _advance(self) -> None:
+        if self._state == "paused" and self._resume_at is not None and time.monotonic() >= self._resume_at:
+            self._state, self._since, self._message, self._resume_at = "printing", time.monotonic(), "", None
         if self._state == "printing" and self._since is not None:
             now = time.monotonic()
             self._printed += now - self._since
@@ -150,8 +157,13 @@ class MockDriver(PrinterDriver):
         await self._changed()
 
     async def resume(self) -> None:
+        self.resume_calls += 1
         if self._state != "paused":
             raise DriverError("nothing is paused")
+        if self.resume_delay > 0:
+            if self._resume_at is None:
+                self._resume_at = time.monotonic() + self.resume_delay
+            raise DriverError("/printer/print/resume: TimeoutError ")
         self._state, self._since, self._message = "printing", time.monotonic(), ""
         await self._changed()
         if self.resume_timeout:
@@ -188,7 +200,7 @@ class MockDriver(PrinterDriver):
         if self.cancel_stuck:
             self._state, self._since = "paused", None      # answered ok, the print stays
             return
-        self._state, self._since, self._left_hot = "cancelled", None, self.heaters_stay
+        self._state, self._since, self._left_hot, self._resume_at = "cancelled", None, self.heaters_stay, None
         await self._changed()
 
     async def cancel_fallback(self) -> Optional[str]:

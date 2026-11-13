@@ -79,6 +79,9 @@ class MessagesAndFilesTest(unittest.IsolatedAsyncioTestCase):
         agent = self.agent(print_seconds=5)
         agent_module.CONFIRM_WAIT_SECONDS, agent_module.CONFIRM_POLL_SECONDS = 0.3, 0.05
         self.addCleanup(lambda: setattr(agent_module, "CONFIRM_WAIT_SECONDS", 60.0))
+        # a resume has its own, longer limit since 0.2.15 (docs/AM.md §15)
+        self.addCleanup(setattr, agent_module, "RESUME_WAIT_SECONDS", agent_module.RESUME_WAIT_SECONDS)
+        agent_module.RESUME_WAIT_SECONDS = 0.3
         self.addCleanup(lambda: setattr(agent_module, "CONFIRM_POLL_SECONDS", 2.0))
         self.server.queue.append({"id": 1, "printer": "p1", "type": "resume", "job_id": None, "payload": {}})
         await self.rounds(agent, 2, pause=0.2)

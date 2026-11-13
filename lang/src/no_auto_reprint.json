@@ -1,0 +1,122 @@
+{
+    "farm.status.stopped": [
+        "Tisk zastaven, čeká na pokyn obsluhy",
+        "Print stopped, waiting for the operator",
+        "Impresión detenida, a la espera del operador"
+    ],
+    "farm.order.stopped_note": [
+        "Tisk se zastavil a teď se netiskne. Obsluha farmy rozhodne, zda ho vytiskne znovu, a dáme vám vědět e-mailem. Platba zůstává rezervovaná; pokud tisk nedokončíme, vrátíme ji celou.",
+        "The print stopped and is not printing now. The farm's operator will decide whether to print it again and we will let you know by e-mail. Your payment stays reserved; if we do not finish the print, you get all of it back.",
+        "La impresión se detuvo y ahora no se está imprimiendo. El operador de la granja decidirá si la imprime de nuevo y se lo comunicaremos por correo electrónico. Su pago queda reservado; si no terminamos la impresión, se lo devolveremos íntegro."
+    ],
+    "farm.mail.stopped.subject": [
+        "Zakázka :number: tisk se zastavil",
+        "Order :number: the print stopped",
+        "Pedido :number: la impresión se detuvo"
+    ],
+    "farm.mail.stopped.body": [
+        "Tisk „:name“ se zastavil a teď se netiskne. Obsluha farmy rozhodne, zda ho vytiskne znovu; jakmile to bude jasné, napíšeme vám. Platba zůstává rezervovaná. Pokud tisk nedokončíme, vrátíme ji celou.",
+        "The print of “:name” stopped and is not printing now. The farm's operator will decide whether to print it again; we will write to you as soon as that is clear. Your payment stays reserved. If we do not finish the print, you get all of it back.",
+        "La impresión de «:name» se detuvo y ahora no se está imprimiendo. El operador de la granja decidirá si la imprime de nuevo; le escribiremos en cuanto esté claro. Su pago queda reservado. Si no terminamos la impresión, se lo devolveremos íntegro."
+    ],
+    "farm.admin.mail.stopped": [
+        ":number: tisk zastaven, čeká na váš pokyn",
+        ":number: print stopped, waiting for your word",
+        ":number: impresión detenida, a la espera de su decisión"
+    ],
+    "farm.admin.mail.line_next_stopped": [
+        "Co dál: zakázka se sama znovu nespustí, ani po uvolnění podložky. Na stránce zakázky zvolte Vytisknout znovu, nebo Zrušit zakázku (zákazníkovi se vrátí celá částka). Peníze zákazníka zůstávají do té doby rezervované.",
+        "What next: the order will not start again by itself, not even after the plate is confirmed as clear. On the order's page choose Print again, or Cancel the order (the customer gets the whole amount back). The customer's money stays reserved until then.",
+        "Qué sigue: el pedido no volverá a empezar solo, ni siquiera tras confirmar la placa vacía. En la página del pedido elija Imprimir de nuevo o Cancelar el pedido (el cliente recupera todo el importe). El dinero del cliente queda reservado hasta entonces."
+    ],
+    "farm.admin.stopped.title": [
+        "Tisk zastaven, čeká na váš pokyn",
+        "Print stopped, waiting for your word",
+        "Impresión detenida, a la espera de su decisión"
+    ],
+    "farm.admin.stopped.text": [
+        "Tisk skončil na tiskárně nedokončený. Zakázka se sama znovu nespustí, ani po uvolnění podložky. Peníze zákazníka zůstávají rezervované, zákazník ví, že se netiskne.",
+        "The print ended on the printer unfinished. The order will not start again by itself, not even after the plate is confirmed as clear. The customer's money stays reserved and the customer knows it is not printing.",
+        "La impresión terminó en la impresora sin acabar. El pedido no volverá a empezar solo, ni siquiera tras confirmar la placa vacía. El dinero del cliente queda reservado y el cliente sabe que no se está imprimiendo."
+    ],
+    "farm.admin.stopped.reprint": [
+        "Vytisknout znovu",
+        "Print again",
+        "Imprimir de nuevo"
+    ],
+    "farm.admin.stopped.cancel": [
+        "Zrušit zakázku",
+        "Cancel the order",
+        "Cancelar el pedido"
+    ],
+    "farm.admin.stopped.cancel_confirm": [
+        "Zrušit zakázku a vrátit zákazníkovi celou částku?",
+        "Cancel the order and give the customer the whole amount back?",
+        "¿Cancelar el pedido y devolver al cliente todo el importe?"
+    ],
+    "farm.admin.stopped.hint": [
+        "„Vytisknout znovu“ vrátí zakázku do fronty tiskárny :printer: spustí se hned, pokud je tiskárna volná a podložka potvrzená jako prázdná, jinak až to tak bude. „Zrušit zakázku“ vrátí zákazníkovi celou částku (na kartu, pokud platil kartou).",
+        "“Print again” puts the order back into the queue of :printer: it starts at once when the printer is free and the plate is confirmed as clear, otherwise as soon as it is. “Cancel the order” gives the customer the whole amount back (to the card when it was paid by card).",
+        "«Imprimir de nuevo» devuelve el pedido a la cola de :printer: empieza enseguida si la impresora está libre y la placa confirmada como vacía; si no, en cuanto lo esté. «Cancelar el pedido» devuelve al cliente todo el importe (a la tarjeta si pagó con tarjeta)."
+    ],
+    "farm.admin.stopped.no_files": [
+        "Soubory zakázky už byly uklizeny, znovu vytisknout ji nejde. Zákazník ji může zopakovat jako novou zakázku.",
+        "The order's files have been cleaned up already, it cannot be printed again. The customer can repeat it as a new order.",
+        "Los archivos del pedido ya se han limpiado, no se puede imprimir de nuevo. El cliente puede repetirlo como un pedido nuevo."
+    ],
+    "farm.admin.stopped.reprint_started": [
+        "Zakázka :number se znovu tiskne na tiskárně :printer.",
+        "Order :number is printing again on :printer.",
+        "El pedido :number se está imprimiendo de nuevo en :printer."
+    ],
+    "farm.admin.stopped.reprint_queued": [
+        "Zakázka :number je zpět ve frontě tiskárny :printer. Spustí se, jakmile bude tiskárna volná a podložka potvrzená jako prázdná.",
+        "Order :number is back in the queue of :printer. It starts as soon as the printer is free and the plate is confirmed as clear.",
+        "El pedido :number ha vuelto a la cola de :printer. Empezará en cuanto la impresora esté libre y la placa confirmada como vacía."
+    ],
+    "farm.admin.stopped.row": [
+        "čeká na pokyn (vytisknout znovu / zrušit)",
+        "waits for your word (print again / cancel)",
+        "espera su decisión (imprimir de nuevo / cancelar)"
+    ],
+    "farm.admin.control.resume": [
+        "Pokračuji… čeká se na potvrzení tiskárny. Tiskárna nejdřív nahřeje trysku a zavede filament, může to trvat i několik minut. Další pauzu ani pokračování teď poslat nejde, zrušení tisku ano.",
+        "Resuming… waiting for the printer to confirm. The printer heats the nozzle and feeds the filament first, which can take several minutes. Another pause or resume cannot be sent now, a cancel can.",
+        "Reanudando… a la espera de la confirmación de la impresora. Primero calienta la boquilla y carga el filamento, puede tardar varios minutos. Ahora no se puede enviar otra pausa ni reanudación; la cancelación sí."
+    ],
+    "farm.admin.control.pause": [
+        "Pozastavuji… čeká se na potvrzení tiskárny. Další pauzu ani pokračování teď poslat nejde, zrušení tisku ano.",
+        "Pausing… waiting for the printer to confirm. Another pause or resume cannot be sent now, a cancel can.",
+        "Pausando… a la espera de la confirmación de la impresora. Ahora no se puede enviar otra pausa ni reanudación; la cancelación sí."
+    ],
+    "farm.admin.control.busy_resume": [
+        "Pokračování už běží a čeká se na tiskárnu (může to trvat několik minut). Další příkaz půjde poslat, až tiskárna odpoví.",
+        "A resume is already under way and waits for the printer (it can take several minutes). Another command can be sent once the printer has answered.",
+        "Ya hay una reanudación en curso a la espera de la impresora (puede tardar varios minutos). Podrá enviar otra orden cuando la impresora responda."
+    ],
+    "farm.admin.control.busy_pause": [
+        "Pauza už běží a čeká se na tiskárnu. Další příkaz půjde poslat, až tiskárna odpoví.",
+        "A pause is already under way and waits for the printer. Another command can be sent once the printer has answered.",
+        "Ya hay una pausa en curso a la espera de la impresora. Podrá enviar otra orden cuando la impresora responda."
+    ],
+    "farm.admin.result.control_confirmed": [
+        "Hotovo: tiskárna to potvrdila svým stavem po :s s (samotné volání včas neodpovědělo).",
+        "Done: the printer confirmed it by its state after :s s (the call itself did not answer in time).",
+        "Hecho: la impresora lo confirmó con su estado tras :s s (la llamada en sí no respondió a tiempo)."
+    ],
+    "farm.admin.result.control_interrupted": [
+        "Čekání na tiskárnu skončilo po :s s, protože přišlo zrušení tisku.",
+        "Waiting for the printer ended after :s s because a cancel of the print came.",
+        "La espera de la impresora terminó tras :s s porque llegó la cancelación de la impresión."
+    ],
+    "farm.admin.message_lasting": [
+        "trvá od",
+        "lasting since",
+        "dura desde"
+    ],
+    "farm.admin.message_last": [
+        "poslední před výpadkem spojení",
+        "the last before the connection was lost",
+        "el último antes de perder la conexión"
+    ]
+}

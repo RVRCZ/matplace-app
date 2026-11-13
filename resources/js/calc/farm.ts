@@ -63,7 +63,7 @@ interface FarmState {
     min_charge?: number;
     shipping: Shipping | null; destination: string | null; tracking_url: string | null;
     colors: Color[]; color: { name: string; hex: string; finish?: string | null; code?: string | null } | null; spools?: SpoolLine[]; delivery: string; balance: number; model_url: string | null; supports_url: string | null;
-    queue: { start_in: number; finish_in: number; ahead: number; blocked: string | null } | null; pause?: string | null; cancel_keep: number | null;
+    queue: { start_in: number; finish_in: number; ahead: number; blocked: string | null } | null; pause?: string | null; stopped?: string | null; cancel_keep: number | null;
     print: { status: string; progress: number; snapshot_url: string | null; snapshot_at: string | null } | null;
     timelapse_url?: string | null;
     /** the finished print photographed in the photo box, on its backdrop */
@@ -1083,8 +1083,11 @@ export function bootFarmOrder(): void {
             q.innerHTML = lines.filter(Boolean).map(esc).join('<br>');
         } else if (s.queue) {
             q.textContent = tr('farm.order.queue_finish', { time: duration(s.queue.finish_in) });
+        } else if (s.stopped) {
+            // the print stopped and waits for the farm's operator: no times, nothing that says it prints, the sentence alone
+            q.textContent = s.stopped;
         }
-        show(q, !!s.queue);
+        show(q, !!s.queue || !!s.stopped);
         // a paid parcel: where it goes, and the link to follow it once it has left
         const dest = $('farm-destination');
         if (dest) {
@@ -1143,7 +1146,7 @@ export function bootFarmOrder(): void {
             if (res.ok) { state = await res.json(); render(); }
         } catch { /* offline for a moment: try again */ }
         const fast = state.status === 'uploaded';
-        const live = ['paid', 'queued', 'printing', 'sliced', 'awaiting_choices', 'done'].includes(state.status);
+        const live = ['paid', 'queued', 'printing', 'stopped', 'sliced', 'awaiting_choices', 'done'].includes(state.status);
         // while it prints the page follows the camera: a new picture every 15 s
         if (fast || live) timer = window.setTimeout(poll, fast ? 2000 : state.status === 'printing' ? 15000 : ['sliced', 'awaiting_choices'].includes(state.status) ? 20000 : 8000);
     };

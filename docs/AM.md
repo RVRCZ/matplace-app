@@ -1139,3 +1139,97 @@ známého dlouhého mlčení volání, které ovladač už umí přečkat). Viz 
 
 **Soubory.** `agent/farm_agent/__init__.py` (0.2.14), `agent.py`, `drivers/moonraker.py`, `agent/README.md`,
 `agent/tests/test_direct_spool.py`.
+
+---
+
+## 15. Jedno pokračování stačí; zrušení nečeká za pokračováním (agent 0.2.15, větev `fix/no-auto-reprint-after-stop`, 13. 11. 2026) – bez tiskárny
+
+Zadání `zadani-farma-po-zastaveni-tisku.md`, bod 3 (serverová část, zastavené zakázky a hlášky tiskáren jsou v
+`docs/AL.md` §25). **Žádná tiskárna při tom nebyla oslovena**; podklad je časová osa F26-000162 ze serveru a kód.
+
+### 15a. Co se stalo 13. 11. 2026 na U2 (agent 0.2.14)
+
+Pauza provedena 18:25:29. Příkazy `resume` 18:26:19 a 18:26:59 skončily „TimeoutError; the printer's state did not
+change in 60 s“, třetí (18:27:40) „confirmed by the printer's state after 25 s“. V agentovi jde jeden příkaz na
+tiskárnu po druhém (`PrinterWorker.busy`): volání `POST /printer/print/resume` má limit 15 s (`timeout` ovladače
+`moonraker`), potom `_control` četl stav 60 s (`CONFIRM_WAIT_SECONDS`). Tři příkazy za sebou tedy znamenají, že
+tiskárna přešla do `printing` zhruba **tři minuty po prvním volání** (2 × 75 s + 15 s + 25 s od chvíle, kdy si agent
+první příkaz vzal). Kobra S1 s Rinkhalsem před pokračováním nahřívá trysku a zavádí filament z ACE a volání drží
+otevřené (§10d, F26-000108), takže `TimeoutError` neznamená odmítnutí.
+
+Co z osy **nejde poznat**: jestli tiskárna pokračovala na první volání (a další dvě jen čekala ve frontě požadavků),
+nebo až na třetí. Proto agent volání dál posílá jednou a jen déle čeká; opakování volání by na stroji, který na první
+volání právě pracuje, bylo druhé `RESUME` do fronty G-kódu a nikdo neví, co s ním GoKlipper udělá.
+
+### 15b. Změny
+
+- **`RESUME_WAIT_SECONDS = 300`** (`agent.py`): `resume`, které tiskárna odmítla nebo na které neodpověděla, se soudí
+  podle stavu 300 s (po 2 s). `pause` má dál 60 s, `cancel` beze změny (60 s + druhý krok, §13). Výsledek má stejný
+  tvar jako dřív: „confirmed by the printer's state after N s; the call itself said: …“, při neúspěchu „…; the
+  printer's state did not change in 300 s“ (server číslo čte z věty, takže rozumí oběma verzím).
+- **Zrušení přeruší čekání.** Příkaz drží zámek tiskárny, takže by `cancel` za pětiminutovým `resume` stál. Když
+  v odpovědi serveru přijde `cancel`, agent nastaví `PrinterWorker.interrupt`; `_watch` pauzy nebo pokračování skončí
+  hned (nejdéle po doběhnutí právě běžícího čtení stavu) a příkaz selže s větou „…; a cancel came after N s; the wait for the printer was given up“. `cancel`
+  si značku smaže, až dostane zámek. Čekání samotného `cancel` se nepřerušuje.
+- Ovladače beze změny (`moonraker`, `anycubic_lan`, `prusalink`); `mock` má `resume_delay` (po pokračování zůstane
+  tolik vteřin `paused`, volání odpoví `TimeoutError` hned) a počítadlo `resume_calls`.
+- `__version__` 0.2.15.
+
+### 15c. Server (bez migrace; podrobně `docs/AL.md` §25.5)
+
+`FarmCommand::controlInFlight()`: poslední příkaz tiskárny z `pause|resume|cancel|start` je `pause` nebo `resume` ve
+stavu `pending`/`sent` a není starší než 10 minut. Karta tiskárny pak píše „Pokračuji…“ / „Pozastavuji…“, tlačítka
+Pauza a Pokračovat jsou vypnutá a `FarmOrderController::command` další pauzu nebo pokračování odmítne; zrušení tisku
+projde vždy. `FarmCommand::resultText()` nově překládá „confirmed by the printer's state after N s“ u pauzy a
+pokračování (dřív anglicky i s `TimeoutError`) a „a cancel came after N s“ (`lang/src/no_auto_reprint.json`).
+
+### 15d. Kompatibilita
+
+| Server | Agent | Chování |
+|---|---|---|
+| nový | 0.2.15 | jeden příkaz, až 300 s „Pokračuji…“, další nejde poslat, zrušení projde hned |
+| nový | 0.2.9 (farma B) až 0.2.14 (farma U) | další příkaz nejde poslat, dokud agent neodpoví; první může po 60 s skončit „selhal“, přestože tiskárna pokračuje, pak jde poslat znovu; zrušení poslané během čekání stojí za ním nejdéle 75 s jako dosud |
+| starý (73bbd5f6) | 0.2.15 | první příkaz čeká 300 s a neselže; další stisky se řadí za něj jako dřív; věty anglicky |
+
+Protokol se nezměnil (žádný nový klíč v příkazech ani v hlášeních).
+
+### 15e. Testy
+
+`agent/tests/test_resume_wait.py` (6): verze a limity; tiskárna pokračuje po době delší, než má pauza (jeden příkaz
+`done`, volání šlo jednou); tiskárna nikdy nepokračuje (selže po limitu pokračování, ne pauzy); pauza má svůj kratší
+limit; zrušení během čekání pokračování (pokračování hned skončí s větou, zrušení se provede, úloha `cancelled`,
+značka smazaná); dřívější zrušení další pokračování neovlivní. `test_messages_files.py`: starý test pokračování
+nastavuje i nový limit. Celá sada: 156 testů OK (`python -m unittest discover -s tests`, 17 přeskočených jako dřív).
+Server: `tests/Feature/FarmNoAutoReprintTest.php` (dva testy o pokračování).
+
+### 15f. Neověřeno na skutečné tiskárně
+
+- Zda S1 pokračuje na **jedno** volání (15a). Kdyby ne, první příkaz po 300 s selže s větou „its state did not change
+  in 300 s“ a řešením bude volání po čase zopakovat – to je záměrně neuděláno naslepo.
+- Jak dlouho S1 po `resume` zůstává `paused` (300 s je odhad s rezervou proti zhruba 190 s z 13. 11.).
+- Zda se během pokračování na S1 neobjeví přechodný stav, který ovladač čte jako `error` (neznámé slovo
+  `print_stats.state`); čekání ho přečká, hlášení úlohy má vlastní ochranu (`ERROR_AFTER_POLLS`).
+- Kobra X a Core One: pokračování tam odpovídá hned, delší limit se jich týká jen při odmítnutém volání.
+
+### 15g. Zkouška na U2 (Roman, po instalaci 0.2.15 a nasazení serveru)
+
+1. Malý tisk z farmy, počkat na první vrstvu, v `/admin/farm` na kartě tiskárny **Pauza** (čekáme „Pozastavuji…“,
+   potom stav pozastaveno).
+2. **Pokračovat, jednou.** Čekáme řádek „Pokračuji… čeká se na potvrzení tiskárny“, vypnutá tlačítka Pauza a
+   Pokračovat, a do pár minut „Poslední příkaz: pokračovat · hotovo · Hotovo: tiskárna to potvrdila svým stavem po
+   N s“. Číslo N prosím poslat.
+3. Kdyby po pěti minutách přišlo „Tiskárna v tisku nepokračuje, její stav se 300 s nezměnil“: tiskárna na jedno volání
+   nepokračuje. Stisknout Pokračovat znovu a poslat `agent.log`.
+4. Znovu Pauza, Pokračovat a hned **Zrušit tisk**: zrušení má projít do pár vteřin, u pokračování „Čekání na tiskárnu
+   skončilo po N s, protože přišlo zrušení tisku“. Zakázka pak má být „Tisk zastaven, čeká na pokyn obsluhy“ a po
+   uvolnění podložky se **nesmí** sama spustit (`docs/AL.md` §25).
+
+### 15h. Instalace 0.2.15 (řídící, Roman)
+
+Jako §13g: zastavit úlohu `matplace-farm-agent`, přehrát složku `farm_agent/`, spustit úlohu. Žádné nové knihovny,
+`requirements.txt` i `config.yaml` beze změny. Zip `matplace-farm-agent-0.2.15.zip` je ve scratchpadu session (cesta
+v závěrečné zprávě). Farma U má 0.2.14, farma B 0.2.9: pro farmu B platí totéž co pro přechod na 0.2.13 a 0.2.14 (§13g, §14;
+pro tiskárnu bez měniče nejdřív agent, pak přepínač), tahle verze k tomu nic nepřidává. Pořadí se serverem je volné.
+
+**Soubory.** `agent/farm_agent/__init__.py` (0.2.15), `agent.py`, `drivers/mock.py`, `agent/README.md`,
+`agent/tests/test_resume_wait.py`, `agent/tests/test_messages_files.py`.

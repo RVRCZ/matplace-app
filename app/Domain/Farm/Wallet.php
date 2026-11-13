@@ -214,7 +214,7 @@ final class Wallet
         $currency = (new Money(0, $currency))->currency;
         DB::transaction(function () use ($user, $currency) {
             $user = User::whereKey($user->id)->lockForUpdate()->firstOrFail();
-            $open = FarmOrder::where('user_id', $user->id)->whereIn('status', [FarmOrder::STATUS_PAID, FarmOrder::STATUS_QUEUED, FarmOrder::STATUS_PRINTING])->exists();
+            $open = FarmOrder::where('user_id', $user->id)->whereIn('status', FarmOrder::STATUSES_OPEN_PAID)->exists();
             if (! $this->balance($user)->isZero() || $open) {
                 throw new \DomainException('The account still holds credit or a running order.');
             }

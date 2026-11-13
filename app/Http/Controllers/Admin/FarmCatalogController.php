@@ -653,6 +653,7 @@ class FarmCatalogController extends Controller
         $data['qualities'] = json_decode($data['qualities'], true);
         $data['strengths'] = json_decode($data['strengths'], true);
         $data['require_approval'] = $request->boolean('require_approval');
+        $data['auto_reprint_start'] = $request->boolean('auto_reprint_start');
         $data['marketplace'] = $request->boolean('marketplace');
         // one choice of three; a form without it (the old checkbox alone) is open or closed by `farm_open` and keeps a pause
         // only while the farm stays open. `farm_open` is written with the state: closed = off, open and paused = on

@@ -16,9 +16,9 @@ export interface TimelineState {
 
 type Tr = (key: string, params?: Record<string, string | number>) => string;
 
-/** null = the block has nothing to say (the order was cancelled or failed). */
+/** null = the block has nothing to say (the order was cancelled or failed, or its print stopped and waits for the farm's operator). */
 export function timelinePrint(s: TimelineState, tr: Tr, duration: (min: number) => string): string | null {
-    if (s.status === 'cancelled' || s.status === 'failed') return null;
+    if (s.status === 'cancelled' || s.status === 'failed' || s.status === 'stopped') return null;
     if (s.status === 'done' || s.status === 'handed_over') return tr('farm.order.tl.done');
     if (s.status === 'printing') {
         // what is left: the farm's estimate of the end, else the part of the print time the progress has not covered

@@ -96,6 +96,10 @@
                                 @endif
                             </div>
                         @endif
+                        {{-- prints that stopped here and wait for the operator's word: not in the queue, nothing starts them (docs/AL.md §25) --}}
+                        @foreach($row['stopped'] as $so)
+                            <p class="mt-1 rounded-lg bg-amber-50 px-2 py-1 text-xs text-amber-900" data-stopped-order="{{ $so->number }}"><a class="font-semibold underline" href="{{ route('admin.farm.orders.show', $so) }}">{{ $so->number }}</a> · {{ __('farm.admin.stopped.row') }}</p>
+                        @endforeach
                     </div>
 
                     {{-- the first order that waits for this printer (its queue, then the paid ones that wait for approval) and how many more --}}

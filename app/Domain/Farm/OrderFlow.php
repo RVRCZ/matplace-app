@@ -28,14 +28,20 @@ use Illuminate\Support\Facades\Storage;
 /**
  * The only place an order changes its status. Every move checks the allowed transitions, writes the history,
  * moves the credit (hold → capture / give back), tells the customer and – for a payment, the first plate starting
- * on an agent's machine, the last plate done, a failure or the customer's cancellation – the operator (alertAdmin).
+ * on an agent's machine, the last plate done, a failure, a print that stopped and waits for a word, or the customer's
+ * cancellation – the operator (alertAdmin).
+ *
+ * A print that ends on the printer unfinished (docs/AL.md §25): stopped by a person there or cancelled from the printer's
+ * card (`print_cancelled`), or failed by the printer (`print_failed`) – the paid order goes to "stopped" and waits for
+ * the operator: reprint() or a cancellation. Nothing prints again by itself, with one exception that is off by default
+ * (printsAgain).
  */
 final class OrderFlow
 {
     /** The customer hears about these; the rest is internal. */
     private const NOTIFY = [
         FarmOrder::STATUS_QUEUED, FarmOrder::STATUS_PRINTING, FarmOrder::STATUS_DONE,
-        FarmOrder::STATUS_HANDED_OVER, FarmOrder::STATUS_FAILED, FarmOrder::STATUS_CANCELLED,
+        FarmOrder::STATUS_HANDED_OVER, FarmOrder::STATUS_FAILED, FarmOrder::STATUS_CANCELLED, FarmOrder::STATUS_STOPPED,
     ];
 
     /** The kinds of mail the operator can switch off one by one in the farm's settings (`notify_<kind>`). */
@@ -47,14 +53,20 @@ final class OrderFlow
     /** The order being paid right now: what its queueing would say goes into the one "paid" mail, not into a second one. */
     private ?int $paying = null;
 
-    /** The order failing on the printer right now and going to be printed again on its own: its money stays held. */
+    /** The order going back to the queue to be printed again right now (on its own, or on the operator's word): its money stays held, the customer hears "we print it again". */
     private ?int $reprinting = null;
 
-    /** Failures of a paid print that are ours: the printer said so, it was stopped at the printer, or the operator said so. */
-    public const REPRINT_CODES = ['print_failed', 'print_cancelled', 'operator'];
+    /** How a print ends on the printer without being finished: the printer failed it, or somebody stopped it (at the printer, or the print alone from the admin). */
+    public const STOP_CODES = ['print_failed', 'print_cancelled'];
 
-    /** How many times a failed print is printed again on its own before its money goes back (docs/AO.md §2). */
+    /** The only end that may be printed again on its own, when the farm's setting allows it: the printer's own failure. Never a person's decision. */
+    public const AUTO_REPRINT_CODES = ['print_failed'];
+
+    /** How many times a failed start is printed again on its own before the order waits for the operator. */
     public const AUTO_REPRINTS = 1;
+
+    /** "Before the first layer": the failed job got less far than this (per cent). */
+    public const AUTO_REPRINT_BELOW_PERCENT = 1.0;
 
     public function __construct(private readonly Wallet $wallet, private readonly FarmSettings $settings, private readonly OrderService $orders, private readonly Shipping $shipping, private readonly ShippingCarrier $carrier) {}
 
@@ -256,7 +268,7 @@ final class OrderFlow
             FarmOrder::STATUS_HANDED_OVER => $order->handed_at = now(),
             default => null,
         };
-        if ($to !== FarmOrder::STATUS_FAILED) {
+        if (! in_array($to, [FarmOrder::STATUS_FAILED, FarmOrder::STATUS_STOPPED], true)) {
             $order->error = $order->error_detail = null;
         }
         $order->save();
@@ -267,6 +279,7 @@ final class OrderFlow
             FarmOrder::STATUS_DONE => $this->onDone($order),
             FarmOrder::STATUS_CANCELLED => $this->onStopped($order, cancelPrint: true),
             FarmOrder::STATUS_FAILED => $this->onStopped($order, cancelPrint: false),
+            FarmOrder::STATUS_STOPPED => $this->onHalted($order),
             default => null,
         };
         if (in_array($to, self::NOTIFY, true) && $order->paid_at !== null) {
@@ -279,19 +292,27 @@ final class OrderFlow
 
     /**
      * Failure with a reason code the customer can read (`farm.error.<code>`). Works from any status that allows it.
-     * A paid print that failed on the printer (our fault) is printed once more on its own: failed → queued, the money
-     * stays held, the customer hears "we print it again"; the second failure ends the order and gives the money back
-     * (to the card when it came from one, CardRefunds).
+     *
+     * A paid print that ended on the printer unfinished (STOP_CODES, reported by the agent) does not fail: it stops
+     * and waits for the operator (stop()), the money stays held. The one exception, off by default: the printer's own
+     * failure before the first layer goes back to the queue once on its own (printsAgain): failed → queued, the money
+     * stays held, the customer hears "we print it again". Everything else – a slice that failed, the operator's own
+     * "failed", a test print – ends the order and gives the money back (to the card when it came from one, CardRefunds).
      */
     public function fail(FarmOrder $order, string $code, string $actor, ?int $actorId = null, ?string $detail = null): void
     {
+        $again = $this->printsAgain($order, $code, $actor);
+        if (! $again && $this->waitsForOperator($order, $code, $actor)) {
+            $this->stop($order, $code, $actor, $actorId, $detail);
+
+            return;
+        }
         $order->forceFill(['error' => $code, 'error_detail' => $detail, 'stage' => null]);
         if (! $order->canMoveTo(FarmOrder::STATUS_FAILED)) {
             $order->save();
 
             return;
         }
-        $again = $this->printsAgain($order, $code, $actor);
         $this->reprinting = $again ? $order->id : null;
         try {
             $this->move($order, FarmOrder::STATUS_FAILED, $actor, $actorId, $code);   // keeps the error: only other targets clear it; the operator's mail goes from move()
@@ -305,16 +326,67 @@ final class OrderFlow
     }
 
     /**
-     * A failure is printed again on its own: switched on (`farm.payments.auto_reprint`), a customer's paid print, not
-     * printed again yet, a failure on the printer (REPRINT_CODES) while it printed – or, reported by the agent, while it
-     * was starting.
+     * A failure goes back to the queue on its own only when all of this holds: the farm's setting `auto_reprint_start`
+     * is on (off by default) and the hard switch `farm.payments.auto_reprint` is not off; a customer's paid print, not
+     * printed again yet; the printer itself failed it (AUTO_REPRINT_CODES, reported by the agent – never a stop by a
+     * person, never the operator's "failed"); and the failed job laid nothing down yet (under AUTO_REPRINT_BELOW_PERCENT).
+     * It then starts like any queued order: once the plate is confirmed as clear.
      */
     private function printsAgain(FarmOrder $order, string $code, string $actor): bool
     {
-        return (bool) config('farm.payments.auto_reprint', true) && $order->paid_at !== null && $order->kind === FarmOrder::KIND_PRINT
-            && (int) $order->reprints < self::AUTO_REPRINTS && in_array($code, self::REPRINT_CODES, true)
+        return (bool) config('farm.payments.auto_reprint', true) && (bool) $this->settings->get('auto_reprint_start')
+            && $actor === 'agent' && in_array($code, self::AUTO_REPRINT_CODES, true)
+            && $order->paid_at !== null && $order->kind === FarmOrder::KIND_PRINT
+            && (int) $order->reprints < self::AUTO_REPRINTS
             && ! $order->filesPruned()
-            && ($order->status === FarmOrder::STATUS_PRINTING || ($actor === 'agent' && $order->status === FarmOrder::STATUS_QUEUED));
+            && in_array($order->status, [FarmOrder::STATUS_QUEUED, FarmOrder::STATUS_PRINTING], true)
+            && (float) ($order->latestJob()?->progress ?? 0) < self::AUTO_REPRINT_BELOW_PERCENT;
+    }
+
+    /** A customer's paid print that ended on the printer unfinished: it waits for the operator instead of failing. */
+    private function waitsForOperator(FarmOrder $order, string $code, string $actor): bool
+    {
+        return $actor === 'agent' && in_array($code, self::STOP_CODES, true)
+            && $order->paid_at !== null && $order->kind === FarmOrder::KIND_PRINT
+            && $order->canMoveTo(FarmOrder::STATUS_STOPPED);
+    }
+
+    /**
+     * The print stopped and the order waits for the operator's word ("Tisk zastaven, čeká na pokyn"): the money stays
+     * held, the customer is told the truth (it does not print, we will decide), the operator is mailed, and nothing
+     * starts it again – the queue only ever takes queued orders (Dispatcher). `$code` says why (STOP_CODES, or
+     * `operator` when the admin stopped it by hand), `$detail` carries the printer's words.
+     */
+    public function stop(FarmOrder $order, string $code, string $actor, ?int $actorId = null, ?string $detail = null): void
+    {
+        $order->forceFill(['error' => $code, 'error_detail' => $detail, 'stage' => null]);
+        if (! $order->canMoveTo(FarmOrder::STATUS_STOPPED)) {
+            $order->save();
+
+            return;
+        }
+        $this->move($order, FarmOrder::STATUS_STOPPED, $actor, $actorId, $code);   // keeps the reason, like a failure
+    }
+
+    /**
+     * "Vytisknout znovu": the operator sends a stopped order back to the queue. The plate that stopped prints again
+     * (FarmOrder::nextPlate), the money stays held, the customer hears "we print it again". It starts like any queued
+     * order: at once when its printer is idle with the plate confirmed, else when it is.
+     *
+     * @throws \DomainException when the order is not stopped, or its G-code is gone
+     */
+    public function reprint(FarmOrder $order, int $adminId): FarmOrder
+    {
+        if (! $order->isStopped() || ! $order->canMoveTo(FarmOrder::STATUS_QUEUED)) {
+            throw new \DomainException("Farm order {$order->id} cannot be printed again from {$order->status}.");
+        }
+        $order->forceFill(['reprints' => (int) $order->reprints + 1])->save();
+        $this->reprinting = $order->id;
+        try {
+            return $this->move($order, FarmOrder::STATUS_QUEUED, 'admin', $adminId, 'reprint '.$order->reprints.' on the word of the operator');
+        } finally {
+            $this->reprinting = null;
+        }
     }
 
     /**
@@ -363,6 +435,22 @@ final class OrderFlow
             // what really left the spool when we know it, else the estimate
             $used = (float) ($order->actual_grams ?? $order->est_grams ?? 0);
             $slot->update(['remaining_g' => max(0, $slot->remaining_g - $used)]);
+        }
+    }
+
+    /**
+     * The order stopped and waits (STATUS_STOPPED): its jobs are closed and the money is not touched. A job the printer
+     * still runs (the admin stopped the order by hand) gets a cancel, so the machine really lets go; a start that has
+     * not left yet is withdrawn.
+     */
+    private function onHalted(FarmOrder $order): void
+    {
+        foreach ($order->printJobs()->whereIn('status', FarmPrintJob::ACTIVE)->get() as $job) {
+            if (in_array($job->status, [FarmPrintJob::STATUS_PRINTING, FarmPrintJob::STATUS_PAUSED, FarmPrintJob::STATUS_SENT, FarmPrintJob::STATUS_UNKNOWN], true) && $job->printer?->isAgentDriven()) {
+                FarmCommand::create(['farm_printer_id' => $job->farm_printer_id, 'farm_print_job_id' => $job->id, 'type' => FarmCommand::TYPE_CANCEL]);
+            }
+            FarmCommand::where('farm_print_job_id', $job->id)->where('status', 'pending')->where('type', FarmCommand::TYPE_START)->update(['status' => 'failed', 'result' => 'order stopped']);
+            $job->update(['status' => FarmPrintJob::STATUS_CANCELLED, 'finished_at' => now()]);
         }
     }
 
@@ -485,6 +573,8 @@ final class OrderFlow
             $this->adminDone($order);
         } elseif ($to === FarmOrder::STATUS_FAILED && $order->paid_at !== null) {
             $this->adminFailed($order);
+        } elseif ($to === FarmOrder::STATUS_STOPPED) {
+            $this->adminStopped($order);
         } elseif ($to === FarmOrder::STATUS_CANCELLED && $actor === 'user' && $order->paid_at !== null) {
             $this->adminCancelled($order);
         }
@@ -561,6 +651,22 @@ final class OrderFlow
         $lines[] = $this->reprinting === $order->id ? $this->t('line_next_reprint', ['n' => (int) $order->reprints + 1])
             : (app(CardRefunds::class)->goesToCard($order) ? Lang::get('farm.refund.admin.line_next_failed_card', [], 'cs') : $this->t('line_next_failed'));
         $this->alertAdmin($this->t('failed', ['number' => $order->number, 'reason' => $code]), $order, $lines, 'problem');
+    }
+
+    /** The print stopped and the order waits for the operator: why, where it got to, and that nothing starts by itself. */
+    private function adminStopped(FarmOrder $order): void
+    {
+        $code = (string) ($order->error ?: 'print_cancelled');
+        $what = Lang::has('farm.admin.mail.reason.'.$code, 'cs') ? $this->t('reason.'.$code) : $code;
+        $job = $order->latestJob();
+        $lines = $this->orderLines($order);
+        $lines[] = $this->t('line_what', ['what' => trim($what.' '.($order->error_detail ? '('.$order->error_detail.')' : ''))]);
+        if ($job) {
+            $where = ($order->printer?->name ?? '—').($order->plates > 1 ? ', '.$this->t('line_plate', ['n' => $job->plate, 'of' => $order->plates]) : '').', '.$this->t('line_progress', ['percent' => round((float) $job->progress)]);
+            $lines[] = $this->t('line_where', ['where' => $where]);
+        }
+        $lines[] = Lang::get('farm.admin.mail.line_next_stopped', [], 'cs');
+        $this->alertAdmin(Lang::get('farm.admin.mail.stopped', ['number' => $order->number], 'cs'), $order, $lines, 'problem');
     }
 
     private function adminCancelled(FarmOrder $order): void

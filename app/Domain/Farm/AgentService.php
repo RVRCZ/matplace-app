@@ -80,14 +80,24 @@ final class AgentService
     }
 
     /**
-     * What the printer has to say right now, kept with its time even outside a print (the screen's text, the ACE's
-     * complaint, the reason of a pause). The agent repeats it in every report, so the words are stored when they
-     * change; an empty report does not wipe the last ones, the time says how old they are (docs/AM.md §10).
+     * What the printer has to say right now (the screen's text, the ACE's complaint, the reason of a pause), with the
+     * time it began to say it. The agent repeats a message in every report while it lasts (every driver builds it from
+     * the printer's state of that moment), so the row holds only what the last report of a reachable printer said: new
+     * words are stored with their time, the same words keep the time they were first said, and a report without words
+     * wipes them. That also covers a change of the printer's state: the report that brings the new state either says
+     * the words again or ends them. The history is not lost by this – the words a print was paused or failed with stay
+     * with its job (FarmPrintJob::noteMessage). A printer the agent cannot reach is not asked here at all, so its last
+     * words stay until it answers again (docs/AL.md §25, docs/AM.md §15; before: an empty report did not wipe them and
+     * "ACE busy" of 12 Nov or a Prusa's "waits for a touch" of 8 Nov were still on the card days later).
      */
     private function printerMessage(FarmPrinter $printer, array $telemetry): void
     {
         $text = mb_substr(trim((string) ($telemetry['message'] ?? '')), 0, 300);
-        if ($text !== '' && $text !== (string) $printer->message) {
+        if ($text === '') {
+            if ($printer->message !== null || $printer->message_at !== null) {
+                $printer->update(['message' => null, 'message_at' => null]);
+            }
+        } elseif ($text !== (string) $printer->message) {
             $printer->update(['message' => $text, 'message_at' => now()]);
         }
     }

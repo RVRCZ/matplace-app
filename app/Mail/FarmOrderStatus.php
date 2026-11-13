@@ -57,7 +57,9 @@ class FarmOrderStatus extends Mailable implements ShouldQueue
             'text' => $this->key(),
             'url' => route('farm.orders.show', $this->order),
             'trackingUrl' => $this->key() === 'shipped' ? $this->order->tracking_url : null,
-            'reason' => $this->order->error ? CardRefunds::errorText($this->order) : null,
+            // a stopped print keeps its reason for the operator; the customer's sentence about it is the mail's own body
+            // (the texts of farm.error.* say the money went back, which is not true while the order waits)
+            'reason' => $this->order->error && $this->status !== FarmOrder::STATUS_STOPPED ? CardRefunds::errorText($this->order) : null,
             'pause' => in_array($this->key(), ['queued_pause', 'queued_closed'], true) ? FarmState::holdLine() : null,
         ]);
     }

@@ -44,6 +44,9 @@ class FarmCommand extends Model
     /** How long an unanswered cancel is shown as waiting; older rows are history (an agent that died in the middle). */
     public const CANCEL_SHOWN_DAYS = 7;
 
+    /** How long a pause or a resume the agent has not answered counts as being carried out; after that a new one may be sent (an agent that died in the middle). */
+    public const CONTROL_WAIT_MINUTES = 10;
+
     /** Filled by FarmPrinter::unconfirmedCancel() for the views (CANCEL_WAITING | CANCEL_REFUSED); not a column. */
     public ?string $cancel_state = null;
 
@@ -107,6 +110,16 @@ class FarmCommand extends Model
         if (in_array($this->type, [self::TYPE_PAUSE, self::TYPE_RESUME], true) && preg_match("/the printer's state did not change in (\\d+) s$/", $result, $m)) {
             return $t($this->type === self::TYPE_PAUSE ? 'pause_refused' : 'resume_refused', ['s' => $m[1]]);
         }
+        // agent 0.2.15 (docs/AM.md §15): a pause or a resume the printer confirmed by its state, and one whose
+        // wait a cancel cut short
+        if (in_array($this->type, [self::TYPE_PAUSE, self::TYPE_RESUME], true)) {
+            if (preg_match("/^confirmed by the printer's state after (\\d+) s/", $result, $m)) {
+                return $t('control_confirmed', ['s' => $m[1]]);
+            }
+            if (preg_match('/a cancel came after (\\d+) s; the wait for the printer was given up$/', $result, $m)) {
+                return $t('control_interrupted', ['s' => $m[1]]);
+            }
+        }
         if (str_starts_with($result, 'cancel not confirmed:')) {
             if (str_contains($result, 'has not answered')) {
                 return $t('cancel_unreachable');
@@ -132,6 +145,19 @@ class FarmCommand extends Model
         }
 
         return $out ? implode(' ', $out) : null;
+    }
+
+    /**
+     * The pause or the resume of this printer the agent has taken (or is about to take) and has not answered yet: the
+     * printer is being paused or resumed right now. Null once the agent answered, when a later command of the printer
+     * is newer than it, or after CONTROL_WAIT_MINUTES. Derived from the commands, nothing new is stored.
+     */
+    public static function controlInFlight(FarmPrinter $printer): ?self
+    {
+        $last = self::where('farm_printer_id', $printer->id)->whereIn('type', [self::TYPE_PAUSE, self::TYPE_RESUME, self::TYPE_CANCEL, self::TYPE_START])->latest('id')->first();
+
+        return $last && in_array($last->type, [self::TYPE_PAUSE, self::TYPE_RESUME], true) && in_array($last->status, ['pending', 'sent'], true)
+            && $last->created_at !== null && $last->created_at->gt(now()->subMinutes(self::CONTROL_WAIT_MINUTES)) ? $last : null;
     }
 
     /** The agent says the cancelled print left the heaters on and it could not switch them off. */

@@ -479,7 +479,7 @@ class OrderController extends Controller
     {
         $filters = ['open', FarmOrder::STATUS_DONE, FarmOrder::STATUS_HANDED_OVER, FarmOrder::STATUS_CANCELLED, FarmOrder::STATUS_FAILED];
         $filter = in_array($request->query('status'), $filters, true) ? (string) $request->query('status') : null;
-        $open = [FarmOrder::STATUS_AWAITING_CHOICES, FarmOrder::STATUS_UPLOADED, FarmOrder::STATUS_SLICED, FarmOrder::STATUS_PAID, FarmOrder::STATUS_QUEUED, FarmOrder::STATUS_PRINTING];
+        $open = [FarmOrder::STATUS_AWAITING_CHOICES, FarmOrder::STATUS_UPLOADED, FarmOrder::STATUS_SLICED, FarmOrder::STATUS_PAID, FarmOrder::STATUS_QUEUED, FarmOrder::STATUS_PRINTING, FarmOrder::STATUS_STOPPED];
 
         return view('farm.orders', [
             'orders' => FarmOrder::with(['modelFile', 'color'])->where('user_id', $request->user()->id)->where('kind', FarmOrder::KIND_PRINT)
@@ -1093,7 +1093,10 @@ class OrderController extends Controller
             'stage_step' => $stage ? (array_search($stage, self::STAGES, true) ?: 0) + 1 : null,
             'stage_total' => count(self::STAGES),
             'error' => $order->error,
-            'error_text' => $order->error ? CardRefunds::errorText($order, $this->errorDataFor($order, $check)) : null,
+            // a stopped print waits for the operator with the money held: the texts of a failure ("we gave the credit back") would not be true
+            'error_text' => $order->error && ! $order->isStopped() ? CardRefunds::errorText($order, $this->errorDataFor($order, $check)) : null,
+            // the print stopped and the farm's operator decides what next (docs/AL.md §25): the sentence the page says instead of times
+            'stopped' => $order->isStopped() ? __('farm.order.stopped_note') : null,
             // money sent back to the card for this order (what the bank has confirmed giving back)
             'refunded' => $order->paid_at ? (app(CardRefunds::class)->refunded($order) ?: null) : null,
             // a model of millions of triangles takes minutes to check and slice (thinned first, docs/AL.md §10.11): said while it works
