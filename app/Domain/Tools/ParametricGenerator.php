@@ -133,6 +133,13 @@ final class ParametricGenerator
 
     public const DECOR_FRAMES = ['circle', 'rect'];
 
+    /**
+     * What happens to the background of a photo (docs/AR.md §12): `remove` cuts the subject out and makes the relief of
+     * it alone, `keep` makes it of the whole photo. A record without the key keeps it: that is how every design stored
+     * before the key existed was built. The page starts a new photo with `remove`.
+     */
+    public const DECOR_BACKGROUNDS = ['keep', 'remove'];
+
     /** kind of decoration → [min, max, default] of its depth in mm: whole layers of 0.2 */
     public const DECOR_DEPTH = ['text' => [0.4, 1.2, 0.6], 'logo' => [0.4, 1.2, 0.6], 'photo' => [0.6, 3.0, 1.2]];
 
@@ -710,6 +717,7 @@ final class ParametricGenerator
             'params.decor.*.image' => ['nullable', 'string', 'regex:'.Artwork::REF],
             'params.decor.*.image_name' => ['nullable', 'string', 'max:120'],
             'params.decor.*.frame' => ['nullable', Rule::in(self::DECOR_FRAMES)],
+            'params.decor.*.background' => ['nullable', Rule::in(self::DECOR_BACKGROUNDS)],
             'params.decor.*.invert' => ['nullable', 'boolean'],
         ];
         foreach ($f as $key => [$min, $max]) {
@@ -748,7 +756,7 @@ final class ParametricGenerator
                 'color' => null,
             ];
             $code = is_array($d['color'] ?? null) ? ($d['color']['code'] ?? null) : ($d['color'] ?? null);
-            if ($kind !== 'photo' && is_string($code) && $code !== '' && $palette->has($code)) {
+            if (is_string($code) && $code !== '' && $palette->has($code)) {
                 $item['color'] = ['code' => Palette::canonical($code), 'hex' => $palette->hex($code)];
             }
             if ($kind === 'text') {
@@ -769,6 +777,7 @@ final class ParametricGenerator
                     $item['frame'] = in_array($d['frame'] ?? null, self::DECOR_FRAMES, true) ? $d['frame'] : 'circle';
                     $item['contrast'] = $num('contrast', ...self::DECOR_FIELDS['contrast']);
                     $item['smooth'] = $num('smooth', ...self::DECOR_FIELDS['smooth']);
+                    $item['background'] = in_array($d['background'] ?? null, self::DECOR_BACKGROUNDS, true) ? $d['background'] : 'keep';
                 }
             }
             $out[] = $item;

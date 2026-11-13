@@ -36,7 +36,9 @@
     if ($decorated) {
         $i18n += collect(['kind.text', 'kind.photo', 'kind.logo', 'empty', 'limit', 'remove', 'line', 'line.add', 'font', 'photo.choose', 'photo.change', 'photo.hint', 'logo.choose', 'logo.change',
             'face', 'face.front', 'face.back', 'mode', 'mode.raised', 'mode.engraved', 'mode.flush', 'frame', 'frame.circle', 'frame.rect', 'size', 'x', 'y', 'turn', 'depth', 'contrast', 'smooth', 'invert',
-            'color', 'color.same', 'color.clear', 'note.sunk', 'note.inlaid', 'note.turned', 'note.cap', 'note.flush'])->mapWithKeys(fn ($k) => ['decor.'.$k => __('param.decor.'.$k)])->all();
+            'color', 'color.same', 'color.clear', 'note.sunk', 'note.inlaid', 'note.turned', 'note.cap', 'note.flush',
+            // round 2: the background of a photo, the texts in the first step, the side on show and the drag in the preview
+            'background.keep', 'background.working', 'background.failed', 'background.hint', 'color.relief', 'text.more', 'text.lead', 'empty.pictures', 'drag.hint', 'side', 'side.front', 'side.back', 'print.many', 'print.plate', 'print.swap'])->mapWithKeys(fn ($k) => ['decor.'.$k => __('param.decor.'.$k)])->all();
         $i18n['param.part.decor'] = __('param.part.decor');
     }
     if ($kind === 'qr') {
@@ -90,7 +92,7 @@
     $handles = \App\Domain\Tools\ParametricGenerator::HANDLES[$kind] ?? [];
     // which section a warning of the tool belongs to; everything else is about the size
     $warnAt = ['stand_cutout_small' => 'input', 'stand_cutout_fine' => 'input', 'stand_silhouette_thin' => 'input', 'stand_silhouette_low' => 'size', 'portrait_fine' => 'input', 'portrait_whole' => 'input', 'cup_narrow' => 'input', 'thin_lines' => 'input', 'outlines_ignored' => 'input', 'missing_chars' => 'input', 'separate_pieces' => 'input', 'floating_pieces' => 'input', 'pieces_tied' => 'input', 'letters_tied' => 'input', 'qr_one_color' => 'colors', 'qr_low_contrast' => 'colors', 'qr_inverted' => 'colors',
-        'decor_bed_face' => 'decor', 'decor_text_small' => 'decor', 'decor_clipped' => 'decor', 'decor_thin' => 'decor'];
+        'decor_bed_face' => 'decor', 'decor_text_small' => 'decor', 'decor_clipped' => 'decor', 'decor_thin' => 'decor', 'decor_no_cutout' => 'decor'];
     $folded = \App\Domain\Tools\ParametricGenerator::FOLDED;
     $fieldsAt = fn (string $section) => collect($fields)->filter(fn ($f, $k) => $at($k, 'size') === $section);
     // the numbers a choice of the first step writes (a straw's diameter by its kind) stand right under that choice
@@ -359,6 +361,11 @@
             {{-- (the composer of this very address, or the composer's own page where that one is open to the visitor) --}}
             <p class="hint !text-xs">{{ __('param.compose.more') }} <a href="{{ ($quickForm ?? null) === true ? url()->current() : route('tools.compose', ['preset' => $composeAs]) }}" class="font-semibold text-action-dark underline">{{ __('param.compose.open') }}</a></p>
         @endif
+        @if($decorated)
+            {{-- every other text of the product is written here too, under the tool's own name: one place for text
+                 (resources/js/calc/decor.ts lists the text decorations here; the photo and the logo stay in the step "Decoration") --}}
+            <div id="decor-texts" class="space-y-2"></div>
+        @endif
     </x-tool-section>
     @endif
 
@@ -369,7 +376,7 @@
     {{-- decorations: a text, a relief from a photo or a logo on the front or the back (resources/js/calc/decor.ts draws the panel) --}}
     @if($decorated)
     <x-tool-section id="decor" :title="$sections['decor']">
-        <p class="hint !text-xs">{{ __('param.decor.lead') }}</p>
+        <p class="hint !text-xs">{{ __('param.decor.lead2') }}</p>
         <div id="decor-panel" class="space-y-3"></div>
     </x-tool-section>
     @endif

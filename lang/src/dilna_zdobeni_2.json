@@ -1,0 +1,87 @@
+{
+    "param.decor.lead2": [
+        "Reliéf z fotky nebo logo na přední či zadní stranu. Můžete jich přidat víc. Texty se píší v kroku Vstup.",
+        "A relief from a photo or a logo on the front or the back. You can add several. Texts are written in the step Input.",
+        "Un relieve de una foto o un logo en el frente o en el dorso. Puede añadir varios. Los textos se escriben en el paso Entrada."
+    ],
+    "param.decor.empty.pictures": [
+        "Zatím bez fotky a loga.",
+        "No photo or logo yet.",
+        "Aún sin foto ni logo."
+    ],
+    "param.decor.text.more": [
+        "Přidat další text",
+        "Add another text",
+        "Añadir otro texto"
+    ],
+    "param.decor.text.lead": [
+        "Další text může být na přední i zadní straně, vystouplý, zapuštěný nebo ve vlastní barvě.",
+        "Another text can be on the front or the back, raised, engraved or in a colour of its own.",
+        "Otro texto puede ir en el frente o en el dorso, en relieve, grabado o en un color propio."
+    ],
+    "param.decor.background.keep": [
+        "Ponechat pozadí fotky",
+        "Keep the photo's background",
+        "Conservar el fondo de la foto"
+    ],
+    "param.decor.background.hint": [
+        "Pozadí fotky odstraníme, vystoupí jen hlavní motiv. Světlá místa jsou výš, tmavá níž.",
+        "We remove the photo's background, only the subject stands out. Light parts are higher, dark ones lower.",
+        "Quitamos el fondo de la foto, solo sobresale el motivo. Las partes claras quedan más altas, las oscuras más bajas."
+    ],
+    "param.decor.background.working": [
+        "Odstraňujeme pozadí fotky, potrvá to pár vteřin…",
+        "Removing the photo's background, this takes a few seconds…",
+        "Quitando el fondo de la foto, tarda unos segundos…"
+    ],
+    "param.decor.background.failed": [
+        "Na téhle fotce se motiv od pozadí oddělit nepodařilo, reliéf je z celé fotky. Zkuste fotku, kde je motiv zblízka a celý.",
+        "The subject of this photo could not be told from its background, the relief is made of the whole photo. Try a photo with the subject close up and whole.",
+        "En esta foto no se pudo separar el motivo del fondo, el relieve es de toda la foto. Pruebe una foto con el motivo de cerca y entero."
+    ],
+    "param.decor.color.relief": [
+        "Reliéf ve vlastní barvě se tiskne druhým filamentem: na ploše výměnou barvy po výšce, zapuštěný na tiskárně s měničem.",
+        "A relief in its own colour is printed with a second filament: on the face by a colour change by height, sunk in on a printer that changes spools.",
+        "Un relieve en su propio color se imprime con un segundo filamento: sobre la cara con un cambio de color por altura, hundido en una impresora con cambiador."
+    ],
+    "param.decor.drag.hint": [
+        "V náhledu ho můžete chytit a přetáhnout, rohem zvětšit a kolečkem nad ním otočit.",
+        "In the preview you can grab it and drag it, resize it by a corner and turn it by the knob above it.",
+        "En la vista previa puede arrastrarlo, cambiar su tamaño por una esquina y girarlo con el botón de arriba."
+    ],
+    "param.decor.side": [
+        "Strana výrobku v náhledu",
+        "Side of the product in the preview",
+        "Lado del producto en la vista previa"
+    ],
+    "param.decor.side.front": [
+        "Přední strana",
+        "Front",
+        "Frente"
+    ],
+    "param.decor.side.back": [
+        "Zadní strana",
+        "Back",
+        "Dorso"
+    ],
+    "param.warn.decor_no_cutout": [
+        "Pozadí fotky se nepodařilo odstranit, reliéf je z celé fotky.",
+        "The photo's background could not be removed, the relief is made of the whole photo.",
+        "No se pudo quitar el fondo de la foto, el relieve es de toda la foto."
+    ],
+    "param.decor.print.swap": [
+        "Zdobení ve vlastní barvě leží nad výrobkem: tiskne se výměnou filamentu po výšce (:n×), zvládne to každá tiskárna.",
+        "The decoration in its own colour lies above the product: it prints with a change of filament by height (:n×), any printer can do it.",
+        "La decoración en su propio color queda sobre el producto: se imprime con un cambio de filamento por altura (:n×), cualquier impresora puede hacerlo."
+    ],
+    "param.decor.print.plate": [
+        "Zdobení ve vlastní barvě leží ve stejných vrstvách jako jiná barva (:c barvy). Vytiskne ho jen tiskárna, která mění filament sama; tisk trvá déle kvůli výměnám a čisticí věži.",
+        "The decoration in its own colour lies in the same layers as another colour (:c colours). Only a printer that changes filament by itself prints it; the print takes longer for the changes and the purge tower.",
+        "La decoración en su propio color queda en las mismas capas que otro color (:c colores). Solo la imprime una impresora que cambia el filamento sola; tarda más por los cambios y la torre de purga."
+    ],
+    "param.decor.print.many": [
+        "Výrobek má :c barev, naše tiskárna jich na jeden tisk vezme nejvýš :max. Uberte barvu některému zdobení.",
+        "The product has :c colours, our printer takes at most :max in one print. Take the colour off one of the decorations.",
+        "El producto tiene :c colores, nuestra impresora admite como máximo :max en una impresión. Quite el color de alguna decoración."
+    ]
+}

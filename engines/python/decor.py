@@ -46,6 +46,11 @@ MARGIN = 0.8                # decorations keep this far from the edge of the fac
 BED_SUNK = 0.4              # on the face that lies on the bed nothing is sunk deeper: two layers are bridged, three call for supports
 RELIEF_FLOOR = 0.2          # the lowest point of a relief: one layer, so the picture has an edge and no hole
 RELIEF_GRID = 300           # a relief is read on at most this many cells across
+BACKGROUNDS = ("keep", "remove")   # what happens to the background of a photo; a record without the key keeps it, as before
+SUBJECT_BASE = 0.3          # a subject cut out of its photo starts this share of the depth above the plate: its dark parts still stand out
+SUBJECT_IN_CIRCLE = 0.9     # the share of a round frame's width the box of a cut-out subject takes
+SUBJECT_MIN_MM2 = 12.0      # a subject smaller than this is no subject: the photo is used whole
+VIEW_RING = 72              # the outline of the face handed to the page has at most this many points a ring
 
 
 def needs_front_up(p):
@@ -72,49 +77,129 @@ def _centred(cs):
     return cs.translate([-(x0 + x1) / 2, -(y0 + y1) / 2])
 
 
+def _subject(item, img, alpha):
+    """
+    What of a photo is its subject, when its background is to go (`background` = remove): (mask "L" the size of the
+    photo with the subject white, or None; why there is none). A picture that brings its own transparency is its own
+    mask; a photo is cut out by the u2net network papel picado uses (papel_portrait.subject: onnxruntime alone, the
+    answer kept in the temporary directory, so the sliders of the page ask the network once per photo).
+    """
+    try:
+        from papel_portrait import subject
+        mask, answered, why = subject(img, alpha, item.get("image_path"), True)
+    except Exception as e:  # noqa: BLE001 - whatever the cut-out lacks, the photo can still be used whole
+        return None, str(e)[:300]
+    if mask is None:
+        return None, why or ("nothing_found" if answered else "no_subject")
+    return mask.convert("L"), ""
+
+
 def _relief(M, Invalid, item, n, w, h, depth, mirrored, outline):
-    """A photo as a height field w × h mm, light is high, its middle on the origin; cut to the outline of its frame."""
+    """
+    A photo as a height field w × h mm, light is high, its middle on the origin; cut to the outline of its frame.
+    Returns (the solid, the outline of what stands: the frame, or the subject alone when the background went, what
+    happened to the background: None not asked, True gone, or the reason it stayed).
+
+    With the background gone the subject is fitted into the frame whole (not the photo cut to cover it), its heights
+    are stretched over the subject alone and start a step above nothing, so a dark dog still stands out of the plate
+    as a shape; nothing is made round it: no floor, no disc.
+    """
     import numpy as np
     from PIL import Image, ImageOps
     from scipy import ndimage
     from relief_tool import heightmap, plate_mesh
     try:
         img = ImageOps.exif_transpose(Image.open(item.get("image_path")))
+        alpha = None
         if img.mode in ("RGBA", "LA", "P"):
             img = img.convert("RGBA")
+            alpha = img.getchannel("A")
             back = Image.new("RGBA", img.size, (255, 255, 255, 255))
             img = Image.alpha_composite(back, img)
+        colour = img.convert("RGB")
         img = img.convert("L")
     except Exception:  # noqa: BLE001
         raise Invalid("artwork_unreadable")
     pitch = max(0.2, w / RELIEF_GRID)
     cols, rows = max(8, int(round(w / pitch))) + 1, max(8, int(round(h / pitch))) + 1
-    # the photo covers its frame: cut to the frame's proportions round its middle
     iw, ih = img.size
     want = (cols - 1) / float(rows - 1)
-    if iw / float(ih) > want:
-        cut = int(round(ih * want))
-        img = img.crop(((iw - cut) // 2, 0, (iw - cut) // 2 + cut, ih))
+    mask, cut = None, None
+    if item.get("background") == "remove":
+        mask, why = _subject(item, colour, alpha)
+        cut = True if mask is not None else (why or "no_subject")
+    box = mask.point(lambda a: 255 if a > 127 else 0).getbbox() if mask is not None else None
+    if mask is not None and not box:
+        mask, cut = None, "nothing_found"
+    if mask is not None:
+        # the subject whole inside the frame: a window of the frame's proportions round the subject's box (a circle
+        # cuts the corners of its square, so the subject gets a little less of it)
+        bw, bh = (box[2] - box[0]) * 1.06, (box[3] - box[1]) * 1.06
+        if item.get("frame", "circle") == "circle":
+            bw, bh = bw / SUBJECT_IN_CIRCLE, bh / SUBJECT_IN_CIRCLE
+        ww, wh = (bw, bw / want) if bw / bh > want else (bh * want, bh)
+        ww, wh = max(8, int(round(ww))), max(8, int(round(wh)))
+        ox, oy = int(round((box[0] + box[2]) / 2.0 - ww / 2.0)), int(round((box[1] + box[3]) / 2.0 - wh / 2.0))
+        inside = np.asarray(mask) > 127
+        mean = int(np.asarray(img)[inside].mean()) if inside.any() else 128
+        window = Image.new("L", (ww, wh), mean)                 # round the subject its own middle grey: the contrast turns about it
+        window.paste(img, (-ox, -oy))
+        img = window
+        window = Image.new("L", (ww, wh), 0)
+        window.paste(mask, (-ox, -oy))
+        mask = window
+    elif iw / float(ih) > want:
+        # the photo covers its frame: cut to the frame's proportions round its middle
+        crop = int(round(ih * want))
+        img = img.crop(((iw - crop) // 2, 0, (iw - crop) // 2 + crop, ih))
     else:
-        cut = int(round(iw / want))
-        img = img.crop((0, (ih - cut) // 2, iw, (ih - cut) // 2 + cut))
+        crop = int(round(iw / want))
+        img = img.crop((0, (ih - crop) // 2, iw, (ih - crop) // 2 + crop))
     contrast = _num(Invalid, item, "contrast", 100, 50, 150, n)
     level = heightmap(img, cols, rows, "relief", bool(item.get("invert", False)), 0.0, (contrast / 100.0 - 1.0) * 50.0, 1.0)
     # what a nozzle of 0.4 mm cannot draw only makes noise on the surface: detail under about half a millimetre goes,
     # more of it with the slider
     sigma = (0.25 + 0.9 * _num(Invalid, item, "smooth", 0.35, 0, 1, n)) / pitch
     level = ndimage.gaussian_filter(level, sigma)
-    lo, hi = float(level.min()), float(level.max())
-    level = (level - lo) / (hi - lo) if hi - lo > 1e-6 else np.zeros_like(level)
-    if mirrored:
-        level = level[:, ::-1]
+    shape = None
+    if mask is not None:
+        on = np.asarray(mask.resize((cols, rows), Image.LANCZOS), dtype=np.float32) / 255.0 > 0.5
+        # crumbs the network left beside the subject are no part of it
+        labels, count = ndimage.label(on)
+        if count > 1:
+            sizes = ndimage.sum(on, labels, range(1, count + 1))
+            on = np.isin(labels, [i + 1 for i, s in enumerate(sizes) if s >= 0.04 * sizes.max()])
+        if on.sum() * pitch * pitch < SUBJECT_MIN_MM2:
+            mask, cut = None, "nothing_found"
+        else:
+            lo, hi = (float(v) for v in np.percentile(level[on], [1, 99]))
+            level = np.clip((level - lo) / (hi - lo), 0.0, 1.0) if hi - lo > 1e-6 else np.ones_like(level)
+            level = SUBJECT_BASE + (1.0 - SUBJECT_BASE) * level
+            if mirrored:
+                level, on = level[:, ::-1], on[:, ::-1]
+            shape = S.mask_outline(M, on, 0.8).scale([pitch, pitch]).translate([-cols * pitch / 2, -rows * pitch / 2])
+            shape = shape ^ outline
+            if shape.is_empty():
+                mask, shape, cut = None, None, "nothing_found"
+    if mask is None:
+        lo, hi = float(level.min()), float(level.max())
+        level = (level - lo) / (hi - lo) if hi - lo > 1e-6 else np.zeros_like(level)
+        if mirrored:
+            level = level[:, ::-1]
     z = (RELIEF_FLOOR + level * (depth - RELIEF_FLOOR)).astype(np.float32)
     verts, faces = plate_mesh(z, pitch, False)
     solid = M.Manifold(M.Mesh(vert_properties=np.asarray(verts, dtype=np.float32), tri_verts=np.asarray(faces, dtype=np.uint32)))
     if solid.status() != M.Error.NoError or solid.volume() <= 0:
         raise Invalid("empty_result")
     solid = solid.translate([-(cols - 1) * pitch / 2, -(rows - 1) * pitch / 2, 0])
-    return solid ^ outline.extrude(depth + 1)
+    stands = shape if shape is not None else outline
+    return solid ^ stands.extrude(depth + 1), stands, cut
+
+
+def _ring_area(points):
+    """The area a ring of points encloses, mm²."""
+    pts = [(float(px), float(py)) for px, py in points]
+    return abs(sum(a[0] * b[1] - b[0] * a[1] for a, b in zip(pts, pts[1:] + pts[:1]))) / 2.0
 
 
 def _zspan(solid):
@@ -144,7 +229,7 @@ def apply(M, Invalid, p, parts, notes, face):
     whole = parts["all"]
     warn = notes.setdefault("warnings", [])
     plate_code = face.get("code") or ""
-    placed, colored = [], []
+    placed, colored, laid = [], [], []
     top = max(parts["all"].bounding_box()[5], t)
 
     def note(code):
@@ -172,7 +257,6 @@ def apply(M, Invalid, p, parts, notes, face):
         if kind == "photo":
             if on_bed:
                 raise Invalid("decor_photo_bed")
-            color = None                                              # a relief is one filament: the plate's
             if mode == "flush":
                 mode = "raised"
         elif on_bed and mode == "raised":
@@ -181,7 +265,8 @@ def apply(M, Invalid, p, parts, notes, face):
         if mode == "flush" and not color:
             mode = "engraved"                                         # inlaid in the plate's own filament shows nothing
         if mode == "engraved":
-            color = None
+            if kind != "photo":
+                color = None                                          # a sunk text is a hollow; a sunk relief is still a solid and may have its filament
             if on_bed:
                 depth = min(depth, BED_SUNK)
         if on_bed:
@@ -216,12 +301,22 @@ def apply(M, Invalid, p, parts, notes, face):
                 frame = item.get("frame", "circle")
                 if frame not in FRAMES:
                     raise Invalid("bad_choice", "decor.%d.frame" % n)
-                art = C.circle(width / 2, 128) if frame == "circle" else S.rounded_rect(M, width, width * 0.75, min(3.0, width / 12))
+                if item.get("background", "keep") not in BACKGROUNDS:
+                    raise Invalid("bad_choice", "decor.%d.background" % n)
+                art = _centred(C.circle(width / 2, 128) if frame == "circle" else S.rounded_rect(M, width, width * 0.75, min(3.0, width / 12)))
+                framed = art.rotate(turn).translate([cx + x, cy + y])   # the frame the photo is sized by, where it lies
+                # the relief is made here: with its background gone, what stands is the subject, not the frame
+                relief, art, cut = _relief(M, Invalid, item, n, S.size(art)[0], S.size(art)[1], depth, on_bed, art)
+                if cut is not None:
+                    entry["cutout"] = cut is True
+                    if cut is not True:
+                        note("decor_no_cutout")
+                        notes["decor_cutout_error"] = str(cut)
         except S.ArtworkError as e:
             raise Invalid(e.code, str(e).split(": ", 1)[1] if ": " in str(e) else "")
-        art = _centred(art)
-        flat = art                                                    # as it is drawn, before it is turned and laid in its place
-        aw, ah = S.size(art)
+        if kind != "photo":
+            art = _centred(art)
+            framed = None
         art = art.rotate(turn)
         if on_bed:
             art = art.scale([-1.0, 1.0])
@@ -235,11 +330,11 @@ def apply(M, Invalid, p, parts, notes, face):
             note("decor_thin")
         bx0, by0, bx1, by1 = inside.bounds()
         entry["box"] = [round(v, 1) for v in (bx0, by0, bx1, by1)]
+        laid.append((entry, framed if framed is not None else art, art, turn))
 
         # ── its solid, and what it does to the parts ───────────────────────────────────────────────────────────
         if kind == "photo":
             sunk = mode == "engraved"
-            relief = _relief(M, Invalid, item, n, aw, ah, depth, on_bed, flat)
             base = t - depth if sunk else t
             if sunk and t - depth < 3 * LAYER:
                 raise Invalid("decor_too_deep", str(n))
@@ -253,8 +348,20 @@ def apply(M, Invalid, p, parts, notes, face):
                 for name, s in solids.items():
                     if name != plate_part:
                         relief = relief - s
-            solids[plate_part] = solids[plate_part] + relief
-            whole = whole + relief
+            if relief.is_empty():
+                raise Invalid("decor_off_face", str(n))
+            if color:
+                # a relief in a filament of its own: on the plate it starts where the plate ends, so the colour changes
+                # by height when nothing else stands in its layers
+                name = "decor_%d" % n
+                solids[name] = relief
+                order.append(name)
+                entry.update({"part": name, "code": str(color["code"]), "hex": str(color.get("hex") or "#888888")})
+                colored.append(entry)
+                whole = whole + relief.translate([0, 0, 0 if sunk else -0.01])
+            else:
+                solids[plate_part] = solids[plate_part] + relief
+                whole = whole + relief
             entry["z"] = list(_zspan(relief))
         elif mode == "engraved":
             if t - depth < 2 * LAYER:
@@ -303,6 +410,34 @@ def apply(M, Invalid, p, parts, notes, face):
     if "use" in parts:
         parts["use"] = whole.rotate([0, 180, 0])
         parts["_pieces"]["use"] = [(name, s.rotate([0, 180, 0])) for name, s in pieces]
+
+    # ── where everything lies in the preview of the page: the piece as it is used, so one printed face down is turned
+    # over (x and z change sign), and the corner of its box is the origin (param_tool.py). The page draws a frame round
+    # a decoration by it, drags it, and keeps it on the face: `region` is where decorations may lie (the plate less its
+    # margin, the eyelet's hole out of it), `hull` the corners of a decoration that have to stay inside
+    shown, flipped = parts.get("use", whole), "use" in parts
+    sx0, sy0, sz0 = shown.bounding_box()[:3]
+
+    def vx(v):
+        return (-v if flipped else v) - sx0
+
+    def vz(v):
+        return (-v if flipped else v) - sz0
+
+    def ring(points, most):
+        step = max(1, int(math.ceil(len(points) / float(most))))
+        return [[round(vx(float(px)), 1), round(float(py) - sy0, 1)] for px, py in list(points)[::step]]
+
+    notes["decor_face"] = {
+        "centre": [round(vx(cx), 2), round(cy - sy0, 2)], "width": round(W, 2),
+        "front_z": round(vz(0.0 if face_down else t), 2), "back_z": round(vz(t if face_down else 0.0), 2),
+        "region": [ring(r, VIEW_RING) for r in region.to_polygons() if _ring_area(r) >= 1.0],      # (slivers of the offset are no places)
+    }
+    for entry, frame, art, turn in laid:
+        fx0, fy0, fx1, fy1 = frame.bounds()
+        xs = sorted((vx(fx0), vx(fx1)))
+        hull = art.hull().to_polygons()
+        entry["view"] = {"box": [round(xs[0], 1), round(fy0 - sy0, 1), round(xs[1], 1), round(fy1 - sy0, 1)], "hull": ring(hull[0], 16) if hull else []}
 
     # ── notes: what was laid where, the parts and their filaments, how it prints ───────────────────────────────
     notes["decor"] = placed
