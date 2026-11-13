@@ -11,6 +11,8 @@
     $sellable = $sliced && ! $model->license_restricted && $model->sliceCalculation;
     $dur = fn (int $m) => $m >= 60 ? intdiv($m, 60).' h '.($m % 60).' min' : $m.' min';
     $images = $model->imageUrls();
+    // prints the farm made of this very model and may show (App\Domain\Catalog\CatalogPhotos, docs/AP.md §14)
+    $prints = \App\Domain\Catalog\CatalogPhotos::for($model);
     $sourceName = __('models.source.'.(\Illuminate\Support\Facades\Lang::has('models.source.'.$model->source) ? $model->source : 'other'));
     $licenseName = $model->license && \Illuminate\Support\Facades\Lang::has('models.license.'.$model->license) ? __('models.license.'.$model->license) : __('models.license.unknown');
     $thing = array_filter([
@@ -32,7 +34,8 @@
 
 @push('head')
 <x-jsonld :data="$thing" />
-@if($sellable)<x-jsonld :data="\App\Support\Schema::product($model->title, $thing['description'] ?? null, $images, route('catalog.show', $model->slug), array_column($sliced['rows'], 'total'), $sliced['currency'])" />@endif
+{{-- a Product only where it is true and meant for search engines: an indexable page with our own price of a print we may sell (docs/AP.md §14) --}}
+@if($sellable && ($indexable ?? false))<x-jsonld :data="\App\Support\Schema::product($model->title, $thing['description'] ?? null, $images, route('catalog.show', $model->slug), array_column($sliced['rows'], 'total'), $sliced['currency'])" />@endif
 <x-jsonld :data="\App\Support\Schema::breadcrumbs(array_values(array_filter([['matplace', route('home')], [__('models.inspiration.title'), route('catalog.index')], $category ? [$category->label(), route('catalog.category', $category->slug)] : null, [$model->title, route('catalog.show', $model->slug)]])))" />
 @endpush
 
@@ -149,6 +152,39 @@
             @endif
         </section>
     @endif
+
+    @if($prints)
+        <section id="model-prints" class="mt-8" aria-labelledby="model-prints-title">
+            <h2 id="model-prints-title" class="text-lg font-bold">{{ __('catalog.photos.title') }}</h2>
+            <p class="mt-1 text-sm text-muted">{{ __('catalog.photos.lead') }}</p>
+            <ul class="mt-3 grid grid-cols-2 gap-3 sm:grid-cols-4">
+                @foreach($prints as $p)
+                    @php $when = $p['at'] ? \Carbon\Carbon::parse($p['at'])->format(app()->getLocale() === 'cs' ? 'j. n. Y' : 'j M Y') : null; @endphp
+                    <li class="card overflow-hidden" data-model-print>
+                        <picture>
+                            @if(! empty($p['webp']))
+                                <source type="image/webp" srcset="{{ $p['webp'] }}">
+                            @endif
+                            <img src="{{ $p['url'] }}" alt="{{ trim(__('catalog.photos.alt', ['title' => $model->title, 'material' => $p['material'] ?? '', 'date' => $when ?? '']), ' ,') }}" width="600" height="400" loading="lazy" decoding="async" class="aspect-[3/2] w-full bg-studio object-cover">
+                        </picture>
+                        @if($p['material'] || $when)
+                            <p class="px-3 py-2 text-xs text-muted">{{ implode(' · ', array_filter([$p['material'], $when])) }}</p>
+                        @endif
+                    </li>
+                @endforeach
+            </ul>
+        </section>
+    @endif
+
+    {{-- from the page search engines walk most to the pages that bring customers: the price of a print, the tools, the gifts (docs/AP.md §14) --}}
+    <nav id="model-next" class="card mt-8 p-4" aria-labelledby="model-next-title">
+        <h2 id="model-next-title" class="font-bold">{{ __('catalog.next.title') }}</h2>
+        <ul class="mt-2 flex flex-col gap-x-6 gap-y-1 text-sm sm:flex-row sm:flex-wrap">
+            <li><a href="{{ route('home') }}" class="inline-flex min-h-11 items-center text-action-dark underline">{{ __('catalog.next.calc') }}</a></li>
+            <li><a href="{{ route('tools') }}" class="inline-flex min-h-11 items-center text-action-dark underline">{{ __('catalog.next.tools') }}</a></li>
+            <li><a href="{{ route('tools.gifts') }}" class="inline-flex min-h-11 items-center text-action-dark underline">{{ __('catalog.next.gifts') }}</a></li>
+        </ul>
+    </nav>
 
     @if($similar->isNotEmpty())
         <section class="mt-10">

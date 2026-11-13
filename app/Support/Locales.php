@@ -123,7 +123,7 @@ final class Locales
 
     public static function isBot(Request $request): bool
     {
-        return Bots::byAgent($request->userAgent()) !== null;
+        return Bots::known($request) !== null;
     }
 
     // ── What the current page offers ─────────────────────────────────────────

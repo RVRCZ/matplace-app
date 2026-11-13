@@ -84,7 +84,7 @@
                     {{-- signing out is reachable from every page, not only from the bottom of the account --}}
                     <form method="post" action="{{ route('logout') }}" class="max-sm:hidden">@csrf<button type="submit" class="nav-link">{{ __('auth.logout') }}</button></form>
                 @else
-                    <a href="{{ route('login') }}" class="nav-link font-medium">{{ __('nav.login') }}</a>
+                    <a href="{{ route('login') }}" rel="nofollow" class="nav-link font-medium">{{ __('nav.login') }}</a>
                 @endauth
                 <details id="site-menu" class="relative {{ $languages || $currencyOpen ? '' : 'sm:hidden' }}" data-menu>
                     <summary class="nav-link cursor-pointer list-none gap-1 text-xs text-muted [&::-webkit-details-marker]:hidden" aria-label="{{ __('nav.menu') }}">
@@ -143,6 +143,7 @@
     <footer class="border-t border-slate-200 bg-white">
         <div class="mx-auto max-w-6xl px-4 py-6 text-center text-sm text-slate-500">
             {{ \App\Support\NextStep::text('footer.promise') }}
+            @include('partials.footer_make')
             <nav class="mt-2 flex flex-wrap items-center justify-center gap-x-5" aria-label="{{ __('site.footer.about_nav') }}">
                 @foreach(['about', 'contact', 'faq'] as $page)
                     @if(\Illuminate\Support\Facades\Lang::has('pages.'.$page.'.title'))<a href="{{ route('pages.'.$page) }}" class="inline-flex min-h-11 min-w-11 items-center justify-center underline hover:text-slate-900">{{ __('site.footer.'.$page) }}</a>@endif

@@ -36,6 +36,7 @@ use App\Models\FarmPrinterSlot;
 use App\Models\Intake;
 use App\Models\ModelFile;
 use App\Models\Payment;
+use App\Support\Bots;
 use App\Support\Countries;
 use App\Support\Currency;
 use App\Support\Money;
@@ -105,8 +106,17 @@ class OrderController extends Controller
                 $carry[$to] = $value;
             }
         }
-        // the customer starts an order here (the calculator's signed-in way goes straight to store: order_created)
-        Track::event('order_started', $card ?? $file, array_filter(['tool' => $file?->origin === 'tool' ? $file->kind() : null, 'kind' => $card ? 'card' : ($inspiration ? 'inspiration' : ($calc ? 'calculation' : 'file'))]));
+        // the customer starts an order here (the calculator's signed-in way goes straight to store: order_created).
+        // Never a robot, and once per browser session and thing in half an hour: this page is a plain link on every model
+        // of the catalogue (/farm?source=…), and a crawler following it wrote 942 and 962 "orders started" on 9 and
+        // 10 Nov 2026 (docs/AP.md §14); a reload or the way back from the login is the same start, not another one.
+        $startKey = 'order_started.'.sha1(($card ? 'card:'.$card->id : ($file ? 'file:'.$file->id : ($inspiration ? 'source:'.$inspiration->id : 'empty'))));
+        if (! Bots::is($request) && (! $request->hasSession() || (int) $request->session()->get($startKey, 0) < now()->subMinutes(30)->timestamp)) {
+            if ($request->hasSession()) {
+                $request->session()->put($startKey, now()->timestamp);
+            }
+            Track::event('order_started', $card ?? $file, array_filter(['tool' => $file?->origin === 'tool' ? $file->kind() : null, 'kind' => $card ? 'card' : ($inspiration ? 'inspiration' : ($calc ? 'calculation' : 'file'))]));
+        }
 
         return view('farm.start', [
             'file' => $file,

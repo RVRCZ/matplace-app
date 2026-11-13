@@ -67,7 +67,8 @@ class EventsBots extends Command
 
         // 1. the name the session's browser gave
         foreach ($visits as $v) {
-            if (! isset($acted[$v->session_id]) && $v->session_id !== null && Bots::byAgent($v->user_agent) !== null) {
+            // the name, or the operator's lists of today (config/bots.php: a listed header, a data centre's block)
+            if (! isset($acted[$v->session_id]) && $v->session_id !== null && (Bots::byAgent($v->user_agent) ?? Bots::byList($v->user_agent, $v->ip)) !== null) {
                 $verdict[$v->id] = 'agent';
             }
         }

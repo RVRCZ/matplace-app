@@ -2526,5 +2526,21 @@
     "router.hint.halloween.3": "Un letrero Cuidado, fantasmas",
     "router.hint.halloween.3.fill": "Un letrero para la puerta Cuidado, aquí hay fantasmas, 15 cm, naranja y negro.",
     "router.summary.tool": "Esto lo hace nuestra herramienta :tool. Ábrala y ajuste el tamaño y los colores en la vista previa.",
-    "router.summary.tool_also": "También puede servir: :tools."
+    "router.summary.tool_also": "También puede servir: :tools.",
+    "footer.make_nav": "Qué hacemos",
+    "footer.gifts": "Regalos a medida",
+    "footer.praha": "Impresión 3D Praga",
+    "footer.business": "Impresión 3D para empresas",
+    "footer.all_tools": "Todas las herramientas",
+    "catalog.next.title": "¿Quiere que fabriquemos algo así?",
+    "catalog.next.calc": "Calcular el precio de impresión 3D de su archivo",
+    "catalog.next.tools": "Diseñar su propia pieza con las herramientas",
+    "catalog.next.gifts": "Regalos a medida de una foto o un nombre",
+    "catalog.photos.title": "Así lo imprimimos",
+    "catalog.photos.lead": "Fotos de impresiones de nuestra granja.",
+    "catalog.photos.alt": "Impresión de :title de nuestra granja, :material, :date",
+    "site.gone.title": "Esta página ya no existe",
+    "site.gone.text": "La dirección era del sitio antiguo y no tiene sucesora. Pruebe la página de inicio o las herramientas.",
+    "seo.privacy.description": "Política de privacidad de matplace: qué datos personales tratamos y por qué, a quién se comunican, cuánto tiempo los conservamos y sus derechos.",
+    "seo.farm_terms.description": "Condiciones de la granja de impresión de matplace: alquiler de impresora para su archivo, qué no imprimimos, precio y pago, archivos y vídeos."
 }

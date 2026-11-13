@@ -41,4 +41,21 @@ return [
         'prihlaseni', 'odhlaseni', 'zapomenute-heslo', 'heslo-reset', 'r',
         'thumbnails', 'stl', 'banner', 'blog-img', 'assets',
     ],
+
+    /*
+     * Addresses without a successor: answered 410 "gone" instead of a redirect or a 404, so that search engines drop
+     * them and stop asking (docs/AP.md §14). Patterns over the path, checked before `to_legacy`; an address a route
+     * of ours answers is never gone. Add what the admin's list "Adresy, které neexistují" and the server log show.
+     *   /assets/thumbs/…   thumbnails of the old catalogue: Googlebot-Image fetched thousands a day through the 302
+     *                      to the old site; our pages show their own copy or the old host directly
+     *                      (CatalogModel::directPreview). LEGACY_THUMBS_GONE=false brings the 302 back.
+     *   /14763             product numbers of the e-shop that was here before 2019
+     *   /pla-luminous-filament-…, /klicenka-…   its product pages
+     */
+    'gone' => array_values(array_filter([
+        env('LEGACY_THUMBS_GONE', true) ? '~^/assets/thumbs(/|$)~' : null,
+        '~^/[0-9]+$~',
+        '~^/[a-z0-9-]*filament[a-z0-9-]*$~',
+        '~^/klicenka-[a-z0-9-]+$~',
+    ])),
 ];

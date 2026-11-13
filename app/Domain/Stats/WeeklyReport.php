@@ -74,6 +74,11 @@ final class WeeklyReport
         }
         $sections[] = ['title' => 'Roboti (nepočítají se mezi lidi)', 'lines' => $robots ?: ['Žádné stránky.']];
 
+        // what Google keeps of us (searchconsole:inspect, docs/AP.md §14): only once it was asked
+        if ($index = SearchConsoleIndex::summary()) {
+            $sections[] = ['title' => 'Google: co má v indexu', 'lines' => SearchConsoleIndex::lines($index) ?: ['Zatím bez odpovědi.']];
+        }
+
         return [
             'subject' => sprintf('Matplace za týden %s: %d lidí%s, %d zaplacených zakázek', $period, $o['people'], self::change($o['people'], $o['people_before']), $o['funnel'][4]['people']),
             'intro' => sprintf('Týden %s ve srovnání s týdnem před ním. Lidé = návštěvy potvrzené prohlížečem, bez robotů a bez nás.', $period),

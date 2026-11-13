@@ -18,6 +18,11 @@
 {{-- the title and the description say what is here and for whom, with today's count of tools (docs/AN.md §7) --}}
 @extends('layouts.app', ['title' => __('tools.seo.title').' · matplace', 'description' => __('tools.seo.description', ['n' => $all->count()])])
 
+{{-- the list of the tools as a list for search engines: each tool on offer with its own page (docs/AP.md §14) --}}
+@push('head')
+<x-jsonld :data="\App\Support\Schema::itemList(__('tools.title'), $all->map(fn ($t, $k) => ['name' => __('tools.'.$k.'.title'), 'url' => route($t['route'])])->values()->all(), __('tools.seo.description', ['n' => $all->count()]))" />
+@endpush
+
 @section('content')
 <div class="mx-auto max-w-5xl">
     <h1 class="text-3xl font-semibold text-ink">{{ __('tools.title') }}</h1>

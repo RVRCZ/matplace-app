@@ -2,7 +2,9 @@
 
 namespace App\Support;
 
+use App\Models\AnonymousSession;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Cache;
 
 /**
  * Who is a robot. Our statistics count people; search engines, link previews, monitors and scripts are kept apart
@@ -11,7 +13,9 @@ use Illuminate\Http\Request;
  * A request is a robot's when
  *   its User-Agent names a known robot (FAMILIES) or carries a robot's word (bot, crawl, spider, …),
  *   it does not introduce itself as a browser at all (no "Mozilla/", or no User-Agent),
- *   it is a HEAD request, or it does not ask for a page (no text/html in Accept).
+ *   it is a HEAD request, or it does not ask for a page (no text/html in Accept),
+ *   the operator listed its User-Agent or its data centre's address block (config/bots.php: `listed`, `datacenter`),
+ *   or it is one repeated header from one address block that never keeps our cookie (`burst`, docs/AP.md §14).
  *
  *   it is a scanner: it asks for addresses of other systems (wp-login.php, /phpinfo, /.env …), or says it came from a
  *   page of a bare IP address or from such an address (scanners set the address they try as the referer).
@@ -21,6 +25,9 @@ use Illuminate\Http\Request;
  */
 final class Bots
 {
+    /** Request attribute: the answer of name() for this request ('' = a browser), so the burst counter counts a page once. */
+    private const DECIDED = 'bots.name';
+
     /** family → pieces of a User-Agent (lower case) */
     public const FAMILIES = [
         'google' => ['googlebot', 'google-inspectiontool', 'googleother', 'adsbot-google', 'mediapartners-google', 'storebot-google', 'google-extended', 'apis-google', 'feedfetcher-google', 'google-read-aloud', 'google-site-verification', 'google-safety', 'google-cloudvertexbot', 'chrome-lighthouse', 'google page speed'],
@@ -32,7 +39,10 @@ final class Bots
         'baidu' => ['baiduspider'],
         'petal' => ['petalbot', 'aspiegelbot'],
         'ahrefs' => ['ahrefsbot', 'ahrefssiteaudit'],
-        'semrush' => ['semrushbot', 'siteauditbot', 'splitsignalbot'],
+        'semrush' => ['semrush', 'siteauditbot', 'splitsignalbot'],
+        'seranking' => ['seranking', 'se ranking'],
+        // tools that audit sites and collect links for their customers: nobody's visit (docs/AP.md §14)
+        'seo' => ['serpstat', 'seokicks', 'blexbot', 'barkrowler', 'sistrix', 'screaming frog', 'megaindex', 'linkdex', 'seobility', 'siteimprove', 'seznamzbozi', 'netcraft', 'censys', 'zoominfo', 'awario', 'imagesift', 'linkpad', 'spbot', 'sitechecker', 'seostar', 'neticle', 'similartech', 'moz.com', 'ubersuggest', 'wpbot', 'keys-so', 'serpapi', 'dataprovider', 'expanse', 'internetmeasurement', 'cyberscan', 'bitsight'],
         'majestic' => ['mj12bot'],
         'dotbot' => ['dotbot', 'rogerbot'],
         'dataforseo' => ['dataforseobot'],
@@ -97,10 +107,106 @@ final class Bots
         return ! str_starts_with($agent, 'Mozilla/') || preg_match(self::WORDS, $agent) === 1 ? 'other' : null;
     }
 
-    /** The same for a whole request: besides the name, how it asks. */
+    /**
+     * A robot by what the operator listed (config/bots.php): a User-Agent string no browser sends (`listed`), or an
+     * address block of a data centre (`datacenter`). Null for everybody else.
+     */
+    public static function byList(?string $agent, ?string $ip): ?string
+    {
+        $agent = strtolower(trim((string) $agent));
+        foreach ((array) config('bots.agents', []) as $needle) {
+            if ($needle !== '' && $agent !== '' && str_contains($agent, strtolower((string) $needle))) {
+                return 'listed';
+            }
+        }
+
+        return self::inNetworks((string) $ip, (array) config('bots.networks', [])) ? 'datacenter' : null;
+    }
+
+    /** Is the address inside one of the blocks ("203.0.113.0/24", "2001:db8::/32", or one address)? */
+    public static function inNetworks(string $ip, array $blocks): bool
+    {
+        $packed = @inet_pton($ip);
+        if ($packed === false) {
+            return false;
+        }
+        foreach ($blocks as $block) {
+            [$net, $bits] = array_pad(explode('/', (string) $block, 2), 2, null);
+            $base = @inet_pton((string) $net);
+            if ($base === false || strlen($base) !== strlen($packed)) {
+                continue;
+            }
+            $bits = $bits === null ? strlen($base) * 8 : max(0, min(strlen($base) * 8, (int) $bits));
+            $bytes = intdiv($bits, 8);
+            $rest = $bits % 8;
+            if (substr($packed, 0, $bytes) !== substr($base, 0, $bytes)) {
+                continue;
+            }
+            if ($rest === 0 || (ord($packed[$bytes]) >> (8 - $rest)) === (ord($base[$bytes]) >> (8 - $rest))) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /** One network: IPv4 by its /24, IPv6 by its /48 (one provider's customer, one data centre's rack). */
+    public static function network(string $ip): string
+    {
+        $packed = @inet_pton($ip);
+        if ($packed === false) {
+            return '';
+        }
+
+        return strlen($packed) === 4 ? bin2hex(substr($packed, 0, 3)).'/24' : bin2hex(substr($packed, 0, 6)).'/48';
+    }
+
+    /**
+     * A robot known without counting anything: by its name, or by the operator's lists. What decides whether a request
+     * gets an anonymous session at all (EnsureAnonymousSession) and whether the start page may send it to a language.
+     */
+    public static function known(Request $request): ?string
+    {
+        return self::byAgent($request->userAgent()) ?? self::byList($request->userAgent(), $request->ip());
+    }
+
+    /**
+     * One repeated header from one address block (config/bots.php `burst_per_hour`): pages asked for without our cookie
+     * by the same User-Agent from the same network, counted per clock hour. A browser keeps the cookie from its first
+     * page on, so a person adds one; a machine that drops it adds one per page and is a robot from the limit on.
+     */
+    private static function burst(Request $request): bool
+    {
+        $limit = (int) config('bots.burst_per_hour', 0);
+        $network = self::network((string) $request->ip());
+        if ($limit <= 0 || $network === '' || ! $request->isMethod('GET') || $request->ajax() || $request->cookies->has(AnonymousSession::COOKIE)) {
+            return false;
+        }
+        try {
+            $key = 'bots:burst:'.now()->format('YmdH').':'.sha1($request->userAgent().'|'.$network);
+            Cache::add($key, 0, 3700);
+
+            return (int) Cache::increment($key) > $limit;
+        } catch (\Throwable) {
+            return false;   // counting must never break a page
+        }
+    }
+
+    /** The same for a whole request: besides the name, how it asks. Decided once per request. */
     public static function name(Request $request): ?string
     {
-        $family = self::byAgent($request->userAgent());
+        if ($request->attributes->has(self::DECIDED)) {
+            return $request->attributes->get(self::DECIDED) ?: null;
+        }
+        $name = self::decide($request);
+        $request->attributes->set(self::DECIDED, $name ?? '');
+
+        return $name;
+    }
+
+    private static function decide(Request $request): ?string
+    {
+        $family = self::known($request);
         if ($family !== null) {
             return $family;
         }
@@ -115,7 +221,8 @@ final class Bots
             return 'other';
         }
 
-        return null;
+        // the last question, and only of a page: every earlier answer is free, this one counts
+        return str_contains((string) $request->headers->get('Accept'), 'text/html') && self::burst($request) ? 'burst' : null;
     }
 
     public static function is(Request $request): bool

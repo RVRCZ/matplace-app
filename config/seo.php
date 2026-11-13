@@ -46,7 +46,37 @@ return [
     ],
 
     // robots.txt: where crawlers need not go at all (the pages themselves say noindex as well)
-    'robots_disallow' => ['/admin/', '/account/', '/api/', '/farm/orders/', '/webhooks/'],
+    'robots_disallow' => [
+        '/admin/', '/account/', '/api/', '/farm/orders/', '/webhooks/',
+        // docs/AP.md §14 (12 Nov 2026): what a crawler only wastes its visits on. The order's entrance with parameters
+        // (a link on every model page; a crawler following it wrote 942 "order started" a day), sign-in redirects to
+        // Google and others, private calculation pages, the catalogue's search and the lists' sorting. Nothing here is
+        // a page for the index or a file a page needs to render; /login itself stays open so its "noindex" can be read.
+        '/farm?', '/en/farm?', '/es/farm?',
+        '/auth/',
+        '/c/', '/en/c/', '/es/c/',
+        '/*?q=', '/*&q=', '/*?sort=', '/*&sort=',
+    ],
+
+    /*
+     * The footer's row "what we make" (resources/views/partials/footer_make.blade.php): the tools that bring customers,
+     * linked from every page, so the pages search engines visit most (the catalogue, the blog) lead to them. Only
+     * tools that are public with a page of their own are shown; the services beside them are fixed in the partial.
+     */
+    'footer_tools' => ['figure', 'pet', 'charm', 'medallion', 'keychain', 'organizer'],
+
+    /*
+     * `searchconsole:inspect` (docs/AP.md §14): the addresses whose index state is asked first, by importance (route
+     * names in Czech, then the addresses of the sitemap up to the cap). Google allows 2 000 inspections a day for a
+     * property; `cap` is ours for one run, `daily_cap` for a calendar day (counted from the stored rows).
+     */
+    'inspect' => [
+        'cap' => (int) env('SEARCH_CONSOLE_INSPECT_CAP', 150),
+        'daily_cap' => 1800,
+        'routes' => ['home', 'tools', 'tools.gifts', 'pages.praha', 'tools.figure', 'tools.pet', 'tools.charm', 'tools.medallion', 'tools.organizer', 'blog.index', 'tools.business', 'materials', 'pages.about', 'catalog.index'],
+        // further addresses by hand (paths), e.g. the two articles of the list for "Request indexing"
+        'paths' => ['/blog/kolik-stoji-3d-tisk-na-zakazku-v-roce-2026', '/blog/vanocni-ozdoby-se-jmenem-z-3d-tiskarny'],
+    ],
 
     // who runs the site, for the Organization structured data of the about and contact pages (the facts the contact page prints, lang/*/pages.php)
     'organization' => [
@@ -59,6 +89,13 @@ return [
         'vat_id' => env('SEO_VAT_ID'),
         'email' => 'info@matplace.com',
     ],
+
+    /*
+     * Where the farms print, for the Organization structured data of the about and contact pages (Schema::organization,
+     * `location`). Empty until the addresses are public (Roman): each ['name' => 'matplace farma Útušice', 'street' => '…',
+     * 'locality' => 'Útušice', 'postal_code' => '…', 'country' => 'CZ'].
+     */
+    'farms' => [],
 
     // profiles of the brand elsewhere, for the Organization structured data (the YouTube channel is added from config/youtube.php)
     'same_as' => [

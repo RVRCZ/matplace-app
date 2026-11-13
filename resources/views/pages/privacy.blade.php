@@ -1,4 +1,4 @@
-@extends('layouts.app', ['title' => __('privacy.title').' · matplace'])
+@extends('layouts.app', ['title' => __('privacy.title').' · matplace', 'description' => __('seo.privacy.description')])
 
 @section('content')
 <article class="mx-auto max-w-2xl rounded-2xl border border-slate-200 bg-white p-6 text-slate-700">

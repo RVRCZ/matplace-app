@@ -15,6 +15,8 @@
 @if(! empty($page['items']))<x-jsonld :data="\App\Support\Schema::faq($page['items'])" />@endif
 {{-- who runs the site, in full (legal name, office, company number): the pages that say so (docs/AN.md §12.4) --}}
 @if(in_array($key, ['about', 'contact'], true))<x-jsonld :data="\App\Support\Schema::organization(true)" />@endif
+{{-- the pages that sell the service say so: 3D printing to order, by us, where (docs/AP.md §14) --}}
+@if(in_array($key, ['praha', 'business'], true))<x-jsonld :data="\App\Support\Schema::service($page['h1'] ?? $page['title'], $page['description'] ?? null, \App\Support\Locales::canonical() ?? url()->current(), $key === 'praha' ? ['Praha'] : [])" />@endif
 @endpush
 
 @section('content')

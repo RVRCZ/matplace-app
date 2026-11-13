@@ -20,6 +20,9 @@ Schedule::command('matplace:events-rollup')->dailyAt('03:50');
 // one machine passing for many people: out of the people (docs/O.md "Vlny"). Only visits counted as people's are judged
 // (off 24 Oct 2026 for a day: the first version took unconfirmed robots in and found 2 500 "wave" visitors on a day of 19 people)
 Schedule::command('matplace:stats-wave')->hourlyAt(5)->withoutOverlapping();
+// what Google keeps of us, asked before the week's report so the report can say it (docs/AP.md §14): the important
+// addresses and a part of the sitemap, at most 150 questions of the 2 000 Google allows a day
+Schedule::command('searchconsole:inspect')->weeklyOn(1, '06:30')->timezone('Europe/Prague')->withoutOverlapping();
 // the week in numbers for the owner: people, sources, funnel, what was published (docs/O.md)
 Schedule::command('matplace:stats-report')->weeklyOn(1, '07:00')->timezone('Europe/Prague');
 // who carries parcels where changes rarely; a failed download keeps last week's list
