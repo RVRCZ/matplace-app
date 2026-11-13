@@ -938,6 +938,12 @@ final class ParametricGenerator
                     // only decorations, no name and no picture to follow: the plate takes the tool's first plain shape
                     $out['body'] = array_values(array_diff(self::CHOICES[$kind]['body'], ['image']))[0] ?? $out['body'];
                 }
+                if ($kind === 'medallion' && ! array_key_exists('motif', $p) && empty($out['artwork']) && trim(($out['line1'] ?? '').($out['line2'] ?? '')) === '') {
+                    // a medal with no number and no motif of its own, only decorations, and nothing said about the
+                    // motif's mode: face up, so that a raised text and a relief come out raised (docs/AR.md §9). A stored
+                    // design always carries its `motif` and keeps it
+                    $out['motif'] = 'raised';
+                }
             }
         }
         if ($kind === 'compose') {

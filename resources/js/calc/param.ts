@@ -82,6 +82,7 @@ export function bootParam(stage: Stage): void {
     let papelFit = false;                   // a photo was just uploaded: the panel takes the photo's proportions once it is known how the photo is cut
     let noCutOut = false;                   // the server cannot cut a person out of a photo: the tick stays off
     let cutoutChosen = false;               // the phone stand: the visitor (or a design they asked for) said what is cut out of the rest
+    let motifChosen = false;                // the medal: the visitor, a stored design or a step back said how the motif prints (flush face down, raised face up)
     const layers: Layer[] = []; let chosen = 0;         // a composition: its layers from the bottom up, and which one is being edited
     const strokes: Stroke[] = [];
     let drawing = false; let pen = spoolCode('white');
@@ -113,6 +114,15 @@ export function bootParam(stage: Stage): void {
         if (compose) p.layers = layers;
         if (decor) { const laid = decor.read(); if (laid.length) p.decor = laid; }
         if (Object.keys(partColors).length) p.part_colors = { ...partColors };
+        // a medal with no number and no motif of its own, only decorations, prints face up unless somebody chose
+        // otherwise: a text raised on its front comes out raised, not sunk into a face that lies on the bed (docs/AR.md §9)
+        if (cfg.kind === 'medallion' && !motifChosen && p.motif === 'flush' && p.decor && !artwork && !String(p.line1 ?? '').trim() && !String(p.line2 ?? '').trim()) {
+            const up = form.querySelector<HTMLInputElement>('[data-choice="motif"][value="raised"]');
+            if (up) {
+                up.checked = true; p.motif = 'raised';
+                up.dispatchEvent(new Event('input', { bubbles: true }));       // the fields of the raised motif show, as after a click
+            }
+        }
         return p;
     };
 
@@ -1292,6 +1302,7 @@ export function bootParam(stage: Stage): void {
         if (el.dataset.choice && fills[el.dataset.choice]?.[el.value]) applyValues(fills[el.dataset.choice][el.value]);
         if (papel && el.dataset.choice === 'treatment') { papelTouched = true; papelMode(el.value); }
         if (cfg.kind === 'phone_stand' && el.dataset.choice === 'cutout') cutoutChosen = true;
+        if (cfg.kind === 'medallion' && el.dataset.choice === 'motif' && e.isTrusted) motifChosen = true;
         if (cfg.kind === 'phone_stand' && el.dataset.choice === 'style' && !cutoutChosen) {
             const now = form.querySelector<HTMLInputElement>(`[data-choice="cutout"][value="${el.value === 'desk' ? 'window' : 'none'}"]`);
             if (now) now.checked = true;
@@ -1421,6 +1432,7 @@ export function bootParam(stage: Stage): void {
             read: () => ({ ...params(), holes: holes.map((h) => ({ ...h })), bins: bins.map((b) => ({ ...b })), merge: merge.map((pair) => [...pair]), order: [...order], strokes: strokes.map((s) => ({ ...s, p: s.p.map((pt) => [...pt]) })), decor: decor?.read() ?? [], artwork: artwork ?? '', _artwork_name: artworkShown?.name ?? '', part_colors: { ...partColors },
                 _material: ($('param-material') as HTMLSelectElement).value, _qty: ($('param-qty') as HTMLInputElement).value }),
             write: (s) => {
+                if ('motif' in s) motifChosen = true;       // a step back or the last settings keep the mode they had
                 applyValues(s);
                 if (typeof s._material === 'string') ($('param-material') as HTMLSelectElement).value = s._material;
                 if (typeof s._qty === 'string') ($('param-qty') as HTMLInputElement).value = s._qty;
@@ -1435,7 +1447,7 @@ export function bootParam(stage: Stage): void {
     if (cfg.from && /^[0-9a-f-]{36}$/.test(cfg.from)) {
         fetch(`${cfg.files}/${cfg.from}`, { credentials: 'same-origin', headers: { Accept: 'application/json' } })
             .then((r) => (r.ok ? r.json() : null))
-            .then((b) => { if (b?.file?.tool?.kind === cfg.kind) applyValues(b.file.tool.params); })
+            .then((b) => { if (b?.file?.tool?.kind === cfg.kind) { motifChosen = true; applyValues(b.file.tool.params); } })      // a stored design keeps the mode it has
             .catch(() => undefined)
             .finally(() => { track(false); void refresh(); });
     } else {

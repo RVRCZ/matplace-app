@@ -149,8 +149,10 @@ class DecorTest extends TestCase
         $front = $this->notes('medallion', $bare + ['decor' => [$this->relief($this->photo(), ['size' => 70])]]);
         $both = $this->notes('medallion', $bare + ['decor' => [$this->relief($this->photo(), ['size' => 70]), $this->text(['face' => 'back', 'mode' => 'engraved', 'x' => 20])]]);
         $n = $both['_notes'];
-        // a medal's motif is flush and printed face down by itself: the relief turns it face up
-        $this->assertTrue($n['turned_up']);
+        // a medal with decorations only and nothing said about its motif is face up by itself (docs/AR.md §9, question 1);
+        // one whose motif is flush (the page's own choice, a stored design) prints face down: there the relief turns it face up
+        $this->assertArrayNotHasKey('turned_up', $n);
+        $this->assertTrue($this->notes('medallion', ['motif' => 'flush'] + $bare + ['decor' => [$this->relief($this->photo(), ['size' => 70])]])['_notes']['turned_up']);
         $this->assertSame(['body'], $n['parts']);
         $this->assertFalse($n['multi_material']);
         $this->assertSame([], $n['color_changes']);
@@ -198,6 +200,38 @@ class DecorTest extends TestCase
         // too deep for the plate, off the plate: said, not built
         $this->preview('coaster', self::PLAIN['coaster'] + ['thickness' => 3, 'decor' => [$this->relief($this->photo(), ['mode' => 'engraved', 'depth' => 2.6])]])
             ->assertStatus(422)->assertJsonFragment([__('param.error.decor_too_deep', ['n' => 1])]);
+    }
+
+    /** docs/AR.md §9, question 1: a medal with decorations only prints face up unless somebody chose the motif's mode. */
+    public function test_a_medal_with_decorations_only_prints_face_up_by_default_and_a_stored_one_keeps_its_mode(): void
+    {
+        $bare = ['line1' => '', 'line2' => '', 'body' => 'circle', 'width' => 60, 'links' => 6, 'decor' => [$this->text()]];
+
+        // what is stored: nothing said about the mode → raised; a mode that was said (a stored design always carries it) stays
+        $this->assertSame('raised', ParametricGenerator::clean('medallion', $bare)['motif']);
+        $this->assertSame('flush', ParametricGenerator::clean('medallion', $bare + ['motif' => 'flush'])['motif'], 'a stored design keeps what it has');
+        $this->assertSame('raised', ParametricGenerator::clean('medallion', $bare + ['motif' => 'raised'])['motif']);
+        // a medal with a number or a motif of its own opens as always, with or without decorations; so does one without any decoration
+        $this->assertSame('flush', ParametricGenerator::clean('medallion', ['line1' => '1'] + $bare)['motif']);
+        $this->assertSame('flush', ParametricGenerator::clean('medallion', ['decor' => [$this->text()]])['motif'], 'the default first place');
+        $this->assertSame('flush', ParametricGenerator::clean('medallion', ['artwork' => 'lib:colour/matplace'] + $bare)['motif']);
+        $this->assertSame('flush', ParametricGenerator::clean('medallion', ['line1' => '', 'line2' => ''])['motif']);
+        $this->assertSame('flush', ParametricGenerator::clean('medallion', ['line1' => '', 'line2' => '', 'decor' => [['kind' => 'text', 'lines' => ['']]]])['motif'], 'a decoration that shows nothing yet is none');
+
+        // the page's script does the same before it asks for a preview (the form always sends a mode)
+        $script = (string) file_get_contents(resource_path('js/calc/param.ts'));
+        $this->assertStringContainsString("cfg.kind === 'medallion' && !motifChosen && p.motif === 'flush' && p.decor && !artwork", $script);
+        $this->assertStringContainsString("if (cfg.kind === 'medallion' && el.dataset.choice === 'motif' && e.isTrusted) motifChosen = true;", $script);
+
+        $this->engine();
+        // built: the text on the front stands raised, the front is up, nothing is turned into an engraving
+        $up = $this->notes('medallion', $bare)['_notes'];
+        $this->assertSame(['raised', false], [$up['decor'][0]['mode'], $up['decor'][0]['on_bed']]);
+        $this->assertNotContains('decor_bed_face', $up['warnings'] ?? []);
+        // the same medal as a design stored face down: built as it was, the text sunk into the face on the bed
+        $down = $this->notes('medallion', $bare + ['motif' => 'flush'])['_notes'];
+        $this->assertSame(['engraved', true], [$down['decor'][0]['mode'], $down['decor'][0]['on_bed']]);
+        $this->assertContains('decor_bed_face', $down['warnings']);
     }
 
     public function test_a_key_ring_carries_a_logo_and_a_text_in_a_filament_of_its_own(): void

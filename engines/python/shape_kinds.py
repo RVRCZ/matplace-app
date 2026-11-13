@@ -518,7 +518,10 @@ def build(M, Invalid, p, product):
     #           (notes.one_plate_required, never a part on its own plate; docs/P.md §8b)
     #   raised  face up: the motif stands one step out of the plate and the colour changes by height
     medal = product == "medallion"
-    motif = p.get("motif", "flush") if medal else None
+    # nothing said about the mode: a medal with no number and no motif of its own, only decorations, prints face up, so
+    # that a raised text and a relief come out raised (docs/AR.md §9); any other medal face down as always
+    bare = medal and not p.get("artwork_path") and not any(str(x).strip() for x in (p.get("lines") or [])) and decor.wanted(p)
+    motif = p.get("motif", "raised" if bare else "flush") if medal else None
     if medal and motif not in ("flush", "raised"):
         raise Invalid("bad_choice", "motif")
     # how it hangs: an eyelet with a chain beside it on the bed, or a loop with a slot for a ribbon and no chain (docs/P.md §8e)
