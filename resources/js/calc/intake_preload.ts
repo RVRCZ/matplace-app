@@ -52,10 +52,12 @@ export async function preloadIntake(payload: IntakePayload): Promise<void> {
         setNumber(document.querySelector<HTMLInputElement>('[data-param="width"]'), size);          // the shape tools, the picture for the wall, the cutter: the width
         setNumber(document.querySelector<HTMLInputElement>('[data-param="size"]'), size);           // the map: the side
         setNumber(document.querySelector<HTMLInputElement>('[data-param="text_height"]'), size);    // the sign, the standing letters: the letter height
+        setNumber(document.querySelector<HTMLInputElement>('[data-param="head"]'), size / 10);        // the headband: the head's circumference, in cm
     }
     if (kind) {
         const radio = document.querySelector<HTMLInputElement>(`input[type=radio][name="kind"][value="${kind}"], input[type=radio][name="style"][value="${kind}"]`);
         if (radio) { radio.checked = true; fire(radio, 'change'); }
+        document.querySelector<HTMLButtonElement>(`[data-preset="hb_${kind}"]`)?.click();              // the headband: the costume (the decoration and its colours)
     }
     if (text) {
         setText(document.querySelector<HTMLInputElement>('[data-text="line1"]'), text);              // a name or an inscription of the shape tools

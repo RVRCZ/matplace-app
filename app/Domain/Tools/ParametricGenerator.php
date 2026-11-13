@@ -51,7 +51,7 @@ final class ParametricGenerator
     public const CHOICE_ICONS = ['body' => self::SHAPE_ICONS, 'hang' => ['chain', 'ribbon']];
 
     /** family → field, flag or choice → the section of the tool page it belongs to (fields and flags: size, choices: input, when not named) */
-    public const PLACE = ['sign' => ['ring_at' => 'size'], 'qr' => ['hidden' => 'input'], 'papel' => self::PAPEL_PLACE, 'shape' => [
+    public const PLACE = ['sign' => ['ring_at' => 'size'], 'headband' => ['head_size' => 'size', 'mount' => 'size'], 'qr' => ['hidden' => 'input'], 'papel' => self::PAPEL_PLACE, 'shape' => [
         'bg_strength' => 'input', 'smooth' => 'input', 'contrast' => 'input', 'brightness' => 'input', 'saturation' => 'input', 'remove_bg' => 'input',
         'colors_n' => 'colors', 'relief' => 'colors', 'flush' => 'colors', 'rim' => 'colors', 'body' => 'size', 'mount' => 'size', 'disc' => 'size', 'floor' => 'size', 'inside' => 'size',
         'straw_d' => 'input',      // the straw is what the topper is for: its size right under the picture and the name, not among the sizes
@@ -61,7 +61,7 @@ final class ParametricGenerator
     public const SECTIONS = ['papel' => ['frame' => 'input', 'placement' => 'size']];
 
     /** kind → the choice the first step opens with, before the picture (what is made of the picture) */
-    public const FIRST = ['papel' => 'treatment', 'qr' => 'content', 'medallion' => ['motif', 'hang']];
+    public const FIRST = ['papel' => 'treatment', 'qr' => 'content', 'medallion' => ['motif', 'hang'], 'headband' => 'decoration'];
 
     /** fields of the input section that sit folded under "adjust the photo" */
     public const FOLDED = ['contrast', 'brightness', 'saturation'];
@@ -222,6 +222,11 @@ final class ParametricGenerator
     public const FIELDS = [
         // a pen holder in the shape of a name (engines/python/name_kinds.py): printed standing, the name itself is the cup
         'name_cup' => ['width' => [80, 250, 160, 1], 'height' => [40, 120, 80, 1], 'wall' => [1.2, 3, 1.6, 0.2], 'floor' => [1.2, 4, 2, 0.2]],
+        // a headband with a decoration on top (engines/python/headband_kind.py, docs/P.md §13): `head` is the head's circumference in cm,
+        // `band` the band's width, `deco` the decoration's size in % of its usual one, `spacing` the distance between a pair along the
+        // band, `tilt` how far a pair leans outwards, `deco_t` how thick a decoration is, `fit` the play of its tongue in the pocket
+        'headband' => ['head' => [44, 64, 52, 0.5], 'band' => [8, 25, 12, 1], 'thickness' => [2, 4, 2.6, 0.2], 'deco' => [60, 160, 100, 1], 'spacing' => [30, 140, 70, 1],
+            'tilt' => [-30, 30, 0, 1], 'deco_t' => [3, 8, 4, 0.2], 'fit' => [0.1, 0.4, 0.2, 0.05]],
         // a bead for every character of a text; `size` is the edge of a cube bead, the other shapes follow it
         'beads' => ['size' => [8, 14, 10, 1], 'hole' => [1.5, 4, 2.5, 0.5], 'relief' => [0.4, 1.2, 0.6, 0.2]],
         'charm' => self::SHAPE_FIELDS + self::SHAPE_EYELET,
@@ -322,6 +327,8 @@ final class ParametricGenerator
         'notes' => ['typeface' => ['sans', 'serif', 'mono', 'script']], 'hair_tie' => ['typeface' => ['script', 'sans', 'serif', 'mono']], 'candle_stand' => ['typeface' => ['script', 'sans', 'serif', 'mono']],
         'papel' => ['treatment' => ['cutout', 'portrait'], 'border' => ['flowers', 'diamonds', 'dots', 'hearts', 'leaves', 'stars', 'folk', 'none'], 'scallop_edge' => ['bottom', 'all'], 'backdrop' => ['plain', 'pattern']],
         'name_cup' => ['typeface' => ['script', 'sans', 'serif', 'mono']],
+        // the head by its age (the circumference in cm), any other by its number; the decoration a part of its own pushed into a pocket, or one piece with the band
+        'headband' => ['decoration' => ['horns', 'cat', 'bunny', 'antlers', 'crown', 'halo', 'unicorn', 'none'], 'head_size' => ['custom', 'child', 'kid', 'adult'], 'mount' => ['slot', 'fused']],
         'beads' => ['shape' => ['cube', 'ball', 'heart', 'star'], 'style' => ['raised', 'engraved'], 'typeface' => ['sans', 'serif', 'mono']],
         'charm' => ['body' => ['image', 'circle', 'oval', 'rect', 'heart', 'hex', 'star'], 'typeface' => ['sans', 'serif', 'mono', 'script']],
         'keychain' => ['body' => ['rect', 'image', 'circle'], 'typeface' => ['sans', 'serif', 'mono', 'script']],
@@ -393,7 +400,7 @@ final class ParametricGenerator
 
     /** the fields shown first; everything else sits under "more" */
     public const MAIN = [
-        'name_cup' => ['width', 'height'], 'beads' => ['size', 'hole'],
+        'name_cup' => ['width', 'height'], 'beads' => ['size', 'hole'], 'headband' => ['head', 'band', 'thickness', 'deco', 'spacing', 'tilt'],
         'charm' => ['width', 'thickness', 'frame', 'eye_pos', 'eye_hole'], 'keychain' => ['width', 'thickness', 'frame', 'eye_pos', 'eye_hole'], 'earrings' => ['width', 'thickness', 'frame', 'eye_pos', 'eye_hole'], 'ornament' => ['width', 'thickness', 'frame', 'eye_pos', 'eye_hole'],
         'magnet' => ['width', 'thickness', 'frame', 'mag_d', 'mag_h'], 'coaster' => ['width', 'thickness', 'frame'], 'gingerbread' => ['width', 'thickness', 'eye_pos', 'eye_hole'], 'name_letter' => ['height', 'thickness'], 'cookie' => ['width', 'thickness', 'frame'], 'topper' => ['width', 'text_size', 'text_y', 'spike', 'spikes'], 'tray' => ['width', 'height', 'frame'], 'badge' => ['width', 'thickness', 'frame', 'mag_d'], 'medallion' => ['width', 'motif_size', 'depth', 'thickness', 'frame', 'links', 'ribbon_w'], 'photo_organizer' => ['width', 'height', 'cell', 'hole_d'], 'bag_charm' => ['width', 'thickness', 'bag_hole', 'bag_wall'], 'straw' => ['width', 'thickness', 'eye_pos'], 'opener' => ['width', 'thickness', 'eye_pos'],
         'organizer' => ['width', 'depth', 'height', 'rows', 'cols', 'radius'], 'box' => ['inner_w', 'inner_d', 'inner_h', 'radius'], 'phone_stand' => ['width', 'device', 'angle', 'back', 'depth', 'vent', 'thickness', 'radius', 'cutout_size', 'rib_pitch', 'band', 'across'],
@@ -424,7 +431,7 @@ final class ParametricGenerator
 
     public const MAX_STROKE_POINTS = 48;
 
-    public const FLAGS = ['name_cup' => ['base'], 'beads' => ['two_sides'], 'charm' => ['remove_bg', 'eyelet', 'flush', 'rim', 'bevel'], 'keychain' => ['remove_bg', 'eyelet', 'flush', 'rim', 'bevel'], 'earrings' => ['remove_bg', 'eyelet', 'mirror', 'flush', 'rim', 'bevel'], 'ornament' => ['remove_bg', 'eyelet', 'flush', 'rim', 'bevel'],
+    public const FLAGS = ['headband' => ['teeth'], 'name_cup' => ['base'], 'beads' => ['two_sides'], 'charm' => ['remove_bg', 'eyelet', 'flush', 'rim', 'bevel'], 'keychain' => ['remove_bg', 'eyelet', 'flush', 'rim', 'bevel'], 'earrings' => ['remove_bg', 'eyelet', 'mirror', 'flush', 'rim', 'bevel'], 'ornament' => ['remove_bg', 'eyelet', 'flush', 'rim', 'bevel'],
         'magnet' => ['remove_bg', 'flush', 'rim', 'bevel'], 'coaster' => ['remove_bg', 'grooves', 'flush', 'rim', 'bevel'], 'gingerbread' => ['eyelet', 'flush', 'bevel'], 'name_letter' => ['hang', 'stand', 'flush', 'bevel'], 'cookie' => ['remove_bg', 'hang', 'tray', 'flush'], 'topper' => ['flush'], 'tray' => ['remove_bg'], 'badge' => ['remove_bg', 'flush', 'rim', 'bevel'], 'medallion' => ['remove_bg', 'border', 'ironing'], 'photo_organizer' => ['remove_bg'], 'bag_charm' => ['remove_bg', 'flush', 'rim', 'bevel'], 'straw' => ['remove_bg', 'flush', 'rim'], 'opener' => ['remove_bg', 'flush', 'rim'],
         'box' => ['lid', 'cable_slot'], 'phone_stand' => ['cable', 'screws'], 'cable_holder' => ['screws'], 'modular' => ['tray'], 'vase' => ['drainage', 'saucer'], 'sign' => ['keyring', 'border', 'bevel', 'two_color'], 'logo' => ['invert', 'bevel'], 'stamp' => ['invert'], 'stencil' => ['invert'], 'papel' => ['isolate', 'invert', 'scallop', 'string_holes'], 'notes' => ['pen', 'invert'], 'hair_tie' => ['invert'], 'candle_stand' => ['invert'], 'insert' => ['notch'], 'lightbox' => ['invert'], 'qr' => ['stand', 'hole', 'hidden'], 'cutter' => ['stamp', 'invert'], 'holder' => ['mount'], 'cap' => ['grip']];
 
@@ -432,6 +439,10 @@ final class ParametricGenerator
     public const WHEN = [
         'qr' => ['url' => ['content', ['web']], 'text' => ['content', ['text']], 'ssid' => ['content', ['wifi']], 'security' => ['content', ['wifi']], 'password' => ['security', ['wpa', 'wep']], 'hidden' => ['content', ['wifi']]],
         'beads' => ['relief' => ['style', ['raised']]],
+        // a pair has a spacing and a tilt, one thing on top has neither; a band alone has nothing to size or to mount
+        'headband' => ['spacing' => ['decoration', ['horns', 'cat', 'bunny', 'antlers', 'unicorn']], 'tilt' => ['decoration', ['horns', 'cat', 'bunny', 'antlers', 'unicorn']],
+            'deco' => ['decoration', ['horns', 'cat', 'bunny', 'antlers', 'crown', 'halo', 'unicorn']], 'deco_t' => ['decoration', ['horns', 'cat', 'bunny', 'antlers', 'crown', 'halo', 'unicorn']],
+            'mount' => ['decoration', ['horns', 'cat', 'bunny', 'antlers', 'crown', 'halo', 'unicorn']], 'fit' => ['mount', ['slot']]],
         // a cut-out is one thin sheet held by ties; a portrait lies on a backing and can be moved in its window
         'papel' => ['soften' => ['treatment', ['cutout']], 'thickness' => ['treatment', ['cutout']], 'bridge' => ['treatment', ['cutout']],
             'detail' => ['treatment', ['portrait']], 'trim' => ['treatment', ['portrait']], 'isolate' => ['treatment', ['portrait']], 'base' => ['treatment', ['portrait']], 'relief' => ['treatment', ['portrait']], 'backdrop' => ['treatment', ['portrait']],
@@ -480,6 +491,8 @@ final class ParametricGenerator
             'd15x3' => ['mag_d' => 15, 'mag_h' => 3], 'd20x3' => ['mag_d' => 20, 'mag_h' => 3]]],
         // drinking straws by their outer diameter: a thin one, the common one, a bubble tea straw
         'straw' => ['straw_size' => ['s6' => ['straw_d' => 6], 's8' => ['straw_d' => 8], 's12' => ['straw_d' => 12]]],
+        // heads by age: a child of 3 to 6, a schoolchild, an adult (the circumference in cm)
+        'headband' => ['head_size' => ['child' => ['head' => 51], 'kid' => ['head' => 54], 'adult' => ['head' => 57]]],
         'cap' => ['thread' => [
             'pet28' => ['size_a' => 27.4, 'pitch' => 2.7],
             'm6' => ['size_a' => 6, 'pitch' => 1], 'm8' => ['size_a' => 8, 'pitch' => 1.25], 'm10' => ['size_a' => 10, 'pitch' => 1.5], 'm12' => ['size_a' => 12, 'pitch' => 1.75],
@@ -488,10 +501,17 @@ final class ParametricGenerator
     ];
 
     /** flags that start switched on */
-    public const FLAGS_ON = ['cable', 'window', 'drainage', 'saucer', 'border', 'stamp', 'mount', 'grip', 'remove_bg', 'eyelet', 'base', 'two_sides', 'scallop', 'string_holes', 'pen', 'notch', 'isolate', 'ironing'];
+    public const FLAGS_ON = ['cable', 'window', 'drainage', 'saucer', 'border', 'stamp', 'mount', 'grip', 'remove_bg', 'eyelet', 'base', 'two_sides', 'scallop', 'string_holes', 'pen', 'notch', 'isolate', 'ironing', 'teeth'];
 
     /** things that hang only when asked to (a biscuit, a big letter): the eyelet's sizes show with the tick */
     private const HANG_WHEN = ['eye_pos' => ['hang', ['on']], 'eye_hole' => ['hang', ['on']], 'eye_wall' => ['hang', ['on']]];
+
+    /** the headband's usual filaments: black, white and gold, any spool of that name, a built-in colour without a farm */
+    private const HB_BLACK = ['01_PLA+_cerny', 'name:černá', 'black'];
+
+    private const HB_WHITE = ['02_PLA+_bily', 'name:bílá', 'white'];
+
+    private const HB_GOLD = ['39_PLA_Silk_zlata_Silk_Gold', 'name:zlatá', 'yellow'];
 
     /** a medal's number and rim: red Silk, else red PLA+, a built-in red without a farm (Roman, 19 Oct 2026) */
     private const MEDAL_MOTIF = ['44_PLA_Silk_cervena_Silk_Red', '05_PLA+_cerveny', 'name:silk red', 'red'];
@@ -516,6 +536,16 @@ final class ParametricGenerator
     private const SHAPE_WHEN = ['bg_strength' => ['remove_bg', ['on']], 'eye_pos' => ['eyelet', ['on']], 'eye_hole' => ['eyelet', ['on']], 'eye_wall' => ['eyelet', ['on']], 'relief' => ['flush', ['off']]];
 
     public const PRESETS = [
+        // a headband for each costume: the decoration and the two filaments it is usually made in (the band, the decoration)
+        'headband' => [
+            'hb_horns' => ['decoration' => 'horns', 'part_colors' => ['body' => self::HB_BLACK, 'details' => ['05_PLA+_cerveny', 'name:červená', 'red']]],
+            'hb_cat' => ['decoration' => 'cat', 'part_colors' => ['body' => self::HB_BLACK, 'details' => self::HB_BLACK]],
+            'hb_bunny' => ['decoration' => 'bunny', 'part_colors' => ['body' => self::HB_WHITE, 'details' => self::HB_WHITE]],
+            'hb_antlers' => ['decoration' => 'antlers', 'part_colors' => ['body' => ['name:červená', 'red'], 'details' => ['name:hnědá', 'brown']]],
+            'hb_crown' => ['decoration' => 'crown', 'part_colors' => ['body' => self::HB_GOLD, 'details' => self::HB_GOLD]],
+            'hb_halo' => ['decoration' => 'halo', 'part_colors' => ['body' => self::HB_WHITE, 'details' => self::HB_GOLD]],
+            'hb_unicorn' => ['decoration' => 'unicorn', 'part_colors' => ['body' => self::HB_WHITE, 'details' => self::HB_GOLD]],
+        ],
         // a medal for each place: the number in its metal, the plate dark so it shines. A colour is a list of spools, the
         // first the farm has is taken (presets()); "name:" looks a spool up by its name, a built-in name stands in without a farm
         'medallion' => [
@@ -669,6 +699,8 @@ final class ParametricGenerator
             'stamp' => ($p['handle'] ?? '') === 'knob' ? ['body', 'handle'] : [],
             'logo' => ($p['mode'] ?? '') === 'standing' ? ['body', 'stand'] : [],
             'notes', 'candle_stand' => ['body', 'stand'],
+            // the band and what is pushed into its pockets; grown together they are one piece
+            'headband' => ($p['mount'] ?? 'slot') === 'slot' && ($p['decoration'] ?? 'horns') !== 'none' ? ['body', 'details'] : [],
             'hair_tie' => ['body', 'stand', 'post'],                                                  // the figure, the base, and the post pushed through it from below
             // the flat-pack stand is a plate and a leg, the Z band a band and its stripe (docs/AA.md)
             'phone_stand' => match ($p['style'] ?? 'plate') {

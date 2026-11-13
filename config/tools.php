@@ -169,6 +169,12 @@ return [
         ['params' => ['artwork' => 'lib:animals/deer', 'width' => 120, 'jar_d' => 103]],
         ['params' => ['line1' => 'Home', 'typeface' => 'script', 'width' => 110, 'jar_d' => 70]],
     ]]],
+    // (docs/P.md §13) a headband sized to the head with a decoration pushed into it; not printed by anybody yet, so no `verified`
+    'headband' => ['route' => 'tools.headband', 'intent' => 'create', 'categories' => ['toys', 'craft'], 'available' => true, 'seo' => ['examples' => [
+        ['params' => ['decoration' => 'horns', 'head' => 52, 'part_colors' => ['body' => 'black', 'details' => 'red']]],
+        ['params' => ['decoration' => 'cat', 'head' => 54, 'part_colors' => ['body' => 'black', 'details' => 'black']]],
+        ['params' => ['decoration' => 'antlers', 'head' => 57, 'part_colors' => ['body' => 'red', 'details' => 'brown']]],
+    ]]],
     'stencil' => ['route' => 'tools.stencil', 'intent' => 'create', 'categories' => ['craft', 'signs'], 'available' => true, 'seo' => ['examples' => [
         ['params' => ['width' => 120, 'line1' => 'BOA 8']],
         ['params' => ['width' => 160, 'line1' => 'FRAGILE']],
