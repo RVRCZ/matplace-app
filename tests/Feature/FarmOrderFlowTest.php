@@ -871,10 +871,9 @@ T2 ; slot chosen by matplace farm
         $this->assertEqualsWithDelta(1000, app(Wallet::class)->balance($this->user)->amount, 0.001);
     }
 
-    public function test_failed_print_returns_the_credit_and_alerts_the_admin(): void
+    public function test_failed_print_waits_for_the_operator_alerts_the_admin_and_a_cancel_returns_the_credit(): void
     {
-        // a failure that ends the order at once: the one automatic reprint is FarmGuestCheckoutTest's (docs/AO.md §2)
-        config(['farm.payments.auto_reprint' => false]);
+        // a print the printer failed stops and waits for the operator's word, the credit stays held (docs/AL.md §25)
         [$printer, $auth] = $this->agentPrinter();
         $this->sync($auth);
         $order = $this->order();
@@ -885,16 +884,22 @@ T2 ; slot chosen by matplace farm
 
         $this->sync($auth, 'error', ['id' => $cmd['job_id'], 'status' => 'failed', 'message' => 'Heater extruder not heating']);
         $order->refresh();
-        $this->assertSame(FarmOrder::STATUS_FAILED, $order->status);
+        $this->assertSame(FarmOrder::STATUS_STOPPED, $order->status);
         $this->assertSame('print_failed', $order->error);
+        $this->assertEqualsWithDelta(1000.0 - (float) $order->price_total, app(Wallet::class)->balance($this->user)->amount, 0.001, 'the credit stays held');
+        Mail::assertQueued(FarmAdminAlert::class, fn (FarmAdminAlert $m) => str_contains($m->subjectLine, 'tisk zastaven'));
+        Mail::assertNotQueued(FarmOrderStatus::class, fn (FarmOrderStatus $m) => $m->status === FarmOrder::STATUS_FAILED);
+
+        // the operator gives the order up: everything comes back
+        $admin = User::factory()->create();
+        $admin->setRole(User::ROLE_ADMIN, true);
+        $this->actingAs($admin)->post(route('admin.farm.orders.status', $order), ['to' => 'cancelled'])->assertRedirect();
+        $this->assertSame(FarmOrder::STATUS_CANCELLED, $order->refresh()->status);
         $this->assertSame(1000.0, app(Wallet::class)->balance($this->user)->amount);
-        Mail::assertQueued(FarmAdminAlert::class);
     }
 
     public function test_an_error_reported_for_a_moment_at_the_start_does_not_close_the_order(): void
     {
-        // a failure that ends the order at once: the one automatic reprint is FarmGuestCheckoutTest's (docs/AO.md §2)
-        config(['farm.payments.auto_reprint' => false]);
         [$printer, $auth] = $this->agentPrinter();
         $this->sync($auth);
         $order = $this->order();
@@ -919,12 +924,13 @@ T2 ; slot chosen by matplace farm
         $this->sync($auth, 'printing', ['id' => $cmd['job_id'], 'status' => 'printing', 'progress' => 3, 'message' => '']);
         $this->assertSame(FarmPrintJob::STATUS_PRINTING, $job->fresh()->status);
 
-        // an error that stays (reported again a minute later) is a failure
+        // an error that stays (reported again a minute later) ends the print: the order stops and waits for the operator
         $this->sync($auth, 'error', ['id' => $cmd['job_id'], 'status' => 'failed', 'progress' => 3, 'message' => '']);
-        $this->assertSame(FarmOrder::STATUS_FAILED, $order->fresh()->status, 'past the first per cent the printer is believed at once');
-        $this->assertSame(1000.0, app(Wallet::class)->balance($this->user)->amount, 'and the credit comes back');
+        $this->assertSame(FarmOrder::STATUS_STOPPED, $order->fresh()->status, 'past the first per cent the printer is believed at once');
+        $this->assertSame(FarmPrintJob::STATUS_FAILED, $job->fresh()->status);
+        $this->assertEqualsWithDelta(1000.0 - (float) $order->price_total, app(Wallet::class)->balance($this->user)->amount, 0.001, 'the credit stays held until the operator decides');
 
-        // an error with a reason is believed at once even at the start: test_failed_print_returns_the_credit_and_alerts_the_admin
+        // an error with a reason is believed at once even at the start: test_failed_print_waits_for_the_operator_alerts_the_admin_and_a_cancel_returns_the_credit
     }
 
     public function test_agent_api_needs_a_valid_token_and_sees_only_its_own_printers(): void

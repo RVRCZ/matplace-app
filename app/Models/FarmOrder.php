@@ -37,6 +37,13 @@ class FarmOrder extends Model
 
     public const STATUS_FAILED = 'failed';
 
+    /**
+     * A paid print that ended on the printer without being finished (stopped on its screen, cancelled from the printer's
+     * card, a failure of the printer) and waits for the operator's word: print it again, or cancel the order. The money
+     * stays held, nothing starts by itself - not even when the plate is confirmed as clear (docs/AL.md §25).
+     */
+    public const STATUS_STOPPED = 'stopped';
+
     public const STATUS_CANCELLED = 'cancelled';
 
     public const KIND_PRINT = 'print';            // a customer's order
@@ -50,8 +57,10 @@ class FarmOrder extends Model
         self::STATUS_UPLOADED => [self::STATUS_SLICED, self::STATUS_FAILED, self::STATUS_CANCELLED],
         self::STATUS_SLICED => [self::STATUS_UPLOADED, self::STATUS_PAID, self::STATUS_CANCELLED, self::STATUS_QUEUED],   // → queued: tests only (OrderFlow)
         self::STATUS_PAID => [self::STATUS_QUEUED, self::STATUS_CANCELLED],
-        self::STATUS_QUEUED => [self::STATUS_PRINTING, self::STATUS_FAILED, self::STATUS_CANCELLED],
-        self::STATUS_PRINTING => [self::STATUS_DONE, self::STATUS_FAILED, self::STATUS_CANCELLED, self::STATUS_QUEUED],
+        self::STATUS_QUEUED => [self::STATUS_PRINTING, self::STATUS_FAILED, self::STATUS_CANCELLED, self::STATUS_STOPPED],
+        self::STATUS_PRINTING => [self::STATUS_DONE, self::STATUS_FAILED, self::STATUS_CANCELLED, self::STATUS_QUEUED, self::STATUS_STOPPED],
+        // → queued only on the operator's word (OrderFlow::reprint); → cancelled gives the money back in full
+        self::STATUS_STOPPED => [self::STATUS_QUEUED, self::STATUS_CANCELLED, self::STATUS_FAILED],
         self::STATUS_DONE => [self::STATUS_HANDED_OVER, self::STATUS_FAILED],
         self::STATUS_FAILED => [self::STATUS_QUEUED, self::STATUS_UPLOADED, self::STATUS_CANCELLED],
         self::STATUS_HANDED_OVER => [],
@@ -59,7 +68,7 @@ class FarmOrder extends Model
     ];
 
     /** The customer's money is held or spent in these states. */
-    public const STATUSES_COMMITTED = [self::STATUS_PAID, self::STATUS_QUEUED, self::STATUS_PRINTING, self::STATUS_DONE, self::STATUS_HANDED_OVER];
+    public const STATUSES_COMMITTED = [self::STATUS_PAID, self::STATUS_QUEUED, self::STATUS_PRINTING, self::STATUS_STOPPED, self::STATUS_DONE, self::STATUS_HANDED_OVER];
 
     protected $attributes = ['currency' => 'CZK', 'quality' => 'standard', 'strength' => 'standard', 'supports' => 'auto', 'copies' => 1, 'plates' => 1, 'plates_done' => 0, 'plate_copies' => 1, 'unit_scale' => 1, 'scale' => 1, 'delivery' => 'pickup', 'kind' => 'print'];
 
@@ -449,7 +458,7 @@ class FarmOrder extends Model
     public function canMoveTo(string $status): bool
     {
         // a failed order sent back without its G-code would stop the printer's queue behind it (Dispatcher::kick)
-        if ($this->status === self::STATUS_FAILED && $status === self::STATUS_QUEUED && $this->filesPruned()) {
+        if (in_array($this->status, [self::STATUS_FAILED, self::STATUS_STOPPED], true) && $status === self::STATUS_QUEUED && $this->filesPruned()) {
             return false;
         }
 
@@ -468,7 +477,7 @@ class FarmOrder extends Model
     }
 
     /** "Print again" (docs/AL.md §15): from the payment on, while it prints, once done, and after a failure or a cancel. */
-    public const REPEATABLE = [self::STATUS_PAID, self::STATUS_QUEUED, self::STATUS_PRINTING, self::STATUS_DONE, self::STATUS_HANDED_OVER, self::STATUS_FAILED, self::STATUS_CANCELLED];
+    public const REPEATABLE = [self::STATUS_PAID, self::STATUS_QUEUED, self::STATUS_PRINTING, self::STATUS_STOPPED, self::STATUS_DONE, self::STATUS_HANDED_OVER, self::STATUS_FAILED, self::STATUS_CANCELLED];
 
     public function repeatable(): bool
     {
@@ -476,11 +485,20 @@ class FarmOrder extends Model
     }
 
     /** The customer may still walk away and get the held credit back. */
-    /** Before it starts for free; a running print too, paid for as far as it got (OrderFlow::onStopped). */
+    /** Before it starts for free; a running print too, paid for as far as it got (OrderFlow::onStopped); a stopped print that waits for the operator for free as well. */
     public function cancellableByCustomer(): bool
     {
-        return in_array($this->status, [self::STATUS_AWAITING_CHOICES, self::STATUS_UPLOADED, self::STATUS_SLICED, self::STATUS_PAID, self::STATUS_QUEUED, self::STATUS_PRINTING], true);
+        return in_array($this->status, [self::STATUS_AWAITING_CHOICES, self::STATUS_UPLOADED, self::STATUS_SLICED, self::STATUS_PAID, self::STATUS_QUEUED, self::STATUS_PRINTING, self::STATUS_STOPPED], true);
     }
+
+    /** The print stopped on the printer and waits for the operator's word (print again / cancel the order). */
+    public function isStopped(): bool
+    {
+        return $this->status === self::STATUS_STOPPED;
+    }
+
+    /** States in which the order is still on its way through the farm: the customer's "open" orders, the spool's reserved grams, the currency lock. */
+    public const STATUSES_OPEN_PAID = [self::STATUS_PAID, self::STATUS_QUEUED, self::STATUS_PRINTING, self::STATUS_STOPPED];
 
     /** The order has not been sliced yet and is not being sliced: a big model waiting for the customer's choices (docs/AL.md §11). */
     public function awaitsChoices(): bool

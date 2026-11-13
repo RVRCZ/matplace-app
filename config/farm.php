@@ -102,6 +102,10 @@ return [
 
         // ── operation ────────────────────────────────────────────────────────
         'require_approval' => false,        // true = every paid order waits for an admin before it may print
+        // a print the printer itself failed before it laid anything down (under 1 %) goes back to the queue once on its own;
+        // off (the default) = every print that ends unfinished waits for the operator's word (docs/AL.md §25). A print
+        // stopped by a person (on the printer's screen, cancelled from the admin) never prints again by itself.
+        'auto_reprint_start' => false,
         'changeover_minutes' => 10,         // plate swap between two jobs, used for the queue estimate
         'offline_after_seconds' => 120,     // no heartbeat for this long = printer offline
         'snapshot_keep' => 1,               // snapshots kept per order (the last one is what people see)
@@ -208,7 +212,8 @@ return [
         // the smallest amount the gateway takes (Stripe: about 0.50 USD): a shortfall under it is charged as this much and
         // the rest stays as credit (the page says so under the button)
         'min_charge' => ['CZK' => (float) env('FARM_MIN_CHARGE_CZK', 15), 'EUR' => (float) env('FARM_MIN_CHARGE_EUR', 0.5)],
-        // a paid print that fails on the printer is printed once more on its own (docs/AO.md §2); off = it fails at once
+        // the hard switch over the farm's setting `auto_reprint_start` (docs/AL.md §25): false here = nothing is ever printed
+        // again on its own, whatever the admin's setting says
         'auto_reprint' => (bool) env('FARM_AUTO_REPRINT', true),
         // money of an order paid by card goes back to the card when the order fails or is cancelled; off = as credit
         'auto_refund' => (bool) env('FARM_AUTO_REFUND', true),

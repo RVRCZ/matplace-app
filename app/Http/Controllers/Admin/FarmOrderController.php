@@ -100,6 +100,9 @@ class FarmOrderController extends Controller
             'waiting' => $row['queue']->pluck('order')->concat(FarmOrder::where('farm_printer_id', $p->id)->where('status', FarmOrder::STATUS_PAID)->orderBy('paid_at')->orderBy('id')->get())->values(),
             'last' => $running ? null : FarmOrder::where('farm_printer_id', $p->id)->whereIn('status', [FarmOrder::STATUS_DONE, FarmOrder::STATUS_HANDED_OVER])
                 ->whereNotNull('finished_at')->orderByDesc('finished_at')->first(),
+            // prints that stopped on this printer and wait for the operator's word (docs/AL.md §25): they are not in the queue
+            // and nothing starts them, so the row names them
+            'stopped' => FarmOrder::where('farm_printer_id', $p->id)->where('status', FarmOrder::STATUS_STOPPED)->orderBy('id')->get(),
         ];
     }
 
@@ -118,18 +121,21 @@ class FarmOrderController extends Controller
                 'command' => FarmCommand::where('farm_printer_id', $p->id)->where('created_at', '>', now()->subDay())->latest('id')->first(),
                 // a cancel the printer has not confirmed or did not carry out: the order is cancelled, the machine is not free
                 'cancel' => $p->isAgentDriven() ? $p->unconfirmedCancel() : null,
+                // a pause or a resume the agent is still carrying out (a Kobra S1 resumes only after it has fed the filament,
+                // which takes minutes): the card says so and offers no second one meanwhile
+                'control' => $p->isAgentDriven() ? FarmCommand::controlInFlight($p) : null,
             ];
         });
     }
 
     /**
-     * "Čeká na vás": orders waiting for the admin (to approve, to hand over, failed after payment), minus the ones the
-     * admin cleared from the list and nothing changed on since.
+     * "Čeká na vás": orders waiting for the admin (to approve, to hand over, failed after payment, a print that stopped
+     * and waits for "print again" or "cancel"), minus the ones the admin cleared from the list and nothing changed on since.
      */
     private function attention(): Builder
     {
         return FarmOrder::query()
-            ->where(fn ($q) => $q->where('status', FarmOrder::STATUS_PAID)->orWhere('status', FarmOrder::STATUS_DONE)
+            ->where(fn ($q) => $q->where('status', FarmOrder::STATUS_PAID)->orWhere('status', FarmOrder::STATUS_DONE)->orWhere('status', FarmOrder::STATUS_STOPPED)
                 ->orWhere(fn ($f) => $f->where('status', FarmOrder::STATUS_FAILED)->whereNotNull('paid_at'))
                 // the gateway refused to send money back to the card: somebody must do it by hand (CardRefunds)
                 ->orWhereHas('refunds', fn ($r) => $r->where('status', PaymentRefund::STATUS_FAILED)
@@ -264,6 +270,12 @@ class FarmOrderController extends Controller
         }
         if ($data['to'] === FarmOrder::STATUS_FAILED) {
             $this->flow->fail($order, 'operator', 'admin', $request->user()->id, $data['note'] ?? null);
+        } elseif ($data['to'] === FarmOrder::STATUS_STOPPED) {
+            // stopped by hand (a manual printer, or a print the operator wants off the machine without deciding yet): the
+            // order waits with its money held, a print still running gets a cancel
+            $this->flow->stop($order, 'operator', 'admin', $request->user()->id, $data['note'] ?? null);
+        } elseif ($data['to'] === FarmOrder::STATUS_QUEUED && $order->isStopped()) {
+            $this->flow->reprint($order, $request->user()->id);
         } else {
             if ($data['to'] === FarmOrder::STATUS_PRINTING && ! $order->printJobs()->whereIn('status', FarmPrintJob::ACTIVE)->exists()) {
                 // started by hand: keep a job row so the history and the calibration look the same as with an agent
@@ -285,6 +297,26 @@ class FarmOrderController extends Controller
         }
 
         return back()->with('status', __('farm.admin.saved'));
+    }
+
+    /**
+     * "Vytisknout znovu": a print that stopped (on the printer's screen, by a cancel from its card, by the printer's
+     * failure) goes back to the queue on the operator's word and only so (docs/AL.md §25). It starts at once when its
+     * printer is free with the plate confirmed; the answer says which of the two happened.
+     */
+    public function reprint(Request $request, FarmOrder $order): RedirectResponse
+    {
+        if (! $order->isStopped()) {
+            return back()->with('error', __('farm.admin.bad_transition'));
+        }
+        if (! $order->canMoveTo(FarmOrder::STATUS_QUEUED)) {
+            return back()->with('error', __('farm.admin.stopped.no_files'));
+        }
+        $this->flow->reprint($order, $request->user()->id);
+        $job = $order->refresh()->latestJob();
+        $started = $job && $job->isActive();
+
+        return back()->with('status', __($started ? 'farm.admin.stopped.reprint_started' : 'farm.admin.stopped.reprint_queued', ['number' => $order->number, 'printer' => (string) $order->printer?->name]));
     }
 
     /** Real time and weight after the print: the data the correction factors are calibrated from. */
@@ -408,6 +440,12 @@ class FarmOrderController extends Controller
         }
         if (! $job) {
             return $this->answer($request, false, __('farm.admin.no_job'));
+        }
+        // one pause or resume at a time: the agent carries them out one after another, and a Kobra S1 confirms a resume only
+        // after minutes (F26-000162: three presses, two of them ended as failures while the first was still at work).
+        // A cancel always goes through.
+        if ($data['type'] !== 'cancel' && ($running = FarmCommand::controlInFlight($printer))) {
+            return $this->answer($request, false, __('farm.admin.control.busy_'.$running->type));
         }
         FarmCommand::create(['farm_printer_id' => $printer->id, 'farm_print_job_id' => $job->id, 'type' => $data['type'], 'created_by' => $request->user()->id]);
 

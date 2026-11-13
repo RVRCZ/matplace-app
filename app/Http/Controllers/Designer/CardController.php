@@ -92,7 +92,7 @@ class CardController extends Controller
     {
         $card = $this->cardOf($request, $card);
         // a print on its way still owes this card its reward
-        $busy = FarmOrder::where('designer_model_id', $card->id)->whereIn('status', [FarmOrder::STATUS_PAID, FarmOrder::STATUS_QUEUED, FarmOrder::STATUS_PRINTING])->exists();
+        $busy = FarmOrder::where('designer_model_id', $card->id)->whereIn('status', FarmOrder::STATUSES_OPEN_PAID)->exists();
         if ($busy) {
             return back()->with('error', __('designer.card.busy'));
         }

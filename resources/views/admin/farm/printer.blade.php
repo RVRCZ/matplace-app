@@ -45,9 +45,12 @@
             @if($t)
                 <p class="mt-2 text-xs text-slate-600">@foreach(collect($t)->except([...$dryerKeys, 'message', 'bed_cleared_at']) as $k => $v){{ $k }}: <strong>{{ is_float($v) ? round($v, 1) : $v }}</strong>@if(! $loop->last) · @endif @endforeach</p>
             @endif
-            @if($p->message)
-                {{-- what the printer said last, with its time: the reason of a pause, the screen's text, the ACE's complaint (agent 0.2.9) --}}
-                <p class="mt-1 rounded-lg {{ ($t['message'] ?? '') === $p->message ? 'bg-amber-50 text-amber-900' : 'bg-slate-50 text-slate-600' }} px-2 py-1 text-xs" data-printer-message><span class="font-semibold">{{ __('farm.admin.message') }}</span> {{ $p->message_at?->format('j. n. H:i') }}: {{ $p->message }}</p>
+            @if($mk = \App\Domain\Farm\PrinterStatus::messageKind($p))
+                {{-- what the printer says in its last report, with the time it began to say it: the reason of a pause, the screen's
+                     text, the ACE's complaint. Amber while it is news (or the reason of a pause / an error that lasts), grey once
+                     it has been repeating for long, or when it is the last word of a printer the agent cannot reach. A report
+                     without the words wipes them (docs/AL.md §25). --}}
+                <p class="mt-1 rounded-lg {{ $mk === 'fresh' ? 'bg-amber-50 text-amber-900' : 'bg-slate-50 text-slate-600' }} px-2 py-1 text-xs" data-printer-message="{{ $mk }}"><span class="font-semibold">{{ __('farm.admin.message') }}</span> @if($mk === 'lasting'){{ __('farm.admin.message_lasting') }} @elseif($mk === 'last')({{ __('farm.admin.message_last') }}) @endif{{ $p->message_at?->format('j. n. H:i') }}: {{ $p->message }}</p>
             @endif
             @if($row['command'])
                 @php $c = $row['command']; @endphp
@@ -138,15 +141,27 @@
                     @endif
                     <div class="mt-1 h-2 overflow-hidden rounded-full bg-slate-200"><div class="h-full bg-action" style="width: {{ min(100, $job->progress) }}%"></div></div>
                     @if($p->isAgentDriven())
+                        {{-- a pause or a resume the agent is carrying out: said here, and no second one is offered meanwhile (a Kobra S1
+                             confirms a resume only after minutes; three presses were three commands, F26-000162). The page redraws
+                             itself every 30 s, so the line goes away when the agent has answered. --}}
+                        @php $ctl = $row['control'] ?? null; @endphp
+                        @if($ctl)
+                            <p class="mt-2 rounded-lg bg-action-soft px-2 py-1 text-xs font-semibold text-action-dark" data-control-in-flight="{{ $ctl->type }}" role="status">{{ __('farm.admin.control.'.$ctl->type) }}</p>
+                        @endif
                         <form method="post" action="{{ route('admin.farm.printers.command', $p) }}" data-ajax class="mt-2 flex flex-wrap gap-2">
                             @csrf
-                            <button name="type" value="pause" class="btn-quiet text-sm">{{ __('farm.admin.pause') }}</button>
-                            <button name="type" value="resume" class="btn-quiet text-sm">{{ __('farm.admin.resume') }}</button>
+                            <button name="type" value="pause" class="btn-quiet text-sm" @disabled($ctl)>{{ __('farm.admin.pause') }}</button>
+                            <button name="type" value="resume" class="btn-quiet text-sm" @disabled($ctl)>{{ __('farm.admin.resume') }}</button>
                             <button name="type" value="cancel" class="btn-quiet text-sm text-red-700" onclick="return confirm(@js(__('farm.admin.cancel_confirm')))">{{ __('farm.admin.cancel') }}</button>
                         </form>
                     @endif
                 </div>
             @endif
+
+            {{-- prints that stopped on this printer and wait for the operator's word: not in the queue, nothing starts them (docs/AL.md §25) --}}
+            @foreach(($overview['stopped'] ?? collect()) as $so)
+                <p class="mt-3 rounded-xl bg-amber-50 px-3 py-2 text-sm text-amber-900" data-stopped-order="{{ $so->number }}"><a class="font-semibold underline" href="{{ route('admin.farm.orders.show', $so) }}">{{ $so->number }}</a> · {{ __('farm.admin.stopped.title') }}</p>
+            @endforeach
 
             <h3 class="mt-4 text-sm font-bold">{{ __('farm.admin.queue') }}</h3>
             <ol class="mt-1 space-y-1 text-sm">

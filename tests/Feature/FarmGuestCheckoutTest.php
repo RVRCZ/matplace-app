@@ -280,7 +280,8 @@ class FarmGuestCheckoutTest extends TestCase
         $this->get('/')->assertOk()->assertSee('data-store="'.route('farm.orders.store').'"', false)->assertSee(e(__('farm.cta_hint_guest')), false);
     }
 
-    // ── §2: money back to the card, one automatic reprint ────────────────────────────────────────────────────────────
+    // ── §2: money back to the card, one automatic reprint (since docs/AL.md §25 only for the printer's own failure before
+    //    the first layer, and only when the farm's setting allows it) ────────────────────────────────────────────────────
 
     public function test_a_failed_print_is_printed_again_and_the_second_failure_returns_everything_to_the_card(): void
     {
@@ -289,9 +290,11 @@ class FarmGuestCheckoutTest extends TestCase
         $leftover = round($payment->amount - $total, 2);
         $this->assertEqualsWithDelta($leftover, $this->balance($user), 0.001);
 
-        // the first failure: printed again, the money stays held, the customer hears "we print it again"
+        // the first failure, reported by the agent before anything was printed, with the switch on: printed again, the money
+        // stays held, the customer hears "we print it again"
+        config(['farm.settings.auto_reprint_start' => true]);
         $this->operator($order, 'printing');
-        $this->operator($order, 'failed');
+        app(OrderFlow::class)->fail($order->refresh(), 'print_failed', 'agent');
         $order->refresh();
         $this->assertSame(FarmOrder::STATUS_QUEUED, $order->status);
         $this->assertSame(1, $order->reprints);
@@ -299,14 +302,14 @@ class FarmGuestCheckoutTest extends TestCase
         $this->assertSame([], FakeGateway::$refunds);
         $this->assertSame(0, PaymentRefund::count());
         $this->assertEqualsWithDelta($leftover, $this->balance($user), 0.001, 'the money stays held');
-        $this->assertStringContainsString('automatic reprint 1 after operator', $order->events->pluck('note')->implode(' | '));
+        $this->assertStringContainsString('automatic reprint 1 after print_failed', $order->events->pluck('note')->implode(' | '));
         Mail::assertQueued(FarmOrderStatus::class, fn (FarmOrderStatus $m) => $m->status === FarmOrderStatus::REPRINT && $m->hasTo('host@example.com'));
         Mail::assertNotQueued(FarmOrderStatus::class, fn (FarmOrderStatus $m) => $m->status === FarmOrder::STATUS_FAILED);
         $alert = Mail::queued(FarmAdminAlert::class)->first(fn (FarmAdminAlert $m) => str_contains($m->subjectLine, 'tisk selhal'));
         $this->assertNotNull($alert);
         $this->assertTrue(collect($alert->lines)->contains(fn ($l) => str_contains($l, 'tiskne znovu automaticky')), implode(' | ', $alert->lines));
 
-        // the second failure: the order fails, the whole price (delivery included) goes back to the card
+        // the second failure, said by the operator: the order fails, the whole price (delivery included) goes back to the card
         $this->operator($order, 'printing');
         $this->operator($order, 'failed');
         $order->refresh();

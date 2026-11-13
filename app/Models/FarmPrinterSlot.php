@@ -111,7 +111,7 @@ class FarmPrinterSlot extends Model
     public function reservedGrams(): float
     {
         return (float) FarmOrder::where('farm_printer_slot_id', $this->id)
-            ->whereIn('status', [FarmOrder::STATUS_PAID, FarmOrder::STATUS_QUEUED, FarmOrder::STATUS_PRINTING])
+            ->whereIn('status', FarmOrder::STATUSES_OPEN_PAID)
             ->sum('est_grams');
     }
 

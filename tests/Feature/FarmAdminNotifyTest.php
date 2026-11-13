@@ -224,8 +224,8 @@ class FarmAdminNotifyTest extends TestCase
 
     public function test_a_failed_print_a_failed_start_and_a_customer_s_cancellation_are_problems_told_once(): void
     {
-        // a failure that ends the order at once: the one automatic reprint is FarmGuestCheckoutTest's (docs/AO.md §2)
-        config(['farm.payments.auto_reprint' => false]);
+        // a print the printer failed waits for the operator's word (docs/AL.md §25); the reprint that may still happen on
+        // its own is FarmNoAutoReprintTest's
         [$printer, $auth, $agent] = $this->agentPrinter();
         $this->sync($auth);
         $order = $this->order();
@@ -235,13 +235,13 @@ class FarmAdminNotifyTest extends TestCase
         $this->sync($auth, 'printing', ['id' => $cmd['job_id'], 'status' => 'printing', 'progress' => 5]);
         $this->sync($auth, 'error', ['id' => $cmd['job_id'], 'status' => 'failed', 'progress' => 5, 'message' => 'Heater extruder not heating']);
         $this->sync($auth, 'error', ['id' => $cmd['job_id'], 'status' => 'failed', 'progress' => 5, 'message' => 'Heater extruder not heating']);
-        $this->assertSame(FarmOrder::STATUS_FAILED, $order->refresh()->status);
+        $this->assertSame(FarmOrder::STATUS_STOPPED, $order->refresh()->status);
         $failed = $this->alerts('problem');
         $this->assertCount(1, $failed, 'a failure said twice is one mail');
-        $this->assertSame($order->number.': tisk selhal (print_failed)', $failed[0]->subjectLine);
+        $this->assertSame($order->number.': tisk zastaven, čeká na váš pokyn', $failed[0]->subjectLine);
         $this->assertLine($failed[0], 'Co: tiskárna nahlásila selhání tisku (Heater extruder not heating)');
         $this->assertLine($failed[0], 'Kde: '.$printer->name.', vytištěno 5 %');
-        $this->assertLine($failed[0], 'Co dál: kredit se zákazníkovi vrátil');
+        $this->assertLine($failed[0], 'Co dál: zakázka se sama znovu nespustí, ani po uvolnění podložky');
 
         // a start the agent could not carry out: the subject names the order
         $printer->refresh()->update(['bed_clear' => true, 'state' => FarmPrinter::STATE_IDLE]);
@@ -273,8 +273,6 @@ class FarmAdminNotifyTest extends TestCase
      */
     public function test_a_print_the_printer_gave_no_numbers_for_gets_them_estimated_and_marked(): void
     {
-        // a failure that ends the order at once: the one automatic reprint is FarmGuestCheckoutTest's (docs/AO.md §2)
-        config(['farm.payments.auto_reprint' => false]);
         [$printer, $auth] = $this->agentPrinter();
         $this->sync($auth);
         $this->credit(2000);
@@ -330,7 +328,7 @@ class FarmAdminNotifyTest extends TestCase
         $this->assertSame(20 * 60, $failed->print_duration_s);
         $this->assertNull($failed->filament_used_mm);
         $this->assertTrue($failed->stats_estimated);
-        $this->assertSame(FarmOrder::STATUS_FAILED, $second->refresh()->status);
+        $this->assertSame(FarmOrder::STATUS_STOPPED, $second->refresh()->status, 'a print the printer failed waits for the operator (docs/AL.md §25)');
         $this->travelBack();
     }
 

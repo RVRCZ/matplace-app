@@ -155,11 +155,15 @@ class FarmAgentMessagesTest extends TestCase
         $this->assertSame(FarmPrintJob::STATUS_PRINTING, $job->status);
         $this->assertNull($job->paused_at);
         $this->assertCount(1, $job->messages);
-        $this->assertSame(self::REASON, $printer->refresh()->message, 'an empty report does not wipe the last words');
+        // the printer's card shows only what its last report said (docs/AL.md §25); the reason stays in the job's history
+        $this->assertNull($printer->refresh()->message, 'a report without words ends the message of the printer');
+        $this->assertNull($printer->message_at);
+        $this->assertSame(self::REASON, $job->messages[0]['m']);
 
         // the second pause of the same print (B3 on F26-000108 paused again after the resume) is news again, with its own words
         $this->sync($auth, 'paused', ['id' => $job->id, 'status' => 'paused', 'progress' => 2, 'message' => 'error: typ = WebRequestError, code = 10011719, message = Filament is tangled'], ['message' => 'error: typ = WebRequestError, code = 10011719, message = Filament is tangled']);
-        $this->sync($auth, 'paused', ['id' => $job->id, 'status' => 'paused', 'progress' => 2, 'message' => 'error: typ = WebRequestError, code = 10011719, message = Filament is tangled']);
+        // the agent repeats the printer's words in every report while the pause lasts
+        $this->sync($auth, 'paused', ['id' => $job->id, 'status' => 'paused', 'progress' => 2, 'message' => 'error: typ = WebRequestError, code = 10011719, message = Filament is tangled'], ['message' => 'error: typ = WebRequestError, code = 10011719, message = Filament is tangled']);
         $this->assertCount(2, $this->alerts('paused'));
         $this->assertLine($this->alerts('paused')[1], 'Filament is tangled');
         $job->refresh();

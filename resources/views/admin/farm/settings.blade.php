@@ -100,6 +100,8 @@
         </div>
         <div class="mt-3 flex flex-wrap gap-4 text-sm">
             <label class="flex items-center gap-2"><input type="checkbox" name="require_approval" value="1" @checked($settings['require_approval']) class="h-4 w-4 accent-action"> Každou zaplacenou zakázku před tiskem ručně schválit</label>
+            {{-- docs/AL.md §25: a print that ends unfinished waits for the operator; this one case may go back to the queue on its own --}}
+            <label class="flex items-center gap-2" id="farm-auto-reprint"><input type="checkbox" name="auto_reprint_start" value="1" @checked($settings['auto_reprint_start']) class="h-4 w-4 accent-action"> Selhání tiskárny před první vrstvou (do 1 %): zařadit zakázku jednou znovu do fronty bez pokynu</label>
             @foreach(['packeta_point', 'packeta_home', 'pickup'] as $mode)
                 <label class="flex items-center gap-2"><input type="checkbox" name="delivery_modes[]" value="{{ $mode }}" @checked(in_array($mode, $settings['delivery_modes'])) class="h-4 w-4 accent-action"> {{ __('farm.delivery.'.$mode) }}</label>
             @endforeach

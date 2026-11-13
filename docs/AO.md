@@ -94,6 +94,11 @@ Sloučeno a nasazeno řídící 28. 10. 2026 (main e13180d2, server a31bb2a4).
 
 ## 2. Dávka 3: vrácení peněz na kartu a jeden automatický opakovaný tisk
 
+> **Změna 13. 11. 2026 (`docs/AL.md` §25):** tisk, který skončí na tiskárně nedokončený, už nejde sám znovu do fronty.
+> Zaplacená zakázka čeká ve stavu „Tisk zastaven, čeká na pokyn obsluhy“ (peníze držené) na „Vytisknout znovu“ nebo „Zrušit
+> zakázku“. Samočinné opakování zůstalo jen pro selhání tiskárny před první vrstvou a je v nastavení farmy vypnuté;
+> správcovo „nepodařilo se“ vrací peníze hned. Vracení na kartu se nezměnilo.
+
 ### 2.1 Co se děje
 
 - **Brána umí vracet.** `PaymentGateway::refund(Payment, float $amount, string $reason): string`. Stripe: z Checkout

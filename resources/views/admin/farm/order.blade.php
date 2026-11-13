@@ -16,6 +16,19 @@
     <p class="mt-2 rounded-lg {{ $cancelState === \App\Models\FarmCommand::CANCEL_REFUSED ? 'bg-red-50 text-red-800' : 'bg-amber-50 text-amber-900' }} px-3 py-2 text-sm" data-cancel-state="{{ $cancelState }}"><strong>{{ __('farm.admin.cancel.'.$cancelState) }}</strong> · {{ __('farm.admin.cancel.'.$cancelState.'_hint') }}</p>
 @endif
 @if($order->error)<p class="mt-2 rounded-lg bg-red-50 px-3 py-2 text-sm text-red-800">{{ $order->error }}@if($order->error_detail) · {{ $order->error_detail }}@endif</p>@endif
+@if($order->isStopped())
+    {{-- the print ended on the printer unfinished and the order waits for the operator's word: it never starts again by itself,
+         not even when the plate is confirmed as clear (docs/AL.md §25) --}}
+    <section class="mt-3 rounded-2xl border border-amber-300 bg-amber-50 p-4" data-stopped>
+        <h2 class="font-bold text-amber-900">{{ __('farm.admin.stopped.title') }}</h2>
+        <p class="mt-1 text-sm text-amber-900">{{ __('farm.admin.stopped.text') }}</p>
+        <div class="mt-3 flex flex-wrap gap-2">
+            <form method="post" action="{{ route('admin.farm.orders.reprint', $order) }}">@csrf<button class="btn-primary text-sm" @disabled(! $order->canMoveTo(\App\Models\FarmOrder::STATUS_QUEUED))>{{ __('farm.admin.stopped.reprint') }}</button></form>
+            <form method="post" action="{{ route('admin.farm.orders.status', $order) }}" onsubmit="return confirm(@js(__('farm.admin.stopped.cancel_confirm')))">@csrf<input type="hidden" name="to" value="cancelled"><button class="btn-quiet text-sm text-red-700">{{ __('farm.admin.stopped.cancel') }}</button></form>
+        </div>
+        <p class="mt-2 text-xs text-amber-900">{{ $order->canMoveTo(\App\Models\FarmOrder::STATUS_QUEUED) ? __('farm.admin.stopped.hint', ['printer' => (string) $order->printer?->name]) : __('farm.admin.stopped.no_files') }}</p>
+    </section>
+@endif
 
 <div class="mt-4 grid gap-4 lg:grid-cols-[1.2fr_1fr]">
     <div class="space-y-4">

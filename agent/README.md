@@ -199,7 +199,8 @@ Celý tok od zákazníka po „hotovo“ jde projít se simulovanou tiskárnou:
   `error: typ = WebRequestError, code = 10011710, message = filament hub feed filament timeout`), protože důvod pauzy
   firmware nikde jinde nedává. Kobra X: `err_msg`, příznak pauzy, zavádění filamentu a `msg` posledního hlášení o souboru.
 - Pauza, pokračování a zrušení z adminu: když tiskárna volání odmítne nebo neodpoví (Rinkhals při pokračování nejdřív
-  zavádí filament a volání vyprší), agent až 60 s čte její stav; změněný stav = příkaz splněn, jinak selhal s textem.
+  zavádí filament a volání vyprší), agent čte její stav – u pauzy až 60 s, u pokračování od 0.2.15 až 300 s; změněný
+  stav = příkaz splněn, jinak selhal s textem.
 - Před startem agent ověří stav zvoleného slotu (`filament_hub` u Rinkhals, `multiColorBox` u Kobry X): prázdný slot
   (`empty`, `runout`) = start odmítnutý s důvodem, obsluha doplní cívku a potvrdí podložku znovu. Tiskárna, která stav
   slotů nehlásí, startuje jako dřív a výsledek příkazu to řekne.
@@ -235,6 +236,20 @@ Celý tok od zákazníka po „hotovo“ jde projít se simulovanou tiskárnou:
   ukáže vedle přepínače a upozorní, když si to odporuje; přepínač sám nemění.
 - Filament musí být v hlavě zavedený už před startem (na displeji tiskárny). Skutečný tisk bez ACE nebyl při vývoji
   vyzkoušen (`docs/AL.md` §24.6, `docs/AM.md` §14).
+
+## Jedno pokračování stačí (agent 0.2.15)
+
+- Pokračování po pauze (`resume`) čeká na stav `printing` až **300 s** (`RESUME_WAIT_SECONDS`), ne 60 s. Kobra S1
+  s Rinkhalsem před pokračováním nahřeje trysku a zavede filament a volání `print/resume` mezitím vyprší
+  (`TimeoutError`); 13. 11. 2026 (F26-000162, U2) tak dva příkazy skončily „the printer's state did not change in
+  60 s“ a prošel až třetí. Volání se tiskárně posílá jednou, agent ho neopakuje. Pauza má dál 60 s.
+- Zrušení tisku, které přijde během toho čekání, čekání hned ukončí a provede se (dřív by stálo ve frontě za ním).
+  Pokračování pak skončí větou „a cancel came after N s; the wait for the printer was given up“.
+- Server (od stejné verze) nedovolí poslat druhou pauzu nebo pokračování, dokud agent na první neodpověděl, a na kartě
+  tiskárny píše „Pokračuji…“. Starší server nový agent nepozná: další stisky se zařadí za sebe jako dřív, jen první
+  už neskončí chybou.
+- Zkušební tiskárna: `resume_delay` (vteřiny, po které po pokračování zůstane `paused`; popis v `drivers/mock.py`).
+- Na skutečné tiskárně nevyzkoušeno (`docs/AM.md` §15).
 
 ## Co agent dělá při potížích
 

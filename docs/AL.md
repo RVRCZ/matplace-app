@@ -3481,3 +3481,233 @@ stojí jen na: kódu (`GcodeSlot`, `Dispatcher`, `agent/farm_agent`), `docs/AL.m
   `app/Jobs/PrepareFarmOrder.php`; `config/farm.php`; `routes/web.php`; `resources/views/admin/farm/{printer,printers,
   printer_edit,slots}.blade.php`, `partials/printer_slots.blade.php`; `lang/src/printer_no_changer.json`; agent
   `farm_agent/{__init__,agent}.py`, `drivers/moonraker.py`, `README.md`, `tests/test_direct_spool.py`.
+
+---
+
+## 25. Po zastavení tisku žádný samočinný nový tisk; hlášky tiskáren jen čerstvé; jedno pokračování stačí (13. 11. 2026, fix/no-auto-reprint-after-stop)
+
+Zadání `zadani-farma-po-zastaveni-tisku.md` (Roman po zkoušce agenta 0.2.14 na U2, 13. 11. 2026). Zakázka F26-000162:
+tisk zastavený na displeji tiskárny, podložka uklizená a v administraci uvolněná; v 18:36:28 přišla událost
+`print_cancelled`, hned po ní „automatic reprint 1 after print_cancelled“ a v 18:37:36 nový `start` na U2. Roman:
+„Pokud se zakázka zruší v průběhu tisku a podložka se uklidí, opětovný tisk jen na pokyn admina.“
+Větev z `origin/main` 73bbd5f6, nesloučeno, nenasazeno. **Nic z toho nikdo nezkoušel na skutečné tiskárně** (25.9).
+
+### 25.1 Jak to bylo (pravidla do 13. 11. 2026)
+
+„Automatic reprint“ vznikal na jediném místě, `OrderFlow::fail()` → `printsAgain()` (zavedeno v `docs/AO.md` §2):
+
+- **Kdy:** zaplacená zakázka zákazníka (`kind` print), která ještě nebyla tištěna znovu (`reprints` < 1, tedy **jednou**),
+  soubory nejsou uklizené, `.env` `FARM_AUTO_REPRINT` není vypnuté (výchozí zapnuto) a zakázka byla ve stavu „tiskne se“
+  – nebo „ve frontě“, když selhání hlásil agent (start).
+- **Po jakých důvodech:** `print_failed` (tiskárna nahlásila selhání, nebo agent úlohu ztratil: „the printer no longer
+  reports this print“), **`print_cancelled`** (tisk zastavený na tiskárně, nebo zrušený tlačítkem „Zrušit tisk“ na kartě
+  tiskárny – to ruší tisk, ne zakázku) a **`operator`** (správce označil tisknoucí zakázku jako „nepodařilo se“).
+- **Co se stalo:** zakázka `failed` → hned `queued` („automatic reprint 1 after …“), peníze zůstaly rezervované,
+  zákazník dostal e-mail „tiskneme znovu“, obsluha e-mail o selhání s řádkem „tiskne se znovu automaticky“. Protože
+  start spotřebuje potvrzení podložky, nový tisk se rozjel **v okamžiku, kdy někdo podložku potvrdil** (v administraci,
+  nebo resetem dotištěné úlohy na tiskárně, `telemetry.bed_cleared_at`). Druhé selhání zakázku ukončilo a vrátilo peníze.
+- Tedy přesně případ z 13. 11.: zastavení člověkem bylo „selhání“, zakázka šla do fronty a uvolnění podložky ji spustilo.
+
+Dvě další cesty, které tisk „spustí znovu“, nejsou opakovaný tisk a **zůstávají beze změny**:
+
+- **Start se nepovedl** (agent příkaz `start` odmítl: prázdný slot, tiskárna soubor nevzala; `AgentService::commandResult`):
+  nic se netisklo, zakázka z fronty vůbec neodešla, obsluha dostane e-mail „start selhal“ a zakázka startuje znovu po
+  dalším potvrzení podložky. Stejně `start`, který si agent 10 minut nevzal (`expireStaleStarts`).
+- **Další podložka** vícepodložkové zakázky (`plateFinished` → fronta).
+
+### 25.2 Jak to je teď
+
+**Nový stav zakázky `stopped` – „Tisk zastaven, čeká na pokyn obsluhy“** (`FarmOrder::STATUS_STOPPED`). Bez migrace:
+slovo má 7 znaků, sloupce `farm_orders.status` a `farm_order_events.from/to` mají 20 (`FarmStatusColumnsTest` bere stavy
+z `FarmOrder::TRANSITIONS`, nový stav v něm tedy je a prochází).
+
+| Co se stalo | Dřív | Teď |
+|---|---|---|
+| Tisk zastavený na tiskárně (agent hlásí úlohu `cancelled`) | 1× znovu sám, pak selhání a peníze zpět | `stopped`, čeká na pokyn |
+| „Zrušit tisk“ na kartě tiskárny (ruší tisk, ne zakázku) | 1× znovu sám | `stopped`, čeká na pokyn |
+| Tiskárna nahlásila selhání / agent tisk ztratil (`print_failed`) | 1× znovu sám, pak selhání a peníze zpět | `stopped`, čeká na pokyn; výjimka je přepínač v 25.3 |
+| Správce dá tisknoucí zakázce stav „Nepodařilo se“ (`operator`) | 1× znovu sama | `failed`, peníze zpět hned (rozhodl člověk) |
+| Zákazník zruší zakázku / správce dá stav „Zrušeno“ | `cancelled`, konec | beze změny |
+| Zkušební a ukázkové tisky farmy (`kind` test, showcase), neplacené | `failed` | beze změny |
+
+Ve stavu `stopped`:
+
+- **Nic ji nespustí.** Fronta (`Dispatcher::kick`) bere jen zakázky ve stavu `queued`; uvolnění podložky v administraci
+  ani potvrzení na tiskárně tedy zastavenou zakázku nerozjede. Další zakázky ve frontě téže tiskárny po potvrzení
+  podložky běží normálně dál.
+- **Peníze zůstávají rezervované** (nic se nevrací ani nestrhává), filament zůstává zakázce rezervovaný
+  (`FarmPrinterSlot::reservedGrams`), soubory se neuklízejí (stav není mezi uzavřenými v `OrderFiles`).
+- **Obsluha:** e-mail druhu `problem` (přepínač `notify_problem`, `alertAdmin`) „F26-…: tisk zastaven, čeká na váš
+  pokyn“ s důvodem (i slovy tiskárny), tiskárnou a procenty a s řádkem „sama se znovu nespustí, ani po uvolnění
+  podložky“. Zakázka je v seznamu „Čeká na vás“, na řádku své tiskárny v přehledu, na detailu tiskárny a ve filtru
+  stavu v seznamu zakázek.
+- **Stránka zakázky v administraci:** žlutý rámeček „Tisk zastaven, čeká na váš pokyn“ se dvěma tlačítky:
+  - **Vytisknout znovu** (`POST /admin/farm/orders/{order}/reprint`, `OrderFlow::reprint`): zakázka jde do fronty své
+    tiskárny (`reprints` + 1, v historii „reprint 1 on the word of the operator“, zákazník dostane e-mail „tiskneme
+    znovu“). Spustí se hned, když je tiskárna volná a podložka potvrzená; jinak až to tak bude – hláška po kliknutí
+    řekne, co z toho nastalo. Tiskne se podložka, která se zastavila. Počet takových pokynů není omezen.
+    Když už jsou soubory zakázky uklizené, tlačítko je vypnuté s vysvětlením.
+  - **Zrušit zakázku** (dnešní `POST …/status` s `to=cancelled`, s potvrzením): zakázka `cancelled`, zákazníkovi se
+    vrátí **celá částka** – na kartu, pokud platil kartou (`CardRefunds`, důvod `cancelled`), jinak do kreditu. Nic se
+    nestrhává za vytištěnou část: ta se podle dnešních pravidel účtuje jen při zrušení **běžícího** tisku, a tady tisk
+    zastavila farma (dřív by taková zakázka skončila jako selhaná, také s plným vrácením).
+  - Obecný formulář „Změnit stav“ nabízí ze `stopped` totéž (Ve frontě = vytisknout znovu, Zrušeno, Nepodařilo se)
+    a u tisknoucí zakázky nově i stav „Tisk zastaven“: zakázka čeká, tisk na tiskárně dostane příkaz `cancel`
+    (pro ruční tiskárnu a pro „sundat z tiskárny a rozhodnout později“).
+- **Zákazník:** stav „Tisk zastaven, čeká na pokyn obsluhy“ a věta „Tisk se zastavil a teď se netiskne. Obsluha farmy
+  rozhodne, zda ho vytiskne znovu…, platba zůstává rezervovaná; pokud tisk nedokončíme, vrátíme ji celou.“ Bez časů
+  začátku a konce, bez pruhu průběhu, bez řádku „Tisk“ v časové ose, bez textu selhání („kredit jsme vám vrátili“ by
+  nebyla pravda). E-mail „Zakázka …: tisk se zastavil“ se stejným obsahem; e-mail „nepodařilo se“ nechodí. Zakázka je
+  mezi „rozpracovanými“ v Moje tisky a zákazník ji může sám zrušit (celá částka zpět).
+
+### 25.3 Přepínač: selhání tiskárny před první vrstvou
+
+Samočinné opakování zůstalo v jediném případě a je **vypnuté, dokud ho správce nezapne**: `/admin/farm/settings`,
+zaškrtávátko „Selhání tiskárny před první vrstvou (do 1 %): zařadit zakázku jednou znovu do fronty bez pokynu“
+(`farm_settings.auto_reprint_start`, výchozí `false` v `config/farm.php`). Platí jen když zároveň:
+
+- důvod je `print_failed` hlášený agentem (tiskárna sama; nikdy `print_cancelled`, nikdy správcovo „nepodařilo se“),
+- selhaná úloha je pod 1 % (`OrderFlow::AUTO_REPRINT_BELOW_PERCENT`; nic podstatného na podložce),
+- zakázka je zaplacená zakázka zákazníka, ještě nebyla tištěna znovu (jednou), soubory má,
+- `.env` `FARM_AUTO_REPRINT` není `false` (zůstává jako tvrdý vypínač nad nastavením; výchozí `true`).
+
+Pak jako dřív: `failed` → `queued`, „automatic reprint 1 after print_failed“, e-mail zákazníkovi „tiskneme znovu“ a
+tisk začne **po potvrzení podložky**. Druhé selhání už čeká na pokyn (`stopped`). Proč výchozí „vypnuto“: ze zadání
+(„pokud si nejsi jistý, žádné samočinné opakování“) a protože `print_failed` umí být i zastavení člověkem v přestrojení
+(agent po osmi hlášeních bez souboru napíše „the printer no longer reports this print“).
+
+**Pozor při nasazení:** dnes je samočinné opakování na produkci zapnuté (výchozí `FARM_AUTO_REPRINT`). Po nasazení
+je vypnuté i pro selhání při startu, dokud Roman přepínač nezaškrtne.
+
+### 25.4 Hlášky tiskáren jen čerstvé
+
+**Jak to bylo:** agent posílá `telemetry.message` v každém hlášení, dokud věc trvá (každý ovladač ji skládá ze stavu
+tiskárny v tu chvíli: `moonraker` z M117, `print_stats.message`, stavu ACE a slotů, při pauze a chybě z konzole;
+`prusalink` jen ve stavu `ATTENTION`/`ERROR`; `anycubic_lan` z `err_msg`, příznaku pauzy a posledního `print/report`).
+Server (`AgentService::printerMessage`) slova uložil, když se změnila, a **hlášení bez slov je nemazalo** („čas řekne,
+jak jsou stará“). Detail tiskárny je pak ukazoval pořád: u Prusy „the printer waits for a touch on its screen…“ z 8. 11.
+ještě 13. 11. při tisku, u U1 „ACE busy · ACE slot 2 unwinding“ z 12. 11.
+
+**Pravidlo teď:**
+
+1. **Řádek tiskárny drží jen to, co řeklo její poslední hlášení.** Nová slova se uloží s časem, stejná slova si nechají
+   čas, kdy zazněla poprvé (`message_at` = „od kdy“), a **hlášení dosažitelné tiskárny bez slov je smaže**. Tím je
+   pokrytá i změna stavu tiskárny: hlášení, které nový stav přináší, slova buď zopakuje, nebo je ukončí. Zdůvodnění:
+   slova nejsou událost, ale popis stavu, který ovladač skládá při každém čtení znovu; co v posledním čtení není, už
+   neplatí. Historie se tím neztrácí – slova, se kterými tisk stál nebo selhal, zůstávají u úlohy
+   (`FarmPrintJob::noteMessage`, posledních 20 s časem; stránka zakázky a karta úlohy), což byl důvod původního
+   „nemazat“ (F26-000108).
+2. **Tiskárna, na kterou agent nevidí** (`offline`), se neptá: její poslední slova zůstanou, na detailu šedě s poznámkou
+   „poslední před výpadkem spojení“.
+3. **Co trvá dlouho, není novinka.** Hláška, kterou tiskárna opakuje déle než 30 minut
+   (`PrinterStatus::MESSAGE_FRESH_MINUTES`) a přitom nestojí v pauze ani v chybě, už z tiskárny v přehledu nedělá
+   „Problém“; na detailu je šedě „trvá od 12. 11. 14:02“. V pauze a chybě hláška zůstává důvodem stavu bez ohledu na
+   stáří. Důvod: přehled ukazoval U1 jako problém kvůli „ACE busy · slot 2 unwinding“ den po události. Jestli ho ACE
+   opravdu pořád hlásí (pak pomáhá bod 3), nebo šlo o starý řádek (pak bod 1), z kódu poznat nejde – viz 25.9.
+
+Při nasazení nic zvlášť: staré hlášky zmizí s prvním hlášením agenta po nasazení.
+
+### 25.5 Pokračování po pauze: jeden příkaz
+
+13. 11. šly tři příkazy `resume` (18:26:19, 18:26:59, 18:27:40): první dva skončily „TimeoutError; the printer's state
+did not change in 60 s“, třetí „confirmed by the printer's state after 25 s“. Agent provádí příkazy jedné tiskárny po
+sobě (volání má limit 15 s, pak 60 s čtení stavu), takže tisk se rozběhl zhruba tři minuty po prvním stisku; mezitím
+administrace dvakrát napsala „selhal“.
+
+- **Agent 0.2.15** (`docs/AM.md` §15): `resume` čeká na stav `printing` až 300 s (pauza dál 60 s), volání tiskárně
+  posílá jednou a neopakuje; zrušení tisku, které přijde mezitím, čekání hned ukončí a provede se.
+- **Server:** dokud agent na pauzu nebo pokračování neodpověděl (`FarmCommand::controlInFlight`: poslední příkaz
+  tiskárny je `pause`/`resume` ve stavu „čeká na agenta“ nebo „u agenta“, nejdéle 10 minut), karta tiskárny píše
+  „Pokračuji… čeká se na potvrzení tiskárny. Tiskárna nejdřív nahřeje trysku a zavede filament, může to trvat i několik
+  minut.“, tlačítka Pauza a Pokračovat jsou vypnutá a další takový příkaz server odmítne (422 s větou). **Zrušit tisk
+  jde vždy.** Stránka se překresluje sama po 30 s, řádek zmizí s odpovědí agenta. Výsledek je česky („Hotovo: tiskárna
+  to potvrdila svým stavem po 185 s…“, „Čekání na tiskárnu skončilo po 42 s, protože přišlo zrušení tisku.“).
+- **Kompatibilita oběma směry:** nový server + starý agent (0.2.9 na farmě B, 0.2.14 na farmě U): druhý stisk nejde
+  poslat, ale první příkaz může po 60 s dál skončit „selhal“, přestože tiskárna pokračuje – pak jde poslat další.
+  Starý server + nový agent: první příkaz čeká 300 s a neselže; další stisky se zařadí za něj jako dřív.
+
+### 25.6 F26-000163 na Kobře X: „Channel 4 filament exhausted (code 11858)“ – co farma dělá (jen z kódu, nic neopraveno)
+
+Podle poznámky řídícího tiskárna zůstala **v pauze** na vrstvě 31 ze 105 (cívka ACE 2, pozice 4). To je tato cesta:
+
+- Ovladač `anycubic_lan` si text a kód z hlášení `print/report` zapamatuje (`_heard` → `_said`) a přidá ho do
+  `telemetry.message` a do `job.message`, dokud tiskárna jmenuje stejný soubor. Kód 11858 ovladač nezná jménem, bere
+  ho jako každé jiné `msg (code N)`.
+- Když tiskárna při tom stojí s příznakem pauzy (`project.pause` 1/2), agent hlásí úlohu `paused`. Server: úloha
+  `paused`, **zakázka zůstává „Tiskne se“** (zákazník nic nedostane), obsluha dostane **jeden e-mail „pozastavila tisk“**
+  (druh `paused`, přepínač `notify_paused`) s hláškou jako důvodem a s „Co dál: podívejte se na tiskárnu a cívku.
+  Pokračovat jde na displeji nebo tlačítkem Pokračovat“. Přehled ukazuje tiskárnu jako „Problém“ s hláškou; hláška je
+  v historii úlohy.
+- **Po doplnění cívky** se nic nestane samo: pokračuje se na displeji tiskárny nebo tlačítkem Pokračovat (agent pošle
+  `print resume`, od 0.2.15 čeká na stav až 300 s). Jakmile agent hlásí `printing`, pauza se uzavře (doba pauzy se
+  odečte ze statistiky) a tisk běží dál; další e-mail přijde až při další pauze.
+- Kdyby tiskárna úlohu místo pauzy ukončila (`failed`/`stoped`), byla by to od této větve zakázka `stopped` (25.2).
+- **Co farma nedělá:** nepřepne na jinou cívku, neupraví zůstatek cívky (v systému 996 g žluté PLA+, ve skutečnosti
+  prázdná – `remaining_g` se odečítá jen po dotištění z odhadu nebo z naměřených gramů) a nepřestane tu pozici nabízet
+  dalším zakázkám, dokud ji někdo neopraví ve filamentech tiskárny. Před **startem** agent pozici kontroluje
+  (`slot_status`), ale u Kobry X jen podle čísla stavu `multiColorBox`; co hlásí u prázdné pozice, nikdo neověřil
+  (`docs/AM.md` §10c), takže start z prázdné pozice dnes neodmítne.
+
+### 25.7 Testy
+
+- `tests/Feature/FarmNoAutoReprintTest.php` (21 testů): zastavení na tiskárně → `stopped`, peníze drženy, e-maily,
+  uvolnění podložky v administraci ani potvrzení z tiskárny nic nespustí, stránka zákazníka a administrace; další
+  zakázka fronty běží, zastavená zůstává; „Zrušit tisk“ z karty tiskárny; „Vytisknout znovu“ (podložka nepotvrzená →
+  fronta → po potvrzení start → dotištěno; podložka potvrzená → start hned; druhý stisk nic); zakázka zastavená
+  dvakrát; „Zrušit zakázku“ a zrušení zákazníkem (celá částka zpět, žádný příkaz tiskárně); selhání tiskárny při
+  vypnutém přepínači; zapnutý přepínač (0 % → fronta jednou, podruhé čeká; zastavení člověkem a selhání ve 40 % nikdy);
+  tvrdý vypínač `.env`; přepínač ve formuláři nastavení; správcovo „nepodařilo se“ a ruční „Tisk zastaven“ s příkazem
+  `cancel`; zkušební tisk farmy selže jako dřív; hlášky (čerstvá, trvající, smazaná, při pauze, poslední před výpadkem,
+  důvod pauzy zůstává u úlohy); pokračování (druhý stisk odmítnut, karta, odpověď agenta, zrušení projde, 10 minut,
+  české věty); texty ve třech jazycích.
+- Upravené testy, které popisovaly staré chování: `FarmGuestCheckoutTest` (§2: jeden automatický tisk – teď s přepínačem
+  a důvodem `print_failed` od agenta; druhé selhání říká správce), `FarmAgentMessagesTest` (hlášení bez slov hlášku
+  tiskárny maže, u úlohy zůstává), `FarmAdminNotifyTest` (dva testy) a `FarmOrderFlowTest` (dva testy): selhání na
+  tiskárně končí `stopped` s drženým kreditem a e-mailem „tisk zastaven“, ne `failed` s vráceným.
+- Agent: `agent/tests/test_resume_wait.py` (6 testů), celá sada 156 testů OK (`python -m unittest discover -s tests`).
+- `FarmStatusColumnsTest` prochází s novým stavem; `pint --dirty`, `npx tsc --noEmit -p .`, `npm run build`,
+  `scripts/check_order_timeline.mjs`.
+
+### 25.8 Nasazení
+
+- **Žádná migrace**, žádná změna `.env`. Texty `lang/src/no_auto_reprint.json` → `lang/{cs,en,es}.json`, pohledy
+  (`view:clear`), **build** (změna v `resources/js/calc/farm.ts` a `order_timeline.ts`), nová adresa
+  `admin.farm.orders.reprint` (`route:cache` jako vždy).
+- **Agent 0.2.15** instaluje Roman ručně na PC farem (`docs/AM.md` §15); pořadí se serverem je volné.
+- Po nasazení: samočinné opakování je vypnuté (25.3); zakázky, které jsou v tu chvíli ve frontě po dřívějším
+  „automatic reprint“, ve frontě zůstanou a po potvrzení podložky se vytisknou – **před nasazením se podívat, jestli
+  taková není**.
+
+### 25.9 Neověřeno – žádná skutečná tiskárna
+
+Tiskárny, agent na farmě ani produkce nebyly osloveny. Závěry stojí na kódu, na časové ose incidentu ze zadání, na
+`docs/AM.md` §10 a §13 a na testech proti zkušební tiskárně.
+
+1. **Stačí Kobře S1 jedno `resume`?** Časová osa sedí na „tiskárna pokračovala asi tři minuty po prvním volání a další
+   dvě volání jen čekala ve frontě“ (pak 300 s stačí), ale stejně dobře na „zabralo až třetí volání“. V druhém případě
+   první příkaz po 300 s selže a bude potřeba volání opakovat (agent to dnes záměrně nedělá). První zkouška: jedna
+   pauza, jeden stisk Pokračovat, číst „Poslední příkaz“ a `agent.log`.
+2. Jak dlouho S1 po `resume` drží stav `paused` (nahřátí, zavedení z ACE) – 300 s je odhad s rezervou.
+3. Jaký stav hlásí S1 po zastavení na displeji: `cancelled` (pak `print_cancelled` hned, jako 13. 11. v 18:36), nebo
+   `paused` (11. 11.) – v druhém případě zakázka zůstane „Tiskne se“ s pozastavenou úlohou, dokud ji někdo nezruší;
+   samočinně se nespustí ani tak.
+4. Zda U1 hlášku „ACE busy · ACE slot 2 unwinding“ opravdu stále posílá (25.4 bod 3), a zda Prusa po doteku stav
+   `ATTENTION` opouští hned.
+5. Kobra X a kód 11858: že tiskárna po doplnění cívky a `resume` opravdu pokračuje z téže pozice (25.6); čteno jen z kódu.
+
+### 25.10 Otevřené otázky a soubory
+
+- Má zrušení zastavené zakázky umět nechat část ceny (vytištěný podíl), když si zastavení vyžádal zákazník? Dnes vždy
+  celá částka zpět.
+- Zastavená zakázka drží peníze zákazníka, dokud správce nerozhodne. Připomínat ji e-mailem po N hodinách?
+- Chce Roman přepínač z 25.3 zapnout (selhání startu), případně rozšířit i na selhání uprostřed tisku?
+- Má „Vytisknout znovu“ umět zvolit jinou tiskárnu nebo cívku? Dnes stejná tiskárna a stejný soubor.
+- Zákazník ve stavu `stopped` nevidí důvod (jen že se netiskne). Stačí to?
+
+**Soubory:** `app/Models/{FarmOrder,FarmCommand,FarmPrinterSlot}.php`; `app/Domain/Farm/{OrderFlow,AgentService,
+PrinterStatus,Wallet}.php`; `app/Http/Controllers/Admin/{FarmOrderController,FarmCatalogController}.php`,
+`Farm/OrderController.php`, `Designer/CardController.php`; `app/Mail/FarmOrderStatus.php`; `config/farm.php`;
+`routes/web.php`; `resources/views/admin/farm/{order,overview,printer,settings}.blade.php`;
+`resources/js/calc/{farm,order_timeline}.ts`; `lang/src/no_auto_reprint.json` (+ `lang/{cs,en,es}.json`);
+`tests/Feature/FarmNoAutoReprintTest.php`, upravené `tests/Feature/{FarmGuestCheckoutTest,FarmAgentMessagesTest,FarmAdminNotifyTest,FarmOrderFlowTest}.php`; agent `farm_agent/{__init__,agent}.py`, `drivers/mock.py`,
+`README.md`, `tests/{test_resume_wait,test_messages_files}.py`.

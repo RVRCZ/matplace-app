@@ -44,6 +44,12 @@ ERROR_AFTER_POLLS = 12          # an "error" of our print is believed after this
 # all the same: F26-000108, 29 Oct 2026)
 CONFIRM_WAIT_SECONDS = 60.0
 CONFIRM_POLL_SECONDS = 2.0
+# a resume gets longer: a Kobra S1 under Rinkhals heats the nozzle and feeds the filament before it prints on, and its
+# print/resume call runs into the limit meanwhile. On F26-000162 (U2, 13 Nov 2026) the state was still "paused" 60 s
+# after the first call and after the second; the print went on about three minutes after the first press, and two
+# commands had been booked as failed by then. One command has to be enough, so it waits this long - and a cancel that
+# comes meanwhile ends the wait at once (PrinterWorker.interrupt), it never queues behind it.
+RESUME_WAIT_SECONDS = 300.0
 # cancel: how long the second step (the driver's cancel_fallback) has to show in the printer's state, and how long
 # the heaters get to go off by themselves after a cancelled print before the agent switches them off
 FALLBACK_WAIT_SECONDS = 20.0
@@ -145,6 +151,7 @@ class PrinterWorker:
         self.last_head: Optional[tuple] = None   # last position away from the park position
         self.burst: Optional[asyncio.Task] = None     # planned-position printers: pictures around one stop
         self.dirty = False              # tracked state changed and is not on disk yet
+        self.interrupt = asyncio.Event()    # a cancel has arrived: a pause or a resume waiting for the printer's state gives up
 
     async def report(self) -> dict:
         status = await self.driver.status()
@@ -246,6 +253,10 @@ class Agent:
         for cmd in answer.get("commands", []):
             worker = self.workers.get(cmd.get("printer"))
             if worker:
+                if cmd.get("type") == "cancel":
+                    # a resume may be waiting minutes for the printer (RESUME_WAIT_SECONDS) and holds the printer's lock:
+                    # the cancel must not wait behind it
+                    worker.interrupt.set()
                 task = asyncio.create_task(self._execute(worker, cmd))
                 self._tasks.add(task)
                 task.add_done_callback(self._tasks.discard)
@@ -352,6 +363,8 @@ class Agent:
                 if kind == "start":
                     message = await self._start(w, cmd)
                 elif kind in ("pause", "resume", "cancel"):
+                    if kind == "cancel":
+                        w.interrupt.clear()     # this cancel has the printer now; whatever waited before it has given up
                     message = await self._control(w, kind, cmd.get("job_id"))
                 elif kind == "reset":
                     await w.driver.reset()
@@ -438,23 +451,38 @@ class Agent:
         if said is None:
             return ""
         wanted = {"pause": lambda st: st.state == PAUSED, "resume": lambda st: st.state == PRINTING}[kind]
-        log.warning("%s: %s said %s, watching the printer's state for %.0f s", w.key, kind, said, CONFIRM_WAIT_SECONDS)
-        took, _ = await self._watch(w, wanted, CONFIRM_WAIT_SECONDS)
+        wait = RESUME_WAIT_SECONDS if kind == "resume" else CONFIRM_WAIT_SECONDS
+        log.warning("%s: %s said %s, watching the printer's state for %.0f s", w.key, kind, said, wait)
+        started = time.monotonic()
+        took, _ = await self._watch(w, wanted, wait, interrupt=w.interrupt)
         if took is None:
-            raise DriverError(f"{said}; the printer's state did not change in {CONFIRM_WAIT_SECONDS:.0f} s")
+            if w.interrupt.is_set():
+                # the sentence's end is what the server words for the operator (FarmCommand::resultText)
+                raise DriverError(f"{said[:SAID_LIMIT]}; a cancel came after {time.monotonic() - started:.0f} s; the wait for the printer was given up")
+            raise DriverError(f"{said}; the printer's state did not change in {wait:.0f} s")
         log.info("%s: %s confirmed by the printer's state after %.0f s", w.key, kind, took)
         return f"confirmed by the printer's state after {took:.0f} s; the call itself said: {said}"
 
-    async def _watch(self, w: PrinterWorker, wanted, seconds: float, at_once: bool = False) -> tuple:
+    async def _watch(self, w: PrinterWorker, wanted, seconds: float, at_once: bool = False, interrupt: Optional[asyncio.Event] = None) -> tuple:
         """Reads the printer's state every CONFIRM_POLL_SECONDS until `wanted` holds or `seconds` are over; with
-        `at_once` the first look comes before the first wait. Returns (seconds it took or None, the last status that
-        was not offline or None)."""
+        `at_once` the first look comes before the first wait. An `interrupt` that is set ends the watch at once (a
+        cancel came while a pause or a resume waited). Returns (seconds it took or None, the last status that was not
+        offline or None)."""
         started = time.monotonic()
         last = None
         first = at_once
         while first or time.monotonic() - started < seconds:
+            if interrupt is not None and interrupt.is_set():
+                break
             if not first:
-                await asyncio.sleep(CONFIRM_POLL_SECONDS)
+                if interrupt is None:
+                    await asyncio.sleep(CONFIRM_POLL_SECONDS)
+                else:
+                    try:
+                        await asyncio.wait_for(interrupt.wait(), timeout=CONFIRM_POLL_SECONDS)
+                        break
+                    except asyncio.TimeoutError:
+                        pass
             first = False
             now = await w.driver.status()
             if now.state == OFFLINE:
