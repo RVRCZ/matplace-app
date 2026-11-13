@@ -67,7 +67,7 @@ final class Palette
             $colors = FarmColor::with('material')->where('enabled', true)->whereNotNull('code')->whereNotNull('hex')
                 ->whereHas('material', fn ($m) => $m->where('enabled', true))->orderBy('sort')->orderBy('id')->get();
             // the spools sitting in a slot of a machine of the farm right now: what the farm's page can offer
-            $loaded = FarmPrinterSlot::query()->where('enabled', true)->whereNotNull('farm_color_id')
+            $loaded = FarmPrinterSlot::query()->fed()->where('enabled', true)->whereNotNull('farm_color_id')
                 ->whereHas('printer', fn ($q) => $q->where('enabled', true))->pluck('farm_color_id')->map(fn ($id) => (int) $id)->flip();
             foreach ($colors as $c) {
                 if (! preg_match('/^#[0-9a-fA-F]{6}$/', (string) $c->hex)) {

@@ -1,0 +1,82 @@
+{
+    "farm.position.direct": [
+        "Přímá cívka",
+        "Direct spool",
+        "Bobina directa"
+    ],
+    "farm.admin.changer.on": [
+        "Měnič (ACE) připojen",
+        "Changer (ACE) attached",
+        "Cambiador (ACE) conectado"
+    ],
+    "farm.admin.changer.off": [
+        "Měnič (ACE) sundaný: tiskne se jen z přímé cívky",
+        "Changer (ACE) taken off: printing from the direct spool only",
+        "Cambiador (ACE) retirado: solo se imprime desde la bobina directa"
+    ],
+    "farm.admin.changer.detach": [
+        "Měnič je sundaný",
+        "The changer is off",
+        "El cambiador está retirado"
+    ],
+    "farm.admin.changer.attach": [
+        "Měnič je zpátky",
+        "The changer is back",
+        "El cambiador ha vuelto"
+    ],
+    "farm.admin.changer.on_hint": [
+        "Nabízejí se cívky ze všech pozic měniče. Když ACE z tiskárny sundáte, přepněte: nabídne se jen přímo vedená cívka v pozici 1 a pozice měniče zůstanou uložené, jak jsou.",
+        "Spools of every position of the changer are offered. When you take the ACE off the printer, switch this: only the directly fed spool in position 1 is offered and the changer's positions stay saved as they are.",
+        "Se ofrecen las bobinas de todas las posiciones del cambiador. Cuando retire el ACE de la impresora, cambie esto: solo se ofrece la bobina guiada directamente en la posición 1 y las posiciones del cambiador quedan guardadas tal como están."
+    ],
+    "farm.admin.changer.off_hint": [
+        "Nabízí se a tiskne jen přímo vedená cívka v pozici 1 a jeden tisk má jednu barvu. Do přímé cívky jde založit i druh „jen z přímo vedené cívky“ (třeba svítící) a tiskárna z něj tiskne sama. Ostatní pozice zůstávají uložené a vrátí se, až přepnete zpět.",
+        "Only the directly fed spool in position 1 is offered and printed, and one print takes one colour. A kind marked \"only from a directly fed spool\" (glow-in-the-dark, for one) can be loaded into the direct spool and the printer prints from it by itself. The other positions stay saved and come back when you switch back.",
+        "Solo se ofrece y se imprime la bobina guiada directamente en la posición 1, y una impresión lleva un solo color. En la bobina directa se puede cargar también un tipo marcado «solo desde bobina guiada directamente» (por ejemplo el luminoso) y la impresora imprime de él sola. Las demás posiciones quedan guardadas y vuelven cuando cambie de nuevo."
+    ],
+    "farm.admin.changer.detached_row": [
+        "Pozice měniče, který na tiskárně teď není: nenabízí se a netiskne se z ní. Vrátí se, až měnič přepnete zpět.",
+        "A position of the changer that is not on the printer now: it is not offered and nothing prints from it. It comes back when you switch the changer back on.",
+        "Posición del cambiador que ahora no está en la impresora: no se ofrece y no se imprime desde ella. Vuelve cuando active de nuevo el cambiador."
+    ],
+    "farm.admin.changer.short_off": [
+        "bez měniče",
+        "no changer",
+        "sin cambiador"
+    ],
+    "farm.admin.changer.reported_yes": [
+        "Tiskárna hlásí: ACE připojené.",
+        "The printer reports: an ACE is connected.",
+        "La impresora informa: hay un ACE conectado."
+    ],
+    "farm.admin.changer.reported_no": [
+        "Tiskárna hlásí: žádné ACE.",
+        "The printer reports: no ACE.",
+        "La impresora informa: ningún ACE."
+    ],
+    "farm.admin.changer.mismatch": [
+        "To nesedí s přepínačem. Podívejte se na tiskárnu a přepněte sami; přepínač se sám nemění.",
+        "That does not match the switch. Look at the printer and switch it yourself; the switch never changes by itself.",
+        "Eso no coincide con el interruptor. Mire la impresora y cámbielo usted; el interruptor nunca cambia solo."
+    ],
+    "farm.admin.changer.now_on": [
+        ":printer: měnič je připojen, nabízejí se zase všechny pozice.",
+        ":printer: the changer is attached, every position is offered again.",
+        ":printer: el cambiador está conectado, se ofrecen de nuevo todas las posiciones."
+    ],
+    "farm.admin.changer.now_off": [
+        ":printer: měnič je sundaný, nabízí se jen přímá cívka.",
+        ":printer: the changer is off, only the direct spool is offered.",
+        ":printer: el cambiador está retirado, solo se ofrece la bobina directa."
+    ],
+    "farm.admin.changer.not_here": [
+        ":printer nemá měnič, který jde sundat.",
+        ":printer has no changer that comes off.",
+        ":printer no tiene un cambiador que se pueda retirar."
+    ],
+    "farm.admin.changer.orders_wait": [
+        "Na měnič čekají zakázky, které bez něj vytisknout nejdou: :orders. Vraťte měnič, nebo je zrušte.",
+        "Orders that cannot print without the changer are waiting for it: :orders. Put the changer back, or cancel them.",
+        "Hay pedidos que no se pueden imprimir sin el cambiador y lo esperan: :orders. Vuelva a poner el cambiador o cancélelos."
+    ]
+}

@@ -3319,3 +3319,165 @@ které tahle kapitola nechala otevřené. Body výše platí s těmito změnami:
 - **Odstávka je na stránce nástroje jednou (mění řádek „Stránky nástrojů“ v 23.4).** Věta pod tlačítky zůstává; první
   otázka „Kdy začne tisk?“ v „Než objednáte“ a ve strukturovaných datech FAQPage je pryč (`LandingPage::order()` se se
   stavem nemění). Klíč `farm.state.pause.faq_q` ve slovníku zůstal nepoužitý.
+
+---
+
+## 24. Tiskárna bez měniče: ACE sundané, nabízí se jen přímá cívka (13. 11. 2026, feature/printer-no-changer)
+
+Zadání `zadani-tiskarna-bez-menice.md` (Roman, 13. 11. 2026): B6 (farma B, Kobra S1 přes agenta) nemá ACE, jen přímo
+vedenou cívku svítící zelené (`17_PLA_Lumious_Green`, druh `manual_only`). „Měnič mohu sundat kdykoli i z jiných tiskáren
+a mělo by se vypnout nabízení cívek z ACE a nabízet jen přímá cívka.“ Větev z `origin/main` 7dc7f357, nesloučeno,
+nenasazeno. **Nic z toho nebylo vytištěno: co udělá skutečná Kobra S1 bez ACE, je neověřené (24.6).**
+
+### 24.1 Přepínač
+
+- Sloupec **`farm_printers.changer_attached`** (bool, výchozí true; migrace `2026_11_13_100000`). Nasazením se nic
+  nezmění, dokud ho někdo nepřepne.
+- **Kde:** detail tiskárny (`/admin/farm/printers/{id}/detail`), rámeček nad filamenty: „Měnič (ACE) připojen“ + tlačítko
+  **„Měnič je sundaný“**; ve vypnutém stavu „Měnič (ACE) sundaný: tiskne se jen z přímé cívky“ + **„Měnič je zpátky“**.
+  Jedno kliknutí, `POST /admin/farm/printers/{printer}/changer` (`FarmCatalogController::setChanger`, `attached=0|1`).
+  V nastavení tiskárny je ve vypnutém stavu jen upozornění s odkazem na detail.
+- **Řádky pozic se nemažou ani nemění.** Vypnutí nesáhne na `farm_printer_slots` (barva, gramy, zaškrtnutí „nabízet“,
+  název); po zapnutí platí hned zase vše. Test porovnává řádky před a po.
+- **Které stroje přepínač mají** (`FarmPrinter::hasDetachableChanger()`, podle profilu stroje jako `SpoolPositions`):
+  Kobra S1 a Kobra 3 Max (ACE se odpojí a stroj tiskne z jedné cívky). **Kobra X přepínač nemá:** stojan je součást stroje
+  a bez ACE se pozice přečíslují (3 + 4 s ACE, 4 bez, `docs/AM.md` §6) – tam se počet pozic mění v nastavení tiskárny jako
+  dosud. **Prusa INDX přepínač nemá:** nástroje jsou stroj sám. Stroj neznámého typu („Pozice n“) také ne. Adresa takový
+  stroj odmítne (`farm.admin.changer.not_here`); dostane-li vypnutý stroj v nastavení profil Kobry X nebo INDX,
+  `savePrinter` přepínač vrátí na „připojen“.
+- Přepínač platí v obou režimech (agent i ruční). Mění ho jen člověk; co hlásí tiskárna, se jen ukazuje (24.5).
+
+### 24.2 Co znamená „bez měniče“
+
+`FarmPrinter::withoutChanger()` (= `changer_attached` je false), `changesSpools()` (= přes agenta a s měničem; nahradilo
+`isAgentDriven()` všude, kde znamenalo „má měnič“), `FarmPrinterSlot::isDetached()` (pozice ≠ 1 na stroji bez měniče),
+`mayOffer()` (= není odpojená a druh na stroj smí), scope `fed()` (totéž v SQL).
+
+- **Jediná pozice je „Přímá cívka“** = pozice 1 (`FarmPrinter::DIRECT_SLOT` 0, v G-code dřív `T0`). Název dává
+  `SpoolPositions` (`farm.position.direct`), vlastní název pozice vítězí jako dřív.
+- **Nabídka:** `OrderService::offeredColors`, `availableSlots` (→ `availableColors`, `machineFor`, platba),
+  `firstsAcross`, `secondSpools`, `secondSpoolsAcross` berou jen `mayOffer()`; `positionsOf` (karty strojů na stránce
+  zakázky) odpojené pozice vůbec nevrací; `loadedMaterials`, `printers()`, `printerFor`, `printerAndMaterialFor` (stroj a
+  druh prvního řezu) a `Palette` („založeno“ v okně barev) počítají jen `fed()`.
+- **Počet barev:** `ColorLimit::of()` = 1; `ColorLimit::farm()` (a tím `/api/config` `max_colors`, slučování barev
+  malovaného 3MF, předvolba barev) bere za stroje s měničem jen `changesSpools()`.
+- **Vícebarevná zakázka na takový stroj nejde:** druhé cívky se nenabízejí (`secondSpools` prázdné), `spoolsForParts` a
+  `partPlatesOn` odmítnou `too_many_colors` s číslem 1, jedna podložka s více filamenty se neřeže
+  (`prepareOnePlate` → `one_plate_skipped: manual`), návrh s povinnou jednou podložkou a malované 3MF v barvách platba
+  odmítne (`one_plate_needed`, `painted_one_plate`) a stránka pro ně nabízí jen stroje s měničem.
+- **Změna barvy podle výšky také nejde.** Řez ji dělá řádkem `T<slot>` (`GcodeSlot::colorChanges`), což je výměna cívky
+  měničem; bez něj by to musela být pauza (`M600`) a člověk u tiskárny. V kódu řezu ani agenta žádná taková cesta není
+  (profil S1 má `machine_pause_gcode M600`, farma ho nepoužívá, agent neumí „vyměňte cívku a pokračujte“). Druhá barva se
+  tedy nenabídne a kopie pro tiskárnu bez měniče změny podle výšky nezapisuje.
+- **Zakázky už zaplacené na jinou pozici** (nebo vícebarevné) stroj bez měniče nespustí: `FarmPrinter::canFeed()` přes
+  `FarmOrder::printSlots()` (cívka každé podložky, filamenty jedné podložky, změny po výšce), `Dispatcher::kick` je
+  přeskočí a tiskne další zakázky z přímé cívky. Při vypnutí to řekne hláška („Na měnič čekají zakázky…: F26-…“), na
+  detailu tiskárny to zůstává červeně, dokud čekají. Po zapnutí se rozjedou samy.
+- **Administrace:** na detailu tiskárny a na stránce „Založení cívek“ jsou pozice měniče zašedlé, s vysvětlením, a jejich
+  pole se neodesílají (řádek zůstane, jak byl); v seznamu cívek pod tiskárnou a v seznamu tiskáren jsou vybledlé, u režimu
+  je „· bez měniče“.
+
+### 24.3 Druhy `manual_only` (svítící)
+
+`FarmPrinterSlot::kindFits()` = druh s příznakem smí tam, kde stroj **nemění cívky sám** (`! changesSpools()`): ruční
+tiskárna jako dosud, nově i tiskárna přes agenta bez měniče. `SlotRules::manualOnly(..., $direct)`: u stroje bez měniče
+pravidlo vynechá pozici 1; **do pozic měniče (2 až 4) ho drží dál** (až se měnič vrátí, cívka by v něm byla). Totéž
+u nové barvy psané u slotu a u karty z e-shopu (`FilamentFromShop`). Zakázka v takové barvě se na stroj bez měniče posílá
+a tiskne sama (test: platba → fronta → start → hotovo). Odznak „ručně z přímo vedené cívky“ u zakázky zůstává (říká, že
+jde o křehký druh). **Na tiskárně s měničem platí dnešní zákaz.** Když se měnič zapne zpět a v pozici 1 sedí takový
+druh, `setChanger` slot vypne a pojmenuje ho stejnou hláškou jako při přechodu ruční → agent
+(`farm.admin.manual_only_disabled`); cívka v řádku zůstává.
+
+### 24.4 Řez a start bez ACE
+
+Co farma dnes do souboru pro S1 dává (`GcodeSlot::retarget`, soubor `C:\tmp\u2\F26-000122.head.gcode` z U2):
+`G9111 bedTemp=… extruderTemp=…`, `M117`, `M104 S…`/`M109 S…` (nahřátí před výměnou cívky), `T<slot>` a teploty druhu
+cívky přepsané do `M104/M109/M140/M190`. Řádek `T<slot>` je příkaz měniči (v konfiguraci tiskárny patří `T` modulu
+`[filament_hub]`: „retract_travel_drip … při provádění příkazu T“; na konzoli po něm jde `FEED_FILAMENT ID=0 INDEX=<slot>`).
+
+- **Kopie pro stroj bez měniče** (`GcodeSlot::retarget($gcode, null, $teploty)`, `fileFor(..., null, ...)`, přípona
+  `.direct`): **žádný řádek `T`** (případný `T0` od sliceru se vyjme), **žádné `M104/M109` před ním**, teploty druhu cívky
+  přepsané jako vždy (`G9111`, `M104/M109`, `M140/M190`), změny podle výšky se nezapisují. Je to tvar, jaký OrcaSlicer sám
+  píše pro jednobarevný tisk (profil S1 má ve startu jen `G9111` a `M117`). Dává ho agentovi (`AgentController::gcode`)
+  i stažení v administraci.
+- **Pojistka:** `.env` `FARM_DIRECT_SPOOL_TOOL_LINE=true` (`config/farm.php` `direct_spool_tool_line`, výchozí false) vrátí
+  i stroji bez měniče dnešní tvar s `M104/M109` + `T0`. Důvod: 23. 9. 2026 firmware S1 **s ACE** soubor bez řádku `T`
+  odmítl („cannot parse the file“, F26-000002); jak se zachová bez ACE, nevíme.
+- **Start:** `Dispatcher::start` přidá do příkazu `direct: true`. Agent 0.2.14 pak před startem **nekontroluje žádný slot
+  měniče** (jinak by se ptal `slot_status(0)` a hub, který není, by mohl říct „empty“ → start odmítnut). Ovladač
+  `moonraker` sám slot nikam neposílá (jen nahraje soubor a zavolá `print/start`), takže víc není třeba.
+- **Agent 0.2.14, kompatibilita** (`docs/AM.md` §14): nový agent se starým serverem = beze změny (klíč `direct` nepřijde);
+  starý agent (0.2.13) s novým serverem = klíč ignoruje a slot 1 zkontroluje jako dřív: start projde, pokud tiskárna
+  o slotu mlčí (pak je ve výsledku příkazu „slot 1 not checked“), a je odmítnut, pokud firmware bez ACE o pozici 1 řekne
+  `empty`. **Pro B6 proto nejdřív agent 0.2.14 na PC farmy B, pak přepnout.**
+- **Kobra 3 Max:** stejný start v profilu (`G9111`, `T<n>` ve výměně), přepínač i pravidla platí stejně; jede-li přes ovladač
+  `moonraker`, platí i vše o agentovi. Stejně neověřené.
+
+### 24.5 Co hlásí tiskárna
+
+Ovladač `moonraker` (agent 0.2.14) posílá `telemetry.ace_units` = počet jednotek v `filament_hub.filament_hubs` (0, když
+objekt existuje a žádná jednotka neodpovídá; klíč chybí, když firmware objekt nemá). `FarmPrinter::reportedChanger()`
+(jen u tiskárny přes agenta, která je online), `changerMismatch()`. Na detailu tiskárny pod přepínačem: „Tiskárna hlásí:
+ACE připojené.“ / „Tiskárna hlásí: žádné ACE.“ a při rozporu červeně „To nesedí s přepínačem. Podívejte se na tiskárnu
+a přepněte sami; přepínač se sám nemění.“ **Přepínač se sám nikdy nemění** (ACE vypnuté ze zásuvky by jinak samo
+stáhlo nabídku). Přehled tiskáren rozpor neukazuje a stav tiskárny kvůli němu není „Problém“ (k rozhodnutí, 24.7).
+
+### 24.6 Neověřeno – nic se netisklo
+
+Skutečný tisk na Kobře S1 bez ACE nikdo neviděl; žádná tiskárna, agent ani produkce nebyly při práci osloveny. Závěry
+stojí jen na: kódu (`GcodeSlot`, `Dispatcher`, `agent/farm_agent`), `docs/AL.md` §7, §10, §19, `docs/AM.md` §10, profilu
+`engines/orca/profiles/machine.json`, a souborech z dřívějších čtení U1/U2 **s ACE** v `C:\tmp\u2`
+(`F26-000122.head.gcode`, `u2-printer.generated.cfg`, `variants/README.md` k TODO #65). Zdrojáky Rinkhalsu k ruce nebyly.
+
+1. **Vezme firmware S1 bez ACE soubor bez řádku `T`?** Předpoklad: ano, je to tvar jednobarevného souboru z Orcy pro
+   tiskárnu s jednou cívkou. Protipříklad máme jen pro S1 s ACE (23. 9. 2026, „cannot parse the file“). Když ne:
+   `FARM_DIRECT_SPOOL_TOOL_LINE=true` a zkusit znovu.
+2. **Co udělá `T0` bez ACE** (varianta s pojistkou): nevíme. Může projít naprázdno, nebo skončit chybou hubu.
+3. **Rinkhals 20261101_01 bez ACE:** jeho `MmuAcePatcher` soubory farmy přepisuje („; processed by MmuAcePatcher“)
+   a od 20261101_01 odmítá tisk namapovaný na prázdnou pozici. Jak se chová, když žádné ACE není a soubor nemá žádný
+   nástroj, nevíme (varianta „bez řádku T“ z kitu k #65 se nikdy netiskla).
+4. **Zavede se filament sám?** Bez ACE musí být filament v hlavě už před startem (zavádí obsluha na displeji). Koncové
+   makro S1 s ACE filament vytahuje; co dělá bez ACE, nevíme. Jestli po tisku filament z hlavy vyjede, další zakázka
+   by tiskla naprázdno – **po prvním tisku na B6 se podívat, zda filament zůstal v hlavě.**
+5. **Čidlo filamentu / dojetí cívky:** bez ACE farma nepozná prázdnou cívku jinak než z gramů v řádku pozice 1.
+6. **`telemetry.ace_units`:** že GoKlipper bez ACE vrací `filament_hub` s prázdným `filament_hubs`, je odhad podle
+   konfigurace (`[filament_hub]` je v `printer.cfg` vždy) a podle testu z dřívějška; může objekt i chybět (pak se neukáže
+   nic) nebo držet starou jednotku.
+7. Starý agent 0.2.13 na stroji bez měniče (24.4).
+
+### 24.7 Otevřené otázky
+
+- Má rozpor „tiskárna hlásí × přepínač“ dělat z tiskárny v přehledu „Problém“ a posílat e-mail? Dnes jen řádek na detailu.
+- Kobra X bez ACE: dnes ruční změna počtu pozic (7 → 4) v nastavení; přepínač by musel přečíslovat stojan. Chce to Roman?
+- Zakázky čekající na měnič: dnes jen čekají a jsou vypsané. Nabídnout zákazníkovi jinou tiskárnu / barvu automaticky?
+- Zkušební tisky z „Ladění“ na pozici měniče stroje bez měniče se založí a čekají stejně jako zakázky (seznam cívek
+  v Ladění odpojené pozice neskrývá).
+- Ruční tiskárna bez měniče: přepínač funguje stejně (jedna pozice, jedna barva); stažený soubor je bez řádku `T`.
+
+### 24.8 Testy, nasazení, soubory
+
+- `tests/Feature/FarmPrinterNoChangerTest.php` (7 testů): přepnutí jedním kliknutím, řádky netknuté a návrat po zapnutí,
+  limit 4 → 1 → 4, `ColorLimit::farm`, `/api/config`, názvy pozic, nabídka zákazníkovi i úvodní stránky, `Palette`,
+  `loadedMaterials`, zašedlé pozice a neodeslaná pole, uložení filamentů jen s přímou cívkou; které stroje přepínač mají
+  (S1, 3 Max ano; Kobra X, INDX ne a adresa odmítne; změna profilu přepínač vrátí); svítící druh: s měničem odmítnut,
+  bez měniče do pozice 1 přijat a do pozice 2 odmítnut, platba → fronta → `start` s `direct: true` → soubor bez `T`
+  a bez „matplace slot“ → hotovo, stažení v administraci stejné, pojistka `direct_spool_tool_line`, po zapnutí slot vypnut
+  s hláškou; vícebarevná: `secondSpools` prázdné, karta stroje s jednou pozicí, `spoolsForParts` → `too_many_colors` 1,
+  změna po výšce bez druhé cívky, zakázka na pozici 3 čeká (žádný příkaz, hláška, detail), po zapnutí startuje s `T2`;
+  hlášení tiskárny a rozpor oběma směry, přepínač se nemění; `GcodeSlot` bez pozice; texty ve třech jazycích.
+- Agent: `agent/tests/test_direct_spool.py` (7 testů): start bez značky na prázdné pozici odmítnut, s `direct` projde bez
+  poznámky (i se seznamem filamentů), `direct: false` jako dřív; `ace_units` 1 / 0 / chybí.
+- **Nasazení nese:** migraci `2026_11_13_100000_farm_printers_changer_attached` (jeden bool sloupec, výchozí true),
+  texty `lang/src/printer_no_changer.json` → `lang/{cs,en,es}.json`, pohledy (`view:clear`), žádný TS/CSS (build beze
+  změny zdrojů), volitelně `.env` `FARM_DIRECT_SPOOL_TOOL_LINE`. **Agent 0.2.14** instaluje Roman ručně na PC farem
+  (`docs/AM.md` §14).
+- **Postup pro B6 po nasazení:** (1) agent 0.2.14 na PC farmy B; (2) detail B6 → „Měnič je sundaný“; (3) tamtéž ve
+  filamentech pozice „Přímá cívka“: vybrat `17_PLA_Lumious_Green`, gramy, zaškrtnout „nabízet“, uložit (pozice ACE 2 až 4
+  nechat být, jsou zašedlé); (4) zapnout tiskárnu, pokud je vypnutá; (5) filament zavést do hlavy na displeji tiskárny;
+  (6) první zakázku pustit jako administrátor a být u toho (24.6).
+- **Soubory:** migrace; `app/Models/{FarmPrinter,FarmPrinterSlot,FarmOrder}.php`; `app/Domain/Farm/{ColorLimit,
+  Dispatcher,FilamentFromShop,GcodeSlot,OrderFlow,OrderService,Palette,SlotRules,SpoolPositions}.php`;
+  `app/Http/Controllers/Admin/{FarmCatalogController,FarmOrderController}.php`, `Farm/{AgentController,OrderController}.php`;
+  `app/Jobs/PrepareFarmOrder.php`; `config/farm.php`; `routes/web.php`; `resources/views/admin/farm/{printer,printers,
+  printer_edit,slots}.blade.php`, `partials/printer_slots.blade.php`; `lang/src/printer_no_changer.json`; agent
+  `farm_agent/{__init__,agent}.py`, `drivers/moonraker.py`, `README.md`, `tests/test_direct_spool.py`.

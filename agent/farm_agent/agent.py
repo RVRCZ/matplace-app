@@ -390,8 +390,11 @@ class Agent:
         # every spool position the plate prints from must hold a spool: B3 paused at its first T<n> because the ACE
         # had nothing to feed, and said so only on its screen (F26-000108, 29 Oct 2026). A printer that does not
         # report its slots starts as before, and the note says so.
+        # `direct` (server, docs/AL.md §24): the changer is off this machine and the spool is fed straight into the head, so
+        # there is no position to ask about - a hub that is not there would answer "empty" at best. A server that does
+        # not know the key never sends it, and the check runs as before.
         notes = []
-        for s in sorted({int(x) for x in (payload.get("filaments") or [slot])}):
+        for s in ([] if payload.get("direct") else sorted({int(x) for x in (payload.get("filaments") or [slot])})):
             state = await w.driver.slot_status(s)
             if state is None:
                 notes.append(f"slot {s + 1} not checked, the printer does not report its slots")

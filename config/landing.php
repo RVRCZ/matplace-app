@@ -87,5 +87,7 @@ return [
         'soap_model' => ['related' => ['holder_model', 'hollow', 'tray'], 'blog' => ['pla-vs-petg-vs-asa-jaky-material-vybrat']],
         'wearable' => ['related' => ['life_size', 'split', 'hollow'], 'blog' => ['rozdeleni-a-vyduteni-3d-modelu']],
         'slider' => ['related' => ['flexi_cut', 'puzzle', 'coaster'], 'blog' => ['jak-pripravit-stl-soubor-pro-3d-tisk']],
+        // the headband came with main on 13 Nov 2026; no article is about it yet
+        'headband' => ['related' => ['earrings', 'medallion', 'wearable'], 'blog' => []],
     ],
 ];

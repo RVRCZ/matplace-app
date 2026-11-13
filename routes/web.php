@@ -172,6 +172,7 @@ $pages = function () {
     Route::get('/tools/sticky-notes', [ToolsController::class, 'param'])->defaults('kind', 'notes')->name('tools.notes');
     Route::get('/tools/hair-tie-holder', [ToolsController::class, 'param'])->defaults('kind', 'hair_tie')->name('tools.hair_tie');
     Route::get('/tools/candle-stand', [ToolsController::class, 'param'])->defaults('kind', 'candle_stand')->name('tools.candle_stand');
+    Route::get('/tools/headband', [ToolsController::class, 'param'])->defaults('kind', 'headband')->defaults('preset', 'hb_horns')->name('tools.headband');
     Route::get('/tools/papel-picado', [ToolsController::class, 'param'])->defaults('kind', 'papel')->name('tools.papel');
     Route::get('/tools/illuminated-sign', [ToolsController::class, 'param'])->defaults('kind', 'lightbox')->name('tools.lightbox');
     Route::get('/tools/qr', [ToolsController::class, 'param'])->defaults('kind', 'qr')->name('tools.qr');
@@ -492,6 +493,8 @@ Route::middleware(['auth', 'role:admin'])->prefix('admin/farm')->name('admin.far
     Route::get('/printers/new', [$catalog, 'editPrinter'])->name('printers.new');
     Route::post('/printers/new', [$catalog, 'savePrinter'])->name('printers.create');
     Route::get('/printers/load', [$catalog, 'loadSlots'])->name('printers.load');
+    // the changer (ACE) is on the machine / taken off it: one click on the printer's detail (docs/AL.md §24)
+    Route::post('/printers/{printer}/changer', [$catalog, 'setChanger'])->name('printers.changer');
     Route::post('/printers/load', [$catalog, 'saveSlots'])->name('printers.load.save');
     Route::get('/printers/{printer}', [$catalog, 'editPrinter'])->name('printers.edit');
     Route::post('/printers/{printer}', [$catalog, 'savePrinter'])->name('printers.update');

@@ -361,6 +361,26 @@ class FarmOrder extends Model
         return $this->colorChanges()[0] ?? null;
     }
 
+    /**
+     * Every spool position (tool number) the order's prints select on its machine: the spool of each plate, the
+     * filaments of a plate of several, the changes by height. What a machine without its changer checks before it
+     * starts the order (FarmPrinter::canFeed, docs/AL.md §24).
+     *
+     * @return list<int>
+     */
+    public function printSlots(): array
+    {
+        $slots = array_values($this->filamentSlots());
+        for ($plate = 1; $plate <= max(1, (int) $this->plates); $plate++) {
+            $slots[] = (int) ($this->plateSpool($plate)?->slot ?? 0);
+        }
+        if (! $this->isByParts()) {
+            $slots = array_merge($slots, array_column($this->colorChanges(), 'slot'));
+        }
+
+        return array_values(array_unique(array_map('intval', $slots)));
+    }
+
     /** The tuning row (printer × kind, or printer × spool) a test print was made for. */
     public function printerMaterial(): BelongsTo
     {

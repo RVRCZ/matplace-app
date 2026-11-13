@@ -122,6 +122,10 @@
     <section class="rounded-2xl border border-slate-200 bg-white p-4">
         <h2 class="font-bold">Sloty (cívky)</h2>
         <p class="text-xs text-slate-500">Zákazník vidí jen barvy v zapnutých slotech. Číslo slotu je číslo nástroje v G-code (slot 1 = T0). {{ __('farm.admin.new_color_hint') }} {{ __('farm.admin.manual_only_slots_hint') }}</p>
+        @if($printer->exists && $printer->withoutChanger())
+            {{-- the switch itself is on the printer's detail (docs/AL.md §24) --}}
+            <p class="mt-1 rounded-lg bg-amber-50 px-2 py-1 text-xs text-amber-900" data-changer="off">{{ __('farm.admin.changer.off') }}. {{ __('farm.admin.changer.off_hint') }} <a class="underline" href="{{ route('admin.farm.printers.show', $printer) }}#slots">{{ __('farm.admin.changer.attach') }} →</a></p>
+        @endif
         {{-- one print takes as many colours as the machine has positions (docs/AL.md §19): the rows here are the positions --}}
         <p class="text-xs text-slate-500">Počet řádků je počet pozic na cívky, a tedy nejvíc barev v jednom tisku (Kobra X se stojanem a ACE 7, Core One s INDX 8). Název pozice se odvodí z modelu tiskárny (Stojan 1, ACE 1), nebo ho napište.</p>
         <div class="mt-2 space-y-2">

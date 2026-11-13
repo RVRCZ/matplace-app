@@ -692,13 +692,14 @@ final class FilamentFromShop
             $created = false;
             if ($place) {
                 $rows = [(int) $entry['slot'] => ['color' => $color->id, 'remaining_g' => (float) $data['remaining_g'], 'enabled' => $enabled ? 1 : 0]];
-                [$rows, $notices] = SlotRules::manualOnly($printer, $printer->mode, $rows, 'slot');
+                [$rows, $notices] = SlotRules::manualOnly($printer, $printer->mode, $rows, 'slot', $printer->withoutChanger());
                 $enabled = ! empty($rows[(int) $entry['slot']]['enabled']);
             }
         } else {
             $kind = FarmMaterial::findOrFail((int) $data['farm_material_id']);
             // a new colour of a kind that breaks in the changer cannot go into an agent-driven machine (SlotRules::manualOnly for stored ones)
-            if ($place && $kind->isManualOnly() && $printer->isAgentDriven()) {
+            // (the directly fed spool of a machine whose changer is off takes it, docs/AL.md §24)
+            if ($place && $kind->isManualOnly() && $printer->isAgentDriven() && ! ($printer->withoutChanger() && (int) $entry['slot'] === FarmPrinter::DIRECT_SLOT)) {
                 throw ValidationException::withMessages(['slot' => __('farm.admin.manual_only_refused', ['color' => $kind->label().', '.$data['name'], 'printer' => $printer->name])]);
             }
             $maker = trim((string) ($data['manufacturer'] ?? ''));

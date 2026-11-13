@@ -1025,7 +1025,10 @@ def main(argv):
             import compose_kind
             import sheet_kinds
             import stand_kinds
-            if kind in compose_kind.BUILDERS:
+            import headband_kind
+            if kind in headband_kind.BUILDERS:
+                parts, notes = headband_kind.BUILDERS[kind](M, Invalid, p)
+            elif kind in compose_kind.BUILDERS:
                 parts, notes = compose_kind.BUILDERS[kind](M, Invalid, p)
             elif kind in sheet_kinds.BUILDERS:
                 parts, notes = sheet_kinds.BUILDERS[kind](M, Invalid, p)

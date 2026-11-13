@@ -226,6 +226,16 @@ Celý tok od zákazníka po „hotovo“ jde projít se simulovanou tiskárnou:
   pauze zapíše do `agent.log` (řádek `pause asked: …`).
 - Zkušební tiskárna: `cancel_stuck`, `cancel_fallback`, `heaters_stay`, `heaters_off` (popis v `drivers/mock.py`).
 
+## Tiskárna bez měniče (agent 0.2.14)
+
+- Tiskárna, které v administraci někdo vypnul přepínač „Měnič (ACE) připojen“ (Kobra S1, Kobra 3 Max s ACE sundaným),
+  tiskne z cívky vedené přímo do hlavy. Server u ní posílá ve startu `direct: true` a soubor bez řádku `T`; agent pak
+  před startem nekontroluje žádný slot měniče. Bez toho klíče se chová jako 0.2.13.
+- Ovladač `moonraker` posílá v telemetrii `ace_units` (kolik jednotek ACE tiskárna hlásí; 0 = žádná). Administrace to
+  ukáže vedle přepínače a upozorní, když si to odporuje; přepínač sám nemění.
+- Filament musí být v hlavě zavedený už před startem (na displeji tiskárny). Skutečný tisk bez ACE nebyl při vývoji
+  vyzkoušen (`docs/AL.md` §24.6, `docs/AM.md` §14).
+
 ## Co agent dělá při potížích
 
 | Situace | Chování |

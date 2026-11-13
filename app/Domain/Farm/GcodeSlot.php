@@ -96,9 +96,19 @@ final class GcodeSlot
         return substr($gcode, 0, $found)."\n".$line.substr($gcode, $found);
     }
 
-    /** @param  array{nozzle?: int, nozzle_first?: int, bed?: int}  $temps  degrees of the chosen kind; empty = keep the sliced ones */
-    public static function retarget(string $gcode, int $slot, array $temps = []): string
+    /**
+     * @param  int|null  $slot  the spool position to select; null = a machine whose changer is off (FarmPrinter::withoutChanger,
+     *                          docs/AL.md §24): the copy selects no position at all, as the slicer writes a one-filament file for a
+     *                          printer with a single spool, and only carries the kind's temperatures
+     * @param  array{nozzle?: int, nozzle_first?: int, bed?: int}  $temps  degrees of the chosen kind; empty = keep the sliced ones
+     */
+    public static function retarget(string $gcode, ?int $slot, array $temps = []): string
     {
+        if ($slot === null) {
+            // nothing to select and nothing to heat for: the start macro (G9111) heats, the filament is in the head already.
+            // A tool line the slicer wrote itself would ask the firmware for a changer that is not there, so it goes
+            return self::temperatures((string) preg_replace('/^T\d+[ \t]*(?:;.*)?\r?\n/m', '', $gcode), $temps);
+        }
         // written for slot 1 (T0) as well: a file without any tool line is refused by the firmware of the S1 + ACE
         // ("cannot parse the file", 23 Sep 2026, order F26-000002)
         // The nozzle is heated and waited for before the tool line: when the ACE really has to change the spool (another
@@ -115,7 +125,17 @@ final class GcodeSlot
             // OrcaSlicer writes no tool line at all for a single-filament print: put one right after the start macro
             $out = preg_replace('/^(M117[ \t]*\r?\n)/m', '$1'.$line."\n", $out, 1, $n);
         }
-        $out = $n > 0 ? (string) $out : $gcode;
+
+        return self::temperatures($n > 0 ? (string) $out : $gcode, $temps);
+    }
+
+    /**
+     * The chosen kind's temperatures written over the sliced ones (retarget).
+     *
+     * @param  array{nozzle?: int, nozzle_first?: int, bed?: int}  $temps
+     */
+    private static function temperatures(string $out, array $temps): string
+    {
         if (! empty($temps['nozzle'])) {
             $first = (int) (($temps['nozzle_first'] ?? 0) ?: $temps['nozzle'] + 5);
             $bed = (int) ($temps['bed'] ?? 0);
@@ -238,14 +258,16 @@ final class GcodeSlot
     /**
      * Writes the retargeted copy next to the original and returns its path (the original when nothing changes).
      *
+     * @param  int|null  $slot  null = the copy selects no spool position (retarget)
      * @param  array{slot:int, z:float}|list<array{slot:int, z:float}>|null  $changes  one change (older callers) or the list of them
      */
-    public static function fileFor(string $gcodePath, int $slot, array $temps = [], ?array $changes = null): string
+    public static function fileFor(string $gcodePath, ?int $slot, array $temps = [], ?array $changes = null): string
     {
-        $changes = $changes === null ? [] : (isset($changes['slot']) ? [$changes] : array_values($changes));
+        // no position to select (a machine without its changer): one spool, so no change by height either
+        $changes = $changes === null || $slot === null ? [] : (isset($changes['slot']) ? [$changes] : array_values($changes));
         // "hot": copies made before the heating-before-the-spool-change (12 Oct 2026) are not reused; "map": nor those
         // made before the filament line the Kobra X agent needs for the changes (8 Nov 2026, F26-000142)
-        $tag = '.hot.slot'.$slot.(! empty($temps['nozzle']) ? '-'.$temps['nozzle'].'-'.(int) ($temps['bed'] ?? 0) : '')
+        $tag = ($slot === null ? '.direct' : '.hot.slot'.$slot).(! empty($temps['nozzle']) ? '-'.$temps['nozzle'].'-'.(int) ($temps['bed'] ?? 0) : '')
             .($changes ? '.map.then'.implode('_', array_map(fn ($c) => $c['slot'].'at'.str_replace('.', '_', (string) $c['z']), $changes)) : '');
         $target = preg_replace('/\.gcode$/', '', $gcodePath).$tag.'.gcode';
         if (! is_file($target) || filemtime($target) < filemtime($gcodePath)) {

@@ -1102,3 +1102,40 @@ agent s novým serverem také (zrušení se neověřuje).
 `app/Models/FarmCommand.php`, `FarmPrinter.php`, `FarmOrder.php`, `app/Domain/Farm/AgentService.php`,
 `app/Http/Controllers/Admin/FarmOrderController.php`, `resources/views/admin/farm/{dashboard,order,orders}.blade.php`,
 `lang/src/agent_cancel.json` (+ `lang/{cs,en,es}.json`), `tests/Feature/FarmCancelConfirmTest.php`.
+
+---
+
+## 14. Tiskárna bez měniče: start bez kontroly slotů, hlášení počtu ACE (agent 0.2.14, větev `feature/printer-no-changer`, 13. 11. 2026) – bez tiskárny
+
+Serverová část a důvody jsou v `docs/AL.md` §24 (přepínač „Měnič (ACE) připojen“ u tiskárny). Agent se změnil ve dvou
+místech; **žádná tiskárna při tom nebyla oslovena a nic se netisklo.**
+
+- **`_start` (agent.py):** příkaz `start` s `payload.direct = true` (server ho posílá u tiskárny s vypnutým přepínačem)
+  **před startem nekontroluje žádný slot** (`slot_status`), ani `filaments`. Důvod: kontrola z 0.2.9 (F26-000108) se ptá
+  ACE na pozici; bez ACE by se ptala na pozici, která není, a slovo `empty` by start odmítlo. Bez klíče (nebo
+  s `direct: false`) je vše jako v 0.2.13. Ovladači se dál předává `slot` (u `moonraker` jen do logu; soubor pro takovou
+  tiskárnu žádný `T` řádek nemá, `docs/AL.md` §24.4).
+- **`moonraker.status()`:** `telemetry.ace_units` = počet jednotek v `filament_hub.filament_hubs`; 0, když objekt
+  `filament_hub` existuje a jednotka žádná; klíč se neposílá, když firmware objekt nemá (holý Klipper). Server z toho
+  ukazuje „Tiskárna hlásí: ACE připojené / žádné ACE“ a rozpor s přepínačem; nic sám nepřepíná.
+- `anycubic_lan` (Kobra X) a `prusalink` beze změny: tyhle stroje přepínač nemají.
+
+**Kompatibilita.** Nový agent + starý server: `direct` nepřijde, `ace_units` server zahodí jako neznámý klíč telemetrie
+(jen ho vypíše mezi hodnotami na kartě tiskárny). Starý agent (≤ 0.2.13) + nový server: `direct` ignoruje a slot 1
+zkontroluje; start projde, když tiskárna o slotu mlčí, a je odmítnut („slot 1 is empty…“), když firmware bez ACE řekne
+`empty`. Proto na PC farmy s tiskárnou bez měniče **nejdřív 0.2.14, pak přepnout přepínač**.
+
+**Testy.** `agent/tests/test_direct_spool.py` (7): bez značky prázdná pozice start odmítne; s `direct` start projde bez
+poznámky, i když zkušební tiskárna o pozici říká `empty`, a i se seznamem `filaments`; `direct: false` kontroluje jako
+dřív; `ace_units` 1, 0 (prázdný seznam, chybějící klíč, `null`), bez objektu klíč chybí. Celá sada: 150 testů OK
+(`python -m unittest discover -s tests`).
+
+**Neověřeno.** Zda GoKlipper/Rinkhals na S1 bez ACE objekt `filament_hub` vrací a s prázdným seznamem; co řekne
+`slot_status(0)` (proto se neptáme); zda `print/start` bez ACE a se souborem bez `T` projde stejně jako s ACE (včetně
+známého dlouhého mlčení volání, které ovladač už umí přečkat). Viz `docs/AL.md` §24.6.
+
+**Instalace 0.2.14.** Jako §13g: zastavit úlohu `matplace-farm-agent`, přehrát složku `farm_agent/`, spustit úlohu;
+žádné nové knihovny, `config.yaml` beze změny. Zip staví řídící (`build_agent_zip.py`) nebo je cesta v závěrečné zprávě.
+
+**Soubory.** `agent/farm_agent/__init__.py` (0.2.14), `agent.py`, `drivers/moonraker.py`, `agent/README.md`,
+`agent/tests/test_direct_spool.py`.

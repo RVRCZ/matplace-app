@@ -57,6 +57,12 @@ return [
     // the safety ceiling no machine's count may pass, whatever its slots table says.
     'max_colors_ceiling' => (int) env('FARM_MAX_COLORS_CEILING', 16),
 
+    // A machine whose changer (ACE) was taken off prints from the spool fed straight into its head (docs/AL.md §24):
+    // its G-code copy selects no spool position, like a one-filament file the slicer writes for a printer with a single
+    // spool. Not verified on a real Kobra S1 without an ACE; should its firmware refuse a file without a tool line,
+    // true brings back the `M104/M109` + `T0` lines every other machine gets.
+    'direct_spool_tool_line' => (bool) env('FARM_DIRECT_SPOOL_TOOL_LINE', false),
+
     'settings' => [
         // ── upload and abuse limits ──────────────────────────────────────────
         'max_upload_mb' => (int) env('FARM_MAX_UPLOAD_MB', 120),

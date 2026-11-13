@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use App\Domain\Farm\SpoolPositions;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
@@ -70,10 +71,40 @@ class FarmPrinterSlot extends Model
         return self::kindFits($this->printer, $this->color);
     }
 
-    /** The same rule before a slot exists: would this colour be allowed in a slot of this printer? */
+    /**
+     * The same rule before a slot exists: would this colour be allowed in a slot of this printer? A machine run by the
+     * agent whose changer was taken off (FarmPrinter::withoutChanger) feeds its one spool straight into the head, so the
+     * kind is at home there too (docs/AL.md §24).
+     */
     public static function kindFits(?FarmPrinter $printer, ?FarmColor $color): bool
     {
-        return ! $color?->material?->isManualOnly() || ! $printer?->isAgentDriven();
+        return ! $color?->material?->isManualOnly() || ! $printer?->changesSpools();
+    }
+
+    /**
+     * A position of the changer that is not on the machine right now: the printer's switch "changer attached" is off and
+     * this is not the directly fed spool (position 1). The row stays as it was – colour, grams, the offer tick – and
+     * counts again the moment the switch is turned back on; meanwhile nothing is offered or printed from it.
+     */
+    public function isDetached(): bool
+    {
+        return (int) $this->slot !== FarmPrinter::DIRECT_SLOT && (bool) $this->printer?->withoutChanger();
+    }
+
+    /** May the farm offer and print from this position right now: it is on the machine and its kind may be fed there. */
+    public function mayOffer(): bool
+    {
+        return ! $this->isDetached() && $this->kindFitsPrinter();
+    }
+
+    /**
+     * The positions that are on their machines right now (isDetached, in SQL): the direct spool of every machine and
+     * every position of a machine with its changer attached.
+     */
+    public function scopeFed(Builder $query): Builder
+    {
+        return $query->where(fn ($w) => $w->where('farm_printer_slots.slot', FarmPrinter::DIRECT_SLOT)
+            ->orWhereHas('printer', fn ($p) => $p->where('changer_attached', true)));
     }
 
     /** Filament already promised to orders that have not finished printing. */

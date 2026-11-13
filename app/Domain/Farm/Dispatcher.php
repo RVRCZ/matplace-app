@@ -25,7 +25,9 @@ final class Dispatcher
             }
             // a pause of the farm (FarmState) holds every customer's order in the queue; the farm's own prints and an
             // admin's orders go on, in their turn among themselves
-            $order = $this->queue($printer)->first(fn (FarmOrder $o) => ! FarmState::holds($o));
+            // a machine whose changer is off prints only what comes from its direct spool alone; an order sliced for another
+            // position or for several spools waits for the changer (FarmPrinter::canFeed, docs/AL.md §24)
+            $order = $this->queue($printer)->first(fn (FarmOrder $o) => ! FarmState::holds($o) && $printer->canFeed($o));
             if (! $order || ! $order->gcode_path) {
                 return null;
             }
@@ -55,7 +57,10 @@ final class Dispatcher
             'farm_printer_id' => $printer->id, 'farm_print_job_id' => $job->id, 'type' => FarmCommand::TYPE_START,
             // a plate of several filaments names the slot of every one (T0 = first); the file's header says the same
             'payload' => ['job_id' => $job->id, 'filename' => $job->remote_filename, 'slot' => $slot, 'plate' => $plate, 'sha256_slot0' => $gcode && is_file($gcode) ? hash_file('sha256', $gcode) : $order->gcode_sha256]
-                + ($order->onePlate() ? ['filaments' => $order->filamentSlots()] : []),
+                + ($order->onePlate() ? ['filaments' => $order->filamentSlots()] : [])
+                // no changer on the machine: the spool is fed straight into the head, the agent (0.2.14) checks no position of the
+                // changer before the start; an older agent ignores the key
+                + ($printer->withoutChanger() ? ['direct' => true] : []),
         ]);
         $printer->update(['bed_clear' => false]);
 
