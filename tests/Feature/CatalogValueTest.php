@@ -33,6 +33,8 @@ class CatalogValueTest extends TestCase
         Storage::fake('farm');
         Storage::fake('public');
         $this->seed(FarmSeeder::class);   // PLA, PLA+ and PETG loaded: prices can be named; ASA is priced in the cheapest kind
+        // the older rule of the switch (a text, any price, the file); the default since 12 Nov 2026 is tested in SeoCleanupTest
+        config(['catalog.index_requires' => ['enriched', 'price', 'file']]);
     }
 
     /** A processed upload with a real cube on the models disk, so the (fake) slicer has something to measure. */
@@ -315,8 +317,8 @@ class CatalogValueTest extends TestCase
             ->assertSee('hreflang="x-default"', false)->assertDontSee('<link rel="alternate" hreflang="es"', false);   // the language menu names Spanish, the head does not
         $this->get('/model/cursed-furby-mask')->assertOk()->assertSee('<link rel="canonical" href="'.url('/model/cursed-furby-mask').'">', false);
 
-        // a model with a Czech text alone: the language redirect lands on a page that does not exist, so it goes on to the Czech one (not a 404)
-        $this->get('/model/drybox?lang=en')->assertStatus(301)->assertRedirect('/en/model/drybox');
+        // a model with a Czech text alone: one hop to the Czech page, not a chain through /en/model/… (docs/AP.md §14)
+        $this->get('/model/drybox?lang=en')->assertStatus(301)->assertRedirect('/model/drybox');
         $this->get('/en/model/drybox')->assertStatus(301)->assertRedirect('/model/drybox');
         $this->get('/es/model/drybox')->assertStatus(301)->assertRedirect('/model/drybox');
         $this->get('/model/drybox')->assertOk();

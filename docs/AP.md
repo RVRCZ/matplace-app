@@ -720,3 +720,278 @@ figurka jako `figure`, jako v `PublicStats::latestPhotos`) a počet vlastních s
 `blog/_farm_month.blade.php` je karta jako u kalkulace, texty `site.blog.farm.*` (`lang/src/blog_n1.json`).
 Text článku čísla nejmenuje, mluví o kartě; kdo článek otevře v prosinci, vidí listopad spočítaný ze zakázek
 ve chvíli zobrazení. Špatný měsíc (třeba `2026-13`) vloží nic. Test v `BlogEmbedsTest`.
+
+## 14. Úklid pro vyhledávače a cesta nových stránek do indexu (větev `feature/seo-cleanup-index`, 12. 11. 2026)
+
+Zadání `docs/prompts/uklid-indexace.md`, podklad studie návštěvnosti z 12. 11. 2026 (mimo repo): Google nehlásí
+postih, ale ze 40 zkoušených stránek nástrojů, vstupních stránek a článků nemá v indexu žádnou, v mapě stránek
+„odesláno 603, zaindexováno 0“, a prochází skoro jen převzatý katalog `/model/…` a zbytky starého webu. Tato
+kapitola popisuje, co se změnilo, aby pozornost Googlu šla na stránky, které přivádějí zákazníky. Žádné triky:
+pořádek, pravdivé signály, nic nového se nevymýšlí. Nic z toho neběželo na produkci a Search Console jsem neviděl;
+co je potřeba ověřit tam, je v 14.10.
+
+### 14.1 Katalog: v indexu jen stránka s naším textem a naší hodnotou
+
+Přepínač `CATALOG_INDEX_REQUIRES` (`config/catalog.php` `index_requires`, §9 v `docs/AL.md`) říká, co musí stránka
+modelu mít, aby směla do indexu; musí mít všechno, co je vyjmenováno. Do 12. 11. byl výchozí stav
+`enriched,price,file` (náš text, jakákoli cena včetně odhadu převzatého ze starého webu, soubor).
+
+**Nové výchozí pravidlo `enriched,value`:**
+
+| podmínka | co znamená | jak se pozná |
+|---|---|---|
+| `enriched` | text napsaný u nás | `enriched_at` (`catalog:enrich` nebo admin) |
+| `value` | něco, co o modelu umíme říct jen my, aspoň jedno z: | |
+| | cena tisku z řezu vlastního souboru modelu | `sliced_at`, `slice_minutes > 0`, `slice_grams > 0` (`catalog:slice`) |
+| | fotka výtisku z naší farmy | zaplacená dokončená zakázka s fotkou a souhlasem se zveřejněním, `farm_orders.catalog_model_id` |
+| | karta autora, kterou farma tiskne | `designerModels` `printable()` |
+
+Starší podmínky `price` a `file` zůstávají pro přepínač (`CATALOG_INDEX_REQUIRES=enriched` = každý model s naším
+textem; `value` samotné = i bez našeho textu). Odhad gramů a minut převzatý ze starého webu už sám nestačí: není náš.
+Pravidlo je jedno místo: `CatalogModel::scopeIndexable()` (mapa stránek, admin, `catalog:enrich`, `catalog:slice`),
+`isIndexable()` a `indexGaps()` (admin ukazuje „chybí: vlastní hodnota“).
+
+Stránka mimo index: `noindex, follow`, bez kanonické adresy, není v mapě stránek a **nenese `Product`**. Návštěvník
+vidí všechno jako dřív (i tabulku cen z řezu, když ji model má). `Product` s `AggregateOffer` se vypisuje jen na
+stránce, která je v indexu, má řez vlastního souboru, licence dovoluje prodej a existuje kalkulace k objednání, tedy
+jen tam, kde je to pravda: cena tisku u nás. `CreativeWork` (dílo jiného autora, s odkazem na zdroj) zůstává všude.
+Fotka výtisku je hodnota, ne cena: stránka jen s fotkou `Product` nenese.
+
+Nový blok „Takhle jsme to vytiskli“ na stránce modelu (`App\Domain\Catalog\CatalogPhotos`, až 4 fotky, materiál
+a datum, nikdy zákazník ani cena): stejné zakázky, které dělají stránku indexovatelnou, jsou na ní vidět. Druhá a další
+strana seznamu `/model?page=N` má nově `noindex, follow`.
+
+**Kolik stránek zůstane: podle pravidla, ne z dat.** Místní databáze je od 1. 11. prázdná (jen seedery), čísla
+produkce neznám. Podle `docs/AN.md` §13 bylo 27. 10. indexovatelných 375 modelů (tehdejší nastavení produkce neznám)
+a soubor drží jen modely nahrané ručně (seznam „Top 30“ v `/admin/catalog/files`). Nové pravidlo nechá v indexu
+jen modely, které mají náš text a zároveň řez, fotku nebo kartu autora: nejvýš tolik, kolik souborů Roman nahrál
+a rozřezal, plus karty autorů a vyfocené zakázky z katalogu. Čekám desítky, ne stovky; je to odhad, ne měření.
+Přesná čísla pro všechny varianty vypíše na produkci (jen čte):
+
+    php artisan matplace:sitemap
+    … Inspiration catalogue: N indexable of M shown pages, K noindex (not listed); the index needs: enriched, value.
+    … By rule: enriched,value = a; enriched = b; value = c; enriched,price,file = d.
+
+**Pozor na `.env` produkce:** pokud tam je `CATALOG_INDEX_REQUIRES=…`, výchozí hodnota se nepoužije. Buď řádek
+smazat, nebo nastavit `enriched,value`.
+
+### 14.2 Zbytky starého webu
+
+- **410 „zrušeno“** (`config/legacy.php` `gone`, `LegacyRedirects::gone`): vzory nad cestou, kontrolované před
+  směrováním; adresa, na kterou odpovídá naše routa, nikdy zrušená není (ověří se proti routeru). Výchozí vzory:
+  `/assets/thumbs/…` (náhledy starého katalogu), `/<číslo>` (`/14763`), cokoli s `filament` v jediném úseku cesty
+  (`/pla-luminous-filament-…`), `/klicenka-…`. Soubor dostane dvě slova textu, stránka šablonu `errors/410`
+  („Tato stránka už neexistuje“, odkazy na hlavní stranu a nástroje, `noindex`). Další vzory se doplní podle
+  seznamu „Adresy, které neexistují“ v `/admin/stats` a logu; seznam starých adres e‑shopu jsem neměl.
+- **`/assets/thumbs/…`:** dosud 302 na `legacy.matplace.com`. Dělá to aplikace (`to_legacy`), ne nginx: šablona
+  `deploy/nginx/matplace-app-common.conf` posílá neexistující soubory do `index.php`. Kdo je ještě používá: nejspíš naše vlastní
+  stránky katalogu. Import katalogu běžel před přepnutím domén s `LEGACY_ASSETS_URL=https://matplace.com`
+  (`docs/DEPLOY-BETA.md`), takže model bez zkopírovaného náhledu má v `preview_url` adresu
+  `https://matplace.com/assets/thumbs/…` a každé zobrazení jde přes naše 302. To sedí s logem (Googlebot-Image,
+  tisíce náhledů). Z produkčních dat jsem to ověřit nemohl. Proto `CatalogModel::directPreview()`: taková adresa se při čtení přepíše rovnou na
+  hostitele starého webu (`legacy.host`), stránka tedy nikoho přes naše přesměrování neposílá a obrázky fungují dál.
+  Model s kopií (`thumbnail_path`) bere obrázek z `/storage` jako dřív. Vypínač `LEGACY_THUMBS_GONE=false` vrátí 302.
+- **Obrázek indexované stránky z vlastní adresy:** `php artisan catalog:own-images [--dry-run] [--limit=200] [--all]`
+  stáhne náhled indexovatelných modelů bez vlastní kopie, uloží jako WebP do `storage/app/public/catalog/own/…`
+  a nastaví `thumbnail_path`.
+- Ostatní `/assets/*`, `/blog-img/*`, `/thumbnails/*`, `/stl/*` a stránky účtů starého webu zůstávají 302 na starý
+  web: mohou je používat staré články a lidé se starými zakázkami. Nesahal jsem na ně.
+- **Přihlášení a účet:** `/login`, `/register`, `/forgot-password`, účet a zakázky mají `noindex` už dřív
+  (`config/seo.php` `noindex`). Nově má odkaz „Přihlásit“ v hlavičce a tlačítka přihlášení přes Google/Facebook
+  `rel="nofollow"`, a `robots.txt` zavírá `/auth/` (jen přesměrování ke Googlu). `/login` v `robots.txt` zavřený
+  není, aby Google `noindex` viděl a stránku z indexu vyřadil.
+
+### 14.3 Přesměrování a jazyky
+
+- `?lang=xx` (starý přepínač): jedno 301 na konečnou adresu. Model katalogu bez textu v daném jazyce šel dřív
+  `/model/x?lang=en` → `/en/model/x` → `/model/x`; teď `SetLocale` pošle rovnou na `/model/x`.
+- Vnitřní odkazy, kanonické adresy, hreflang ani mapa stránek `?lang=` nenesou (test nad 13 stránkami a všemi
+  soubory mapy).
+- **Vnitřní odkazy přes přesměrování:** `SeoQualityTest::test_no_link_on_the_pages_search_engines_read_leads_through_a_redirect`
+  projde všechny stránky mapy stránek, seznam a detail katalogu a přihlášení, posbírá všechny vnitřní odkazy a každý
+  otevře. Výsledek je v 14.9.
+
+### 14.4 Mapa stránek a robots.txt
+
+- V mapě je jen to, co má být v indexu: nástroje ve třech jazycích, `/tools`, `/gifts`, `/3d-tisk-praha`, `/business`,
+  statické stránky, blog, indexovatelné modely katalogu. Test otevře každou adresu z map nástrojů a blogu: 200, bez
+  `noindex`, kanonická adresa na sebe, jeden H1.
+- **Skutečné `lastmod`:** nástroj = den, kdy se změnil jeho text (`lang/<jazyk>/tools_seo/<nástroj>.php`, čas souboru;
+  nasazení přepisuje jen změněné soubory), článek = `updated_at`, model katalogu = den našeho textu nebo řezu (ne
+  `updated_at`, to posouvá každé zobrazení stránky), stránky bez známého data žádné `lastmod` nemají. Index map už
+  neříká u každého souboru dnešek, ale nejnovější datum v souboru (nebo nic).
+- **`robots.txt`** nově zavírá: `/farm?` (vstup do zakázky s parametry, i `/en/`, `/es/`), `/auth/`, `/c/` (soukromé
+  kalkulace), hledání v katalogu `?q=` a řazení `?sort=`. Nezavírá nic, co má být v indexu nebo co stránka potřebuje
+  k vykreslení (`/build`, `/storage`, `/img`). `/assets/thumbs` se nezavírá schválně: Google musí 410 vidět.
+
+### 14.5 Vnitřní odkazy
+
+- **Patička na každé stránce** (`partials/footer_make.blade.php`, v layoutu jeden řádek `@include`): Všechny nástroje,
+  Dárky na míru, šest nástrojů z `config/seo.php` `footer_tools` (busta, mazlíček, přívěsek, medaile, klíčenka,
+  organizér; jen ty, které jsou veřejné), 3D tisk Praha, 3D tisk pro firmy. V jazyce stránky.
+- **Stránka modelu:** blok „Chcete něco takového vyrobit?“ se třemi obyčejnými odkazy (cena z vlastního souboru,
+  nástroje, dárky). Tlačítko „Nahrát a vytisknout“ (`/farm?source=…`) zůstává `nofollow`.
+- Úvodní stranu jsem neupravoval (jiná session).
+
+### 14.6 Kvalita stránek, které mají být v indexu
+
+`SeoQualityTest` čte každou adresu z map nástrojů a blogu ve třech jazycích jako vyhledávač. Tvrdá pravidla (test
+na nich padá): 200, žádný `noindex`, kanonická adresa na sebe, právě jeden H1, jazyk stránky, titulek, popis aspoň
+50 znaků, obrázek pro sdílení, každý obrázek s `alt`, strukturovaná data, titulek i popis v rámci jazyka jedinečné,
+hreflang: stránka jmenuje sebe, každé dvojče je v mapě a jmenuje ji zpět, `x-default` je česká verze. Co je jen
+slabé, vypíše s `SEO_AUDIT_OUT=<soubor>` jako tabulku. Nálezy a opravy jsou v 14.9.
+
+Doplněná strukturovaná data: `Service` (3D tisk na zakázku, poskytovatel matplace, oblast Česko, u pražské stránky
+i Praha; bez vymyšlené ceny) na `/3d-tisk-praha`, `/business` a `/gifts`; `ItemList` nástrojů na `/tools`;
+`Organization` na stránkách O nás a Kontakt umí `location` pro místa farem z `config/seo.php` `farms` (prázdné,
+dokud Roman adresy nezveřejní).
+
+### 14.7 Měření: roboti a `order_started`
+
+Pravidla jsou v `App\Support\Bots`, nastavení v `config/bots.php` (jde měnit v `.env` bez nasazení):
+
+- **Jména:** nové rodiny `seranking`, `seo` (Serpstat, Sistrix, Screaming Frog, BLEXBot, Seobility…), `semrush`
+  pozná i audit bez slova „bot“. Jejich stránka je `crawl`, nikdy návštěva.
+- **Datová centra:** `BOT_NETWORKS="203.0.113.0/24,2001:db8::/32"`: požadavek z uvedeného bloku je robot
+  `datacenter`. Blok z logu 12. 11. (1 128 požadavků „Firefox 159“) studie nejmenuje, doplní řídící.
+- **Hlavička, kterou žádný prohlížeč neposílá:** `BOT_AGENTS="řetězec|řetězec"` → robot `listed`. „Firefox 159“
+  sem nepatří: podle čísla verze robota poznat nejde, stejnou hlavičku pošle i člověk.
+- **Opakovaná hlavička z jednoho bloku adres (`burst`):** stejný User-Agent ze stejné sítě (IPv4 /24, IPv6 /48),
+  který si nedrží naši cookie, smí za hodinu otevřít `BOT_BURST_PER_HOUR` stránek (výchozí 40) jako „nový
+  návštěvník“; další jsou `crawl`. Prohlížeč si cookie drží od první stránky, člověk se tedy započítá jednou, ať čte
+  cokoli; `0` pravidlo vypne. Stránku i cookie dostane každý, mění se jen to, co se zapíše.
+- Zpětně: `matplace:events-bots` označí i nepotvrzené návštěvy podle `BOT_NETWORKS` a `BOT_AGENTS`. Potvrzené vlny
+  dál hlídá `matplace:stats-wave` (docs/O.md).
+- Přehled a týdenní e‑mail počítají lidi přes `Event::people()` jako dřív; roboti výše se do návštěv vůbec nezapíšou.
+
+**`order_started`:** zapisuje ho jediné místo, `Farm\OrderController::start` (`GET /farm`), při každém otevření
+stránky, bez ohledu na to, kdo ji otevřel. Od objednávky bez registrace (28. 10.) je stránka otevřená i hostům a na
+každém modelu katalogu na ni vede odkaz `/farm?source=<id>`. Robot, který prošel katalog a odkaz následoval, tak
+zapsal jednu „zahájenou objednávku“ za každý model: to odpovídá 942 a 962 zápisům 9. a 10. 11. Příčinu jsem
+odvodil z kódu, produkční události jsem neviděl; ověření je v 14.10. Ochrana: robot (`Bots::is`) nezapíše nic;
+člověk jednou za 30 minut na relaci a věc (obnovení stránky nebo návrat z přihlášení není další zahájení);
+`robots.txt` zavírá `/farm?`.
+
+### 14.8 Stav indexu jedním příkazem
+
+    php artisan searchconsole:inspect                # důležité adresy, pak mapa stránek, do stropu
+    php artisan searchconsole:inspect --important    # jen důležité (config/seo.php inspect)
+    php artisan searchconsole:inspect --cap=40 | --dry-run | --summary
+
+Nad stávajícím `SearchConsoleClient` (stačí oprávnění jen pro čtení): `inspect()` = `POST
+searchconsole.googleapis.com/v1/urlInspection/index:inspect` (`inspectionUrl`, `siteUrl`, anglicky kvůli strojovému
+čtení), `sitemaps()` = `GET webmasters/v3/sites/<site>/sitemaps`. `App\Domain\Stats\SearchConsoleIndex` sestaví
+frontu (důležité adresy z `config/seo.php` `inspect.routes` a `paths`, pak adresy z mapy, nejdřív ty nikdy nebo
+nejdéle nezkoušené; na co se ptal dnes, na to se neptá znovu), uloží odpovědi do `search_console_inspections`
+(řádek na adresu a den: stav `indexed / discovered / crawled / unknown / excluded / error`, slova Googlu, kanonická
+adresa podle Googlu, poslední procházení) a mapy do `search_console_sitemaps` (odesláno, zaindexováno, chyby).
+Stropy: jeden běh `SEARCH_CONSOLE_INSPECT_CAP` (150), den 1 800 (Google dovoluje 2 000); při 429 nebo ztraceném
+oprávnění běh skončí a řekne proč. Souhrn tiskne příkaz i týdenní e‑mail (oddíl „Google: co má v indexu“): kolik
+adres je v jakém stavu, které důležité stránky v indexu nejsou, mapy stránek a u cizích map poznámka „stará mapa,
+smazat v Search Console“. Rozvrh: pondělí 6:30 před týdenním e‑mailem. Testy jen s `Http::fake`; Google jsem nevolal.
+
+### 14.9 Co ukázala kontrola stránek (13. 11. 2026, místně v testech)
+
+`SeoQualityTest` přečetl 249 adres z map nástrojů a blogu (99 česky, 75 anglicky, 75 španělsky; články jsou jen
+česky) a otevřel 345 různých vnitřních odkazů, které na nich a na stránkách katalogu jsou.
+
+- **Odkazy přes přesměrování: žádný.** Všech 345 odkazů odpovídá 200 (soukromé stránky `/farm`, `/account` posílají
+  hosta na přihlášení a roboti na ně nesmějí). 301, které Googlebot dostává, tedy nepocházejí z našich odkazů, ale
+  z adres, které zná z dřívějška (`?lang=`, starý web); ty teď končí jedním krokem nebo 410.
+- **Jen na produkci, neposuzováno:** sedm odkazů na ukázkové kalkulace `/c/<token>` z článků a ze stránky pro firmy
+  (tokeny jsou produkční) a odkaz na článek `/blog/jak-vznika-busta-z-fotky` z článku o figurce (článek ze starého
+  webu, v repozitáři není). Na produkci stojí za kontrolu, že všech osm odpovídá 200.
+- **Tvrdá pravidla:** po opravách projde všech 249 stránek. Opraveno: `/privacy` a `/farm/terms` měly ve všech
+  jazycích stejný popis (obecný slogan webu), teď má každá svůj (`seo.privacy.description`,
+  `seo.farm_terms.description`); doplněna strukturovaná data z 14.6.
+- **Slabé, neopravováno (chce to texty nebo rozhodnutí):**
+  - Titulek delší než 60 znaků má 176 stránek, delší než 70 má 29 (hlavně články: název článku + „ · matplace“,
+    73 až 91 znaků). Google zobrazí zhruba 60 znaků; u článků by pomohl kratší titulek pro vyhledávače vedle
+    nadpisu.
+  - `/blog` má popis 70 znaků.
+  - `/contact` má 100 slov (je to kontakt), `/model` je seznam bez vlastního textu.
+  - Stránky nástrojů mají 700 až 1 900 slov vlastního textu, medián všech stránek 1 136 slov; HTML má medián
+    114 kB, největší 351 kB (nástroj s velkou konfigurací ve stránce).
+- **Rychlost načtení jsem neměřil** (místní databáze je prázdná a produkci nesmím zatěžovat); platí měření
+  z `docs/AH.md` §11. Pro Search Console: Zkušenosti → Core Web Vitals.
+- Úvodní strana: titulek a obsah si odporují (studie, příčina 3); sjednocuje ji session `feature/home-what-to-make`.
+
+**Testy (13. 11. 2026, jak opravdu běžely):** celá sada má 1 109 testů. Jeden běh celé sady jsem po 895 testech
+zastavil (trval přes hodinu, stroj sdílely další session). Potom ve dvou bězích po posledních úpravách kódu: rozsah
+tříd L až Sa (234 testů) a všechno ostatní včetně Unit (917 testů), a nakonec 71 testů stránek po poslední úpravě
+textů (`SeoQualityTest|AuditRestTest|SeoCleanupTest|SeoTest|ToolPageTest|LandingPagesTest|PraguePageTest|
+SecurityHeadersTest`: OK, 18 195 asercí). Selhávají čtyři testy z důvodů mimo tuto větev (jejich soubory ani kód,
+který zkoušejí, jsem neměnil; na `main` jsem je nespouštěl): `FarmPagesTest` (formulář nastavení farmy žádá `shorts_publish_hour`), `PrintPhotosTest` (fotka
+`photo-short.jpg` ve střihu Shortu), `PapelPortraitTest` (šest kroků: `id="param-artwork-file" type="file"`),
+`YouTubeChannelTest` (název videa vlastního souboru). Pint bez nálezů.
+
+### 14.10 Nasazení a co ověřit na produkci
+
+**Nasazení nese:**
+
+- **Migraci** `2026_11_12_100000_search_console_inspections` (dvě nové tabulky `search_console_inspections`
+  a `search_console_sitemaps`; nic stávajícího nemění). Stav `state` má nejvýš 10 znaků ve sloupci `varchar(20)`.
+- **`.env` (nic není povinné):** zkontrolovat `CATALOG_INDEX_REQUIRES` (smazat nebo `enriched,value`, viz 14.1);
+  volitelně `BOT_NETWORKS`, `BOT_AGENTS`, `BOT_BURST_PER_HOUR` (40), `LEGACY_THUMBS_GONE` (true),
+  `SEARCH_CONSOLE_INSPECT_CAP` (150). Po změně `.env` `php artisan optimize` a restart php-fpm.
+- **`npm run build`** (nové třídy v patičce a na stránce modelu) a po nasazení `php artisan matplace:sitemap`
+  (jinak se mapa přepíše až ve 4:40).
+- **Nový rozvrh:** `searchconsole:inspect` v pondělí 6:30 (až 150 dotazů na Google přes připojený účet).
+- **nginx: není potřeba nic**, pokud server odpovídá šabloně v `deploy/nginx` (neexistující soubory jdou do
+  `index.php`, 410 vrací aplikace). Návrh, jen pokud by se chtělo ušetřit PHP nebo pokud má server vlastní pravidlo,
+  které `/assets/` přesměrovává dřív než aplikace (pak 410 z aplikace nikdy nepřijde a pravidlo je potřeba odstranit):
+
+      # snippets/matplace-app-common.conf, před location ~* \.(css|js|…)$
+      location ^~ /assets/thumbs/ { return 410; }
+
+**Co ověřit na produkci (z této session nešlo):**
+
+1. `php artisan matplace:sitemap`: řádek „By rule“ a počet indexovatelných modelů; rozhodnout, jestli nechat
+   `enriched,value`, nebo dočasně `enriched`.
+2. `curl -sI https://matplace.com/assets/thumbs/<cokoli>.jpg` → 410; `/14763` → 410; `/assets/img/<soubor>` → 302;
+   `/model/<slug>?lang=en` → jedno 301.
+3. Stránka modelu bez zkopírovaného náhledu: obrázek se načte z `legacy.matplace.com` (ne přes
+   `matplace.com/assets/thumbs`). Kolik modelů to je: `php artisan catalog:own-images --dry-run` (indexované)
+   a `--all --dry-run` (všechny). Pak `catalog:own-images` pro indexované. Pozor: `legacy.matplace.com` posílá
+   `X-Robots-Tag: noindex` i u obrázků, takže indexovaná stránka má mít obrázek u nás.
+4. `https://matplace.com/robots.txt` a `sitemap.xml` (data `lastmod` nejsou všechna dnešní).
+5. `order_started`: `SELECT DATE(created_at), COUNT(*), COUNT(DISTINCT session_id) FROM events WHERE type =
+   'order_started' AND created_at >= '2026-11-08' GROUP BY 1` a u 9. a 10. 11. `meta->kind` (čekám `inspiration`)
+   a User-Agent relací; po nasazení má být denní počet zpět v jednotkách.
+6. Blok adres „Firefox 159“ z logu do `BOT_NETWORKS`; `php artisan matplace:events-bots --since=2026-11-01 --dry-run`.
+7. Seznam „Adresy, které neexistují“ v `/admin/stats` a log: další staré adresy e‑shopu do `config/legacy.php` `gone`.
+8. `php artisan searchconsole:inspect --important` (první běh, 16 dotazů) a `--summary`.
+9. Rich Results Test na jednu indexovanou stránku modelu (`Product`), `/3d-tisk-praha` (`Service`, `FAQPage`)
+   a `/tools` (`ItemList`).
+
+**Pro Romana v Search Console (ne z kódu):**
+
+Požádat o indexování (Kontrola adresy URL → Požádat o indexování; kolem deseti denně), v tomto pořadí:
+
+1. `https://matplace.com/gifts`
+2. `https://matplace.com/tools/figure`
+3. `https://matplace.com/tools/pet-figurine`
+4. `https://matplace.com/tools`
+5. `https://matplace.com/3d-tisk-praha`
+6. `https://matplace.com/tools/charm`
+7. `https://matplace.com/tools/medallion`
+8. `https://matplace.com/tools/organizer`
+9. `https://matplace.com/blog/kolik-stoji-3d-tisk-na-zakazku-v-roce-2026`
+10. `https://matplace.com/blog/vanocni-ozdoby-se-jmenem-z-3d-tiskarny`
+
+Až 24. 11. vyjde článek `vanocni-darky-z-3d-tisku-do-24-12-terminy`, požádat i o něj. Další den anglické verze
+(`/en/gifts`, `/en/tools/figure`, `/en/tools`), pokud má smysl cizina.
+
+Postup:
+
+1. Soubory Sitemap: smazat tři staré mapy z let 2013 a 2018 (u každé tři tečky → Odebrat soubor Sitemap). Nechat jen
+   `https://matplace.com/sitemap.xml`; po nasazení ji odeslat znovu (stejná adresa, „Odeslat“), aby si ji Google stáhl.
+2. Po nasazení deset adres výše.
+3. **Za týden:** Stránky → „Proč stránky nejsou indexovány“: má ubývat „Stránka s přesměrováním“ a přibývat
+   „Vyloučeno značkou noindex“ u `/model/…` (to je správně); Soubory Sitemap: „zaindexováno“ u naší mapy už ne 0;
+   pondělní e‑mail, oddíl „Google: co má v indexu“ (kolik z důležitých stránek je v indexu).
+4. **Za tři týdny:** deset adres má být „Stránka je indexována“; Výkon → Česko: zobrazení na dotazy mimo název
+   („dárek z fotky“, „3D tisk na zakázku“, „3D tisk Praha“); Statistiky procházení: méně požadavků na obrázky
+   a `/model/…`, více na `/tools/…` a `/blog/…`; karta Nákupy: počet „produktů“ má klesat k počtu skutečně
+   indexovaných modelů s cenou. Když se deset adres do tří týdnů neobjeví, příčina není technická, ale váha webu:
+   odkazy odjinud a firemní profil (studie, bod 4 a 5).

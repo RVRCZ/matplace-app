@@ -179,8 +179,8 @@ class SeoTest extends TestCase
     public function test_sitemaps_list_a_page_only_in_the_languages_it_exists_in(): void
     {
         $card = $this->printableCard();
-        // the inspiration catalogue lists only pages with something of their own: a text of ours, a price, the file (CatalogSeoTest)
-        $own = ['enriched_at' => now(), 'file_available' => true, 'est_minutes' => 60, 'est_grams' => 20];
+        // the inspiration catalogue lists only pages with something of their own: a text of ours and a value of ours (SeoCleanupTest; the older switch CatalogSeoTest)
+        $own = ['enriched_at' => now(), 'file_available' => true, 'est_minutes' => 60, 'est_grams' => 20, 'sliced_at' => now(), 'slice_minutes' => 60, 'slice_grams' => 20];   // + the slice of the model's own file (docs/AP.md §14)
         CatalogModel::create(['legacy_id' => 1, 'slug' => 'only-czech', 'title' => 'Only Czech', 'description' => ['cs' => 'Jen česky.'], 'source' => 'printables', 'visible' => true] + $own);
         CatalogModel::create(['legacy_id' => 2, 'slug' => 'translated', 'title' => 'Translated', 'description' => ['cs' => 'Česky.', 'en' => 'In English.'], 'source' => 'printables', 'visible' => true] + $own);
         CatalogModel::create(['legacy_id' => 3, 'slug' => 'hidden', 'title' => 'Hidden', 'description' => ['cs' => 'Skrytý.'], 'source' => 'printables', 'visible' => false] + $own);

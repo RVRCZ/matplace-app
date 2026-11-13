@@ -40,6 +40,9 @@ class CatalogSeoTest extends TestCase
         Mail::fake();
         $this->seed(FarmSeeder::class);   // a kind loaded on the farm: prices can be named
         $this->sitemaps = sys_get_temp_dir().'/mp_cseo_'.uniqid();
+        // the older rule of the switch (a text, any price, the file) is what these tests walk; the default since 12 Nov 2026
+        // (a text and a value of our own) has its own tests in SeoCleanupTest
+        config(['catalog.index_requires' => ['enriched', 'price', 'file']]);
         config(['seo.sitemap_dir' => $this->sitemaps, 'engines.search' => ['local'], 'ai.gemini.api_key' => 'test-key', 'ai.gemini.text_model' => 'gemini-2.5-flash']);
     }
 
