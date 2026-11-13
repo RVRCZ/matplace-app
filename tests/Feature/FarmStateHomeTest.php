@@ -103,7 +103,9 @@ class FarmStateHomeTest extends TestCase
 
     public function test_a_closed_farm_promises_no_print_on_the_home_page_and_the_page_keeps_its_title(): void
     {
-        $from = e(__('router.gifts.from', ['price' => Money::of(99, Money::CZK)->format()]));
+        // a gift card names a price only when every example of the tool has one (config/site.php): here the bust's two priced ones
+        config(['site.example_items' => array_values(array_filter((array) config('site.example_items'), fn ($i) => $i['tool'] === 'figure' && ! empty($i['price'])))]);
+        $from = e(__('router.gifts.from', ['price' => Money::of(130, Money::CZK)->format()]));
         foreach (['' => 'cs', '/en' => 'en', '/es' => 'es'] as $prefix => $lang) {
             config(['farm.open' => true, 'farm.state' => 'open']);
             $open = (string) $this->get($prefix.'/')->assertOk()->getContent();
@@ -137,7 +139,7 @@ class FarmStateHomeTest extends TestCase
         $this->get('/')->assertOk()->assertSee('a kolik to bude stát')->assertSee($from, false);
         $this->close();
         $this->get('/')->assertOk()->assertDontSee('a kolik to bude stát')->assertDontSee($from, false)
-            ->assertDontSee(e(__('home.benefit.farm_from', ['price' => Money::of(99, Money::CZK)->format()])), false);
+            ->assertDontSee(e(__('home.benefit.farm_from', ['price' => (string) IntakePage::minOrderPrice()])), false);
 
         // the admin tries the farm out while it is closed: the page is the one of an open farm, without the promise of Christmas
         $admin = User::factory()->create();

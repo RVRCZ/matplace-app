@@ -1,8 +1,8 @@
 {
   "router.eyebrow": [
-    "3D tisk na zakázku, Praha",
-    "Custom 3D printing, Prague",
-    "Impresión 3D a medida, Praga"
+    "3D tisk na zakázku",
+    "Custom 3D printing",
+    "Impresión 3D a medida"
   ],
   "router.title": [
     "Co chcete vyrobit?",
@@ -410,9 +410,9 @@
     "Envolvemos el regalo y lo enviamos por Packeta."
   ],
   "router.deadline.pickup": [
-    "Nebo si ho vyzvednete v Praze.",
-    "Or you pick it up in Prague.",
-    "O lo recoge en Praga."
+    "Nebo si ho vyzvednete osobně.",
+    "Or you pick it up in person.",
+    "O lo recoge en persona."
   ],
   "router.prints.eyebrow": [
     "Skutečné výtisky",

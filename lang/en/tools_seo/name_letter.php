@@ -4,11 +4,11 @@
 return [
     'title' => '3D printed letter with a name: a custom decoration, free',
     'heading' => 'A big letter with a name as a gift',
-    'description' => 'Type a name and get its big first letter with the whole name in a second colour. We print it in two colours from 99 CZK, or you download the model free.',
+    'description' => 'Type a name and get its big first letter with the whole name in a second colour. We print it in two colours, or you download the model free.',
     'h1' => 'How the letter with a name is made, when it stands by itself and what it costs',
     'intro' => [
         'The tool makes the big first letter of a name and writes the whole name on it. Type a name of up to 20 characters: the letter picks itself, or you choose another, the initial of a surname say. You set the height from 60 to 200 mm and the thickness from 3 to 15 mm; from 10 mm most letters stand on a shelf by themselves, and any of them can stand in a base with a groove that prints next to it. The big letter comes in three bold typefaces, the name in thirty including handwritten ones. The tool places the name where the letter has the most room: across a horizontal stroke, or upright along a vertical one; it stands 0.4 to 2 mm proud and prints in the second colour. The two colours lie one above the other, so the print pauses once for a filament change; on our farm the letter prints in one go and you pick both colours at the order.',
-        'An example from the production calculator (27 October 2026, PLA): a letter E 120 mm high and 8 mm thick with the name Ela in a script typeface weighs 27 g, prints in 40 minutes and costs 99 CZK (about 4 EUR) from us, which is the minimum order (calculation /c/vhfifzrzy5in, one colour, the second you pick at the order). At 8 mm you stand it in the base from the same file, from 10 mm it stands by itself. It prints flat without supports. It suits a child’s door, a shelf, or a gift for a birth or a name day; the model and the project with the filament change are free to download, no sign-up.',
+        'An example from the production calculator (27 October 2026, PLA): a letter E 120 mm high and 8 mm thick with the name Ela in a script typeface weighs 27 g and prints in 40 minutes (calculation /c/vhfifzrzy5in, one colour, the second you pick at the order). At 8 mm you stand it in the base from the same file, from 10 mm it stands by itself. It prints flat without supports. It suits a child’s door, a shelf, or a gift for a birth or a name day; the model and the project with the filament change are free to download, no sign-up.',
     ],
     'steps' => [
         ['name' => 'Type the name', 'text' => 'The big letter is the first letter of the name. If you want another, the initial of a surname say, type it into the second field.'],
@@ -25,7 +25,7 @@ return [
         ['q' => 'How big a letter can you print?', 'a' => 'Up to 200 mm high, the bed of our farm is 250 × 250 mm. The preview shows by the dimensions whether the letter fits the bed; wide letters such as M and W are wider at the same height.'],
     ],
     'examples' => [
-        'A letter E 120 mm high with the name Ela in a script typeface along the vertical stroke: 27 g, 40 minutes, 99 CZK.',
+        'A letter E 120 mm high with the name Ela in a script typeface along the vertical stroke: 27 g, 40 minutes.',
         'A serif letter T 150 mm high with the name Tomáš.',
         'A letter I 100 mm high and 12 mm thick with the name Ivana, standing by itself.',
     ],

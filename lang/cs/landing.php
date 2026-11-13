@@ -32,7 +32,7 @@ return [
 
     'figure' => [
         'order' => [
-            ['q' => 'Kolik stojí vytištěná busta a jak bude velká?', 'farm' => true, 'a' => 'Busta vysoká 80 mm vyjde u nás na 99 Kč, 120 mm na 130 Kč a 150 mm na 200 Kč (PLA+, jeden kus, bez dopravy; kalkulace z produkce 17. 10. 2026). Velikost změníte v kalkulaci a cena se přepočítá.'],
+            ['q' => 'Kolik stojí vytištěná busta a jak bude velká?', 'farm' => true, 'a' => 'Busta vysoká 120 mm vyjde u nás na 130 Kč a 150 mm na 200 Kč (PLA+, jeden kus, bez dopravy; kalkulace z produkce 17. 10. 2026). Velikost změníte v kalkulaci a cena se přepočítá.'],
             ['q' => 'Jak dlouho trvá tisk a doručení?', 'farm' => true, 'a' => 'Model vzniká 2 až 4 minuty. Tisk busty 80 mm trvá asi hodinu, 150 mm necelé tři hodiny. Odesíláme v den, kdy tisk skončí, v pracovní dny, a Zásilkovna v Česku obvykle doručí do 1 až 2 pracovních dnů.'],
             ['q' => 'Z čeho a v jaké barvě se busta tiskne?', 'a' => 'Z jedné barvy plastu PLA nebo PLA+. Na figurky se hodí matné odstíny, na kterých jsou vrstvy tisku méně vidět.'],
             ['q' => 'Co když se mi model nelíbí?', 'a' => 'Model si nejdřív prohlédnete ve 3D. V rámci denního limitu (:guest bez účtu, :account s účtem) můžete zkusit jinou fotku; podstavec, jméno a věnování změníte i bez nového generování.'],
@@ -97,7 +97,7 @@ return [
         'order' => [
             ['q' => 'Jak změřit, co se má vejít dovnitř?', 'a' => 'Změřte věc v nejširším místě a přidejte 1 až 2 mm na každou stranu. Nástroj zadává vnitřní rozměry, vnější dopočítá podle stěn a dna.'],
             ['q' => 'Jak přesně krabička sedí?', 'a' => 'Tiskárna drží rozměr v řádu desetin milimetru. Víčko má vůli 0,25 mm, kterou můžete změnit; u první krabičky z nové sady ji vyzkoušejte.'],
-            ['q' => 'Kolik stojí a jak dlouho se tiskne?', 'farm' => true, 'a' => 'Krabička 84 × 54 × 32 mm s víčkem se tiskne asi 35 minut a vyjde na 99 Kč (PLA+, bez dopravy). Pro jiné rozměry ukáže cenu a dobu kalkulace dřív, než cokoli objednáte. Odesíláme v den, kdy tisk skončí, v pracovní dny.'],
+            ['q' => 'Kolik stojí a jak dlouho se tiskne?', 'farm' => true, 'a' => 'Krabička 84 × 54 × 32 mm s víčkem se tiskne asi 35 minut. Pro vaše rozměry ukáže cenu a dobu kalkulace dřív, než cokoli objednáte. Odesíláme v den, kdy tisk skončí, v pracovní dny.'],
             ['q' => 'Z jakého materiálu?', 'a' => 'Na drobnosti a elektroniku uvnitř stačí PLA. Do tepla nebo vlhka zvolte PETG.'],
             ['q' => 'Kolik stojí doprava?', 'farm' => true, 'a' => 'Zásilkovnou na výdejní místo v Česku :cz_point, domů :cz_home, na Slovensko od :sk_point, do dalších zemí EU od :eu_point.'],
             ['q' => 'Potřebuji účet?', 'a' => 'Na návrh a stažení ne. Účet potřebujete až na objednávku tisku u nás.'],
@@ -114,7 +114,7 @@ return [
         'order' => [
             ['q' => 'Jak vysoko tvar vytáhnout, aby se dal vytisknout a držel?', 'a' => 'Nejméně 0,6 mm, to jsou tři vrstvy po 0,2 mm; štítek nebo nálepka na dveře snese 2 až 3 mm, přívěsek na klíče 4 až 6 mm a tvar, který má stát sám, 20 mm a víc. Čím výš, tím víc gramů a minut; kalkulace to přepočítá po každé změně.'],
             ['q' => 'Jak tenké čáry se vytisknou?', 'a' => 'Tryska 0,4 mm potřebuje dvě linky vedle sebe, tedy aspoň 0,8 mm. Nástroj čáry pod 0,8 mm označí předem; v editoru je zesilte, nebo tvar zvětšete.'],
-            ['q' => 'Kolik stojí vytištěný tvar a jak dlouho se tiskne?', 'farm' => true, 'a' => 'Kočka 80 mm vytažená na 6 mm má 9,6 g a tiskne se 17 minut, u nás za 99 Kč, což je nejnižší cena zakázky (PLA, bez dopravy). Větší nebo vyšší tvar ukáže kalkulace v gramech, minutách a korunách dřív, než cokoli objednáte.'],
+            ['q' => 'Kolik stojí vytištěný tvar a jak dlouho se tiskne?', 'farm' => true, 'a' => 'Kočka 80 mm vytažená na 6 mm má 9,6 g a tiskne se 17 minut (PLA). Váš tvar ukáže kalkulace v gramech, minutách a korunách dřív, než cokoli objednáte.'],
             ['q' => 'Můžu mít motiv jinou barvou než podklad?', 'a' => 'Vytažený obrys je jedna barva. Když má být motiv na destičce jinou barvou, přepněte provedení na reliéf: barvy pak leží nad sebou a tiskárna je zvládne výměnou filamentu ve výšce destičky, u nás i doma.'],
             ['q' => 'Jak dlouho trvá doručení?', 'farm' => true, 'a' => 'Odesíláme v den, kdy tisk skončí, v pracovní dny. Zásilkovna v Česku obvykle doručí do 1 až 2 pracovních dnů, na výdejní místo za :cz_point, domů za :cz_home; na Slovensko od :sk_point, do EU od :eu_point.'],
             ['q' => 'Můžu výsledek dál upravovat?', 'a' => 'Ano. Vzniklý STL je obyčejný model: v kalkulaci ho zvětšíte nebo zmenšíte, nástroj Puzzle ho rozřeže na dílky, Forma z něj udělá formu na odlévání a Vykrajovátko ze stejného obrysu vyrobí vykrajovátko na těsto.'],
@@ -130,7 +130,7 @@ return [
         'order' => [
             ['q' => 'Jak poznám, že model potřebuje opravu?', 'a' => 'Slicer hlásí non‑manifold, otevřené hrany nebo neuzavřenou síť, v náhledu chybí kousky povrchu, nebo výtisk má díry a vrstvy navíc. Když si nejste jistí, nejdřív model nahrajte do kontroly; ta řekne, co je špatně, a opravu nabídne jedním tlačítkem.'],
             ['q' => 'Jak dlouho oprava trvá a jak velký soubor zvládne?', 'a' => 'Soubor do 120 MB. Běžný model je hotový za pár vteřin, síť s miliony trojúhelníků do minuty; stránka říká, co se právě děje.'],
-            ['q' => 'Kolik stojí tisk opraveného modelu?', 'farm' => true, 'a' => 'Oprava nic nestojí. Tisk u nás spočítá kalkulace z gramů a minut; nejnižší cena zakázky je 99 Kč a busta 60 × 52 × 78 mm z příkladu vyjde kolem 110 Kč (PLA, bez dopravy).'],
+            ['q' => 'Kolik stojí tisk opraveného modelu?', 'farm' => true, 'a' => 'Oprava nic nestojí. Tisk u nás spočítá kalkulace z gramů a minut; busta 60 × 52 × 78 mm z příkladu vyjde kolem 110 Kč (PLA, bez dopravy).'],
             ['q' => 'Pomůže oprava i modelu pro pryskyřicový tisk?', 'a' => 'Ano, STL je pro FDM i pryskyřici stejný a uzavřená síť je potřeba v obou. Pro pryskyřici model po opravě vydutíte s odtokovými otvory, ušetříte pryskyřici a díl nepraskne.'],
             ['q' => 'Jak výtisk dostanu?', 'farm' => true, 'a' => 'Pošleme ho Zásilkovnou na výdejní místo (v Česku :cz_point) nebo na adresu v EU. Odesíláme v den, kdy tisk skončí, v pracovní dny; jakmile balík předáme, přijde e‑mail se sledováním.'],
             ['q' => 'Co když slicer po opravě pořád hlásí chybu?', 'a' => 'Ve zprávě stojí, co se nepodařilo: chybějící velký kus povrchu nebo stěnu bez tloušťky nástroj nedoplní. Zbytek je ruční práce v Blenderu nebo Meshmixeru; drobné vady slicer často přejde a výtisk se povede.'],
@@ -146,7 +146,7 @@ return [
         'order' => [
             ['q' => 'Hlídá kontrola i tloušťku stěn?', 'a' => 'Jen nejtenčí rozměr celého modelu: pod 0,8 mm je chyba, protože tryska 0,4 mm takovou stěnu nevytiskne. Tenké místo uvnitř jinak silného modelu kontrola nenajde; to ukáže až slicer.'],
             ['q' => 'Co se stane s modelem, který neprojde?', 'a' => 'Díry a převrácené plochy pošlete jedním tlačítkem do opravy. Model větší než tiskárna zmenšíte v kalkulaci měřítkem, nebo ho rozdělíte na díly s kolíky. Špatné jednotky vyřeší nové uložení v milimetrech.'],
-            ['q' => 'Projde-li kontrola, můžu rovnou objednat tisk?', 'farm' => true, 'a' => 'Ano. Tlačítko k ceně otevře model v kalkulaci, kde vidíte gramy, dobu tisku a cenu; nejnižší cena zakázky je 99 Kč. Stejná kontrola běží i v kalkulaci, takže nic nehlásí dvakrát.'],
+            ['q' => 'Projde-li kontrola, můžu rovnou objednat tisk?', 'farm' => true, 'a' => 'Ano. Tlačítko k ceně otevře model v kalkulaci, kde vidíte gramy, dobu tisku a cenu. Stejná kontrola běží i v kalkulaci, takže nic nehlásí dvakrát.'],
             ['q' => 'Kontroluje se i STEP, 3MF a OBJ?', 'a' => 'Ano. STEP z CADu se převede na síť a zkontroluje stejně jako STL; u 3MF se kontroluje tvar, barvy a nastavení tisku zůstávají stranou.'],
             ['q' => 'Jak dlouho trvá tisk a doručení?', 'farm' => true, 'a' => 'Dobu tisku ukáže kalkulace. Odesíláme v den, kdy tisk skončí, v pracovní dny, a Zásilkovna v Česku obvykle doručí do 1 až 2 pracovních dnů (na výdejní místo :cz_point).'],
             ['q' => 'Ukládáte můj soubor?', 'a' => 'Soubor slouží ke kontrole, k opravě a ke kalkulaci a nikomu dalšímu ho neposíláme. Kontrola do něj nezasahuje; stažený model je stejný soubor, jaký jste nahráli.'],
@@ -161,7 +161,7 @@ return [
     // vstupní stránky session N1, dávka 2 (docs/AP.md §4): vydutit, rozdělit, G‑kód
     'hollow' => [
         'order' => [
-            ['q' => 'Kolik ušetřím na ceně tisku u vás?', 'farm' => true, 'a' => 'Záleží na velikosti. Váleček ⌀ 120 × 200 mm stál plný 910 Kč a dutý se stěnou 2,5 mm 500 Kč (PLA+, bez dopravy); u malého dílu se cena nezmění, protože nejnižší cena zakázky je 99 Kč. Rozdíl ukáže nástroj hned po vydutění a kalkulace ho potvrdí.'],
+            ['q' => 'Kolik ušetřím na ceně tisku u vás?', 'farm' => true, 'a' => 'Záleží na velikosti. Váleček ⌀ 120 × 200 mm stál plný 910 Kč a dutý se stěnou 2,5 mm 500 Kč (PLA+, bez dopravy); u malého dílu se cena změnit nemusí, protože zakázka má nejnižší cenu. Rozdíl ukáže nástroj hned po vydutění a kalkulace ho potvrdí.'],
             ['q' => 'Tiskne se dutý model bez podpěr?', 'a' => 'Zvenku stejně jako plný. Uvnitř má dutina strop, který slicer buď překlene, nebo podepře vnitřními podpěrami; ty po tisku vysypete odtokovými otvory. Pro FDM volte stěnu 2 až 3 mm, slicer ji ještě vyplní podle svého nastavení.'],
             ['q' => 'Jak vydutit model pro pryskyřicový tisk?', 'a' => 'Stěna 2 až 3 mm a aspoň dva otvory 3 až 4 mm ve dně, aby pryskyřice vytekla a nevznikl podtlak. Váleček ⌀ 120 × 200 mm by plný spolkl 2,3 litru pryskyřice, dutý asi čtvrt litru.'],
             ['q' => 'Jak dlouho trvá tisk a doručení?', 'farm' => true, 'a' => 'Dutý model se tiskne kratší dobu: váleček z příkladu 6 h 36 min místo 8 h 14 min. Odesíláme v den, kdy tisk skončí, v pracovní dny, a Zásilkovna v Česku obvykle doručí do 1 až 2 pracovních dnů (na výdejní místo :cz_point).'],
@@ -193,7 +193,7 @@ return [
 
     'gcode' => [
         'order' => [
-            ['q' => 'Kolik stojí tisk modelu z G‑kódu u vás?', 'farm' => true, 'a' => 'Jako u každého modelu: kalkulace ho nařeže pro naše tiskárny a cenu spočítá z gramů a minut; čas a gramy z hlavičky G‑kódu jsou jen orientační. Nejnižší cena zakázky je 99 Kč (PLA, bez dopravy).'],
+            ['q' => 'Kolik stojí tisk modelu z G‑kódu u vás?', 'farm' => true, 'a' => 'Jako u každého modelu: kalkulace ho nařeže pro naše tiskárny a cenu spočítá z gramů a minut; čas a gramy z hlavičky G‑kódu jsou jen orientační.'],
             ['q' => 'Nemůžete vytisknout rovnou můj G‑kód?', 'a' => 'Ne. G‑kód je psaný pro jednu tiskárnu a její nastavení; naše farma tiskne z modelu, který nařeže pro svůj stroj a materiál. Převod na model to umožní a navíc můžete změnit velikost nebo barvy.'],
             ['q' => 'Proč je povrch modelu schodovitý?', 'a' => 'Model nese vrstvy výtisku, ze kterého vznikl, třeba 0,2 mm. Při tisku se schodky překryjí novými vrstvami a vidět nejsou; po zvětšení modelu je přebruste, nebo tiskněte jemnější vrstvou.'],
             ['q' => 'Jak dlouho trvá tisk a doručení?', 'farm' => true, 'a' => 'Dobu tisku ukáže kalkulace. Odesíláme v den, kdy tisk skončí, v pracovní dny, a Zásilkovna v Česku obvykle doručí do 1 až 2 pracovních dnů (na výdejní místo :cz_point).'],
@@ -251,7 +251,7 @@ return [
             ['q' => 'Potřebuji účet?', 'a' => 'Na návrh a stažení ne. Účet potřebujete, až když si perníčky necháte vytisknout u nás; platí se z kreditu dobitého kartou.'],
         ],
         'who' => [
-            ['t' => 'Jmenovky na stromeček pro celou rodinu', 'text' => 'Každý má svůj perníček se jménem: jeden stojí 99 Kč, šest stejných 140 Kč, pro další jména další návrh.'],
+            ['t' => 'Jmenovky na stromeček pro celou rodinu', 'text' => 'Každý má svůj perníček se jménem: šest stejných stojí 140 Kč, pro další jména další návrh.'],
             ['t' => 'Dárek pro učitelku a kolegy', 'text' => 'Perníček 60 mm se jménem na stužce místo jmenovky na balíčku; po rozbalení visí na stromečku.'],
             ['t' => 'Školka a kroužek', 'text' => 'Ozdoby se jmény dětí z vlastní tiskárny: projekt s jednou výměnou filamentu, 20 minut na kus.'],
         ],
@@ -259,7 +259,7 @@ return [
 
     'ornament' => [
         'order' => [
-            ['q' => 'Kolik stojí ozdoba u vás a jak dlouho se tiskne?', 'farm' => true, 'a' => 'Perníček 80 mm se tiskne 18 minut a stojí 99 Kč, což je nejnižší cena zakázky; šest kusů vyjde na 160 Kč, tedy 27 Kč za ozdobu (PLA+, bez dopravy, kalkulace z 18. 10. 2026). Cenu vaší ozdoby ukáže kalkulace dřív, než cokoli objednáte.'],
+            ['q' => 'Kolik stojí ozdoba u vás a jak dlouho se tiskne?', 'farm' => true, 'a' => 'Perníček 80 mm se tiskne 18 minut; šest kusů vyjde na 160 Kč, tedy 27 Kč za ozdobu (PLA+, bez dopravy, kalkulace z 18. 10. 2026). Cenu vaší ozdoby ukáže kalkulace dřív, než cokoli objednáte.'],
             ['q' => 'Můžu udělat ozdobu z dětské kresby?', 'a' => 'Ano. Kresbu na bílém papíře vyfoťte shora při denním světle, nástroj odstraní pozadí a barvy sloučí do 2 až 4 filamentů; jemné čáry tužkou zesilte fixem. Ozdoba pak kopíruje obrys kresby, nebo ji dáte do kruhu.'],
             ['q' => 'Jak dlouho trvá doručení?', 'farm' => true, 'a' => 'Odesíláme v den, kdy tisk skončí, v pracovní dny, a Zásilkovna v Česku obvykle doručí do 1 až 2 pracovních dnů (na výdejní místo :cz_point). Před Vánoci objednejte s předstihem.'],
             ['q' => 'Jak ozdobu tisknout doma ve více barvách?', 'a' => 'Naplocho, lícem nahoru, bez podpěr. Stažený projekt má výměny filamentu ve výškách jednotlivých barev; s jednou tryskou cívky vyměníte při pauze, tiskárna s AMS, MMU nebo ACE je vymění sama.'],
@@ -275,7 +275,7 @@ return [
 
     'cutter' => [
         'order' => [
-            ['q' => 'Kolik stojí vykrajovátko u vás?', 'farm' => true, 'a' => 'Vykrajovátko jména Ela (82 × 54 mm) se tiskne 31 minut a stojí 99 Kč, což je nejnižší cena zakázky (PLA+, bez dopravy, kalkulace z 18. 10. 2026). Každý tvar je vlastní návrh a vlastní kalkulace; počet kusů jednoho tvaru zadáte v ní.'],
+            ['q' => 'Kolik stojí vykrajovátko u vás?', 'farm' => true, 'a' => 'Vykrajovátko jména Ela (82 × 54 mm) se tiskne 31 minut (PLA+); cenu vidíte v kalkulaci dřív, než cokoli objednáte. Každý tvar je vlastní návrh a vlastní kalkulace; počet kusů jednoho tvaru zadáte v ní.'],
             ['q' => 'Jak vykrajovat, aby se těsto nelepilo?', 'a' => 'Těsto nechte vychladlé a vykrajovátko před každým tvarem namočte do mouky. Tlačte rovně za obrubu, nekruťte, a tvar vysuňte prstem z hrany; zúžená hrana řeže čistěji než rovná.'],
             ['q' => 'Jak dlouho trvá tisk a doručení?', 'farm' => true, 'a' => 'Vykrajovátko se tiskne 25 až 35 minut. Odesíláme v den, kdy tisk skončí, v pracovní dny, a Zásilkovna v Česku obvykle doručí do 1 až 2 pracovních dnů (na výdejní místo :cz_point). Na vánoční pečení objednejte s předstihem.'],
             ['q' => 'Jak vykrajovátko tisknout doma?', 'a' => 'Obrubou dolů, bez podpěr, z PLA nebo PETG; stažený projekt má stěnu 1 mm a vrstvu 0,2 mm z kalkulace. Razítko, pokud vzniklo, se tiskne vedle jako samostatný díl.'],
@@ -291,7 +291,7 @@ return [
 
     'nameplate' => [
         'order' => [
-            ['q' => 'Kolik stojí jmenovky na dárky u vás?', 'farm' => true, 'a' => 'Jmenovka 70 mm s očkem se tiskne 10 minut: jedna stojí 99 Kč, což je nejnižší cena zakázky, deset stejných 120 Kč, tedy 12 Kč za kus (PLA, bez dopravy, kalkulace z 27. 10. 2026). Pro různá jména uděláte návrh pro každé; cenu vidíte dřív, než cokoli objednáte.'],
+            ['q' => 'Kolik stojí jmenovky na dárky u vás?', 'farm' => true, 'a' => 'Jmenovka 70 mm s očkem se tiskne 10 minut: deset stejných stojí 120 Kč, tedy 12 Kč za kus (PLA, bez dopravy, kalkulace z 27. 10. 2026). Pro různá jména uděláte návrh pro každé; cenu vidíte dřív, než cokoli objednáte.'],
             ['q' => 'Jak jmenovku pověsit na dárek?', 'a' => 'Zaškrtněte očko: otvor 2 až 8 mm projde stužkou i provázkem. Jmenovka 70 mm váží 5 g, takže drží na mašli i na větvi; bez očka ji přilepíte na balicí papír oboustrannou páskou.'],
             ['q' => 'Jak dlouho trvá tisk a doručení?', 'farm' => true, 'a' => 'Jmenovka se tiskne 10 až 25 minut podle velikosti. Odesíláme v den, kdy tisk skončí, v pracovní dny, a Zásilkovna v Česku obvykle doručí do 1 až 2 pracovních dnů (na výdejní místo :cz_point). Před Vánoci objednejte s předstihem.'],
             ['q' => 'Jak jmenovku tisknout doma ve více barvách?', 'a' => 'Naplocho, bez podpěr. Stažený projekt má výměnu filamentu ve výšce každé vrstvy; s jednou tryskou vyměníte cívku při pauze, tiskárna s AMS, MMU nebo ACE to udělá sama. STL je jedno těleso pro tisk jednou barvou.'],
@@ -307,7 +307,7 @@ return [
 
     'topper' => [
         'order' => [
-            ['q' => 'Kolik stojí zápich u vás a kdy dorazí?', 'farm' => true, 'a' => 'Zápich s číslem 2 a jménem Olivia (110 mm) se tiskne 55 minut a stojí 99 Kč, což je nejnižší cena zakázky (PLA, bez dopravy, kalkulace z 27. 10. 2026). Odesíláme v den, kdy tisk skončí, v pracovní dny, Zásilkovna doručí do 1 až 2 pracovních dnů; na oslavu objednejte aspoň týden předem.'],
+            ['q' => 'Kolik stojí zápich u vás a kdy dorazí?', 'farm' => true, 'a' => 'Zápich s číslem 2 a jménem Olivia (110 mm) se tiskne 55 minut (PLA); cenu vidíte v kalkulaci dřív, než cokoli objednáte. Odesíláme v den, kdy tisk skončí, v pracovní dny, Zásilkovna doručí do 1 až 2 pracovních dnů; na oslavu objednejte aspoň týden předem.'],
             ['q' => 'Jak zápich zapíchnout, aby držel?', 'a' => 'Hroty zasuňte do dortu až po tvar, nejlépe skrz piškot, ne jen do krému; dva hroty drží lépe než jeden. Obalte je potravinářskou fólií nebo zasuňte do brček a zápich dejte do dortu až před podáváním.'],
             ['q' => 'Kolik stojí doprava?', 'farm' => true, 'a' => 'Zásilkovnou na výdejní místo v Česku :cz_point, domů :cz_home, na Slovensko od :sk_point, do dalších zemí EU od :eu_point.'],
             ['q' => 'Jak zápich tisknout doma?', 'a' => 'Naplocho, lícem nahoru, bez podpěr, z PLA. Stažený projekt má pauzu ve výšce jména pro výměnu cívky; tiskárna s více cívkami to udělá sama. Tloušťka 3 mm stačí, aby se neohýbal.'],
@@ -315,7 +315,7 @@ return [
             ['q' => 'Potřebuji účet?', 'a' => 'Na návrh a stažení ne. Účet potřebujete, až když si zápich necháte vytisknout u nás; platí se z kreditu dobitého kartou.'],
         ],
         'who' => [
-            ['t' => 'Dětské narozeniny', 'text' => 'Číslo věku 110 mm se jménem psacím písmem, dva hroty 60 mm, za 99 Kč.'],
+            ['t' => 'Dětské narozeniny', 'text' => 'Číslo věku 110 mm se jménem psacím písmem, dva hroty 60 mm.'],
             ['t' => 'Svatba a výročí', 'text' => 'Srdce 120 mm s nápisem „Ela a Tom“ nebo datem, zlatá s bílou.'],
             ['t' => 'Silvestr a firemní oslava', 'text' => 'Jen nápis bez tvaru: „2027“, „Děkujeme“ nebo název týmu, 180 mm široký, hroty 80 mm.'],
         ],
@@ -323,7 +323,7 @@ return [
 
     'name_letter' => [
         'order' => [
-            ['q' => 'Kolik stojí písmeno u vás?', 'farm' => true, 'a' => 'Písmeno E vysoké 120 mm se jménem Ela se tiskne 40 minut a stojí 99 Kč, což je nejnižší cena zakázky (PLA, bez dopravy, kalkulace z 27. 10. 2026). Písmeno 200 mm je dražší podle gramů a minut; cenu vidíte dřív, než cokoli objednáte.'],
+            ['q' => 'Kolik stojí písmeno u vás?', 'farm' => true, 'a' => 'Písmeno E vysoké 120 mm se jménem Ela se tiskne 40 minut (PLA). Písmeno 200 mm je dražší podle gramů a minut; cenu vidíte dřív, než cokoli objednáte.'],
             ['q' => 'Jak písmeno pověsit na dveře?', 'a' => 'Zaškrtněte očko a pověste ho na stužku nebo háček, nebo ho přilepte oboustrannou páskou; písmeno 120 mm váží 27 g. Na poličku stačí tloušťka 10 mm, nebo podstavec s drážkou z téhož souboru.'],
             ['q' => 'Jak dlouho trvá tisk a doručení?', 'farm' => true, 'a' => 'Písmeno 120 mm se tiskne 40 minut, 200 mm přes hodinu. Odesíláme v den, kdy tisk skončí, v pracovní dny, a Zásilkovna v Česku obvykle doručí do 1 až 2 pracovních dnů (na výdejní místo :cz_point).'],
             ['q' => 'Jak písmeno tisknout doma ve dvou barvách?', 'a' => 'Naplocho, lícem nahoru, bez podpěr. Stažený projekt má pauzu ve výšce jména pro výměnu cívky; podstavec se tiskne vedle. Tiskárna s AMS, MMU nebo ACE vymění barvu sama.'],
@@ -356,7 +356,7 @@ return [
 
     'sign' => [
         'order' => [
-            ['q' => 'Kolik stojí cedulky u vás?', 'farm' => true, 'a' => 'Klíčenka se jménem 99 Kč a deset stejných dohromady 99 Kč, cedulka na dveře 173 × 69 mm 99 Kč (PLA+, bez dopravy, kalkulace z 18. 10. 2026). Větší cedulka nebo víc jmen se počítá z gramů a minut; cenu vidíte dřív, než cokoli objednáte.'],
+            ['q' => 'Kolik stojí cedulky u vás?', 'farm' => true, 'a' => 'Cedulka se počítá z gramů a minut tisku: klíčenka se jménem má 2 g a tiskne se 5 minut, cedulka na dveře 173 × 69 mm má 30 g a tiskne se 46 minut (PLA+). Počet kusů zadáte v kalkulaci; cenu vidíte dřív, než cokoli objednáte.'],
             ['q' => 'Jaký tvar a písmo zvolit na dveře?', 'a' => 'Na dveře bytu nebo kanceláře bezpatkové nebo patkové písmo s výškou aspoň 15 mm a rámeček, aby se cedulka četla z chodby; psaná písma nechte na jména a klíčenky. Vystouplé písmo druhou barvou je čitelnější než zapuštěné.'],
             ['q' => 'Jak dlouho trvá tisk a doručení?', 'farm' => true, 'a' => 'Klíčenka se tiskne 5 minut, cedulka na dveře 46 minut. Odesíláme v den, kdy tisk skončí, v pracovní dny, a Zásilkovna v Česku obvykle doručí do 1 až 2 pracovních dnů (na výdejní místo :cz_point).'],
             ['q' => 'Jak cedulku tisknout doma ve dvou barvách?', 'a' => 'Naplocho, bez podpěr. Stažený projekt má pauzu ve výšce, kde písmo začíná: tiskárna se zastaví, vyměníte cívku a tisk pokračuje; tiskárna s AMS, MMU nebo ACE barvu vymění sama. U dvoubarevné varianty stáhnete desku a písmo i zvlášť.'],
@@ -364,7 +364,7 @@ return [
             ['q' => 'Potřebuji účet?', 'a' => 'Na návrh a stažení ne. Účet potřebujete, až když si cedulky necháte vytisknout u nás; platí se z kreditu dobitého kartou.'],
         ],
         'who' => [
-            ['t' => 'Jmenovky pro třídu a tým', 'text' => 'Klíčenky se jmény 46 × 22 mm: deset kusů za 99 Kč, každé jméno vlastní návrh se stejným rozložením.'],
+            ['t' => 'Jmenovky pro třídu a tým', 'text' => 'Klíčenky se jmény 46 × 22 mm: deset kusů v jedné zakázce, každé jméno vlastní návrh se stejným rozložením.'],
             ['t' => 'Cedulka na dveře bytu a kanceláře', 'text' => '„Novákovi 12“ s vystouplým písmem a rámečkem, 173 × 69 mm, přilepená oboustrannou páskou.'],
             ['t' => 'Jméno na dětský pokoj', 'text' => 'Jen jméno psacím písmem bez destičky, s očkem na stužku, nebo bez něj na dveře.'],
         ],
@@ -372,7 +372,7 @@ return [
 
     'keychain' => [
         'order' => [
-            ['q' => 'Kolik stojí klíčenky u vás?', 'farm' => true, 'a' => 'Kost 70 mm se jménem ve dvou barvách stojí 99 Kč, což je nejnižší cena zakázky, deset stejných 100 Kč, tedy 10 Kč za kus (PLA, bez dopravy, kalkulace z 28. 10. 2026). Barvy vyberete při objednávce z cívek, které máme skladem.'],
+            ['q' => 'Kolik stojí klíčenky u vás?', 'farm' => true, 'a' => 'Kost 70 mm se jménem ve dvou barvách: deset stejných stojí 100 Kč, tedy 10 Kč za kus (PLA, bez dopravy, kalkulace z 28. 10. 2026). Barvy vyberete při objednávce z cívek, které máme skladem.'],
             ['q' => 'Jak udělat klíčenky s různými jmény pro tým?', 'a' => 'Návrh zůstává na stránce: přepíšete jméno, necháte tvar a obrázek a pokračujete do kalkulace pro každé jméno zvlášť; počet kusů jednoho jména zadáte v ní. Všechny klíčenky se tisknou vedle sebe na jedné podložce.'],
             ['q' => 'Jak dlouho trvá tisk a doručení?', 'farm' => true, 'a' => 'Klíčenka se tiskne 10 minut. Odesíláme v den, kdy tisk skončí, v pracovní dny, a Zásilkovna v Česku obvykle doručí do 1 až 2 pracovních dnů (na výdejní místo :cz_point).'],
             ['q' => 'Jak klíčenku tisknout doma ve více barvách?', 'a' => 'Naplocho, bez podpěr. Stažený projekt má výměnu filamentu ve výšce každé vrstvy; s jednou tryskou vyměníte cívku při pauze, tiskárna s AMS, MMU nebo ACE to udělá sama. STL je jedno těleso pro tisk jednou barvou.'],
@@ -422,7 +422,7 @@ return [
     // dávka C (docs/AP.md §9): logo, držák, razítko, světelný nápis
     'logo' => [
         'order' => [
-            ['q' => 'Kolik stojí logo u vás?', 'farm' => true, 'a' => 'Reliéf na destičce široký 100 mm stojí 99 Kč, což je nejnižší cena zakázky (PLA, bez dopravy, kalkulace z 28. 10. 2026). Větší cedule nebo stojící logo se počítá z gramů a minut; cenu vidíte dřív, než cokoli objednáte, i pro víc kusů.'],
+            ['q' => 'Kolik stojí logo u vás?', 'farm' => true, 'a' => 'Reliéf na destičce široký 100 mm má 27,6 g a tiskne se 43 minut (PLA). Logo se počítá z gramů a minut; cenu vidíte dřív, než cokoli objednáte, i pro víc kusů.'],
             ['q' => 'Jak připravit SVG loga?', 'a' => 'Jednou barvou, s výplněmi místo čar (Inkscape: Stroke to Path) a textem převedeným na křivky; přechody a masky nástroj nečte. Logo s drobným textem zvětšete aspoň na 100 mm, aby čáry nebyly pod 0,8 mm.'],
             ['q' => 'Jak dlouho trvá tisk a doručení?', 'farm' => true, 'a' => 'Reliéf 100 mm se tiskne 43 minut, cedule 250 mm přes dvě hodiny. Odesíláme v den, kdy tisk skončí, v pracovní dny, a Zásilkovna v Česku obvykle doručí do 1 až 2 pracovních dnů (na výdejní místo :cz_point).'],
             ['q' => 'Jak logo tisknout doma ve dvou barvách?', 'a' => 'Naplocho, bez podpěr. U reliéfu na destičce má stažený projekt pauzu ve výšce, kde motiv začíná: tiskárna se zastaví, vyměníte cívku a tisk pokračuje; tiskárna s AMS, MMU nebo ACE to udělá sama. Stojící logo a podstavec se tisknou jako dva díly.'],
@@ -438,7 +438,7 @@ return [
 
     'holder' => [
         'order' => [
-            ['q' => 'Kolik stojí držák u vás?', 'farm' => true, 'a' => 'Kolébka na ovladač 100 Kč, hák na sluchátka 99 Kč, klip na koště 99 Kč (PLA+, bez dopravy, kalkulace z 18. 10. 2026); 99 Kč je nejnižší cena zakázky. Víc držáků v jedné objednávce vyjde na kus levněji; cenu vidíte dřív, než cokoli objednáte.'],
+            ['q' => 'Kolik stojí držák u vás?', 'farm' => true, 'a' => 'Kolébka na ovladač, 27 g a 1 h 12 min tisku, stojí 100 Kč (PLA+, bez dopravy, kalkulace z 18. 10. 2026). Víc držáků v jedné objednávce vyjde na kus levněji; cenu vidíte dřív, než cokoli objednáte.'],
             ['q' => 'Jaký typ držáku na co?', 'a' => 'Kolébka na ovladač, telefon nebo brýle, kapsa na lahev, nářadí a tužky, hák na sluchátka, tašku nebo klíče s uchem, klip na násadu koštěte, mopu nebo hrábí. Předvolby nastaví rozměry běžných věcí, vlastní rozměry je přepíšou.'],
             ['q' => 'Jak dlouho trvá tisk a doručení?', 'farm' => true, 'a' => 'Klip se tiskne 21 minut, hák 27 minut, kolébka 1 h 12 min. Odesíláme v den, kdy tisk skončí, v pracovní dny, a Zásilkovna v Česku obvykle doručí do 1 až 2 pracovních dnů (na výdejní místo :cz_point).'],
             ['q' => 'Jak držák připevnit bez vrtání?', 'a' => 'Vypněte otvory a držák přilepte oboustrannou páskou; unese jen lehké věci jako ovladač nebo sluchátka. Tam, kde už ve zdi šroub je, zvolte zavěšení na šroub: hlava projde širokým otvorem a držák sjede do drážky.'],
@@ -454,7 +454,7 @@ return [
 
     'stamp' => [
         'order' => [
-            ['q' => 'Kolik stojí razítko u vás?', 'farm' => true, 'a' => 'Razítko 50 mm s držadlem stojí 99 Kč, což je nejnižší cena zakázky (PLA, bez dopravy, kalkulace z 28. 10. 2026). Větší razítko nebo víc kusů se počítá z gramů a minut; cenu vidíte dřív, než cokoli objednáte.'],
+            ['q' => 'Kolik stojí razítko u vás?', 'farm' => true, 'a' => 'Razítko 50 mm s držadlem má 6,8 g a tiskne se 28 minut (PLA). Razítko se počítá z gramů a minut; cenu vidíte dřív, než cokoli objednáte.'],
             ['q' => 'Jak udělat značku autora na dno hrnků?', 'a' => 'Nahrajte logo jako SVG nebo napište iniciály, zvolte vystouplý motiv, šířku 20 až 40 mm a výšku motivu 1 až 1,5 mm; otisk do kožené hlíny je pak čistý. S držadlem se razítko drží lépe, bez držadla ho otisknete palcem.'],
             ['q' => 'Jak dlouho trvá tisk a doručení?', 'farm' => true, 'a' => 'Razítko 50 mm se tiskne 28 minut. Odesíláme v den, kdy tisk skončí, v pracovní dny, a Zásilkovna v Česku obvykle doručí do 1 až 2 pracovních dnů (na výdejní místo :cz_point).'],
             ['q' => 'Hodí se razítko na mýdlo a těsto?', 'a' => 'Ano, na vše měkké, co otisk podrží: mýdlo, fondán, linecké těsto, polymerovou hmotu. Pro vystouplé logo na mýdle zvolte zahloubený motiv. Tištěný plast je určený pro krátký dotyk s potravinou; razítko myjte ručně, do myčky nepatří.'],
@@ -486,7 +486,7 @@ return [
     // 3D nápis, který stojí (docs/AP.md §12, dávka D)
     'text' => [
         'order' => [
-            ['q' => 'Kolik stojí nápis u vás?', 'farm' => true, 'a' => 'Slovo HOME 144 mm stojí 99 Kč (PLA, bez dopravy, kalkulace z 28. 10. 2026), dvouřádkový nápis KAVÁRNA u Jany 130 Kč. Cena roste s počtem písmen, výškou a hloubkou; vidíte ji dřív, než cokoli objednáte, i pro víc kusů.'],
+            ['q' => 'Kolik stojí nápis u vás?', 'farm' => true, 'a' => 'Dvouřádkový nápis KAVÁRNA u Jany stojí 130 Kč (PLA, bez dopravy, kalkulace z 28. 10. 2026). Cena roste s počtem písmen, výškou a hloubkou; vidíte ji dřív, než cokoli objednáte, i pro víc kusů.'],
             ['q' => 'Jaký text a písmo se hodí?', 'a' => 'Krátké slovo nebo jméno v tučném bezpatkovém písmu stojí nejjistěji; psaná písma volte od výšky 30 mm. Diakritiku nástroj přichytí spojkou, symboly pod poli vložíte jedním klepnutím.'],
             ['q' => 'Jak dlouho trvá tisk a doručení?', 'farm' => true, 'a' => 'HOME se tiskne 40 minut, dvouřádkový nápis 1 h 53 min. Odesíláme v den, kdy tisk skončí, v pracovní dny, a Zásilkovna v Česku obvykle doručí do 1 až 2 pracovních dnů (na výdejní místo :cz_point).'],
             ['q' => 'Dá se nápis přilepit na stěnu?', 'a' => 'Ano. Nápis se tiskne na zádech, takže zadní strana je rovná a hladká; na stěnu nebo na dveře ho přilepíte oboustrannou páskou. Na zavěšení je lepší cedulka s očkem, nápis očko nemá.'],
@@ -502,7 +502,7 @@ return [
     // obraz z filamentu (docs/AP.md §12, dávka D)
     'filament_art' => [
         'order' => [
-            ['q' => 'Kolik stojí obraz u vás?', 'farm' => true, 'a' => 'Sněhulák ze čtyř desek v kulatém rámu 120 mm stojí 200 Kč, perníček jako jeden tisk 120 mm 99 Kč (PLA, bez dopravy, kalkulace z 28. 10. 2026). Cena roste se šířkou a počtem desek; vidíte ji dřív, než cokoli objednáte.'],
+            ['q' => 'Kolik stojí obraz u vás?', 'farm' => true, 'a' => 'Sněhulák ze čtyř desek v kulatém rámu 120 mm stojí 200 Kč (PLA, bez dopravy, kalkulace z 28. 10. 2026). Cena roste se šířkou a počtem desek; vidíte ji dřív, než cokoli objednáte.'],
             ['q' => 'Jaký obrázek nahrát?', 'a' => 'Kresbu nebo logo s několika plnými barvami, PNG nebo JPG s jasným pozadím, nebo SVG. Fotku nástroj zjednoduší na hlavní barvy v režimu „malba“; portrét ve stupních šedi dejte raději do litofanie.'],
             ['q' => 'Jak dlouho trvá tisk a doručení?', 'farm' => true, 'a' => 'Sněhulák se tiskne 2 h 46 min, perníček 26 minut. Odesíláme v den, kdy tisk skončí, v pracovní dny, a Zásilkovna v Česku obvykle doručí do 1 až 2 pracovních dnů (na výdejní místo :cz_point).'],
             ['q' => 'Jak obraz tisknout doma?', 'a' => 'Naplocho, bez podpěr, vrstva 0,2 mm, PLA. Každou desku ze své cívky; u jednoho tisku má projekt výměny filamentu ve výškách barev, tiskárna se zastaví a vy cívku vyměníte.'],
@@ -534,7 +534,7 @@ return [
     // víčko, zátka nebo krytka na míru (docs/AP.md §12, dávka E)
     'cap' => [
         'order' => [
-            ['q' => 'Kolik stojí víčko u vás?', 'farm' => true, 'a' => 'Víčko na PET lahev stojí 99 Kč, což je nejnižší cena zakázky, nasazovací víčko na sklenici 70 mm 99 Kč (PLA, bez dopravy, kalkulace z 28. 10. 2026). Víc kusů stejného víčka zadáte jako počet kusů a cena za kus klesne.'],
+            ['q' => 'Kolik stojí víčko u vás?', 'farm' => true, 'a' => 'Víčko na PET lahev má 5,7 g a tiskne se 22 minut, nasazovací víčko na sklenici 70 mm má 17,8 g a tiskne se 39 minut (PLA); cenu vidíte v kalkulaci dřív, než cokoli objednáte. Víc kusů stejného víčka zadáte jako počet kusů a cena za kus klesne.'],
             ['q' => 'Co když neznám stoupání závitu?', 'a' => 'Změřte délku deseti závitů a vydělte ji deseti, nebo zkuste předvolbu: PET lahve mají 2,7 mm, metrické závity stoupání podle řady M6 až M30. U neznámého závitu vytiskněte jeden kus a teprve potom objednejte víc.'],
             ['q' => 'Jak dlouho trvá tisk a doručení?', 'farm' => true, 'a' => 'Víčko na PET lahev se tiskne 22 minut, víčko na sklenici 39 minut. Odesíláme v den, kdy tisk skončí, v pracovní dny, a Zásilkovna v Česku obvykle doručí do 1 až 2 pracovních dnů (na výdejní místo :cz_point).'],
             ['q' => 'Co když víčko nepasuje?', 'a' => 'Zkontrolujte, že jste zadali skutečný rozměr bez vůle; vůli přidává nástroj. Když jde díl ztuha, zvětšete vůli o 0,1 mm, když je volný, zmenšete ji, a nový kus objednáte ze stejného návrhu.'],
@@ -550,7 +550,7 @@ return [
     // podtácek s obrázkem (docs/AP.md §12, dávka E)
     'coaster' => [
         'order' => [
-            ['q' => 'Kolik stojí podtácek u vás?', 'farm' => true, 'a' => 'Kulatý podtácek 100 mm stojí 99 Kč, což je nejnižší cena zakázky, sada čtyř 170 Kč (PLA, bez dopravy, kalkulace z 28. 10. 2026). Cena roste s tloušťkou a počtem kusů; vidíte ji dřív, než cokoli objednáte.'],
+            ['q' => 'Kolik stojí podtácek u vás?', 'farm' => true, 'a' => 'Sada čtyř kulatých podtácků 100 mm stojí 170 Kč (PLA, bez dopravy, kalkulace z 28. 10. 2026). Cena roste s tloušťkou a počtem kusů; vidíte ji dřív, než cokoli objednáte.'],
             ['q' => 'Jaký tvar a velikost zvolit?', 'a' => 'Na sklenici a hrnek stačí kruh 90 až 100 mm, na půllitr čtverec 100 až 110 mm; šestiúhelníky se skládají vedle sebe do sady. Tloušťka 4 mm je dost, 6 mm působí masivněji.'],
             ['q' => 'Jak dlouho trvá tisk a doručení?', 'farm' => true, 'a' => 'Jeden podtácek se tiskne 40 minut, sada čtyř úměrně déle. Odesíláme v den, kdy tisk skončí, v pracovní dny, a Zásilkovna v Česku obvykle doručí do 1 až 2 pracovních dnů (na výdejní místo :cz_point).'],
             ['q' => 'Jak podtácek čistit?', 'a' => 'Otřít vlhkým hadrem nebo opláchnout vlažnou vodou; do myčky ne, PLA by se při 60 °C zkroutilo. Barvy jsou plast, nesmývají se ani neblednou.'],
@@ -566,7 +566,7 @@ return [
     // magnetka na lednici (docs/AP.md §12, dávka E)
     'magnet' => [
         'order' => [
-            ['q' => 'Kolik stojí magnetka u vás?', 'farm' => true, 'a' => 'Tlapka 60 mm s kapsou na magnet stojí 99 Kč, což je nejnižší cena zakázky (PLA, bez dopravy, kalkulace z 28. 10. 2026). Víc kusů stejného návrhu zadáte jako počet kusů a cena za kus klesne; magnet není v ceně.'],
+            ['q' => 'Kolik stojí magnetka u vás?', 'farm' => true, 'a' => 'Tlapka 60 mm s kapsou na magnet má 7 g a tiskne se 14 minut (PLA); cenu vidíte v kalkulaci dřív, než cokoli objednáte. Víc kusů stejného návrhu zadáte jako počet kusů a cena za kus klesne; magnet není v ceně.'],
             ['q' => 'Kde koupit magnety?', 'a' => 'Neodymové kulaté magnety Ø 10 × 2 nebo Ø 12 × 3 mm prodává železářství i e-shopy po desítkách kusů; na magnetku do 60 mm stačí jeden, na 100 mm zvolte větší, třeba Ø 20 × 3 mm. Zadejte rozměr magnetu, který opravdu máte.'],
             ['q' => 'Jak dlouho trvá tisk a doručení?', 'farm' => true, 'a' => 'Magnetka 60 mm se tiskne 14 minut. Odesíláme v den, kdy tisk skončí, v pracovní dny, a Zásilkovna v Česku obvykle doručí do 1 až 2 pracovních dnů (na výdejní místo :cz_point).'],
             ['q' => 'Udrží magnetka na lednici papír?', 'a' => 'Neodymový magnet Ø 10 × 2 mm v magnetce 60 mm udrží několik listů papíru; na tlustší svazek zvolte Ø 12 × 3 nebo Ø 15 × 3 mm. Na nerezových dveřích bez železné vrstvy magnet nedrží, vyzkoušejte je obyčejným magnetem.'],
@@ -582,7 +582,7 @@ return [
     // náušnice z obrázku (docs/AP.md §12, dávka E)
     'earrings' => [
         'order' => [
-            ['q' => 'Kolik stojí náušnice u vás?', 'farm' => true, 'a' => 'Pár srdcí 28 mm stojí 99 Kč, což je nejnižší cena zakázky (PLA, bez dopravy, kalkulace z 28. 10. 2026). Víc párů stejného návrhu zadáte jako počet kusů a cena za pár klesne; háčky nejsou v ceně.'],
+            ['q' => 'Kolik stojí náušnice u vás?', 'farm' => true, 'a' => 'Pár srdcí 28 mm má 2,2 g a tiskne se 6 minut (PLA); cenu vidíte v kalkulaci dřív, než cokoli objednáte. Víc párů stejného návrhu zadáte jako počet kusů a cena za pár klesne; háčky nejsou v ceně.'],
             ['q' => 'Jaké háčky a kroužky koupit?', 'a' => 'Afroháčky nebo puzety z chirurgické oceli a spojovací kroužky 4 až 5 mm z galanterie. Kroužek rozevřete dvěma kleštičkami do strany, navléknete do očka a zavřete; očko nastavte na 2 mm.'],
             ['q' => 'Jak dlouho trvá tisk a doručení?', 'farm' => true, 'a' => 'Pár náušnic se tiskne 6 minut. Odesíláme v den, kdy tisk skončí, v pracovní dny, a Zásilkovna v Česku obvykle doručí do 1 až 2 pracovních dnů (na výdejní místo :cz_point).'],
             ['q' => 'Dotýká se plast ucha?', 'a' => 'Ne, v uchu je jen háček nebo puzeta; plastová část visí pod ním. Háčky volte z chirurgické oceli, titanu nebo stříbra. PLA neobsahuje nikl.'],
@@ -598,7 +598,7 @@ return [
     // puzzle z modelu (docs/AP.md §12, dávka F)
     'puzzle' => [
         'order' => [
-            ['q' => 'Kolik stojí puzzle u vás?', 'farm' => true, 'a' => 'Podtácek 100 mm rozřezaný na 3 × 4 dílky stojí 99 Kč (PLA, bez dopravy, kalkulace z 28. 10. 2026). Nástroj je zdarma, platíte jen tisk; cena roste s velikostí modelu a s táckem, ne s počtem dílků.'],
+            ['q' => 'Kolik stojí puzzle u vás?', 'farm' => true, 'a' => 'Podtácek 100 mm rozřezaný na 3 × 4 dílky má 22,6 g a tiskne se 1 h 3 min (PLA); cenu vidíte v kalkulaci dřív, než cokoli objednáte. Nástroj je zdarma, platíte jen tisk; cena roste s velikostí modelu a s táckem, ne s počtem dílků.'],
             ['q' => 'Jaký model do puzzle nahrát?', 'a' => 'Plochý: reliéf nebo litofanii z fotky, logo, podtácek z našich nástrojů, do 25 mm výšky a aspoň 80 mm široký, aby dílky měly 25 mm. Vlastní STL musí mít rovné dno; model z kalkulace sem pošlete jedním klepnutím.'],
             ['q' => 'Jak dlouho trvá tisk a doručení?', 'farm' => true, 'a' => 'Puzzle z podtácku 100 mm se tiskne 1 h 3 min, všechny dílky najednou. Odesíláme v den, kdy tisk skončí, v pracovní dny, a Zásilkovna v Česku obvykle doručí do 1 až 2 pracovních dnů (na výdejní místo :cz_point).'],
             ['q' => 'Může mít každý dílek jinou barvu?', 'a' => 'Ano, při objednávce u nás vyberete barvu každého dílku v jedné zakázce; u puzzle z barevného podtácku zůstávají barvy obrázku a dílky se liší jen obrysem. Doma vytisknete dílky ze dvou cívek střídavě.'],
@@ -614,7 +614,7 @@ return [
     // držák kabelů na stůl (docs/AP.md §12, dávka F)
     'cable_holder' => [
         'order' => [
-            ['q' => 'Kolik stojí držák u vás?', 'farm' => true, 'a' => 'Držák na čtyři kabely 6 mm stojí 99 Kč, což je nejnižší cena zakázky (PLA, bez dopravy, kalkulace z 28. 10. 2026). Víc držáků stejného návrhu zadáte jako počet kusů a cena za kus klesne.'],
+            ['q' => 'Kolik stojí držák u vás?', 'farm' => true, 'a' => 'Držák na čtyři kabely 6 mm má 17,1 g a tiskne se 42 minut (PLA); cenu vidíte v kalkulaci dřív, než cokoli objednáte. Víc držáků stejného návrhu zadáte jako počet kusů a cena za kus klesne.'],
             ['q' => 'Jaký průměr zadat u běžných kabelů?', 'a' => 'Kabel ke sluchátkům 3 až 4 mm, USB‑C a Lightning 4 až 5 mm, napájecí kabel notebooku 5 až 6 mm, HDMI 6 až 7 mm, síťový kabel monitoru 7 až 8 mm. Změřte svůj posuvným měřítkem nebo papírem obtočeným kolem kabelu.'],
             ['q' => 'Jak dlouho trvá tisk a doručení?', 'farm' => true, 'a' => 'Držák na čtyři kabely se tiskne 42 minut, na šest kabelů s oušky 56 minut. Odesíláme v den, kdy tisk skončí, v pracovní dny, a Zásilkovna v Česku obvykle doručí do 1 až 2 pracovních dnů (na výdejní místo :cz_point).'],
             ['q' => 'Kam držák umístit?', 'a' => 'Na zadní hranu desky stolu, kde kabely přicházejí od zásuvky, nebo zespodu desky u přední hrany, aby nabíječky visely po ruce a nebyly vidět. Pod držák dejte pásku v celé ploše, ne jen kousek.'],
@@ -630,7 +630,7 @@ return [
     // přívěsek z obrázku (docs/AP.md §12, dávka F)
     'charm' => [
         'order' => [
-            ['q' => 'Kolik stojí přívěsek u vás?', 'farm' => true, 'a' => 'Veselý duch 45 mm stojí 99 Kč, což je nejnižší cena zakázky (PLA, bez dopravy, kalkulace z 28. 10. 2026). Víc kusů stejného návrhu zadáte jako počet kusů a cena za kus klesne; kroužek na klíče není v ceně.'],
+            ['q' => 'Kolik stojí přívěsek u vás?', 'farm' => true, 'a' => 'Veselý duch 45 mm má 3 g a tiskne se 7 minut (PLA); cenu vidíte v kalkulaci dřív, než cokoli objednáte. Víc kusů stejného návrhu zadáte jako počet kusů a cena za kus klesne; kroužek na klíče není v ceně.'],
             ['q' => 'Jakou velikost a tloušťku zvolit?', 'a' => 'Na klíče 35 až 45 mm a 3 mm tloušťky, na batoh nebo tašku 50 až 60 mm, na jezdec zipu 20 až 25 mm a 2 mm. Jmenovka na dárek může mít 60 až 80 mm a tloušťku 2 mm, nic ji nenamáhá.'],
             ['q' => 'Jak dlouho trvá tisk a doručení?', 'farm' => true, 'a' => 'Duch 45 mm se tiskne 7 minut, jméno Ela 60 mm 12 minut. Odesíláme v den, kdy tisk skončí, v pracovní dny, a Zásilkovna v Česku obvykle doručí do 1 až 2 pracovních dnů (na výdejní místo :cz_point).'],
             ['q' => 'Jaký obrázek se hodí?', 'a' => 'Kresba, logo nebo fotka s jasným motivem na klidném pozadí; nástroj pozadí odstraní a přívěsek kopíruje obrys. Drobné výběžky pod 0,8 mm se zlomí, proto je nástroj slije nebo na ně upozorní; portrét z fotky dejte na kruh nebo obdélník.'],

@@ -8,7 +8,7 @@ return [
     'h1' => 'Cómo componer la etiqueta por capas, cuánto cuesta y dónde encaja',
     'intro' => [
         'Aquí compone una placa con nombre por capas. La placa tiene una de diecinueve formas: hexágono, corazón, estrella, nube, hueso, lazo, flecha, casa, coche, gato, pez, escudo, bocadillo y más. Sobre ella coloca un nombre en una de treinta tipografías y una imagen de una biblioteca de 178 siluetas o propia; hasta doce capas, cada una con su color entre los filamentos de nuestra granja. Elige una capa haciendo clic en la vista previa, la mueve arrastrando, la escala por la esquina de su marco y la gira con la rueda, y ajusta el ancho de cada una de 5 a 250 mm. Las capas quedan una sobre otra, cada una un paso más alta, así que la impresora solo cambia el filamento a la altura correcta; en nuestra granja imprimimos hasta cuatro colores de una vez. Con una argolla, el mismo diseño es etiqueta de regalo, letrero para la puerta de una habitación infantil, etiqueta de bolso y chapa de collar.',
-        'Un ejemplo de la calculadora en producción (27 de octubre de 2026, PLA): un hexágono de 120 × 60 mm con el nombre Adéla y una estrella en tres colores pesa 14,5 g, se imprime en 25 minutos y cuesta 99 CZK (unos 4 EUR) con nosotros, que es el pedido mínimo (cálculo /c/v9fh1s1ogsob). Una etiqueta de regalo, hexágono de 70 mm con argolla y el texto «Pro Elu», pesa 5,2 g y se imprime en 10 minutos: una cuesta 99 CZK; diez iguales, 120 CZK, es decir, 12 CZK cada una, porque la preparación del pedido se paga una vez (/c/udkkubsktt9d). El cálculo cuenta un color; las bobinas de los demás se confirman al hacer el pedido. ¿Solo quiere un nombre en una placa que crece sola alrededor del texto? Bajo las opciones del inicio de la página hay un enlace al formulario rápido.',
+        'Un ejemplo de la calculadora en producción (27 de octubre de 2026, PLA): un hexágono de 120 × 60 mm con el nombre Adéla y una estrella en tres colores pesa 14,5 g y se imprime en 25 minutos (cálculo /c/v9fh1s1ogsob). Una etiqueta de regalo, hexágono de 70 mm con argolla y el texto «Pro Elu», pesa 5,2 g y se imprime en 10 minutos: diez iguales cuestan 120 CZK, es decir, 12 CZK cada una, porque la preparación del pedido se paga una vez (/c/udkkubsktt9d). El cálculo cuenta un color; las bobinas de los demás se confirman al hacer el pedido. ¿Solo quiere un nombre en una placa que crece sola alrededor del texto? Bajo las opciones del inicio de la página hay un enlace al formulario rápido.',
     ],
     'steps' => [
         ['name' => 'Empiece por la placa con nombre', 'text' => 'La página se abre con una placa, el nombre Adéla y una estrella. Cambie el nombre y elija otra forma de placa.'],
@@ -25,7 +25,7 @@ return [
         ['q' => '¿Sirve como chapa para perro?', 'a' => 'La forma de hueso con argolla, sí; para un collar elija PETG y letras de al menos 6 mm de alto. Añada el teléfono como otra capa de texto.'],
     ],
     'examples' => [
-        'Hexágono de 120 × 60 mm con el nombre Adéla y una estrella, tres colores: 14,5 g, 25 minutos, 99 CZK.',
+        'Hexágono de 120 × 60 mm con el nombre Adéla y una estrella, tres colores: 14,5 g, 25 minutos.',
         'Hueso de 130 mm con el nombre Rex y una huella, tipografía Titan One.',
         'Nube de 100 × 55 mm con el nombre Ela y una estrella.',
     ],

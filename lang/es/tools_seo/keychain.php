@@ -8,7 +8,7 @@ return [
     'h1' => 'Cómo componer el llavero por capas, qué agujero para la anilla y cuánto cuesta',
     'intro' => [
         'Aquí compone un llavero por capas. Abajo va una forma (hueso, corazón, círculo, etiqueta, rectángulo redondeado y más), encima un nombre en una de treinta tipografías y, si quiere, una imagen de la biblioteca de siluetas o propia. Cada capa tiene su color entre los filamentos de nuestra granja y queda un paso más alta que la de debajo; hasta doce capas. Elige una capa haciendo clic en la vista previa, la mueve arrastrando, la escala por la esquina de su marco y la gira con la rueda. Arriba hay una argolla con agujero de 2 a 8 mm. Los colores quedan uno sobre otro, así que la impresora solo cambia el filamento a la altura correcta; en nuestra granja imprimimos hasta cuatro colores de una vez. Un llavero a partir de una imagen en color, por ejemplo un logotipo, lo hace el formulario rápido al que enlaza la página.',
-        'Un ejemplo de la calculadora en producción (28 de octubre de 2026, PLA): un hueso de 70 mm de ancho con el nombre Rex en dos colores pesa 3,8 g y se imprime en 10 minutos. Uno cuesta 99 CZK (unos 4 EUR), que es el pedido mínimo; diez iguales cuestan 100 CZK, es decir, 10 CZK cada uno, porque la preparación del pedido se paga una vez (cálculos /c/fwgocmbyzfx6 y /c/teyrxpsrhi4k). Para otros nombres hace otro diseño: la composición se mantiene, solo cambia el nombre. La anilla no forma parte de la impresión. El modelo y el proyecto para el laminador con los cambios de filamento se descargan gratis y sin registro.',
+        'Un ejemplo de la calculadora en producción (28 de octubre de 2026, PLA): un hueso de 70 mm de ancho con el nombre Rex en dos colores pesa 3,8 g y se imprime en 10 minutos. Diez iguales cuestan 100 CZK, es decir, 10 CZK cada uno, porque la preparación del pedido se paga una vez (cálculos /c/fwgocmbyzfx6 y /c/teyrxpsrhi4k). Para otros nombres hace otro diseño: la composición se mantiene, solo cambia el nombre. La anilla no forma parte de la impresión. El modelo y el proyecto para el laminador con los cambios de filamento se descargan gratis y sin registro.',
     ],
     'steps' => [
         ['name' => 'Empiece por el llavero', 'text' => 'La página se abre con un hueso y el nombre Rex. Cambie el nombre, cambie la forma o elija otro ajuste, por ejemplo un corazón con nombre.'],
@@ -25,7 +25,7 @@ return [
         ['q' => '¿Y si las piezas quedan una junto a otra sin tocarse?', 'a' => 'La herramienta las une en la capa inferior con un puente corto y lo avisa, así el llavero se mantiene de una pieza.'],
     ],
     'examples' => [
-        'Hueso de 70 × 32 mm con el nombre Rex y argolla para la anilla, dos colores: 3,8 g, 10 minutos, 99 CZK.',
+        'Hueso de 70 × 32 mm con el nombre Rex y argolla para la anilla, dos colores: 3,8 g, 10 minutos.',
         'Corazón de 60 mm con el nombre Ema en la tipografía Lobster, argolla arriba.',
         'Llavero redondo de 45 mm con una huella, negro y amarillo.',
     ],

@@ -8,7 +8,7 @@ return [
     'h1' => 'Cómo nace el adorno de una imagen, cuántos colores admite y cuánto cuesta',
     'intro' => [
         'La herramienta convierte una imagen en un adorno navideño plano con argolla para la cinta. Sube un PNG, JPG, WebP o SVG, elige un motivo de nuestra biblioteca (unos 137 motivos, 8 de ellos en color) o escribe un nombre en una de treinta tipografías en lugar de la imagen. El fondo se elimina solo y la imagen se reduce a entre 1 y 8 colores; cada uno se asigna al filamento más cercano que nuestra granja tiene realmente en stock. El adorno sigue el contorno de la imagen o tiene forma de círculo o estrella, mide de 40 a 150 mm de ancho y de 2 a 5 mm de grosor. Los colores quedan uno sobre otro, cada uno de 0,4 a 1,2 mm más alto, así que cualquier impresora imprime el adorno con cambios de filamento a las alturas que lleva el proyecto descargable; nuestra granja imprime hasta cuatro colores de una vez.',
-        'Un ejemplo de la calculadora en producción (18 de octubre de 2026, PLA+): un muñeco de jengibre de la biblioteca de 80 mm de ancho pesa 10 g, se imprime en 18 minutos y cuesta 99 CZK (unos 4 EUR) con nosotros, que es el pedido mínimo; seis unidades salen por 160 CZK, es decir, 27 CZK por adorno, porque la preparación del pedido se paga una vez. El cálculo cuenta un color; las bobinas de los demás colores se confirman al hacer el pedido. El adorno se imprime en plano, boca arriba y sin soportes, pesa unos diez gramos y cuelga incluso de una cinta fina. El STL, un ZIP con un STL por color y el proyecto para el laminador se descargan gratis y sin registro.',
+        'Un ejemplo de la calculadora en producción (18 de octubre de 2026, PLA+): un muñeco de jengibre de la biblioteca de 80 mm de ancho pesa 10 g y se imprime en 18 minutos; seis unidades salen por 160 CZK, es decir, 27 CZK por adorno, porque la preparación del pedido se paga una vez. El cálculo cuenta un color; las bobinas de los demás colores se confirman al hacer el pedido. El adorno se imprime en plano, boca arriba y sin soportes, pesa unos diez gramos y cuelga incluso de una cinta fina. El STL, un ZIP con un STL por color y el proyecto para el laminador se descargan gratis y sin registro.',
     ],
     'steps' => [
         ['name' => 'Suba una imagen o escriba un nombre', 'text' => 'Suba una imagen, elija una de la biblioteca o use una que subió antes. Un nombre o un texto corto puede tener una o dos líneas, en una de treinta tipografías.'],
@@ -25,7 +25,7 @@ return [
         ['q' => '¿De qué avisa la herramienta?', 'a' => 'De líneas más finas que la boquilla. También de que unió piezas sueltas de la imagen con un pequeño puente para que se mantengan juntas, y de que la imagen tiene menos colores distintos de los que indicó.'],
     ],
     'examples' => [
-        'Muñeco de jengibre de 80 mm de ancho: base marrón, glaseado blanco y botones rojos; 10 g, 18 minutos, 99 CZK.',
+        'Muñeco de jengibre de 80 mm de ancho: base marrón, glaseado blanco y botones rojos; 10 g, 18 minutos.',
         'Árbol de Navidad decorado de 90 mm de ancho en cinco colores.',
         'Bola de Navidad roja de 70 mm con una franja blanca, sin margen.',
     ],

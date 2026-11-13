@@ -8,7 +8,7 @@ return [
     'h1' => 'Dos maneras de fabricar el cuadro, y cuánto cuesta',
     'intro' => [
         'La herramienta reduce una imagen o una foto a 1 a 8 colores de filamentos que de verdad tenemos en la granja y construye con ellos un cuadro para la pared de 50 a 250 mm de ancho. Por defecto es un cuadro en capas: cada color es una placa propia de 1,5 a 3 mm de grosor y las placas se apilan una tras otra como un recortable; la trasera lleva toda la silueta, la delantera solo su color. Entre las placas hay postes separadores de 2 a 5 mm, que dan al cuadro profundidad y sombra; quien quiera un cuadro fino deja las placas planas. Se añade un marco redondo o cuadrado con ranura para un clavo y, si quiere, sitio para una tira LED. La segunda manera es una sola impresión: una base y encima los colores de 0,4 mm uno sobre otro, un filamento por capa, así que cualquier impresora la imprime cambiando el filamento a las alturas que indica el proyecto. El fondo de una foto se quita solo; para una foto que llene toda el área, lo desactiva. En cada color ve la bobina que eligió la herramienta y puede cambiarla por otra del catálogo, reordenar los colores o fusionar dos.',
-        'Un ejemplo de la calculadora en producción (28 de octubre de 2026, PLA): el muñeco de nieve de la biblioteca como cuadro en capas de cuatro placas en un marco redondo de 120 mm pesa 105,6 g, se imprime en 2 h 46 min y cuesta 200 CZK (unos 8 EUR) con nosotros, sin envío (cálculo /c/tmwh0ok9ixpv); el color de cada placa y del marco se elige al encargar, en un solo pedido. El hombre de jengibre como una sola impresión de 120 mm de ancho, base y tres colores apilados, pesa 15,9 g, se imprime en 26 minutos y cuesta 99 CZK (cálculo /c/etcdmot38mpy). Junto a la vista previa está la guía: las placas en orden de atrás hacia delante, cada una dibujada. Descargue cada placa como STL propio, o todo el diseño como proyecto para su slicer, gratis y sin registro.',
+        'Un ejemplo de la calculadora en producción (28 de octubre de 2026, PLA): el muñeco de nieve de la biblioteca como cuadro en capas de cuatro placas en un marco redondo de 120 mm pesa 105,6 g, se imprime en 2 h 46 min y cuesta 200 CZK (unos 8 EUR) con nosotros, sin envío (cálculo /c/tmwh0ok9ixpv); el color de cada placa y del marco se elige al encargar, en un solo pedido. El hombre de jengibre como una sola impresión de 120 mm de ancho, base y tres colores apilados, pesa 15,9 g y se imprime en 26 minutos (cálculo /c/etcdmot38mpy). Junto a la vista previa está la guía: las placas en orden de atrás hacia delante, cada una dibujada. Descargue cada placa como STL propio, o todo el diseño como proyecto para su slicer, gratis y sin registro.',
     ],
     'steps' => [
         ['name' => 'Suba una imagen', 'text' => 'Suba una imagen, elija una de la biblioteca o reutilice una subida antes. El fondo se quita solo; para una foto que deba llenar toda el área, desactive la eliminación.'],
@@ -26,7 +26,7 @@ return [
     ],
     'examples' => [
         'Un muñeco de nieve como cuadro en capas de cuatro placas en un marco redondo de 120 mm: 105,6 g, 2 h 46 min, 200 CZK.',
-        'Un cuadro menor de 100 mm con tres placas sin marco, plano: 25 g, 46 minutos, 99 CZK, el pedido mínimo.',
-        'Un hombre de jengibre como una sola impresión de 120 mm: base y tres colores de 0,4 mm uno sobre otro, 15,9 g, 26 minutos, 99 CZK.',
+        'Un cuadro menor de 100 mm con tres placas sin marco, plano: 25 g, 46 minutos.',
+        'Un hombre de jengibre como una sola impresión de 120 mm: base y tres colores de 0,4 mm uno sobre otro, 15,9 g, 26 minutos.',
     ],
 ];

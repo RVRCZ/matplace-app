@@ -8,7 +8,7 @@ return [
     'h1' => 'Jak magnetka vzniká, jaký magnet do ní patří a kolik stojí',
     'intro' => [
         'Nástroj udělá z obrázku magnetku na lednici. Nahrajete PNG, JPG, WebP nebo SVG, vyberete motiv z knihovny, nebo napíšete jméno. Obrázek se převede na 1 až 8 barev filamentů, které máme na farmě skladem; pozadí fotky se odstraní samo a magnetka pak kopíruje obrys motivu, nebo je to kruh či obdélník s celou fotkou. Šířka 40 až 100 mm, tloušťka 3 až 6 mm, okraj kolem obrázku do 3 mm, případně zkosená hrana. Na zadní straně je uprostřed kapsa na magnet: vyberete běžný kulatý magnet od Ø 6 × 2 do Ø 20 × 3 mm, nebo zadáte vlastní rozměr, a magnet vlepíte, nalisujete, nebo necháte otvor skrz; pro samolepicí magnetickou fólii zvolíte magnetku bez kapsy. Když je magnet na zvolenou tloušťku vysoký, nástroj podklad zesílí, aby nad ním zůstaly čtyři vrstvy plastu. Magnety součástí nejsou.',
-        'Příklad z kalkulace na produkci (28. 10. 2026, PLA): tlapka z knihovny v kruhu 60 mm, 3 mm silná, s kapsou na magnet Ø 10 × 2 mm, má 7 g, tiskne se 14 minut a stojí u nás 99 Kč, což je nejnižší cena zakázky, bez dopravy (kalkulace /c/gob4imtsfmor). Víc kusů stejného návrhu zadáte jako počet kusů a cena za kus klesne; magnetky z fotek celé rodiny jsou různé návrhy. Na farmě vytiskneme až čtyři barvy najednou, podklad a tři další; cívku každé barvy potvrdíte při objednávce. STL, ZIP s jedním STL pro každou barvu i projekty pro slicer si stáhnete zdarma a bez registrace.',
+        'Příklad z kalkulace na produkci (28. 10. 2026, PLA): tlapka z knihovny v kruhu 60 mm, 3 mm silná, s kapsou na magnet Ø 10 × 2 mm, má 7 g a tiskne se 14 minut (kalkulace /c/gob4imtsfmor). Víc kusů stejného návrhu zadáte jako počet kusů a cena za kus klesne; magnetky z fotek celé rodiny jsou různé návrhy. Na farmě vytiskneme až čtyři barvy najednou, podklad a tři další; cívku každé barvy potvrdíte při objednávce. STL, ZIP s jedním STL pro každou barvu i projekty pro slicer si stáhnete zdarma a bez registrace.',
     ],
     'steps' => [
         ['name' => 'Nahrajte obrázek nebo fotku', 'text' => 'Pozadí se odstraní samo a tvar pak kopíruje obrys motivu. Když má být vidět celá fotka, odstranění pozadí vypnete. Kontrast, jas a sytost fotky doladíte posuvníky.'],
@@ -25,7 +25,7 @@ return [
         ['q' => 'Vytisknete magnetku barevně?', 'a' => 'Ano, až ve čtyřech barvách v jednom tisku: podklad a tři barvy nad ním. Cívku pro každou barvu potvrdíte při objednávce, ty z návrhu jsou předvybrané. Návrh s více barvami si stáhnete; barvy leží nad sebou, takže ho vytiskne jakákoli tiskárna výměnou filamentu ve výškách, které projekt obsahuje.'],
     ],
     'examples' => [
-        'Tlapka v kruhu široká 60 mm, vzadu kapsa na magnet Ø 10 × 2 mm: 7 g, 14 minut, 99 Kč.',
+        'Tlapka v kruhu široká 60 mm, vzadu kapsa na magnet Ø 10 × 2 mm: 7 g, 14 minut.',
         'Červené srdce široké 50 mm s nalisovaným magnetem Ø 8 × 3 mm.',
         'Fotka na obdélníku širokém 80 mm, 6 barev, otvor skrz na magnet Ø 12 × 3 mm.',
     ],

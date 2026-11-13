@@ -31,7 +31,7 @@ return [
 
     'figure' => [
         'order' => [
-            ['q' => '¿Cuánto cuesta un busto impreso y de qué tamaño es?', 'farm' => true, 'a' => 'Un busto de 80 mm de alto sale con nosotros por 99 CZK, de 120 mm por 130 CZK y de 150 mm por 200 CZK (PLA+, una pieza, sin envío; cálculos en la web del 17/10/2026). Cambie el tamaño en el cálculo y el precio se ajusta.'],
+            ['q' => '¿Cuánto cuesta un busto impreso y de qué tamaño es?', 'farm' => true, 'a' => 'Un busto de 120 mm de alto sale con nosotros por 130 CZK y de 150 mm por 200 CZK (PLA+, una pieza, sin envío; cálculos en la web del 17/10/2026). Cambie el tamaño en el cálculo y el precio se ajusta.'],
             ['q' => '¿Cuánto tardan la impresión y la entrega?', 'farm' => true, 'a' => 'El modelo tarda de 2 a 4 minutos. Un busto de 80 mm se imprime en una hora aproximadamente, uno de 150 mm en algo menos de tres horas. Enviamos el mismo día en que termina, en días laborables, y Packeta suele entregar en 1 a 2 días laborables en Chequia.'],
             ['q' => '¿De qué y en qué color se imprime el busto?', 'a' => 'En un solo color de PLA o PLA+. A las figuras les van mejor los tonos mate, en los que se notan menos las capas.'],
             ['q' => '¿Y si el modelo no me gusta?', 'a' => 'Primero lo ve en 3D. Dentro del límite diario (:guest sin cuenta, :account con cuenta) puede probar otra foto; la base, el nombre y la dedicatoria se cambian sin generar de nuevo.'],
@@ -96,7 +96,7 @@ return [
         'order' => [
             ['q' => '¿Cómo mido lo que va dentro?', 'a' => 'Mida el objeto en su punto más ancho y añada de 1 a 2 mm por cada lado. La herramienta usa las medidas interiores y calcula las exteriores según las paredes y el fondo.'],
             ['q' => '¿Qué tan exacto es el ajuste?', 'a' => 'Una impresora mantiene las medidas con unas décimas de milímetro. La tapa tiene 0,25 mm de holgura, que puede cambiar; pruébela en la primera caja de una serie nueva.'],
-            ['q' => '¿Cuánto cuesta y cuánto tarda en imprimirse?', 'farm' => true, 'a' => 'Una caja de 84 × 54 × 32 mm con tapa se imprime en unos 35 minutos y sale por 99 CZK (PLA+, sin envío). Para otras medidas el cálculo muestra el precio y el tiempo antes de pedir nada. Enviamos el mismo día en que termina, en días laborables.'],
+            ['q' => '¿Cuánto cuesta y cuánto tarda en imprimirse?', 'farm' => true, 'a' => 'Una caja de 84 × 54 × 32 mm con tapa se imprime en unos 35 minutos. Para sus medidas el cálculo muestra el precio y el tiempo antes de pedir nada. Enviamos el mismo día en que termina, en días laborables.'],
             ['q' => '¿Qué material?', 'a' => 'Para cosas pequeñas y electrónica dentro basta el PLA. Para calor o humedad elija PETG.'],
             ['q' => '¿Cuánto cuesta el envío?', 'farm' => true, 'a' => 'Con Packeta a un punto de recogida en Chequia :cz_point, a domicilio :cz_home, a Eslovaquia desde :sk_point, a otros países de la UE desde :eu_point.'],
             ['q' => '¿Necesito una cuenta?', 'a' => 'No para el diseño ni la descarga. Solo la necesita para pedir la impresión con nosotros.'],
@@ -113,7 +113,7 @@ return [
         'order' => [
             ['q' => '¿Cuánto extruir la forma para que se imprima y aguante?', 'a' => 'Al menos 0,6 mm, es decir, tres capas de 0,2 mm; una etiqueta o un letrero de puerta admite 2 a 3 mm, un colgante de llaves 4 a 6 mm y una forma que deba sostenerse sola, 20 mm o más. Cuanto más alta, más gramos y minutos; el cálculo lo recalcula tras cada cambio.'],
             ['q' => '¿Cómo de finas pueden ser las líneas?', 'a' => 'Una boquilla de 0,4 mm necesita dos líneas juntas, así que al menos 0,8 mm. La herramienta marca de antemano las líneas de menos de 0,8 mm; engrósela en su editor o agrande la forma.'],
-            ['q' => '¿Cuánto cuesta una forma impresa y cuánto tarda?', 'farm' => true, 'a' => 'El gato de 80 mm extruido a 6 mm pesa 9,6 g y se imprime en 17 minutos, 99 CZK con nosotros, que es el pedido mínimo (PLA, sin envío). Una forma mayor o más alta muestra sus gramos, minutos y precio en el cálculo antes de encargar nada.'],
+            ['q' => '¿Cuánto cuesta una forma impresa y cuánto tarda?', 'farm' => true, 'a' => 'El gato de 80 mm extruido a 6 mm pesa 9,6 g y se imprime en 17 minutos (PLA). Su forma muestra sus gramos, minutos y precio en el cálculo antes de encargar nada.'],
             ['q' => '¿Puede ir el motivo en un color distinto de la base?', 'a' => 'Un contorno extruido es de un solo color. Si el motivo debe ir sobre una placa de otro color, cambie el acabado a relieve: los colores quedan uno sobre otro y la impresora los resuelve con un cambio de filamento a la altura de la placa, en nuestra granja o en casa.'],
             ['q' => '¿Cuánto tarda el envío?', 'farm' => true, 'a' => 'Enviamos el mismo día en que termina la impresión, en días laborables. Packeta suele entregar en 1 a 2 días laborables en Chequia, a un punto de recogida por :cz_point, a domicilio por :cz_home; a Eslovaquia desde :sk_point, a la UE desde :eu_point.'],
             ['q' => '¿Puedo seguir editando el resultado?', 'a' => 'Sí. El STL es un modelo normal: lo escala en la calculadora, la herramienta Puzle lo corta en piezas, Molde hace con él un molde de colada y Cortador de galletas fabrica un cortador con el mismo contorno.'],
@@ -129,7 +129,7 @@ return [
         'order' => [
             ['q' => '¿Cómo sé que el modelo necesita reparación?', 'a' => 'El laminador avisa de non-manifold, aristas abiertas o malla no estanca, en la vista previa faltan trozos de superficie, o la impresión tiene agujeros y capas de más. Si no está seguro, suba antes el modelo a la revisión; dice qué falla y ofrece la reparación con un botón.'],
             ['q' => '¿Cuánto tarda la reparación y qué tamaño de archivo admite?', 'a' => 'Un archivo de hasta 120 MB. Un modelo normal está listo en unos segundos; una malla con millones de triángulos, en menos de un minuto; la página dice qué está pasando.'],
-            ['q' => '¿Cuánto cuesta imprimir el modelo reparado?', 'farm' => true, 'a' => 'La reparación no cuesta nada. La impresión con nosotros la calcula la calculadora a partir de los gramos y los minutos; el pedido mínimo es de 99 CZK, y el busto de 60 × 52 × 78 mm del ejemplo sale por unas 110 CZK (PLA, sin envío).'],
+            ['q' => '¿Cuánto cuesta imprimir el modelo reparado?', 'farm' => true, 'a' => 'La reparación no cuesta nada. La impresión con nosotros la calcula la calculadora a partir de los gramos y los minutos; el busto de 60 × 52 × 78 mm del ejemplo sale por unas 110 CZK (PLA, sin envío).'],
             ['q' => '¿Sirve la reparación también para un modelo de impresión en resina?', 'a' => 'Sí, el STL es el mismo para FDM y resina, y ambos necesitan una malla cerrada. Para resina, vacíe el modelo tras la reparación con orificios de drenaje: ahorra resina y la pieza no se agrieta.'],
             ['q' => '¿Cómo recibo la impresión?', 'farm' => true, 'a' => 'La enviamos con Packeta a un punto de recogida (en Chequia :cz_point) o a una dirección en la UE. Enviamos el mismo día en que termina la impresión, en días laborables; en cuanto entregamos el paquete, llega un correo con el seguimiento.'],
             ['q' => '¿Y si el laminador sigue avisando de un error tras la reparación?', 'a' => 'El informe dice qué no se pudo hacer: un trozo grande de superficie que falta o una pared sin grosor no se reconstruyen. El resto es trabajo manual en Blender o Meshmixer; el laminador suele pasar por alto fallos pequeños y la impresión sale bien.'],
@@ -145,7 +145,7 @@ return [
         'order' => [
             ['q' => '¿Mira la revisión también el grosor de las paredes?', 'a' => 'Solo la medida más fina de todo el modelo: menos de 0,8 mm es error, porque una boquilla de 0,4 mm no imprime esa pared. Un punto fino dentro de un modelo por lo demás grueso no lo detecta la revisión; eso lo muestra el laminador.'],
             ['q' => '¿Qué pasa con un modelo que no supera la revisión?', 'a' => 'Los agujeros y las caras invertidas van a la reparación con un botón. Un modelo mayor que la impresora se reduce con la escala en la calculadora, o se divide en piezas con pasadores. Las unidades equivocadas se resuelven guardando de nuevo en milímetros.'],
-            ['q' => 'Si la revisión es correcta, ¿puedo encargar la impresión enseguida?', 'farm' => true, 'a' => 'Sí. El botón del precio abre el modelo en la calculadora, donde ve los gramos, el tiempo de impresión y el precio; el pedido mínimo es de 99 CZK. La misma revisión se ejecuta en el cálculo, así que nada se avisa dos veces.'],
+            ['q' => 'Si la revisión es correcta, ¿puedo encargar la impresión enseguida?', 'farm' => true, 'a' => 'Sí. El botón del precio abre el modelo en la calculadora, donde ve los gramos, el tiempo de impresión y el precio. La misma revisión se ejecuta en el cálculo, así que nada se avisa dos veces.'],
             ['q' => '¿Se revisan también STEP, 3MF y OBJ?', 'a' => 'Sí. Un STEP de CAD se convierte en malla y se revisa como un STL; en un 3MF se revisa la forma, los colores y los ajustes de impresión quedan aparte.'],
             ['q' => '¿Cuánto tardan la impresión y el envío?', 'farm' => true, 'a' => 'El cálculo muestra el tiempo de impresión. Enviamos el mismo día en que termina, en días laborables, y Packeta suele entregar en 1 a 2 días laborables en Chequia (a un punto de recogida :cz_point).'],
             ['q' => '¿Guardan mi archivo?', 'a' => 'El archivo sirve para la revisión, la reparación y el cálculo y no se entrega a nadie más. La revisión no lo toca; el modelo que descarga es el mismo archivo que subió.'],
@@ -160,7 +160,7 @@ return [
     // páginas de entrada de la sesión N1, lote 2 (docs/AP.md §4): vaciar, dividir, G-code
     'hollow' => [
         'order' => [
-            ['q' => '¿Cuánto ahorro en el precio de impresión con ustedes?', 'farm' => true, 'a' => 'Depende del tamaño. Un cilindro de ⌀ 120 × 200 mm costó 910 CZK macizo y 500 CZK vaciado con pared de 2,5 mm (PLA+, sin envío); en una pieza pequeña el precio no cambia, porque el pedido mínimo es de 99 CZK. La herramienta muestra la diferencia justo después del vaciado y el cálculo la confirma.'],
+            ['q' => '¿Cuánto ahorro en el precio de impresión con ustedes?', 'farm' => true, 'a' => 'Depende del tamaño. Un cilindro de ⌀ 120 × 200 mm costó 910 CZK macizo y 500 CZK vaciado con pared de 2,5 mm (PLA+, sin envío); en una pieza pequeña el precio puede no cambiar, porque el pedido tiene un precio mínimo. La herramienta muestra la diferencia justo después del vaciado y el cálculo la confirma.'],
             ['q' => '¿Se imprime un modelo hueco sin soportes?', 'a' => 'Por fuera, igual que uno macizo. Por dentro, el hueco tiene un techo que el laminador puentea o apuntala con soportes interiores; esos se sacuden por los orificios de drenaje tras imprimir. Para FDM elija una pared de 2 a 3 mm; el laminador la rellena además según sus ajustes.'],
             ['q' => '¿Cómo vacío un modelo para impresión con resina?', 'a' => 'Pared de 2 a 3 mm y al menos dos orificios de 3 a 4 mm en el fondo, para que la resina salga y no se forme vacío. Un cilindro macizo de ⌀ 120 × 200 mm se tragaría 2,3 litros de resina; hueco, un cuarto de litro aproximadamente.'],
             ['q' => '¿Cuánto tardan la impresión y el envío?', 'farm' => true, 'a' => 'Un modelo hueco se imprime en menos tiempo: el cilindro del ejemplo, en 6 h 36 min en lugar de 8 h 14 min. Enviamos el mismo día en que termina la impresión, en días laborables, y Packeta suele entregar en 1 a 2 días laborables en Chequia (a un punto de recogida :cz_point).'],
@@ -192,7 +192,7 @@ return [
 
     'gcode' => [
         'order' => [
-            ['q' => '¿Cuánto cuesta imprimir con ustedes un modelo a partir de G-code?', 'farm' => true, 'a' => 'Como con cualquier modelo: el cálculo lo lamina para nuestras impresoras y pone el precio según los gramos y los minutos; el tiempo y los gramos de la cabecera del G-code son solo orientativos. El pedido mínimo es de 99 CZK (PLA, sin envío).'],
+            ['q' => '¿Cuánto cuesta imprimir con ustedes un modelo a partir de G-code?', 'farm' => true, 'a' => 'Como con cualquier modelo: el cálculo lo lamina para nuestras impresoras y pone el precio según los gramos y los minutos; el tiempo y los gramos de la cabecera del G-code son solo orientativos.'],
             ['q' => '¿No pueden imprimir directamente mi G-code?', 'a' => 'No. El G-code está escrito para una impresora y sus ajustes; nuestra granja imprime a partir de un modelo que lamina para su propia máquina y material. La conversión a modelo lo hace posible y, además, puede cambiar el tamaño o los colores.'],
             ['q' => '¿Por qué la superficie del modelo es escalonada?', 'a' => 'El modelo lleva las capas de la impresión de la que procede, por ejemplo 0,2 mm. Al imprimir, los escalones quedan cubiertos por las capas nuevas y no se ven; tras agrandar el modelo, líjelos o imprima con una capa más fina.'],
             ['q' => '¿Cuánto tardan la impresión y el envío?', 'farm' => true, 'a' => 'El cálculo muestra el tiempo de impresión. Enviamos el mismo día en que termina, en días laborables, y Packeta suele entregar en 1 a 2 días laborables en Chequia (a un punto de recogida :cz_point).'],
@@ -250,7 +250,7 @@ return [
             ['q' => '¿Necesito una cuenta?', 'a' => 'Para el diseño y la descarga, no. Solo la necesita cuando nos encarga las galletas impresas; se paga con crédito recargado con tarjeta.'],
         ],
         'who' => [
-            ['t' => 'Etiquetas para el árbol de toda la familia', 'text' => 'Cada uno tiene su galleta con nombre: una cuesta 99 CZK; seis iguales, 140 CZK; para otros nombres, otro diseño.'],
+            ['t' => 'Etiquetas para el árbol de toda la familia', 'text' => 'Cada uno tiene su galleta con nombre: seis iguales cuestan 140 CZK; para otros nombres, otro diseño.'],
             ['t' => 'Un regalo para la maestra o los compañeros', 'text' => 'Una galleta de 60 mm con nombre en una cinta en lugar de la etiqueta del paquete; tras abrirlo, cuelga en el árbol.'],
             ['t' => 'Guardería y taller', 'text' => 'Adornos con los nombres de los niños en su propia impresora: un proyecto con un cambio de filamento, 20 minutos por pieza.'],
         ],
@@ -258,7 +258,7 @@ return [
 
     'ornament' => [
         'order' => [
-            ['q' => '¿Cuánto cuesta un adorno con ustedes y cuánto tarda en imprimirse?', 'farm' => true, 'a' => 'Un muñeco de jengibre de 80 mm se imprime en 18 minutos y cuesta 99 CZK, que es el pedido mínimo; seis unidades salen por 160 CZK, es decir, 27 CZK por adorno (PLA+, sin envío, cálculo del 18 de octubre de 2026). El cálculo muestra el precio de su adorno antes de encargar nada.'],
+            ['q' => '¿Cuánto cuesta un adorno con ustedes y cuánto tarda en imprimirse?', 'farm' => true, 'a' => 'Un muñeco de jengibre de 80 mm se imprime en 18 minutos; seis unidades salen por 160 CZK, es decir, 27 CZK por adorno (PLA+, sin envío, cálculo del 18 de octubre de 2026). El cálculo muestra el precio de su adorno antes de encargar nada.'],
             ['q' => '¿Puedo hacer un adorno con el dibujo de un niño?', 'a' => 'Sí. Fotografíe el dibujo sobre papel blanco desde arriba con luz de día; la herramienta quita el fondo y funde los colores en 2 a 4 filamentos; repase con rotulador las líneas finas a lápiz. El adorno sigue entonces el contorno del dibujo, o lo pone en un círculo.'],
             ['q' => '¿Cuánto tarda el envío?', 'farm' => true, 'a' => 'Enviamos el mismo día en que termina la impresión, en días laborables, y Packeta suele entregar en 1 a 2 días laborables en Chequia (a un punto de recogida :cz_point). Antes de Navidad, encargue con tiempo.'],
             ['q' => '¿Cómo imprimo el adorno en casa en varios colores?', 'a' => 'En plano, boca arriba, sin soportes. El proyecto descargado lleva cambios de filamento a las alturas de cada color; con una boquilla cambia las bobinas en la pausa, y una impresora con AMS, MMU o ACE las cambia sola.'],
@@ -274,7 +274,7 @@ return [
 
     'cutter' => [
         'order' => [
-            ['q' => '¿Cuánto cuesta un cortador con ustedes?', 'farm' => true, 'a' => 'Un cortador del nombre Ela (82 × 54 mm) se imprime en 31 minutos y cuesta 99 CZK, que es el pedido mínimo (PLA+, sin envío, cálculo del 18 de octubre de 2026). Cada forma es un diseño y un cálculo propios; el número de unidades de una forma lo indica ahí.'],
+            ['q' => '¿Cuánto cuesta un cortador con ustedes?', 'farm' => true, 'a' => 'Un cortador del nombre Ela (82 × 54 mm) se imprime en 31 minutos (PLA+); ve el precio en el cálculo antes de encargar nada. Cada forma es un diseño y un cálculo propios; el número de unidades de una forma lo indica ahí.'],
             ['q' => '¿Cómo corto para que la masa no se pegue?', 'a' => 'Mantenga la masa fría y pase el cortador por harina antes de cada forma. Presione recto sobre el reborde, sin girar, y saque la forma del filo con un dedo; un filo afilado corta más limpio que uno recto.'],
             ['q' => '¿Cuánto tardan la impresión y el envío?', 'farm' => true, 'a' => 'Un cortador se imprime en 25 a 35 minutos. Enviamos el mismo día en que termina la impresión, en días laborables, y Packeta suele entregar en 1 a 2 días laborables en Chequia (a un punto de recogida :cz_point). Para la repostería navideña, encargue con tiempo.'],
             ['q' => '¿Cómo imprimo el cortador en casa?', 'a' => 'Con el reborde abajo, sin soportes, en PLA o PETG; el proyecto descargado lleva la pared de 1 mm y las capas de 0,2 mm del cálculo. El sello, si se ha creado, se imprime al lado como pieza aparte.'],
@@ -290,7 +290,7 @@ return [
 
     'nameplate' => [
         'order' => [
-            ['q' => '¿Cuánto cuestan las etiquetas de regalo con ustedes?', 'farm' => true, 'a' => 'Una etiqueta de 70 mm con argolla se imprime en 10 minutos: una cuesta 99 CZK, que es el pedido mínimo; diez iguales, 120 CZK, es decir, 12 CZK cada una (PLA, sin envío, cálculo del 27 de octubre de 2026). Para nombres distintos hace un diseño por cada uno; ve el precio antes de encargar nada.'],
+            ['q' => '¿Cuánto cuestan las etiquetas de regalo con ustedes?', 'farm' => true, 'a' => 'Una etiqueta de 70 mm con argolla se imprime en 10 minutos: diez iguales cuestan 120 CZK, es decir, 12 CZK cada una (PLA, sin envío, cálculo del 27 de octubre de 2026). Para nombres distintos hace un diseño por cada uno; ve el precio antes de encargar nada.'],
             ['q' => '¿Cómo cuelgo la etiqueta en un regalo?', 'a' => 'Marque la argolla: su agujero de 2 a 8 mm admite una cinta o un cordel. Una etiqueta de 70 mm pesa 5 g, así que cuelga de un lazo o de una rama; sin argolla la pega al papel de regalo con cinta de doble cara.'],
             ['q' => '¿Cuánto tardan la impresión y el envío?', 'farm' => true, 'a' => 'Una etiqueta se imprime en 10 a 25 minutos según el tamaño. Enviamos el mismo día en que termina la impresión, en días laborables, y Packeta suele entregar en 1 a 2 días laborables en Chequia (a un punto de recogida :cz_point). Antes de Navidad, encargue con tiempo.'],
             ['q' => '¿Cómo imprimo la etiqueta en casa en varios colores?', 'a' => 'En plano, sin soportes. El proyecto descargado lleva un cambio de filamento a la altura de cada capa; con una boquilla cambia la bobina en la pausa, y una impresora con AMS, MMU o ACE lo hace sola. El STL es un solo cuerpo para imprimir en un color.'],
@@ -306,7 +306,7 @@ return [
 
     'topper' => [
         'order' => [
-            ['q' => '¿Cuánto cuesta un topper con ustedes y cuándo llega?', 'farm' => true, 'a' => 'Un topper con el número 2 y el nombre Olivia (110 mm) se imprime en 55 minutos y cuesta 99 CZK, que es el pedido mínimo (PLA, sin envío, cálculo del 27 de octubre de 2026). Enviamos el mismo día en que termina la impresión, en días laborables, y Packeta entrega en 1 a 2 días laborables; para una fiesta encargue al menos con una semana de antelación.'],
+            ['q' => '¿Cuánto cuesta un topper con ustedes y cuándo llega?', 'farm' => true, 'a' => 'Un topper con el número 2 y el nombre Olivia (110 mm) se imprime en 55 minutos (PLA); ve el precio en el cálculo antes de encargar nada. Enviamos el mismo día en que termina la impresión, en días laborables, y Packeta entrega en 1 a 2 días laborables; para una fiesta encargue al menos con una semana de antelación.'],
             ['q' => '¿Cómo clavo el topper para que aguante?', 'a' => 'Clave las púas en la tarta hasta la forma, mejor a través del bizcocho y no solo en la crema; dos púas aguantan mejor que una. Envuélvalas en film o métalas en pajitas, y ponga el topper en la tarta solo antes de servir.'],
             ['q' => '¿Cuánto cuesta el envío?', 'farm' => true, 'a' => 'Con Packeta a un punto de recogida en Chequia :cz_point, a domicilio :cz_home, a Eslovaquia desde :sk_point, a otros países de la UE desde :eu_point.'],
             ['q' => '¿Cómo imprimo el topper en casa?', 'a' => 'En plano, boca arriba, sin soportes, en PLA. El proyecto descargado lleva una pausa a la altura del nombre para cambiar la bobina; una impresora con varias bobinas lo hace sola. Con 3 mm de grosor basta para que no se doble.'],
@@ -314,7 +314,7 @@ return [
             ['q' => '¿Necesito una cuenta?', 'a' => 'Para el diseño y la descarga, no. Solo la necesita cuando nos encarga el topper impreso; se paga con crédito recargado con tarjeta.'],
         ],
         'who' => [
-            ['t' => 'Cumpleaños infantil', 'text' => 'La edad como número de 110 mm con el nombre en tipografía manuscrita, dos púas de 60 mm, por 99 CZK.'],
+            ['t' => 'Cumpleaños infantil', 'text' => 'La edad como número de 110 mm con el nombre en tipografía manuscrita, dos púas de 60 mm.'],
             ['t' => 'Boda y aniversario', 'text' => 'Un corazón de 120 mm con «Ela a Tom» o una fecha, dorado con blanco.'],
             ['t' => 'Nochevieja y fiesta de empresa', 'text' => 'Solo texto sin forma: «2027», «Gracias» o el nombre del equipo, 180 mm de ancho, púas de 80 mm.'],
         ],
@@ -322,7 +322,7 @@ return [
 
     'name_letter' => [
         'order' => [
-            ['q' => '¿Cuánto cuesta una letra con ustedes?', 'farm' => true, 'a' => 'Una letra E de 120 mm de alto con el nombre Ela se imprime en 40 minutos y cuesta 99 CZK, que es el pedido mínimo (PLA, sin envío, cálculo del 27 de octubre de 2026). Una letra de 200 mm cuesta más según sus gramos y minutos; ve el precio antes de encargar nada.'],
+            ['q' => '¿Cuánto cuesta una letra con ustedes?', 'farm' => true, 'a' => 'Una letra E de 120 mm de alto con el nombre Ela se imprime en 40 minutos (PLA). Una letra de 200 mm cuesta más según sus gramos y minutos; ve el precio antes de encargar nada.'],
             ['q' => '¿Cómo cuelgo la letra en una puerta?', 'a' => 'Marque la argolla y cuélguela de una cinta o un gancho, o péguela con cinta de doble cara; una letra de 120 mm pesa 27 g. Para una estantería bastan 10 mm de grosor, o la peana con ranura del mismo archivo.'],
             ['q' => '¿Cuánto tardan la impresión y el envío?', 'farm' => true, 'a' => 'Una letra de 120 mm se imprime en 40 minutos; una de 200 mm, en más de una hora. Enviamos el mismo día en que termina la impresión, en días laborables, y Packeta suele entregar en 1 a 2 días laborables en Chequia (a un punto de recogida :cz_point).'],
             ['q' => '¿Cómo imprimo la letra en casa en dos colores?', 'a' => 'En plano, boca arriba, sin soportes. El proyecto descargado lleva una pausa a la altura del nombre para cambiar la bobina; la peana se imprime al lado. Una impresora con AMS, MMU o ACE cambia el color sola.'],
@@ -355,7 +355,7 @@ return [
 
     'sign' => [
         'order' => [
-            ['q' => '¿Cuánto cuestan las placas con ustedes?', 'farm' => true, 'a' => 'Un llavero con nombre, 99 CZK, y diez iguales, 99 CZK en total; un letrero de puerta de 173 × 69 mm, 99 CZK (PLA+, sin envío, cálculo del 18 de octubre de 2026). Una placa mayor o más nombres se calculan por gramos y minutos; ve el precio antes de encargar nada.'],
+            ['q' => '¿Cuánto cuestan las placas con ustedes?', 'farm' => true, 'a' => 'Una placa se calcula por los gramos y los minutos de impresión: un llavero con nombre pesa 2 g y se imprime en 5 minutos; un letrero de puerta de 173 × 69 mm pesa 30 g y se imprime en 46 minutos (PLA+). El número de unidades se indica en el cálculo; ve el precio antes de encargar nada.'],
             ['q' => '¿Qué forma y tipografía elegir para una puerta?', 'a' => 'Para la puerta de un piso o una oficina, una tipografía sin serifa o con serifa con letras de al menos 15 mm y un marco, para que la placa se lea desde el pasillo; deje las manuscritas para nombres y llaveros. Las letras en relieve en un segundo color se leen mejor que las rebajadas.'],
             ['q' => '¿Cuánto tardan la impresión y el envío?', 'farm' => true, 'a' => 'Un llavero se imprime en 5 minutos; un letrero de puerta, en 46 minutos. Enviamos el mismo día en que termina la impresión, en días laborables, y Packeta suele entregar en 1 a 2 días laborables en Chequia (a un punto de recogida :cz_point).'],
             ['q' => '¿Cómo imprimo la placa en casa en dos colores?', 'a' => 'En plano, sin soportes. El proyecto descargado lleva una pausa a la altura en que empiezan las letras: la impresora se detiene, cambia la bobina y la impresión sigue; una impresora con AMS, MMU o ACE cambia el color sola. En la versión de dos colores también descarga la placa y las letras por separado.'],
@@ -363,7 +363,7 @@ return [
             ['q' => '¿Necesito una cuenta?', 'a' => 'Para el diseño y la descarga, no. Solo la necesita cuando nos encarga las placas impresas; se paga con crédito recargado con tarjeta.'],
         ],
         'who' => [
-            ['t' => 'Etiquetas para una clase o un equipo', 'text' => 'Llaveros con nombres de 46 × 22 mm: diez unidades por 99 CZK, cada nombre su propio diseño con la misma composición.'],
+            ['t' => 'Etiquetas para una clase o un equipo', 'text' => 'Llaveros con nombres de 46 × 22 mm: diez unidades en un pedido, cada nombre su propio diseño con la misma composición.'],
             ['t' => 'Letrero para la puerta del piso o la oficina', 'text' => '«Novákovi 12» con letras en relieve y marco, 173 × 69 mm, pegado con cinta de doble cara.'],
             ['t' => 'Un nombre para la habitación infantil', 'text' => 'Solo el nombre en manuscrita sin placa, con argolla para una cinta, o sin ella para la puerta.'],
         ],
@@ -371,7 +371,7 @@ return [
 
     'keychain' => [
         'order' => [
-            ['q' => '¿Cuánto cuestan los llaveros con ustedes?', 'farm' => true, 'a' => 'Un hueso de 70 mm con nombre en dos colores cuesta 99 CZK, que es el pedido mínimo; diez iguales, 100 CZK, es decir, 10 CZK cada uno (PLA, sin envío, cálculo del 28 de octubre de 2026). Los colores se eligen al hacer el pedido entre las bobinas que tenemos en stock.'],
+            ['q' => '¿Cuánto cuestan los llaveros con ustedes?', 'farm' => true, 'a' => 'Un hueso de 70 mm con nombre en dos colores: diez iguales cuestan 100 CZK, es decir, 10 CZK cada uno (PLA, sin envío, cálculo del 28 de octubre de 2026). Los colores se eligen al hacer el pedido entre las bobinas que tenemos en stock.'],
             ['q' => '¿Cómo hago llaveros con distintos nombres para un equipo?', 'a' => 'El diseño se queda en la página: cambie el nombre, mantenga la forma y la imagen y continúe al cálculo con cada nombre por separado; el número de unidades de un nombre lo indica ahí. Todos los llaveros se imprimen juntos en una misma cama.'],
             ['q' => '¿Cuánto tardan la impresión y el envío?', 'farm' => true, 'a' => 'Un llavero se imprime en 10 minutos. Enviamos el mismo día en que termina la impresión, en días laborables, y Packeta suele entregar en 1 a 2 días laborables en Chequia (a un punto de recogida :cz_point).'],
             ['q' => '¿Cómo imprimo el llavero en casa en varios colores?', 'a' => 'En plano, sin soportes. El proyecto descargado lleva un cambio de filamento a la altura de cada capa; con una boquilla cambia la bobina en la pausa, y una impresora con AMS, MMU o ACE lo hace sola. El STL es un solo cuerpo para imprimir en un color.'],
@@ -421,7 +421,7 @@ return [
     // lote C (docs/AP.md §9): logotipo, soporte de pared, sello, cartel luminoso
     'logo' => [
         'order' => [
-            ['q' => '¿Cuánto cuesta un logotipo con ustedes?', 'farm' => true, 'a' => 'Un relieve sobre placa de 100 mm de ancho cuesta 99 CZK, que es el pedido mínimo (PLA, sin envío, cálculo del 28 de octubre de 2026). Un cartel mayor o un logotipo de pie se calcula por gramos y minutos; ve el precio antes de encargar nada, también para varias unidades.'],
+            ['q' => '¿Cuánto cuesta un logotipo con ustedes?', 'farm' => true, 'a' => 'Un relieve sobre placa de 100 mm de ancho pesa 27,6 g y se imprime en 43 minutos (PLA). Un logotipo se calcula por gramos y minutos; ve el precio antes de encargar nada, también para varias unidades.'],
             ['q' => '¿Cómo preparo el SVG del logotipo?', 'a' => 'En un solo color, con rellenos en lugar de trazos (Inkscape: Stroke to Path) y el texto convertido en trazados; degradados y máscaras no se leen. Un logotipo con texto pequeño agrándelo al menos a 100 mm para que ninguna línea baje de 0,8 mm.'],
             ['q' => '¿Cuánto tardan la impresión y el envío?', 'farm' => true, 'a' => 'Un relieve de 100 mm se imprime en 43 minutos; un cartel de 250 mm, en más de dos horas. Enviamos el mismo día en que termina la impresión, en días laborables, y Packeta suele entregar en 1 a 2 días laborables en Chequia (a un punto de recogida :cz_point).'],
             ['q' => '¿Cómo imprimo el logotipo en casa en dos colores?', 'a' => 'En plano, sin soportes. En el relieve sobre placa el proyecto descargado lleva una pausa a la altura en que empieza el motivo: la impresora se detiene, cambia la bobina y la impresión sigue; una impresora con AMS, MMU o ACE lo hace sola. El logotipo de pie y su peana se imprimen como dos piezas.'],
@@ -437,7 +437,7 @@ return [
 
     'holder' => [
         'order' => [
-            ['q' => '¿Cuánto cuesta un soporte con ustedes?', 'farm' => true, 'a' => 'Una cuna para un mando, 100 CZK; un gancho para auriculares, 99 CZK; una pinza para una escoba, 99 CZK (PLA+, sin envío, cálculo del 18 de octubre de 2026); 99 CZK es el pedido mínimo. Varios soportes en un pedido salen más baratos por unidad; ve el precio antes de encargar nada.'],
+            ['q' => '¿Cuánto cuesta un soporte con ustedes?', 'farm' => true, 'a' => 'Una cuna para un mando, 27 g y 1 h 12 min de impresión, cuesta 100 CZK (PLA+, sin envío, cálculo del 18 de octubre de 2026). Varios soportes en un pedido salen más baratos por unidad; ve el precio antes de encargar nada.'],
             ['q' => '¿Qué tipo de soporte para cada cosa?', 'a' => 'La cuna para un mando, un móvil o unas gafas; el bolsillo para una botella, herramientas y bolígrafos; el gancho para auriculares, un bolso o llaves con asa; la pinza para el mango de una escoba, una fregona o un rastrillo. Los ajustes predefinidos ponen las medidas de objetos corrientes; sus propias medidas los sustituyen.'],
             ['q' => '¿Cuánto tardan la impresión y el envío?', 'farm' => true, 'a' => 'La pinza se imprime en 21 minutos; el gancho, en 27 minutos; la cuna, en 1 h 12 min. Enviamos el mismo día en que termina la impresión, en días laborables, y Packeta suele entregar en 1 a 2 días laborables en Chequia (a un punto de recogida :cz_point).'],
             ['q' => '¿Cómo fijo el soporte sin taladrar?', 'a' => 'Desactive los agujeros y pegue el soporte con cinta de doble cara; solo aguanta cosas ligeras como un mando o unos auriculares. Donde ya hay un tornillo en la pared, elija colgar de un tornillo: la cabeza pasa por el agujero ancho y el soporte baja hasta la ranura.'],
@@ -453,7 +453,7 @@ return [
 
     'stamp' => [
         'order' => [
-            ['q' => '¿Cuánto cuesta un sello con ustedes?', 'farm' => true, 'a' => 'Un sello de 50 mm con mango cuesta 99 CZK, que es el pedido mínimo (PLA, sin envío, cálculo del 28 de octubre de 2026). Un sello mayor o más unidades se calculan por gramos y minutos; ve el precio antes de encargar nada.'],
+            ['q' => '¿Cuánto cuesta un sello con ustedes?', 'farm' => true, 'a' => 'Un sello de 50 mm con mango pesa 6,8 g y se imprime en 28 minutos (PLA). Un sello se calcula por gramos y minutos; ve el precio antes de encargar nada.'],
             ['q' => '¿Cómo hago una marca de autor para la base de las tazas?', 'a' => 'Suba el logotipo como SVG o escriba sus iniciales, elija motivo en relieve, un ancho de 20 a 40 mm y una altura de motivo de 1 a 1,5 mm; la impronta en arcilla en dureza de cuero queda limpia. Con mango el sello se sujeta mejor; sin él, lo presiona con el pulgar.'],
             ['q' => '¿Cuánto tardan la impresión y el envío?', 'farm' => true, 'a' => 'Un sello de 50 mm se imprime en 28 minutos. Enviamos el mismo día en que termina la impresión, en días laborables, y Packeta suele entregar en 1 a 2 días laborables en Chequia (a un punto de recogida :cz_point).'],
             ['q' => '¿Sirve el sello para jabón y masa?', 'a' => 'Sí, para todo lo blando que conserve la impronta: jabón, fondant, masa quebrada, arcilla polimérica. Para un logotipo en relieve sobre jabón elija el motivo rebajado. El plástico impreso está pensado para un contacto breve con alimentos; lave el sello a mano, no en el lavavajillas.'],
@@ -485,7 +485,7 @@ return [
     // texto 3D de pie (docs/AP.md §12, lote D)
     'text' => [
         'order' => [
-            ['q' => '¿Cuánto cuesta el texto con ustedes?', 'farm' => true, 'a' => 'La palabra HOME, de 144 mm, cuesta 99 CZK (PLA, sin envío, cálculo del 28 de octubre de 2026); el texto de dos líneas KAVÁRNA u Jany, 130 CZK. El precio crece con el número de letras, la altura y el fondo; lo ve antes de encargar nada, también para varias unidades.'],
+            ['q' => '¿Cuánto cuesta el texto con ustedes?', 'farm' => true, 'a' => 'El texto de dos líneas KAVÁRNA u Jany cuesta 130 CZK (PLA, sin envío, cálculo del 28 de octubre de 2026). El precio crece con el número de letras, la altura y el fondo; lo ve antes de encargar nada, también para varias unidades.'],
             ['q' => '¿Qué texto y tipografía van bien?', 'a' => 'Una palabra corta o un nombre en sans serif negrita se sostiene mejor; las caligráficas, a partir de 30 mm. La herramienta sujeta las tildes con una unión corta y los símbolos bajo los campos entran con un toque.'],
             ['q' => '¿Cuánto tardan la impresión y el envío?', 'farm' => true, 'a' => 'HOME se imprime en 40 minutos; el texto de dos líneas, en 1 h 53 min. Enviamos el día en que termina la impresión, en días laborables, y Packeta en Chequia suele entregar en 1 o 2 días laborables (a un punto de recogida :cz_point).'],
             ['q' => '¿Se puede pegar el texto a una pared?', 'a' => 'Sí. El texto se imprime sobre la espalda, así que la cara trasera queda plana y lisa; péguelo a una pared o una puerta con cinta de doble cara. Para colgarlo es mejor el cartel con ojal; el texto no lo tiene.'],
@@ -501,7 +501,7 @@ return [
     // cuadro de filamento (docs/AP.md §12, lote D)
     'filament_art' => [
         'order' => [
-            ['q' => '¿Cuánto cuesta el cuadro con ustedes?', 'farm' => true, 'a' => 'El muñeco de nieve de cuatro placas en un marco redondo de 120 mm cuesta 200 CZK; el hombre de jengibre como una sola impresión de 120 mm, 99 CZK (PLA, sin envío, cálculo del 28 de octubre de 2026). El precio crece con el ancho y el número de placas; lo ve antes de encargar nada.'],
+            ['q' => '¿Cuánto cuesta el cuadro con ustedes?', 'farm' => true, 'a' => 'El muñeco de nieve de cuatro placas en un marco redondo de 120 mm cuesta 200 CZK (PLA, sin envío, cálculo del 28 de octubre de 2026). El precio crece con el ancho y el número de placas; lo ve antes de encargar nada.'],
             ['q' => '¿Qué imagen subo?', 'a' => 'Un dibujo o un logotipo con pocos colores planos, un PNG o JPG con fondo claro, o un SVG. Una foto la herramienta la simplifica a sus colores principales en modo «pintura»; un retrato en escala de grises queda mejor como litofanía.'],
             ['q' => '¿Cuánto tardan la impresión y el envío?', 'farm' => true, 'a' => 'El muñeco de nieve se imprime en 2 h 46 min; el hombre de jengibre, en 26 minutos. Enviamos el día en que termina la impresión, en días laborables, y Packeta en Chequia suele entregar en 1 o 2 días laborables (a un punto de recogida :cz_point).'],
             ['q' => '¿Cómo imprimo el cuadro en casa?', 'a' => 'Plano, sin soportes, capas de 0,2 mm, PLA. Cada placa con su bobina; en la impresión única el proyecto lleva los cambios de filamento a las alturas de los colores, la impresora se detiene y usted cambia la bobina.'],
@@ -533,7 +533,7 @@ return [
     // tapa, tapón o cubierta a medida (docs/AP.md §12, lote E)
     'cap' => [
         'order' => [
-            ['q' => '¿Cuánto cuesta una tapa con ustedes?', 'farm' => true, 'a' => 'Una tapa para botella PET cuesta 99 CZK, el pedido mínimo; una tapa a presión para un tarro de 70 mm, 99 CZK (PLA, sin envío, cálculo del 28 de octubre de 2026). Varias unidades de la misma tapa se indican como cantidad y el precio por pieza baja.'],
+            ['q' => '¿Cuánto cuesta una tapa con ustedes?', 'farm' => true, 'a' => 'Una tapa para botella PET pesa 5,7 g y se imprime en 22 minutos; una tapa a presión para un tarro de 70 mm pesa 17,8 g y se imprime en 39 minutos (PLA); ve el precio en el cálculo antes de encargar nada. Varias unidades de la misma tapa se indican como cantidad y el precio por pieza baja.'],
             ['q' => '¿Y si no conozco el paso de la rosca?', 'a' => 'Mida la longitud de diez filetes y divídala entre diez, o pruebe un preajuste: las botellas PET tienen 2,7 mm; las roscas métricas, el paso de la serie M6 a M30. Con una rosca desconocida imprima una unidad antes de encargar más.'],
             ['q' => '¿Cuánto tardan la impresión y el envío?', 'farm' => true, 'a' => 'La tapa de botella PET se imprime en 22 minutos; la tapa del tarro, en 39 minutos. Enviamos el día en que termina la impresión, en días laborables, y Packeta en Chequia suele entregar en 1 o 2 días laborables (a un punto de recogida :cz_point).'],
             ['q' => '¿Y si la tapa no encaja?', 'a' => 'Compruebe que indicó la medida real sin holgura; la holgura la añade la herramienta. Si la pieza entra dura, añada 0,1 mm de holgura; si queda floja, quítelos, y encargue la nueva pieza desde el mismo diseño.'],
@@ -549,7 +549,7 @@ return [
     // posavasos con imagen (docs/AP.md §12, lote E)
     'coaster' => [
         'order' => [
-            ['q' => '¿Cuánto cuesta un posavasos con ustedes?', 'farm' => true, 'a' => 'Un posavasos redondo de 100 mm cuesta 99 CZK, el pedido mínimo; un juego de cuatro, 170 CZK (PLA, sin envío, cálculo del 28 de octubre de 2026). El precio crece con el grosor y el número de piezas; lo ve antes de encargar nada.'],
+            ['q' => '¿Cuánto cuesta un posavasos con ustedes?', 'farm' => true, 'a' => 'Un juego de cuatro posavasos redondos de 100 mm cuesta 170 CZK (PLA, sin envío, cálculo del 28 de octubre de 2026). El precio crece con el grosor y el número de piezas; lo ve antes de encargar nada.'],
             ['q' => '¿Qué forma y tamaño elijo?', 'a' => 'Para un vaso o una taza basta un círculo de 90 a 100 mm; para una jarra, un cuadrado de 100 a 110 mm; los hexágonos encajan uno junto a otro como juego. Un grosor de 4 mm es suficiente; 6 mm parece más sólido.'],
             ['q' => '¿Cuánto tardan la impresión y el envío?', 'farm' => true, 'a' => 'Un posavasos se imprime en 40 minutos; un juego de cuatro, proporcionalmente más. Enviamos el día en que termina la impresión, en días laborables, y Packeta en Chequia suele entregar en 1 o 2 días laborables (a un punto de recogida :cz_point).'],
             ['q' => '¿Cómo limpio el posavasos?', 'a' => 'Pásele un paño húmedo o enjuáguelo con agua tibia; no en el lavavajillas, el PLA se deformaría a 60 °C. Los colores son plástico, no se lavan ni se destiñen.'],
@@ -565,7 +565,7 @@ return [
     // imán de nevera (docs/AP.md §12, lote E)
     'magnet' => [
         'order' => [
-            ['q' => '¿Cuánto cuesta un imán con ustedes?', 'farm' => true, 'a' => 'La huella de 60 mm con hueco para el imán cuesta 99 CZK, el pedido mínimo (PLA, sin envío, cálculo del 28 de octubre de 2026). Varias unidades del mismo diseño se indican como cantidad y el precio por pieza baja; el imán no va en el precio.'],
+            ['q' => '¿Cuánto cuesta un imán con ustedes?', 'farm' => true, 'a' => 'La huella de 60 mm con hueco para el imán pesa 7 g y se imprime en 14 minutos (PLA); ve el precio en el cálculo antes de encargar nada. Varias unidades del mismo diseño se indican como cantidad y el precio por pieza baja; el imán no va en el precio.'],
             ['q' => '¿Dónde compro los imanes?', 'a' => 'Los imanes de disco de neodimio de Ø 10 × 2 o Ø 12 × 3 mm se venden en ferreterías y tiendas en línea por decenas; para una pieza de hasta 60 mm basta uno; para 100 mm elija uno mayor, como Ø 20 × 3 mm. Indique la medida del imán que de verdad tiene.'],
             ['q' => '¿Cuánto tardan la impresión y el envío?', 'farm' => true, 'a' => 'Un imán de 60 mm se imprime en 14 minutos. Enviamos el día en que termina la impresión, en días laborables, y Packeta en Chequia suele entregar en 1 o 2 días laborables (a un punto de recogida :cz_point).'],
             ['q' => '¿Sujetará papel en la nevera?', 'a' => 'Un neodimio de Ø 10 × 2 mm en una pieza de 60 mm sujeta unas hojas de papel; para un fajo más grueso elija Ø 12 × 3 o Ø 15 × 3 mm. En puertas de acero inoxidable sin capa de hierro un imán no se sujeta; pruébelas con un imán corriente.'],
@@ -581,7 +581,7 @@ return [
     // pendientes a partir de una imagen (docs/AP.md §12, lote E)
     'earrings' => [
         'order' => [
-            ['q' => '¿Cuánto cuestan los pendientes con ustedes?', 'farm' => true, 'a' => 'Un par de corazones de 28 mm cuesta 99 CZK, el pedido mínimo (PLA, sin envío, cálculo del 28 de octubre de 2026). Varios pares del mismo diseño se indican como cantidad y el precio por par baja; los ganchos no van en el precio.'],
+            ['q' => '¿Cuánto cuestan los pendientes con ustedes?', 'farm' => true, 'a' => 'Un par de corazones de 28 mm pesa 2,2 g y se imprime en 6 minutos (PLA); ve el precio en el cálculo antes de encargar nada. Varios pares del mismo diseño se indican como cantidad y el precio por par baja; los ganchos no van en el precio.'],
             ['q' => '¿Qué ganchos y anillas compro?', 'a' => 'Ganchos de pesca o pernos de acero quirúrgico y anillas de 4 a 5 mm de una mercería. Abra la anilla de lado con dos alicates, pásela por el ojal y ciérrela; ajuste el ojal a 2 mm.'],
             ['q' => '¿Cuánto tardan la impresión y el envío?', 'farm' => true, 'a' => 'Un par de pendientes se imprime en 6 minutos. Enviamos el día en que termina la impresión, en días laborables, y Packeta en Chequia suele entregar en 1 o 2 días laborables (a un punto de recogida :cz_point).'],
             ['q' => '¿El plástico toca la oreja?', 'a' => 'No, en la oreja solo va el gancho o el perno; la parte de plástico cuelga debajo. Elija ganchos de acero quirúrgico, titanio o plata. El PLA no contiene níquel.'],
@@ -597,7 +597,7 @@ return [
     // puzzle de un modelo (docs/AP.md §12, lote F)
     'puzzle' => [
         'order' => [
-            ['q' => '¿Cuánto cuesta un puzzle con ustedes?', 'farm' => true, 'a' => 'El posavasos de 100 mm cortado en 3 × 4 piezas cuesta 99 CZK (PLA, sin envío, cálculo del 28 de octubre de 2026). La herramienta es gratuita, solo paga la impresión; el precio crece con el tamaño del modelo y la bandeja, no con el número de piezas.'],
+            ['q' => '¿Cuánto cuesta un puzzle con ustedes?', 'farm' => true, 'a' => 'El posavasos de 100 mm cortado en 3 × 4 piezas pesa 22,6 g y se imprime en 1 h 3 min (PLA); ve el precio en el cálculo antes de encargar nada. La herramienta es gratuita, solo paga la impresión; el precio crece con el tamaño del modelo y la bandeja, no con el número de piezas.'],
             ['q' => '¿Qué modelo subo?', 'a' => 'Uno plano: un relieve o una litofanía de una foto, un logotipo, un posavasos de nuestras herramientas, de hasta 25 mm de alto y al menos 80 mm de ancho para que las piezas lleguen a 25 mm. Un STL propio necesita el fondo plano; un modelo de un cálculo llega aquí con un clic.'],
             ['q' => '¿Cuánto tardan la impresión y el envío?', 'farm' => true, 'a' => 'El puzzle del posavasos de 100 mm se imprime en 1 h 3 min, todas las piezas juntas. Enviamos el día en que termina la impresión, en días laborables, y Packeta en Chequia suele entregar en 1 o 2 días laborables (a un punto de recogida :cz_point).'],
             ['q' => '¿Puede tener cada pieza otro color?', 'a' => 'Sí, en la impresión con nosotros elige el color de cada pieza al encargar, en un solo pedido; un puzzle de un posavasos de colores conserva los colores de la imagen y las piezas solo se distinguen por el contorno. En casa imprima las piezas con dos bobinas alternas.'],
@@ -613,7 +613,7 @@ return [
     // sujetacables de escritorio (docs/AP.md §12, lote F)
     'cable_holder' => [
         'order' => [
-            ['q' => '¿Cuánto cuesta un soporte con ustedes?', 'farm' => true, 'a' => 'Un soporte para cuatro cables de 6 mm cuesta 99 CZK, el pedido mínimo (PLA, sin envío, cálculo del 28 de octubre de 2026). Varios soportes del mismo diseño se indican como cantidad y el precio por pieza baja.'],
+            ['q' => '¿Cuánto cuesta un soporte con ustedes?', 'farm' => true, 'a' => 'Un soporte para cuatro cables de 6 mm pesa 17,1 g y se imprime en 42 minutos (PLA); ve el precio en el cálculo antes de encargar nada. Varios soportes del mismo diseño se indican como cantidad y el precio por pieza baja.'],
             ['q' => '¿Qué diámetro tienen los cables corrientes?', 'a' => 'Un cable de auriculares, 3 a 4 mm; USB‑C y Lightning, 4 a 5 mm; el cable de alimentación de un portátil, 5 a 6 mm; HDMI, 6 a 7 mm; el cable de red de un monitor, 7 a 8 mm. Mida el suyo con un calibre o con una tira de papel enrollada en el cable.'],
             ['q' => '¿Cuánto tardan la impresión y el envío?', 'farm' => true, 'a' => 'El soporte para cuatro cables se imprime en 42 minutos; el de seis cables con pestañas, en 56 minutos. Enviamos el día en que termina la impresión, en días laborables, y Packeta en Chequia suele entregar en 1 o 2 días laborables (a un punto de recogida :cz_point).'],
             ['q' => '¿Dónde coloco el soporte?', 'a' => 'En el borde trasero del tablero, por donde llegan los cables del enchufe, o bajo el tablero junto al borde delantero, para que los cargadores cuelguen a mano y no se vean. Ponga cinta bajo todo el soporte, no solo un trozo.'],
@@ -629,7 +629,7 @@ return [
     // colgante de una imagen (docs/AP.md §12, lote F)
     'charm' => [
         'order' => [
-            ['q' => '¿Cuánto cuesta un colgante con ustedes?', 'farm' => true, 'a' => 'El fantasma alegre de 45 mm cuesta 99 CZK, el pedido mínimo (PLA, sin envío, cálculo del 28 de octubre de 2026). Varias unidades del mismo diseño se indican como cantidad y el precio por pieza baja; la anilla de llaves no va en el precio.'],
+            ['q' => '¿Cuánto cuesta un colgante con ustedes?', 'farm' => true, 'a' => 'El fantasma alegre de 45 mm pesa 3 g y se imprime en 7 minutos (PLA); ve el precio en el cálculo antes de encargar nada. Varias unidades del mismo diseño se indican como cantidad y el precio por pieza baja; la anilla de llaves no va en el precio.'],
             ['q' => '¿Qué tamaño y grosor elijo?', 'a' => 'Para llaves, de 35 a 45 mm y 3 mm de grosor; para mochila o bolso, de 50 a 60 mm; para un tirador de cremallera, de 20 a 25 mm y 2 mm. Una etiqueta de regalo puede medir de 60 a 80 mm con 2 mm de grosor, nada la fuerza.'],
             ['q' => '¿Cuánto tardan la impresión y el envío?', 'farm' => true, 'a' => 'El fantasma de 45 mm se imprime en 7 minutos; el nombre Ela de 60 mm, en 12 minutos. Enviamos el día en que termina la impresión, en días laborables, y Packeta en Chequia suele entregar en 1 o 2 días laborables (a un punto de recogida :cz_point).'],
             ['q' => '¿Qué imagen va bien?', 'a' => 'Un dibujo, un logotipo o una foto con un motivo claro sobre un fondo tranquilo; la herramienta quita el fondo y el colgante sigue el contorno. Las puntas finas por debajo de 0,8 mm se romperían, así que la herramienta las funde o avisa; un retrato de una foto, póngalo en un círculo o un rectángulo.'],

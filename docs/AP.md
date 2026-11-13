@@ -1332,3 +1332,38 @@ zveřejněnou adresu → Požádat o indexování), protože z ní vedou odkazy 
 5. **Fotky skutečných výtisků** k nástrojům kampaně (busta, figurka psa, klíčenka, medaile, ozdoba): bez nich
    stránky ukazují vykreslené příklady. Fotí se v sobotu 14. 11. i tyhle kusy?
 6. **`Product` s cenou „od“ a H1 úvodní strany** (15.8/3 a 15.8/4): udělat, nebo nechat?
+
+## 16. Bez tvrzení o farmě v Praze a bez psaných cen „od“ (větev `fix/prague-claim-min-price`, 13. 11. 2026)
+
+Rozhodl Roman 13. 11. 2026 (odpověď na otázky 1 a 3 z §15): v Praze se netiskne a nejnižší cena zakázky je
+nastavení farmy (`/admin/farm/settings`, `min_price`), ne číslo v textu.
+
+**Praha.** Stránka `/3d-tisk-praha` si nechává adresu, titulek a H1 (do Prahy doručujeme), ale žádný text už
+neříká, kde farma stojí, a osobní odběr v Praze nenabízí ani neslibuje. Totéž úvodní strana (`router.eyebrow`,
+`router.deadline.pickup`), zadání pro asistenta rozcestníku a pro kartu filamentu z e-shopu a dva články blogu
+(1. 12. a 4. 12.). Místo farmy se ničím nenahrazuje, o místech rozhodne Roman. Sídlo firmy (Rybná 716/24, Praha 1)
+je právní údaj a zůstává: kontakt, podmínky, zásady ochrany soukromí, `config/seo.php` `organization`.
+`Service` data stránky mají dál `areaServed` Praha a žádnou adresu provozovny.
+
+**Ceny.** Pravidlo: číslo ceny tisku smí být v textu jen jako datovaný příklad skutečné kalkulace, která nevyšla
+na tehdejší nejnižší cenu zakázky. Co se změnilo:
+
+- titulky busty, klíčenky, ozdoby a přívěsku (cs) jsou bez „od 99 Kč“; popisy klíčenky, písmene se jménem, SVG do
+  STL a stojánku na telefon bez „od … Kč“;
+- úvod busty a figurky mazlíčka je bez ceny (jako před §15);
+- ze stránek nástrojů (`lang/*/tools_seo/*.php`), z otázek a tipů (`lang/*/landing.php`) a ze stránky pro Prahu
+  zmizela každá cena 99 Kč / 99 CZK a každé „nejnižší cena zakázky je 99 Kč“: těch 99 Kč bylo tehdejší minimum
+  zakázky, ne výsledek kalkulace, a s dnešním nastavením neplatí. Gramy a doba tisku příkladů zůstaly, ceny nad
+  minimem také (jsou z kalkulace);
+- `config/site.php` `example_items`: čtyři příklady, které vyšly na minimum (busta 80 mm, QR cedulka, krabička,
+  kočka ze SVG), jsou bez ceny, dokud je někdo na produkci nepřepočítá; `IntakePage::fromPrice()` u nástroje
+  s neoceněným příkladem cenu „od“ neukáže;
+- „Nebo tisk u nás od …“ na úvodní straně bere číslo z nastavení farmy (`IntakePage::minOrderPrice()`: minimum
+  s DPH zaokrouhlené na krok farmy, stejně jako kalkulace). Při zavřené farmě se neukazuje (beze změny).
+
+Titulky, popisy a H1 na stavu farmy nezávisí a žádnou cenu neobsahují.
+
+**Nezměněno a proč:** články blogu kromě dvou výše (24 článků zmiňuje 99 Kč, některé na ní stojí celým výkladem
+ceny; je to obsah s datem, na rozhodnutí Romana), cena dopravy v otázkách a v obchodních podmínkách (doprava, ne
+tisk; `config/farm.php` `shipping`), výchozí `min_price` 99 v `config/farm.php` (výchozí hodnota nastavení, na
+produkci ji přepisuje admin).

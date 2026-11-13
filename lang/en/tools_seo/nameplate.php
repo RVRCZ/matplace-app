@@ -8,7 +8,7 @@ return [
     'h1' => 'How to build the tag from layers, what it costs and where it fits',
     'intro' => [
         'Here you build a name tag from layers. The plate has one of nineteen shapes: a hexagon, a heart, a star, a cloud, a bone, a ribbon, an arrow, a house, a car, a cat, a fish, a shield, a speech bubble and more. On it you lay a name in one of thirty typefaces and a picture from a library of 178 silhouettes or your own; up to twelve layers, each in its own colour from the filaments our farm has. You pick a layer by clicking in the preview, move it by dragging, scale it by the corner of its frame and turn it with the wheel, and set the width of each from 5 to 250 mm. The layers lie one above the other, each a step higher, so a printer only changes the filament at the right height; on our farm we print up to four colours in one go. With an eyelet the same design is a gift tag, a sign for a child’s door, a bag tag and a collar tag.',
-        'An example from the production calculator (27 October 2026, PLA): a 120 × 60 mm hexagon with the name Adéla and a star in three colours weighs 14.5 g, prints in 25 minutes and costs 99 CZK (about 4 EUR) from us, which is the minimum order (calculation /c/v9fh1s1ogsob). A gift tag, a 70 mm hexagon with an eyelet and the text "Pro Elu", weighs 5.2 g and prints in 10 minutes: one costs 99 CZK, ten of the same 120 CZK, that is 12 CZK each, because the order preparation is paid once (/c/udkkubsktt9d). The calculation counts one colour, the spools for the others you confirm at the order. Just want a name on a plate that grows around the text by itself? Under the options at the top of the page is a link to the quick form.',
+        'An example from the production calculator (27 October 2026, PLA): a 120 × 60 mm hexagon with the name Adéla and a star in three colours weighs 14.5 g and prints in 25 minutes (calculation /c/v9fh1s1ogsob). A gift tag, a 70 mm hexagon with an eyelet and the text "Pro Elu", weighs 5.2 g and prints in 10 minutes: ten of the same cost 120 CZK, that is 12 CZK each, because the order preparation is paid once (/c/udkkubsktt9d). The calculation counts one colour, the spools for the others you confirm at the order. Just want a name on a plate that grows around the text by itself? Under the options at the top of the page is a link to the quick form.',
     ],
     'steps' => [
         ['name' => 'Start from the name plate', 'text' => 'The page opens with a plate, the name Adéla and a star. Rewrite the name and pick another plate shape.'],
@@ -25,7 +25,7 @@ return [
         ['q' => 'Does it work as a dog tag?', 'a' => 'The bone shape with an eyelet does; for a collar choose PETG and letters at least 6 mm high. Add the phone number as another text layer.'],
     ],
     'examples' => [
-        'A 120 × 60 mm hexagon with the name Adéla and a star, three colours: 14.5 g, 25 minutes, 99 CZK.',
+        'A 120 × 60 mm hexagon with the name Adéla and a star, three colours: 14.5 g, 25 minutes.',
         'A 130 mm bone with the name Rex and a paw, the Titan One typeface.',
         'A 100 × 55 mm cloud with the name Ela and a star.',
     ],

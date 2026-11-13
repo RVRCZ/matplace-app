@@ -8,7 +8,7 @@ return [
     'h1' => 'Jak zápich vzniká, jak velký má být a kolik stojí',
     'intro' => [
         'Nástroj vytvoří zápich do dortu: velké číslo, srdce, hvězdu nebo kruh a přes ně jméno jiným písmem a jinou barvou, nebo jen samotný nápis bez tvaru. Stačí napsat jméno do 20 znaků a číslo do tří číslic, třeba „2“ a „Olivia“. Šířku tvaru nastavíte od 50 do 200 mm, jméno může tvar přesahovat a posunete ho výš nebo níž; jméno má třicet písem. Dole má zápich jeden nebo dva hroty dlouhé 30 až 100 mm. Všechno je jeden plochý kus silný 2 až 4 mm; písmena, která by přečnívala nebo se nedotýkala, nástroj sám podloží rozšířenou kopií v barvě tvaru a spojí můstkem. Jméno vystupuje o 0,4 až 1,2 mm a tiskne se druhou barvou, takže stačí jedna výměna filamentu; na naší farmě zápich vytiskneme najednou a obě barvy si vyberete při objednávce.',
-        'Příklad z kalkulace na produkci (27. 10. 2026, PLA): číslo 2 široké 110 mm se jménem Olivia psacím písmem a dvěma hroty 60 mm má 30 g, tiskne se 55 minut a stojí u nás 99 Kč, což je nejnižší cena zakázky (kalkulace /c/4jdvyezywc3l, jedna barva, druhou vyberete při objednávce). Tiskne se naplocho bez podpěr; při tloušťce 3 mm je lehký a neohýbá se. Tištěný plast není určený pro styk s potravinou, hroty proto obalte fólií nebo zasuňte do brčka. Model i projekt s výměnou filamentu stáhnete zdarma a bez registrace; na oslavu objednávejte s předstihem, dobu tisku a doručení ukáže kalkulace.',
+        'Příklad z kalkulace na produkci (27. 10. 2026, PLA): číslo 2 široké 110 mm se jménem Olivia psacím písmem a dvěma hroty 60 mm má 30 g a tiskne se 55 minut (kalkulace /c/4jdvyezywc3l, jedna barva, druhou vyberete při objednávce). Tiskne se naplocho bez podpěr; při tloušťce 3 mm je lehký a neohýbá se. Tištěný plast není určený pro styk s potravinou, hroty proto obalte fólií nebo zasuňte do brčka. Model i projekt s výměnou filamentu stáhnete zdarma a bez registrace; na oslavu objednávejte s předstihem, dobu tisku a doručení ukáže kalkulace.',
     ],
     'steps' => [
         ['name' => 'Napište jméno a číslo', 'text' => 'Jméno nebo krátký nápis a k němu číslo, například věk oslavence. Pro srdce, hvězdu a kruh číslo nepotřebujete.'],
@@ -25,7 +25,7 @@ return [
         ['q' => 'Co když se písmena nedotýkají tvaru?', 'a' => 'Pod jménem leží jeho rozšířená kopie v barvě tvaru, takže drží i písmena, která tvar přesahují. Oddělené kousky nástroj spojí krátkým můstkem a upozorní na to.'],
     ],
     'examples' => [
-        'Zápich s číslem 2 širokým 110 mm a jménem Olivia psacím písmem, dva hroty 60 mm: 30 g, 55 minut, 99 Kč.',
+        'Zápich s číslem 2 širokým 110 mm a jménem Olivia psacím písmem, dva hroty 60 mm: 30 g, 55 minut.',
         'Srdce 120 mm s nápisem Ela a Tom na svatební dort.',
         'Nápis Všechno nejlepší široký 180 mm bez tvaru, hroty 80 mm.',
     ],

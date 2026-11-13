@@ -2,13 +2,13 @@
 
 // Stránka pro dotaz „vánoční ozdoba 3d tisk“ (docs/AP.md §6). 'heading' = H1 stránky, 'h1' = nadpis obsahu pod nástrojem.
 return [
-    'title' => 'Vánoční ozdoba z obrázku nebo jména: 3D tisk od 99 Kč',
+    'title' => 'Vánoční ozdoba z obrázku nebo jména: 3D tisk na zakázku',
     'heading' => 'Vánoční ozdoba na 3D tisk z obrázku nebo jména',
     'description' => 'Nahrajete obrázek nebo napíšete jméno a vznikne vánoční ozdoba v barvách filamentů s očkem na stužku. Vytiskneme ji, nebo si model stáhnete zdarma.',
     'h1' => 'Jak ozdoba z obrázku vzniká, kolik barev zvládne a kolik stojí',
     'intro' => [
         'Nástroj udělá z obrázku plochou vánoční ozdobu s očkem na stužku. Nahrajete PNG, JPG, WebP nebo SVG, vyberete motiv z naší knihovny (asi 137 motivů, 8 z nich barevných), nebo místo obrázku napíšete jméno v jednom ze třiceti písem. Pozadí se odstraní samo a obrázek se převede na 1 až 8 barev; každá se přiřadí k nejbližšímu filamentu, který máme na farmě opravdu skladem. Ozdoba kopíruje obrys obrázku, nebo má tvar kruhu či hvězdy, je široká 40 až 150 mm a silná 2 až 5 mm. Barvy leží jedna na druhé, každá o 0,4 až 1,2 mm výš, takže ozdobu vytiskne jakákoli tiskárna výměnou filamentu ve výškách, které projekt ke stažení obsahuje; naše farma vytiskne až čtyři barvy najednou.',
-        'Příklad z kalkulace na produkci (18. 10. 2026, PLA+): perníček z knihovny široký 80 mm má 10 g, tiskne se 18 minut a stojí u nás 99 Kč, což je nejnižší cena zakázky; šest kusů vyjde na 160 Kč, tedy 27 Kč za ozdobu, protože příprava zakázky se platí jednou. Kalkulace počítá s jednou barvou, cívky pro další barvy potvrdíte při objednávce. Ozdoba se tiskne naplocho, lícem nahoru a bez podpěr, váží kolem deseti gramů a drží i na tenké stužce. STL, ZIP s jedním STL pro každou barvu i projekt pro slicer si stáhnete zdarma a bez registrace.',
+        'Příklad z kalkulace na produkci (18. 10. 2026, PLA+): perníček z knihovny široký 80 mm má 10 g a tiskne se 18 minut; šest kusů vyjde na 160 Kč, tedy 27 Kč za ozdobu, protože příprava zakázky se platí jednou. Kalkulace počítá s jednou barvou, cívky pro další barvy potvrdíte při objednávce. Ozdoba se tiskne naplocho, lícem nahoru a bez podpěr, váží kolem deseti gramů a drží i na tenké stužce. STL, ZIP s jedním STL pro každou barvu i projekt pro slicer si stáhnete zdarma a bez registrace.',
     ],
     'steps' => [
         ['name' => 'Nahrajte obrázek nebo napište jméno', 'text' => 'Obrázek nahrajete, vyberete z knihovny, nebo použijete ten, který jste nahráli dřív. Jméno či krátký text může mít jeden nebo dva řádky a vyberete k němu jedno ze třiceti písem.'],
@@ -25,7 +25,7 @@ return [
         ['q' => 'Na co nástroj upozorní?', 'a' => 'Na čáry tenčí než tryska. Dále na to, že oddělené kousky obrázku spojil malým můstkem, aby držely pohromadě, a na to, že obrázek má méně odlišných barev, než jste zadali.'],
     ],
     'examples' => [
-        'Perníček široký 80 mm: hnědý podklad, bílá poleva a červené knoflíky; 10 g, 18 minut, 99 Kč.',
+        'Perníček široký 80 mm: hnědý podklad, bílá poleva a červené knoflíky; 10 g, 18 minut.',
         'Ozdobený vánoční stromek široký 90 mm v pěti barvách.',
         'Červená vánoční baňka 70 mm s bílým pruhem, bez okraje.',
     ],

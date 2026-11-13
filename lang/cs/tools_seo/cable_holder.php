@@ -8,7 +8,7 @@ return [
     'h1' => 'Jak držák vzniká, jak velký vyjde a kolik stojí',
     'intro' => [
         'Držák kabelů je malý blok s drážkami, který přilepíte oboustrannou páskou nebo přišroubujete na hranu stolu. Kabel do drážky zacvaknete shora a zůstane na místě, i když ho odpojíte od zařízení; štěrbina nad drážkou je o něco užší než kabel, proto nevypadne, a otvor je o 0,6 mm větší, aby se kabel volně posouval. Zadáte počet kabelů 1 až 8 a průměr kabelu 3 až 14 mm, všechny drážky jednoho držáku mají stejný průměr. Hloubku držáku nastavíte od 10 do 80 mm, tloušťku stěn mezi drážkami a zaoblení rohů také; s volbou „S oušky na šrouby“ dostane po stranách dvě ouška s otvory. Hodí se na nabíječky, kabely k monitoru nebo ke sluchátkům.',
-        'Příklad z kalkulace na produkci (28. 10. 2026, PLA): držák na čtyři kabely o průměru 6 mm, dlouhý 61 mm a hluboký 45 mm, má 17,1 g, tiskne se 42 minut a stojí u nás 99 Kč, což je nejnižší cena zakázky, bez dopravy (kalkulace /c/mjyodedmxzye); držák na šest tenkých kabelů 4 mm s oušky na šrouby má 24,6 g a tiskne se 56 minut (kalkulace /c/kop5zm2dhbtw). Na každý stůl v kanceláři zadáte počet kusů a cena za kus klesne. Model si stáhnete zdarma jako STL nebo projekt pro svou tiskárnu; tiskne se bez podpěr. Páska ani šrouby nejsou součástí výtisku.',
+        'Příklad z kalkulace na produkci (28. 10. 2026, PLA): držák na čtyři kabely o průměru 6 mm, dlouhý 61 mm a hluboký 45 mm, má 17,1 g a tiskne se 42 minut (kalkulace /c/mjyodedmxzye); držák na šest tenkých kabelů 4 mm s oušky na šrouby má 24,6 g a tiskne se 56 minut (kalkulace /c/kop5zm2dhbtw). Na každý stůl v kanceláři zadáte počet kusů a cena za kus klesne. Model si stáhnete zdarma jako STL nebo projekt pro svou tiskárnu; tiskne se bez podpěr. Páska ani šrouby nejsou součástí výtisku.',
     ],
     'steps' => [
         ['name' => 'Změřte průměr kabelu', 'text' => 'Změřte průměr kabelu, ne koncovky. Zadat lze průměr od 3 do 14 mm po půl milimetru.'],
@@ -25,7 +25,7 @@ return [
         ['q' => 'Z čeho držák tisknout a jak doma?', 'a' => 'Z PLA do kanceláře a domácnosti, z PETG tam, kde je teplo nebo se kabely často vyndávají a štěrbina má pružit. Tiskne se drážkami nahoru, bez podpěr, vrstva 0,2 mm; projekt pro slicer je připravený.'],
     ],
     'examples' => [
-        'Držák na čtyři kabely o průměru 6 mm, délka 61 mm, lepí se páskou: 17,1 g, 42 minut, 99 Kč.',
+        'Držák na čtyři kabely o průměru 6 mm, délka 61 mm, lepí se páskou: 17,1 g, 42 minut.',
         'Držák na dva silné kabely o průměru 10 mm, délka 45 mm.',
         'Držák na šest tenkých kabelů 4 mm s oušky na šrouby, délka 105 mm: 24,6 g, 56 minut.',
     ],

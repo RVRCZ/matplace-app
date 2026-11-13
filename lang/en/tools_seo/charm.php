@@ -8,7 +8,7 @@ return [
     'h1' => 'How the charm is made, where the eyelet goes and what it costs',
     'intro' => [
         'The tool turns a picture or a name into a charm for keys, a bag, a backpack, a zip pull or a gift tag. Upload a PNG, JPG, WebP or SVG, pick a motif from the library, or type a name in one of thirty typefaces; loose pieces of a typeface are tied with a bridge so that the charm holds together. The background disappears by itself and the picture is reduced to 1 to 8 colours of filaments we have in stock on the farm. The charm follows the outline of the picture, or is a circle or a rectangle, 20 to 120 mm wide and 2 to 6 mm thick, with a frame of up to 3 mm round the picture. The eyelet moves anywhere along the outline by a slider or by dragging it in the preview, with a hole of 2 to 6 mm and a wall of 1.5 to 3 mm. The colours lie one on another, each 0.6 mm higher unless you change it.',
-        'An example from the production calculator (28 October 2026, PLA): the happy ghost from the library, 45 mm wide and 3 mm thick, weighs 3 g, prints in 7 minutes and costs 99 CZK (about 4 EUR) from us, the lowest order price, without delivery (calculation /c/mca5ddgfzctt); the name Ela in a script, 60 mm wide, weighs 3.7 g and prints in 12 minutes (calculation /c/gmfsgcpwmjl8). Several pieces of the same design go in as the quantity and the price per piece falls; charms with different names are different designs. Our farm prints up to four colours in one print, the base and three more; you confirm the spool of each colour when ordering. The STL, a ZIP with one STL per colour and the slicer project download free, without registration.',
+        'An example from the production calculator (28 October 2026, PLA): the happy ghost from the library, 45 mm wide and 3 mm thick, weighs 3 g and prints in 7 minutes (calculation /c/mca5ddgfzctt); the name Ela in a script, 60 mm wide, weighs 3.7 g and prints in 12 minutes (calculation /c/gmfsgcpwmjl8). Several pieces of the same design go in as the quantity and the price per piece falls; charms with different names are different designs. Our farm prints up to four colours in one print, the base and three more; you confirm the spool of each colour when ordering. The STL, a ZIP with one STL per colour and the slicer project download free, without registration.',
     ],
     'steps' => [
         ['name' => 'Upload a picture or type a name', 'text' => 'Upload a picture, pick one from the library, or reuse one you uploaded earlier. Instead of a picture you can type a name or a short text on one or two lines.'],
@@ -25,7 +25,7 @@ return [
         ['q' => 'What is the charm printed from, and does it last on keys?', 'a' => 'We recommend PLA; it prints flat, face up and without supports. A thickness of 3 mm and a 2 mm eyelet wall take keys in a pocket, and the tool warns about thin motifs under 0.8 mm. For a charm that will get warm, for example in a car in the sun, PETG is the better choice.'],
     ],
     'examples' => [
-        'Happy ghost 45 mm wide, white with dark eyes and pink cheeks: 3 g, 7 minutes, 99 CZK.',
+        'Happy ghost 45 mm wide, white with dark eyes and pink cheeks: 3 g, 7 minutes.',
         'Smiling yellow star 50 mm wide, the eyelet on a point.',
         'The name Ela in handwritten letters, 60 mm wide, joined into one piece: 3.7 g, 12 minutes.',
     ],

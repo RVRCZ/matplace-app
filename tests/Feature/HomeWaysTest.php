@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use App\Domain\Farm\FarmSettings;
 use App\Models\AnonymousSession;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
@@ -38,8 +39,18 @@ class HomeWaysTest extends TestCase
         preg_match('~<nav[^>]*data-ways>.*?</nav>~s', $html, $nav);
         $this->assertNotEmpty($nav);
         $this->assertStringNotContainsString('href="#"', $nav[0]);
-        // the hero names the price a print by us starts from (the cheapest priced example, crowns)
-        $this->assertStringContainsString('Nebo tisk u nás od 99', $html);
+        // the hero names the price a print by us starts from: the order minimum of the farm's settings with VAT, rounded up
+        // to the farm's step (99 without VAT → 119.79 → 120), never a number typed into a text
+        $this->assertStringContainsString('Nebo tisk u nás od 120', $html);
+        app(FarmSettings::class)->set('min_price', 10);
+        $html = (string) $this->get('/')->getContent();
+        // a minimum under the fixed fee of an order does not lower it: 30 without VAT → 36.3 → 40
+        $this->assertStringContainsString('Nebo tisk u nás od 40', $html);
+        $this->assertStringNotContainsString('Nebo tisk u nás od 120', $html);
+        // nothing to name only when an order has neither a minimum nor a fixed fee
+        app(FarmSettings::class)->set('min_price', 0);
+        app(FarmSettings::class)->set('fixed_fee', 0);
+        $this->assertStringNotContainsString('Nebo tisk u nás od', (string) $this->get('/')->getContent());
     }
 
     public function test_a_robot_fetching_a_page_gets_no_session_row_and_no_cookie(): void

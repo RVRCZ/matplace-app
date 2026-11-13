@@ -60,15 +60,21 @@ class HomeRouterPageTest extends TestCase
 
     public function test_a_gift_names_a_price_only_from_a_real_calculation(): void
     {
+        // config/site.php: the bust's smallest example has no price (it came out at the order minimum of its day, which is a
+        // setting of the farm), so the card names none: a smaller bust may cost less than the priced ones
+        $this->assertNull(IntakePage::fromPrice('figure'));
+        preg_match('~data-gift="figure".*?</a>~s', (string) $this->get('/')->assertOk()->getContent(), $unpriced);
+        $this->assertStringNotContainsString('Kč', $unpriced[0] ?? 'Kč');
+        config(['site.example_items' => array_values(array_filter((array) config('site.example_items'), fn ($i) => $i['tool'] === 'figure' && ! empty($i['price'])))]);
         $html = (string) $this->get('/')->assertOk()->getContent();
         preg_match('~data-gift="figure".*?</a>~s', $html, $figure);
         preg_match('~data-gift="pet".*?</a>~s', $html, $pet);
         $this->assertNotEmpty($figure);
         $this->assertNotEmpty($pet);
-        // the bust has a priced example in config/site.php (99 Kč of a real calculation), the pet none
-        $this->assertStringContainsString(e(__('router.gifts.from', ['price' => Money::of(99, Money::CZK)->format()])), $figure[0]);
+        // every example of the bust left has a price of a real calculation (the cheapest 130 Kč), the pet has none
+        $this->assertStringContainsString(e(__('router.gifts.from', ['price' => Money::of(130, Money::CZK)->format()])), $figure[0]);
         $this->assertStringNotContainsString(e(__('router.gifts.from', ['price' => ''])), $pet[0]);
-        $this->assertSame(Money::of(99, Money::CZK)->format(), IntakePage::fromPrice('figure'));
+        $this->assertSame(Money::of(130, Money::CZK)->format(), IntakePage::fromPrice('figure'));
         $this->assertNull(IntakePage::fromPrice('pet'));
     }
 

@@ -4,6 +4,7 @@ namespace App\Domain\Intake;
 
 use App\Domain\Farm\FarmSettings;
 use App\Domain\Farm\FarmState;
+use App\Domain\Farm\PriceCalculator;
 use App\Domain\Tools\ToolPhotos;
 use App\Domain\Tools\ToolVisibility;
 use App\Models\User;
@@ -50,15 +51,36 @@ final class IntakePage
         return $out;
     }
 
-    /** "from 99 Kč": the cheapest priced example of the tool (a real calculation), in crowns; null elsewhere or without one. */
+    /**
+     * "from 130 Kč": the cheapest priced example of the tool (a real calculation), in crowns; null elsewhere, without
+     * one, or when an example of the tool has no price (a smaller piece may cost less than the priced ones).
+     */
     public static function fromPrice(string $tool): ?string
     {
         if (Currency::current() !== Money::CZK) {
             return null;
         }
-        $prices = collect((array) config('site.example_items'))->where('tool', $tool)->map(fn ($i) => $i['price'][Money::CZK] ?? null)->filter();
+        $prices = collect((array) config('site.example_items'))->where('tool', $tool)->map(fn ($i) => $i['price'][Money::CZK] ?? null);
 
-        return $prices->isEmpty() ? null : Money::of((float) $prices->min(), Money::CZK)->format();
+        return $prices->isEmpty() || $prices->contains(null) ? null : Money::of((float) $prices->min(), Money::CZK)->format();
+    }
+
+    /**
+     * "A print by us from …": the lowest price of an order as the calculator charges it, from the farm's settings
+     * (/admin/farm/settings: the minimum with VAT, rounded up to the farm's step, as FarmPricingProfile does). No
+     * number is typed into a text. In crowns only; null elsewhere or with no minimum set.
+     */
+    public static function minOrderPrice(): ?string
+    {
+        if (Currency::current() !== Money::CZK) {
+            return null;
+        }
+        $settings = app(FarmSettings::class);
+        // no order is cheaper than the fixed fee of an order, whatever the minimum says (PriceCalculator: net = max(time + material + fixed_fee, min_price))
+        $net = max((float) $settings->get('min_price'), (float) $settings->get('fixed_fee'));
+        $min = PriceCalculator::roundUp($net * (1 + (float) $settings->get('vat_percent') / 100), (float) $settings->get('rounding'));
+
+        return $min > 0 ? Money::of($min, Money::CZK)->format() : null;
     }
 
     /** The last day an order still arrives before Christmas, as the page says it (the farm's setting; null when none or gone by). */

@@ -8,7 +8,7 @@ return [
     'h1' => 'How to build the keychain from layers, which hole for the ring and what it costs',
     'intro' => [
         'Here you build a keychain from layers. At the bottom lies a shape (a bone, a heart, a circle, a tag, a rounded rectangle and more), on it a name in one of thirty typefaces and, if you like, a picture from the library of silhouettes or your own. Every layer has its own colour from the filaments our farm has and lies a step higher than the one below; up to twelve layers. You pick a layer by clicking in the preview, move it by dragging, scale it by the corner of its frame and turn it with the wheel. At the top is an eyelet with a 2 to 8 mm hole. The colours lie one above the other, so a printer only changes the filament at the right height; on our farm we print up to four colours in one go. A keychain from a colour picture, a logo say, is made by the quick form the page links to.',
-        'An example from the production calculator (28 October 2026, PLA): a 70 mm wide bone with the name Rex in two colours weighs 3.8 g and prints in 10 minutes. One costs 99 CZK (about 4 EUR), which is the minimum order; ten of the same cost 100 CZK, that is 10 CZK each, because the order preparation is paid once (calculations /c/fwgocmbyzfx6 and /c/teyrxpsrhi4k). For other names you make another design: the layout stays, you only rewrite the name. The ring is not part of the print. The model and the slicer project with the filament changes are free to download, no sign-up.',
+        'An example from the production calculator (28 October 2026, PLA): a 70 mm wide bone with the name Rex in two colours weighs 3.8 g and prints in 10 minutes. Ten of the same cost 100 CZK, that is 10 CZK each, because the order preparation is paid once (calculations /c/fwgocmbyzfx6 and /c/teyrxpsrhi4k). For other names you make another design: the layout stays, you only rewrite the name. The ring is not part of the print. The model and the slicer project with the filament changes are free to download, no sign-up.',
     ],
     'steps' => [
         ['name' => 'Start from the keychain', 'text' => 'The page opens with a bone and the name Rex. Rewrite the name, change the shape, or pick another preset, a heart with a name say.'],
@@ -25,7 +25,7 @@ return [
         ['q' => 'What if the pieces lie next to each other and do not touch?', 'a' => 'The tool joins them in the bottom layer with a short bridge and says so, so the keychain holds together.'],
     ],
     'examples' => [
-        'A 70 × 32 mm bone with the name Rex and an eyelet for the ring, two colours: 3.8 g, 10 minutes, 99 CZK.',
+        'A 70 × 32 mm bone with the name Rex and an eyelet for the ring, two colours: 3.8 g, 10 minutes.',
         'A 60 mm heart with the name Ema in the Lobster typeface, the eyelet on top.',
         'A round 45 mm keychain with a paw, black and yellow.',
     ],

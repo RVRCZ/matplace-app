@@ -8,7 +8,7 @@ return [
     'h1' => 'How the QR sign is made, why it needs two colours and how big it should be',
     'intro' => [
         'The tool makes a plate with a raised QR code. The code can open a website, a menu, your reviews or a payment link, or connect a phone to your Wi‑Fi: you paste a link or a text of 4 to 300 characters, for Wi‑Fi the network name, the password and the security, and the tool composes the technical notation itself. Under the code goes a caption of up to 40 characters, and the sign can get a table stand it slides into at a slight tilt, or a hole for hanging. You set the code size from 30 to 150 mm. The tool watches readability: one module of the code must be at least 0.9 mm, otherwise it asks you to enlarge the code or shorten the link, and it reads the finished design back the way a phone does. A code reads only in two colours: a light plate, a dark code.',
-        'An example from the production calculator (18 October 2026, PLA+): a sign with a web link, 70 × 83 × 3 mm, one module about 2 mm, weighs 14 g, prints in 25 minutes and costs 99 CZK (about 4 EUR) from us (calculation /c/lomf0wzlshw4); a 90 mm Wi‑Fi sign with a table stand weighs 35 g, prints in 1 h 1 min and costs 110 CZK, both in one colour and without delivery. For a print from us you pick the second colour at the order and the printer changes it by itself at the height of the plate; the project you download for your own printer already carries the filament change, and the STL is one body. Try the link from the preview with your phone before printing; a printed code cannot be changed.',
+        'An example from the production calculator (18 October 2026, PLA+): a sign with a web link, 70 × 83 × 3 mm, one module about 2 mm, weighs 14 g and prints in 25 minutes (calculation /c/lomf0wzlshw4); a 90 mm Wi‑Fi sign with a table stand weighs 35 g, prints in 1 h 1 min and costs 110 CZK, both in one colour and without delivery. For a print from us you pick the second colour at the order and the printer changes it by itself at the height of the plate; the project you download for your own printer already carries the filament change, and the STL is one body. Try the link from the preview with your phone before printing; a printed code cannot be changed.',
     ],
     'steps' => [
         ['name' => 'Paste a link, a text, or your Wi‑Fi', 'text' => 'In "Link or text" paste the address or any text; for Wi‑Fi the network name, the password and the security. In "Caption under the code" a short label, the network name say; it may stay empty.'],
@@ -25,7 +25,7 @@ return [
         ['q' => 'What if I have my own printer?', 'a' => 'Download the model free as an STL, or as a project for your printer. The project carries a filament change at the height of the plate: the printer pauses, you swap the spool and the print goes on in the second colour. A printer with several spools does it by itself.'],
     ],
     'examples' => [
-        'A 70 × 83 mm QR sign with a web link and the caption matplace.com: 14 g, 25 minutes, 99 CZK.',
+        'A 70 × 83 mm QR sign with a web link and the caption matplace.com: 14 g, 25 minutes.',
         'A 90 × 113 mm QR sign with a Wi‑Fi caption in a table stand, for the guests of a café.',
         'A small 40 × 40 mm QR plate without a caption, for product packaging say.',
     ],

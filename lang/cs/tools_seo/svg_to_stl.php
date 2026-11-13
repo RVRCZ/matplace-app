@@ -4,11 +4,11 @@
 return [
     'title' => 'SVG do STL online zdarma: obrys jako 3D model k tisku',
     'heading' => 'Převod SVG do STL online zdarma',
-    'description' => 'Nahrajete SVG, PNG nebo napíšete text, zadáte šířku v milimetrech a výšku vytažení. Uzavřené STL stáhnete bez registrace, nebo tvar vytiskneme od 99 Kč.',
+    'description' => 'Nahrajete SVG, PNG nebo napíšete text, zadáte šířku v milimetrech a výšku vytažení. Uzavřené STL stáhnete bez registrace, nebo tvar vytiskneme.',
     'h1' => 'Co převod SVG do STL umí a kde má hranice',
     'intro' => [
         'Nástroj vezme vyplněné tvary ze souboru SVG a vytáhne je kolmo do výšky, kterou zadáte: od 0,6 do 50 mm. Šířku nastavíte od 20 do 250 mm a druhý rozměr se dopočítá podle poměru stran, takže model má přesně ty milimetry, které čtete vedle náhledu; na jednotkách zapsaných v SVG nezáleží. Otvory uvnitř tvaru zůstávají otvory. Soubor SVG může mít do 400 kB a čáry bez výplně nástroj vynechá a řekne to. Místo SVG jde nahrát jednoduchý kontrastní obrázek PNG, JPG nebo WebP do 5 MB, vybrat siluetu z knihovny, nebo napsat text. Výsledek je uzavřené těleso s dnem, víkem a stěnami, které slicer vezme bez opravy. Nástroj předem upozorní na čáry tenčí než 0,8 mm, které se tryskou 0,4 mm netisknou čistě, a napíše, z kolika samostatných kousků se tvar skládá.',
-        'Příklad z 27. 10. 2026: silueta kočky z knihovny, šířka 80 mm, vytažená na 6 mm, vyšla 80 × 81 × 6 mm, 2 568 trojúhelníků a 17,7 cm³. Kalkulace na ni počítá 9,6 g PLA a 17 minut tisku, u nás za 99 Kč (nejnižší cena zakázky, bez dopravy; kalkulace /c/lfa9iggn3hls). Model si stáhnete zdarma a bez účtu jako STL, nebo jako projekt 3MF pro OrcaSlicer, Bambu Studio či PrusaSlicer s nastavením z kalkulace. Kdo tiskárnu nemá, nechá tvar vytisknout na naší farmě v barvě, která je právě založená v tiskárnách.',
+        'Příklad z 27. 10. 2026: silueta kočky z knihovny, šířka 80 mm, vytažená na 6 mm, vyšla 80 × 81 × 6 mm, 2 568 trojúhelníků a 17,7 cm³. Kalkulace na ni počítá 9,6 g PLA a 17 minut tisku (kalkulace /c/lfa9iggn3hls). Model si stáhnete zdarma a bez účtu jako STL, nebo jako projekt 3MF pro OrcaSlicer, Bambu Studio či PrusaSlicer s nastavením z kalkulace. Kdo tiskárnu nemá, nechá tvar vytisknout na naší farmě v barvě, která je právě založená v tiskárnách.',
     ],
     'steps' => [
         ['name' => 'Nahrajte SVG, obrázek nebo text', 'text' => 'Soubor SVG do 400 kB, obrázek PNG, JPG či WebP do 5 MB, silueta z knihovny, nebo nápis. Na vyzkoušení je předvybraná kočka z knihovny.'],

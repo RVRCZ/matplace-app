@@ -8,7 +8,7 @@ return [
     'h1' => 'Co krabička na míru umí, jak sedí víčko a kolik stojí tisk',
     'intro' => [
         'Nástroj vytvoří krabičku podle vnitřních rozměrů, tedy podle věci, která se do ní má vejít: šířka a hloubka 10 až 300 mm, výška 8 až 200 mm, stěny 1,2 až 5 mm. Vnější rozměry dopočítá sám a ukáže je pod náhledem. Můžete přidat nasazovací víčko s lemem (vůle 0,25 mm, jde změnit), až osm kruhových nebo obdélníkových otvorů do přední, zadní, levé nebo pravé stěny, zaoblené rohy a výřez na kabel od horního okraje široký 3 až 30 mm. Krabička i víčko se tisknou vedle sebe bez podpěr. Poslouží na elektroniku, drobné součástky, SD karty i jako obal na dárek.',
-        'Příklad z kalkulace na produkci (18. 10. 2026, PLA+): krabička s nasazovacím víčkem, uvnitř 80 × 50 × 30 mm (vně 84 × 54 × 32 mm), má 28 g, tiskne se 34 minut a stojí u nás 99 Kč, což je nejnižší cena zakázky (kalkulace /c/nku29wz4vieb); s víčkem a výřezem na kabel má 41 g, tiskne se 51 minut a stojí 110 Kč, obojí bez dopravy. Za 90 dní prošlo kalkulací 13 krabiček. Do zásuvky stačí PLA, do koupelny nebo k troubě zvolte PETG. Model si stáhnete zdarma jako STL nebo projekt pro svou tiskárnu; krabičku i víčko také jako samostatné díly.',
+        'Příklad z kalkulace na produkci (18. 10. 2026, PLA+): krabička s nasazovacím víčkem, uvnitř 80 × 50 × 30 mm (vně 84 × 54 × 32 mm), má 28 g a tiskne se 34 minut (kalkulace /c/nku29wz4vieb); s víčkem a výřezem na kabel má 41 g, tiskne se 51 minut a stojí 110 Kč, obojí bez dopravy. Za 90 dní prošlo kalkulací 13 krabiček. Do zásuvky stačí PLA, do koupelny nebo k troubě zvolte PETG. Model si stáhnete zdarma jako STL nebo projekt pro svou tiskárnu; krabičku i víčko také jako samostatné díly.',
     ],
     'steps' => [
         ['name' => 'Změřte, co se má vejít', 'text' => 'Zadejte šířku, hloubku a výšku uvnitř krabičky. Kolem věci si nechte 1 až 2 mm rezervy na každé straně.'],
@@ -26,7 +26,7 @@ return [
         ['q' => 'Hodí se krabička na elektroniku, třeba na Arduino nebo ESP32?', 'a' => 'Ano: zadáte rozměry desky plus 2 mm na každé straně a výšku podle nejvyšší součástky, otvory na konektory umístíte podle polohy od rohu stěny. Větrací otvory přidáte jako řadu kruhových otvorů; na teplo uvnitř zvolte PETG.'],
     ],
     'examples' => [
-        'Krabička s nasazovacím víčkem na drobnosti, uvnitř 80 × 50 × 30 mm: 28 g, 34 minut, 99 Kč.',
+        'Krabička s nasazovacím víčkem na drobnosti, uvnitř 80 × 50 × 30 mm: 28 g, 34 minut.',
         'Krabička s víčkem a výřezem na kabel, uvnitř 120 × 80 × 40 mm.',
         'Otevřená krabička bez víčka se zaoblenými rohy, uvnitř 40 × 40 × 20 mm.',
     ],

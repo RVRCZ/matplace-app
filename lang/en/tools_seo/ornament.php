@@ -8,7 +8,7 @@ return [
     'h1' => 'How the ornament is made from a picture, how many colours it takes and what it costs',
     'intro' => [
         'The tool turns a picture into a flat Christmas ornament with an eyelet for a ribbon. You upload a PNG, JPG, WebP or SVG, pick a motif from our library (about 137 motifs, 8 of them in colour), or type a name in one of thirty typefaces instead of a picture. The background is removed by itself and the picture is reduced to 1 to 8 colours; each is matched to the nearest filament our farm really has in stock. The ornament follows the outline of the picture or is a circle or a star, 40 to 150 mm wide and 2 to 5 mm thick. The colours lie one on another, each 0.4 to 1.2 mm higher, so any printer prints the ornament with filament changes at the heights the downloadable project carries; our farm prints up to four colours in one go.',
-        'An example from the production calculator (18 October 2026, PLA+): an 80 mm wide gingerbread man from the library weighs 10 g, prints in 18 minutes and costs 99 CZK (about 4 EUR) from us, which is the minimum order; six pieces come to 160 CZK, that is 27 CZK per ornament, because the order preparation is paid once. The calculation counts one colour, the spools for the other colours you confirm at the order. The ornament prints flat, face up and without supports, weighs about ten grams and hangs even on a thin ribbon. The STL, a ZIP with one STL per colour and the slicer project are free to download, no sign-up.',
+        'An example from the production calculator (18 October 2026, PLA+): an 80 mm wide gingerbread man from the library weighs 10 g and prints in 18 minutes; six pieces come to 160 CZK, that is 27 CZK per ornament, because the order preparation is paid once. The calculation counts one colour, the spools for the other colours you confirm at the order. The ornament prints flat, face up and without supports, weighs about ten grams and hangs even on a thin ribbon. The STL, a ZIP with one STL per colour and the slicer project are free to download, no sign-up.',
     ],
     'steps' => [
         ['name' => 'Upload a picture or type a name', 'text' => 'Upload a picture, pick one from the library, or use one you uploaded before. A name or a short text may have one or two lines, in one of thirty typefaces.'],
@@ -25,7 +25,7 @@ return [
         ['q' => 'What does the tool warn about?', 'a' => 'Lines thinner than the nozzle. Also that it joined separate pieces of the picture with a small bridge so they hold together, and that the picture has fewer distinct colours than you asked for.'],
     ],
     'examples' => [
-        'An 80 mm wide gingerbread man: brown body, white icing and red buttons; 10 g, 18 minutes, 99 CZK.',
+        'An 80 mm wide gingerbread man: brown body, white icing and red buttons; 10 g, 18 minutes.',
         'A decorated Christmas tree 90 mm wide in five colours.',
         'A red 70 mm bauble with a white stripe, without a margin.',
     ],

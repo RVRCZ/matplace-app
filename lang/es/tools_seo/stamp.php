@@ -8,7 +8,7 @@ return [
     'h1' => 'En qué imprime el sello, cómo nace y cuánto cuesta',
     'intro' => [
         'La herramienta crea un sello para improntas en arcilla cerámica, arcilla polimérica, jabón o masa, es decir, en un material blando que conserve la marca. El motivo puede ser un texto de hasta dos líneas de 20 caracteres en una de cuatro tipografías, un SVG o una imagen sencilla en blanco y negro; el original subido tiene prioridad sobre el texto. El motivo se refleja solo, así que la impronta se lee bien; la vista previa se puede cambiar a la impronta que deja el sello. El ancho del motivo se ajusta de 15 a 120 mm, su altura de 0,8 a 4 mm, y elige un sello con mango redondo o solo una placa. El motivo puede ir en relieve, y entonces se hunde en el material, o rebajado, y entonces la impronta sobresale. La herramienta avisa de líneas más finas de 0,8 mm. Un sello impreso no sirve para tinta y papel; su superficie es demasiado dura.',
-        'Un ejemplo de la calculadora en producción (28 de octubre de 2026, PLA): el sello EVA de 50 mm de ancho con mango y motivo en relieve pesa 6,8 g, se imprime en 28 minutos y cuesta 99 CZK (unos 4 EUR) con nosotros, que es el pedido mínimo, sin envío (cálculo /c/qr5iss66z3ip). El mango se imprime aparte y se pega a la placa con cianoacrilato. Un sello con logotipo para un taller de cerámica o la marca de autor en la base de las tazas se imprime igual; basta subir un SVG. El modelo se descarga gratis como STL o proyecto para su impresora.',
+        'Un ejemplo de la calculadora en producción (28 de octubre de 2026, PLA): el sello EVA de 50 mm de ancho con mango y motivo en relieve pesa 6,8 g y se imprime en 28 minutos (cálculo /c/qr5iss66z3ip). El mango se imprime aparte y se pega a la placa con cianoacrilato. Un sello con logotipo para un taller de cerámica o la marca de autor en la base de las tazas se imprime igual; basta subir un SVG. El modelo se descarga gratis como STL o proyecto para su impresora.',
     ],
     'steps' => [
         ['name' => 'Escriba un texto o suba un motivo', 'text' => 'Escriba el texto en una o dos líneas, o suba un SVG o una imagen con el motivo oscuro sobre fondo claro. El original subido tiene prioridad sobre el texto.'],
@@ -25,7 +25,7 @@ return [
         ['q' => '¿Cómo imprimo el sello en casa y cómo lo limpio?', 'a' => 'Con el motivo hacia arriba, sin soportes, en PLA o PETG, capas de 0,2 mm o más finas para bordes más lisos. La arcilla se lava del sello con agua y un cepillo; antes de sellar un material pegajoso, espolvoree el sello con almidón de maíz.'],
     ],
     'examples' => [
-        'Sello EVA con mango, placa de 56 × 23 mm, motivo en relieve para arcilla: 6,8 g, 28 minutos, 99 CZK.',
+        'Sello EVA con mango, placa de 56 × 23 mm, motivo en relieve para arcilla: 6,8 g, 28 minutos.',
         'Sello de dos líneas HAND MADE con mango, placa de 66 × 41 mm, para cerámica.',
         'Placa OK sin mango, 46 × 25 mm, motivo rebajado, la impronta sobresale.',
     ],

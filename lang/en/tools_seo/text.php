@@ -8,7 +8,7 @@ return [
     'h1' => 'How the text is made, how big it comes out and what it costs',
     'intro' => [
         'The tool turns a text into lettering that stands by itself on a shelf, a desk or in a shop window. Type one to three lines of up to 40 characters, pick one of thirty typefaces and a capital height from 4 to 80 mm. The letters are 1.2 to 30 mm thick and stand on a common foot, so even a typeface whose letters do not touch holds together; lines one above another are joined by a rail. Add a silhouette from the library or your own SVG, next to the letters or above them. The text prints lying on its back without supports, so its front is flat and smooth. If it is too thin for its height and could tip over, the tool says so in the preview.',
-        'An example from the production calculator (28 October 2026, PLA): the word HOME in Archivo Black with 30 mm letters 12 mm thick measures 144 × 34 mm, weighs 21.1 g, prints in 40 minutes and costs 99 CZK (about 4 EUR) from us without delivery (calculation /c/bkdbbtgjavzn). The two-line text KAVÁRNA u Jany in Bebas Neue, 20 mm thick, weighs 55.7 g, prints in 1 h 53 min and costs 130 CZK (calculation /c/qxcoca4ayqkb). You see the price before you order anything, for several pieces too. The model downloads free as an STL or a project for your printer, without registration.',
+        'An example from the production calculator (28 October 2026, PLA): the word HOME in Archivo Black with 30 mm letters 12 mm thick measures 144 × 34 mm, weighs 21.1 g and prints in 40 minutes (calculation /c/bkdbbtgjavzn). The two-line text KAVÁRNA u Jany in Bebas Neue, 20 mm thick, weighs 55.7 g, prints in 1 h 53 min and costs 130 CZK (calculation /c/qxcoca4ayqkb). You see the price before you order anything, for several pieces too. The model downloads free as an STL or a project for your printer, without registration.',
     ],
     'steps' => [
         ['name' => 'Type the text', 'text' => 'One to three lines; the first is the biggest. The symbols below the fields go into the text with one tap; add a picture from the library or upload an SVG.'],
@@ -25,7 +25,7 @@ return [
         ['q' => 'How do I print the text at home?', 'a' => 'On its back, front face down, without supports, 0.2 mm layers, PLA or PETG. The downloaded project for OrcaSlicer and PrusaSlicer has the text laid down already; from the STL lay it on its front face yourself. The underside of the foot stays smooth after it comes off the bed.'],
     ],
     'examples' => [
-        'The word HOME in Archivo Black, 144 × 34 mm, 12 mm deep: 21.1 g, 40 minutes, 99 CZK.',
+        'The word HOME in Archivo Black, 144 × 34 mm, 12 mm deep: 21.1 g, 40 minutes.',
         'The name Ela in a script with a heart on the same foot, 143 × 48 mm, 15 mm deep.',
         'Two lines, KAVÁRNA u Jany, in Bebas Neue, 20 mm deep: 55.7 g, 1 h 53 min, 130 CZK.',
     ],
