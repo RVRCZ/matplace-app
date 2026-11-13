@@ -2612,5 +2612,14 @@
     "param.warn.decor_bed_face": "Una decoración en el lado que se apoya en la base al imprimir no puede sobresalir: queda grabada o a ras en su color.",
     "param.warn.decor_text_small": "Un texto de la decoración es pequeño, las letras de menos de 3 mm pueden no imprimirse legibles. Agrándelo o acórtelo.",
     "param.warn.decor_clipped": "Una parte de la decoración sobrepasa el borde del producto y queda recortada. Muévala o redúzcala.",
-    "param.warn.decor_thin": "Una decoración tiene líneas finas que una boquilla de 0,4 mm puede no imprimir. Agrándela o elija una letra más gruesa."
+    "param.warn.decor_thin": "Una decoración tiene líneas finas que una boquilla de 0,4 mm puede no imprimir. Agrándela o elija una letra más gruesa.",
+    "router.submit.hint.closed": "Gratis y sin registro. En un minuto le proponemos cómo fabricarlo.",
+    "router.gifts.lead.closed": "Cada uno nace de su foto, dibujo o nombre. Verá el diseño y descargará el modelo para su impresora.",
+    "router.file.title.closed": "Tiempo de impresión y material de su archivo en un minuto",
+    "router.file.lead.closed": "Suba un STL, 3MF o STEP, elija el material y verá el tiempo de impresión, el material necesario y una vista previa.",
+    "home.start.file.hint.closed": "Suba el modelo y vea al instante el tiempo de impresión y el material.",
+    "home.start.gift.hint.closed": "Con nombre, de una foto o con dedicatoria. Elija y vea la vista previa al instante.",
+    "home.start.part.hint.closed": "Una caja, un soporte, una tapa o su propio archivo. Un modelo a medida para su impresora.",
+    "home.farm.home.step3.closed": "Descargue el modelo",
+    "home.farm.home.step3.text.closed": "Descargue el STL o un proyecto listo para su impresora."
 }

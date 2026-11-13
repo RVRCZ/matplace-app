@@ -2612,5 +2612,14 @@
     "param.warn.decor_bed_face": "A decoration on the side that lies on the bed while printing cannot stand out: it is engraved or inlaid in its colour.",
     "param.warn.decor_text_small": "A text in a decoration is small, letters under 3 mm may not print legibly. Make it bigger or shorter.",
     "param.warn.decor_clipped": "A part of a decoration reaches over the product's edge and is cut off. Move it or make it smaller.",
-    "param.warn.decor_thin": "A decoration has thin lines a 0.4 mm nozzle may not print. Make it bigger or choose a bolder typeface."
+    "param.warn.decor_thin": "A decoration has thin lines a 0.4 mm nozzle may not print. Make it bigger or choose a bolder typeface.",
+    "router.submit.hint.closed": "Free, no sign-up. Within a minute we'll suggest how to make it.",
+    "router.gifts.lead.closed": "Each one is made from your photo, drawing or name. You see the design and download the model for your own printer.",
+    "router.file.title.closed": "Print time and material from your file within a minute",
+    "router.file.lead.closed": "Upload an STL, 3MF or STEP, choose the material and you see the print time, the material used and a preview.",
+    "home.start.file.hint.closed": "Upload the model and see its print time and material use at once.",
+    "home.start.gift.hint.closed": "With a name, from a photo or with a dedication. Pick one and see the preview at once.",
+    "home.start.part.hint.closed": "A box, a holder, a cap or your own file. A model exactly to measure for your printer.",
+    "home.farm.home.step3.closed": "Download the model",
+    "home.farm.home.step3.text.closed": "Download the STL or a ready project for your printer."
 }

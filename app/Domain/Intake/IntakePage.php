@@ -3,6 +3,7 @@
 namespace App\Domain\Intake;
 
 use App\Domain\Farm\FarmSettings;
+use App\Domain\Farm\FarmState;
 use App\Domain\Tools\ToolPhotos;
 use App\Domain\Tools\ToolVisibility;
 use App\Models\User;
@@ -69,6 +70,10 @@ final class IntakePage
         }
         $date = Carbon::createFromFormat('Y-m-d', $raw)->startOfDay();
         if ($date->isPast() && ! $date->isToday()) {
+            return null;
+        }
+        // a paused farm promises Christmas only when its pause ends by that day, a closed one never (docs/AL.md §23.5)
+        if (! FarmState::allowsPromiseBy($date)) {
             return null;
         }
         $locale = app()->getLocale();

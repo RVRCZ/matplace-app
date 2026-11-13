@@ -9,7 +9,12 @@
 @php
     // without the marketplace the copy speaks about downloading or printing on the farm, never about other printers
     $mp = (bool) config('features.marketplace');
-    $tx = fn (string $key) => __($mp ? $key : 'home.farm.'.$key);
+    // a closed farm (App\Domain\Farm\FarmState, docs/AL.md §23.5) takes no orders from this visitor: the page then names
+    // no price of a print, no order and no delivery. "<key>.closed" is the wording without them; titles, the meta
+    // description and the h1 stay as they are in every state
+    $closed = \App\Domain\Farm\FarmState::isClosed() && ! \App\Domain\Farm\FarmGate::offered(auth()->user());
+    $cx = fn (string $key, array $replace = []) => __($closed && \Illuminate\Support\Facades\Lang::has($key.'.closed') ? $key.'.closed' : $key, $replace);
+    $tx = fn (string $key) => $cx($mp ? $key : 'home.farm.'.$key);
     // the spare-part inquiry is a tool of the catalogue too: no tile where its page would not open (/admin/tools)
     $spare = $mp && \App\Domain\Tools\ToolVisibility::canOpen(auth()->user(), 'spare');
     // the router: the farm's numbers (the reply time, the Christmas deadline), the gift cards, the photographed prints
@@ -28,6 +33,8 @@
         'router.mic', 'router.mic.on', 'router.mic.denied'])
         ->mapWithKeys(fn ($k) => [$k => __($k, ['hours' => ':hours', 'email' => ':email', 'tool' => ':tool'])])->all()
         + ['photo.too_big' => __('photo.too_big', ['mb' => ':mb']), 'auth.email' => __('auth.email')];
+    // the script writes this sentence back under the button: the same one the page shows
+    $routerTexts['router.submit.hint'] = $cx('router.submit.hint');
     $eyebrow = 'text-xs font-bold uppercase tracking-[0.14em] text-action';
     $h2 = 'mt-2 text-2xl font-extrabold tracking-tight text-ink sm:text-3xl';
 @endphp
@@ -85,21 +92,27 @@
                 {{-- the one orange action of the screen: at least 60 px tall, the whole width on a phone --}}
                 <button type="submit" id="intake-submit" class="btn-primary min-h-[60px] w-full rounded-2xl px-8 text-lg shadow-sm sm:w-auto sm:min-w-[320px]">{{ __('router.submit') }}</button>
                 <label for="intake-model" id="intake-file-link" class="inline-flex min-h-11 cursor-pointer items-center text-sm font-medium text-muted underline underline-offset-4 hover:text-ink">{{ __('router.file_link') }}</label>
-                <p id="intake-hint" class="max-w-md text-sm text-muted" aria-live="polite">{{ __('router.submit.hint') }}</p>
+                <p id="intake-hint" class="max-w-md text-sm text-muted" aria-live="polite">{{ $cx('router.submit.hint') }}</p>
             </div>
             <p id="intake-error" class="note-error hidden text-sm" role="alert"></p>
             <div id="intake-assist" class="hidden border-t border-line pt-4" aria-live="polite"></div>
         </form>
 
         <ul class="mt-4 flex flex-wrap justify-center gap-x-4 gap-y-1.5 text-sm text-muted" aria-label="{{ __('router.trust.preview') }}">
-            @foreach(array_filter(['preview' => __('router.trust.preview'), 'no_signup' => __('router.trust.no_signup'), 'christmas' => $christmas ? __('router.trust.christmas', ['date' => $christmas]) : null]) as $k => $line)
+            @foreach(array_filter(['preview' => $closed ? null : __('router.trust.preview'), 'no_signup' => __('router.trust.no_signup'), 'christmas' => $christmas ? __('router.trust.christmas', ['date' => $christmas]) : null]) as $k => $line)
                 <li class="flex items-center gap-1.5" data-trust="{{ $k }}"><svg class="h-3.5 w-3.5 shrink-0 text-ok" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2.4" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M4 10.5l4 4 8-9"/></svg>{{ $line }}</li>
             @endforeach
         </ul>
+        {{-- a paused farm says so here, with the day printing starts again; a closed one that it takes no orders --}}
+        @include('farm._pause', ['class' => 'mt-3 text-center'])
+        @if($closed)
+            <p data-farm-closed class="mt-3 rounded-lg bg-amber-50 px-3 py-2 text-center text-sm text-amber-900" role="note">{{ __('farm.state.closed.note') }}</p>
+        @endif
         <p class="mt-2 text-center text-xs text-muted">{{ __('router.privacy') }}</p>
     </div>
 
-    {{-- ── what happens after sending: the three ways it can go ── --}}
+    {{-- ── what happens after sending: the three ways it can go (each ends with a price and an order: not while the farm is closed) ── --}}
+    @if(! $closed)
     <section class="mt-14" aria-labelledby="router-paths-title" id="router-paths">
         <p class="{{ $eyebrow }}">{{ __('router.paths.eyebrow') }}</p>
         <h2 id="router-paths-title" class="{{ $h2 }}">{{ __('router.paths.title') }}</h2>
@@ -115,13 +128,14 @@
             @endforeach
         </div>
     </section>
+    @endif
 
     {{-- ── the gifts made from a photo, a drawing or a name ── --}}
     @if($gifts)
     <section class="mt-14" aria-labelledby="router-gifts-title" id="router-gifts">
         <p class="{{ $eyebrow }}">{{ __('router.gifts.eyebrow') }}</p>
         <h2 id="router-gifts-title" class="{{ $h2 }}">{{ __('router.gifts.title') }}</h2>
-        <p class="mt-1 max-w-3xl text-muted">{{ __('router.gifts.lead') }}</p>
+        <p class="mt-1 max-w-3xl text-muted">{{ $cx('router.gifts.lead') }}</p>
         <div class="mt-5 grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4">
             @foreach($gifts as $gift)
                 <a href="{{ $gift['url'] }}" data-gift="{{ $gift['key'] }}" class="card group flex flex-col overflow-hidden transition hover:border-ink">
@@ -129,7 +143,7 @@
                     <span class="flex flex-1 flex-col p-3">
                         <span class="font-semibold leading-tight text-ink group-hover:underline">{{ $gift['title'] }}</span>
                         {{-- "from": the cheapest real calculation of the farm for the tool (config/site.php), nothing made up; without one the card says no price --}}
-                        @if($gift['from'])<span class="mt-1 text-sm text-muted">{{ __('router.gifts.from', ['price' => $gift['from']]) }}</span>@endif
+                        @if($gift['from'] && ! $closed)<span class="mt-1 text-sm text-muted">{{ __('router.gifts.from', ['price' => $gift['from']]) }}</span>@endif
                     </span>
                 </a>
             @endforeach
@@ -144,7 +158,7 @@
     @endif
 
     {{-- ── the farm's photographed prints of these gifts (App\Domain\Tools\ToolPhotos): nothing until there are photos ── --}}
-    @if($prints)
+    @if($prints && ! $closed)
     <section class="mt-14" aria-labelledby="router-prints-title" id="router-prints">
         <p class="{{ $eyebrow }}">{{ __('router.prints.eyebrow') }}</p>
         <h2 id="router-prints-title" class="{{ $h2 }}">{{ __('router.prints.title') }}</h2>
@@ -166,15 +180,15 @@
     {{-- ── a model of one's own: the calculator's entrance (its scripts bind to the ids inside: file-input, dropzone, search-form) ── --}}
     <section class="card mt-14 p-4 sm:p-6" aria-labelledby="router-file-title" id="router-file">
         <p class="{{ $eyebrow }}">{{ __('router.file.eyebrow') }}</p>
-        <h2 id="router-file-title" class="{{ $h2 }}">{{ __('router.file.title') }}</h2>
-        <p class="mt-1 max-w-3xl text-muted">{{ __('router.file.lead') }}</p>
+        <h2 id="router-file-title" class="{{ $h2 }}">{{ $cx('router.file.title') }}</h2>
+        <p class="mt-1 max-w-3xl text-muted">{{ $cx('router.file.lead') }}</p>
         <div class="mt-4">
             @include('calculator.inputs', ['centered' => false, 'fileOnly' => true])
         </div>
         <ul class="mt-4 flex flex-wrap gap-x-5 gap-y-1 text-xs text-muted">
             {{-- "from 99 Kč": the cheapest of the priced examples (config site.example_items), only in crowns (audit 26 Oct 2026, D15) --}}
             @php $from = \App\Support\Currency::current() === \App\Support\Money::CZK ? collect((array) config('site.example_items'))->map(fn ($i) => $i['price']['CZK'] ?? null)->filter()->min() : null; @endphp
-            @foreach($mp ? ['real_prices', 'no_signup', 'share'] : ['free_tools', 'download', $from ? 'farm_from' : 'farm'] as $b)
+            @foreach($mp ? ['real_prices', 'no_signup', 'share'] : array_filter(['free_tools', 'download', $closed ? null : ($from ? 'farm_from' : 'farm')]) as $b)
                 <li class="flex items-center gap-1.5"><svg class="h-3.5 w-3.5 text-action" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2.4" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M4 10.5l4 4 8-9"/></svg>{{ $b === 'free_tools' ? trans_choice('home.benefit.free_tools_n', $n = (int) config('ai.daily_limits.generate_guest'), ['n' => $n]) : __('home.benefit.'.$b, ['price' => $from ? \App\Support\Money::of((float) $from, \App\Support\Money::CZK)->format() : '']) }}</li>
             @endforeach
         </ul>
@@ -202,7 +216,7 @@
             <{{ $tag }} @if($tag === 'a') href="{{ $href }}" @else type="button" @endif data-way="{{ $k }}" @if($tile) data-tile="{{ $tile }}" @endif @if($k === 'file') onclick="document.getElementById('file-input').click();return false;" @endif
                class="group flex w-full items-start gap-3 px-1 py-4 text-left sm:px-5 lg:first:pl-0 lg:last:pr-0">
                 <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-action-soft text-action-dark" aria-hidden="true"><svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path stroke-linecap="round" stroke-linejoin="round" d="{{ $path }}"/></svg></span>
-                <span class="min-w-0 flex-1"><span class="block font-bold text-ink">{{ __('home.start.'.$k) }}</span><span class="block text-sm text-muted">{{ __('home.start.'.$k.'.hint') }}</span></span>
+                <span class="min-w-0 flex-1"><span class="block font-bold text-ink">{{ __('home.start.'.$k) }}</span><span class="block text-sm text-muted">{{ $cx('home.start.'.$k.'.hint') }}</span></span>
                 <span class="mt-1 text-ink transition group-hover:translate-x-0.5" aria-hidden="true">→</span>
             </{{ $tag }}>
         @endforeach

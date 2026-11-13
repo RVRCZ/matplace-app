@@ -3,6 +3,7 @@
 namespace App\Domain\Intake;
 
 use App\Domain\Farm\FarmSettings;
+use App\Domain\Farm\FarmState;
 use App\Models\FarmSetting;
 use App\Support\Locales;
 use Carbon\Carbon;
@@ -176,6 +177,11 @@ final class IntakeHints
                     $to = $set;
                 }
             }
+        }
+        // an offer that ends with the farm's last day before the holiday is a promise to deliver by it: none while the
+        // farm cannot keep it (a pause without an end or one that ends later, a closed farm; docs/AL.md §23.5)
+        if (! empty($event['until_setting']) && ! FarmState::allowsPromiseBy($to)) {
+            return null;
         }
         if ($adminFrom = self::monthDay($over['from'] ?? null)) {
             $from = self::before($adminFrom, $to);

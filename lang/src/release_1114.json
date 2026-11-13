@@ -1,0 +1,11 @@
+{
+    "router.submit.hint.closed": ["Zdarma a bez registrace. Během minuty navrhneme, jak to vyrobit.", "Free, no sign-up. Within a minute we'll suggest how to make it.", "Gratis y sin registro. En un minuto le proponemos cómo fabricarlo."],
+    "router.gifts.lead.closed": ["Každý vzniká z vaší fotky, kresby nebo jména. Návrh si prohlédnete a model stáhnete pro svou tiskárnu.", "Each one is made from your photo, drawing or name. You see the design and download the model for your own printer.", "Cada uno nace de su foto, dibujo o nombre. Verá el diseño y descargará el modelo para su impresora."],
+    "router.file.title.closed": ["Doba tisku a materiál ze souboru během minuty", "Print time and material from your file within a minute", "Tiempo de impresión y material de su archivo en un minuto"],
+    "router.file.lead.closed": ["Nahrajte STL, 3MF nebo STEP, zvolte materiál a uvidíte dobu tisku, spotřebu materiálu a náhled.", "Upload an STL, 3MF or STEP, choose the material and you see the print time, the material used and a preview.", "Suba un STL, 3MF o STEP, elija el material y verá el tiempo de impresión, el material necesario y una vista previa."],
+    "home.start.file.hint.closed": ["Nahrajte model a hned uvidíte dobu tisku a spotřebu materiálu.", "Upload the model and see its print time and material use at once.", "Suba el modelo y vea al instante el tiempo de impresión y el material."],
+    "home.start.gift.hint.closed": ["Se jménem, z fotky nebo s věnováním. Vyberete a hned vidíte náhled.", "With a name, from a photo or with a dedication. Pick one and see the preview at once.", "Con nombre, de una foto o con dedicatoria. Elija y vea la vista previa al instante."],
+    "home.start.part.hint.closed": ["Krabička, držák, krytka nebo vlastní soubor. Model přesně na míru pro vaši tiskárnu.", "A box, a holder, a cap or your own file. A model exactly to measure for your printer.", "Una caja, un soporte, una tapa o su propio archivo. Un modelo a medida para su impresora."],
+    "home.farm.home.step3.closed": ["Stáhněte model", "Download the model", "Descargue el modelo"],
+    "home.farm.home.step3.text.closed": ["Stáhněte STL nebo hotový projekt pro svou tiskárnu.", "Download the STL or a ready project for your printer.", "Descargue el STL o un proyecto listo para su impresora."]
+}

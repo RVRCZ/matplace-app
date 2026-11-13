@@ -2612,5 +2612,14 @@
     "param.warn.decor_bed_face": "Zdobení na straně, která leží při tisku na podložce, nemůže vystupovat: je zapuštěné nebo zarovnané v barvě.",
     "param.warn.decor_text_small": "Text ve zdobení je malý, písmena pod 3 mm se nemusí vytisknout čitelně. Zvětšete ho nebo zkraťte.",
     "param.warn.decor_clipped": "Část zdobení přesahuje okraj výrobku a je oříznutá. Posuňte ho nebo zmenšete.",
-    "param.warn.decor_thin": "Zdobení má tenké čáry, které tryska 0,4 mm nemusí vytisknout. Zvětšete ho nebo zvolte tučnější písmo."
+    "param.warn.decor_thin": "Zdobení má tenké čáry, které tryska 0,4 mm nemusí vytisknout. Zvětšete ho nebo zvolte tučnější písmo.",
+    "router.submit.hint.closed": "Zdarma a bez registrace. Během minuty navrhneme, jak to vyrobit.",
+    "router.gifts.lead.closed": "Každý vzniká z vaší fotky, kresby nebo jména. Návrh si prohlédnete a model stáhnete pro svou tiskárnu.",
+    "router.file.title.closed": "Doba tisku a materiál ze souboru během minuty",
+    "router.file.lead.closed": "Nahrajte STL, 3MF nebo STEP, zvolte materiál a uvidíte dobu tisku, spotřebu materiálu a náhled.",
+    "home.start.file.hint.closed": "Nahrajte model a hned uvidíte dobu tisku a spotřebu materiálu.",
+    "home.start.gift.hint.closed": "Se jménem, z fotky nebo s věnováním. Vyberete a hned vidíte náhled.",
+    "home.start.part.hint.closed": "Krabička, držák, krytka nebo vlastní soubor. Model přesně na míru pro vaši tiskárnu.",
+    "home.farm.home.step3.closed": "Stáhněte model",
+    "home.farm.home.step3.text.closed": "Stáhněte STL nebo hotový projekt pro svou tiskárnu."
 }
