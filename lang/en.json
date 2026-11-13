@@ -2542,5 +2542,19 @@
     "site.gone.title": "This page no longer exists",
     "site.gone.text": "The address belonged to the old site and has no successor. Try the home page or the tools.",
     "seo.privacy.description": "Privacy policy of matplace: which personal data we process and why, who receives them, how long we keep them, and your rights.",
-    "seo.farm_terms.description": "Terms of the matplace print farm: renting a printer for your file, what we do not print, price and payment, your files and print videos."
+    "seo.farm_terms.description": "Terms of the matplace print farm: renting a printer for your file, what we do not print, price and payment, your files and print videos.",
+    "farm.state.pause.until": "The farm is paused right now. Printing starts on :date at the earliest.",
+    "farm.state.pause.open_end": "The farm is paused right now. Printing starts as soon as we start the farm again.",
+    "farm.state.pause.order": "You can order and pay now; the order waits in the queue.",
+    "farm.state.pause.faq_q": "When does printing start?",
+    "farm.state.closed.note": "The farm takes no new orders right now. The tools, the preview and the model download work as always.",
+    "farm.mail.queued_pause.subject": "Order :number is accepted, printing starts after the pause",
+    "farm.mail.queued_pause.body": "Your print “:name” (:color) is paid and waits in the queue. We will let you know when it starts printing.",
+    "farm.guest.mail.body_pause": "Thank you. The print “:name” is paid (:total) and waits in the queue. Its page shows how it goes; we will write to you about every step.",
+    "farm.state.admin.line_queue_pause": "Queue: the farm is paused, the order waits and starts once you open the farm",
+    "param.go.hint.closed": "The calculation shows the print time and the material used, and you download the model or the project for your own printer. No registration.",
+    "gifts.after.closed": "Every design ends the same way: a preview, the dimensions and a file to download for your printer.",
+    "footer.promise.closed": "A check, a preview and a file for your printer. Free.",
+    "param.go.closed": "Work out print time and material",
+    "farm.order.blocked_pause": "The farm is paused; printing starts after the pause."
 }

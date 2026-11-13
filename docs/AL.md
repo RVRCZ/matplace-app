@@ -3182,3 +3182,115 @@ Zkušební tisky před zapnutím pro zákazníky (nejsnáz přes `ORCA_SLICER_TR
 Nasazení (koordinátor): rozbalit stabilní 2.5.0 na server, do `.env` `ORCA_BIN_25=<cesta>/AppRun`, pro zkoušku `ORCA_SLICER_TRIAL=2.5`,
 po zkušebních tiscích `ORCA_SLICER=2.5` (a `ORCA_BIN_TOOLCHANGER` na stejnou cestu, až projde řez pro INDX). Zpět: `ORCA_SLICER=2.4`.
 Žádná migrace, žádné texty, žádný JavaScript.
+
+## 23. Stav farmy: otevřeno / odstávka / zavřeno a texty podle něj (13. 11. 2026, feature/farm-state)
+
+Zadání `docs/prompts/stav-farmy-odstavka.md`. Roman má farmu často vypnutou kvůli úpravám; web přitom dál sliboval rychlost.
+Stav je stav **celé služby** (ne jedné farmy z tabulky `farms`). Bez migrace: vše je v `farm_settings`.
+
+### 23.1 Tři stavy a staré přepínače
+
+`App\Domain\Farm\FarmState` (`OPEN`, `PAUSED`, `CLOSED`), čte konfiguraci, kterou z nastavení plní `AppServiceProvider`
+(`farm.open`, `farm.state`, `farm.pause_until`, `farm.pause_note`).
+
+| Stav | `farm_open` | `farm_state` | Zákazník | Tisk |
+|---|---|---|---|---|
+| Otevřeno | zapnuto | `open` (nebo nikdy neuloženo) | vše jako dosud | fronta běží |
+| Odstávka | zapnuto | `paused` | ceny, objednávka i platba zůstávají; místo slibů rychlosti věta o odstávce | zakázky zákazníků čekají ve frontě |
+| Zavřeno | **vypnuto** | `closed` | tlačítko, ceny tisku a texty o tisku u nás zmizí, nové zakázky nejdou založit | jako dosud při `farm_open` vypnuto (viz 23.6) |
+
+- `farm_open` zůstává tím, co zavírá: `FarmGate` se nezměnil. Vypnutý `farm_open` = Zavřeno, ať je ve `farm_state` cokoli;
+  databáze, která `farm_state` nikdy neviděla (produkce po nasazení), je otevřená nebo zavřená podle `farm_open`.
+  Uložení stavu zapisuje obojí (`farm_open` = stav není Zavřeno). Formulář bez `farm_state` (starý tvar) se chová jako dřív.
+- `farm_public` (farmu vidí jen administrátor) a `require_approval` (zaplacená zakázka čeká na schválení) platí beze změny
+  ve všech stavech. Schválená zakázka za odstávky jde do fronty a čeká tam.
+- Administrátor objedná a tiskne ve všech stavech (zkoušky), stejně tak vlastní tisky farmy (`kind` test, showcase).
+
+### 23.2 Administrace
+
+- `/admin/farm/settings`, první blok **„Stav farmy“** (`#farm-state`): tři volby s popisem, pole „tisk začne nejdřív“
+  (`farm_pause_until`, nepovinné), poznámka pro zákazníky česky / anglicky / španělsky (`farm_pause_note`, nepovinná; ukáže se
+  jen v jazyce, ve kterém je vyplněná) a upozornění „Při odstávce nebo zavření zvažte pozastavení reklamy.“ Zaškrtávátko
+  „Farma přijímá zakázky“ z „Přepínačů webu“ zmizelo (je to volba Zavřeno).
+- Pruh se stavem je v `admin/farm/nav.blade.php`, tedy nahoře na **všech** stránkách správy farmy včetně přehledu
+  „Tiskárny a fronta“: při Otevřeno malý řádek, při Odstávce a Zavřeno výrazný žlutý pruh (kolik zakázek čeká, co vidí
+  zákazníci, upozornění na reklamu, tlačítko „Změnit stav“). Datum, které uplynulo, pruh řekne; zákazníci pak vidí větu bez
+  data. Farma se sama neotevře.
+
+### 23.3 Odstávka a tisk
+
+- `Dispatcher::kick()` bere z fronty první zakázku, kterou odstávka nedrží (`FarmState::holds()`: stav Odstávka, zakázka není
+  vlastní tisk farmy a nepatří administrátorovi). Zakázka zákazníka projde placením jako vždy (`paid` → `queued`, žádný nový
+  stav, žádný nový sloupec) a zůstane ve frontě; potvrzení volné podložky se nespotřebuje. Po přepnutí na Otevřeno ji spustí
+  nejbližší hlášení agenta (`AgentService::sync` volá `kick` pro každou tiskárnu), ručně nic.
+- Platí i pro další podložku vícepodložkové zakázky a pro automatický opakovaný tisk po selhání: za odstávky se nespustí.
+  Tisk, který už běží, doběhne.
+- `Dispatcher::estimate()` vrací `blocked: pause`; stránka zakázky pak neukazuje časy začátku a konce, jen větu o odstávce.
+- **Fronta úloh:** worker žije hodiny a konfiguraci četl jen při startu. `AppServiceProvider::applySwitches()` se proto volá
+  i před každou úlohou fronty (`JobProcessing`, mimo `sync`): zakázka, kterou do fronty zařadí worker (nové řezání po platbě),
+  i e-maily z fronty vidí stav platný v tu chvíli. Platí tím i pro `farm_open`, `farm_public` a tržiště.
+- Tiskárnu v ručním režimu spouští člověk; odstávka mu v tom nebrání (je to jeho rozhodnutí).
+
+### 23.4 Kde se texty řídí stavem
+
+Věta: „Farma má teď odstávku. Tisk začne nejdřív {datum}.“ / bez data nebo s uplynulým datem „…Tisk začne, jakmile farmu
+znovu spustíme.“ + poznámka správce + „Objednat a zaplatit můžete už teď, zakázka počká ve frontě.“
+(`FarmState::pauseLine()`, partial `farm/_pause.blade.php`, klíče `farm.state.*` v `lang/src/farm_state.json`).
+
+| Místo | Odstávka | Zavřeno |
+|---|---|---|
+| Kalkulačka (`farm/cta`, `calculator/_trust`) | věta pod tlačítkem „Objednat tisk“; řádek „Od zaplacení k předání obvykle do … dne“ se neukazuje; cena zůstává | tlačítko, blok „Tisk u nás v číslech“, orientační cena tisku i řádek o dopravě pryč (`ConfigController::farmProfiles` nedá návštěvníkovi ceník farmy) |
+| Stránka zakázky (`farm/order`, `calc/farm.ts`) | věta nad platbou; „začne hned“ se neukazuje; po zaplacení místo odhadu začátku a konce věta o odstávce | nová zakázka nejde založit (jako dosud) |
+| Stránky nástrojů (`tools/page`) | věta pod tlačítky; v „Než objednáte“ první otázka „Kdy začne tisk?“ (i ve strukturovaných datech FAQPage) | texty varianty „stažení“; tam, kde ta slibovala cenu, nová varianta `.closed` (`param.go`, `param.go.hint`, `gifts.after`, `footer.promise`); otázky o tisku u nás zmizí (jako dosud) |
+| Vstupní stránky `/gifts`, `/3d-tisk-praha`, `/faq`, `/business` | věta pod úvodem | `/gifts`: varianta bez tisku; statické stránky: „Farma teď nové zakázky nepřijímá. Nástroje, náhled a stažení modelu fungují dál.“ |
+| `/farm` | věta pod úvodem | věta o zavření pro toho, kdo není administrátor |
+| Patička | beze změny | „Kontrola, náhled a soubor pro vaši tiskárnu. Zdarma.“ |
+| E-maily | zákazník: „Zakázka … je přijatá, tisk začne po odstávce“ + věta s datem (`farm.mail.queued_pause`), totéž v e-mailu hosta; obsluha: „Fronta: farma má odstávku, zakázka čeká…“ | – |
+| Strukturovaná data (`Schema::product`) | `availability` BackOrder | OutOfStock |
+
+Titulky, popisy a H1 se se stavem nemění (test je porovnává ve všech třech stavech).
+Slib „do Vánoc“: `FarmState::allowsPromiseBy($den)` – Otevřeno ano; Odstávka jen když datum konce odstávky je nejpozději v den
+slibu; bez data a při Zavřeno ne.
+
+### 23.5 Úvodní strana – neupraveno (čeká na `feature/home-what-to-make` v main)
+
+`origin/main` v době odevzdání neobsahoval `app/Domain/Intake/IntakeHints.php`, proto podle zadání zůstala úvodní strana
+beze změny a **při odstávce dál slibuje Vánoce**. Po slití stačí:
+
+1. `App\Domain\Intake\IntakePage::christmas()`: po výpočtu dne vrátit `null`, když `! FarmState::allowsPromiseBy($den)`.
+   Z té jedné funkce berou datum oba sliby v `calculator/home.blade.php` („Doručení do Vánoc při objednání do :date“
+   v řádku důvěry a pruh „Do Vánoc stihneme objednávky přijaté do :date.“).
+2. `IntakeHints` (řádek s `until_setting` → `christmas_deadline`): vánoční nabídku ukončit stejnou podmínkou.
+3. Pod řádek důvěry `@include('farm._pause')` (věta o odstávce); při Zavřeno neukazovat karty a texty, které slibují tisk u nás.
+4. „Během minuty navrhneme, jak to vyrobit a kolik to bude stát.“ (`router.submit.hint`) je slib návrhu, ne tisku: při
+   Odstávce nechat, při Zavřeno vypustit „a kolik to bude stát“.
+
+### 23.6 Co se liší od zadání a co zůstává otevřené
+
+- **Zavřeno nedrží frontu.** Zadání žádá zadržení tisku jen pro Odstávku a zachování dnešního chování starých přepínačů;
+  při `farm_open` vypnuto se už zařazené zakázky tiskly a tisknou dál. Kdo přepne z Odstávky na Zavřeno, rozjede čekající
+  zakázky; formulář na to upozorňuje. Změna na „Zavřeno také drží“ je jeden řádek ve `FarmState::holds()`.
+- **Statické texty** nástrojů (`lang/*/tools_seo`), odpovědi „Než objednáte“ a stránky `/3d-tisk-praha`, `/faq` se nepřepisují
+  (jsou to texty pro vyhledávače): při Odstávce je nad nimi věta o odstávce, při Zavřeno věta o zavření; věty typu
+  „tisk začne, jakmile je tiskárna volná“ v nich zůstávají.
+- **Katalog** (`inspiration/show`, ceny v titulcích) se nemění: ceny jsou součást titulků a na katalogu pracuje
+  `feature/seo-cleanup-index`. Mění se jen `availability` ve strukturovaných datech.
+- Přehled „Tiskárny a fronta“ z `feature/admin-farm-overview` nebyl v main; pruh je proto v navigaci správy farmy a na
+  novém přehledu se objeví sám, pokud přehled navigaci vkládá.
+
+### 23.7 Testy, snímky, nasazení
+
+- `tests/Feature/FarmStateTest.php` (14 testů): mapování starých přepínačů (i formulář starého tvaru), uložení stavu
+  v administraci, pruh ve správě farmy, kdo smí objednat ve třech stavech, věta s datem / bez data / s uplynulým datem a
+  poznámka jen ve svém jazyce, slib do daného dne, kalkulačka (tlačítko, věta, ceník v JSON konfiguraci pro hosta
+  a administrátora), stránka nástroje (věta, první otázka, varianty `.closed`), vstupní stránky `/3d-tisk-praha` a `/gifts`,
+  strukturovaná data, zakázka zaplacená za odstávky (nespustí se ani po dvou hlášeních agenta, podložka zůstane potvrzená,
+  stránka i e-mail zákazníka, e-mail obsluhy a e-mail hosta říkají totéž; po otevření ji spustí další hlášení agenta),
+  zakázka za běžného provozu má e-mail beze změny, administrátorova zakázka se za odstávky vytiskne před čekajícím
+  zákazníkem, worker čte stav před každou úlohou. Titulek, popis a H1 se porovnávají ve všech třech stavech.
+- Snímky (lokální server nad soukromou kopií databáze, 390 a 1280 px): kalkulačka, stránka nástroje a `/3d-tisk-praha` ve
+  stavu Odstávka a Zavřeno, nastavení v administraci v obou stavech. Přehled `/admin/farm` lokálně padá na chybějící tabulce
+  staré vývojové databáze (`payment_refunds`), pruh je vyfocen na `/admin/farm/printers`; přehled kryje test.
+- **Nasazení:** žádná migrace, žádná změna `.env`. Po nasazení je stav Otevřeno nebo Zavřeno podle dnešního `farm_open`;
+  nic se samo nepřepne. Nové klíče `farm_state`, `farm_pause_until`, `farm_pause_note` vzniknou prvním uložením formuláře.
+  Workery se při nasazení restartují jako vždy (nový kód čte stav před každou úlohou).

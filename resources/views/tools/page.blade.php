@@ -178,9 +178,11 @@
                 {{-- share the result: the phone's share sheet, else the link copied (Stage.shareable; docs/AN.md §12) --}}
                 <button type="button" id="tool-share" class="btn-secondary w-full gap-1.5 sm:w-auto" hidden data-copied="{{ __('toolpage.share.copied') }}"><x-icon name="share" class="h-4 w-4" />{{ __('toolpage.share') }}</button>
                 {{-- on a phone the way on is the bar fixed to the bottom (x-action-bar below), which mirrors this button; the button itself stays for lg --}}
-                <span class="max-lg:hidden lg:contents"><button type="button" id="tool-go" class="btn-primary gap-1.5" disabled><span id="tool-go-label">{{ __('param.go') }}</span><x-icon name="arrow-right" class="h-4 w-4" /></button></span>
+                <span class="max-lg:hidden lg:contents"><button type="button" id="tool-go" class="btn-primary gap-1.5" disabled><span id="tool-go-label">{{ \App\Support\NextStep::text('param.go') }}</span><x-icon name="arrow-right" class="h-4 w-4" /></button></span>
             </div>
             <p class="w-full text-xs text-muted">@hasSection('price-note')@yield('price-note')@else{{ \App\Support\NextStep::text('param.go.hint') }}@endif</p>
+            {{-- the farm is paused: said where the page promises a print with us (only to visitors the farm is offered to) --}}
+            @if($next === \App\Support\NextStep::FARM)@include('farm._pause', ['class' => 'w-full'])@endif
         </div>
         @yield('stage')
     </div>

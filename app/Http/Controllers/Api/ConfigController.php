@@ -6,6 +6,7 @@ use App\Domain\Calculation\MaterialCatalog;
 use App\Domain\Farm\ColorLimit;
 use App\Domain\Farm\FarmPricingProfile;
 use App\Domain\Farm\FarmSettings;
+use App\Domain\Farm\FarmState;
 use App\Domain\Farm\Palette;
 use App\Engines\Contracts\ModelGenerator;
 use App\Engines\Converter\ConverterChain;
@@ -32,6 +33,11 @@ class ConfigController extends Controller
     public static function farmProfiles(MaterialCatalog $materials): array
     {
         if (config('features.marketplace') || ! config('farm.enabled')) {
+            return [];
+        }
+        // a closed farm (FarmState) names no price of a print to its visitors; the admin, who orders anyway, keeps it
+        // (NextStep::mode() is "farm" only for somebody the farm is offered to, and it is part of the cached JSON's address)
+        if (FarmState::isClosed() && NextStep::mode() !== NextStep::FARM) {
             return [];
         }
         $farm = app(FarmPricingProfile::class);

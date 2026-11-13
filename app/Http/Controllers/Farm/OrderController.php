@@ -10,6 +10,7 @@ use App\Domain\Farm\Dispatcher;
 use App\Domain\Farm\FarmGate;
 use App\Domain\Farm\FarmRefusal;
 use App\Domain\Farm\FarmSettings;
+use App\Domain\Farm\FarmState;
 use App\Domain\Farm\InsufficientCredit;
 use App\Domain\Farm\ModelValidator;
 use App\Domain\Farm\OrderFlow;
@@ -996,7 +997,7 @@ class OrderController extends Controller
                     'price' => $price = $sliced ? $this->orders->priceFor($order, $r['printer'], Shipping::PICKUP, $r['color']->material, null, $currency) : null, 'total' => $price['total'] ?? null,
                     'rates' => ['price_per_gram' => (float) $r['color']->material->price_per_gram, 'density' => (float) ($r['color']->material->density ?: 1.24),
                         'hourly_rate' => (float) ($r['printer']->hourly_rate ?? $this->settings->get('hourly_rate')), 'time_factor' => (float) ($r['printer']->time_factor ?: 1), 'weight_factor' => (float) ($r['printer']->weight_factor ?: 1)],
-                    'starts_now' => $r['printer']->readyForAutoStart() && ! $this->settings->get('require_approval'),
+                    'starts_now' => $r['printer']->readyForAutoStart() && ! $this->settings->get('require_approval') && ! FarmState::holds($order),
                     // a plate with a raised text: the colours the text can have next to this colour of the plate – from every
                     // machine that holds this colour (the order goes where both spools are, machineFor); every colour once
                     'second' => ($multi ? $this->orders->secondSpoolsAcross($r['slot'], $order) : collect())
@@ -1158,6 +1159,8 @@ class OrderController extends Controller
             'model_url' => ($order->absolutePrintStlPath() || $order->modelFile?->stl_path) && ! $order->hidesModelFrom($request->user()) ? route('farm.orders.model', $order).'?v='.($order->updated_at?->timestamp ?? 0) : null,
             'supports_url' => $order->absoluteSupportsPath() ? route('farm.orders.supports', $order).'?v='.($order->updated_at?->timestamp ?? 0) : null,
             'queue' => app(Dispatcher::class)->estimate($order, $this->settings),
+            // the farm is paused and this order waits for its end (FarmState): the sentence the page says instead of start times
+            'pause' => FarmState::holds($order) ? FarmState::pauseLine() : null,
             'timelapse_url' => $order->timelapse_path ? route('farm.orders.timelapse', $order) : null,
             // the photo of the finished print on its backdrop (PrintPhotos), once the operator took one
             'photo_url' => $order->photoUrl(),

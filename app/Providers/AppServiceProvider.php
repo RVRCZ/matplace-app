@@ -8,6 +8,7 @@ use App\Domain\Calculation\RoughEstimator;
 use App\Domain\Calculation\ShapeRange;
 use App\Domain\Designer\DesignerProfiles;
 use App\Domain\Farm\FarmSettings;
+use App\Domain\Farm\FarmState;
 use App\Domain\Farm\Palette;
 use App\Domain\Mail\Outbox;
 use App\Domain\Tools\ToolVisibility;
@@ -18,6 +19,7 @@ use App\Support\RegisterGuard;
 use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Http\Request;
 use Illuminate\Mail\Events\MessageSent;
+use Illuminate\Queue\Events\JobProcessing;
 use Illuminate\Routing\UrlGenerator;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Blade;
@@ -52,19 +54,19 @@ class AppServiceProvider extends ServiceProvider
         });
     }
 
-    public function boot(): void
+    /** The admin's switches from farm_settings over the config: the marketplace, the farm's state and visibility, the AI limits. */
+    private function applySwitches(): void
     {
-        // Anonymous use is unlimited by design; these limits only stop abuse of the heavy endpoints.
-        // Staging safety: real people were imported from the legacy site. Until launch every outgoing mail goes to one inbox.
-        if ($to = config('mail.always_to')) {
-            Mail::alwaysTo($to);
-        }
-
-        // product switches live in farm_settings so the admin flips them at /admin/farm/settings; .env is only the default
         try {
             if (Schema::hasTable('farm_settings')) {
                 $s = $this->app->make(FarmSettings::class);
-                config(['features.marketplace' => (bool) $s->get('marketplace'), 'farm.open' => (bool) $s->get('farm_open'), 'farm.public' => (bool) $s->get('farm_public')]);
+                // the state of the service (open / paused / closed, FarmState): `farm.open` stays what the gate reads
+                $state = FarmState::fromSettings($s);
+                config([
+                    'features.marketplace' => (bool) $s->get('marketplace'), 'farm.public' => (bool) $s->get('farm_public'),
+                    'farm.open' => $state !== FarmState::CLOSED, 'farm.state' => $state,
+                    'farm.pause_until' => (string) $s->get('farm_pause_until'), 'farm.pause_note' => (array) $s->get('farm_pause_note'),
+                ]);
                 // the spare-part inquiry is the marketplace's tool: on offer when the marketplace is, by the same switch
                 // (its page would answer 404 to the visitors of a marketplace switched on here and not in .env: ToolGate)
                 config(['tools.spare.available' => (bool) $s->get('marketplace')]);
@@ -74,6 +76,26 @@ class AppServiceProvider extends ServiceProvider
         } catch (\Throwable) {
             // no database yet (first install, artisan key:generate…): the .env defaults stand
         }
+    }
+
+    public function boot(): void
+    {
+        // Anonymous use is unlimited by design; these limits only stop abuse of the heavy endpoints.
+        // Staging safety: real people were imported from the legacy site. Until launch every outgoing mail goes to one inbox.
+        if ($to = config('mail.always_to')) {
+            Mail::alwaysTo($to);
+        }
+
+        // product switches live in farm_settings so the admin flips them at /admin/farm/settings; .env is only the default
+        $this->applySwitches();
+        // a queue worker lives for hours: before every job it reads the switches again, or a pause set meanwhile would
+        // not hold an order the worker puts into the queue (PrepareFarmOrder → Dispatcher) and its mails would not say it.
+        // Not for the sync queue, which runs inside the request that has just read them (and inside the tests' own config)
+        Event::listen(function (JobProcessing $job) {
+            if ($job->connectionName !== 'sync') {
+                $this->applySwitches();
+            }
+        });
 
         // an account being deleted takes its designer profile down with it and leaves the statistics without a person
         Event::listen(function (AccountErasing $erasing) {

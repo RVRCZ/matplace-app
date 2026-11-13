@@ -10,6 +10,10 @@
 @if($reason)
 {{ $reason }}
 @endif
+@if($pause ?? null)
+
+{{ $pause }}
+@endif
 
 @if($trackingUrl ?? null)
 {{ __('farm.mail.shipped.barcode', ['barcode' => $order->packeta_barcode]) }}

@@ -24,6 +24,12 @@
     <h1 class="text-2xl font-extrabold text-ink">{{ $page['h1'] ?? $page['title'] }}</h1>
     @if(in_array($key, ['terms', 'business_terms', 'cookies', 'complaints'], true) && $updated)<p class="text-xs text-slate-500">{{ __('site.pages.updated', ['date' => $updated]) }}</p>@endif
     @if(! empty($page['lead']))<p class="mt-3 text-lg leading-relaxed">{!! $linked($page['lead']) !!}</p>@endif
+    {{-- the pages that speak of printing with us say the state of the farm first (FarmState): paused with the day, closed plainly;
+         their titles and texts stay as they are --}}
+    @if(in_array($key, ['praha', 'faq', 'business'], true) && config('farm.enabled') && (config('farm.public') || auth()->user()?->isAdmin()))
+        @include('farm._pause', ['class' => 'mt-3'])
+        @if(\App\Domain\Farm\FarmState::isClosed())<p data-farm-closed class="mt-3 rounded-lg bg-amber-50 px-3 py-2 text-sm text-amber-900" role="note">{{ __('farm.state.closed.note') }}</p>@endif
+    @endif
 
     @foreach($page['sections'] ?? [] as $section)
         <section class="mt-5">

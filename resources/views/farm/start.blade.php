@@ -29,6 +29,8 @@
         </div>
     </div>
     <p class="mt-2 text-slate-600">{{ __('farm.lead') }}</p>
+    @include('farm._pause', ['class' => 'mt-3'])
+    @if(\App\Domain\Farm\FarmState::isClosed() && ! auth()->user()?->isAdmin())<p data-farm-closed class="mt-3 rounded-lg bg-amber-50 px-3 py-2 text-sm text-amber-900" role="note">{{ __('farm.state.closed.note') }}</p>@endif
     @include('partials.flash')
     @include('partials.verify_banner')
 

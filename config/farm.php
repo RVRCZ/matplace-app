@@ -120,6 +120,10 @@ return [
         'marketplace' => (bool) env('FEATURE_MARKETPLACE', false),   // printers' marketplace: price lists, inquiries, quotes
         'farm_open' => true,                                          // false: the farm takes no new orders (running ones finish)
         'farm_public' => false,                                       // false: only admins see "rent a printer" (the farm is still being tried out)
+        // the state of the whole service (App\Domain\Farm\FarmState, docs/AL.md §23): closed = farm_open off; paused is kept here
+        'farm_state' => null,                                         // open | paused | closed; null = never saved (open or closed by farm_open)
+        'farm_pause_until' => '',                                     // paused: the day printing starts again at the earliest (YYYY-MM-DD); empty = no date is named
+        'farm_pause_note' => ['cs' => '', 'en' => '', 'es' => ''],    // paused: a short note for customers, per language (empty = the standard sentence alone)
     ],
 
     // Prices are defined in CZK. Accounts outside Czechia pay and are paid in EUR at this fixed rate (CZK per 1 EUR);

@@ -23,7 +23,9 @@ final class Dispatcher
             if (! $printer || ! $printer->readyForAutoStart()) {
                 return null;
             }
-            $order = $this->queue($printer)->first();
+            // a pause of the farm (FarmState) holds every customer's order in the queue; the farm's own prints and an
+            // admin's orders go on, in their turn among themselves
+            $order = $this->queue($printer)->first(fn (FarmOrder $o) => ! FarmState::holds($o));
             if (! $order || ! $order->gcode_path) {
                 return null;
             }
@@ -63,7 +65,7 @@ final class Dispatcher
     /**
      * When will this order start and finish? Minutes from now, on its printer, with the corrected times.
      *
-     * @return array{start_in: int, finish_in: int, ahead: int, blocked: string|null}|null
+     * @return array{start_in: int, finish_in: int, ahead: int, blocked: string|null}|null blocked: offline | approval | plate | pause (the farm is paused, FarmState: the times are not to be shown)
      */
     public function estimate(FarmOrder $order, FarmSettings $settings): ?array
     {
@@ -104,6 +106,7 @@ final class Dispatcher
             $ahead++;
         }
         $blocked = match (true) {
+            FarmState::holds($order) => 'pause',                             // the farm is paused: nothing of a customer starts
             ! $printer->isOnline() => 'offline',
             $order->status === FarmOrder::STATUS_PAID => 'approval',
             ! $job && $ahead === 0 && ! $printer->bed_clear => 'plate',      // next in line, waits for the operator
