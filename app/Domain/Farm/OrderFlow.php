@@ -95,11 +95,11 @@ final class OrderFlow
         }
         // a design whose colours share a layer prints on one plate of a machine with a changer (its copies together on it,
         // docs/AL.md §10.13), or not at all
-        if ($order->modelFile?->onePlateRequired() && ! $offer['printer']->isAgentDriven()) {
+        if ($order->modelFile?->onePlateRequired() && ! $offer['printer']->changesSpools()) {
             throw new FarmRefusal('one_plate_needed');
         }
         // a painted 3MF in its colours prints on one plate of a machine with a changer (any number of copies), never by parts
-        if ($order->isByParts() && PaintedColors::painted($order->modelFile) && ! $offer['printer']->isAgentDriven()) {
+        if ($order->isByParts() && PaintedColors::painted($order->modelFile) && ! $offer['printer']->changesSpools()) {
             throw new FarmRefusal('painted_one_plate');
         }
 

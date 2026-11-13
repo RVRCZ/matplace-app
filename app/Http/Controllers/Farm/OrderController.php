@@ -1001,18 +1001,18 @@ class OrderController extends Controller
                     // a plate with a raised text: the colours the text can have next to this colour of the plate – from every
                     // machine that holds this colour (the order goes where both spools are, machineFor); every colour once
                     'second' => ($multi ? $this->orders->secondSpoolsAcross($r['slot'], $order) : collect())
-                        ->filter(fn ($s) => ! $required || $s->printer->isAgentDriven())->values()
+                        ->filter(fn ($s) => ! $required || $s->printer->changesSpools())->values()
                         ->map(fn ($s) => ['slot' => $s->id, 'name' => $s->color->displayName(), 'kind' => $s->color->material->label(), 'hex' => $s->color->hex, 'finish' => $s->color->material->finish, 'photo' => $s->color->customerPhoto(), 'main' => $s->main_slot_id] + $where($s))->values()->all(),
                     'color_id' => $r['color']->id,
                     // more colours than one: every machine that holds this colour, with its first-colour slot and its other spools –
                     // the page offers each change or part the colours one machine holds together with the first colour and the other
                     // choices, and sends that one machine's slots (the customer picks colours, the farm the machine, docs/AL.md §19, §20)
                     'machines' => $multi ? $this->orders->firstsAcross($r['slot'], $order)
-                        ->filter(fn ($f) => ! $required || $f->printer->isAgentDriven())
+                        ->filter(fn ($f) => ! $required || $f->printer->changesSpools())
                         ->map(fn ($f) => ['main' => $f->id, 'name' => $f->printer->name, 'key' => $f->printer->key,
                             // how many colours this machine takes and every one of its spool positions in the operator's order (the
                             // empty and the unfit ones too, each with its reason), for the chooser's machine card (docs/AL.md §19)
-                            'limit' => $f->printer->colorLimit(), 'changer' => $f->printer->isAgentDriven(), 'positions' => $positions($f),
+                            'limit' => $f->printer->colorLimit(), 'changer' => $f->printer->changesSpools(), 'positions' => $positions($f),
                             'colors' => $this->orders->secondSpools($f)
                                 ->map(fn ($s) => ['slot' => $s->id, 'color_id' => $s->farm_color_id, 'name' => $s->color->displayName(), 'kind' => $s->color->material->label(), 'hex' => $s->color->hex, 'finish' => $s->color->material->finish, 'photo' => $s->color->customerPhoto()] + $where($s))->values()->all()]
                             + ($admin ? ['code' => $place($f), 'printer_code' => $f->printer->shortCode()] : []))

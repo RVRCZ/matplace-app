@@ -2626,5 +2626,21 @@
     "farm.state.admin.line_queue_closed": "Cola: la granja está cerrada, el pedido espera y empezará cuando la abra",
     "farm.mail.queued_closed.subject": "Pedido :number aceptado, la impresión empezará cuando la granja vuelva a abrir",
     "farm.mail.queued_closed.body": "Su impresión «:name» (:color) está pagada y espera en la cola. Le avisaremos cuando empiece a imprimirse.",
-    "router.summary.tool_decor": "La foto irá encima como relieve de un solo color; la vista previa muestra cómo queda."
+    "router.summary.tool_decor": "La foto irá encima como relieve de un solo color; la vista previa muestra cómo queda.",
+    "farm.position.direct": "Bobina directa",
+    "farm.admin.changer.on": "Cambiador (ACE) conectado",
+    "farm.admin.changer.off": "Cambiador (ACE) retirado: solo se imprime desde la bobina directa",
+    "farm.admin.changer.detach": "El cambiador está retirado",
+    "farm.admin.changer.attach": "El cambiador ha vuelto",
+    "farm.admin.changer.on_hint": "Se ofrecen las bobinas de todas las posiciones del cambiador. Cuando retire el ACE de la impresora, cambie esto: solo se ofrece la bobina guiada directamente en la posición 1 y las posiciones del cambiador quedan guardadas tal como están.",
+    "farm.admin.changer.off_hint": "Solo se ofrece y se imprime la bobina guiada directamente en la posición 1, y una impresión lleva un solo color. En la bobina directa se puede cargar también un tipo marcado «solo desde bobina guiada directamente» (por ejemplo el luminoso) y la impresora imprime de él sola. Las demás posiciones quedan guardadas y vuelven cuando cambie de nuevo.",
+    "farm.admin.changer.detached_row": "Posición del cambiador que ahora no está en la impresora: no se ofrece y no se imprime desde ella. Vuelve cuando active de nuevo el cambiador.",
+    "farm.admin.changer.short_off": "sin cambiador",
+    "farm.admin.changer.reported_yes": "La impresora informa: hay un ACE conectado.",
+    "farm.admin.changer.reported_no": "La impresora informa: ningún ACE.",
+    "farm.admin.changer.mismatch": "Eso no coincide con el interruptor. Mire la impresora y cámbielo usted; el interruptor nunca cambia solo.",
+    "farm.admin.changer.now_on": ":printer: el cambiador está conectado, se ofrecen de nuevo todas las posiciones.",
+    "farm.admin.changer.now_off": ":printer: el cambiador está retirado, solo se ofrece la bobina directa.",
+    "farm.admin.changer.not_here": ":printer no tiene un cambiador que se pueda retirar.",
+    "farm.admin.changer.orders_wait": "Hay pedidos que no se pueden imprimir sin el cambiador y lo esperan: :orders. Vuelva a poner el cambiador o cancélelos."
 }

@@ -200,7 +200,40 @@ class FarmCatalogController extends Controller
     private function manualOnlyRule(FarmPrinter $printer, string $mode, array $rows, string $field): array
     {
         // shared with the card of a spool read from an e-shop (FilamentFromShop::save), so both doors apply the one rule
-        return SlotRules::manualOnly($printer, $mode, $rows, $field);
+        return SlotRules::manualOnly($printer, $mode, $rows, $field, $printer->withoutChanger());
+    }
+
+    /**
+     * The switch "the changer (ACE) is attached" of one printer (docs/AL.md §24), one click on its detail. Off: only the
+     * directly fed spool in position 1 is offered and printed, one colour a print; the rows of the other positions stay
+     * untouched and count again when the switch goes back on. Only a machine whose changer comes off has the switch
+     * (FarmPrinter::hasDetachableChanger). Nothing else sets it: what the printer itself reports is only shown next to it.
+     */
+    public function setChanger(Request $request, FarmPrinter $printer): RedirectResponse
+    {
+        $attached = $request->boolean('attached');
+        $back = redirect()->to(route('admin.farm.printers.show', $printer).'#slots');
+        if (! $attached && ! $printer->hasDetachableChanger()) {
+            return $back->with('error', __('farm.admin.changer.not_here', ['printer' => $printer->name]));
+        }
+        $printer->update(['changer_attached' => $attached]);
+        $notices = [];
+        if ($attached && $printer->isAgentDriven()) {
+            // the spool fed straight into the head is a position of the changer again: a kind that breaks in it is switched
+            // off there and named, as SlotRules::manualOnly does when a manual machine goes over to the agent
+            foreach ($printer->slots()->with('color.material')->where('enabled', true)->get() as $slot) {
+                if ($slot->color?->material?->isManualOnly()) {
+                    $slot->update(['enabled' => false]);
+                    $notices[] = __('farm.admin.manual_only_disabled', ['n' => (int) $slot->slot + 1, 'color' => $slot->color->fullLabel(), 'printer' => $printer->name]);
+                }
+            }
+        }
+        if (! $attached && ($waiting = $printer->ordersWaitingForChanger())->isNotEmpty()) {
+            $notices[] = __('farm.admin.changer.orders_wait', ['orders' => $waiting->map(fn ($o) => $o->number ?: '#'.$o->id)->implode(', ')]);
+        }
+
+        return $back->with('status', __($attached ? 'farm.admin.changer.now_on' : 'farm.admin.changer.now_off', ['printer' => $printer->name]))
+            ->with('error', $notices ? implode(' ', $notices) : null);
     }
 
     /** Every maker named so far, ours first: the suggestions under the "výrobce" fields. */
@@ -275,8 +308,9 @@ class FarmCatalogController extends Controller
             if (trim((string) ($s['new']['name'] ?? '')) === '' || empty($s['new']['material'])) {
                 throw ValidationException::withMessages(["slots.$index.new.name" => __('farm.admin.new_color_needs')]);
             }
-            // a new colour of a kind that breaks in the changer is not even created for a machine run by the agent
-            if ($data['mode'] === FarmPrinter::MODE_AGENT && ($newKind = FarmMaterial::find((int) $s['new']['material']))?->isManualOnly()) {
+            // a new colour of a kind that breaks in the changer is not even created for a machine run by the agent (but for the
+            // directly fed spool of one whose changer is off, docs/AL.md §24)
+            if ($data['mode'] === FarmPrinter::MODE_AGENT && ! ($printer?->withoutChanger() && (int) $index === FarmPrinter::DIRECT_SLOT) && ($newKind = FarmMaterial::find((int) $s['new']['material']))?->isManualOnly()) {
                 throw ValidationException::withMessages(["slots.$index.color" => __('farm.admin.manual_only_refused', ['color' => $newKind->label().', '.trim((string) $s['new']['name']), 'printer' => $data['name']])]);
             }
             $data['slots'][$index]['color'] = $this->newColor($request, $s['new'], (int) $index)->id;
@@ -301,6 +335,10 @@ class FarmCatalogController extends Controller
         $data['code'] ??= FarmPrinter::suggestCode($data['name'], FarmPrinter::when($printer?->id, fn ($q, $id) => $q->whereKeyNot($id))->whereNotNull('code')->pluck('code')->all());
         $printer = $printer ?? new FarmPrinter;
         $printer->fill($data)->save();
+        if ($printer->withoutChanger() && ! $printer->hasDetachableChanger()) {
+            // the machine got another slicer profile (a Kobra X, a tool changer): it has no changer to take off, the switch is on again
+            $printer->update(['changer_attached' => true]);
+        }
         foreach ($slots as $index => $s) {
             $printer->slots()->updateOrCreate(['slot' => (int) $index], [
                 'farm_color_id' => $s['color'] ?? null, 'remaining_g' => (float) ($s['remaining_g'] ?? 0), 'enabled' => ! empty($s['enabled']) && ! empty($s['color']),

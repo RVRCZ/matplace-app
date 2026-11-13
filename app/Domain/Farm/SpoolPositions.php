@@ -51,10 +51,11 @@ final class SpoolPositions
             return $out;
         }
         if (preg_match('/kobra/i', $model)) {
-            // a Kobra with an ACE (S1 Combo, 3 Max Combo): ACE 1 to 4, a second box ACE2 1 to 4
+            // a Kobra with an ACE (S1 Combo, 3 Max Combo): ACE 1 to 4, a second box ACE2 1 to 4; with the ACE taken off
+            // (FarmPrinter::withoutChanger, docs/AL.md §24) the first position is the spool fed straight into the head
             for ($k = 0; $k < $count; $k++) {
                 $u = intdiv($k, self::BOX) + 1;
-                $out[] = __($u === 1 ? 'farm.position.ace' : 'farm.position.ace_more', ['u' => $u, 'n' => $k % self::BOX + 1]);
+                $out[] = $k === FarmPrinter::DIRECT_SLOT && $printer->withoutChanger() ? __('farm.position.direct') : __($u === 1 ? 'farm.position.ace' : 'farm.position.ace_more', ['u' => $u, 'n' => $k % self::BOX + 1]);
             }
 
             return $out;

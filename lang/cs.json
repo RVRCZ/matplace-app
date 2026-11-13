@@ -2626,5 +2626,21 @@
     "farm.state.admin.line_queue_closed": "Fronta: farma je zavřená, zakázka čeká a spustí se, až farmu otevřete",
     "farm.mail.queued_closed.subject": "Zakázka :number je přijatá, tisk začne po otevření farmy",
     "farm.mail.queued_closed.body": "Váš tisk „:name“ (:color) je zaplacený a čeká ve frontě. Dáme vědět, až se začne tisknout.",
-    "router.summary.tool_decor": "Fotku na něj položíme jako reliéf v jedné barvě; jak vyjde, uvidíte v náhledu."
+    "router.summary.tool_decor": "Fotku na něj položíme jako reliéf v jedné barvě; jak vyjde, uvidíte v náhledu.",
+    "farm.position.direct": "Přímá cívka",
+    "farm.admin.changer.on": "Měnič (ACE) připojen",
+    "farm.admin.changer.off": "Měnič (ACE) sundaný: tiskne se jen z přímé cívky",
+    "farm.admin.changer.detach": "Měnič je sundaný",
+    "farm.admin.changer.attach": "Měnič je zpátky",
+    "farm.admin.changer.on_hint": "Nabízejí se cívky ze všech pozic měniče. Když ACE z tiskárny sundáte, přepněte: nabídne se jen přímo vedená cívka v pozici 1 a pozice měniče zůstanou uložené, jak jsou.",
+    "farm.admin.changer.off_hint": "Nabízí se a tiskne jen přímo vedená cívka v pozici 1 a jeden tisk má jednu barvu. Do přímé cívky jde založit i druh „jen z přímo vedené cívky“ (třeba svítící) a tiskárna z něj tiskne sama. Ostatní pozice zůstávají uložené a vrátí se, až přepnete zpět.",
+    "farm.admin.changer.detached_row": "Pozice měniče, který na tiskárně teď není: nenabízí se a netiskne se z ní. Vrátí se, až měnič přepnete zpět.",
+    "farm.admin.changer.short_off": "bez měniče",
+    "farm.admin.changer.reported_yes": "Tiskárna hlásí: ACE připojené.",
+    "farm.admin.changer.reported_no": "Tiskárna hlásí: žádné ACE.",
+    "farm.admin.changer.mismatch": "To nesedí s přepínačem. Podívejte se na tiskárnu a přepněte sami; přepínač se sám nemění.",
+    "farm.admin.changer.now_on": ":printer: měnič je připojen, nabízejí se zase všechny pozice.",
+    "farm.admin.changer.now_off": ":printer: měnič je sundaný, nabízí se jen přímá cívka.",
+    "farm.admin.changer.not_here": ":printer nemá měnič, který jde sundat.",
+    "farm.admin.changer.orders_wait": "Na měnič čekají zakázky, které bez něj vytisknout nejdou: :orders. Vraťte měnič, nebo je zrušte."
 }

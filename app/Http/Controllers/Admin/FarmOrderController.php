@@ -188,7 +188,7 @@ class FarmOrderController extends Controller
         $path = match (true) {
             (bool) $order->printer?->isToolChanger() => $path,
             $order->onePlate() => GcodeSlot::fileForMany($path, $order->filamentSlots(), PrintProfile::tempsForFilaments($order)),
-            default => GcodeSlot::fileFor($path, (int) ($order->plateSpool($plate)?->slot ?? 0), PrintProfile::tempsForPlate($order, $plate), $order->isByParts() ? [] : $order->colorChanges()),
+            default => GcodeSlot::fileFor($path, $order->printer?->printsWithoutToolLine() ? null : (int) ($order->plateSpool($plate)?->slot ?? 0), PrintProfile::tempsForPlate($order, $plate), $order->isByParts() ? [] : $order->colorChanges()),
         };
 
         return response()->download($path, 'matplace-'.($order->number ?: $order->token).($order->plates > 1 ? '-p'.$plate : '').'.gcode', ['Content-Type' => 'text/x.gcode']);

@@ -492,6 +492,8 @@ Route::middleware(['auth', 'role:admin'])->prefix('admin/farm')->name('admin.far
     Route::get('/printers/new', [$catalog, 'editPrinter'])->name('printers.new');
     Route::post('/printers/new', [$catalog, 'savePrinter'])->name('printers.create');
     Route::get('/printers/load', [$catalog, 'loadSlots'])->name('printers.load');
+    // the changer (ACE) is on the machine / taken off it: one click on the printer's detail (docs/AL.md §24)
+    Route::post('/printers/{printer}/changer', [$catalog, 'setChanger'])->name('printers.changer');
     Route::post('/printers/load', [$catalog, 'saveSlots'])->name('printers.load.save');
     Route::get('/printers/{printer}', [$catalog, 'editPrinter'])->name('printers.edit');
     Route::post('/printers/{printer}', [$catalog, 'savePrinter'])->name('printers.update');

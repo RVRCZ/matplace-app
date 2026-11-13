@@ -2626,5 +2626,21 @@
     "farm.state.admin.line_queue_closed": "Queue: the farm is closed, the order waits and starts once you open the farm",
     "farm.mail.queued_closed.subject": "Order :number is accepted, printing starts once the farm opens again",
     "farm.mail.queued_closed.body": "Your print “:name” (:color) is paid and waits in the queue. We will let you know when it starts printing.",
-    "router.summary.tool_decor": "The photo goes on it as a relief in one colour; the preview shows how it comes out."
+    "router.summary.tool_decor": "The photo goes on it as a relief in one colour; the preview shows how it comes out.",
+    "farm.position.direct": "Direct spool",
+    "farm.admin.changer.on": "Changer (ACE) attached",
+    "farm.admin.changer.off": "Changer (ACE) taken off: printing from the direct spool only",
+    "farm.admin.changer.detach": "The changer is off",
+    "farm.admin.changer.attach": "The changer is back",
+    "farm.admin.changer.on_hint": "Spools of every position of the changer are offered. When you take the ACE off the printer, switch this: only the directly fed spool in position 1 is offered and the changer's positions stay saved as they are.",
+    "farm.admin.changer.off_hint": "Only the directly fed spool in position 1 is offered and printed, and one print takes one colour. A kind marked \"only from a directly fed spool\" (glow-in-the-dark, for one) can be loaded into the direct spool and the printer prints from it by itself. The other positions stay saved and come back when you switch back.",
+    "farm.admin.changer.detached_row": "A position of the changer that is not on the printer now: it is not offered and nothing prints from it. It comes back when you switch the changer back on.",
+    "farm.admin.changer.short_off": "no changer",
+    "farm.admin.changer.reported_yes": "The printer reports: an ACE is connected.",
+    "farm.admin.changer.reported_no": "The printer reports: no ACE.",
+    "farm.admin.changer.mismatch": "That does not match the switch. Look at the printer and switch it yourself; the switch never changes by itself.",
+    "farm.admin.changer.now_on": ":printer: the changer is attached, every position is offered again.",
+    "farm.admin.changer.now_off": ":printer: the changer is off, only the direct spool is offered.",
+    "farm.admin.changer.not_here": ":printer has no changer that comes off.",
+    "farm.admin.changer.orders_wait": "Orders that cannot print without the changer are waiting for it: :orders. Put the changer back, or cancel them."
 }

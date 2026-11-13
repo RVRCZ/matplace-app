@@ -135,6 +135,11 @@ class MoonrakerDriver(PrinterDriver):
         if sd.get("remain_time"):
             telemetry["remain_min"] = round(float(sd["remain_time"]) / 60)
         # Anycubic ACE (Rinkhals object ota_filament_hub): standby, or busy while it changes the spool
+        # how many ACE units answer (docs/AL.md §24): the server shows it next to the printer's switch "changer attached" and
+        # warns when the two disagree. Only when the firmware has the filament_hub object at all - a plain Klipper says nothing.
+        if isinstance(s.get("filament_hub"), dict):
+            listed = s["filament_hub"].get("filament_hubs")
+            telemetry["ace_units"] = len([h for h in listed if isinstance(h, dict)]) if isinstance(listed, list) else 0
         hub = s.get("ota_filament_hub") or {}
         if hub.get("state"):
             telemetry["ace"] = hub["state"] if hub["state"] == "standby" else f"{hub['state']} {hub.get('progress', 0)}%"

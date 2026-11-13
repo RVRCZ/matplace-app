@@ -25,21 +25,22 @@
         @php $slots = $p->slots->keyBy('slot'); $count = max($p->positionRows(), $slots->count()); $planned = $plan[$p->key] ?? []; @endphp
         <section class="rounded-2xl border border-slate-200 bg-white p-3" data-printer="{{ $p->key }}">
             <div class="flex flex-wrap items-baseline justify-between gap-2">
-                <h2 class="font-bold">{{ $p->name }} <span class="text-xs font-normal text-slate-500">{{ $p->key }} · {{ $p->model }} · {{ __('farm.admin.mode.'.$p->mode) }}</span></h2>
+                <h2 class="font-bold">{{ $p->name }} <span class="text-xs font-normal text-slate-500">{{ $p->key }} · {{ $p->model }} · {{ __('farm.admin.mode.'.$p->mode) }}@if($p->withoutChanger()) · {{ __('farm.admin.changer.short_off') }}@endif</span></h2>
                 @if($planned)<span class="text-xs text-slate-500">{{ __('farm.admin.slots_plan') }}: {{ collect($planned)->map(fn ($x, $i) => ($i + 1).' '.($x['label'] ?? '? '.$x['want']))->implode(' · ') }}</span>@endif
             </div>
             <div class="mt-2 grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
                 @for($i = 0; $i < $count; $i++)
-                    @php $s = $slots->get($i); $want = $planned[$i] ?? null; @endphp
-                    <div class="rounded-xl bg-slate-50 p-2" data-slot="{{ $i }}" data-plan-id="{{ $want['id'] ?? '' }}">
+                    {{-- a position of a changer that is off the machine (docs/AL.md §24): greyed and not sent, its row stays as it was --}}
+                    @php $s = $slots->get($i); $want = $planned[$i] ?? null; $detached = $p->withoutChanger() && $i !== \App\Models\FarmPrinter::DIRECT_SLOT; @endphp
+                    <div class="rounded-xl bg-slate-50 p-2 {{ $detached ? 'opacity-50' : '' }}" @if($detached) data-detached title="{{ __('farm.admin.changer.detached_row') }}" @else data-slot="{{ $i }}" data-plan-id="{{ $want['id'] ?? '' }}" @endif>
                         <label class="{{ $lb }}">{{ trim((string) $s?->label) !== '' ? $s->label : \App\Domain\Farm\SpoolPositions::name($p, $i, $count) }}
-                            <select name="slots[{{ $p->id }}][{{ $i }}][color]" data-color class="{{ $in }}"><option value="">— {{ __('farm.admin.slots_empty') }} —</option>
+                            <select name="slots[{{ $p->id }}][{{ $i }}][color]" data-color class="{{ $in }}" @disabled($detached)><option value="">— {{ __('farm.admin.slots_empty') }} —</option>
                                 @foreach($groups as $kind => $group)<optgroup label="{{ $kind }}">@foreach($group as $c)<option value="{{ $c->id }}" @selected($s?->farm_color_id === $c->id)>{{ $c->fullLabel() }}</option>@endforeach</optgroup>@endforeach
                             </select>
                         </label>
                         <div class="mt-1 grid grid-cols-[1fr_auto] items-end gap-2">
-                            <label class="{{ $lb }}">g<input type="number" step="1" min="0" name="slots[{{ $p->id }}][{{ $i }}][remaining_g]" data-grams value="{{ $s ? round($s->remaining_g) : 0 }}" class="{{ $in }}"></label>
-                            <label class="flex items-center gap-1 pb-2 text-xs"><input type="checkbox" name="slots[{{ $p->id }}][{{ $i }}][enabled]" value="1" data-enabled @checked($s?->enabled) class="h-4 w-4 accent-action"> {{ __('farm.admin.slots_offer') }}</label>
+                            <label class="{{ $lb }}">g<input type="number" step="1" min="0" name="slots[{{ $p->id }}][{{ $i }}][remaining_g]" data-grams value="{{ $s ? round($s->remaining_g) : 0 }}" class="{{ $in }}" @disabled($detached)></label>
+                            <label class="flex items-center gap-1 pb-2 text-xs"><input type="checkbox" name="slots[{{ $p->id }}][{{ $i }}][enabled]" value="1" data-enabled @checked($s?->enabled) @disabled($detached) class="h-4 w-4 accent-action"> {{ __('farm.admin.slots_offer') }}</label>
                         </div>
                         {{-- a spool bought on the web: the link of its product page, read by the agent into a card (TODO #71, docs/AL.md §21) --}}
                         <div class="mt-1 flex items-end gap-1" data-shop>

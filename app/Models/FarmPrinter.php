@@ -9,6 +9,7 @@ use App\Engines\Slicer\OrcaSlicer;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Support\Collection;
 
 /** One machine of the farm. The slicer profile, the calibration factors and the live state all live here. */
 class FarmPrinter extends Model
@@ -50,10 +51,11 @@ class FarmPrinter extends Model
         'name', 'code', 'model', 'key', 'farm_id', 'farm_agent_id', 'mode', 'enabled', 'bed_x', 'bed_y', 'bed_z', 'nozzle_mm',
         'machine_profile', 'process_profiles', 'machine_overrides', 'process_overrides', 'time_factor', 'weight_factor',
         'hourly_rate', 'bed_clear', 'bed_cleared_at', 'state', 'telemetry', 'last_seen_at', 'snapshot_path', 'snapshot_at',
-        'offline_notified_at', 'offline_alerted_at', 'timelapse', 'message', 'message_at', 'files', 'files_at',
+        'offline_notified_at', 'offline_alerted_at', 'timelapse', 'message', 'message_at', 'files', 'files_at', 'changer_attached',
     ];
 
     protected $casts = [
+        'changer_attached' => 'bool',
         'enabled' => 'bool', 'bed_clear' => 'bool', 'bed_x' => 'float', 'bed_y' => 'float', 'bed_z' => 'float',
         'nozzle_mm' => 'float', 'time_factor' => 'float', 'weight_factor' => 'float', 'hourly_rate' => 'float',
         'process_profiles' => 'array', 'machine_overrides' => 'array', 'process_overrides' => 'array', 'telemetry' => 'array',
@@ -140,6 +142,101 @@ class FarmPrinter extends Model
     public function isAgentDriven(): bool
     {
         return $this->mode === self::MODE_AGENT;
+    }
+
+    /** The position of the spool fed straight into the head of a machine whose changer was taken off: position 1 (T0). */
+    public const DIRECT_SLOT = 0;
+
+    /**
+     * Has this machine a changer a person can take off (docs/AL.md §24)? A Kobra S1 or a Kobra 3 Max feeds from an ACE
+     * box that unplugs; without it the machine prints from one spool led straight into the head. Not so the Kobra X
+     * (its rack is part of the machine and the positions would have to be renumbered: 3 + 4 with the ACE, 4 without, docs/AM.md
+     * §6), nor a tool changer (Prusa INDX: the tools are the machine), nor a machine we know nothing about: those get no switch.
+     */
+    public function hasDetachableChanger(): bool
+    {
+        $model = $this->machineName();
+
+        return ! $this->isToolChanger() && preg_match('/kobra/i', $model) && ! preg_match('/kobra\s*x\b|indx/i', $model);
+    }
+
+    /**
+     * The changer (ACE) is off this machine (the admin's switch `changer_attached`, never set by the agent): only the
+     * directly fed spool in position 1 prints, the other positions keep their rows and are not offered, one print takes
+     * one colour, and a kind that breaks in the changer (FarmMaterial::manual_only) may print from it by itself.
+     */
+    public function withoutChanger(): bool
+    {
+        return $this->changer_attached === false;
+    }
+
+    /** Does this machine change spools by itself during a print (run by the agent, with its changer on)? */
+    public function changesSpools(): bool
+    {
+        return $this->isAgentDriven() && ! $this->withoutChanger();
+    }
+
+    /**
+     * Does the copy of the G-code for this machine select no spool position at all (GcodeSlot::retarget with no slot)?
+     * Without a changer there is nothing to select; config farm.direct_spool_tool_line brings the `T0` line back should
+     * a firmware turn out to want it (unverified on a real machine, docs/AL.md §24).
+     */
+    public function printsWithoutToolLine(): bool
+    {
+        return $this->withoutChanger() && ! config('farm.direct_spool_tool_line', false);
+    }
+
+    /**
+     * What the printer itself says about its changer: true = an ACE answers, false = none does, null = the agent does
+     * not tell (an older agent, another driver, the printer offline). From the telemetry key `ace_units` (agent 0.2.14).
+     */
+    public function reportedChanger(): ?bool
+    {
+        $units = $this->telemetry['ace_units'] ?? null;
+
+        return is_numeric($units) && $this->isAgentDriven() && $this->isOnline() ? (int) $units > 0 : null;
+    }
+
+    /** The printer reports the opposite of the switch: the admin is told, the switch stays as a person set it. */
+    public function changerMismatch(): bool
+    {
+        $reported = $this->reportedChanger();
+
+        return $reported !== null && $this->hasDetachableChanger() && $reported === $this->withoutChanger();
+    }
+
+    /**
+     * Can this machine print the order as it stands? Without a changer only what comes from the direct spool alone: an
+     * order sliced for another position, for several filaments or with a change by height waits (Dispatcher::kick) until
+     * the changer is back or the order is moved.
+     */
+    public function canFeed(FarmOrder $order): bool
+    {
+        if (! $this->withoutChanger()) {
+            return true;
+        }
+        foreach ($order->printSlots() as $slot) {
+            if ($slot !== self::DIRECT_SLOT) {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    /**
+     * Paid and queued orders of this machine it cannot print without its changer (canFeed), for the admin's notice.
+     *
+     * @return Collection<int, FarmOrder>
+     */
+    public function ordersWaitingForChanger(): Collection
+    {
+        if (! $this->withoutChanger()) {
+            return collect();
+        }
+
+        return FarmOrder::where('farm_printer_id', $this->id)->whereIn('status', [FarmOrder::STATUS_PAID, FarmOrder::STATUS_QUEUED])
+            ->orderBy('id')->get()->reject(fn (FarmOrder $o) => $this->canFeed($o))->values();
     }
 
     /** A manual printer is "online" whenever it is enabled: a person stands behind it. */

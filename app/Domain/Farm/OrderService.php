@@ -332,7 +332,7 @@ final class OrderService
             ->where('farm_color_id', $main->farm_color_id)->where('enabled', true)
             ->whereHas('printer', fn ($q) => $q->where('enabled', true))
             ->get()
-            ->filter(fn (FarmPrinterSlot $s) => $s->kindFitsPrinter() && ($s->id === $main->id || ($s->printer->isOnline() && $s->printer->takesQuality($quality) && (! $dims || $s->printer->fits($dims)))))
+            ->filter(fn (FarmPrinterSlot $s) => $s->mayOffer() && ($s->id === $main->id || ($s->printer->isOnline() && $s->printer->takesQuality($quality) && (! $dims || $s->printer->fits($dims)))))
             ->sortBy(fn (FarmPrinterSlot $s) => [$s->id === $main->id ? 0 : 1, $s->printer->readyForAutoStart() ? 0 : 1, $s->id])
             ->values();
     }
@@ -632,6 +632,9 @@ final class OrderService
 
         return $slots->values()->map(function (FarmPrinterSlot $s, int $i) use ($first, $printer, $names, $family) {
             $s->setRelation('printer', $printer);
+            if ($s->isDetached()) {
+                return null;   // a position of the changer that is off the machine (docs/AL.md §24): not there for the customer
+            }
             $color = $s->color;
             $reason = match (true) {
                 ! $color => 'empty',
@@ -650,7 +653,7 @@ final class OrderService
             return ['slot' => $s->id, 'n' => (int) $s->slot, 'label' => $label,
                 'color_id' => $color?->id, 'name' => $color?->displayName(), 'kind' => $color?->material?->label(), 'hex' => $color?->hex, 'finish' => $color?->material?->finish, 'photo' => $color?->customerPhoto(),
                 'code' => $s->code(), 'place' => $printer->name.' · '.$label, 'main' => (int) $s->id === (int) $first->id, 'offer' => $reason === null, 'reason' => $reason];
-        })->values()->all();
+        })->filter()->values()->all();
     }
 
     /**
@@ -666,7 +669,7 @@ final class OrderService
             ->where('enabled', true)->whereNotNull('farm_color_id')
             ->whereHas('color', fn ($q) => $q->where('enabled', true))
             ->get()
-            ->filter(fn (FarmPrinterSlot $s) => $s->color->id !== $main->color?->id && self::family($s->color->material) === self::family($main->color?->material) && $s->availableGrams() > 30 && $s->kindFitsPrinter())
+            ->filter(fn (FarmPrinterSlot $s) => $s->color->id !== $main->color?->id && self::family($s->color->material) === self::family($main->color?->material) && $s->availableGrams() > 30 && $s->mayOffer())
             ->values();
     }
 
@@ -708,7 +711,7 @@ final class OrderService
             ->whereHas('printer', fn ($q) => $q->where('enabled', true))
             ->whereHas('color', fn ($q) => $q->where('enabled', true)->whereHas('material', fn ($m) => $m->where('enabled', true)))
             ->get()
-            ->filter(fn (FarmPrinterSlot $s) => $s->printer->isOnline() && $s->printer->takesQuality($quality) && $s->availableGrams() >= self::MIN_SPOOL_G && $s->kindFitsPrinter())
+            ->filter(fn (FarmPrinterSlot $s) => $s->printer->isOnline() && $s->printer->takesQuality($quality) && $s->availableGrams() >= self::MIN_SPOOL_G && $s->mayOffer())
             ->sortBy(fn (FarmPrinterSlot $s) => [$s->printer->readyForAutoStart() ? 0 : 1, $s->printer->bedVolume(), $s->id])
             ->unique('farm_color_id')
             ->sortBy(fn (FarmPrinterSlot $s) => self::colorOrder($s->color))
@@ -730,7 +733,7 @@ final class OrderService
         // one entry per colour: prefer a slot with enough filament, the machine the order is sliced for, then the one
         // that can start soonest; a design that must print on one plate sees the machines that change spools alone
         $slots = $this->availableSlots($order)
-            ->filter(fn ($r) => ! $changerOnly || $r['printer']->isAgentDriven())
+            ->filter(fn ($r) => ! $changerOnly || $r['printer']->changesSpools())
             ->sortBy(fn ($r) => [$r['enough'] ? 0 : 1, $r['printer']->id === $order->farm_printer_id ? 0 : 1, $r['printer']->readyForAutoStart() ? 0 : 1, $r['slot']->id])
             ->values();
         $spools = $slots->groupBy(fn ($r) => $r['color']->id)->map(fn ($rows) => $rows->map(fn ($r) => $r['slot'])->unique('id')->values());
@@ -764,7 +767,7 @@ final class OrderService
             ->get()
             // any machine of the farm the model goes on and that takes this quality: a colour on another machine means
             // slicing again for it at payment
-            ->filter(fn (FarmPrinterSlot $s) => $s->printer->isOnline() && $s->printer->fits($dims) && $s->printer->takesQuality((string) $order->quality) && $s->availableGrams() >= self::MIN_SPOOL_G && $s->kindFitsPrinter())
+            ->filter(fn (FarmPrinterSlot $s) => $s->printer->isOnline() && $s->printer->fits($dims) && $s->printer->takesQuality((string) $order->quality) && $s->availableGrams() >= self::MIN_SPOOL_G && $s->mayOffer())
             ->map(fn (FarmPrinterSlot $s) => ['slot' => $s, 'color' => $s->color, 'printer' => $s->printer, 'enough' => $s->availableGrams() >= $need])
             ->values();
     }
@@ -880,6 +883,8 @@ final class OrderService
             ->join('farm_colors', 'farm_colors.id', '=', 'farm_printer_slots.farm_color_id')
             ->join('farm_printers', 'farm_printers.id', '=', 'farm_printer_slots.farm_printer_id')
             ->where('farm_colors.enabled', true)->where('farm_printers.enabled', true)
+            // a position of a changer that is off its machine holds nothing the farm can print from (docs/AL.md §24)
+            ->where(fn ($w) => $w->where('farm_printer_slots.slot', FarmPrinter::DIRECT_SLOT)->orWhere('farm_printers.changer_attached', true))
             ->when($printer, fn ($q) => $q->where('farm_printers.id', $printer->id))
             ->groupBy('farm_colors.farm_material_id')
             ->selectRaw('farm_colors.farm_material_id as id, count(*) as n')->pluck('n', 'id');
@@ -892,7 +897,7 @@ final class OrderService
     public function printerFor(FarmMaterial $material): ?FarmPrinter
     {
         return FarmPrinter::where('enabled', true)
-            ->whereHas('slots', fn ($q) => $q->where('enabled', true)->whereHas('color', fn ($c) => $c->where('farm_material_id', $material->id)))
+            ->whereHas('slots', fn ($q) => $q->fed()->where('enabled', true)->whereHas('color', fn ($c) => $c->where('farm_material_id', $material->id)))
             ->get()
             ->sortBy(fn (FarmPrinter $p) => [$p->isOnline() ? 0 : 1, $p->id])
             ->first();
@@ -902,7 +907,7 @@ final class OrderService
     public function printers(): Collection
     {
         return FarmPrinter::where('enabled', true)
-            ->whereHas('slots', fn ($q) => $q->where('enabled', true)->whereHas('color', fn ($c) => $c->where('enabled', true)))
+            ->whereHas('slots', fn ($q) => $q->fed()->where('enabled', true)->whereHas('color', fn ($c) => $c->where('enabled', true)))
             ->get();
     }
 
@@ -928,7 +933,7 @@ final class OrderService
             ->filter(fn (FarmPrinter $p) => $p->takesQuality($quality));
         foreach ($this->loadedMaterials()->sortBy(fn (FarmMaterial $m) => $materialCode !== null && $m->code === $materialCode ? 0 : 1) as $material) {
             $printer = $printers
-                ->filter(fn (FarmPrinter $p) => $p->slots()->where('enabled', true)->whereHas('color', fn ($c) => $c->where('farm_material_id', $material->id))->exists())
+                ->filter(fn (FarmPrinter $p) => $p->slots()->fed()->where('enabled', true)->whereHas('color', fn ($c) => $c->where('farm_material_id', $material->id))->exists())
                 ->sortBy(fn (FarmPrinter $p) => [$p->isOnline() ? 0 : 1, $p->bedVolume(), $p->id])
                 ->first();
             if ($printer) {

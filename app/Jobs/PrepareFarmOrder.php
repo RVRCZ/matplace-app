@@ -884,8 +884,8 @@ class PrepareFarmOrder implements ShouldQueue
         if (count($skeleton) < 2) {
             return $skip('parts');
         }
-        if (! $printer->isAgentDriven()) {
-            return $skip('manual');
+        if (! $printer->changesSpools()) {
+            return $skip('manual');   // a person feeds one spool, or the changer is off the machine (docs/AL.md §24)
         }
         // a painted 3MF goes to the slicer as itself with its colours mapped (docs/AL.md §14.8), a tool's design as its parts
         $paintedFile = PaintedColors::painted($file);

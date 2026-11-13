@@ -11,12 +11,12 @@
         <a href="{{ route('admin.farm.printers.edit', $p) }}" class="block rounded-2xl border border-slate-200 bg-white p-4 hover:border-action">
             <div class="flex flex-wrap items-center justify-between gap-2">
                 <span class="font-bold"><span class="mr-1 rounded bg-slate-100 px-1.5 py-0.5 font-mono text-xs" title="Kód tiskárny">{{ $p->shortCode() }}</span>{{ $p->name }} <span class="text-xs font-normal text-slate-500">{{ $p->key }} · {{ $p->model }}</span></span>
-                <span class="text-xs">{{ __('farm.admin.state.'.$p->displayState()) }} · {{ __('farm.admin.mode.'.$p->mode) }}</span>
+                <span class="text-xs">{{ __('farm.admin.state.'.$p->displayState()) }} · {{ __('farm.admin.mode.'.$p->mode) }}@if($p->withoutChanger()) · {{ __('farm.admin.changer.short_off') }}@endif</span>
             </div>
             <p class="mt-1 text-sm text-slate-600">{{ (int) $p->bed_x }} × {{ (int) $p->bed_y }} × {{ (int) $p->bed_z }} mm · {{ $p->nozzle_mm }} mm · podložka {{ $p->bedTypeLabel() }} · čas × {{ $p->time_factor }} · hmotnost × {{ $p->weight_factor }}@if($p->hourly_rate) · @money($p->hourly_rate, 'CZK')/h @endif</p>
             <p class="mt-1 text-xs text-slate-500">{{ $cal ? __('farm.admin.calibration', ['n' => $cal['n'], 'time' => $cal['time'] ?? '—', 'weight' => $cal['weight'] ?? '—']) : __('farm.admin.calibration_none') }}</p>
             {{-- what sits in the slots, as the admin tells spools apart: kind, names, maker --}}
-            <p class="mt-1 text-xs text-slate-600">@forelse($p->slots->sortBy('slot') as $s)<span class="{{ $s->enabled ? '' : 'opacity-50' }}">{{ $s->slot + 1 }}: {{ $s->color ? $s->color->fullLabel().' ('.round($s->remaining_g).' g)' : '—' }}</span>@if(! $loop->last) · @endif @empty —@endforelse</p>
+            <p class="mt-1 text-xs text-slate-600">@forelse($p->slots->sortBy('slot') as $s)<span class="{{ $s->enabled && ! ($p->withoutChanger() && $s->slot !== \App\Models\FarmPrinter::DIRECT_SLOT) ? '' : 'opacity-50' }}">{{ $s->slot + 1 }}: {{ $s->color ? $s->color->fullLabel().' ('.round($s->remaining_g).' g)' : '—' }}</span>@if(! $loop->last) · @endif @empty —@endforelse</p>
         </a>
     @endforeach
 </div>

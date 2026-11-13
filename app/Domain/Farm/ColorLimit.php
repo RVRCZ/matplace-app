@@ -24,6 +24,9 @@ final class ColorLimit
         if (! $printer) {
             return min(self::ceiling(), FarmOrder::MAX_COLORS);
         }
+        if ($printer->withoutChanger()) {
+            return 1;   // the changer is off the machine: the one spool fed straight into the head (docs/AL.md §24)
+        }
         $positions = $printer->relationLoaded('slots') ? $printer->slots->count() : $printer->slots()->count();
 
         return max(1, min(self::ceiling(), $positions > 0 ? $positions : FarmOrder::MAX_COLORS));
@@ -37,7 +40,7 @@ final class ColorLimit
     public static function farm(): int
     {
         $printers = FarmPrinter::with('slots')->where('enabled', true)->get();
-        $changers = $printers->filter(fn (FarmPrinter $p) => $p->isAgentDriven());
+        $changers = $printers->filter(fn (FarmPrinter $p) => $p->changesSpools());
         $pool = $changers->isNotEmpty() ? $changers : $printers;
 
         return $pool->isNotEmpty() ? (int) $pool->max(fn (FarmPrinter $p) => self::of($p)) : min(self::ceiling(), FarmOrder::MAX_COLORS);

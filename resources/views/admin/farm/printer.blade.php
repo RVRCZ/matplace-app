@@ -6,6 +6,8 @@
     $dur = fn (int $m) => $m >= 60 ? intdiv($m, 60).' h '.($m % 60).' min' : $m.' min';
     // the dryer gets its own worded line under the drying buttons, the rest of the telemetry stays a plain list
     $dryerKeys = ['dryer', 'dryer_state', 'dryer_temp', 'dryer_target', 'dryer_remain_min', 'dryer_rh'];
+    // how many ACE units the printer reports (agent 0.2.14): worded next to the switch "changer attached", not in the plain list
+    $dryerKeys[] = 'ace_units';
 @endphp
 
 {{-- with JavaScript the cards are redrawn in place every 30 s (bootFarmDashboard); the meta refresh is the fallback --}}
@@ -35,7 +37,7 @@
             <div class="flex flex-wrap items-start justify-between gap-2">
                 <div>
                     <h2 class="text-lg font-bold"><span class="mr-1 rounded bg-slate-100 px-1.5 py-0.5 font-mono text-sm">{{ $p->shortCode() }}</span>{{ $p->name }}</h2>
-                    <p class="text-xs text-slate-500">{{ $p->model }} · {{ __('farm.admin.mode.'.$p->mode) }}@if($p->agent) · {{ $p->agent->name }}@endif · {{ $p->bedTypeLabel() }}</p>
+                    <p class="text-xs text-slate-500">{{ $p->model }} · {{ __('farm.admin.mode.'.$p->mode) }}@if($p->withoutChanger()) · {{ __('farm.admin.changer.short_off') }}@endif @if($p->agent) · {{ $p->agent->name }}@endif · {{ $p->bedTypeLabel() }}</p>
                 </div>
                 <span class="rounded-full px-3 py-1 text-xs font-bold {{ in_array($state, ['offline', 'error', 'unknown']) ? 'bg-red-100 text-red-800' : ($state === 'printing' ? 'bg-action-soft text-action-dark' : 'bg-ok-soft text-ok') }}">{{ __('farm.admin.state.'.$state) }}</span>
             </div>
@@ -161,8 +163,9 @@
             <p class="mt-3 text-xs text-slate-500">
                 @foreach($p->slots as $s)
                     {{-- struck through: a kind that breaks in the changer sitting in a machine run by the agent – not offered, move the spool --}}
-                    @php $fits = \App\Models\FarmPrinterSlot::kindFits($p, $s->color); @endphp
-                    <span class="mr-2 inline-flex items-center gap-1 {{ $s->enabled ? '' : 'opacity-40' }} {{ $fits ? '' : 'line-through decoration-amber-700' }}" @if(! $fits) title="{{ __('farm.admin.manual_only_refused', ['color' => $s->color?->fullLabel(), 'printer' => $p->name]) }}" @endif><span class="inline-block h-3 w-3 rounded-full border border-slate-300" style="background: {{ $s->color?->hex ?? '#fff' }}"></span><span class="font-mono">{{ $s->code() }}</span>: {{ $s->color?->fullLabel() ?? '—' }} ({{ round($s->remaining_g) }} g)</span>
+                    {{-- faded: a position of the changer that is off the machine (docs/AL.md §24) --}}
+                    @php $fits = \App\Models\FarmPrinterSlot::kindFits($p, $s->color); $away = $s->setRelation('printer', $p)->isDetached(); @endphp
+                    <span class="mr-2 inline-flex items-center gap-1 {{ $s->enabled && ! $away ? '' : 'opacity-40' }} {{ $fits ? '' : 'line-through decoration-amber-700' }}" @if($away) title="{{ __('farm.admin.changer.detached_row') }}" @elseif(! $fits) title="{{ __('farm.admin.manual_only_refused', ['color' => $s->color?->fullLabel(), 'printer' => $p->name]) }}" @endif><span class="inline-block h-3 w-3 rounded-full border border-slate-300" style="background: {{ $s->color?->hex ?? '#fff' }}"></span><span class="font-mono">{{ $s->code() }}</span>: {{ $s->color?->fullLabel() ?? '—' }} ({{ round($s->remaining_g) }} g)</span>
                     @if($s->color)
                         <a href="{{ route('admin.farm.colors.show', $s->color) }}" class="mr-2 underline" title="{{ __('farm.admin.pd.filament_detail') }}">→</a>
                     @endif
