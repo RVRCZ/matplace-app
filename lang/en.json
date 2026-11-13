@@ -2306,5 +2306,21 @@
     "youtube.clips.guides.in_hand": "Show the print in your hand",
     "youtube.analytics.reconnect": "Reconnect with Analytics scope",
     "youtube.analytics.summary": "28 days: :views views · :retention % watched · :seconds s average",
-    "youtube.analytics.engaged": "watched (engagedViews): :views"
+    "youtube.analytics.engaged": "watched (engagedViews): :views",
+    "footer.make_nav": "What we make",
+    "footer.gifts": "Custom gifts",
+    "footer.praha": "3D printing Prague",
+    "footer.business": "3D printing for businesses",
+    "footer.all_tools": "All tools",
+    "catalog.next.title": "Want something like this made?",
+    "catalog.next.calc": "Get a 3D printing price from your own file",
+    "catalog.next.tools": "Design your own thing with our tools",
+    "catalog.next.gifts": "Custom gifts from a photo or a name",
+    "catalog.photos.title": "This is how we printed it",
+    "catalog.photos.lead": "Photos of prints from our farm.",
+    "catalog.photos.alt": "Print of :title from our farm, :material, :date",
+    "site.gone.title": "This page no longer exists",
+    "site.gone.text": "The address belonged to the old site and has no successor. Try the home page or the tools.",
+    "seo.privacy.description": "Privacy policy of matplace: which personal data we process and why, who receives them, how long we keep them, and your rights.",
+    "seo.farm_terms.description": "Terms of the matplace print farm: renting a printer for your file, what we do not print, price and payment, your files and print videos."
 }

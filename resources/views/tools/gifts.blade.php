@@ -14,6 +14,11 @@
     $sign = \App\Domain\Tools\ToolVisibility::isPublic('sign');
 @endphp
 
+{{-- what the page sells, said to search engines: gifts printed to order by us (docs/AP.md §14) --}}
+@push('head')
+<x-jsonld :data="\App\Support\Schema::service(__('gifts.title'), __('gifts.lead'), route('tools.gifts'))" />
+@endpush
+
 @section('content')
 <div class="mx-auto max-w-5xl">
     <a href="{{ route('tools') }}" class="text-sm text-action-dark underline">← {{ __('tools.title') }}</a>

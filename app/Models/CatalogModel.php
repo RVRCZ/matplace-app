@@ -42,18 +42,23 @@ class CatalogModel extends Model
     public const ORIGINAL = 'original';
 
     /** Everything a page may be asked to have before search engines get it (config/catalog.php `index_requires`). */
-    public const INDEX_NEEDS = ['enriched', 'price', 'file'];
+    public const INDEX_NEEDS = ['enriched', 'value', 'price', 'file'];
+
+    /** What config asks when it says nothing: a text of our own and something only we can say of the model (12 Nov 2026). */
+    public const INDEX_DEFAULT = ['enriched', 'value'];
 
     /** @return list<string> what config asks of an indexable page, in the order of INDEX_NEEDS */
     public static function indexNeeds(): array
     {
-        return array_values(array_intersect(self::INDEX_NEEDS, (array) config('catalog.index_requires', self::INDEX_NEEDS)));
+        return array_values(array_intersect(self::INDEX_NEEDS, (array) config('catalog.index_requires', self::INDEX_DEFAULT)));
     }
 
     /**
-     * Pages search engines may index: shown, and with everything config asks for – a text of our own, a real price
-     * (the author's printable card, or the old site's slicer figures with a kind loaded on the farm), the file. The
-     * sitemap lists exactly these; every other page says "noindex, follow" (Roman, 18 Oct 2026).
+     * Pages search engines may index: shown, and with everything config asks for. By default (12 Nov 2026, docs/AP.md
+     * §14) a text of our own AND a value of our own: the price from a slice of the model's own file, a photo of a print
+     * the farm made of it, or the author's printable card. The older conditions stay for the switch: `price` (also the
+     * old site's slicer figures) and `file`. The sitemap lists exactly these pages; every other one says
+     * "noindex, follow" and carries no Product (Roman, 18 Oct and 12 Nov 2026).
      */
     public function scopeIndexable(Builder $query): Builder
     {
@@ -75,6 +80,12 @@ class CatalogModel extends Model
     public function scopeIndexReady(Builder $query, ?array $needs = null): Builder
     {
         $needs ??= array_values(array_diff(self::indexNeeds(), ['enriched']));
+        if (in_array('value', $needs, true)) {
+            $query->where(fn (Builder $w) => $w
+                ->where(fn (Builder $s) => $s->whereNotNull('catalog_models.sliced_at')->where('catalog_models.slice_minutes', '>', 0)->where('catalog_models.slice_grams', '>', 0))
+                ->orWhereHas('designerModels', fn (Builder $d) => $d->printable())
+                ->orWhereExists(fn ($o) => self::printPhotoOrders($o->from('farm_orders'))->whereColumn('farm_orders.catalog_model_id', 'catalog_models.id')));
+        }
         if (in_array('file', $needs, true)) {
             $query->where(fn (Builder $w) => $w->where('catalog_models.file_available', true)->orWhereNotNull('catalog_models.model_file_id')
                 ->orWhereHas('designerModels', fn (Builder $d) => $d->printable()));
@@ -105,10 +116,13 @@ class CatalogModel extends Model
     public function indexGaps(): array
     {
         $needs = self::indexNeeds();
-        $card = in_array('file', $needs, true) || in_array('price', $needs, true) ? $this->printableCard() : null;
+        $card = array_intersect(['file', 'price', 'value'], $needs) ? $this->printableCard() : null;
         $gaps = [];
         if (in_array('enriched', $needs, true) && ! $this->isEnriched()) {
             $gaps[] = 'enriched';
+        }
+        if (in_array('value', $needs, true) && ! ($this->hasSlice() || $card || $this->hasPrintPhoto())) {
+            $gaps[] = 'value';
         }
         if (in_array('price', $needs, true) && ! (app(ModelPricing::class)->anyMaterial() && (($this->est_minutes > 0 && $this->est_grams > 0) || $this->hasSlice() || ($card && ! empty($card->slice_summary))))) {
             $gaps[] = 'price';
@@ -118,6 +132,28 @@ class CatalogModel extends Model
         }
 
         return $gaps;
+    }
+
+    /**
+     * Orders whose photographed print may stand on a model's page: paid, finished, with a photo, and the customer agreed
+     * to publishing (the model is somebody's choice, unlike a box made from sizes alone). One condition for the index
+     * rule and for the page's block (App\Domain\Catalog\CatalogPhotos).
+     *
+     * @template T of \Illuminate\Database\Query\Builder|Builder
+     *
+     * @param  T  $orders
+     * @return T
+     */
+    public static function printPhotoOrders($orders)
+    {
+        return $orders->whereNotNull('farm_orders.paid_at')->whereNotNull('farm_orders.photo_path')->where('farm_orders.video_consent', true)
+            ->whereIn('farm_orders.status', [FarmOrder::STATUS_DONE, FarmOrder::STATUS_HANDED_OVER]);
+    }
+
+    /** The farm printed this model for somebody and photographed it (and may show the photo). */
+    public function hasPrintPhoto(): bool
+    {
+        return self::printPhotoOrders(FarmOrder::query())->where('farm_orders.catalog_model_id', $this->id)->exists();
     }
 
     /** A text of our own was written for this model (catalog:enrich or the admin). */
@@ -217,7 +253,25 @@ class CatalogModel extends Model
 
     public function thumbUrl(): ?string
     {
-        return $this->thumbnail_path ? Storage::disk('public')->url($this->thumbnail_path) : ($this->preview_url ?: null);
+        return $this->thumbnail_path ? Storage::disk('public')->url($this->thumbnail_path) : (self::directPreview($this->preview_url) ?: null);
+    }
+
+    /**
+     * A preview that was imported as an address of the old site on our own host (https://matplace.com/assets/thumbs/…)
+     * goes straight to where the old site lives now (config/legacy.php `host`): the page never sends a browser or
+     * Googlebot-Image through our redirect, and that address on our host can answer "gone" (docs/AP.md §14).
+     */
+    public static function directPreview(?string $url): ?string
+    {
+        $url = (string) $url;
+        $own = strtolower((string) parse_url((string) config('app.url'), PHP_URL_HOST));
+        $host = strtolower((string) parse_url($url, PHP_URL_HOST));
+        $path = (string) parse_url($url, PHP_URL_PATH);
+        if ($url === '' || $own === '' || ! in_array($host, [$own, 'www.'.$own], true) || ! preg_match('~^/(assets|thumbnails|blog-img)/~', $path)) {
+            return $url !== '' ? $url : null;
+        }
+
+        return rtrim((string) config('legacy.host'), '/').$path;
     }
 
     /** @return list<string> the thumbnail first, then the further pictures */

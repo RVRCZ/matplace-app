@@ -3,6 +3,9 @@
     'description' => __('models.inspiration.description'),
     // search results and deep pages of a list are not pages of their own for search engines
     'noindex' => $q !== '',
+    // the second and further pages of the list stay reachable and their links followed, but are no pages for the index
+    // (docs/AP.md §14: thousands of taken-over models behind them, the ones worth indexing are in the sitemap)
+    'robots' => $models->currentPage() > 1 ? 'noindex, follow' : null,
 ])
 
 @section('content')

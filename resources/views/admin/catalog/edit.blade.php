@@ -35,7 +35,7 @@
         @if($original = $model->original())
             <details class="mt-3 rounded-xl border border-slate-200 p-3 text-sm"><summary class="cursor-pointer font-semibold">Původní popis zdroje ({{ $original['locale'] }}), zachovaný pod naším textem</summary><p class="mt-2 whitespace-pre-line text-slate-600">{{ $original['text'] }}</p></details>
         @endif
-        @php $gaps = $model->indexGaps(); $gapWords = ['enriched' => 'text', 'price' => 'cena', 'file' => 'soubor']; @endphp
+        @php $gaps = $model->indexGaps(); $gapWords = ['enriched' => 'text', 'value' => 'vlastní hodnota (řez souboru, fotka výtisku nebo karta autora)', 'price' => 'cena', 'file' => 'soubor']; @endphp
         <p class="mt-2 text-xs text-slate-500">Obohaceno: {{ $model->enriched_at?->format('j. n. Y H:i') ?? 'ne' }}{{ $model->enriched_price_czk ? ' · cena 1 ks '.round($model->enriched_price_czk).' Kč' : '' }} · index: {{ $gaps === [] ? 'ano' : 'ne (chybí '.implode(', ', array_map(fn ($g) => $gapWords[$g] ?? $g, $gaps)).')' }}</p>
 
         <label class="mt-3 flex items-center gap-2"><input type="checkbox" name="visible" value="1" @checked(old('visible', $model->getAttribute('visible'))) class="h-4 w-4 accent-action"> Viditelný v katalogu</label>

@@ -2306,5 +2306,21 @@
     "youtube.clips.guides.in_hand": "Ukažte výtisk v ruce",
     "youtube.analytics.reconnect": "Znovu připojit s rozsahem Analytics",
     "youtube.analytics.summary": "28 dní: :views zhlédnutí · sledování :retention % · průměr :seconds s",
-    "youtube.analytics.engaged": "zhlédnuto (engagedViews): :views"
+    "youtube.analytics.engaged": "zhlédnuto (engagedViews): :views",
+    "footer.make_nav": "Co vyrobíme",
+    "footer.gifts": "Dárky na míru",
+    "footer.praha": "3D tisk Praha",
+    "footer.business": "3D tisk pro firmy",
+    "footer.all_tools": "Všechny nástroje",
+    "catalog.next.title": "Chcete něco takového vyrobit?",
+    "catalog.next.calc": "Spočítat cenu 3D tisku z vlastního souboru",
+    "catalog.next.tools": "Navrhnout vlastní věc v nástrojích",
+    "catalog.next.gifts": "Dárky na míru z fotky nebo jména",
+    "catalog.photos.title": "Takhle jsme to vytiskli",
+    "catalog.photos.lead": "Fotky výtisků z naší farmy.",
+    "catalog.photos.alt": "Výtisk modelu :title z naší farmy, :material, :date",
+    "site.gone.title": "Tato stránka už neexistuje",
+    "site.gone.text": "Adresa patřila starému webu a nemá nástupce. Zkuste hlavní stranu nebo nástroje.",
+    "seo.privacy.description": "Zásady ochrany osobních údajů matplace: jaké údaje zpracováváme a proč, komu je předáváme, jak dlouho je uchováváme a jaká máte práva.",
+    "seo.farm_terms.description": "Podmínky tiskové farmy matplace: pronájem tiskárny pro váš soubor, co netiskneme, cena a platba, vlastnosti výtisku, soubory a videa z tisku."
 }

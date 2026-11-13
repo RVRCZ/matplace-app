@@ -27,6 +27,8 @@ class BuildSitemap extends Command
         $c = $sitemaps->catalogCounts();
         $this->line(sprintf('Inspiration catalogue: %d indexable of %d shown pages, %d noindex (not listed); the index needs: %s.',
             $c['indexable'], $c['shown'], $c['shown'] - $c['indexable'], implode(', ', CatalogModel::indexNeeds()) ?: 'nothing'));
+        // what each rule of CATALOG_INDEX_REQUIRES would keep (docs/AP.md §14)
+        $this->line('By rule: '.implode('; ', array_map(fn (string $rule, int $n) => "{$rule} = {$n}", array_keys($rules = $sitemaps->catalogRules()), $rules)).'.');
 
         return self::SUCCESS;
     }

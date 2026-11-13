@@ -1,4 +1,4 @@
-@extends('layouts.app', ['title' => __('farm.terms.title').' · matplace'])
+@extends('layouts.app', ['title' => __('farm.terms.title').' · matplace', 'description' => __('seo.farm_terms.description')])
 
 @section('content')
 <article class="mx-auto max-w-2xl rounded-2xl border border-slate-200 bg-white p-6">

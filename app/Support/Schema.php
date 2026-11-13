@@ -54,6 +54,12 @@ final class Schema
         }
 
         return $data + [
+            // where the farms print, once their addresses are public (config/seo.php `farms`, empty until Roman fills it)
+            'location' => array_values(array_map(fn (array $farm) => [
+                '@type' => 'Place', 'name' => $farm['name'] ?? null,
+                'address' => ['@type' => 'PostalAddress', 'streetAddress' => $farm['street'] ?? null, 'addressLocality' => $farm['locality'] ?? null,
+                    'postalCode' => $farm['postal_code'] ?? null, 'addressCountry' => $farm['country'] ?? 'CZ'],
+            ], array_filter((array) config('seo.farms', []), fn ($farm) => is_array($farm) && ! empty($farm['locality'])))),
             'legalName' => $org['legal_name'] ?? null,
             'email' => $org['email'] ?? null,
             'address' => empty($org['street']) ? null : [
@@ -63,6 +69,25 @@ final class Schema
             // the company number (IČO): schema.org has no field of its own for it
             'identifier' => empty($org['ico']) ? null : ['@type' => 'PropertyValue', 'propertyID' => 'IČO', 'value' => (string) $org['ico']],
             'vatID' => $org['vat_id'] ?? null,
+        ];
+    }
+
+    /**
+     * What we do for a customer, on the pages that sell it (the local entry page, the page for businesses, the gifts):
+     * 3D printing to order, by us, delivered in the places named. No price is stated here: the page's own examples
+     * and the calculation say it, a made-up "from" would not be true for every order (docs/AP.md §14).
+     *
+     * @param  list<string>  $places  towns the page speaks of, besides the country
+     */
+    public static function service(string $name, ?string $description, string $url, array $places = []): array
+    {
+        return [
+            '@type' => 'Service', 'name' => $name, 'description' => $description, 'url' => $url, 'serviceType' => '3D printing', 'inLanguage' => app()->getLocale(),
+            'provider' => ['@type' => 'Organization', '@id' => url('/').'#organization', 'name' => 'matplace', 'url' => url('/')],
+            'areaServed' => array_merge(
+                array_map(fn (string $place) => ['@type' => 'City', 'name' => $place], $places),
+                [['@type' => 'Country', 'name' => (string) (config('seo.organization.country') ?: 'CZ')]],
+            ),
         ];
     }
 

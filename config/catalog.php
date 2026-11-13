@@ -20,13 +20,16 @@ return [
 
     /*
      * Which inspiration pages search engines may index (CatalogModel::scopeIndexable); the rest answer with
-     * "noindex, follow" and stay out of the sitemaps, visitors see every page as before (Roman, 18 Oct 2026). A page
-     * must have everything listed here: `enriched` = a text of our own (catalog:enrich, enriched_at), `price` = a real
-     * price from a calculation (the author's printable card, or the slicer's grams and minutes taken over from the old
-     * site, with a kind loaded on the farm), `file` = we hold the file (file_available, model_file_id, or the author's
-     * card). Take `price` and `file` out to index every enriched model.
+     * "noindex, follow", stay out of the sitemaps and carry no Product, visitors see every page as before (Roman,
+     * 18 Oct and 12 Nov 2026, docs/AP.md §14). A page must have everything listed here:
+     *   `enriched` = a text of our own (catalog:enrich, enriched_at),
+     *   `value`    = something only we can say of the model: the price from a slice of its own file (catalog:slice),
+     *                a photo of a print the farm made of it, or the author's printable card,
+     *   `price`    = any price (also the slicer's grams and minutes taken over from the old site), `file` = we hold the
+     *                file (file_available, model_file_id, or the author's card) – the older, looser conditions.
+     * The default is `enriched,value`. `enriched` alone indexes every model with a text of ours.
      */
-    'index_requires' => array_values(array_filter(explode(',', (string) env('CATALOG_INDEX_REQUIRES', 'enriched,price,file')))),
+    'index_requires' => array_values(array_filter(array_map('trim', explode(',', (string) env('CATALOG_INDEX_REQUIRES', 'enriched,value'))))),
 
     // the materials an inspiration page prices one piece in, from the slice of the model's own file (catalog:slice, docs/AN.md §13)
     'value_materials' => ['PLA', 'PETG', 'ASA'],

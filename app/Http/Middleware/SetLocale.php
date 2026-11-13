@@ -2,6 +2,7 @@
 
 namespace App\Http\Middleware;
 
+use App\Models\CatalogModel;
 use App\Support\Locales;
 use Closure;
 use Illuminate\Http\Request;
@@ -64,10 +65,18 @@ class SetLocale
         $route = $request->route();
         $parameters = array_intersect_key($route->parameters(), array_flip($route->parameterNames()));
         $query = array_diff_key($request->query(), ['lang' => 1, 'locale' => 1]);
+        $locale = Locales::supported($locale) ? $locale : Locales::current();
+        // one hop, not a chain (docs/AP.md §14): a model of the inspiration catalogue without a text in that language has
+        // no page in it, /en/model/<slug> would only redirect again to the Czech page (docs/AN.md §16)
+        if (Locales::baseName($route->getName()) === 'catalog.show' && $locale !== Locales::DEFAULT) {
+            $slug = $route->parameter('catalogModel');
+            $model = $slug instanceof CatalogModel ? $slug : CatalogModel::where('slug', (string) $slug)->first();
+            if ($model && ! in_array($locale, $model->locales(), true)) {
+                $locale = Locales::DEFAULT;
+            }
+        }
 
-        return route(Locales::baseName($route->getName()), $parameters + $query + [
-            'locale' => Locales::supported($locale) ? $locale : Locales::current(),
-        ]);
+        return route(Locales::baseName($route->getName()), $parameters + $query + ['locale' => $locale]);
     }
 
     private function firstVisitElsewhere(Request $request, string $name): bool

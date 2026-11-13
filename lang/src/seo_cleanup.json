@@ -1,0 +1,16 @@
+{
+    "footer.make_nav": ["Co vyrobíme", "What we make", "Qué hacemos"],
+    "footer.gifts": ["Dárky na míru", "Custom gifts", "Regalos a medida"],
+    "footer.praha": ["3D tisk Praha", "3D printing Prague", "Impresión 3D Praga"],
+    "footer.business": ["3D tisk pro firmy", "3D printing for businesses", "Impresión 3D para empresas"],
+    "footer.all_tools": ["Všechny nástroje", "All tools", "Todas las herramientas"],
+    "catalog.next.title": ["Chcete něco takového vyrobit?", "Want something like this made?", "¿Quiere que fabriquemos algo así?"],
+    "catalog.next.calc": ["Spočítat cenu 3D tisku z vlastního souboru", "Get a 3D printing price from your own file", "Calcular el precio de impresión 3D de su archivo"],
+    "catalog.next.tools": ["Navrhnout vlastní věc v nástrojích", "Design your own thing with our tools", "Diseñar su propia pieza con las herramientas"],
+    "catalog.next.gifts": ["Dárky na míru z fotky nebo jména", "Custom gifts from a photo or a name", "Regalos a medida de una foto o un nombre"],
+    "catalog.photos.title": ["Takhle jsme to vytiskli", "This is how we printed it", "Así lo imprimimos"],
+    "catalog.photos.lead": ["Fotky výtisků z naší farmy.", "Photos of prints from our farm.", "Fotos de impresiones de nuestra granja."],
+    "catalog.photos.alt": ["Výtisk modelu :title z naší farmy, :material, :date", "Print of :title from our farm, :material, :date", "Impresión de :title de nuestra granja, :material, :date"],
+    "site.gone.title": ["Tato stránka už neexistuje", "This page no longer exists", "Esta página ya no existe"],
+    "site.gone.text": ["Adresa patřila starému webu a nemá nástupce. Zkuste hlavní stranu nebo nástroje.", "The address belonged to the old site and has no successor. Try the home page or the tools.", "La dirección era del sitio antiguo y no tiene sucesora. Pruebe la página de inicio o las herramientas."]
+}

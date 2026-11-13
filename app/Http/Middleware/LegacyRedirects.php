@@ -22,6 +22,13 @@ class LegacyRedirects
     public function handle(Request $request, Closure $next): Response
     {
         if ($request->isMethod('GET') || $request->isMethod('HEAD')) {
+            if (self::gone('/'.ltrim($request->path(), '/')) && ! self::routed($request)) {
+                // a file (a thumbnail of the old catalogue) answers in two words; a page gets the "no longer exists" page
+                if (preg_match('~\.[a-z0-9]{2,5}$~i', $request->path())) {
+                    return response("Gone\n", 410, ['Content-Type' => 'text/plain; charset=utf-8', 'Cache-Control' => 'public, max-age=86400']);
+                }
+                abort(410);
+            }
             $target = self::targetFor('/'.ltrim($request->path(), '/'), (string) $request->getQueryString());
             if ($target !== null) {
                 return redirect()->to($target[0], $target[1]);
@@ -29,6 +36,34 @@ class LegacyRedirects
         }
 
         return $next($request);
+    }
+
+    /**
+     * An address of the old site (or of the e-shop before it) that has no successor: answered 410 "gone", so search
+     * engines stop asking for it (config/legacy.php `gone`, docs/AP.md §14). Never an address a route of ours answers.
+     */
+    public static function gone(string $path): bool
+    {
+        $path = '/'.ltrim($path, '/');
+        foreach ((array) config('legacy.gone', []) as $pattern) {
+            if (@preg_match((string) $pattern, $path) === 1) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /** Does a route of the application answer this request? Asked only for an address a `gone` pattern matched. */
+    private static function routed(Request $request): bool
+    {
+        try {
+            Route::getRoutes()->match($request);
+
+            return true;
+        } catch (\Throwable) {
+            return false;
+        }
     }
 
     /**

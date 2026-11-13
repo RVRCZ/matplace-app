@@ -43,10 +43,12 @@ final class Sitemaps
         File::deleteDirectory($dir);
         File::ensureDirectoryExists($dir);
         $written = [];
-        $write = function (string $name, array $urls) use ($dir, &$written) {
+        $changed = [];   // file → the newest lastmod it lists (none → the index says none either: no made-up dates)
+        $write = function (string $name, array $urls) use ($dir, &$written, &$changed) {
             if ($urls) {
                 File::put($dir.'/'.$name, $this->urlset($urls));
                 $written[$name] = count($urls);
+                $changed[$name] = max(array_merge([''], array_filter(array_column($urls, 'lastmod')))) ?: null;
             }
         };
 
@@ -68,7 +70,7 @@ final class Sitemaps
         }
         $write('sitemap-catalog-'.(++$n).'.xml', $chunk);
 
-        File::put($dir.'/sitemap.xml', $this->index(array_keys($written)));
+        File::put($dir.'/sitemap.xml', $this->index($changed));
         // swapped in at once: a crawler never meets a half-written set
         File::deleteDirectory(self::dir().'.old');
         if (File::isDirectory(self::dir())) {
@@ -110,7 +112,8 @@ final class Sitemaps
         }
         foreach (ToolSeo::tools() as $tool) {
             if ($tool !== 'calc') {
-                $urls[] = $all((string) config('tools')[$tool]['route']);
+                // lastmod = the day the page's own text changed (lang/<locale>/tools_seo/<tool>.php), nothing when unknown
+                $urls[] = $this->entry((string) config('tools')[$tool]['route'], [], Locales::SUPPORTED, $locale, self::textChanged($tool, $locale));
             }
         }
         foreach (array_keys(PageController::PAGES) as $page) {
@@ -173,7 +176,8 @@ final class Sitemaps
         foreach (CatalogModel::indexable()->orderBy('catalog_models.id')->lazy(1000) as $model) {
             $languages = $model->locales();
             foreach ($languages as $locale) {
-                if ($url = $this->entry('catalog.show', ['catalogModel' => $model->slug], $languages, $locale, $model->enriched_at ?? $model->updated_at)) {
+                // not updated_at: every view of the page touches it (view_count)
+                if ($url = $this->entry('catalog.show', ['catalogModel' => $model->slug], $languages, $locale, max($model->enriched_at, $model->sliced_at) ?? $model->created_at)) {
                     yield $url;
                 }
             }
@@ -184,6 +188,25 @@ final class Sitemaps
     public function catalogCounts(): array
     {
         return ['shown' => CatalogModel::shown()->count(), 'indexable' => CatalogModel::indexable()->count()];
+    }
+
+    /**
+     * How many pages each possible rule would keep, for the decision about CATALOG_INDEX_REQUIRES (docs/AP.md §14):
+     * the rule's name → pages. Read-only; `matplace:sitemap` prints it.
+     *
+     * @return array<string, int>
+     */
+    public function catalogRules(): array
+    {
+        $was = config('catalog.index_requires');
+        $out = [];
+        foreach (['enriched,value', 'enriched', 'value', 'enriched,price,file'] as $rule) {
+            config(['catalog.index_requires' => explode(',', $rule)]);
+            $out[$rule] = CatalogModel::indexable()->count();
+        }
+        config(['catalog.index_requires' => $was]);
+
+        return $out;
     }
 
     /**
@@ -226,12 +249,20 @@ final class Sitemaps
         return $xml.'</urlset>'."\n";
     }
 
-    /** @param  list<string>  $files */
+    /** The day the text of a tool's page last changed in a language: the day its text file was written (a deploy rewrites only changed files). */
+    private static function textChanged(string $tool, string $locale): ?string
+    {
+        $file = lang_path($locale.'/tools_seo/'.$tool.'.php');
+
+        return is_file($file) ? date('Y-m-d', (int) filemtime($file)) : null;
+    }
+
+    /** @param  array<string, ?string>  $files  file → the newest lastmod among its addresses, null when it lists none */
     private function index(array $files): string
     {
         $xml = '<?xml version="1.0" encoding="UTF-8"?>'."\n".'<sitemapindex xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">'."\n";
-        foreach ($files as $file) {
-            $xml .= '  <sitemap><loc>'.self::x(url('/'.$file)).'</loc><lastmod>'.now()->toDateString().'</lastmod></sitemap>'."\n";
+        foreach ($files as $file => $lastmod) {
+            $xml .= '  <sitemap><loc>'.self::x(url('/'.$file)).'</loc>'.($lastmod ? '<lastmod>'.self::x($lastmod).'</lastmod>' : '').'</sitemap>'."\n";
         }
 
         return $xml.'</sitemapindex>'."\n";
