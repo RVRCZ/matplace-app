@@ -32,5 +32,11 @@
     {"text": "Un cuadro famoso para la pared, 20 cm.", "photo": true, "route": "tool", "tools": ["filament_art", "coaster"], "params": {"size_mm": 200}},
 
     {"text": "Chci medaili s reliéfem z fotky", "photo": false, "route": "tool", "tools": ["medallion"], "params": {"decor": null}},
-    {"text": "Chci medaili s reliéfem z fotky", "photo": true, "route": "tool", "tools": ["medallion"], "params": {"decor": "photo"}}
+    {"text": "Chci medaili s reliéfem z fotky", "photo": true, "route": "tool", "tools": ["medallion"], "params": {"decor": "photo"}},
+    {"text": "Čelenka s čertovskými rohy na Mikuláše pro osmileté dítě, červená a černá.", "photo": false, "route": "tool", "tool": "headband"},
+    {"text": "Čelenka s kočičíma ušima jako na téhle fotce, černá, obvod hlavy 54 cm.", "photo": true, "route": "tool", "tool": "headband", "params": {"size_mm": 540}},
+    {"text": "A headband with bunny ears for my daughter, head 52 cm around, white.", "photo": false, "route": "tool", "tool": "headband", "params": {"size_mm": 520}},
+    {"text": "Reindeer antlers on a headband like the ones in this photo, for an adult.", "photo": true, "route": "tool", "tool": "headband"},
+    {"text": "Una diadema con cuernos de diablo para un niño de ocho años, roja y negra.", "photo": false, "route": "tool", "tool": "headband"},
+    {"text": "Una diadema de unicornio como la de la foto, blanca y dorada.", "photo": true, "route": "tool", "tool": "headband"}
 ]

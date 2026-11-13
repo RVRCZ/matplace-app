@@ -216,6 +216,7 @@ export function bootParam(stage: Stage): void {
         if (['notes', 'candle_stand'].includes(cfg.kind)) return ['body', 'stand'];      // the silhouette and the base its foot is pushed into
         if (cfg.kind === 'phone_stand' && p.style === 'flatpack') return ['body', 'stand'];     // the patterned plate and the leg pushed through it
         if (cfg.kind === 'phone_stand' && p.style === 'ribbon') return ['body', 'stripe'];      // the Z band and the stripe pressed into its groove
+        if (cfg.kind === 'headband') return p.mount !== 'fused' && p.decoration !== 'none' ? ['body', 'details'] : [];   // the band and the decoration pushed into it
         if (cfg.kind === 'hair_tie') return ['body', 'stand', 'post'];                   // … and the post for the ties, pushed through the base from below
         if (cfg.kind === 'sign' && p.two_color && p.style !== 'engrave') return ['plate', 'text'];
         if (cfg.kind === 'beads' && p.style === 'raised') return ['body', 'text'];

@@ -384,9 +384,9 @@ class HomeWhatToMakeTest extends TestCase
         // missed; of 19 honest texts one is held (Ukrainian without a photo) and one price question gets the answer about prices
         $this->assertSame([13, 0, 19, 1], [$caught, $missed, $honest, $wrong]);
 
-        // the golden cases of the router (32) and every example of the first screen (110): none is held, none is taken for a bare price question
+        // the golden cases of the router (38) and every example of the first screen (122): none is held, none is taken for a bare price question
         $golden = json_decode((string) file_get_contents(base_path('tests/fixtures/intake/cases.json')), true);
-        $this->assertCount(32, $golden);
+        $this->assertCount(38, $golden);
         foreach (array_merge($golden, IntakeCases::hintCases()) as $case) {
             $this->assertSame('pass', $verdict((string) $case['text'], (bool) $case['photo']), (string) $case['text']);
         }

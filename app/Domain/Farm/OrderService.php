@@ -456,7 +456,9 @@ final class OrderService
     /** Our generators whose parts are separate objects (a box and its lid…), not the colour layers of one piece. */
     public const ASSEMBLED = ['box', 'vase', 'stamp', 'logo', 'qr', 'lightbox', 'cutter', 'modular',
         // a silhouette pushed into its base (and the post of the hair-tie holder pushed through it): each its own colour
-        'notes', 'hair_tie', 'candle_stand'];
+        'notes', 'hair_tie', 'candle_stand',
+        // a headband and the decoration pushed into it: laid on the bed side by side, each its own colour
+        'headband'];
 
     /** The name of a part as the tool's page shows it ("Víko", "Deska 2", "Díl 3"); the raw name when none is known. */
     public static function partLabel(?ModelFile $file, string $part): string
