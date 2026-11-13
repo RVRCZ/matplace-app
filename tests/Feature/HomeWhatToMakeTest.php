@@ -299,6 +299,7 @@ class HomeWhatToMakeTest extends TestCase
     {
         $system = IntakeRouter::system();
         foreach (['Never promise the customer, and never ask them for, an input that the chosen tool\'s `takes` does not list', 'do not ask for a photo for a tool that takes no photo',
+            'do not promise a relief of a photo on a thing whose tool takes no photo', 'a cake topper with a relief from a photo: the topper tool takes no photo',
             'a combination no single tool makes', 'say plainly in `summary` what that tool makes and what it does not', 'put the tools that DO take the photo into `alternatives`',
             'relief, coaster, charm, filament_art', 'name the best of them in `summary` by its public name', 'a picture is still not a person\'s job', 'a photo as a relief or a lithophane → relief'] as $rule) {
             $this->assertStringContainsString($rule, $system, $rule);
@@ -306,22 +307,25 @@ class HomeWhatToMakeTest extends TestCase
         $this->assertStringContainsString('a picture is never a person\'s job', $system, 'the main rule of round 2 stays');
         $this->assertStringContainsString('Never promise the customer', IntakeRouter::system(true), 'the rule holds for "without a designer" too');
 
-        // the catalogue the model sees has the relief tool (it was missing), with a photo as what it takes; the medal takes none
+        // the catalogue the model sees has the relief tool (it was missing), with a photo as what it takes; the medal
+        // takes a photo as a relief since the decorations (docs/AR.md §8, IntakeDecorTest), a cake topper takes none
         $this->assertArrayHasKey('relief', IntakeRouter::TOOLS);
         $this->assertStringContainsString('a photo', IntakeRouter::TOOLS['relief']['takes']);
-        $this->assertStringNotContainsString('photo', IntakeRouter::TOOLS['medallion']['takes']);
+        $this->assertStringContainsString('a photo', IntakeRouter::TOOLS['medallion']['takes']);
+        $this->assertStringNotContainsString('photo', IntakeRouter::TOOLS['topper']['takes']);
         $user = IntakeRouter::user(new Intake(['text' => 'Chci medaili s reliéfem z fotky', 'locale' => 'cs']));
         $this->assertStringContainsString("\nrelief | ".__('tools.relief.title', [], 'cs').' / '.__('tools.relief.title', [], 'en').' / '.__('tools.relief.title', [], 'es').' | a photo', $user);
         $this->assertTrue((bool) config('tools.relief.available'));
-        $this->assertSame(6, IntakeRouter::unionCount(), 'the schema did not change');
+        $this->assertSame(7, IntakeRouter::unionCount(), 'the schema has one more nullable field: params.decor');
 
         // the tool's page takes the photo the router hands over
         $this->get('/tools/relief')->assertOk()->assertSee('<input id="relief-photo" name="photo" data-intake-photo type="file"', false);
-        // an answer of the model that names the relief tool goes there with the token
-        FakeAssistant::$answers['intake'] = ['route' => 'tool', 'tool_key' => 'medallion', 'params' => [], 'summary' => ['cs' => 'Medaili umíme s číslem, motivem nebo textem; reliéf z fotky na ni zatím neumíme. Fotku zvládne Reliéf a litofanie z fotky.', 'en' => 'x', 'es' => 'x'],
+        // an answer of the model that says plainly what the chosen tool does not make and names the tools that take the photo
+        FakeAssistant::$answers['intake'] = ['route' => 'tool', 'tool_key' => 'topper', 'params' => ['decor' => 'photo'], 'summary' => ['cs' => 'Zápich do dortu umíme se jménem a číslem; reliéf z fotky na něj neumíme. Fotku zvládne Reliéf a litofanie z fotky.', 'en' => 'x', 'es' => 'x'],
             'questions' => [], 'confidence' => 0.6, 'alternatives' => ['relief', 'coaster', 'teleport']];
-        $r = $this->send(['text' => 'Chci medaili s reliéfem z fotky'])->assertCreated()->assertJsonPath('tool_key', 'medallion')->assertJsonPath('alternatives', ['relief', 'coaster']);
-        $this->assertStringContainsString('reliéf z fotky na ni zatím neumíme', $r->json('summary'));
+        $r = $this->send(['text' => 'Chci zápich do dortu s reliéfem z fotky'])->assertCreated()->assertJsonPath('tool_key', 'topper')->assertJsonPath('alternatives', ['relief', 'coaster']);
+        $this->assertStringContainsString('reliéf z fotky na něj neumíme', $r->json('summary'));
+        $this->assertArrayNotHasKey('decor', (array) $r->json('params'), 'a tool without decorations gets no relief');
     }
 
     public function test_the_keyword_fallback_says_the_tool_it_chose_not_the_designer(): void
@@ -330,8 +334,12 @@ class HomeWhatToMakeTest extends TestCase
             foreach (['cs', 'en', 'es'] as $lang) {
                 $d = IntakeRouter::guess('Chci medaili s reliéfem z fotky', $photo, $lang);
                 $this->assertSame(['tool', 'medallion', ['relief']], [$d['route'], $d['tool_key'], $d['answer']['alternatives']]);
-                // the sentence names the tool and the one that takes the photo, and is not the designer's
-                $this->assertSame(__('router.summary.tool', ['tool' => __('tools.medallion.title', [], $lang)], $lang).' '.__('router.summary.tool_also', ['tools' => __('tools.relief.title', [], $lang)], $lang), $d['summary']);
+                // the sentence names the tool and the one that takes the photo, and is not the designer's; with a photo
+                // it says that the photo becomes a relief on the medal (params.decor, IntakeDecorTest)
+                $this->assertSame(__('router.summary.tool', ['tool' => __('tools.medallion.title', [], $lang)], $lang)
+                    .($photo ? ' '.__('router.summary.tool_decor', [], $lang) : '')
+                    .' '.__('router.summary.tool_also', ['tools' => __('tools.relief.title', [], $lang)], $lang), $d['summary']);
+                $this->assertSame($photo ? 'photo' : null, $d['params']['decor'] ?? null);
                 foreach (['router.summary.fallback', 'router.summary.fallback_text', 'router.summary.shape', 'router.summary.shape_text'] as $key) {
                     $this->assertNotSame(__($key, ['hours' => 24], $lang), $d['summary']);
                 }

@@ -2625,5 +2625,6 @@
     "farm.state.closed.held": "La granja está cerrada por ahora. La impresión empezará en cuanto volvamos a abrirla.",
     "farm.state.admin.line_queue_closed": "Cola: la granja está cerrada, el pedido espera y empezará cuando la abra",
     "farm.mail.queued_closed.subject": "Pedido :number aceptado, la impresión empezará cuando la granja vuelva a abrir",
-    "farm.mail.queued_closed.body": "Su impresión «:name» (:color) está pagada y espera en la cola. Le avisaremos cuando empiece a imprimirse."
+    "farm.mail.queued_closed.body": "Su impresión «:name» (:color) está pagada y espera en la cola. Le avisaremos cuando empiece a imprimirse.",
+    "router.summary.tool_decor": "La foto irá encima como relieve de un solo color; la vista previa muestra cómo queda."
 }

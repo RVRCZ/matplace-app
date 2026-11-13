@@ -31,6 +31,6 @@
     {"text": "El logo de nuestro club como llavero, 5 cm.", "photo": true, "route": "tool", "tools": ["charm", "keychain"], "params": {"size_mm": 50}},
     {"text": "Un cuadro famoso para la pared, 20 cm.", "photo": true, "route": "tool", "tools": ["filament_art", "coaster"], "params": {"size_mm": 200}},
 
-    {"text": "Chci medaili s reliéfem z fotky", "photo": false, "route": "tool", "tools": ["medallion", "relief"], "alternatives": true},
-    {"text": "Chci medaili s reliéfem z fotky", "photo": true, "route": "tool", "tools": ["medallion", "relief"], "alternatives": true}
+    {"text": "Chci medaili s reliéfem z fotky", "photo": false, "route": "tool", "tools": ["medallion"], "params": {"decor": null}},
+    {"text": "Chci medaili s reliéfem z fotky", "photo": true, "route": "tool", "tools": ["medallion"], "params": {"decor": "photo"}}
 ]

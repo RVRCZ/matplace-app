@@ -106,7 +106,7 @@ return [
                 'birthday' => ['name' => 'Narozeniny', 'always' => true, 'examples' => ['topper', 'keychain']],
                 'wedding' => ['name' => 'Svatba', 'always' => true, 'examples' => ['topper', 'sign']],
                 'mikulas' => ['name' => 'Mikuláš', 'date' => ['cs' => '12-05'], 'lead' => 30, 'stop' => 4, 'examples' => ['human', 'charm', 'sign']],
-                'christmas' => ['name' => 'Vánoce', 'date' => ['cs' => '12-24', 'en' => '12-25', 'es' => '12-25'], 'lead' => 50, 'stop' => 9, 'until_setting' => 'christmas_deadline', 'examples' => ['charm', 'coaster', 'cutter', 'map']],
+                'christmas' => ['name' => 'Vánoce', 'date' => ['cs' => '12-24', 'en' => '12-25', 'es' => '12-25'], 'lead' => 50, 'stop' => 9, 'until_setting' => 'christmas_deadline', 'examples' => ['ornament', 'coaster', 'cutter', 'map']],
                 'silvestr' => ['name' => 'Silvestr', 'date' => '12-31', 'lead' => 30, 'stop' => 4, 'year_offset' => 1, 'examples' => ['text', 'topper']],
                 'reyes' => ['name' => 'Tři králové (jen es)', 'date' => ['es' => '01-06'], 'lead' => 36, 'stop' => 5, 'examples' => ['keychain', 'pet']],
                 'valentine' => ['name' => 'Valentýn', 'date' => '02-14', 'lead' => 35, 'stop' => 4, 'examples' => ['charm', 'text', 'coaster']],

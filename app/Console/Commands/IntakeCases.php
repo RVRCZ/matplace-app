@@ -64,7 +64,9 @@ class IntakeCases extends Command
             $tools = array_values(array_filter((array) ($case['tools'] ?? [$case['tool'] ?? null])));
             $want = $case['route'].($tools ? ':'.implode('|', $tools) : '').(! empty($case['wants_shape']) ? ' (shape)' : '');
             // an example of the first screen that goes to a person may also come back as a shape: both end with the e-mail field
-            $ok = isset($d) && $d['route'] === $case['route'] && ($tools ? in_array($d['tool_key'], $tools, true) : $d['tool_key'] === null) && (! empty($case['any_shape']) || $d['wants_shape'] === ! empty($case['wants_shape']));
+            $ok = isset($d) && $d['route'] === $case['route'] && ($tools ? in_array($d['tool_key'], $tools, true) : $d['tool_key'] === null) && (! empty($case['any_shape']) || $d['wants_shape'] === ! empty($case['wants_shape']))
+                // a case that says whether the photo becomes a relief on the thing (params.decor, docs/AR.md §8) is held to it
+                && (! array_key_exists('decor', (array) ($case['params'] ?? [])) || ($d['params']['decor'] ?? null) === $case['params']['decor']);
             $agree += $ok ? 1 : 0;
             $n++;
             $call = $keywords ? null : AiCall::where('kind', IntakeRouter::KIND)->latest('id')->first();

@@ -2625,5 +2625,6 @@
     "farm.state.closed.held": "Farma je teď zavřená. Tisk začne, jakmile ji znovu otevřeme.",
     "farm.state.admin.line_queue_closed": "Fronta: farma je zavřená, zakázka čeká a spustí se, až farmu otevřete",
     "farm.mail.queued_closed.subject": "Zakázka :number je přijatá, tisk začne po otevření farmy",
-    "farm.mail.queued_closed.body": "Váš tisk „:name“ (:color) je zaplacený a čeká ve frontě. Dáme vědět, až se začne tisknout."
+    "farm.mail.queued_closed.body": "Váš tisk „:name“ (:color) je zaplacený a čeká ve frontě. Dáme vědět, až se začne tisknout.",
+    "router.summary.tool_decor": "Fotku na něj položíme jako reliéf v jedné barvě; jak vyjde, uvidíte v náhledu."
 }

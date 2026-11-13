@@ -58,12 +58,13 @@ final class IntakeRouter
         'figure' => ['takes' => 'a photo of a person: the face (a bust) or the whole body (a figure)', 'makes' => 'a bust or a whole figure of that person on a pedestal, modelled in 3D from the photo', 'when' => 'a photo of a person that should become a 3D figure; the first choice for a face', 'size' => [30, 250], 'colors' => 1],
         'pet' => ['takes' => 'a photo of an animal: a dog, a cat, a rabbit, a horse, a bird', 'makes' => 'a figurine of the pet on a base with its name (realistic, a miniature or a cartoon)', 'when' => 'a photo of an animal that should become a figurine', 'size' => [30, 250], 'colors' => 1],
         'charm' => ['takes' => 'a drawing, a logo, a child\'s picture, a well-known motif or character, a photo, or a name / short text', 'makes' => 'a keychain or pendant with an eyelet: the picture flattened into areas of filament colours', 'when' => 'a flat picture to hang on keys or a bag; the logo of a club or a company; a child\'s drawing; a known character as a small flat thing', 'size' => [20, 120], 'colors' => 4],
-        'keychain' => ['takes' => 'a name or a short text, with a small picture if wanted', 'makes' => 'a key ring tag with the name in relief (a rectangle, a circle or the shape of the picture)', 'when' => 'a keychain whose main thing is the name; a keychain made of a picture is charm', 'size' => [30, 100], 'colors' => 4, 'query' => ['form' => 1]],
-        'medallion' => ['takes' => 'a place (1st, 2nd, 3rd), a number, a motif or a short text', 'makes' => 'a medal for winners with a chain or on a ribbon (gold, silver, bronze)', 'when' => 'a medal, a prize, winners, places in a race or a tournament', 'size' => [40, 120], 'colors' => 2],
+        'ornament' => ['takes' => 'a photo (a face, a pet), a drawing, a logo, or a name with a year', 'makes' => 'a Christmas tree ornament with an eyelet for a ribbon: a relief of the photo or the picture in filament colours on the front, a name and a year on the back', 'when' => 'a Christmas ornament, a bauble, a gift tag for the tree', 'size' => [40, 150], 'colors' => 4],
+        'keychain' => ['takes' => 'a name or a short text, a logo or a small picture, or a photo that becomes a small relief', 'makes' => 'a key ring tag with the name in relief (a rectangle, a circle or the shape of the picture); a logo and a text side by side, a text engraved on the back', 'when' => 'a keychain whose main thing is the name; a keychain made of a picture is charm', 'size' => [30, 100], 'colors' => 4, 'query' => ['form' => 1]],
+        'medallion' => ['takes' => 'a place (1st, 2nd, 3rd), a number, a motif or a short text; or a photo (a face, a pet, a house) that becomes a relief on the front, with a name or a year on the back', 'makes' => 'a medal for winners with a chain or on a ribbon (gold, silver, bronze), or with a relief of a photo on its front', 'when' => 'a medal, a prize, winners, places in a race or a tournament', 'size' => [40, 120], 'colors' => 2],
         'map' => ['takes' => 'the name of a place: a city, a town, a village, a landscape, a mountain', 'makes' => 'a 3D map of the place: buildings, streets and water, or the relief of the landscape, with the name on the rim', 'when' => 'the thing wanted is a place itself (a home town, a favourite mountain)', 'size' => [100, 250], 'colors' => 3],
         'topper' => ['takes' => 'a name with a number, a heart or a star', 'makes' => 'a cake topper with spikes to push into the cake', 'when' => 'anything for a cake', 'size' => [50, 200], 'colors' => 2],
-        'coaster' => ['takes' => 'a photo, a painting, a drawing or a logo', 'makes' => 'a round, square or hexagonal coaster with the picture as flat areas of filament colours', 'when' => 'a well-known painting or picture for the table; a logo; a photo as a small flat thing', 'size' => [80, 120], 'colors' => 4],
-        'relief' => ['takes' => 'a photo: a portrait, a family, a pet, a landscape', 'makes' => 'a relief or a lithophane of the photo in one colour, where thickness makes the picture: a flat panel, a picture for the wall, or a lamp shade the light shines through', 'when' => 'a photo that should become a relief or a lithophane; the words relief, lithophane, embossed, a lamp from a photo', 'size' => [40, 250], 'colors' => 1],
+        'coaster' => ['takes' => 'a photo, a painting, a drawing or a logo; or a photo that becomes a relief sunk into the coaster, with a text', 'makes' => 'a round, square or hexagonal coaster with the picture as flat areas of filament colours', 'when' => 'a well-known painting or picture for the table; a logo; a photo as a small flat thing', 'size' => [80, 120], 'colors' => 4],
+        'relief' => ['takes' => 'a photo: a portrait, a family, a pet, a landscape', 'makes' => 'a relief or a lithophane of the photo in one colour, where thickness makes the picture: a flat panel, a picture for the wall, or a lamp shade the light shines through', 'when' => 'a photo that should become a relief or a lithophane; the words relief, lithophane, embossed, a lamp from a photo; a relief on a medal, a key ring, an ornament or a coaster is that tool with params.decor = "photo"', 'size' => [40, 250], 'colors' => 1],
         'filament_art' => ['takes' => 'a photo, a painting, a poster or any picture', 'makes' => 'a picture of layered filament to hang on the wall, A5 to A3, with a frame if wanted', 'when' => 'a painting, a poster or a photo meant to be looked at on a wall; the first choice for a well-known painting or a picture without any other wish', 'size' => [50, 250], 'colors' => 8],
         'earrings' => ['takes' => 'a drawing or a small motif', 'makes' => 'a pair of earrings (the same or mirrored) with an eyelet for a hook', 'when' => 'earrings or jewellery from a small motif or a child\'s drawing', 'size' => [10, 60], 'colors' => 4],
         'papel' => ['takes' => 'a photo of a face, or a picture', 'makes' => 'a papel picado panel: the portrait or the picture cut out in two colours inside a decorated border', 'when' => 'a portrait that should stay a flat picture (a cut-out panel for the wall, a fiesta decoration), not a 3D figure', 'size' => [80, 250], 'colors' => 2],
@@ -72,13 +73,20 @@ final class IntakeRouter
         'cutter' => ['takes' => 'a drawing, a logo or a simple outline', 'makes' => 'a cookie cutter following the outline of the picture', 'when' => 'a cookie cutter, baking, the outline of a drawing', 'size' => [30, 150], 'colors' => 1],
     ];
 
+    /**
+     * The tools that take decorations (docs/AR.md): a photo sent to one of them with the wish "a relief of it" is laid
+     * on the front as a relief (`params.decor` = "photo", read by the tool's page) instead of becoming flat colours.
+     */
+    public const DECORATED = ['medallion', 'keychain', 'ornament', 'coaster'];
+
     /** What `params.kind` may say, per tool. */
     private const KINDS = ['figure' => ['bust', 'figure'], 'pet' => ['realistic', 'miniature', 'cartoon']];
 
     /**
      * Words that send a visitor to a tool, or to a person, when no model is available (cs, en, es; without diacritics
      * too). The first family that fits decides, so the order matters: a part before a shape, a pet before a face, a
-     * coaster and a picture for the wall before the charm (whose "obráz" would take "obraz" too).
+     * coaster and a picture for the wall before the charm (whose "obráz" would take "obraz" too), the ornament for
+     * the tree before the charm as well (the charm used to take it).
      */
     private const WORDS = [
         Intake::ROUTE_HUMAN => '/kole[čc]k|\bd[íi]l[yuůe]?\b|n[áa]hradn|dr[žz][áa]k|krytk|v[íi][čc]k|ozuben|rozm[ěe]r|toleranc|z[áa]vit|aby (to )?pasoval|p[řr]esn[ěe]|spare|replacement|bracket|\bmount\b|thread|toleranc|dimension|to fit|repuesto|\bpieza\b|soporte|\brosca\b|medid|\bmm\b.*\bmm\b/u',
@@ -94,7 +102,8 @@ final class IntakeRouter
         'earrings' => '/n[áa]u[šs]nic|\bearring|pendiente/u',
         'cutter' => '/vykrajov|cookie cutter|cortador/u',
         'filament_art' => '/\bobraz(u|em|y|ů|ech)?\b|\bmalb|malovan|\bpainting|\bcanvas\b|\bposter|plak[áa]t|na ze[ďd]\b|\bwall\b|\bcuadro\b|pintura|\bcartel\b/u',
-        'charm' => '/p[řr][íi]v[ěe]s|ozdob[auy]? na strom|\bornament|adorno (de|para el) [áa]rbol|kresb|kresl|obr[áa]z|\blogo\b|pendant|\bcharm\b|drawing|colgante|dibujo/u',
+        'ornament' => '/ozdob[auy]? na strom|\bornament|adorno (de|para el) [áa]rbol/u',
+        'charm' => '/p[řr][íi]v[ěe]s|kresb|kresl|obr[áa]z|\blogo\b|pendant|\bcharm\b|drawing|colgante|dibujo/u',
         'keychain' => '/kl[íi][čc]enk|kl[íi][čc]e\b|keychain|key ?ring|llavero/u',
         'text' => '/n[áa]pis|3d text|p[íi]smen|\bletters?\b|\bletras\b|\bhome\b|\blove\b/u',
         'sign' => '/cedulk|jmenovk|\bdve[řr]|\bsign\b|name ?(tag|plate)|\blabel\b|\bjm[ée]n[oa]\b|\bnombre\b|\bplaca\b|letrero|etiqueta/u',
@@ -223,6 +232,9 @@ final class IntakeRouter
         $tool = is_string($answer['tool_key'] ?? null) && isset(self::TOOLS[$answer['tool_key']]) ? $answer['tool_key'] : null;
         $confidence = is_numeric($answer['confidence'] ?? null) ? max(0.0, min(1.0, (float) $answer['confidence'])) : 0.0;
         $params = self::params(is_array($answer['params'] ?? null) ? $answer['params'] : [], $tool);
+        if (! $hasPhoto) {
+            unset($params['decor']);                          // no photo came: there is nothing to lay on the thing yet
+        }
         $questions = array_values(array_slice(array_filter(array_map(
             fn ($q) => is_string($q) ? mb_substr(trim($q), 0, 160) : '', is_array($answer['questions'] ?? null) ? $answer['questions'] : []
         ), fn ($q) => $q !== ''), 0, 3));
@@ -254,6 +266,7 @@ final class IntakeRouter
             // a tool without a sentence of the model (the keyword guess): the house says which tool, and which others would do
             $name = fn (string $key): string => (string) __('tools.'.$key.'.title', [], Locales::supported($locale) ? $locale : Locales::DEFAULT);
             $summary = self::sentence('router.summary.tool', $locale, ['tool' => $name((string) $tool)])
+                .(isset($params['decor']) ? ' '.self::sentence('router.summary.tool_decor', $locale) : '')
                 .($alternatives ? ' '.self::sentence('router.summary.tool_also', $locale, ['tools' => implode(', ', array_map($name, $alternatives))]) : '');
         } elseif ($summary === '' || ($route === Intake::ROUTE_HUMAN && ($answer['route'] ?? null) !== Intake::ROUTE_HUMAN)) {
             // the assistant said a tool or a shape and the rules said a person: its sentence would promise the wrong thing
@@ -288,10 +301,12 @@ final class IntakeRouter
         foreach (self::WORDS as $target => $pattern) {
             if ($t !== '' && preg_match($pattern, $t)) {
                 $route = in_array($target, [Intake::ROUTE_HUMAN, Intake::ROUTE_SHAPE], true) ? $target : Intake::ROUTE_TOOL;
+                // "a medal with a relief from a photo": the words name a tool that takes decorations and a relief as well
+                $decor = in_array($target, self::DECORATED, true) && preg_match(self::WORDS['relief'], $t) ? ['decor' => 'photo'] : [];
 
                 return self::decide([
                     'route' => $route, 'tool_key' => $route === Intake::ROUTE_TOOL ? $target : null,
-                    'params' => self::paramsFromWords($t), 'confidence' => self::GUESS_CONFIDENCE, 'summary' => [], 'questions' => [],
+                    'params' => self::paramsFromWords($t) + $decor, 'confidence' => self::GUESS_CONFIDENCE, 'summary' => [], 'questions' => [],
                     // a shape names the nearest tools; a tool names the other tools the words speak of too (a medal with a relief from a photo)
                     'alternatives' => $route === Intake::ROUTE_SHAPE ? self::nearest($t, $hasPhoto) : ($route === Intake::ROUTE_TOOL ? self::alsoNamed($t, $target) : []),
                 ], $hasPhoto, $locale);
@@ -457,7 +472,7 @@ final class IntakeRouter
 
     /**
      * Parameters a tool can take: a size inside the tool's range, a few colour names, a count, a short text, a place,
-     * a kind the tool knows. Anything else is dropped.
+     * a kind the tool knows, and `decor` = "photo" for a tool that takes decorations. Anything else is dropped.
      *
      * @param  array<string, mixed>  $raw
      * @return array<string, mixed>
@@ -488,6 +503,9 @@ final class IntakeRouter
         }
         if (is_string($raw['kind'] ?? null) && $tool !== null && in_array($raw['kind'], self::KINDS[$tool] ?? [], true)) {
             $out['kind'] = $raw['kind'];
+        }
+        if (($raw['decor'] ?? null) === 'photo' && in_array($tool, self::DECORATED, true)) {
+            $out['decor'] = 'photo';
         }
 
         return $out;
@@ -543,13 +561,13 @@ final class IntakeRouter
             '- `human`: only parts with dimensions, tolerances, threads, "so that it fits", a holder or a bracket for a specific thing, a spare part, anything technical, and things where no tool makes sense even with a few questions.',
             '- `file`: only when the visitor says they have a 3D file (STL, 3MF, STEP, OBJ) and asks for nothing else.',
             '',
-            'The main rule: a picture is never a person\'s job. A photo, a drawing, a painting, a logo, a well-known motif, a known character, a poster, a child\'s picture → the nearest tool for a picture, always. A flat motif: coaster, filament_art (a picture for the wall), charm (keys, a bag), earrings, sign. A photo whose picture should stand out by thickness or by light: relief. A portrait of a person: figure (a 3D bust or figure) or papel (a flat cut-out panel). An animal: pet. When two tools would do, choose the one the words point to, name the other ones in `alternatives` (up to three, the best first) and ask a question. When you are not sure between tools, still choose a tool and ask; a low confidence is no reason for a person.',
+            'The main rule: a picture is never a person\'s job. A photo, a drawing, a painting, a logo, a well-known motif, a known character, a poster, a child\'s picture → the nearest tool for a picture, always. A flat motif: coaster, filament_art (a picture for the wall), charm (keys, a bag), earrings, sign. A photo whose picture should stand out by thickness or by light: relief (on a medal, a key ring, a Christmas ornament or a coaster it is that tool with `params.decor` = "photo"). A portrait of a person: figure (a 3D bust or figure) or papel (a flat cut-out panel). An animal: pet. When two tools would do, choose the one the words point to, name the other ones in `alternatives` (up to three, the best first) and ask a question. When you are not sure between tools, still choose a tool and ask; a low confidence is no reason for a person.',
             '',
-            'What a tool takes is all it takes. Never promise the customer, and never ask them for, an input that the chosen tool\'s `takes` does not list: do not ask for a photo for a tool that takes no photo, do not promise a relief of a photo on a thing whose tool takes a place, a number, a motif or a text. When the wish asks for a combination no single tool makes (a medal with a relief from a photo: the medal tool takes no photo), a picture is still not a person\'s job: choose the tool for the main thing, say plainly in `summary` what that tool makes and what it does not ("a medal with a number, a motif or a text; a relief of a photo on it is not something we can make yet"), put the tools that DO take the photo into `alternatives` (for a photo: relief, coaster, charm, filament_art, as the catalogue says) and name the best of them in `summary` by its public name. Ask only questions the chosen tool can use.',
+            'What a tool takes is all it takes. Never promise the customer, and never ask them for, an input that the chosen tool\'s `takes` does not list: do not ask for a photo for a tool that takes no photo, do not promise a relief of a photo on a thing whose tool takes no photo (a cake topper, a sign, standing letters, a map). A medal, a key ring, a Christmas ornament and a coaster DO take a photo as a decoration: when the wish is a relief of a photo on one of them ("a medal with a relief from a photo", "an ornament with our dog\'s face in relief"), choose that tool (medallion, keychain, ornament, coaster), set `params.decor` to "photo" and say it honestly in `summary`: the photo becomes a relief in one colour on the front of the thing, how well a face reads depends on the photo and on the size, and the preview shows it before anything is ordered; a name or a year from the words goes on the back (`params.text`). When no photo is attached, choose that tool all the same and say that the photo is added on the tool\'s page, in its step "Zdobení" / "Decoration" / "Decoración". When the wish asks for a combination no single tool makes (a cake topper with a relief from a photo: the topper tool takes no photo), a picture is still not a person\'s job: choose the tool for the main thing, say plainly in `summary` what that tool makes and what it does not ("a cake topper with a name and a number; a relief of a photo on it is not something we can make"), put the tools that DO take the photo into `alternatives` (for a photo: relief, coaster, charm, filament_art, as the catalogue says) and name the best of them in `summary` by its public name. Ask only questions the chosen tool can use.',
             '',
-            'Rules of thumb: a face or a person → figure; an animal → pet; a drawing, a logo, a child\'s picture or a name meant to hang on keys or a bag → charm; a name as the main thing of a keychain → keychain; a name with a cake → topper; the name of a place → map; a medal, winners, places → medallion; a coaster → coaster; a picture for the wall, a painting, a poster → filament_art; a photo as a relief or a lithophane → relief; earrings → earrings; a door sign, a name tag, a label → sign; a word standing on its own → text; a cookie cutter → cutter. The photo says what is there, the words say what is to be made of it: a photo of a dog with "a keychain from this" is charm, not pet. A person\'s face without any words is figure (kind bust). An animal without words is pet. A well-known painting without words is filament_art.',
+            'Rules of thumb: a face or a person → figure; an animal → pet; a drawing, a logo, a child\'s picture or a name meant to hang on keys or a bag → charm; a name as the main thing of a keychain → keychain; a name with a cake → topper; the name of a place → map; a medal, winners, places → medallion; a Christmas tree ornament, a bauble, a gift tag for the tree → ornament; a coaster → coaster; a picture for the wall, a painting, a poster → filament_art; a photo as a relief or a lithophane → relief; earrings → earrings; a door sign, a name tag, a label → sign; a word standing on its own → text; a cookie cutter → cutter. The photo says what is there, the words say what is to be made of it: a photo of a dog with "a keychain from this" is charm, not pet. A person\'s face without any words is figure (kind bust). An animal without words is pet. A well-known painting without words is filament_art.',
             '',
-            'Parameters: `size_mm` is the main size the tool asks for (the height for figure and pet, the letter height for sign and text, the width for the rest), inside the tool\'s range, converted from centimetres; null when not said. `colors`: colour names in English as the visitor named them, at most the tool\'s count. `copies`: how many pieces, null when not said. `text`: a name or an inscription to put on the thing, at most 24 characters, null otherwise. `place`: the place of a map. `kind`: bust or figure for figure, realistic, miniature or cartoon for pet; null otherwise.',
+            'Parameters: `size_mm` is the main size the tool asks for (the height for figure and pet, the letter height for sign and text, the width for the rest), inside the tool\'s range, converted from centimetres; null when not said. `colors`: colour names in English as the visitor named them, at most the tool\'s count. `copies`: how many pieces, null when not said. `text`: a name or an inscription to put on the thing, at most 24 characters, null otherwise. `place`: the place of a map. `kind`: bust or figure for figure, realistic, miniature or cartoon for pet; null otherwise. `decor`: "photo" when the attached photo should become a relief laid on a medal, a key ring, a Christmas ornament or a coaster (medallion, keychain, ornament, coaster) instead of flat areas of filament colours; null otherwise.',
             '',
             '`summary`: one or two short sentences to the customer, in Czech, English and Spanish (always all three): what you saw, what you suggest and with which settings. Never write a tool\'s key (figure, pet, filament_art…): call the tool by its public name from the catalogue in the language of the sentence. For `human` say that a person will look at it and what would help (dimensions, the number of pieces). For `shape` say that the shape will be made from the photo first. Never a price, never a delivery time. `questions`: up to three short questions in the visitor\'s language (<lang>) about what is missing and matters (a size, the number of pieces, a colour, which of two tools); empty when nothing is missing. `alternatives`: keys of up to three other tools that would also do, the best first; empty when none. `reason`: one sentence in English for the operator, why this route and this tool. `confidence`: 0 to 1, how sure you are about the route and the tool together.',
             '',
@@ -586,7 +604,7 @@ final class IntakeRouter
 
     /**
      * The answer the assistant must give. The API refuses more than 16 union-typed (nullable) properties in a schema
-     * (TODO #79): this one has six (tool_key, size_mm, copies, text, place, kind); `alternatives` is a plain array,
+     * (TODO #79): this one has seven (tool_key, size_mm, copies, text, place, kind, decor); `alternatives` is a plain array,
      * `reason` a plain string, kept so on purpose.
      */
     public static function schema(): array
@@ -604,6 +622,7 @@ final class IntakeRouter
                 'text' => $nullable('string'),
                 'place' => $nullable('string'),
                 'kind' => $nullable('string'),
+                'decor' => $nullable('string'),
             ]),
             'summary' => $object(['cs' => ['type' => 'string'], 'en' => ['type' => 'string'], 'es' => ['type' => 'string']]),
             'questions' => ['type' => 'array', 'items' => ['type' => 'string']],
