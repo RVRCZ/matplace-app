@@ -1191,7 +1191,7 @@ stránek na ni vede celkem / z obsahu):
 | `/tools/keychain` | 71 → 56 | 102 / 11 → 103 / 16 | BreadcrumbList, FAQPage, HowTo |
 | `/tools/medallion` | 64 → 53 | 102 / 4 → 103 / 5 | BreadcrumbList, FAQPage, HowTo |
 | `/tools/ornament` | 71 → 53 | **9 / 7 → 103 / 8** | BreadcrumbList, FAQPage, HowTo |
-| `/tools/gingerbread` | 67 → 56 | **11 / 9 → 105 / 11** | BreadcrumbList, FAQPage, HowTo |
+| `/tools/gingerbread` | 67 → 56 | **11 / 9 → 103 / 11** | BreadcrumbList, FAQPage, HowTo |
 | `/tools/charm` | 66 → 58 | 102 / 6 → 103 / 10 | BreadcrumbList, FAQPage, HowTo |
 | `/tools/organizer` | 67 → 56 | 102 / 8 → 103 / 11 | BreadcrumbList, FAQPage, HowTo |
 | `/gifts` | 60 → 60 | 102 / 4 → 103 / 6 | BreadcrumbList, FAQPage, HowTo, Service |
@@ -1200,10 +1200,24 @@ stránek na ni vede celkem / z obsahu):
 | `/business` | 55 → 55 | 104 / 5 → 105 / 5 | BreadcrumbList, FAQPage, Service |
 | `/` | 58 → 58 | beze změny | FAQPage, HowTo, Organization, WebSite |
 
+**Testy (13. 11. 2026, jak opravdu běžely).** `tests/Feature/PageOptimizationTest.php`, 7 testů: pravidlo titulku
+a délka titulků všech nástrojů ve třech jazycích; drobečky jako řádek i jako data; titulek a popis článku z hlavičky
+souboru, nadpis, `dateModified` a obrázek článku; „Kam dál“ u každého nástroje a nástroje v článku; odkaz na vypnutý
+nástroj; rozměry obrázků a rozměr karty náhledu; `/materials` v mapě, patička a odkazy pod seznamem nástrojů.
+`SeoTest` upraven na třech místech (titulek přes `PageTitle`, `BreadcrumbList` mezi druhy dat stránky). Celá sada
+jednou: **1 200 testů, 101 871 assertions, 3 selhání, 11 přeskočených, 1 h 55 min**; selhávají jen tři testy, které
+padají i na `main` (`PapelPortraitTest`, `PrintPhotosTest`, `YouTubeChannelTest`, stejné důvody jako v 14.9).
+Po celé sadě přišly ještě dvě změny v `config/seo.php` (perníček do patičky; klíčenka, ozdoba a perníček mezi adresy,
+na které se `searchconsole:inspect` ptá první) a jeden řádek testu; po nich znovu
+`SeoCleanupTest|PageOptimizationTest|SeoQualityTest|WebRound2Test|SearchConsole`: 32 testů OK. Celá sada po těchto
+dvou řádcích znovu neběžela. `vendor/bin/pint --dirty` bez nálezů, `npx tsc --noEmit -p .` čisté, `npm run build`
+prošel i s kontrolami bundlu.
+
 ### 15.6 Nasazení
 
 - **Migrace: žádná. `.env`: nic.** Nové třídy `App\Support\PageTitle`, `BlogSeo`, `BlogLinks`, komponenta
-  `components/crumbs.blade.php`, `config/landing.php` `next`, `config/seo.php` `footer_tools`.
+  `components/crumbs.blade.php`, `config/landing.php` `next`, `config/seo.php` `footer_tools` a `inspect.routes`
+  (pondělní `searchconsole:inspect` se nově ptá i na klíčenku, ozdobu a perníček: o tři dotazy víc).
 - **`npm run build`** (nové třídy v řádku drobečků a pod seznamem nástrojů).
 - **Po nasazení `php artisan matplace:sitemap`** (přibude `/materials`; změněné soubory `tools_seo` posunou `lastmod`
   pěti nástrojů: figure, pet, keychain, ornament, charm; jinak se mapa přepíše až ve 4:40).

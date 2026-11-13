@@ -283,7 +283,7 @@ class PageOptimizationTest extends TestCase
         }
         $html = $this->pageHead('/about')['html'];
         $footer = substr($html, (int) strpos($html, 'id="footer-make"'), 5000);
-        foreach (['/tools/figure', '/tools/pet-figurine', '/tools/ornament', '/tools/medallion', '/tools/keychain', '/tools/charm', '/tools/organizer', '/gifts', '/tools', '/3d-tisk-praha', '/business'] as $path) {
+        foreach (['/tools/figure', '/tools/pet-figurine', '/tools/ornament', '/tools/gingerbread', '/tools/medallion', '/tools/keychain', '/tools/charm', '/tools/organizer', '/gifts', '/tools', '/3d-tisk-praha', '/business'] as $path) {
             $this->assertStringContainsString('href="'.url($path).'"', $footer, $path);
         }
         // the list of the tools ends with the ways to a finished print
