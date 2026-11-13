@@ -23,6 +23,12 @@ use App\Engines\Exceptions\EngineException;
  * each as a <part> of that object in model_settings.config): Orca reads them as the volumes of one model, keeps them
  * where they are and honours the filament of each. Parts that all start at the same height (a medal face down with its
  * motif beside the plate) are written as before, object by object, byte for byte.
+ *
+ * Copies of a piece of several parts are written the same way, an object per copy: with a build item per copy of
+ * every part the slicer made new objects of the second and further copies ("split as instance") and printed all of
+ * their parts with the first filament (two medals face down, Orca 2.4 and 2.5.0, 13 Nov 2026: the motif of the second
+ * one came out in the plate's filament, `; printing object id:3 copy 0` under T0). One part with copies, and several
+ * parts without copies on one floor, stay as they were.
  */
 final class ThreeMfWriter
 {
@@ -65,8 +71,9 @@ final class ThreeMfWriter
             $meshes[$i] = self::mesh((string) $o['stl'], $low);
             $lows[$i] = $low;
         }
-        // some part stands on another: one object of all of them (see the note of the class)
-        $stacked = count($objects) > 1 && max($lows) - min($lows) > self::SAME_FLOOR;
+        // some part stands on another, or a piece of several parts has copies: one object of all its parts per copy (see
+        // the note of the class)
+        $stacked = count($objects) > 1 && (max($lows) - min($lows) > self::SAME_FLOOR || count($transforms) > 1);
         foreach (array_values($objects) as $i => $o) {
             $id = $i + 1;
             $name = htmlspecialchars((string) $o['name'], ENT_XML1 | ENT_QUOTES, 'UTF-8');
@@ -84,12 +91,14 @@ final class ThreeMfWriter
             $parts .= '<part id="'.$id.'" subtype="normal_part"><metadata key="name" value="'.$name.'"/><metadata key="extruder" value="'.max(1, (int) $o['extruder']).'"/>'.$own.'</part>';
         }
         if ($stacked) {
-            $whole = count($objects) + 1;
-            $resources .= '<object id="'.$whole.'" name="print" type="model"><components>'.implode('', array_map(fn ($id) => '<component objectid="'.$id.'"/>', range(1, count($objects)))).'</components></object>';
-            foreach ($transforms as $t) {
+            $config = '';
+            foreach ($transforms as $k => $t) {
+                // (an object of its own per copy: the slicer tells the filaments of the parts only to the object it reads them for)
+                $whole = count($objects) + 1 + $k;
+                $resources .= '<object id="'.$whole.'" name="print" type="model"><components>'.implode('', array_map(fn ($id) => '<component objectid="'.$id.'"/>', range(1, count($objects)))).'</components></object>';
                 $build .= '<item objectid="'.$whole.'" transform="'.$t.'"/>';
+                $config .= '<object id="'.$whole.'"><metadata key="name" value="print"/><metadata key="extruder" value="'.max(1, (int) array_values($objects)[0]['extruder']).'"/>'.$parts.'</object>';
             }
-            $config = '<object id="'.$whole.'"><metadata key="name" value="print"/><metadata key="extruder" value="'.max(1, (int) array_values($objects)[0]['extruder']).'"/>'.$parts.'</object>';
         }
         $entries = [
             '[Content_Types].xml' => '<?xml version="1.0" encoding="UTF-8"?>'."\n".'<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types">'

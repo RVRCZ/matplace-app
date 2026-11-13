@@ -63,12 +63,44 @@ final class ThreeMfWriterTest extends TestCase
         // three copies: as it is, 25 mm to the right turned a quarter, 25 mm up and 2.5 mm raised
         ThreeMfWriter::write($this->dir.'/copies.3mf', $this->objects(), [], [[0.0, 0.0], [25.0, 0.0, 0.0, 1], [0.0, 25.0, 2.5]]);
         [$model, $items] = $this->items($this->dir.'/copies.3mf');
-        $this->assertSame(2, substr_count($model, '<object id='), 'the mesh of a part is in the file once, however many copies');
-        $this->assertCount(6, $items);
-        $expected = ['1 0 0 0 1 0 0 0 1 0 0 0', '0 1 0 -1 0 0 0 0 1 25 0 0', '1 0 0 0 1 0 0 0 1 0 25 2.5'];
-        $this->assertSame($expected, array_column(array_slice($items, 0, 3), 1), 'the body: unit, a quarter turn about Z moved right, moved up and raised');
-        $this->assertSame(['1', '1', '1', '2', '2', '2'], array_column($items, 0));
-        $this->assertSame($expected, array_column(array_slice($items, 3), 1), 'the inlay gets the very same list, so it stays set in its body');
+        $this->assertSame(2, substr_count($model, '<mesh>'), 'the mesh of a part is in the file once, however many copies');
+        // a piece of two parts with copies: an object per copy, both parts its components, so the inlay stays set in its
+        // body and keeps its filament in every copy (as items of the parts the slicer printed the copies in one filament)
+        $this->assertSame(5, substr_count($model, '<object id='));
+        $this->assertSame(3, substr_count($model, '<components><component objectid="1"/><component objectid="2"/></components>'));
+        $this->assertCount(3, $items);
+        $this->assertSame(['3', '4', '5'], array_column($items, 0));
+        $this->assertSame(['1 0 0 0 1 0 0 0 1 0 0 0', '0 1 0 -1 0 0 0 0 1 25 0 0', '1 0 0 0 1 0 0 0 1 0 25 2.5'], array_column($items, 1), 'unit, a quarter turn about Z moved right, moved up and raised');
+        $zip = new \ZipArchive;
+        $zip->open($this->dir.'/copies.3mf');
+        $config = (string) $zip->getFromName('Metadata/model_settings.config');
+        $zip->close();
+        foreach (['3', '4', '5'] as $copy) {
+            $this->assertStringContainsString('<object id="'.$copy.'"><metadata key="name" value="print"/><metadata key="extruder" value="1"/><part id="1" subtype="normal_part"><metadata key="name" value="body"/><metadata key="extruder" value="1"/></part>'
+                .'<part id="2" subtype="normal_part"><metadata key="name" value="inlay"/><metadata key="extruder" value="2"/></part></object>', $config);
+        }
+    }
+
+    public function test_parts_that_stand_on_other_parts_are_the_parts_of_one_object(): void
+    {
+        // a text raised on a plate: it starts where the plate ends. As an object of its own the slicer would lay it on the
+        // bed, into the plate (Orca: "gcode path conflicts found between decor_1 and body")
+        StlFile::writeBox($this->dir.'/text.stl', 6, 6, 0.6);
+        StlFile::translate($this->dir.'/text.stl', $this->dir.'/raised.stl', [5.0, 5.0, 3.0]);
+        $objects = [['name' => 'body', 'stl' => $this->dir.'/body.stl', 'extruder' => 1], ['name' => 'decor_1', 'stl' => $this->dir.'/raised.stl', 'extruder' => 2, 'process' => ['ironing_type' => 'no ironing']]];
+        ThreeMfWriter::write($this->dir.'/stacked.3mf', $objects);
+        [$model, $items] = $this->items($this->dir.'/stacked.3mf');
+        $this->assertSame([['3', '1 0 0 0 1 0 0 0 1 0 0 0']], $items, 'one item: the object of both parts');
+        $this->assertStringContainsString('<object id="3" name="print" type="model"><components><component objectid="1"/><component objectid="2"/></components></object>', $model);
+        $zip = new \ZipArchive;
+        $zip->open($this->dir.'/stacked.3mf');
+        $config = (string) $zip->getFromName('Metadata/model_settings.config');
+        $zip->close();
+        $this->assertStringContainsString('<part id="2" subtype="normal_part"><metadata key="name" value="decor_1"/><metadata key="extruder" value="2"/><metadata key="ironing_type" value="no ironing"/></part>', $config);
+        $this->assertSame(1, substr_count($config, '<object id='));
+        // parts on one floor (the inlay beside its plate) stay objects of their own, as they always were
+        ThreeMfWriter::write($this->dir.'/flat.3mf', $this->objects());
+        $this->assertSame(['1', '2'], array_column($this->items($this->dir.'/flat.3mf')[1], 0));
     }
 
     public function test_the_transform_turns_about_z_the_way_the_plate_layout_turns_a_copy(): void

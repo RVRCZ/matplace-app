@@ -166,10 +166,10 @@ class FarmOnePlateCopiesTest extends TestCase
         // the project: two objects, each placed four times with the very same moves (2 × 2, a piece and a gap apart), no turn
         $disk = Storage::disk('farm');
         $items = $this->items($disk->path($order->dir().'/plate.3mf'));
-        $this->assertCount(8, $items);
-        $this->assertSame(['1', '1', '1', '1', '2', '2', '2', '2'], array_column($items, 0));
-        $body = array_column(array_slice($items, 0, 4), 1);
-        $this->assertSame($body, array_column(array_slice($items, 4), 1), 'the bar moves with its plate');
+        // an object per copy, the plate and the bar its two parts (ThreeMfWriter: the bar moves with its plate and keeps its filament)
+        $this->assertCount(4, $items);
+        $this->assertSame(['3', '4', '5', '6'], array_column($items, 0));
+        $body = array_column($items, 1);
         $moves = array_map(fn ($t) => array_map('floatval', array_slice(explode(' ', $t), 9)), $body);
         $this->assertSame([0.0, 0.0, 0.0], $moves[0]);
         $this->assertEqualsWithDelta([25.0, 0.0, 0.0], $moves[1], 0.01, 'the second copy a piece and a gap to the right');
@@ -233,7 +233,7 @@ class FarmOnePlateCopiesTest extends TestCase
         $this->assertNotSame($order->absoluteGcodePath(1), $order->absoluteGcodePath(3));
         $this->assertSame($order->absoluteGcodePath(1), $order->absoluteGcodePath(2), 'the second plate is the first one again');
         $disk = Storage::disk('farm');
-        $this->assertCount(8, $this->items($disk->path($order->dir().'/plate.3mf')));
+        $this->assertCount(4, $this->items($disk->path($order->dir().'/plate.3mf')), 'four copies, an object of both parts each');
         $rest = $this->items($disk->path($order->dir().'/plate-rest.3mf'));
         $this->assertCount(2, $rest, 'the last plate: every object once');
         $this->assertSame($rest[0][1], $rest[1][1]);
@@ -268,7 +268,7 @@ class FarmOnePlateCopiesTest extends TestCase
         $this->assertSame(7.0, (float) $tower['y'], 'below the pieces: the bed margin and the brim');
         $this->assertEquals([0, 0], $tower['shift']);
         $this->assertGreaterThan(0, $order->slice_result['changes']);
-        $this->assertCount(8, $this->items(Storage::disk('farm')->path($order->dir().'/plate.3mf')));
+        $this->assertCount(4, $this->items(Storage::disk('farm')->path($order->dir().'/plate.3mf')));
         // the copies of a design the tower leaves fewer places for: 115 mm pieces on the 250 plate are 2 × 2 without the band
         // (235 of 246 mm), 2 × 1 with the 25 mm band below them – two plates of two
         $big = $this->order($this->design(115.0), $white->farm_color_id, ['part_color' => ['color_2' => $red->farm_color_id], 'copies' => 4]);
