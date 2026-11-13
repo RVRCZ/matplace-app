@@ -12,7 +12,7 @@ import { pickArtwork, uploadArtwork, PickedArtwork } from './artwork';
 import { icon } from '../site/icon';
 import { modelMeta } from './api';
 import { partLabel as sharedPartLabel } from './parts';
-import { bootDecor, DecorCfg, DecorPlaced } from './decor';
+import { bootDecor, DecorCfg, DecorFace, DecorPlaced } from './decor';
 
 interface Cfg {
     kind: string; family: string | null; sample: string | null; preset: string | null; captioned: boolean; preview: string; create: string; home: string; locale: string; artworkUrl: string; files: string; from: string | null;
@@ -90,7 +90,10 @@ export function bootParam(stage: Stage): void {
     const decorHost = document.getElementById('decor-panel');
     // a photo handed over from the home page with the wish "a relief of it" (the router's params.decor, or ?decor=photo in the address)
     let reliefWanted = (stage.cfg.intake?.params as { decor?: unknown } | undefined)?.decor === 'photo' || new URLSearchParams(location.search).get('decor') === 'photo';
-    const decor = decorHost && cfg.decor ? bootDecor(decorHost, { ...cfg.decor, library: stage.cfg.artwork.library, file: stage.cfg.artwork.file }, (k, r) => t(k, r), stage.nf, () => soon(60)) : null;
+    // (the texts are listed in the first step, under the tool's own name: every text of the product in one place)
+    const decor = decorHost && cfg.decor ? bootDecor(decorHost, { ...cfg.decor, library: stage.cfg.artwork.library, file: stage.cfg.artwork.file }, (k, r) => t(k, r), stage.nf, () => soon(60),
+        { texts: document.getElementById('decor-texts'), onOpen: () => decorOpened() }) : null;
+    let decorOpened: () => void = () => undefined;
     /** A new picture has new colours: what was said about the old ones (which filament, which order) no longer holds. */
     const forgetColours = (): void => {
         merge = []; order = [];
@@ -270,6 +273,13 @@ export function bootParam(stage: Stage): void {
         (n.warnings ?? []).forEach((w) => add(cfg.warnAt[w] ?? 'size', t(cfg.i18n[`shape.warn.${w}`] ? `shape.warn.${w}` : `param.warn.${w}`, { n: n.thin_pct ?? 0, c: (n.missing_chars ?? []).join(' '), p: n.pieces ?? 0 })));
         const thickened = shapeNotes().thickened;
         if (shape && m && thickened) add('size', t('shape.thickened', { t: nf.format(thickened) }));
+        // a decoration in a filament of its own: how that prints, said where the decoration is made. More colours than the
+        // farm's machine has spools (max_colors, ColorLimit::farm) cannot be printed at all
+        const tinted = ((m?.notes as { decor?: DecorPlaced[] } | undefined)?.decor ?? []).filter((d) => d.part).length;
+        if (decor && m && tinted) {
+            const sn = shapeNotes(); const spools = sn.filaments ?? 1; const most = cfg.config.max_colors ?? 4; const swaps = (sn.color_changes ?? []).length;
+            add('decor', spools > most ? t('decor.print.many', { c: spools, max: most }) : sn.multi_material ? t('decor.print.plate', { c: spools }) : t('decor.print.swap', { n: swaps }));
+        }
         // a spool that is out of stock: the design keeps its colour, the visitor is told to pick another
         const used = [...form.querySelectorAll<HTMLInputElement>('[data-choice][data-color]')].map((i) => i.value).concat(Object.values(partColors), cfg.kind === 'modular' ? bins.map((b) => b.color) : []);
         if (used.some((code) => { const c = colorOf(code); return c !== null && !c.in_stock; })) add('colors', stage.t('toolpage.color.out'));
@@ -550,7 +560,7 @@ export function bootParam(stage: Stage): void {
             renderViews();
             const res = await post({ kind: cfg.kind, params: params(), view: 'use', part: viewPart, pieces: true });
             if (mine !== seq) return;                       // a newer change is already on its way
-            if (!res.ok) { valid = false; showError(await errorOf(res)); return; }
+            if (!res.ok) { valid = false; decor?.settle(); showError(await errorOf(res)); return; }
             // the model first: a big one (a relief is megabytes) must not wait behind the request for the rest of its notes
             const stl = await res.arrayBuffer();
             lastMeta = await modelMeta<Meta>(res);
@@ -561,12 +571,15 @@ export function bootParam(stage: Stage): void {
             valid = true; showError(null); markNamed();
             if (lastMeta) { renderDims(lastMeta); renderBom(lastMeta); if (viewPart === 'all') renderPrice(); }
             renderParts(); paintParts(); renderWarnings(lastMeta); renderStatus();
-            renderDownloads(); placeEyelet(); placeFrame();
+            // (what the engine made of the decorations first: the frame in the preview is drawn round the open one by it)
             decor?.placed((lastMeta?.notes as { decor?: DecorPlaced[] } | undefined)?.decor, Boolean((lastMeta?.notes as { turned_up?: boolean } | undefined)?.turned_up));
+            // (an engraving two layers deep reads in the preview only when its floor is a shade darker than the face)
+            if (decor) viewer.setSunk(viewPart === 'all' ? ((lastMeta?.notes as { decor?: DecorPlaced[] } | undefined)?.decor ?? []).filter((d) => d.view && d.view.floor !== undefined).map((d) => ({ box: d.view!.box, z: d.view!.floor! })) : []);
+            renderDownloads(); placeEyelet(); placeFrame();
             if (papel) papelShow();
             if (cookie) { renderPen(); armDraw(); }
         } catch {
-            if (mine === seq) { valid = false; showError(t('param.preview_failed')); }
+            if (mine === seq) { valid = false; decor?.settle(); showError(t('param.preview_failed')); }
         } finally {
             if (mine === seq) stage.busy(false);
         }
@@ -940,7 +953,8 @@ export function bootParam(stage: Stage): void {
     // ── the eyelet of a pendant: a grip on the outline, dragged in the viewer ──
     const placeEyelet = (): void => {
         const n = shapeNotes();
-        if (!shape || !n.eyelet || !n.outline || viewPart !== 'all' || drawing) { viewer.setMarker(null, null); return; }
+        // (on the back of the product the grip would lie mirrored: the eyelet is moved from the front)
+        if (!shape || !n.eyelet || !n.outline || viewPart !== 'all' || drawing || viewer.isTurned()) { viewer.setMarker(null, null); return; }
         viewer.setMarker({ path: n.outline, z: n.eyelet.z, at: [n.eyelet.x, n.eyelet.y] }, (share, phase) => {
             const input = fieldOf('eye_pos'); if (!input) return;
             const value = String((Math.round(share * 200) / 2) % 100);
@@ -1051,13 +1065,64 @@ export function bootParam(stage: Stage): void {
         soon(0);
     });
 
+    // ── decorations in the preview: the side on show (front or back), the open decoration's frame to drag, resize and turn ──
+    const decorFace = (): DecorFace | null => (lastMeta?.notes as { decor_face?: DecorFace } | undefined)?.decor_face ?? null;
+    const sideBar = decor ? document.createElement('div') : null;
+    let decorLooked = false;                // the preview already looks at the face the open decoration lies on
+    /** The preview looks straight at the face of the product, close: a medal lies small beside its chain, and a decoration is dragged on its face. */
+    const lookAtFace = (back: boolean): void => {
+        const face = decorFace();
+        if (face) viewer.focus([face.centre[0], face.centre[1], back ? face.back_z : face.front_z], face.width * 1.2); else viewer.setView('top');
+        decorLooked = true;
+    };
+    /** The front or the back of the product on show: the model turned over, looked at straight, the buttons pressed to match. */
+    const showSide = (back: boolean, look = true): void => {
+        const turn = viewer.isTurned() !== back;
+        if (turn) viewer.setTurned(back);
+        if (look) lookAtFace(back);
+        sideBar?.querySelectorAll<HTMLButtonElement>('[data-decor-side]').forEach((b) => b.setAttribute('aria-pressed', (b.dataset.decorSide === 'back') === back ? 'true' : 'false'));
+        placeEyelet(); placeFrame();
+    };
+    if (decor && sideBar) {
+        // the two buttons lie over the preview's lower left corner, a thumb away on a phone
+        sideBar.className = 'tool-bar pointer-events-auto absolute bottom-3 left-3 z-[5]'; sideBar.setAttribute('role', 'group'); sideBar.setAttribute('aria-label', t('decor.side')); sideBar.id = 'decor-side';
+        (['front', 'back'] as const).forEach((side) => {
+            const b = document.createElement('button'); b.type = 'button'; b.className = 'tool-bar-btn min-h-11 px-3 text-sm'; b.dataset.decorSide = side;
+            // (on a phone the short word, so the two fit beside the "working" mark; the whole name for a reader and on wider screens)
+            b.setAttribute('aria-pressed', side === 'front' ? 'true' : 'false'); b.setAttribute('aria-label', t(`decor.side.${side}`)); b.title = t(`decor.side.${side}`);
+            b.innerHTML = `<span class="sm:hidden">${t(`decor.face.${side}`)}</span><span class="max-sm:hidden">${t(`decor.side.${side}`)}</span>`;
+            b.onclick = () => showSide(side === 'back');
+            sideBar.appendChild(b);
+        });
+        document.getElementById('tool-viewer')?.parentElement?.appendChild(sideBar);
+        decorOpened = () => {
+            // the open decoration is looked at: the preview turns to its side (and stays there when it closes)
+            const now = decor.active();
+            if (now) showSide(now.face === 'back', !decorLooked || (now.face === 'back') !== viewer.isTurned()); else placeFrame();
+        };
+    }
+    /** The frame of the open decoration; false when no decoration is open on the side on show (the frame is free for a layer). */
+    const placeDecor = (): boolean => {
+        const now = decor?.active(); const face = decorFace();
+        if (!decor || !now || !now.placed.view || !face || !valid || viewPart !== 'all' || drawing) { if (!now) decorLooked = false; return false; }
+        if ((now.face === 'back') !== viewer.isTurned()) return false;
+        if (!decorLooked) lookAtFace(viewer.isTurned());        // a decoration just built (a photo uploaded): the preview comes to it
+        // a preview that comes back while the next drag is already under way must not take the frame out of the hand:
+        // the drag's own end asks for a new preview, and that one draws the frame where the decoration then lies
+        if (viewer.framingNow()) return true;
+        viewer.setFrame({ box: now.placed.view.box, z: now.face === 'back' ? face.back_z : face.front_z },
+            (c, phase) => decor.drag(c, phase, face), (c) => decor.hold(c, face));
+        return true;
+    };
+
     const placeFrame = (): void => {
+        if (placeDecor()) return;
         if (papel) { placePortrait(); return; }
         const l = layers[chosen]; const n = shapeNotes();
         // the tool numbers the layers it built: the hidden ones are not among them
         const at = l && !l.hidden ? layers.slice(0, chosen).filter((x) => !x.hidden).length + 1 : 0;
         const built = n.layers?.find((x) => x.index === at);
-        if (!compose || !l || !built || !valid || viewPart !== 'all') { viewer.setFrame(null, null); return; }
+        if (!compose || !l || !built || !valid || viewPart !== 'all' || viewer.isTurned()) { viewer.setFrame(null, null); return; }
         let from: { x: number; y: number; w: number; turn: number } | null = null;
         viewer.setFrame({ box: built.box, z: n.outer?.[2] ?? built.z }, (c, phase) => {
             from ??= { x: l.x, y: l.y, w: l.w, turn: l.turn };
@@ -1091,7 +1156,7 @@ export function bootParam(stage: Stage): void {
                     <span class="inline-block h-3 w-3 shrink-0 rounded-full border border-line" style="background:${colorOf(l.code)?.hex ?? '#888888'}"></span>
                     <span class="min-w-0 truncate text-ink" title="${what.replace(/[<>&"]/g, '')}">${t(`compose.layer.${l.kind}`)}: ${what.replace(/[<>&]/g, '')}</span></button>
                 ${act('up', '↑', i === layers.length - 1)}${act('down', '↓', i === 0)}${act(l.hidden ? 'show' : 'hide', l.hidden ? '○' : '●')}${act('copy', '⧉', layers.length >= 12)}${act('remove', '×')}`;
-            row.querySelector<HTMLButtonElement>('[data-layer-pick]')!.onclick = () => { chosen = i; renderLayers(); placeFrame(); };
+            row.querySelector<HTMLButtonElement>('[data-layer-pick]')!.onclick = () => { chosen = i; decor?.close(); showSide(false, false); renderLayers(); placeFrame(); };
             row.querySelectorAll<HTMLButtonElement>('[data-layer-act]').forEach((b) => {
                 b.onclick = () => {
                     const a = b.dataset.layerAct;
@@ -1380,7 +1445,15 @@ export function bootParam(stage: Stage): void {
     }
 
     // a click on a piece in the viewer: the panel jumps to what belongs to it
-    viewer.onPiecePicked((index, piece) => {
+    viewer.onPiecePicked((index, piece, at) => {
+        // a decoration under the click (on the side on show): it opens, and its frame is there to drag it by
+        const face = decorFace(); const laid = (lastMeta?.notes as { decor?: DecorPlaced[] } | undefined)?.decor;
+        if (decor && face && laid && at && viewPart === 'all') {
+            const side = viewer.isTurned() ? 'back' : 'front';
+            const under = laid.filter((d) => d.face === side && d.view && at[0] >= d.view.box[0] && at[0] <= d.view.box[2] && at[1] >= d.view.box[1] && at[1] <= d.view.box[3])
+                .sort((a, b) => (a.view!.box[2] - a.view!.box[0]) * (a.view!.box[3] - a.view!.box[1]) - (b.view!.box[2] - b.view!.box[0]) * (b.view!.box[3] - b.view!.box[1]))[0];
+            if (under && decor.openPlaced(under.index)) { viewer.select(-1); placeFrame(); return; }
+        }
         viewer.select(index);
         stage.note(piece && viewer.getPieces().length > 1 ? stage.t('toolpage.status.piece', { name: partLabel(piece.name) }) : null);
         if (!piece) return;
@@ -1392,7 +1465,9 @@ export function bootParam(stage: Stage): void {
             const i = shown[Number(piece.name.replace('layer_', '')) - 1];
             if (i === undefined) return;
             viewer.select(-1);
-            if (i !== chosen) { chosen = i; renderLayers(); placeFrame(); }
+            decor?.close();
+            if (i !== chosen) { chosen = i; renderLayers(); }
+            placeFrame();
             return;
         }
         const row = document.querySelector<HTMLElement>(`#tool-parts [data-part="${piece.name}"]`) ?? document.querySelector<HTMLElement>('#tool-parts [data-part]');

@@ -2774,5 +2774,22 @@
     "site.blog.seo_title": "Blog de impresión 3D: guías, precios e ideas de regalo",
     "site.blog.seo_description": "Guías y consejos sobre impresión 3D por encargo: cuánto cuesta, qué material elegir, cómo preparar el modelo y qué regalar con una foto o un nombre.",
     "site.blog.tools_title": "Herramientas del artículo",
-    "site.blog.related": "Artículos relacionados"
+    "site.blog.related": "Artículos relacionados",
+    "param.decor.lead2": "Un relieve de una foto o un logo en el frente o en el dorso. Puede añadir varios. Los textos se escriben en el paso Entrada.",
+    "param.decor.empty.pictures": "Aún sin foto ni logo.",
+    "param.decor.text.more": "Añadir otro texto",
+    "param.decor.text.lead": "Otro texto puede ir en el frente o en el dorso, en relieve, grabado o en un color propio.",
+    "param.decor.background.keep": "Conservar el fondo de la foto",
+    "param.decor.background.hint": "Quitamos el fondo de la foto, solo sobresale el motivo. Las partes claras quedan más altas, las oscuras más bajas.",
+    "param.decor.background.working": "Quitando el fondo de la foto, tarda unos segundos…",
+    "param.decor.background.failed": "En esta foto no se pudo separar el motivo del fondo, el relieve es de toda la foto. Pruebe una foto con el motivo de cerca y entero.",
+    "param.decor.color.relief": "Un relieve en su propio color se imprime con un segundo filamento: sobre la cara con un cambio de color por altura, hundido en una impresora con cambiador.",
+    "param.decor.drag.hint": "En la vista previa puede arrastrarlo, cambiar su tamaño por una esquina y girarlo con el botón de arriba.",
+    "param.decor.side": "Lado del producto en la vista previa",
+    "param.decor.side.front": "Frente",
+    "param.decor.side.back": "Dorso",
+    "param.warn.decor_no_cutout": "No se pudo quitar el fondo de la foto, el relieve es de toda la foto.",
+    "param.decor.print.swap": "La decoración en su propio color queda sobre el producto: se imprime con un cambio de filamento por altura (:n×), cualquier impresora puede hacerlo.",
+    "param.decor.print.plate": "La decoración en su propio color queda en las mismas capas que otro color (:c colores). Solo la imprime una impresora que cambia el filamento sola; tarda más por los cambios y la torre de purga.",
+    "param.decor.print.many": "El producto tiene :c colores, nuestra impresora admite como máximo :max en una impresión. Quite el color de alguna decoración."
 }

@@ -1413,3 +1413,5 @@ katalog; předání na stránku nástroje.
 6. Texty nápověd, které správce změnil na `/admin/intake/hints` (nastavení `home.hints`), mají přednost před
    `lang`: kde má produkce u události vlastní texty, nové příklady (`steady.3`, `christmas.4`, `easter.4`,
    `halloween.4`) se tam samy neobjeví, dokud je správce nepřepíše nebo nevrátí výchozí.
+Druhé kolo (13. 11. 2026, `feature/dilna-zdobeni-2`): pozadí fotky pryč, pohled s otočením a tažení zdobení v náhledu,
+texty v kroku Vstup, reliéf ve vlastní barvě, oprava 3MF farmy pro díly nad podložkou a kopie. `docs/AR.md` §12.

@@ -2774,5 +2774,22 @@
     "site.blog.seo_title": "3D printing blog: guides, prices and gift ideas",
     "site.blog.seo_description": "Guides and advice on made-to-order 3D printing: what a print costs, which material to choose, how to prepare a model and what to make as a gift.",
     "site.blog.tools_title": "Tools from this article",
-    "site.blog.related": "Related articles"
+    "site.blog.related": "Related articles",
+    "param.decor.lead2": "A relief from a photo or a logo on the front or the back. You can add several. Texts are written in the step Input.",
+    "param.decor.empty.pictures": "No photo or logo yet.",
+    "param.decor.text.more": "Add another text",
+    "param.decor.text.lead": "Another text can be on the front or the back, raised, engraved or in a colour of its own.",
+    "param.decor.background.keep": "Keep the photo's background",
+    "param.decor.background.hint": "We remove the photo's background, only the subject stands out. Light parts are higher, dark ones lower.",
+    "param.decor.background.working": "Removing the photo's background, this takes a few seconds…",
+    "param.decor.background.failed": "The subject of this photo could not be told from its background, the relief is made of the whole photo. Try a photo with the subject close up and whole.",
+    "param.decor.color.relief": "A relief in its own colour is printed with a second filament: on the face by a colour change by height, sunk in on a printer that changes spools.",
+    "param.decor.drag.hint": "In the preview you can grab it and drag it, resize it by a corner and turn it by the knob above it.",
+    "param.decor.side": "Side of the product in the preview",
+    "param.decor.side.front": "Front",
+    "param.decor.side.back": "Back",
+    "param.warn.decor_no_cutout": "The photo's background could not be removed, the relief is made of the whole photo.",
+    "param.decor.print.swap": "The decoration in its own colour lies above the product: it prints with a change of filament by height (:n×), any printer can do it.",
+    "param.decor.print.plate": "The decoration in its own colour lies in the same layers as another colour (:c colours). Only a printer that changes filament by itself prints it; the print takes longer for the changes and the purge tower.",
+    "param.decor.print.many": "The product has :c colours, our printer takes at most :max in one print. Take the colour off one of the decorations."
 }

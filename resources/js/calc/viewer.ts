@@ -75,13 +75,16 @@ export class Viewer {
     private handles: { id: string; axis: 'x' | 'y' | 'z'; group: Group; dir: Vector3 }[] = [];
     private onHandle: ((id: string, mm: number, phase: 'move' | 'end') => string | void) | null = null;
     private handleLabel: HTMLElement | null = null;
-    private onPick: ((index: number, piece: Piece | null) => void) | null = null;
+    private onPick: ((index: number, piece: Piece | null, at: [number, number, number] | null) => void) | null = null;
+    private turned = false;                             // the model is shown turned over, its back up (setTurned)
+    private sunk: Uint8Array | null = null;             // one flag per triangle that is the floor of something sunk into the model (setSunk)
     private marker: { group: Group; path: [number, number][]; z: number } | null = null;
     private onMarker: ((share: number, phase: 'move' | 'end') => string | void) | null = null;
     private draw: { z: number; color: string } | null = null;
     private onDraw: ((points: [number, number][]) => void) | null = null;
     private frame: { group: Group; grips: Mesh[]; box: [number, number, number, number]; z: number } | null = null;
     private onFrame: ((change: FrameChange, phase: 'move' | 'end') => string | void) | null = null;
+    private frameWithin: ((change: FrameChange) => FrameChange) | null = null;      // what a drag of the frame is held to (the face of a product)
     private framing: { mode: 'move' | 'size' | 'turn'; from: Vector3; change: FrameChange; x: number; y: number; moved: boolean } | null = null;
     private listening = false;
     private anim: { from: Vector3; to: Vector3; t0: number; ms: number } | null = null;
@@ -140,11 +143,72 @@ export class Viewer {
         this.mesh = new Mesh(geom, filament ? this.paintOf(this.look) : plate ? this.plateMaterial : sculpture ? this.sculptureMaterial : this.material);
         this.frontal = sculpture;
         this.mesh.rotation.x = -Math.PI / 2;
+        if (this.turned) this.mesh.rotation.y = Math.PI;        // a model that comes while the back is on show is shown from the back too
         this.mesh.scale.setScalar(scale);
         this.scene.add(this.mesh);
         this.fit();
         this.afterGeometry();
     }
+
+    /**
+     * The model turned over, like a medal in the hand: about the axis that runs up its face, so what was on its right is
+     * on its left and its back is up, lying on the grid. Everything given in the millimetres of the file (pieces, the
+     * frame, the marker) keeps meaning the same place of the model. The camera stays where it is.
+     */
+    setTurned(on: boolean): void {
+        if (this.turned === on) return;
+        this.turned = on;
+        const mesh = this.mesh;
+        if (!mesh) return;
+        mesh.rotation.set(-Math.PI / 2, on ? Math.PI : 0, 0);
+        mesh.position.set(0, 0, 0);
+        mesh.updateMatrixWorld(true);
+        if (this.grid) this.scene.remove(this.grid);
+        const was = this.hold; this.hold = true;
+        this.fit();
+        this.hold = was;
+        if (this.bed) this.drawBed();
+        this.placeHandles();
+    }
+
+    /**
+     * A look straight at one place of the model from above, close enough for `size` millimetres of it to fill the view:
+     * the face of a medal that lies small beside its chain, when something on it is to be dragged. `at` is in the
+     * millimetres of the file. "Fit" frames the whole model again.
+     */
+    focus(at: [number, number, number], size: number, ms = 300): void {
+        if (!this.mesh) return;
+        this.mesh.updateMatrixWorld(true);
+        const target = this.mesh.localToWorld(new Vector3(...at));
+        const half = (this.camera.fov * Math.PI) / 360;
+        const dist = ((size * this.mesh.scale.x) / 2 / Math.tan(half) / Math.min(1, this.camera.aspect || 1)) * 1.1;
+        this.controls.target.copy(target);
+        this.anim = { from: this.camera.position.clone(), to: new Vector3(0, 1, 0.0005).normalize().multiplyScalar(dist).add(target), t0: performance.now(), ms: Math.max(1, ms) };
+    }
+
+    /**
+     * The floors of what is sunk into a flat face (a text engraved two layers deep), drawn a shade darker: lit from
+     * above, a floor and the face round it are the same colour, and a shallow engraving could not be read in the preview.
+     * `box` is where the engraving lies and `z` the height of its floor, in the millimetres of the file. Holds until the
+     * next model.
+     */
+    setSunk(floors: { box: [number, number, number, number]; z: number }[]): void {
+        const pos = this.mesh?.geometry.getAttribute('position');
+        this.sunk = null;
+        if (pos && floors.length && !this.mesh!.geometry.index && this.spread === 0) {
+            const flags = new Uint8Array(pos.count / 3); let any = false;
+            for (let t = 0; t < flags.length; t++) {
+                const z = [pos.getZ(t * 3), pos.getZ(t * 3 + 1), pos.getZ(t * 3 + 2)];
+                const x = (pos.getX(t * 3) + pos.getX(t * 3 + 1) + pos.getX(t * 3 + 2)) / 3; const y = (pos.getY(t * 3) + pos.getY(t * 3 + 1) + pos.getY(t * 3 + 2)) / 3;
+                if (floors.some((f) => z.every((v) => Math.abs(v - f.z) < 0.03) && x >= f.box[0] && x <= f.box[2] && y >= f.box[1] && y <= f.box[3])) { flags[t] = 1; any = true; }
+            }
+            if (any) this.sunk = flags;
+        }
+        this.repaint();
+    }
+
+    /** Whether the model is shown with its back up. */
+    isTurned(): boolean { return this.turned; }
 
     /** A picture of the model as it is framed now (drawn in this very call, so no kept drawing buffer is needed). */
     async snapshot(type = 'image/webp', quality = 0.85): Promise<Blob | null> {
@@ -289,6 +353,7 @@ export class Viewer {
         if (this.highlight) { this.highlight.geometry.dispose(); this.highlight = null; }
         this.selected = -1;
         this.pieces = [];
+        this.sunk = null;
         // the colours belonged to the pieces of the model before (a copper box, then a plain upload)
         this.pieceColors.clear();
         this.pieceLooks.clear();
@@ -335,7 +400,8 @@ export class Viewer {
     getPieces(): Piece[] { return this.pieces; }
 
     /** A click (not a drag) on the model tells which piece was hit; -1 and null for a click beside it. */
-    onPiecePicked(cb: (index: number, piece: Piece | null) => void): void {
+    /** A plain click on the model: the piece under it (-1 and null when there is none) and where on the model it was, in the millimetres of the file. */
+    onPiecePicked(cb: (index: number, piece: Piece | null, at: [number, number, number] | null) => void): void {
         this.onPick = cb;
         this.listen();
     }
@@ -369,7 +435,8 @@ export class Viewer {
         const beyond = this.bed && this.bedCheck ? this.beyondBed() : null;
         this.over = !!beyond;
         mesh.geometry.clearGroups();
-        if (!this.pieceColors.size && !beyond) {
+        const sunk = this.sunk && this.sunk.length === pos.count / 3 ? this.sunk : null;
+        if (!this.pieceColors.size && !beyond && !sunk) {
             if (this.baseCol) mesh.geometry.setAttribute('color', new Float32BufferAttribute(this.baseCol.slice(), 3)); else mesh.geometry.deleteAttribute('color');
             mesh.material = this.baseMaterial;
             return;
@@ -380,11 +447,12 @@ export class Viewer {
             const piece = this.pieces[index]; if (!piece) return;
             for (let v = piece.tris[0] * 3; v < piece.tris[1] * 3; v++) { col[v * 3] = c[0]; col[v * 3 + 1] = c[1]; col[v * 3 + 2] = c[2]; }
         });
+        if (sunk) for (let t = 0; t < sunk.length; t++) if (sunk[t]) for (let k = 0; k < 9; k++) col[t * 9 + k] *= 0.62;
         if (beyond) for (let t = 0; t < beyond.length; t++) if (beyond[t]) for (let k = 0; k < 3; k++) { col[(t * 3 + k) * 3] = 0.62; col[(t * 3 + k) * 3 + 1] = 0.03; col[(t * 3 + k) * 3 + 2] = 0.03; }
         mesh.geometry.setAttribute('color', new Float32BufferAttribute(col, 3));
         // a plate coloured by its height stays the plate it was (only what hangs over the bed is marked on it);
         // once its parts are given filaments of their own, it shines as they do, like everything else
-        if (this.baseMaterial === this.plateMaterial && !this.pieceColors.size) { mesh.material = this.plateMaterial; return; }
+        if (this.baseMaterial === this.plateMaterial && !this.pieceColors.size && !sunk) { mesh.material = this.plateMaterial; return; }
         creaseNormals(mesh.geometry, CREASE_DEGREES);
         const rest = this.baseCol ? this.look : this.plainLook;
         const looks = this.pieces.map((_, i) => (this.pieceColors.has(i) ? this.pieceLooks.get(i) ?? 'solid' : rest));
@@ -528,7 +596,7 @@ export class Viewer {
         const flags = new Uint8Array(pos.count / 3); let any = false;
         for (let t = 0; t < flags.length; t++) {
             for (let k = 0; k < 3; k++) {
-                const wx = pos.getX(t * 3 + k) * s + mesh.position.x; const wz = -pos.getY(t * 3 + k) * s + mesh.position.z;
+                const wx = pos.getX(t * 3 + k) * s * (this.turned ? -1 : 1) + mesh.position.x; const wz = -pos.getY(t * 3 + k) * s + mesh.position.z;
                 if (Math.abs(wx) > hx + 0.01 || Math.abs(wz) > hy + 0.01) { flags[t] = 1; any = true; break; }
             }
         }
@@ -599,14 +667,16 @@ export class Viewer {
      * a composition. `box` is the frame in the millimetres of the file (x0, y0, x1, y1), `z` the height it is drawn at.
      * A drag inside it moves the thing, a drag by a corner resizes it about its middle, the knob above it turns it.
      * `cb` gets what has changed since the press; the model itself stays as it is until the caller builds it anew.
+     * `within` may hold the drag back (a decoration stays on the face of its product): it gets the change the pointer
+     * asks for and answers with the one that is allowed; the frame follows the answer.
      */
-    setFrame(frame: { box: [number, number, number, number]; z: number } | null, cb: ((change: FrameChange, phase: 'move' | 'end') => string | void) | null): void {
+    setFrame(frame: { box: [number, number, number, number]; z: number } | null, cb: ((change: FrameChange, phase: 'move' | 'end') => string | void) | null, within: ((change: FrameChange) => FrameChange) | null = null): void {
         if (this.frame) {
             this.scene.remove(this.frame.group);
             this.frame.group.traverse((o) => { (o as Mesh).geometry?.dispose(); });
         }
         if (this.framing) { this.framing = null; this.controls.enabled = true; this.handleLabel?.classList.add('hidden'); }
-        this.frame = null; this.onFrame = cb;
+        this.frame = null; this.onFrame = cb; this.frameWithin = within;
         if (!frame || !this.mesh) { this.canvas.style.cursor = this.draw ? 'crosshair' : ''; return; }
         this.mesh.updateMatrixWorld();
         const [x0, y0, x1, y1] = frame.box; const z = frame.z + 0.05;
@@ -624,7 +694,8 @@ export class Viewer {
         const grip = (p: Vector3, mode: 'size' | 'turn'): Mesh => {
             const dot = new Mesh(new SphereGeometry(0.13, 16, 12), new MeshBasicMaterial({ color: mode === 'turn' ? 0xc94714 : 0xffffff, depthTest: false, transparent: true }));
             const rim = new Mesh(new SphereGeometry(0.17, 16, 12), new MeshBasicMaterial({ color: mode === 'turn' ? 0xffffff : 0xc94714, depthTest: false, transparent: true }));
-            const grab = new Mesh(new SphereGeometry(0.45, 8, 8), new MeshBasicMaterial({ visible: false }));
+            // (a finger covers more than a mouse pointer points at: its grip is twice as wide)
+            const grab = new Mesh(new SphereGeometry(window.matchMedia?.('(pointer: coarse)').matches ? 0.9 : 0.45, 8, 8), new MeshBasicMaterial({ visible: false }));
             rim.renderOrder = 11; dot.renderOrder = 12;
             grab.add(rim, dot);
             grab.position.copy(p); grab.userData.mode = mode;
@@ -636,6 +707,9 @@ export class Viewer {
         this.frame = { group, grips, box: frame.box, z: frame.z };
         this.listen();
     }
+
+    /** Whether the frame is being dragged right now (a caller that would draw it anew waits for the drag to end). */
+    framingNow(): boolean { return this.framing !== null; }
 
     /** What of the frame lies under the pointer: a corner, the knob, its inside, or nothing. */
     private frameUnder(ray: Raycaster): { mode: 'move' | 'size' | 'turn'; at: Vector3 } | null {
@@ -818,17 +892,19 @@ export class Viewer {
                 const p = this.fileAt(ray, this.frame.z);
                 if (!p) return;
                 const group = this.frame.group;
+                const asked: FrameChange = { ...f.change };
                 if (f.mode === 'move') {
-                    f.change.dx = p.x - f.from.x; f.change.dy = p.y - f.from.y;
-                    group.position.copy(this.mesh.localToWorld(new Vector3(cx + f.change.dx, cy + f.change.dy, this.frame.z + 0.05)));
+                    asked.dx = p.x - f.from.x; asked.dy = p.y - f.from.y;
                 } else if (f.mode === 'size') {
-                    f.change.scale = Math.max(0.05, Math.min(20, Math.hypot(p.x - cx, p.y - cy) / (Math.hypot(f.from.x - cx, f.from.y - cy) || 1)));
-                    group.scale.setScalar(f.change.scale);
+                    asked.scale = Math.max(0.05, Math.min(20, Math.hypot(p.x - cx, p.y - cy) / (Math.hypot(f.from.x - cx, f.from.y - cy) || 1)));
                 } else {
                     const deg = (Math.atan2(p.y - cy, p.x - cx) - Math.atan2(f.from.y - cy, f.from.x - cx)) * 180 / Math.PI;
-                    f.change.turn = Math.round(((deg + 540) % 360) - 180);
-                    group.rotation.y = f.change.turn * Math.PI / 180;
+                    asked.turn = Math.round(((deg + 540) % 360) - 180);
                 }
+                f.change = this.frameWithin ? this.frameWithin(asked) : asked;
+                if (f.mode === 'move') group.position.copy(this.mesh.localToWorld(new Vector3(cx + f.change.dx, cy + f.change.dy, this.frame.z + 0.05)));
+                else if (f.mode === 'size') group.scale.setScalar(f.change.scale);
+                else group.rotation.y = (this.turned ? -1 : 1) * f.change.turn * Math.PI / 180;
                 label(this.onFrame({ ...f.change }, 'move'), e);
                 return;
             }
@@ -872,7 +948,8 @@ export class Viewer {
             const hit = ray.intersectObject(this.mesh, false)[0];
             const tri = hit?.faceIndex ?? -1;
             const index = tri < 0 ? -1 : this.pieces.findIndex((p) => tri >= p.tris[0] && tri < p.tris[1]);
-            this.onPick(index, index >= 0 ? this.pieces[index] : null);
+            const where = hit ? this.mesh.worldToLocal(hit.point.clone()) : null;
+            this.onPick(index, index >= 0 ? this.pieces[index] : null, where ? [where.x, where.y, where.z] : null);
         };
         this.canvas.addEventListener('pointerup', up);
         this.canvas.addEventListener('pointercancel', () => { endStroke(); if (grip) { grip = null; this.controls.enabled = true; this.handleLabel?.classList.add('hidden'); } if (drag) { drag = null; this.controls.enabled = true; this.handleLabel?.classList.add('hidden'); } if (this.framing) { this.framing = null; this.controls.enabled = true; this.handleLabel?.classList.add('hidden'); } down = null; });

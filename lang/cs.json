@@ -2774,5 +2774,22 @@
     "site.blog.seo_title": "Blog o 3D tisku: návody, ceny a nápady na dárky",
     "site.blog.seo_description": "Návody a rady k 3D tisku na zakázku: kolik tisk stojí, jaký materiál vybrat, jak připravit model a co vyrobit jako dárek z fotky nebo se jménem.",
     "site.blog.tools_title": "Nástroje z článku",
-    "site.blog.related": "Články k tématu"
+    "site.blog.related": "Články k tématu",
+    "param.decor.lead2": "Reliéf z fotky nebo logo na přední či zadní stranu. Můžete jich přidat víc. Texty se píší v kroku Vstup.",
+    "param.decor.empty.pictures": "Zatím bez fotky a loga.",
+    "param.decor.text.more": "Přidat další text",
+    "param.decor.text.lead": "Další text může být na přední i zadní straně, vystouplý, zapuštěný nebo ve vlastní barvě.",
+    "param.decor.background.keep": "Ponechat pozadí fotky",
+    "param.decor.background.hint": "Pozadí fotky odstraníme, vystoupí jen hlavní motiv. Světlá místa jsou výš, tmavá níž.",
+    "param.decor.background.working": "Odstraňujeme pozadí fotky, potrvá to pár vteřin…",
+    "param.decor.background.failed": "Na téhle fotce se motiv od pozadí oddělit nepodařilo, reliéf je z celé fotky. Zkuste fotku, kde je motiv zblízka a celý.",
+    "param.decor.color.relief": "Reliéf ve vlastní barvě se tiskne druhým filamentem: na ploše výměnou barvy po výšce, zapuštěný na tiskárně s měničem.",
+    "param.decor.drag.hint": "V náhledu ho můžete chytit a přetáhnout, rohem zvětšit a kolečkem nad ním otočit.",
+    "param.decor.side": "Strana výrobku v náhledu",
+    "param.decor.side.front": "Přední strana",
+    "param.decor.side.back": "Zadní strana",
+    "param.warn.decor_no_cutout": "Pozadí fotky se nepodařilo odstranit, reliéf je z celé fotky.",
+    "param.decor.print.swap": "Zdobení ve vlastní barvě leží nad výrobkem: tiskne se výměnou filamentu po výšce (:n×), zvládne to každá tiskárna.",
+    "param.decor.print.plate": "Zdobení ve vlastní barvě leží ve stejných vrstvách jako jiná barva (:c barvy). Vytiskne ho jen tiskárna, která mění filament sama; tisk trvá déle kvůli výměnám a čisticí věži.",
+    "param.decor.print.many": "Výrobek má :c barev, naše tiskárna jich na jeden tisk vezme nejvýš :max. Uberte barvu některému zdobení."
 }
