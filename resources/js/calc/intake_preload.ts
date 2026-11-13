@@ -52,7 +52,7 @@ export async function preloadIntake(payload: IntakePayload): Promise<void> {
         setNumber(document.querySelector<HTMLInputElement>('[data-param="width"]'), size);          // the shape tools, the picture for the wall, the cutter: the width
         setNumber(document.querySelector<HTMLInputElement>('[data-param="size"]'), size);           // the map: the side
         setNumber(document.querySelector<HTMLInputElement>('[data-param="text_height"]'), size);    // the sign, the standing letters: the letter height
-        setNumber(document.querySelector<HTMLInputElement>('[data-param="head"]'), size / 10);        // the headband: the head's circumference, in cm
+        if (size > 440) setNumber(document.querySelector<HTMLInputElement>('[data-param="head"]'), size / 10);   // the headband: the head's circumference, in cm (440 = a smaller number held at the tool's lowest: not a head)
     }
     if (kind) {
         const radio = document.querySelector<HTMLInputElement>(`input[type=radio][name="kind"][value="${kind}"], input[type=radio][name="style"][value="${kind}"]`);

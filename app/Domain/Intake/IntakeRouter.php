@@ -71,6 +71,8 @@ final class IntakeRouter
         'sign' => ['takes' => 'a name or a short text, up to three lines; no photo', 'makes' => 'a sign, a name tag or a label with the text in relief', 'when' => 'words only: a door sign, a name tag, a label for a desk or a shelf', 'size' => [4, 80], 'colors' => 2, 'input' => 'text'],
         'text' => ['takes' => 'a word or a name; no photo', 'makes' => 'standing 3D letters for a shelf, a desk or a shop window', 'when' => 'a word or a name that stands on its own (HOME, LOVE, a name)', 'size' => [4, 80], 'colors' => 2, 'input' => 'text'],
         'cutter' => ['takes' => 'a drawing, a logo or a simple outline', 'makes' => 'a cookie cutter following the outline of the picture', 'when' => 'a cookie cutter, baking, the outline of a drawing', 'size' => [30, 150], 'colors' => 1],
+        // (docs/P.md §13) its size is the head's circumference; params.kind names the decoration
+        'headband' => ['takes' => 'the decoration wanted and, when known, the circumference of the head or the age; no photo', 'makes' => 'a headband sized to the head with a decoration on top: devil horns, cat ears, bunny ears, reindeer antlers, a crown, a halo or a unicorn (a horn and ears); the band and the decoration can be two colours', 'when' => 'a headband, horns or ears to wear on the head, a costume for St Nicholas, a carnival, Halloween or a Christmas party; params.kind = horns, cat, bunny, antlers, crown, halo or unicorn; params.size_mm = the circumference of the head in mm, only when it is said', 'size' => [440, 640], 'colors' => 2, 'input' => 'text'],
     ];
 
     /**
@@ -80,7 +82,7 @@ final class IntakeRouter
     public const DECORATED = ['medallion', 'keychain', 'ornament', 'coaster'];
 
     /** What `params.kind` may say, per tool. */
-    private const KINDS = ['figure' => ['bust', 'figure'], 'pet' => ['realistic', 'miniature', 'cartoon']];
+    private const KINDS = ['figure' => ['bust', 'figure'], 'pet' => ['realistic', 'miniature', 'cartoon'], 'headband' => ['horns', 'cat', 'bunny', 'antlers', 'crown', 'halo', 'unicorn']];
 
     /**
      * Words that send a visitor to a tool, or to a person, when no model is available (cs, en, es; without diacritics
@@ -91,6 +93,7 @@ final class IntakeRouter
     private const WORDS = [
         Intake::ROUTE_HUMAN => '/kole[čc]k|\bd[íi]l[yuůe]?\b|n[áa]hradn|dr[žz][áa]k|krytk|v[íi][čc]k|ozuben|rozm[ěe]r|toleranc|z[áa]vit|aby (to )?pasoval|p[řr]esn[ěe]|spare|replacement|bracket|\bmount\b|thread|toleranc|dimension|to fit|repuesto|\bpieza\b|soporte|\brosca\b|medid|\bmm\b.*\bmm\b/u',
         Intake::ROUTE_SHAPE => '/so[šs]k|statuet|ma[sš]kot|hra[čc]k|\btoy\b|mascot|statue|estatu|juguete|\bdrak|dragon|drag[óo]n/u',
+        'headband' => '/[čc]elenk|headband|hair ?band|diadema|\bcintillo|\btiara|(rohy|r[ůu][žz]ky|u[šs]i|parohy) na hlavu|ko[čc]i[čc][íi] u[šs]i|zaje[čc][íi] u[šs]i|sob[íi] parohy|cat ears|bunny ears|devil horns|reindeer antlers|orejas de (gato|conejo)|cuernos de (diablo|demonio)|astas de reno/u',
         'pet' => '/\bpes\b|\bpsa\b|\bps[íi]k|\bps[íi]\b|pejs|ko[čc]k|ko[čc]i[čc]|mazl[íi][čc]|kr[áa]l[íi][čc]|zv[íi][řr]|\bdog\b|\bpuppy\b|\bcat\b|kitten|\bpet\b|rabbit|horse|\bperro\b|\bgato\b|mascota|conejo|caballo/u',
         'papel' => '/papel|vyst[řr]ihov|prolamovan|paper ?cut|cut-?out|recortad/u',
         'figure' => '/\bbust|hlav[ay]\b|obli[čc]ej|portr[ée]t|\bt[áa]t[aouy]\b|\bt[áa]t[íi]k|\bd[ěe]d[aouy]\b|\bd[ěe]de[čc]|\bm[áa]m[aouy]\b|\bbab[ii][čc]k|\bbabi\b|figurk[ay] (m[ěe]|n[áa]s|t[áa]t|m[áa]m|d[ěe]d|bab|syn|dcer|kamar)|\bperson\b|\bface\b|\bhead\b|\bdad\b|\bmum\b|\bmom\b|grand(pa|ma|father|mother)|\bbusto\b|\bcara\b|abuel|\bpadre\b|\bmadre\b|\bpap[áa]\b|\bmam[áa]\b/u',
@@ -306,7 +309,7 @@ final class IntakeRouter
 
                 return self::decide([
                     'route' => $route, 'tool_key' => $route === Intake::ROUTE_TOOL ? $target : null,
-                    'params' => self::paramsFromWords($t) + $decor, 'confidence' => self::GUESS_CONFIDENCE, 'summary' => [], 'questions' => [],
+                    'params' => self::paramsFromWords($t) + $decor + ($target === 'headband' ? self::headbandKind($t) : []), 'confidence' => self::GUESS_CONFIDENCE, 'summary' => [], 'questions' => [],
                     // a shape names the nearest tools; a tool names the other tools the words speak of too (a medal with a relief from a photo)
                     'alternatives' => $route === Intake::ROUTE_SHAPE ? self::nearest($t, $hasPhoto) : ($route === Intake::ROUTE_TOOL ? self::alsoNamed($t, $target) : []),
                 ], $hasPhoto, $locale);
@@ -527,6 +530,19 @@ final class IntakeRouter
         }
 
         return array_slice($out, 0, self::MAX_ALTERNATIVES);
+    }
+
+    /** The decoration the words of a headband name, as `params.kind`; nothing when they name none (the tool then opens with its horns). */
+    private static function headbandKind(string $t): array
+    {
+        foreach (['unicorn' => '/jednoro[žz]|unicorn/u', 'cat' => '/ko[čc]i[čc]|\bcat\b|\bgato\b/u', 'bunny' => '/zaj[íe][čc]|kr[áa]l[íi][čc]|bunny|rabbit|conej/u', 'antlers' => '/paroh|\bsob|antler|reindeer|\basta|\breno\b/u',
+            'crown' => '/korun|princez|crown|tiara|princess|corona|princesa/u', 'halo' => '/svatoz|and[ěe]l|\bhalo\b|angel|aureola|[áa]ngel/u', 'horns' => '/\broh|r[ůu][žz]k|[čc]ert|horn|devil|cuerno|diablo/u'] as $kind => $pattern) {
+            if (preg_match($pattern, $t)) {
+                return ['kind' => $kind];
+            }
+        }
+
+        return [];
     }
 
     /** What plain words say about the size ("12 cm", "40 mm") and the count ("4 kusy", "two pieces"). */
