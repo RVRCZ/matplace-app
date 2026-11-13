@@ -20,7 +20,7 @@ return [
         ['q' => 'Proč je barevný tisk dražší než jednobarevný?', 'a' => 'Při každé výměně barvy tiskárna starý filament vytlačí do čisticí věže a nový zavede. Trvá to asi dvě minuty a stojí trochu plastu. Model s barvami vedle sebe po celé výšce má takovou výměnu v každé vrstvě, model s barvami nad sebou jen jednu na každou změnu.'],
         ['q' => 'Jak jemné detaily se dají namalovat?', 'a' => 'Tryska má průměr 0,4 mm, tenčí čáru nevytiskne. Štětec proto kreslí okraj s přesností kolem 0,4 mm a skvrny menší než půl milimetru čtverečního při uložení sloučíme s okolní barvou; kolik jich bylo, vám nástroj řekne.'],
         ['q' => 'Změní vybarvení tvar modelu?', 'a' => 'Ne. Vylití a barvy podle výšky jen přiřadí barvu ploškám modelu, štětec navíc rozdělí plošky pod tahem na menší, aby okraj barvy šel tam, kudy jste táhli. Povrch i rozměry zůstávají stejné.'],
-        ['q' => 'Zvládne nástroj velké modely a telefon?', 'a' => 'Vylití a barvy podle výšky fungují do milionu trojúhelníků. Štětec zjemňuje síť, proto pracuje do půl milionu trojúhelníků na počítači a do dvou set tisíc na telefonu; u větších modelů nástroj štětec vypne a řekne to.'],
+        ['q' => 'Zvládne nástroj velké modely a telefon?', 'a' => 'Vylití a barvy podle výšky fungují do milionu trojúhelníků na počítači a do půl milionu na telefonu. Štětec zjemňuje síť, proto pracuje do půl milionu trojúhelníků na počítači a do dvou set tisíc na telefonu; u větších modelů nástroj štětec vypne a řekne to.'],
     ],
     'examples' => [],
 ];

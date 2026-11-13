@@ -2706,5 +2706,8 @@
     "paint.opened.painted": "The file already has painted colours. You can carry on with them.",
     "paint.tip": "We print the coloured model in one go on a printer that changes filaments by itself. The calculation shows the price in one colour and in colours.",
     "paint.calc.link": "Colour the model",
-    "paint.calc.link.edit": "Change the colouring"
+    "paint.calc.link.edit": "Change the colouring",
+    "paint.changes.one": "about :n filament change, the print :time longer",
+    "paint.changes.few": "about :n filament changes, the print :time longer",
+    "paint.changes.other": "about :n filament changes, the print :time longer"
 }

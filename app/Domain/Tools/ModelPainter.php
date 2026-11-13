@@ -14,6 +14,7 @@ use App\Models\ModelFile;
 use App\Models\User;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\File;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 
@@ -59,17 +60,19 @@ final class ModelPainter
     /**
      * What the page works within.
      *
-     * @return array{max_triangles: int, max_added: int, brush_triangles: int, brush_triangles_phone: int, max_colors: int, max_heights: int, edge_mm: float, speck_mm2: float}
+     * @return array{max_triangles: int, max_triangles_phone: int, max_added: int, brush_triangles: int, brush_triangles_phone: int, max_colors: int, max_heights: int, edge_mm: float, speck_mm2: float, change_minutes: float}
      */
     public static function limits(): array
     {
         $c = (array) config('engines.paint');
 
         return [
-            'max_triangles' => (int) $c['max_triangles'], 'max_added' => (int) $c['max_added'],
+            'max_triangles' => (int) $c['max_triangles'], 'max_triangles_phone' => (int) $c['max_triangles_phone'], 'max_added' => (int) $c['max_added'],
             'brush_triangles' => (int) $c['brush_triangles'], 'brush_triangles_phone' => (int) $c['brush_triangles_phone'],
             'max_colors' => self::maxColors(), 'max_heights' => self::MAX_HEIGHTS,
             'edge_mm' => (float) $c['edge_mm'], 'speck_mm2' => (float) $c['speck_mm2'],
+            // what one colour change adds to a print (the calculator's own number, docs/AL.md §14.5): the page says it while painting
+            'change_minutes' => (float) config('engines.colors.change_minutes', 2.2),
         ];
     }
 
@@ -220,6 +223,8 @@ final class ModelPainter
         ]));
         $r = $this->python->runScript('paint_tool.py', ['build', (string) $src->absoluteStlPath(), $dst, '@'.$json], (int) config('engines.paint.timeout', 600));
         if (empty($r['ok']) || ! is_file($dst)) {
+            // the reason in words stays in the log; the file carries the code the page has a sentence for
+            Log::warning('The painted 3MF could not be written', ['file' => $file->id, 'code' => $r['code'] ?? null, 'error' => mb_substr((string) ($r['error'] ?? ''), 0, 500)]);
             throw new EngineException((string) ($r['code'] ?? 'paint_failed'));
         }
 

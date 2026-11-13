@@ -2706,5 +2706,8 @@
     "paint.opened.painted": "Soubor už má namalované barvy. Můžete v nich pokračovat.",
     "paint.tip": "Barevný model vytiskneme najednou na tiskárně, která si filamenty mění sama. V kalkulaci uvidíte cenu jednobarevně i barevně.",
     "paint.calc.link": "Vybarvit model",
-    "paint.calc.link.edit": "Upravit vybarvení"
+    "paint.calc.link.edit": "Upravit vybarvení",
+    "paint.changes.one": "asi :n výměna filamentu, tisk delší o :time",
+    "paint.changes.few": "asi :n výměny filamentu, tisk delší o :time",
+    "paint.changes.other": "asi :n výměn filamentu, tisk delší o :time"
 }

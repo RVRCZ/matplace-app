@@ -2,16 +2,17 @@
 
 namespace Tests\Feature;
 
+use App\Domain\Farm\Palette;
 use App\Domain\Files\PaintedColors;
 use App\Domain\Tools\ModelPainter;
 use App\Domain\Tools\ToolVisibility;
+use App\Engines\Contracts\Slicer;
 use App\Engines\Mesh\StlFile;
 use App\Engines\Repair\PythonTool;
 use App\Models\FarmAgent;
 use App\Models\FarmColor;
 use App\Models\FarmOrder;
 use App\Models\FarmPrinter;
-use App\Models\FarmPrinterSlot;
 use App\Models\ModelFile;
 use App\Models\ToolFlag;
 use App\Models\User;
@@ -174,6 +175,141 @@ final class PaintToolTest extends TestCase
         $this->assertLessThanOrEqual(0.001, $f['colors'][1]['share']);
     }
 
+    /**
+     * The Kobra S1 run by an agent (it changes spools), with a spool of each colour in its free positions.
+     *
+     * @param  array<string, string>  $colors  hex => name
+     * @return list<FarmColor>
+     */
+    private function spools(array $colors): array
+    {
+        $s1 = FarmPrinter::where('key', 'kobra-s1-01')->firstOrFail();
+        [$runner] = FarmAgent::issue('test agent');
+        $s1->update(['mode' => FarmPrinter::MODE_AGENT, 'farm_agent_id' => $runner->id, 'last_seen_at' => now(), 'state' => FarmPrinter::STATE_IDLE]);
+        $pla = FarmColor::findOrFail($s1->slots()->whereNotNull('farm_color_id')->firstOrFail()->farm_color_id)->farm_material_id;
+        $free = $s1->slots()->whereNull('farm_color_id')->orderBy('slot')->get()->values();
+        $out = [];
+        foreach (array_keys($colors) as $i => $hex) {
+            $color = FarmColor::create(['farm_material_id' => $pla, 'name' => $colors[$hex], 'hex' => $hex, 'enabled' => true]);
+            $free[$i]->update(['farm_color_id' => $color->id, 'remaining_g' => 800, 'enabled' => true]);
+            $out[] = $color;
+        }
+
+        return $out;
+    }
+
+    /**
+     * The record of a stroke drawn in a real browser (scripts/paint_walk.mjs, Chrome, 13 Nov 2026): on the cube a tap
+     * filled one side black, a stroke of the brush of 1 mm in red went across two sides, the brush refined every one of
+     * the twelve triangles (2 846 pieces). tests/fixtures/paint/cube-stroke-*.bin are the three files the page sent.
+     *
+     * @param  array<string, mixed>  $record
+     */
+    private function stroke(string $uuid, array $record = [])
+    {
+        $file = fn (string $name) => new UploadedFile(base_path('tests/fixtures/paint/cube-stroke-'.$name.'.bin'), $name.'.bin', 'application/octet-stream', null, true);
+
+        return $this->actingAs($this->user)->post('/api/files/'.$uuid.'/paint', [
+            'record' => json_encode($record + ['v' => 1, 'triangles' => 12, 'palette' => ['#f4f4f2', '#1b1b1d', '#d1232a']]),
+            'states' => $file('states'), 'added' => $file('added'), 'added_states' => $file('added-states'),
+        ], ['Accept' => 'application/json']);
+    }
+
+    public function test_a_stroke_drawn_in_a_browser_leaves_the_surface_whole_and_its_colours_on_it(): void
+    {
+        $src = $this->cube();
+        // the stroke and the fill as they were drawn, and red from 6.3 mm up for what is not painted
+        $r = $this->stroke($src['uuid'], ['heights' => [['z' => 6.3, 'color' => 2]]])->assertCreated();
+        $f = $this->getJson('/api/files/'.$r->json('file.uuid'))->assertOk()->json('file');
+        $this->assertSame('ready', $f['status'], (string) $f['error']);
+        $file = ModelFile::where('uuid', $f['uuid'])->firstOrFail();
+        // the brush split edges, both triangles of an edge at once: the mesh is the same closed cube, no hole, no T-junction
+        $this->assertTrue((bool) ($file->mesh_report['watertight'] ?? false), json_encode($file->mesh_report));
+        $this->assertEqualsWithDelta(1000, $file->volume_mm3, 0.5);
+        $this->assertEqualsWithDelta(600, $file->area_mm2, 0.5);
+        $this->assertSame(['x' => 10.0, 'y' => 10.0, 'z' => 10.0], array_map('floatval', $file->bbox));
+        $this->assertNotContains('not_watertight', $f['issues']);
+        $report = $f['paint']['report'];
+        $this->assertSame(2846, $report['refined']);
+        $this->assertGreaterThan(0, $report['cut'], 'the height at 6.3 mm cut the triangles it crosses');
+        $this->assertSame(2846 + 2 * $report['cut'], $report['triangles'], 'a triangle cut at a height becomes three');
+        $this->assertSame(0, $report['specks']['count'], 'the stroke is one clean band, nothing under the nozzle\'s width');
+        // red: the top, 3.7 mm of three sides and of the black side's rest, and the stroke; black: its side below 6.3 mm
+        // less the stroke; the model's own colour the rest
+        $share = array_column($f['colors'], 'share', 'hex');
+        $this->assertEqualsCanonicalizing(['#D1232A', '#F4F4F2', '#1B1B1D'], array_keys($share));
+        $this->assertEqualsWithDelta(1.0, array_sum($share), 0.002);
+        $this->assertGreaterThan((100 + 3 * 37) / 600, $share['#D1232A'], 'more red than the height alone gives: the stroke');
+        $this->assertLessThan((100 + 4 * 37 + 60) / 600, $share['#D1232A']);
+        // the black side keeps what the stroke did not take: the height does not repaint what was painted by hand
+        $this->assertGreaterThan(0.10, $share['#1B1B1D']);
+        $this->assertLessThan(100 / 600, $share['#1B1B1D']);
+        // the preview's STL is the refined mesh in colour order
+        $this->assertSame($report['triangles'], $file->triangles);
+        $this->assertSame([0, $file->triangles], [$f['groups'][0]['from'], $f['groups'][count($f['groups']) - 1]['to']]);
+    }
+
+    /**
+     * On this machine with the real OrcaSlicer (ORCA_LOCAL = its orca-slicer.exe): the cube with the browser's stroke, the
+     * fill and a colour by height is ordered in colours and slices on one plate of the S1 from the painted file itself,
+     * three filaments, every one of them used. Skipped elsewhere; PAINT_SAMPLES (a folder) gets the numbers and the plate.
+     */
+    public function test_a_coloured_model_slices_on_one_plate_with_the_real_orca(): void
+    {
+        $exe = (string) env('ORCA_LOCAL', '');
+        if ($exe === '' || ! is_file($exe)) {
+            $this->markTestSkipped('ORCA_LOCAL not set: the real slice runs on Roman\'s PC only');
+        }
+        config(['engines.slicer' => 'orca', 'engines.orca.bin' => $exe, 'engines.orca.xvfb' => false, 'engines.orca.cache' => false,
+            'engines.orca.work_dir' => sys_get_temp_dir().'/mp_orca_'.uniqid(), 'engines.orca.timeout' => 600]);
+        $this->app->forgetInstance(Slicer::class);
+        [$white, $black, $red] = $this->spools(['#F4F4F2' => 'Bílá', '#1B1B1D' => 'Černá', '#D1232A' => 'Červená']);
+        $src = $this->cube();
+        // three times the size, so the stroke is 6 mm wide and every colour has layers of its own to show in the G-code
+        $r = $this->stroke($src['uuid'], ['heights' => [['z' => 6.3, 'color' => 2]]])->assertCreated();
+        $uuid = $r->json('file.uuid');
+        $t = microtime(true);
+        $r = $this->actingAs($this->user)->postJson('/farm/orders', ['file' => $uuid, 'colors' => 'painted', 'scale' => 3])->assertCreated();
+        $order = FarmOrder::where('token', basename($r->json('url')))->firstOrFail();
+        $seconds = round(microtime(true) - $t, 1);
+        $this->assertSame(FarmOrder::STATUS_SLICED, $order->status, (string) $order->error.' '.json_encode($order->timings).' '.json_encode(collect((array) $order->check)->except(['mesh'])->all()));
+        $this->assertTrue($order->onePlate(), json_encode($order->timings));
+        $this->assertSame('painted', $order->timings['one_plate_project'] ?? null);
+        $this->assertEqualsCanonicalizing([$white->id, $black->id, $red->id], array_map('intval', array_column($order->partPlates(), 'color_id')));
+        $grams = (array) $order->slice_result['filament_grams'];
+        $this->assertCount(3, $grams);
+        foreach ($grams as $g) {
+            $this->assertGreaterThan(0.05, (float) $g, 'every filament of the three prints something: '.json_encode($grams));
+        }
+        $dir = (string) env('PAINT_SAMPLES', '');
+        if ($dir !== '' && is_dir($dir)) {
+            file_put_contents($dir.'/cube-stroke-orca.json', json_encode(['order_s' => $seconds, 'grams' => $grams, 'changes' => $order->slice_result['changes'] ?? null,
+                'minutes' => $order->est_minutes, 'grams_total' => $order->est_grams, 'price' => $order->price_total, 'timings' => $order->timings], JSON_PRETTY_PRINT));
+            copy(Storage::disk('farm')->path($order->dir().'/plate.3mf'), $dir.'/cube-stroke-plate.3mf');
+            copy(Storage::disk('farm')->path($order->gcode_path), $dir.'/cube-stroke.gcode');
+        }
+
+        // the same cube in two colours one above the other (by height alone): the cheap kind of colour, one change
+        $r = $this->paint($src['uuid'], ['triangles' => 12, 'palette' => ['#f4f4f2', '#d1232a'], 'heights' => [['z' => 5.1, 'color' => 1]]], array_fill(0, 12, 0))->assertCreated();
+        $r = $this->actingAs($this->user)->postJson('/farm/orders', ['file' => $r->json('file.uuid'), 'colors' => 'painted', 'scale' => 3])->assertCreated();
+        $stacked = FarmOrder::where('token', basename($r->json('url')))->firstOrFail();
+        $this->assertSame(FarmOrder::STATUS_SLICED, $stacked->status, (string) $stacked->error.' '.json_encode($stacked->timings));
+        $this->assertTrue($stacked->onePlate(), json_encode($stacked->timings));
+        $this->assertCount(2, (array) $stacked->slice_result['filament_grams']);
+        $this->assertLessThanOrEqual(2, (int) ($stacked->slice_result['changes'] ?? 99), 'colours one above another change the filament once');
+        $this->assertLessThan($order->est_minutes / 3, $stacked->est_minutes, 'and print in a fraction of the time of colours side by side');
+        // and in one colour, for the comparison the page's note about colour changes rests on
+        $r = $this->actingAs($this->user)->postJson('/farm/orders', ['file' => $uuid, 'colors' => 'one', 'scale' => 3])->assertCreated();
+        $one = FarmOrder::where('token', basename($r->json('url')))->firstOrFail();
+        $this->assertSame(FarmOrder::STATUS_SLICED, $one->status, (string) $one->error);
+        $this->assertLessThan($stacked->est_minutes, $one->est_minutes);
+        if ($dir !== '' && is_dir($dir)) {
+            file_put_contents($dir.'/cube-height-orca.json', json_encode(['grams' => $stacked->slice_result['filament_grams'], 'changes' => $stacked->slice_result['changes'] ?? null,
+                'minutes' => $stacked->est_minutes, 'grams_total' => $stacked->est_grams, 'price' => $stacked->price_total,
+                'one_colour' => ['minutes' => $one->est_minutes, 'grams_total' => $one->est_grams, 'price' => $one->price_total]], JSON_PRETTY_PRINT));
+        }
+    }
+
     /** @return array{0: list<float>, 1: list<float>, 2: list<float>} the corners of a triangle of a binary STL */
     private function triangle(string $stl, int $index): array
     {
@@ -215,19 +351,7 @@ final class PaintToolTest extends TestCase
 
     public function test_an_order_of_a_coloured_model_prints_by_colours_on_one_plate_like_a_painted_upload(): void
     {
-        $s1 = FarmPrinter::where('key', 'kobra-s1-01')->firstOrFail();
-        [$runner] = FarmAgent::issue('test agent');
-        $s1->update(['mode' => FarmPrinter::MODE_AGENT, 'farm_agent_id' => $runner->id, 'last_seen_at' => now(), 'state' => FarmPrinter::STATE_IDLE]);
-        $pla = FarmColor::findOrFail($s1->slots()->whereNotNull('farm_color_id')->firstOrFail()->farm_color_id)->farm_material_id;
-        $free = $s1->slots()->whereNull('farm_color_id')->orderBy('slot')->get();
-        $spool = function (FarmPrinterSlot $slot, string $hex, string $name) use ($pla) {
-            $color = FarmColor::create(['farm_material_id' => $pla, 'name' => $name, 'hex' => $hex, 'enabled' => true]);
-            $slot->update(['farm_color_id' => $color->id, 'remaining_g' => 800, 'enabled' => true]);
-
-            return $color;
-        };
-        $red = $spool($free[0], '#D62828', 'Červená');
-        $blue = $spool($free[1], '#1F6FD6', 'Modrá');
+        [$red, $blue] = $this->spools(['#D62828' => 'Červená', '#1F6FD6' => 'Modrá']);
 
         $src = $this->cube();
         // the top half blue by height, the bottom face red: two colours that meet in no layer but the first
@@ -279,7 +403,7 @@ final class PaintToolTest extends TestCase
         // the farm's catalogue is where the tiles come from: a spool's colour is one of them, once
         app()->setLocale('cs');
         $spool = FarmColor::where('enabled', true)->whereNotNull('hex')->whereNotNull('code')->firstOrFail();
-        $tiles = ModelPainter::tiles(app(\App\Domain\Farm\Palette::class));
+        $tiles = ModelPainter::tiles(app(Palette::class));
         $this->assertContains(strtolower($spool->hex), array_column($tiles, 'hex'));
         $this->assertSame(count($tiles), count(array_unique(array_column($tiles, 'hex'))));
 

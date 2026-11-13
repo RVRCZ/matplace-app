@@ -6,7 +6,7 @@
         'mode.fill.hint', 'mode.brush.hint', 'mode.erase.hint', 'mode.turn.hint', 'colors.base', 'colors.base.hint', 'colors.left.one', 'colors.left.few', 'colors.left.other', 'colors.left.none',
         'colors.remove', 'colors.change', 'colors.window', 'colors.window.farm', 'colors.window.basic', 'colors.loaded', 'colors.taken', 'colors.close', 'colors.share',
         'height.from', 'height.color', 'height.remove', 'height.need_model', 'go.need', 'saving', 'building', 'saved.specks.one', 'saved.specks.few', 'saved.specks.other', 'saved.lost',
-        'error.one_color', 'error.failed', 'error.source_changed', 'error.too_many_colors', 'download.3mf', 'download.3mf.hint', 'opened.painted', 'color.now'];
+        'error.one_color', 'error.failed', 'error.source_changed', 'error.too_many_colors', 'download.3mf', 'download.3mf.hint', 'opened.painted', 'color.now', 'changes.one', 'changes.few', 'changes.other'];
     $i18n = collect($keys)->mapWithKeys(fn ($k) => ['paint.'.$k => __('paint.'.$k)])->all();
     $sections = ['model' => __('paint.step.model'), 'colors' => __('paint.step.colors'), 'height' => __('paint.step.height')];
     $modes = ['fill' => 'paint-bucket', 'brush' => 'brush', 'erase' => 'eraser', 'turn' => 'move-3d'];
@@ -56,14 +56,6 @@
     </div>
 
     <p id="paint-result" class="note-warn hidden text-sm" role="status" aria-live="polite"></p>
-    {{-- what a print in several colours costs in time and plastic, said before the price is --}}
-    <div id="paint-honest" class="card p-4 text-sm text-ink">
-        <h2 class="font-semibold">{{ __('paint.honest.title') }}</h2>
-        <ul class="mt-2 list-disc space-y-1 pl-5 text-muted">
-            @foreach(['time', 'waste', 'height', 'detail'] as $k)<li>{{ __('paint.honest.'.$k) }}</li>@endforeach
-        </ul>
-        @if(\App\Support\NextStep::mode() === \App\Support\NextStep::FARM)<p class="mt-2 text-muted">{{ __('paint.tip') }}</p>@endif
-    </div>
 @endsection
 
 @section('panel')
@@ -97,5 +89,15 @@
         <div id="paint-bands" class="space-y-3"></div>
         <button type="button" id="paint-band-add" class="btn-quiet !min-h-10 gap-1.5 !px-3 !py-2 text-sm"><x-icon name="layers" class="h-4 w-4" />{{ __('paint.height.add') }}</button>
     </x-tool-section>
+
+    {{-- what a print in several colours costs in time and plastic, said before the price is: beside the colours, where
+         they are chosen (under the model it took the room the model itself needs) --}}
+    <div id="paint-honest" class="card mt-3 p-4 text-sm text-ink">
+        <h2 class="font-semibold">{{ __('paint.honest.title') }}</h2>
+        <ul class="mt-2 list-disc space-y-1 pl-5 text-muted">
+            @foreach(['time', 'waste', 'height', 'detail'] as $k)<li>{{ __('paint.honest.'.$k) }}</li>@endforeach
+        </ul>
+        @if(\App\Support\NextStep::mode() === \App\Support\NextStep::FARM)<p class="mt-2 text-muted">{{ __('paint.tip') }}</p>@endif
+    </div>
 </form>
 @endsection

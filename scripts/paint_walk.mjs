@@ -27,6 +27,9 @@ const LANG = String(arg('lang', 'cs'));
 const WIDTHS = String(arg('widths', '390,1280')).split(',').map(Number);
 const SAVE = !arg('no-save', false);
 const BRUSH = !arg('no-brush', false);
+// --card: instead of the walk, the model is coloured for a picture (two colours by height, a wavy stroke) and only the
+// viewer is photographed, as <out>/<name>-card.png (what public/img/tools/paint-*.{jpg,webp} are made of)
+const CARD = Boolean(arg('card', false));
 const CHROME = process.env.CHROME ?? 'C:/Program Files/Google/Chrome/Application/chrome.exe';
 const SIZE = { 390: [844, 2, true], 1280: [800, 1, false] };
 const UA = {
@@ -138,6 +141,36 @@ async function walk(width, port) {
         await look();
         await shot('2-model');
 
+        if (CARD) {
+            const pickTile = async (n) => { await click('#paint-swatches [data-add]'); await sleep(400); await evaluate(cdp, `(() => { const tiles = [...document.querySelectorAll("dialog[open] [data-pick]:not([disabled])")]; (tiles[${n}] ?? tiles[0])?.click(); })()`); await sleep(300); };
+            const setRange = (id, value) => evaluate(cdp, `(() => { const el = document.getElementById(${JSON.stringify(id)}); el.value = ${JSON.stringify(String(value))}; el.dispatchEvent(new Event('input', { bubbles: true })); el.dispatchEvent(new Event('change', { bubbles: true })); })()`);
+            const height = await evaluate(cdp, 'window.mpPaint.mesh().heightRange()[1] - window.mpPaint.mesh().heightRange()[0]');
+            // closer to the model, and without the buttons that lie over the viewer
+            await evaluate(cdp, '(() => { const v = window.mpPaint.view.host; v.camera.position.sub(v.controls.target).multiplyScalar(0.86).add(v.controls.target); v.controls.update(); document.getElementById("tool-viewbar").parentElement.style.display = "none"; })()');
+            await sleep(300);
+            // the second colour of the page from a third of the height, a third one from two thirds
+            await click('#paint-band-add'); await sleep(400);
+            await setRange('paint-band-0', Math.round(height * 0.34 * 5) / 5);
+            await pickTile(1);
+            await click('#paint-band-add'); await sleep(400);
+            await setRange('paint-band-1', Math.round(height * 0.7 * 5) / 5);
+            // a wavy line round the middle with the brush, in a fourth colour
+            await pickTile(4);
+            await click('#paint-bar [data-mode="brush"]');
+            await setRange('paint-size', 3);
+            await look();
+            const wave = [];
+            for (let i = 0; i <= 60; i++) wave.push(at(0.36 + 0.28 * i / 60, 0.5 + 0.035 * Math.sin(i / 60 * Math.PI * 6)));
+            await drag(wave);
+            await evaluate(cdp, 'document.getElementById("tool-viewer").dispatchEvent(new PointerEvent("pointerleave"))');
+            await sleep(400);
+            await look();
+            const { data } = await cdp('Page.captureScreenshot', { format: 'png', clip: { x: box[0], y: box[1], width: box[2], height: box[3], scale: 2 } });
+            writeFileSync(join(OUT, `${NAME}-card.png`), Buffer.from(data, 'base64'));
+            facts.card = JSON.parse(await evaluate(cdp, 'JSON.stringify({ nT: window.mpPaint.mesh().nT, bands: window.mpPaint.state().ui.bands })'));
+            return facts;
+        }
+
         // a tap with the fill: the patch under the middle of the model
         const stats = 'JSON.stringify((() => { const m = window.mpPaint.mesh(); const a = m.areas(); let total = 0; for (const v of a) total += v; return { nT: m.nT, added: m.added(), shares: [...a].map((v) => Math.round(1000 * v / total) / 10).filter((v, i) => i < 8) }; })())';
         let t = Date.now();
@@ -171,6 +204,9 @@ async function walk(width, port) {
             await sleep(200);
         }
 
+        // the fill took the whole body and there is no brush for a model this fine: the fill is taken back, so that the
+        // height below has something to colour
+        if (!(BRUSH && facts.brush_on) && facts.after_fill.shares[0] === 0) { await click('#paint-undo'); await sleep(600); }
         // a colour from a height up
         await click('#paint-band-add');
         await sleep(500);
@@ -197,6 +233,13 @@ async function walk(width, port) {
                 facts.calc = await evaluate(cdp, `({ painted: document.getElementById('viewer')?.dataset.painted ?? null, line: document.getElementById('calc-colors-line')?.innerText ?? null, prices: document.getElementById('calc-colors-prices')?.innerText ?? null,
                     button: document.getElementById('cta-farm')?.innerText?.trim() ?? null, link: document.getElementById('paint-model-link')?.innerText?.trim() ?? null, linkShown: !document.getElementById('paint-model-link')?.classList.contains('hidden') })`);
                 await shot('8-calculation');
+                // back in the tool with the coloured model: its colours are there to go on with
+                await cdp('Page.navigate', { url: `${BASE}${LANG === 'cs' ? '' : `/${LANG}`}/tools/paint?from=${saved.uuid}` });
+                if (await until(cdp, 'typeof window.mpPaint === "object" && window.mpPaint.mesh() !== null', 60000)) {
+                    await sleep(600);
+                    facts.reopened = JSON.parse(await evaluate(cdp, 'JSON.stringify((() => { const m = window.mpPaint.mesh(); const a = m.areas(); let total = 0; for (const v of a) total += v; return { nT: m.nT, slots: window.mpPaint.state().ui.slots.filter((s) => s !== null), shares: [...a].slice(0, 6).map((v) => Math.round(1000 * v / total) / 10), note: document.getElementById("paint-note").textContent }; })())'));
+                    await shot('9-reopened');
+                }
             }
         }
         facts.errors = errors.slice(0, 5);

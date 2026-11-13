@@ -1,0 +1,1001 @@
+{
+  "cube-390": {
+    "width": 390,
+    "file": "cube10.stl",
+    "hscroll_empty": false,
+    "open_s": 4,
+    "state": "",
+    "triangles": 12,
+    "fetch_ms": 363,
+    "weld_ms": 1,
+    "buffers_ms": 1,
+    "brush_on": true,
+    "phone": true,
+    "renderer": "ANGLE (AMD, AMD Radeon(TM) Graphics (0x00001638) Direct3D11 vs_5_0 ps_5_0, D3D11)",
+    "note": "",
+    "frame_ms": 5,
+    "fill_tap_ms": 109,
+    "after_fill": {
+      "nT": 12,
+      "added": 0,
+      "shares": [
+        83.3,
+        16.7,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ]
+    },
+    "stroke_ms": 441,
+    "after_brush": {
+      "nT": 1622,
+      "added": 1610,
+      "shares": [
+        81.1,
+        14.6,
+        4.3,
+        0,
+        0,
+        0,
+        0,
+        0
+      ]
+    },
+    "sound": null,
+    "after_undo": [
+      83.3,
+      16.7,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+    ],
+    "bands": 1,
+    "hscroll": false,
+    "status": "10 × 10 × 10 mm\n·\n3 barvy\n·\nasi 50 výměn filamentu, tisk delší o 1 h 50 min\n·\nvejde se na 250 mm",
+    "save_s": 7.6,
+    "saved": {
+      "uuid": "203e933b-9391-487e-b66c-2f0e3fd4ecdf",
+      "status": "ready",
+      "colors": [
+        "#D1232A",
+        "#F4F4F2",
+        "#1B1B1D"
+      ],
+      "triangles": 1624,
+      "specks": 0,
+      "kind": "paint"
+    },
+    "calc": {
+      "painted": "colors",
+      "line": "Soubor má 3 namalované barvy",
+      "prices": "Barevně od 140 Kč · Jednobarevně 120 Kč",
+      "button": null,
+      "link": "Upravit vybarvení",
+      "linkShown": true
+    },
+    "reopened": {
+      "nT": 1624,
+      "slots": [
+        "#d1232a",
+        "#f4f4f2",
+        "#1b1b1d"
+      ],
+      "shares": [
+        43.7,
+        41.7,
+        14.6,
+        0,
+        0,
+        0
+      ],
+      "note": "Soubor už má namalované barvy. Můžete v nich pokračovat."
+    },
+    "errors": []
+  },
+  "cube-1280": {
+    "width": 1280,
+    "file": "cube10.stl",
+    "hscroll_empty": false,
+    "open_s": 3.8,
+    "state": "",
+    "triangles": 12,
+    "fetch_ms": 373,
+    "weld_ms": 1,
+    "buffers_ms": 1,
+    "brush_on": true,
+    "phone": false,
+    "renderer": "ANGLE (AMD, AMD Radeon(TM) Graphics (0x00001638) Direct3D11 vs_5_0 ps_5_0, D3D11)",
+    "note": "",
+    "frame_ms": 5,
+    "fill_tap_ms": 56,
+    "after_fill": {
+      "nT": 12,
+      "added": 0,
+      "shares": [
+        83.3,
+        16.7,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ]
+    },
+    "stroke_ms": 379,
+    "after_brush": {
+      "nT": 2414,
+      "added": 2402,
+      "shares": [
+        79.2,
+        13.2,
+        7.6,
+        0,
+        0,
+        0,
+        0,
+        0
+      ]
+    },
+    "sound": null,
+    "after_undo": [
+      83.3,
+      16.7,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+    ],
+    "bands": 1,
+    "hscroll": false,
+    "status": "10 × 10 × 10 mm\n·\n3 barvy\n·\nasi 50 výměn filamentu, tisk delší o 1 h 50 min\n·\nvejde se na 250 mm",
+    "save_s": 8.3,
+    "saved": {
+      "uuid": "19520abe-1e82-4a67-b34e-48a3b23f5c48",
+      "status": "ready",
+      "colors": [
+        "#D1232A",
+        "#F4F4F2",
+        "#1B1B1D"
+      ],
+      "triangles": 2414,
+      "specks": 0,
+      "kind": "paint"
+    },
+    "calc": {
+      "painted": "colors",
+      "line": "Soubor má 3 namalované barvy",
+      "prices": "Barevně od 140 Kč · Jednobarevně 120 Kč",
+      "button": null,
+      "link": "Upravit vybarvení",
+      "linkShown": true
+    },
+    "reopened": {
+      "nT": 2414,
+      "slots": [
+        "#d1232a",
+        "#f4f4f2",
+        "#1b1b1d"
+      ],
+      "shares": [
+        45.1,
+        41.7,
+        13.2,
+        0,
+        0,
+        0
+      ],
+      "note": "Soubor už má namalované barvy. Můžete v nich pokračovat."
+    },
+    "errors": []
+  },
+  "ball50k-390": {
+    "width": 390,
+    "file": "ball50000.stl",
+    "hscroll_empty": false,
+    "open_s": 4.3,
+    "state": "",
+    "triangles": 49728,
+    "fetch_ms": 437,
+    "weld_ms": 34,
+    "buffers_ms": 7,
+    "brush_on": true,
+    "phone": true,
+    "renderer": "ANGLE (AMD, AMD Radeon(TM) Graphics (0x00001638) Direct3D11 vs_5_0 ps_5_0, D3D11)",
+    "note": "",
+    "frame_ms": 4.8,
+    "fill_tap_ms": 161,
+    "after_fill": {
+      "nT": 49728,
+      "added": 0,
+      "shares": [
+        0,
+        100,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ]
+    },
+    "stroke_ms": 445,
+    "after_brush": {
+      "nT": 51134,
+      "added": 1406,
+      "shares": [
+        0,
+        97.1,
+        2.9,
+        0,
+        0,
+        0,
+        0,
+        0
+      ]
+    },
+    "sound": null,
+    "after_undo": [
+      0,
+      100,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+    ],
+    "bands": 1,
+    "hscroll": false,
+    "status": "60,5 × 62,2 × 62,2 mm\n·\n2 barvy\n·\nvejde se na 250 mm",
+    "save_s": 9.4,
+    "saved": {
+      "uuid": "99ce81e8-a056-4d89-a74e-df6d74e966a3",
+      "status": "ready",
+      "colors": [
+        "#1B1B1D",
+        "#D1232A"
+      ],
+      "triangles": 52030,
+      "specks": 1,
+      "kind": "paint"
+    },
+    "calc": {
+      "painted": "colors",
+      "line": "Soubor má 2 namalované barvy",
+      "prices": "Barevně od 250 Kč · Jednobarevně 130 Kč",
+      "button": null,
+      "link": "Upravit vybarvení",
+      "linkShown": true
+    },
+    "reopened": {
+      "nT": 52030,
+      "slots": [
+        "#1b1b1d",
+        "#d1232a"
+      ],
+      "shares": [
+        97.1,
+        2.9,
+        0,
+        0,
+        0,
+        0
+      ],
+      "note": "Soubor už má namalované barvy. Můžete v nich pokračovat."
+    },
+    "errors": []
+  },
+  "ball50k-1280": {
+    "width": 1280,
+    "file": "ball50000.stl",
+    "hscroll_empty": false,
+    "open_s": 4,
+    "state": "",
+    "triangles": 49728,
+    "fetch_ms": 366,
+    "weld_ms": 34,
+    "buffers_ms": 6,
+    "brush_on": true,
+    "phone": false,
+    "renderer": "ANGLE (AMD, AMD Radeon(TM) Graphics (0x00001638) Direct3D11 vs_5_0 ps_5_0, D3D11)",
+    "note": "",
+    "frame_ms": 4.9,
+    "fill_tap_ms": 75,
+    "after_fill": {
+      "nT": 49728,
+      "added": 0,
+      "shares": [
+        0,
+        100,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ]
+    },
+    "stroke_ms": 407,
+    "after_brush": {
+      "nT": 51418,
+      "added": 1690,
+      "shares": [
+        0,
+        96.7,
+        3.3,
+        0,
+        0,
+        0,
+        0,
+        0
+      ]
+    },
+    "sound": null,
+    "after_undo": [
+      0,
+      100,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+    ],
+    "bands": 1,
+    "hscroll": false,
+    "status": "60,5 × 62,2 × 62,2 mm\n·\n2 barvy\n·\nvejde se na 250 mm",
+    "save_s": 9.7,
+    "saved": {
+      "uuid": "6da4f030-b87d-466a-85d2-acc6a5cfa62d",
+      "status": "ready",
+      "colors": [
+        "#1B1B1D",
+        "#D1232A"
+      ],
+      "triangles": 52314,
+      "specks": 0,
+      "kind": "paint"
+    },
+    "calc": {
+      "painted": "colors",
+      "line": "Soubor má 2 namalované barvy",
+      "prices": "Barevně od 330 Kč · Jednobarevně 130 Kč",
+      "button": null,
+      "link": "Upravit vybarvení",
+      "linkShown": true
+    },
+    "reopened": {
+      "nT": 52314,
+      "slots": [
+        "#1b1b1d",
+        "#d1232a"
+      ],
+      "shares": [
+        96.7,
+        3.3,
+        0,
+        0,
+        0,
+        0
+      ],
+      "note": "Soubor už má namalované barvy. Můžete v nich pokračovat."
+    },
+    "errors": []
+  },
+  "ball200k-390": {
+    "width": 390,
+    "file": "ball200000.stl",
+    "hscroll_empty": false,
+    "open_s": 5.5,
+    "state": "",
+    "triangles": 198468,
+    "fetch_ms": 379,
+    "weld_ms": 132,
+    "buffers_ms": 12,
+    "brush_on": true,
+    "phone": true,
+    "renderer": "ANGLE (AMD, AMD Radeon(TM) Graphics (0x00001638) Direct3D11 vs_5_0 ps_5_0, D3D11)",
+    "note": "",
+    "frame_ms": 4.8,
+    "fill_tap_ms": 182,
+    "after_fill": {
+      "nT": 198468,
+      "added": 0,
+      "shares": [
+        0,
+        100,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ]
+    },
+    "stroke_ms": 444,
+    "after_brush": {
+      "nT": 200030,
+      "added": 1562,
+      "shares": [
+        0,
+        97.1,
+        2.9,
+        0,
+        0,
+        0,
+        0,
+        0
+      ]
+    },
+    "sound": null,
+    "after_undo": [
+      0,
+      100,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+    ],
+    "bands": 1,
+    "hscroll": false,
+    "status": "60,5 × 62,2 × 62,2 mm\n·\n2 barvy\n·\nvejde se na 250 mm",
+    "save_s": 14.6,
+    "saved": {
+      "uuid": "dc8771fe-f8f5-44f3-ba93-b855a515c8cc",
+      "status": "ready",
+      "colors": [
+        "#1B1B1D",
+        "#D1232A"
+      ],
+      "triangles": 201818,
+      "specks": 0,
+      "kind": "paint"
+    },
+    "calc": {
+      "painted": "colors",
+      "line": "Soubor má 2 namalované barvy",
+      "prices": "Barevně od 250 Kč · Jednobarevně 130 Kč",
+      "button": null,
+      "link": "Upravit vybarvení",
+      "linkShown": true
+    },
+    "reopened": {
+      "nT": 201818,
+      "slots": [
+        "#1b1b1d",
+        "#d1232a"
+      ],
+      "shares": [
+        97.1,
+        2.9,
+        0,
+        0,
+        0,
+        0
+      ],
+      "note": "Model má 201 818 trojúhelníků. Štětec na tomto zařízení pracuje do 200 000; vylití plochy a barvy podle výšky fungují dál."
+    },
+    "errors": []
+  },
+  "ball200k-1280": {
+    "width": 1280,
+    "file": "ball200000.stl",
+    "hscroll_empty": false,
+    "open_s": 5.5,
+    "state": "",
+    "triangles": 198468,
+    "fetch_ms": 405,
+    "weld_ms": 125,
+    "buffers_ms": 13,
+    "brush_on": true,
+    "phone": false,
+    "renderer": "ANGLE (AMD, AMD Radeon(TM) Graphics (0x00001638) Direct3D11 vs_5_0 ps_5_0, D3D11)",
+    "note": "",
+    "frame_ms": 4.9,
+    "fill_tap_ms": 137,
+    "after_fill": {
+      "nT": 198468,
+      "added": 0,
+      "shares": [
+        0,
+        100,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ]
+    },
+    "stroke_ms": 432,
+    "after_brush": {
+      "nT": 200354,
+      "added": 1886,
+      "shares": [
+        0,
+        96.7,
+        3.3,
+        0,
+        0,
+        0,
+        0,
+        0
+      ]
+    },
+    "sound": null,
+    "after_undo": [
+      0,
+      100,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+    ],
+    "bands": 1,
+    "hscroll": false,
+    "status": "60,5 × 62,2 × 62,2 mm\n·\n2 barvy\n·\nvejde se na 250 mm",
+    "save_s": 15,
+    "saved": {
+      "uuid": "c1ad5b5e-f8f6-438d-9638-8456fcdc50d7",
+      "status": "ready",
+      "colors": [
+        "#1B1B1D",
+        "#D1232A"
+      ],
+      "triangles": 202142,
+      "specks": 0,
+      "kind": "paint"
+    },
+    "calc": {
+      "painted": "colors",
+      "line": "Soubor má 2 namalované barvy",
+      "prices": "Barevně od 330 Kč · Jednobarevně 130 Kč",
+      "button": null,
+      "link": "Upravit vybarvení",
+      "linkShown": true
+    },
+    "reopened": {
+      "nT": 202142,
+      "slots": [
+        "#1b1b1d",
+        "#d1232a"
+      ],
+      "shares": [
+        96.7,
+        3.3,
+        0,
+        0,
+        0,
+        0
+      ],
+      "note": "Soubor už má namalované barvy. Můžete v nich pokračovat."
+    },
+    "errors": []
+  },
+  "ball480k-1280": {
+    "width": 1280,
+    "file": "ball480000.stl",
+    "hscroll_empty": false,
+    "open_s": 8.6,
+    "state": "",
+    "triangles": 478170,
+    "fetch_ms": 471,
+    "weld_ms": 310,
+    "buffers_ms": 22,
+    "brush_on": true,
+    "phone": false,
+    "renderer": "ANGLE (AMD, AMD Radeon(TM) Graphics (0x00001638) Direct3D11 vs_5_0 ps_5_0, D3D11)",
+    "note": "",
+    "frame_ms": 4.8,
+    "fill_tap_ms": 241,
+    "after_fill": {
+      "nT": 478170,
+      "added": 0,
+      "shares": [
+        0,
+        100,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ]
+    },
+    "stroke_ms": 452,
+    "after_brush": {
+      "nT": 480960,
+      "added": 2790,
+      "shares": [
+        0,
+        96.7,
+        3.3,
+        0,
+        0,
+        0,
+        0,
+        0
+      ]
+    },
+    "sound": null,
+    "after_undo": [
+      0,
+      100,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+    ],
+    "bands": 1,
+    "hscroll": false,
+    "status": "60,5 × 62,2 × 62,2 mm\n·\n2 barvy\n·\nvejde se na 250 mm",
+    "save_s": 27.3,
+    "saved": {
+      "uuid": "3440602f-c6df-4d57-b3ec-6ebfcb46ccb8",
+      "status": "ready",
+      "colors": [
+        "#1B1B1D",
+        "#D1232A"
+      ],
+      "triangles": 483732,
+      "specks": 0,
+      "kind": "paint"
+    },
+    "calc": {
+      "painted": "colors",
+      "line": "Soubor má 2 namalované barvy",
+      "prices": "Barevně od 330 Kč · Jednobarevně 130 Kč",
+      "button": null,
+      "link": "Upravit vybarvení",
+      "linkShown": true
+    },
+    "reopened": {
+      "nT": 483732,
+      "slots": [
+        "#1b1b1d",
+        "#d1232a"
+      ],
+      "shares": [
+        96.7,
+        3.3,
+        0,
+        0,
+        0,
+        0
+      ],
+      "note": "Soubor už má namalované barvy. Můžete v nich pokračovat."
+    },
+    "errors": []
+  },
+  "ball1m-390": {
+    "width": 390,
+    "file": "ball1000000.stl",
+    "hscroll_empty": false,
+    "open_s": 25.4,
+    "state": "",
+    "triangles": 998000,
+    "fetch_ms": 618,
+    "weld_ms": 712,
+    "buffers_ms": 43,
+    "brush_on": false,
+    "phone": true,
+    "renderer": "ANGLE (AMD, AMD Radeon(TM) Graphics (0x00001638) Direct3D11 vs_5_0 ps_5_0, D3D11)",
+    "note": "Model má 998 000 trojúhelníků. Štětec na tomto zařízení pracuje do 200 000; vylití plochy a barvy podle výšky fungují dál.",
+    "frame_ms": 4.9,
+    "fill_tap_ms": 514,
+    "after_fill": {
+      "nT": 998000,
+      "added": 0,
+      "shares": [
+        0,
+        100,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ]
+    },
+    "bands": 1,
+    "hscroll": false,
+    "status": "60,5 × 62,2 × 62,2 mm\n·\n2 barvy\n·\nvejde se na 250 mm",
+    "save_s": 50.4,
+    "saved": {
+      "uuid": "7931bda9-ca29-4e1b-a016-2f1566e22604",
+      "status": "ready",
+      "colors": [
+        "#1B1B1D",
+        "#F4F4F2"
+      ],
+      "triangles": 1002000,
+      "specks": 0,
+      "kind": "paint"
+    },
+    "calc": {
+      "painted": "colors",
+      "line": "Soubor má 2 namalované barvy",
+      "prices": "Barevně i jednobarevně stejně: 130 Kč",
+      "button": null,
+      "link": "Upravit vybarvení",
+      "linkShown": true
+    },
+    "errors": []
+  },
+  "ball1m-1280": {
+    "width": 1280,
+    "file": "ball1000000.stl",
+    "hscroll_empty": false,
+    "open_s": 25.9,
+    "state": "",
+    "triangles": 998000,
+    "fetch_ms": 619,
+    "weld_ms": 668,
+    "buffers_ms": 42,
+    "brush_on": false,
+    "phone": false,
+    "renderer": "ANGLE (AMD, AMD Radeon(TM) Graphics (0x00001638) Direct3D11 vs_5_0 ps_5_0, D3D11)",
+    "note": "Model má 998 000 trojúhelníků. Štětec na tomto zařízení pracuje do 500 000; vylití plochy a barvy podle výšky fungují dál.",
+    "frame_ms": 5,
+    "fill_tap_ms": 437,
+    "after_fill": {
+      "nT": 998000,
+      "added": 0,
+      "shares": [
+        0,
+        100,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ]
+    },
+    "bands": 1,
+    "hscroll": false,
+    "status": "60,5 × 62,2 × 62,2 mm\n·\n2 barvy\n·\nvejde se na 250 mm",
+    "save_s": 53,
+    "saved": {
+      "uuid": "5e474e62-e138-4e45-839d-003b1f08db88",
+      "status": "ready",
+      "colors": [
+        "#1B1B1D",
+        "#F4F4F2"
+      ],
+      "triangles": 1002000,
+      "specks": 0,
+      "kind": "paint"
+    },
+    "calc": {
+      "painted": "colors",
+      "line": "Soubor má 2 namalované barvy",
+      "prices": "Barevně i jednobarevně stejně: 130 Kč",
+      "button": null,
+      "link": "Upravit vybarvení",
+      "linkShown": true
+    },
+    "errors": []
+  },
+  "ball1m-phone-390": {
+    "width": 390,
+    "file": "ball1000000.stl",
+    "hscroll_empty": false,
+    "open_s": 0,
+    "state": "Model má 998 000 trojúhelníků, nástroj jich zvládne nejvýš 500 000. Zjednodušte ho v programu, kde vznikl, nebo ve sliceru, a nahrajte znovu.",
+    "refused": true
+  },
+  "vase-390": {
+    "width": 390,
+    "file": "vase.stl",
+    "hscroll_empty": false,
+    "open_s": 3.7,
+    "state": "",
+    "triangles": 29756,
+    "fetch_ms": 384,
+    "weld_ms": 17,
+    "buffers_ms": 4,
+    "brush_on": true,
+    "phone": true,
+    "renderer": "ANGLE (AMD, AMD Radeon(TM) Graphics (0x00001638) Direct3D11 vs_5_0 ps_5_0, D3D11)",
+    "note": "",
+    "frame_ms": 5,
+    "fill_tap_ms": 132,
+    "after_fill": {
+      "nT": 29756,
+      "added": 0,
+      "shares": [
+        52.5,
+        47.5,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ]
+    },
+    "stroke_ms": 416,
+    "after_brush": {
+      "nT": 31436,
+      "added": 1680,
+      "shares": [
+        52.5,
+        45.7,
+        1.8,
+        0,
+        0,
+        0,
+        0,
+        0
+      ]
+    },
+    "sound": null,
+    "after_undo": [
+      52.5,
+      47.5,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+    ],
+    "bands": 1,
+    "hscroll": false,
+    "status": "68,6 × 68,6 × 120 mm\n·\n3 barvy\n·\nasi 593 výměn filamentu, tisk delší o 21 h 45 min\n·\nvejde se na 250 mm",
+    "save_s": 8.3,
+    "saved": {
+      "uuid": "77e8edb9-242f-4626-9cb4-966f7c26be64",
+      "status": "ready",
+      "colors": [
+        "#1B1B1D",
+        "#F4F4F2",
+        "#D1232A"
+      ],
+      "triangles": 32396,
+      "specks": 1,
+      "kind": "paint"
+    },
+    "calc": {
+      "painted": "colors",
+      "line": "Soubor má 3 namalované barvy",
+      "prices": "Barevně od 1 200 Kč · Jednobarevně 180 Kč",
+      "button": null,
+      "link": "Upravit vybarvení",
+      "linkShown": true
+    },
+    "reopened": {
+      "nT": 32396,
+      "slots": [
+        "#1b1b1d",
+        "#f4f4f2",
+        "#d1232a"
+      ],
+      "shares": [
+        45.7,
+        28.6,
+        25.7,
+        0,
+        0,
+        0
+      ],
+      "note": "Soubor už má namalované barvy. Můžete v nich pokračovat."
+    },
+    "errors": []
+  },
+  "vase-1280": {
+    "width": 1280,
+    "file": "vase.stl",
+    "hscroll_empty": false,
+    "open_s": 3.8,
+    "state": "",
+    "triangles": 29756,
+    "fetch_ms": 380,
+    "weld_ms": 20,
+    "buffers_ms": 5,
+    "brush_on": true,
+    "phone": false,
+    "renderer": "ANGLE (AMD, AMD Radeon(TM) Graphics (0x00001638) Direct3D11 vs_5_0 ps_5_0, D3D11)",
+    "note": "",
+    "frame_ms": 5,
+    "fill_tap_ms": 64,
+    "after_fill": {
+      "nT": 29756,
+      "added": 0,
+      "shares": [
+        52.5,
+        47.5,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ]
+    },
+    "stroke_ms": 396,
+    "after_brush": {
+      "nT": 31106,
+      "added": 1350,
+      "shares": [
+        52.5,
+        46.1,
+        1.4,
+        0,
+        0,
+        0,
+        0,
+        0
+      ]
+    },
+    "sound": null,
+    "after_undo": [
+      52.5,
+      47.5,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+    ],
+    "bands": 1,
+    "hscroll": false,
+    "status": "68,6 × 68,6 × 120 mm\n·\n3 barvy\n·\nasi 593 výměn filamentu, tisk delší o 21 h 45 min\n·\nvejde se na 250 mm",
+    "save_s": 8.6,
+    "saved": {
+      "uuid": "98dc1c6f-820f-4f70-b233-334fc446696a",
+      "status": "ready",
+      "colors": [
+        "#1B1B1D",
+        "#F4F4F2",
+        "#D1232A"
+      ],
+      "triangles": 32066,
+      "specks": 0,
+      "kind": "paint"
+    },
+    "calc": {
+      "painted": "colors",
+      "line": "Soubor má 3 namalované barvy",
+      "prices": "Barevně od 1 200 Kč · Jednobarevně 180 Kč",
+      "button": null,
+      "link": "Upravit vybarvení",
+      "linkShown": true
+    },
+    "reopened": {
+      "nT": 32066,
+      "slots": [
+        "#1b1b1d",
+        "#f4f4f2",
+        "#d1232a"
+      ],
+      "shares": [
+        46.1,
+        28.6,
+        25.3,
+        0,
+        0,
+        0
+      ],
+      "note": "Soubor už má namalované barvy. Můžete v nich pokračovat."
+    },
+    "errors": []
+  }
+}

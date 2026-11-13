@@ -181,6 +181,38 @@ const totalArea = (mesh) => { let a = 0; for (let t = 0; t < mesh.nT; t++) a += 
     ok(guided.added() < plain.added() * 0.6, `and refine less: ${guided.added()} against ${plain.added()} triangles`);
 }
 
+// ── a wavy stroke over a curved surface, drawn the way the page draws it: the rims of its dabs graze one another, and
+//    the brush once cut one spot down to nothing until it ran out of triangles (400 000 slivers from one stroke) ──
+{
+    const mesh = PaintMesh.fromSoup(ball(50000));
+    const top = mesh.hitNear(0, [-20, 0, 100], [0, 0, -1], mesh.nT);
+    ok(top !== null, 'the start of the wavy stroke');
+    mesh.begin();
+    mesh.strokeStart(2.5, 1);
+    let seed = top[0]; let last = null; let was = null;
+    for (let i = 0; i <= 90; i++) {
+        const x = -20 + i * 0.45; const y = 4 * Math.sin(x / 3);
+        const hit = mesh.hitNear(seed, [x, y, 100], [0, 0, -1], 20000);
+        if (!hit) continue;
+        seed = hit[0];
+        const point = [x, y, 100 - hit[1]];
+        let dir = null;
+        if (last) { const d = [point[0] - last[0], point[1] - last[1], point[2] - last[2]]; const len = Math.hypot(...d); dir = d.map((v) => v / len); if (was && was[0] * dir[0] + was[1] * dir[1] + was[2] * dir[2] < 0.7) dir = null; }
+        mesh.strokeDab(seed, point, 1.0, mesh.srcT + 400000, dir);
+        was = dir; last = point;
+    }
+    mesh.strokeEnd();
+    mesh.end();
+    ok(mesh.sound() === null, `the wavy stroke: ${mesh.sound()}`);
+    ok(mesh.added() > 500 && mesh.added() < 12000, `the wavy stroke added ${mesh.added()} triangles`);
+    let slivers = 0;
+    for (let t = mesh.srcT; t < mesh.nT; t++) if (mesh.area(t) < 1e-7) slivers++;
+    ok(slivers === 0, `${slivers} of the added triangles have no area`);
+    // about a band of 5 mm along the wave (its length 44 mm and a little), nothing far from it
+    const painted = mesh.areas()[1];
+    ok(painted > 200 && painted < 320, `the wavy stroke painted ${Math.round(painted)} mm²`);
+}
+
 // ── the eraser is the brush with state 0; the fill over a brushed line ──
 {
     const mesh = PaintMesh.fromSoup(ball(20000));
@@ -192,6 +224,19 @@ const totalArea = (mesh) => { let a = 0; for (let t = 0; t < mesh.nT; t++) a += 
     mesh.brush(top[0], [0.1, 0.2, 30], 4, 0, 0.4, 500000);
     mesh.end();
     near(mesh.areas()[0], Math.PI * 16, Math.PI * 16 * 0.03, 'the eraser leaves a disc of the model\'s own colour');
+}
+
+// ── what the colours cost: filament changes by layer ──
+{
+    const mesh = PaintMesh.fromSoup(box(10, 10, 10, 1));
+    ok(mesh.colourChanges([]) === 0, 'one colour: no change');
+    ok(mesh.colourChanges([{ z: 5, color: 1 }]) === 1, 'two colours one above the other: one change');
+    ok(mesh.colourChanges([{ z: 3, color: 1 }, { z: 7, color: 2 }]) === 2, 'three colours one above another: two changes');
+    mesh.begin();
+    mesh.flood(4, 30, 1);        // a side of the cube, bottom to top
+    mesh.end();
+    ok(mesh.colourChanges([]) === 50, `a side in another colour: a change in each of the 50 layers (${mesh.colourChanges([])})`);
+    ok(mesh.colourChanges([{ z: 5, color: 2 }]) === 50, 'and a band beside it changes nothing about that: still two colours a layer');
 }
 
 // ── bands and the count of colours ──

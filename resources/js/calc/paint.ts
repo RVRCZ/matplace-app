@@ -22,7 +22,7 @@ import type { FileInfo } from './api';
 import { extensionOf } from './loaders';
 import { PaintMesh, Step, cleanBands, usedStates } from './paint_mesh';
 
-interface Limits { max_triangles: number; max_added: number; brush_triangles: number; brush_triangles_phone: number; max_colors: number; max_heights: number; edge_mm: number; speck_mm2: number }
+interface Limits { change_minutes: number; max_triangles: number; max_triangles_phone: number; max_added: number; brush_triangles: number; brush_triangles_phone: number; max_colors: number; max_heights: number; edge_mm: number; speck_mm2: number }
 interface Tile { hex: string; name: string; loaded: boolean }
 interface Cfg { upload: string; files: string; download: string; home: string; from: string | null; formats: string[]; maxMb: number; limits: Limits; tiles: Tile[]; fromFarm: boolean; i18n: Record<string, string> }
 interface Band { z: number; color: number }
@@ -278,6 +278,8 @@ export function bootPaint(stage: Stage): void {
     const limits = cfg.limits;
     const phone = window.matchMedia?.('(pointer: coarse)').matches ?? false;
     const brushLimit = phone ? limits.brush_triangles_phone : limits.brush_triangles;
+    // a phone has less memory: a model it could not hold is refused with a sentence instead of a page that dies
+    const openLimit = phone ? Math.min(limits.max_triangles, limits.max_triangles_phone) : limits.max_triangles;
     const tileName = new Map(cfg.tiles.map((x) => [x.hex.toLowerCase(), x.name]));
     const nameOf = (hex: string): string => tileName.get(hex.toLowerCase()) ?? hex;
 
@@ -299,6 +301,7 @@ export function bootPaint(stage: Stage): void {
     let saving: Promise<Painted | null> | null = null;
     let areas: Float64Array = new Float64Array(256);
     let full = false;        // the brush met its limit of triangles
+    let changes = 0;         // filament changes a print of the colouring as it is would take
     let timings: Record<string, number> = {};     // how long the last model took to open (docs/AS.md §6)
 
     const state = $('paint-state'); const note = $('paint-note'); const source = $('paint-source'); const result = $('paint-result');
@@ -318,7 +321,11 @@ export function bootPaint(stage: Stage): void {
         view.setBands(ui.bands, zLo);
         if (stats) areas = pm.areas();
         const used = usedStates(areas, ui.bands);
-        stage.status({ bbox: model?.bbox ?? null, colors: used.length });
+        // what the colours cost: a filament change for every colour a layer holds beyond its first, about two minutes each
+        if (stats) changes = used.length > 1 ? pm.colourChanges(ui.bands) : 0;
+        const minutes = Math.round(changes * limits.change_minutes);
+        const time = minutes >= 60 ? `${Math.floor(minutes / 60)} h ${minutes % 60} min` : `${minutes} min`;
+        stage.status({ bbox: model?.bbox ?? null, colors: used.length, extra: changes > 0 ? [count('changes', changes).replace(':time', time)] : [] });
         drawSwatches(); drawColors(); drawBands();
         const undo = [$('paint-undo') as HTMLButtonElement, $('tool-undo') as HTMLButtonElement]; const redo = [$('paint-redo') as HTMLButtonElement, $('tool-redo') as HTMLButtonElement];
         undo.forEach((b) => { b.disabled = at === 0; }); redo.forEach((b) => { b.disabled = at >= entries.length; });
@@ -522,6 +529,7 @@ export function bootPaint(stage: Stage): void {
         if (!pm || !stroke) return false;
         const hit = view.pick(x, y, pm);
         if (!hit) return false;
+        lastPx = view.pixelsPerMm(hit.dist);
         // the way the stroke goes, from the last point on the model to this one; the first dab, a jump and a sharp turn have none
         let dir: [number, number, number] | null = null;
         if (stroke.at) {
@@ -739,6 +747,8 @@ export function bootPaint(stage: Stage): void {
                 if (file.status !== 'ready') { stage.error(failText(file.error)); return null; }
                 if (file.paint?.lost) { stage.error(t('saved.lost')); return null; }
                 if (mine === rev) saved = { rev: mine, file };
+                // a step back from the calculation, or a reload, opens the coloured model, not the bare one
+                stage.keep(file.uuid);
                 const specks = file.paint?.report?.specks?.count ?? 0;
                 result.textContent = specks > 0 ? count('saved.specks', specks) : '';
                 result.classList.toggle('hidden', specks < 1);
@@ -774,14 +784,14 @@ export function bootPaint(stage: Stage): void {
     const open = async (file: FileInfo): Promise<void> => {
         if (file.status !== 'ready' || !file.stl_url) { say(t('model_failed')); return; }
         const n = file.triangles ?? 0;
-        if (n > limits.max_triangles) { say(t('error.too_heavy', { n: whole.format(n), max: whole.format(limits.max_triangles) })); return; }
+        if (n > openLimit) { say(t('error.too_heavy', { n: whole.format(n), max: whole.format(openLimit) })); return; }
         say(t('loading'));
         const t0 = performance.now();
         const res = await fetch(file.stl_url, { credentials: 'same-origin' });
         const soup = res.ok ? soupOfStl(await res.arrayBuffer()) : null;
         const t1 = performance.now();
         if (!soup) { say(t('model_failed')); return; }
-        if (soup.length / 9 > limits.max_triangles) { say(t('error.too_heavy', { n: whole.format(soup.length / 9), max: whole.format(limits.max_triangles) })); return; }
+        if (soup.length / 9 > openLimit) { say(t('error.too_heavy', { n: whole.format(soup.length / 9), max: whole.format(openLimit) })); return; }
         say(t('preparing'));
         await new Promise((r) => setTimeout(r, 30));      // the line above is drawn before the page is busy welding
         const t2 = performance.now();
@@ -812,7 +822,8 @@ export function bootPaint(stage: Stage): void {
         source.textContent = t('source', { name: file.name, n: whole.format(mesh.srcT) });
         source.classList.remove('hidden');
         // the brush refines the mesh: above its limit only the fill and the heights are offered, and the page says so
-        brushOn = mesh.srcT <= brushLimit;
+        // (a model coloured here comes back with what the brush added to it: that much more is still the brush's to work on)
+        brushOn = mesh.srcT <= brushLimit + (file.kind === 'paint' ? limits.max_added : 0);
         bar.querySelectorAll<HTMLButtonElement>('[data-mode="brush"], [data-mode="erase"]').forEach((b) => { b.disabled = !brushOn; b.classList.toggle('opacity-40', !brushOn); });
         note.textContent = brushOn ? (fits ? t('opened.painted') : '') : t('brush.off', { n: whole.format(mesh.srcT), max: whole.format(brushLimit) });
         note.classList.toggle('hidden', note.textContent === '');
@@ -833,6 +844,11 @@ export function bootPaint(stage: Stage): void {
         stage.error(null);
         if (!cfg.formats.includes(extensionOf(picked.name))) { say(t('bad_format', { formats: cfg.formats.map((f) => f.toUpperCase()).join(', ') })); return; }
         if (picked.size > cfg.maxMb * 1024 * 1024) { say(t('too_big', { max: cfg.maxMb })); return; }
+        // a binary STL says how many triangles it has in its header: one too fine is refused before it is sent anywhere
+        if (extensionOf(picked.name) === 'stl' && picked.size >= 84) {
+            const n = new DataView(await picked.slice(80, 84).arrayBuffer()).getUint32(0, true);
+            if (picked.size === 84 + n * 50 && n > openLimit) { say(t('error.too_heavy', { n: whole.format(n), max: whole.format(openLimit) })); return; }
+        }
         say(t('uploading', { pct: 0 }));
         try {
             const file = await new Promise<FileInfo>((resolve, reject) => {
@@ -865,5 +881,5 @@ export function bootPaint(stage: Stage): void {
         void stage.fetchFile(cfg.from).then((f) => stage.untilReady(f)).then(open).catch(() => say(t('model_failed')));
     }
     // for the walk-through scripts and the measurements (docs/AS.md §6): the mesh and the view of this page
-    (window as unknown as { mpPaint?: unknown }).mpPaint = { mesh: () => pm, view, save, state: () => ({ ui, mode, rev, entries: entries.length, at, timings, brushOn, phone }) };
+    (window as unknown as { mpPaint?: unknown }).mpPaint = { mesh: () => pm, view, save, state: () => ({ ui, mode, rev, entries: entries.length, at, timings, brushOn, phone, changes }) };
 }

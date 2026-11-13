@@ -20,7 +20,7 @@ return [
         ['q' => 'Why does a multicolour print cost more than one colour?', 'a' => 'At every colour change the printer pushes the old filament out into a prime tower and loads the new one. That takes about two minutes and a little plastic. A model with colours side by side over its whole height has such a change in every layer, a model with colours one above another only one per change.'],
         ['q' => 'How fine can the painted details be?', 'a' => 'The nozzle is 0.4 mm wide and cannot print a thinner line. The brush therefore draws its edge to about 0.4 mm, and specks under half a square millimetre are merged into the colour around them when you save; the tool tells you how many there were.'],
         ['q' => 'Does colouring change the shape of the model?', 'a' => 'No. The fill and the colours by height only give the faces of the model a colour; the brush also splits the faces under the stroke into smaller ones, so the edge of the colour runs where you dragged. The surface and the size stay the same.'],
-        ['q' => 'Does the tool handle large models and phones?', 'a' => 'The fill and the colours by height work up to a million triangles. The brush refines the mesh, so it works up to half a million triangles on a computer and two hundred thousand on a phone; for larger models the tool switches the brush off and says so.'],
+        ['q' => 'Does the tool handle large models and phones?', 'a' => 'The fill and the colours by height work up to a million triangles on a computer and half a million on a phone. The brush refines the mesh, so it works up to half a million triangles on a computer and two hundred thousand on a phone; for larger models the tool switches the brush off and says so.'],
     ],
     'examples' => [],
 ];

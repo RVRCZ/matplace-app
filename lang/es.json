@@ -2706,5 +2706,8 @@
     "paint.opened.painted": "El archivo ya tiene colores pintados. Puede continuar con ellos.",
     "paint.tip": "Imprimimos el modelo en color de una vez en una impresora que cambia de filamento sola. El cálculo muestra el precio en un color y en colores.",
     "paint.calc.link": "Colorear el modelo",
-    "paint.calc.link.edit": "Cambiar el coloreado"
+    "paint.calc.link.edit": "Cambiar el coloreado",
+    "paint.changes.one": "aprox. :n cambio de filamento, la impresión :time más larga",
+    "paint.changes.few": "aprox. :n cambios de filamento, la impresión :time más larga",
+    "paint.changes.other": "aprox. :n cambios de filamento, la impresión :time más larga"
 }

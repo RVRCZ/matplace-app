@@ -500,39 +500,43 @@ export class PaintMesh {
 
     private cellKey(x: number, y: number, z: number): number { return (Math.imul(x, 73856093) ^ Math.imul(y, 19349663) ^ Math.imul(z, 83492791)) | 0; }
 
-    /** Is a point within the stroke: within r of a dab's middle, or of the line from a dab to the one before it. */
-    private inStroke(x: number, y: number, z: number): boolean {
+    /**
+     * How deep a point lies in the stroke: the brush's radius less the distance to the nearest dab's middle or to the
+     * line from a dab to the one before it (mm; above zero inside, below outside, far outside a large negative number).
+     */
+    private depth(x: number, y: number, z: number): number {
         const k = this.sk!; const c = k.c;
         const size = 2 * k.r;
         const ix = Math.floor(x / size); const iy = Math.floor(y / size); const iz = Math.floor(z / size);
+        let best = Infinity;
         for (let dx = -1; dx <= 1; dx++) for (let dy = -1; dy <= 1; dy++) for (let dz = -1; dz <= 1; dz++) {
             const list = k.grid.get(this.cellKey(ix + dx, iy + dy, iz + dz));
             if (!list) continue;
             for (const i of list) {
                 const ax = x - c[i * 3]; const ay = y - c[i * 3 + 1]; const az = z - c[i * 3 + 2];
-                if (ax * ax + ay * ay + az * az <= k.r2) return true;
-                if (!k.linked[i]) continue;
-                // the nearest point of the line from this dab back to the one before it
-                const bx = c[i * 3 - 3] - c[i * 3]; const by = c[i * 3 - 2] - c[i * 3 + 1]; const bz = c[i * 3 - 1] - c[i * 3 + 2];
-                const f = (ax * bx + ay * by + az * bz) / (bx * bx + by * by + bz * bz || 1);
-                if (f <= 0 || f >= 1) continue;
-                const ex = ax - bx * f; const ey = ay - by * f; const ez = az - bz * f;
-                if (ex * ex + ey * ey + ez * ez <= k.r2) return true;
+                let d = ax * ax + ay * ay + az * az;
+                if (k.linked[i]) {
+                    // the nearest point of the line from this dab back to the one before it
+                    const bx = c[i * 3 - 3] - c[i * 3]; const by = c[i * 3 - 2] - c[i * 3 + 1]; const bz = c[i * 3 - 1] - c[i * 3 + 2];
+                    const f = (ax * bx + ay * by + az * bz) / (bx * bx + by * by + bz * bz || 1);
+                    if (f > 0 && f < 1) { const ex = ax - bx * f; const ey = ay - by * f; const ez = az - bz * f; d = ex * ex + ey * ey + ez * ez; }
+                }
+                if (d < best) best = d;
             }
         }
-        return false;
+        return best === Infinity ? -1e9 : k.r - Math.sqrt(best);
     }
 
     /**
      * Where the stroke's rim crosses an edge whose ends lie on its two sides: the share of the way from the vertex at
-     * `a` to the one at `b` (offsets into pos), found by halving; the point returned is still inside the stroke.
+     * `a` to the one at `b` (offsets into pos), found by halving; the point returned is on the rim or a hair inside.
      */
     private rimAt(a: number, b: number, aOutside: boolean): number {
         const pos = this.pos;
         let inside = aOutside ? 1 : 0; let outside = aOutside ? 0 : 1;
-        for (let i = 0; i < 12; i++) {
+        for (let i = 0; i < 14; i++) {
             const f = (inside + outside) / 2;
-            if (this.inStroke(pos[a] + (pos[b] - pos[a]) * f, pos[a + 1] + (pos[b + 1] - pos[a + 1]) * f, pos[a + 2] + (pos[b + 2] - pos[a + 2]) * f)) inside = f; else outside = f;
+            if (this.depth(pos[a] + (pos[b] - pos[a]) * f, pos[a + 1] + (pos[b + 1] - pos[a + 1]) * f, pos[a + 2] + (pos[b + 2] - pos[a + 2]) * f) >= 0) inside = f; else outside = f;
         }
         return inside;
     }
@@ -547,32 +551,49 @@ export class PaintMesh {
     /**
      * The work of a dab: the triangles within reach of `p`, and those that waited (`must`), are painted, split or left
      * waiting. `closing`: the stroke is over, with the fineness and the limit of its last dab.
+     *
+     * A corner counts as inside or outside the stroke only when it is so by more than a hair (`eps`); a corner on the
+     * rim is neither. A triangle is cut only between a corner clearly inside and one clearly outside, and the point
+     * of the cut lies on the rim: so no cut can ask for another one beside it, however the rims of two dabs graze
+     * each other (they did, and the brush split one spot down to nothing until it ran out of triangles).
      */
     private settle(stack: number[], p: ArrayLike<number>, edge: number, maxT: number, dir: ArrayLike<number> | null, closing = false): boolean {
         const k = this.sk!;
         const s = k.s; const r2 = k.r2;
         if (closing) { edge = this.lastEdge; maxT = this.lastMax; } else { this.lastEdge = edge; this.lastMax = maxT; }
         const e2 = edge * edge;
+        const eps = Math.min(0.02, Math.max(0.002, 0.02 * edge));
+        const deep = (k.r - eps) * (k.r - eps);
         // a dab joined to the one before it reaches as far as the line between them does: a little beyond the two balls
         const joined = !closing && k.linked[k.linked.length - 1] === true;
         const reach = joined ? r2 * 1.07 : r2;
         const id = ++this.stamp;
         const waits: number[] = [];
         let whole = true;
-        while (stack.length) {
+        let budget = 200000;     // no dab ever needs this many looks: a guard against a loop nobody thought of
+        while (stack.length && budget-- > 0) {
             const t = stack.pop()!;
             if (this.mark[t] === id) continue;
-            if (this.dist2(t, p[0], p[1], p[2]) > reach && (!joined || this.dist2(t, k.c[k.c.length - 6], k.c[k.c.length - 5], k.c[k.c.length - 4]) > reach)) {
+            let d2 = this.dist2(t, p[0], p[1], p[2]);
+            if (joined && d2 > r2) d2 = Math.min(d2, this.dist2(t, k.c[k.c.length - 6], k.c[k.c.length - 5], k.c[k.c.length - 4]));
+            if (d2 > reach) {
                 // out of this dab's reach: only what waited, or a piece of it, is still looked at, while it reaches into the stroke
                 if (!this.must[t]) continue;
                 if (!this.touchesStroke(t)) { this.must[t] = 0; continue; }
+                d2 = 0;
             }
             this.mark[t] = id;
             this.must[t] = 0;
             const pos = this.pos; const tri = this.tri;
             const a = tri[t * 3] * 3; const b = tri[t * 3 + 1] * 3; const c = tri[t * 3 + 2] * 3;
-            const oa = !this.inStroke(pos[a], pos[a + 1], pos[a + 2]); const ob = !this.inStroke(pos[b], pos[b + 1], pos[b + 2]); const oc = !this.inStroke(pos[c], pos[c + 1], pos[c + 2]);
-            if ((oa || ob || oc) && this.state[t] !== s) {
+            const da = this.depth(pos[a], pos[a + 1], pos[a + 2]); const db = this.depth(pos[b], pos[b + 1], pos[b + 2]); const dc = this.depth(pos[c], pos[c + 1], pos[c + 2]);
+            const oa = da < -eps; const ob = db < -eps; const oc = dc < -eps;
+            const hasIn = da > eps || db > eps || dc > eps;
+            if (!oa && !ob && !oc) {
+                // no corner outside: the stroke's own; three corners on the rim go by their middle
+                if (hasIn || this.depth((pos[a] + pos[b] + pos[c]) / 3, (pos[a + 1] + pos[b + 1] + pos[c + 1]) / 3, (pos[a + 2] + pos[b + 2] + pos[c + 2]) / 3) >= 0) this.set(t, s);
+            } else if (this.state[t] !== s && (hasIn || d2 < deep)) {
+                // the rim crosses it
                 const len2 = this.longest(t)[1];
                 const ahead = (v: number): boolean => (pos[v] - p[0]) * dir![0] + (pos[v + 1] - p[1]) * dir![1] + (pos[v + 2] - p[2]) * dir![2] > 0;
                 if (dir && len2 <= r2 && (!oa || ahead(a)) && (!ob || ahead(b)) && (!oc || ahead(c))) {
@@ -591,11 +612,12 @@ export class PaintMesh {
                     // fine enough: the triangle is cut where the stroke's rim crosses its edges, so the rim is a clean line
                     // through points that lie on it (not the zigzag of whole triangles in or out)
                     if (this.nT + 100 <= maxT) {
-                        const outside = [oa, ob, oc];
+                        const depths = [da, db, dc];
                         let cut = false;
                         for (let e = 0; e < 3 && !cut; e++) {
-                            if (outside[e] === outside[(e + 1) % 3]) continue;
-                            const f = this.rimAt(tri[t * 3 + e] * 3, tri[t * 3 + (e + 1) % 3] * 3, outside[e]);
+                            const d0 = depths[e]; const d1 = depths[(e + 1) % 3];
+                            if (!((d0 > eps && d1 < -eps) || (d0 < -eps && d1 > eps))) continue;
+                            const f = this.rimAt(tri[t * 3 + e] * 3, tri[t * 3 + (e + 1) % 3] * 3, d0 < 0);
                             // a crossing right at a corner is that corner: no sliver is cut off for it
                             if (f < 0.12 || f > 0.88) continue;
                             const from = this.dirtyGeom.length;
@@ -607,11 +629,12 @@ export class PaintMesh {
                         if (cut) continue;
                     }
                     // nothing left to cut: the triangle goes with its middle
-                    if (this.inStroke((pos[a] + pos[b] + pos[c]) / 3, (pos[a + 1] + pos[b + 1] + pos[c + 1]) / 3, (pos[a + 2] + pos[b + 2] + pos[c + 2]) / 3)) this.set(t, s);
+                    if (this.depth((pos[a] + pos[b] + pos[c]) / 3, (pos[a + 1] + pos[b + 1] + pos[c + 1]) / 3, (pos[a + 2] + pos[b + 2] + pos[c + 2]) / 3) >= 0) this.set(t, s);
                 }
-            } else if (!oa && !ob && !oc) this.set(t, s);
+            }
             for (let i = 0; i < 3; i++) { const u = this.adj[t * 3 + i]; if (u >= 0 && this.mark[u] !== id) stack.push(u); }
         }
+        if (stack.length) whole = false;
         k.pending = waits;
         return whole;
     }
@@ -626,6 +649,44 @@ export class PaintMesh {
         const out = new Float64Array(256);
         for (let t = 0; t < this.nT; t++) out[this.state[t]] += this.area(t);
         return out;
+    }
+
+    /**
+     * How many times a print of this colouring changes its filament: in every layer one change for each colour beyond
+     * the first that the layer holds (the same count the server makes of a painted 3MF, PaintedColors::extra). A
+     * triangle that is not painted counts in the colour of each band it reaches into. `layer` in mm.
+     */
+    colourChanges(bands: { z: number; color: number }[], layer = 0.2): number {
+        const [lo, hi] = this.heightRange();
+        if (!(hi > lo)) return 0;
+        const nl = Math.min(50000, Math.max(1, Math.ceil((hi - lo) / layer)));
+        const at = (z: number): number => Math.min(nl - 1, Math.max(0, Math.floor((z - lo) / layer)));
+        const diff: (Int32Array | undefined)[] = [];
+        const add = (s: number, a: number, b: number): void => { const d = diff[s] ?? (diff[s] = new Int32Array(nl + 1)); d[a]++; d[b + 1]--; };
+        const cuts = bands.map((b) => lo + b.z);
+        const { pos, tri } = this;
+        for (let t = 0; t < this.nT; t++) {
+            const za = pos[tri[t * 3] * 3 + 2]; const zb = pos[tri[t * 3 + 1] * 3 + 2]; const zc = pos[tri[t * 3 + 2] * 3 + 2];
+            const zmin = Math.min(za, zb, zc); const zmax = Math.max(za, zb, zc);
+            const s = this.state[t];
+            if (s !== 0 || !cuts.length) { add(s, at(zmin), at(zmax)); continue; }
+            // below the first band the model's own colour, then band by band
+            if (zmin < cuts[0]) add(0, at(zmin), at(Math.min(zmax, cuts[0] - 1e-6)));
+            for (let i = 0; i < cuts.length; i++) {
+                const from = Math.max(zmin, cuts[i]); const to = i + 1 < cuts.length ? Math.min(zmax, cuts[i + 1] - 1e-6) : zmax;
+                if (to >= from) add(bands[i].color, at(from), at(to));
+            }
+        }
+        const colours = new Int32Array(nl);
+        const which = new Int32Array(nl);       // the sum of the states a layer holds: the state itself where there is one
+        diff.forEach((d, s) => { if (!d) return; let run = 0; for (let i = 0; i < nl; i++) { run += d[i]; if (run > 0) { colours[i]++; which[i] += s; } } });
+        let changes = 0;
+        for (let i = 0; i < nl; i++) {
+            if (colours[i] > 1) changes += colours[i] - 1;
+            // colours one above another: a layer in one colour on a layer in another one is a change too
+            else if (i > 0 && colours[i] === 1 && colours[i - 1] === 1 && which[i] !== which[i - 1]) changes++;
+        }
+        return changes;
     }
 
     /** The lowest and the highest z of the model. */
