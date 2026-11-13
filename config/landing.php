@@ -89,5 +89,6 @@ return [
         'slider' => ['related' => ['flexi_cut', 'puzzle', 'coaster'], 'blog' => ['jak-pripravit-stl-soubor-pro-3d-tisk']],
         // the headband came with main on 13 Nov 2026; no article is about it yet
         'headband' => ['related' => ['earrings', 'medallion', 'wearable'], 'blog' => []],
+        'paint' => ['related' => ['filament_art', 'charm', 'relief'], 'blog' => []],
     ],
 ];
