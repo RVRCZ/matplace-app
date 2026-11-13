@@ -165,6 +165,8 @@ class ModelFile extends Model
         return [
             'token' => $req->token,
             'refinable' => app(GenerationService::class)->basePrompt($req) !== null,
+            // a free design of the home page (docs/AN.md §24.4): its changes in words are counted by the home page's own counts
+            'design' => ! empty($req->description['intake']),
             'pedestal' => app(PedestalChanger::class)->state($this),
             // a pet figurine: its look, its base and its thinnest place (the tool page warns below 2.5 mm)
             'pet' => app(PedestalChanger::class)->petState($this),

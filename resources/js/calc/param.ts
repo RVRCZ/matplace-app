@@ -1453,7 +1453,12 @@ export function bootParam(stage: Stage): void {
             .finally(() => { track(false); void refresh(); });
     } else {
         const qs = new URLSearchParams(location.search);
-        const preset = qs.get('preset') ?? cfg.preset;      // asked for in the address, or the one this page of the tool starts with
+        // the wish from the home page, already in this form's own values (App\Domain\Intake\IntakePrefill, docs/AN.md §24.3):
+        // a preset (the place on a medal), texts, numbers, choices, colours of parts; `_qty` and `_material` for the last step
+        const given: Record<string, unknown> = { ...((stage.cfg.intake as { values?: Record<string, unknown> } | null | undefined)?.values ?? {}) };
+        const wished: Record<string, unknown> = {};
+        Object.entries(given).forEach(([k, v]) => { if (k !== 'preset' && !k.startsWith('_')) wished[k] = v; });
+        const preset = (typeof given.preset === 'string' && cfg.presets[given.preset] ? given.preset : null) ?? qs.get('preset') ?? cfg.preset;      // from the wish, asked for in the address, or the one this page of the tool starts with
         if (preset && cfg.presets[preset]) {
             applyValues(cfg.presets[preset]);
             form.querySelectorAll('[data-preset]').forEach((o) => o.classList.toggle('chip-on', (o as HTMLElement).dataset.preset === preset));
@@ -1463,10 +1468,19 @@ export function bootParam(stage: Stage): void {
         const typed: Record<string, string> = {};
         form.querySelectorAll<HTMLInputElement>('[data-text]').forEach((i) => { const v = qs.get(i.dataset.text!); if (v) typed[i.dataset.text!] = v.slice(0, i.maxLength > 0 ? i.maxLength : 40); });
         if (Object.keys(typed).length) applyValues(typed);
+        if (Object.keys(wished).length) {
+            if ('motif' in wished) motifChosen = true;
+            applyValues(wished);
+            // a name of the wish stands instead of our sample picture, like a name typed in the address
+            form.querySelectorAll<HTMLInputElement>('[data-text]').forEach((i) => { const k = i.dataset.text!; if (typeof wished[k] === 'string' && wished[k]) typed[k] = String(wished[k]); });
+        }
+        if (typeof given._qty === 'string' && Number(given._qty) >= 1) ($('param-qty') as HTMLInputElement).value = given._qty;
+        const plastic = $('param-material') as HTMLSelectElement;
+        if (typeof given._material === 'string' && [...plastic.options].some((o) => o.value === given._material)) plastic.value = given._material;
         // a tool that needs a picture opens with one of ours, so the first thing a visitor sees is a finished thing
         // (a name typed in the address stands instead of the picture, unless the tool puts it under the picture)
         if ((cfg.captioned || !Object.keys(typed).length) && cfg.sample && !artwork && (shape ? !preset : preset === cfg.preset)) setArtwork({ ref: cfg.sample, name: '', url: null });
-        track(!preset && !Object.keys(typed).length);
+        track(!preset && !Object.keys(typed).length && !Object.keys(wished).length);
         void refresh();
     }
 }

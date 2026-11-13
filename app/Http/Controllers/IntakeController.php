@@ -20,7 +20,7 @@ use Symfony\Component\HttpFoundation\BinaryFileResponse;
 class IntakeController extends Controller
 {
     /** What POST /intake/event may say; the event is `intake_<type>`. */
-    public const EVENTS = ['view', 'chip', 'photo', 'voice'];
+    public const EVENTS = ['view', 'chip', 'photo', 'voice', 'again'];
 
     /** POST /intake: multipart photo | model | text (at least one). 201 with the decision, 422 with a sentence. */
     public function store(Request $request, IntakeService $service): JsonResponse
@@ -33,7 +33,7 @@ class IntakeController extends Controller
     /**
      * POST /intake/event {type, code?}: what a visitor did on the first screen before sending (docs/AN.md §23.4):
      * `view` the page was shown, `chip` an example was clicked (code = which), `photo` a picture was added, `voice`
-     * dictation was used. Numbers only; the staff's browsers and robots are left out by Track itself. Always 204.
+     * dictation was used, `again` the visitor came back from a tool or a design with "I wanted something else" (§24). Numbers only; the staff's browsers and robots are left out by Track itself. Always 204.
      */
     public function event(Request $request): Response
     {
@@ -55,6 +55,23 @@ class IntakeController extends Controller
 
         // a file response is public by default (Symfony): this picture is the visitor's own, no shared cache keeps it
         return response()->file($path, ['X-Robots-Tag' => 'noindex, nofollow', 'Content-Disposition' => 'inline; filename="photo.jpg"'])->setPrivate()->setMaxAge(600);
+    }
+
+    /**
+     * GET /intake/{token}: the wish once more, for the way back from a tool or a design ("I wanted something else",
+     * docs/AN.md §24): the words, the other tools that would do, the free design and the request to a person. Never indexed.
+     */
+    public function show(Intake $intake, IntakeService $service): JsonResponse
+    {
+        abort_if($intake->status === Intake::STATUS_SPAM, 404);
+
+        return response()->json($service->describe($intake, true))->header('X-Robots-Tag', 'noindex, nofollow');
+    }
+
+    /** POST /intake/{token}/design: "try a free design", the generator started by the visitor's own press. 200 with the decision (its `go` opens the design), 422 with the sentence why not. */
+    public function design(Request $request, Intake $intake, IntakeService $service): JsonResponse
+    {
+        return response()->json($service->describe($service->startDesign($intake, $request)));
     }
 
     /** POST /intake/{token}/reroute: "try it now without a designer", the decision made again without a person (round 2). 200 with the new decision. */

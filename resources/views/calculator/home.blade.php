@@ -30,11 +30,18 @@
         'router.tag.tool', 'router.tag.human', 'router.tag.shape', 'router.tag.file', 'router.act.open_tool', 'router.act.open_tool_text', 'router.act.rather_human', 'router.act.open_calc',
         'router.act.send_request', 'router.act.sending', 'router.act.without_designer', 'router.act.rerouting', 'router.questions', 'router.request.title', 'router.request.lead', 'router.request.consent', 'router.request.sent',
         'router.request.need_consent', 'router.request.need_email', 'router.request.failed', 'router.tag.held', 'router.tag.price', 'router.tag.design', 'router.example_nudge',
-        'router.mic', 'router.mic.on', 'router.mic.denied'])
+        'router.mic', 'router.mic.on', 'router.mic.denied',
+        // one press ends on a design (docs/AN.md §24): the page that opens, the way back, the free design
+        'router.opening', 'router.opening.design', 'router.opening.file', 'router.tag.again', 'router.tag.free', 'router.again.lead', 'router.act.free_design', 'router.act.open_design',
+        'router.design.starting', 'router.design.honest', 'router.act.login', 'router.act.topup', 'router.act.pay_design'])
         ->mapWithKeys(fn ($k) => [$k => __($k, ['hours' => ':hours', 'email' => ':email', 'tool' => ':tool'])])->all()
         + ['photo.too_big' => __('photo.too_big', ['mb' => ':mb']), 'auth.email' => __('auth.email')];
     // the script writes this sentence back under the button: the same one the page shows
     $routerTexts['router.submit.hint'] = $cx('router.submit.hint');
+    // a person is the visitor's own choice now, and the button says who it goes to
+    $routerTexts['router.act.rather_human'] = __('router.act.rather_designer');
+    // the free design is switched on (/admin/intake/design): the second of the three ways is then a design made right away, not a designer's e-mail
+    $free = app(\App\Domain\Intake\IntakeDesign::class)->enabled() ? '.free' : '';
     $eyebrow = 'text-xs font-bold uppercase tracking-[0.14em] text-action';
     $h2 = 'mt-2 text-2xl font-extrabold tracking-tight text-ink sm:text-3xl';
 @endphp
@@ -46,7 +53,7 @@
         <{{ $titleTag }} class="break-words text-center text-[1.85rem] font-extrabold leading-[1.1] tracking-tight text-ink sm:text-5xl">{{ __('router.title') }}</{{ $titleTag }}>
 
         <form id="intake-form" class="mt-3 grid gap-3 sm:mt-6" novalidate enctype="multipart/form-data" method="post" action="{{ route('intake.store') }}"
-              data-url="{{ route('intake.store') }}" data-event-url="{{ route('intake.event') }}" data-max-mb="{{ \App\Domain\Intake\IntakeService::PHOTO_MB }}" data-i18n="{{ json_encode($routerTexts, JSON_UNESCAPED_UNICODE) }}">
+              data-url="{{ route('intake.store') }}" data-show-url="{{ route('intake.show', '__TOKEN__') }}" data-event-url="{{ route('intake.event') }}" data-max-mb="{{ \App\Domain\Intake\IntakeService::PHOTO_MB }}" data-i18n="{{ json_encode($routerTexts, JSON_UNESCAPED_UNICODE) }}">
             @csrf
             {{-- against advertising (IntakeSpam, §23.2): the stamp of this page, and a field no person sees or fills --}}
             <input type="hidden" name="{{ \App\Domain\Intake\IntakeSpam::STAMP_FIELD }}" id="intake-started" value="{{ \App\Domain\Intake\IntakeSpam::stamp() }}">
@@ -121,9 +128,9 @@
             @foreach(['tool' => 'camera', 'shape' => 'box', 'human' => 'wrench'] as $path => $ico)
                 <article class="card p-5" data-path="{{ $path }}">
                     <span class="flex h-10 w-10 items-center justify-center rounded-xl bg-action-soft text-action-dark" aria-hidden="true"><x-icon :name="$ico" class="h-5 w-5" /></span>
-                    <h3 class="mt-3 text-lg font-bold text-ink">{{ __('router.paths.'.$path.'.title') }}</h3>
-                    <p class="mt-1 text-sm leading-relaxed text-muted">{{ __('router.paths.'.$path.'.text', ['hours' => $hours]) }}</p>
-                    <p class="mt-3 rounded-lg bg-page px-3 py-2 text-sm text-ink">{{ __('router.paths.'.$path.'.example', ['hours' => $hours]) }}</p>
+                    <h3 class="mt-3 text-lg font-bold text-ink">{{ __('router.paths.'.$path.'.title'.($path === 'shape' ? $free : '')) }}</h3>
+                    <p class="mt-1 text-sm leading-relaxed text-muted">{{ __('router.paths.'.$path.'.text'.($path === 'shape' ? $free : ''), ['hours' => $hours]) }}</p>
+                    <p class="mt-3 rounded-lg bg-page px-3 py-2 text-sm text-ink">{{ __('router.paths.'.$path.'.example'.($path === 'shape' ? $free : ''), ['hours' => $hours]) }}</p>
                 </article>
             @endforeach
         </div>

@@ -51,6 +51,19 @@
     <section id="result" class="hidden">
         {{-- from lg the grid fills the window under the header (stick-fit, --fit-top from calculator.ts showResult): the viewer
              stands on the left, the column on the right scrolls inside its frame (docs/AN.md §20) --}}
+        {{-- a free design of the home page (`/?design=<generation>&wish=<intake>`, docs/AN.md §24.4, calculator.ts openDesign): the words
+             of the wish, what a free design is and is not, the way back; shown by the script only for such a design --}}
+        <div id="design-line" class="mb-3 hidden rounded-2xl bg-studio px-4 py-3 text-sm leading-snug text-ink" role="note"
+             data-show-url="{{ route('intake.show', '__TOKEN__') }}" data-waiting="{{ __('router.design.waiting') }}" data-failed="{{ __('router.design.failed') }}" data-unprintable="{{ __('router.design.unprintable') }}">
+            <p><span class="font-semibold">{{ __('router.design.line') }}</span><span class="hidden">: „<span data-design-text></span>“</span>
+                <a data-design-back id="design-back" href="{{ route('home') }}" class="ml-1 whitespace-nowrap font-semibold text-action-dark underline underline-offset-2">{{ __('router.got.back') }}</a></p>
+            <p class="mt-1 text-muted" data-design-note>{{ __('router.design.note') }}</p>
+            <p class="mt-1 hidden text-ink" data-design-fit>{{ __('router.design.fit') }}</p>
+            <div id="design-failed" class="mt-2 hidden" role="alert">
+                <p class="font-semibold text-danger" data-design-error></p>
+                <p class="mt-2 flex flex-wrap gap-2"><a data-design-back href="{{ route('home') }}" class="btn-primary">{{ __('router.design.retry') }}</a><a data-design-back href="{{ route('home') }}" class="btn-secondary">{{ __('router.act.rather_designer') }}</a></p>
+            </div>
+        </div>
         <div id="calc-grid" class="stick-fit grid grid-cols-1 gap-4 lg:grid-cols-[1.2fr_1fr] lg:grid-rows-[minmax(0,1fr)]">
             <div id="calc-stage" class="min-w-0 overflow-hidden rounded-2xl border border-slate-200 bg-white lg:flex lg:h-full lg:flex-col">
                 <div class="relative lg:min-h-0 lg:flex-1">

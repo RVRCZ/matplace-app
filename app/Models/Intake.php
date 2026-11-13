@@ -27,6 +27,9 @@ class Intake extends Model
 
     public const ROUTE_FILE = 'file';
 
+    /** A free design made by the model generator from the words (App\Domain\Intake\IntakeDesign, docs/AN.md §24.4). */
+    public const ROUTE_DESIGN = 'design';
+
     public const STATUS_NEW = 'new';
 
     public const STATUS_OPENED = 'opened';

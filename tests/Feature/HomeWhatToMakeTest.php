@@ -316,7 +316,7 @@ class HomeWhatToMakeTest extends TestCase
         $user = IntakeRouter::user(new Intake(['text' => 'Chci medaili s reliéfem z fotky', 'locale' => 'cs']));
         $this->assertStringContainsString("\nrelief | ".__('tools.relief.title', [], 'cs').' / '.__('tools.relief.title', [], 'en').' / '.__('tools.relief.title', [], 'es').' | a photo', $user);
         $this->assertTrue((bool) config('tools.relief.available'));
-        $this->assertSame(7, IntakeRouter::unionCount(), 'the schema has one more nullable field: params.decor');
+        $this->assertSame(10, IntakeRouter::unionCount(), 'the schema has params.decor and, for the form of a tool, text2, number and shape (docs/AN.md §24.3)');
 
         // the tool's page takes the photo the router hands over
         $this->get('/tools/relief')->assertOk()->assertSee('<input id="relief-photo" name="photo" data-intake-photo type="file"', false);

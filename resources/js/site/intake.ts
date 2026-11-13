@@ -8,15 +8,29 @@
  * field's own row, so is dictation where the browser can do it; the examples under the field write a sample wish into
  * it (nothing is sent). What the visitor did before sending is counted (POST /intake/event: the page shown, an example
  * clicked, a photo added, dictation used). The form carries the page's stamp and an unseen field against robots.
+ *
+ * One press ends on a design (docs/AN.md §24): the answer's `go` is the page that opens by itself, with no card in
+ * between: the tool with the wish in its form, the free design in the calculator, the calculator with the file. A
+ * card is shown only where there is nothing to open (a part for a person, a held wish, the free designs used up) and
+ * on the way back from a tool or a design (`/?wish=<token>`, "I wanted something else"): the words are in the field
+ * again, under it the other tools, "try a free design" and, as the visitor's own choice, the request to a designer.
  */
 import { shrinkPhoto, overLimit } from '../calc/photo';
 
 type Words = Record<string, string>;
 interface Decision {
-    token: string; route: 'tool' | 'shape' | 'human' | 'file' | null; held?: 'held' | 'price' | null; tool_key: string | null; tool: string | null; summary: string;
+    token: string; route: 'tool' | 'shape' | 'human' | 'file' | 'design' | null; held?: 'held' | 'price' | null; tool_key: string | null; tool: string | null; summary: string;
     params: Record<string, unknown>; questions: string[]; alternatives?: string[]; wants_shape: boolean; has_photo: boolean; rerouted?: boolean; hours: number;
     file: { uuid: string; name: string } | null;
-    actions: { tool: string | null; calc: string | null; request: string | null; reroute?: string | null };
+    // one press ends on a design (docs/AN.md §24): `go` is the page that opens by itself (the tool with the wish filled in, the
+    // free design, the calculator with the file); `again` marks the way back ("I wanted something else"), with the words and
+    // the other ways: the tools that would also do, a free design, a request to a person
+    go?: string | null; again?: boolean; text?: string | null; unsure?: boolean; others?: { key: string; title: string; url: string }[]; design_note?: string | null;
+    // the free designs have counts (docs/AN.md §24.4): `login` = a visitor without an account used theirs, signing in gives more;
+    // `pay_design` = an account used its free ones and a price is set: the same press, paid from the credit, the button names the price
+    login?: string | null;
+    actions: { tool: string | null; calc: string | null; request: string | null; reroute?: string | null; design?: string | null; start_design?: string | null;
+        pay_design?: { url: string; price: string; topup: string | null } | null };
 }
 
 const csrf = (): string => document.querySelector<HTMLMetaElement>('meta[name="csrf-token"]')?.content ?? '';
@@ -49,7 +63,7 @@ export function bootIntake(): void {
 
     /** What the visitor did before sending, for our own numbers: the type and a short code, never a text (docs/AN.md §23.4). */
     const told = new Set<string>();
-    const track = (type: 'view' | 'chip' | 'photo' | 'voice', code = '', once = true): void => {
+    const track = (type: 'view' | 'chip' | 'photo' | 'voice' | 'again', code = '', once = true): void => {
         const key = `${type}:${code}`;
         if (once && told.has(key)) return;
         told.add(key);
@@ -103,6 +117,19 @@ export function bootIntake(): void {
         submit.setAttribute('aria-busy', on ? 'true' : 'false');
         hint.textContent = on ? t('router.sending') : t('router.submit.hint');
     };
+    /** The design opens by itself: the tool with the wish filled in, the free design, the calculator with the file. The button stays busy until the page goes. */
+    let leaving = false;
+    const open = (d: Decision): boolean => {
+        if (!d.go) return false;
+        leaving = true;
+        submit.disabled = true; submit.setAttribute('aria-busy', 'true');
+        hint.textContent = d.route === 'design' ? t('router.opening.design') : d.route === 'file' ? t('router.opening.file') : t('router.opening', { tool: d.tool ?? '' });
+        hint.classList.add('font-semibold', 'text-ink');
+        location.assign(d.go);
+        return true;
+    };
+    // back from the page that opened (the browser's own Back keeps this page as it was): the form works again
+    window.addEventListener('pageshow', (e) => { if (e.persisted && leaving) { leaving = false; hint.classList.remove('font-semibold', 'text-ink'); busy(false); } });
 
     form.addEventListener('submit', async (e) => {
         e.preventDefault();
@@ -139,13 +166,31 @@ export function bootIntake(): void {
             if (res.status === 429) { say(t('router.too_many')); return; }
             if (res.status === 422) { say(Object.values(answer.errors ?? {})[0]?.[0] ?? answer.message ?? t('router.error')); return; }
             if (!res.ok || !answer.token) { say(t('router.error')); return; }
+            // no card in between: the design opens; a card only where there is nothing to open (a person, a held wish)
+            if (open(answer as Decision)) return;
             render(answer as Decision);
         } catch {
             say(t('router.error'));
         } finally {
-            busy(false);
+            if (!leaving) busy(false);
         }
     });
+
+    // the way back from a tool or a design ("I wanted something else", `/?wish=<token>`): the words are in the field again,
+    // under it the other ways: the tools that would also do, a free design, a request to a designer
+    const wish = new URLSearchParams(location.search);
+    if (/^[A-Za-z0-9]{24}$/.test(wish.get('wish') ?? '') && !wish.has('design') && form.dataset.showUrl) {
+        void fetch(form.dataset.showUrl.replace('__TOKEN__', wish.get('wish')!), { credentials: 'same-origin', headers: { Accept: 'application/json' } })
+            .then((r) => (r.ok ? r.json() : null))
+            .then((d: Decision | null) => {
+                if (!d?.token) return;
+                if (d.text && text.value.trim() === '') text.value = d.text;
+                render(d);
+                track('again');
+            })
+            .catch(() => undefined);
+        history.replaceState(null, '', location.pathname);
+    }
 
     // an answer handed in from outside (the review script, a test): shown like the server's
     form.addEventListener('intake:answer', (e) => render((e as CustomEvent<Decision>).detail));
@@ -155,28 +200,67 @@ export function bootIntake(): void {
         assist.innerHTML = '';
         assist.classList.remove('hidden');
         const tag = d.held ? t(d.held === 'price' ? 'router.tag.price' : 'router.tag.held')
-            : d.route === 'tool' ? t('router.tag.tool', { tool: d.tool ?? d.tool_key ?? '' }) : d.route === 'file' ? t('router.tag.file')
-                : d.wants_shape ? t(d.has_photo ? 'router.tag.shape' : 'router.tag.design') : t('router.tag.human');
+            : d.again ? t('router.tag.again')
+                : d.route === 'tool' ? t('router.tag.tool', { tool: d.tool ?? d.tool_key ?? '' }) : d.route === 'file' ? t('router.tag.file') : d.route === 'design' ? t('router.tag.free')
+                    : d.wants_shape ? t(d.has_photo ? 'router.tag.shape' : 'router.tag.design') : t('router.tag.human');
         const bubble = document.createElement('div');
         bubble.className = 'rounded-2xl bg-studio p-4';
         bubble.setAttribute('role', 'status');
         let html = `<p class="text-xs font-semibold uppercase tracking-wide text-muted">${esc(t('router.assistant'))} · <span class="rounded-full bg-ok-soft px-2 py-0.5 text-ok normal-case tracking-normal">${esc(tag)}</span></p>`;
-        html += `<p class="mt-2 text-ink">${esc(d.summary)}</p>`;
-        if (d.questions?.length) html += `<p class="mt-2 text-sm text-muted">${esc(t('router.questions'))} ${d.questions.map(esc).join(' · ')}</p>`;
+        html += `<p class="mt-2 text-ink">${esc(d.again ? t('router.again.lead') : d.summary)}</p>`;
+        if (d.design_note) html += `<p class="mt-2 text-sm text-ink" data-design-note>${esc(d.design_note)}</p>`;
+        if (d.questions?.length && !d.again) html += `<p class="mt-2 text-sm text-muted">${esc(t('router.questions'))} ${d.questions.map(esc).join(' · ')}</p>`;
+        html += '<p data-assist-error class="mt-2 hidden rounded-lg bg-danger-soft px-3 py-2 text-sm text-danger" role="alert"></p>';
         bubble.innerHTML = html;
         const acts = document.createElement('div');
         acts.className = 'mt-3 flex flex-wrap gap-2';
-        if (d.route === 'tool' && d.actions.tool) {
-            acts.appendChild(link(d.actions.tool, t(d.has_photo ? 'router.act.open_tool' : 'router.act.open_tool_text'), true));
-            acts.appendChild(button(t('router.act.rather_human'), false, () => human(d, bubble)));
-        } else if (d.route === 'file' && d.actions.calc) {
-            acts.appendChild(link(d.actions.calc, t('router.act.open_calc'), true));
+        // the ways on: the tool or the file where the page did not open it by itself, the other tools that would do, the free
+        // design (the one on its way, or the press that starts one), and a person as the visitor's own choice
+        if (d.route === 'tool' && d.actions.tool && !d.again) acts.appendChild(link(d.actions.tool, t(d.has_photo ? 'router.act.open_tool' : 'router.act.open_tool_text'), true));
+        if (d.route === 'file' && d.actions.calc) acts.appendChild(link(d.actions.calc, t('router.act.open_calc'), true));
+        (d.others ?? []).forEach((o) => { const a = link(o.url, o.title, false); a.dataset.other = o.key; acts.appendChild(a); });
+        if (d.actions.design) acts.appendChild(link(d.actions.design, t('router.act.open_design'), !d.again));
+        if (d.actions.start_design) {
+            const b = button(t('router.act.free_design'), false, () => { void startDesign(d, bubble, b, d.actions.start_design!, false); });
+            b.dataset.startDesign = '1';
+            acts.appendChild(b);
         }
+        if (d.actions.pay_design) {
+            const paid = d.actions.pay_design;
+            const b = button(t('router.act.pay_design', { price: paid.price }), false, () => { void startDesign(d, bubble, b, paid.url, true); });
+            b.dataset.payDesign = '1';
+            acts.appendChild(b);
+            if (paid.topup) acts.appendChild(link(paid.topup, t('router.act.topup'), false));
+        }
+        if (d.login) { const a = link(d.login, t('router.act.login'), false); a.dataset.login = '1'; acts.appendChild(a); }
+        if ((d.again || d.route === 'tool' || d.route === 'design') && d.actions.request) acts.appendChild(button(t('router.act.rather_human'), false, () => human(d, bubble)));
         if (acts.children.length) bubble.appendChild(acts);
+        if (d.actions.start_design) bubble.insertAdjacentHTML('beforeend', `<p class="mt-2 text-xs text-muted">${esc(t('router.design.honest'))}</p>`);
         assist.appendChild(bubble);
         // a wish the rules held (an advertisement, a bare question about the price): the sentence alone, the field stays for another try
-        if (!d.held && d.route !== 'tool' && d.route !== 'file') human(d, bubble);
+        // a person's own work (a part with dimensions, a wish nothing could be made of): the e-mail field right away
+        if (!d.held && !d.again && d.route !== 'tool' && d.route !== 'file' && d.route !== 'design') human(d, bubble);
         bubble.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    }
+
+    /** "Try a free design": the generator is started by the visitor's own press; the design then opens like any other. */
+    async function startDesign(d: Decision, bubble: HTMLElement, b: HTMLButtonElement, url: string, pay: boolean): Promise<void> {
+        const err = bubble.querySelector<HTMLElement>('[data-assist-error]');
+        const tell = (m: string): void => { if (err) { err.textContent = m; err.classList.toggle('hidden', m === ''); } };
+        const label = b.textContent ?? '';
+        tell('');
+        b.disabled = true; b.textContent = t('router.design.starting'); b.setAttribute('aria-busy', 'true');
+        try {
+            const res = await fetch(url, { method: 'POST', credentials: 'same-origin', headers: { 'Content-Type': 'application/json', Accept: 'application/json', 'X-CSRF-TOKEN': csrf() }, body: JSON.stringify({ pay }) });
+            const answer = await res.json().catch(() => ({})) as Partial<Decision> & { message?: string; errors?: Record<string, string[]> };
+            if (res.status === 429) tell(t('router.too_many'));
+            else if (!res.ok || !answer.token) tell(Object.values(answer.errors ?? {})[0]?.[0] ?? answer.message ?? t('router.error'));
+            else if (open(answer as Decision)) return;
+            else render(answer as Decision);
+        } catch {
+            tell(t('router.error'));
+        }
+        b.disabled = false; b.textContent = label; b.removeAttribute('aria-busy');
     }
 
     /**

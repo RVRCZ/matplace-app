@@ -1,0 +1,342 @@
+{
+    "router.opening": [
+        "Otevírám nástroj :tool…",
+        "Opening the tool :tool…",
+        "Abriendo la herramienta :tool…"
+    ],
+    "router.opening.design": [
+        "Vytvářím návrh podle vašeho popisu…",
+        "Making a design from your description…",
+        "Creando un diseño a partir de su descripción…"
+    ],
+    "router.opening.file": [
+        "Otevírám kalkulačku s vaším souborem…",
+        "Opening the calculator with your file…",
+        "Abriendo la calculadora con su archivo…"
+    ],
+    "router.tag.again": [
+        "Zkusit jinak",
+        "Another way",
+        "Otra forma"
+    ],
+    "router.tag.free": [
+        "Volný návrh",
+        "Free design",
+        "Diseño libre"
+    ],
+    "router.again.lead": [
+        "Vaše slova jsou zpátky v poli: upravte je a zmáčkněte Vytvořit znovu, nebo zkuste jednu z těchto cest.",
+        "Your words are back in the field: change them and press Create again, or try one of these ways.",
+        "Sus palabras están de nuevo en el campo: cámbielas y pulse Crear otra vez, o pruebe una de estas opciones."
+    ],
+    "router.act.free_design": [
+        "Zkusit volný návrh",
+        "Try a free design",
+        "Probar un diseño libre"
+    ],
+    "router.act.open_design": [
+        "Otevřít návrh",
+        "Open the design",
+        "Abrir el diseño"
+    ],
+    "router.act.rather_designer": [
+        "Raději poptávka designérovi",
+        "I'd rather ask a designer",
+        "Prefiero pedirlo a un diseñador"
+    ],
+    "router.design.starting": [
+        "Spouštím návrh…",
+        "Starting the design…",
+        "Iniciando el diseño…"
+    ],
+    "router.design.honest": [
+        "Volný návrh vymyslí tvar podle popisu. Je přibližný: přesné rozměry a díly, které mají někam pasovat, neumí.",
+        "A free design makes up a shape from the description. It is approximate: it cannot keep exact dimensions or make parts that have to fit something.",
+        "Un diseño libre inventa una forma a partir de la descripción. Es aproximado: no mantiene medidas exactas ni hace piezas que deban encajar."
+    ],
+    "router.design.summary": [
+        "Na tohle nemáme hotový nástroj, proto vytváříme volný návrh podle vašeho popisu. Tvar je přibližný a rozměry nejsou přesné; slovy pak řeknete, co změnit.",
+        "We have no ready tool for this, so we are making a free design from your description. The shape is approximate and the dimensions are not exact; you can then say in words what to change.",
+        "No tenemos una herramienta lista para esto, así que creamos un diseño libre a partir de su descripción. La forma es aproximada y las medidas no son exactas; después puede decir con palabras qué cambiar."
+    ],
+    "router.design.fit": [
+        "U věci, která se nosí nebo má někam pasovat, nevíme, jestli bude sedět: na míru ji umí náš návrhář.",
+        "For a thing that is worn or has to fit something we do not know whether it will fit: our designer can make it to measure.",
+        "Si es algo que se lleva puesto o que debe encajar, no sabemos si quedará bien: nuestro diseñador puede hacerlo a medida."
+    ],
+    "router.design.off": [
+        "Volný návrh teď není k dispozici.",
+        "A free design is not available right now.",
+        "El diseño libre no está disponible ahora."
+    ],
+    "router.design.closed": [
+        "Farma teď nepřijímá zakázky, volný návrh proto nespouštíme.",
+        "The farm is not taking orders now, so no free design is started.",
+        "La granja no acepta pedidos ahora, por eso no iniciamos un diseño libre."
+    ],
+    "router.design.words": [
+        "Z tak krátkého popisu návrh neuděláme. Napište prosím pár slov o tom, co má vzniknout.",
+        "That is too little to make a design from. Please write a few words about what it should be.",
+        "Es demasiado poco para hacer un diseño. Escriba unas palabras sobre lo que debe ser."
+    ],
+    "router.design.person": [
+        "Z fotky člověka volný návrh neděláme. Bustu nebo figurku z fotky umí náš nástroj, kde k fotce dáte souhlas.",
+        "We make no free design from a photo of a person. A bust or a figure from a photo is made by our tool, where you give your consent to the photo.",
+        "No hacemos un diseño libre a partir de la foto de una persona. Un busto o una figura a partir de una foto lo hace nuestra herramienta, donde da su consentimiento."
+    ],
+    "router.design.day_limit": [
+        "Dnešní volné návrhy jsou vyčerpané, zítra to půjde znovu. Teď můžete zkusit některý nástroj, nebo to předat našemu návrháři.",
+        "Today's free designs are used up; tomorrow it works again. For now you can try one of the tools or hand it to our designer.",
+        "Los diseños libres de hoy se han agotado; mañana funcionará de nuevo. Por ahora puede probar una herramienta o pasarlo a nuestro diseñador."
+    ],
+    "router.design.line": [
+        "Návrh podle vašich slov",
+        "A design from your words",
+        "Un diseño a partir de sus palabras"
+    ],
+    "router.design.note": [
+        "Tvar vymyslela umělá inteligence podle popisu: je přibližný a rozměry nejsou přesné. Velikost, barvu a materiál nastavíte u ceny, slovy řeknete, co změnit.",
+        "The shape was made up by an AI from the description: it is approximate and its dimensions are not exact. You set the size, the colour and the material next to the price, and say in words what to change.",
+        "La forma la ha inventado una IA a partir de la descripción: es aproximada y sus medidas no son exactas. El tamaño, el color y el material se eligen junto al precio, y con palabras dice qué cambiar."
+    ],
+    "router.design.waiting": [
+        "Vytvářím 3D návrh podle vašeho popisu. Může to trvat pár minut, stránku nechte otevřenou.",
+        "Making a 3D design from your description. It may take a few minutes; keep the page open.",
+        "Creando un diseño 3D a partir de su descripción. Puede tardar unos minutos; deje la página abierta."
+    ],
+    "router.design.failed": [
+        "Návrh se nepovedlo vytvořit. Zkuste to popsat jinak, nebo to předejte našemu návrháři.",
+        "The design could not be made. Try to describe it another way, or hand it to our designer.",
+        "No se pudo crear el diseño. Intente describirlo de otra manera o páselo a nuestro diseñador."
+    ],
+    "router.design.unprintable": [
+        "Tenhle návrh se nepodařilo připravit k tisku. Zkuste ho slovy upravit, popsat jinak, nebo to předejte našemu návrháři.",
+        "This design could not be prepared for printing. Try to change it in words, describe it another way, or hand it to our designer.",
+        "Este diseño no se pudo preparar para imprimir. Intente cambiarlo con palabras, describirlo de otra manera o páselo a nuestro diseñador."
+    ],
+    "router.design.retry": [
+        "Popsat jinak",
+        "Describe it another way",
+        "Describirlo de otra manera"
+    ],
+    "router.got.lead": [
+        "Asistent pochopil:",
+        "The assistant understood:",
+        "El asistente entendió:"
+    ],
+    "router.got.unsure": [
+        "Asistent si nebyl jistý, tohle je nejbližší nástroj.",
+        "The assistant was not sure; this is the nearest tool.",
+        "El asistente no estaba seguro; esta es la herramienta más cercana."
+    ],
+    "router.got.nothing": [
+        "Nástroj jsme otevřeli podle vašeho přání; podrobnosti doladíte tady.",
+        "We opened the tool for your wish; set the details here.",
+        "Hemos abierto la herramienta según su deseo; ajuste aquí los detalles."
+    ],
+    "router.got.back": [
+        "Chtěl jsem něco jiného",
+        "I wanted something else",
+        "Quería otra cosa"
+    ],
+    "router.got.text": [
+        "text „:text“",
+        "the text “:text”",
+        "el texto «:text»"
+    ],
+    "router.got.name": [
+        "jméno „:text“",
+        "the name “:text”",
+        "el nombre «:text»"
+    ],
+    "router.got.place": [
+        ":n. místo",
+        "place :n",
+        "puesto :n"
+    ],
+    "router.got.number": [
+        "číslo :n",
+        "the number :n",
+        "el número :n"
+    ],
+    "router.got.where": [
+        "místo: :place",
+        "the place: :place",
+        "el lugar: :place"
+    ],
+    "router.got.height": [
+        "výška :mm mm",
+        "height :mm mm",
+        "altura :mm mm"
+    ],
+    "router.got.width": [
+        "šířka :mm mm",
+        "width :mm mm",
+        "ancho :mm mm"
+    ],
+    "router.got.letters": [
+        "výška písma :mm mm",
+        "letter height :mm mm",
+        "altura de letra :mm mm"
+    ],
+    "router.got.shape": [
+        "tvar: :shape",
+        "shape: :shape",
+        "forma: :shape"
+    ],
+    "router.got.shape.heart": [
+        "srdce",
+        "heart",
+        "corazón"
+    ],
+    "router.got.shape.star": [
+        "hvězda",
+        "star",
+        "estrella"
+    ],
+    "router.got.shape.hex": [
+        "šestiúhelník",
+        "hexagon",
+        "hexágono"
+    ],
+    "router.got.shape.circle": [
+        "kruh",
+        "circle",
+        "círculo"
+    ],
+    "router.got.shape.square": [
+        "čtverec",
+        "square",
+        "cuadrado"
+    ],
+    "router.got.shape.rect": [
+        "obdélník",
+        "rectangle",
+        "rectángulo"
+    ],
+    "router.got.shape.oval": [
+        "ovál",
+        "oval",
+        "óvalo"
+    ],
+    "router.got.shape.shield": [
+        "štít",
+        "shield",
+        "escudo"
+    ],
+    "router.got.shape.cloud": [
+        "mrak",
+        "cloud",
+        "nube"
+    ],
+    "router.got.shape.bone": [
+        "kost",
+        "bone",
+        "hueso"
+    ],
+    "router.got.shape.house": [
+        "domek",
+        "house",
+        "casita"
+    ],
+    "router.got.hang.ribbon": [
+        "na stužce",
+        "on a ribbon",
+        "con cinta"
+    ],
+    "router.got.hang.chain": [
+        "na řetízku",
+        "on a chain",
+        "con cadena"
+    ],
+    "router.got.colors": [
+        "barvy: :colors",
+        "colours: :colors",
+        "colores: :colors"
+    ],
+    "router.got.colors_n": [
+        "počet barev: :n",
+        "colours: :n",
+        "colores: :n"
+    ],
+    "router.got.copies": [
+        "počet kusů: :n",
+        "pieces: :n",
+        "piezas: :n"
+    ],
+    "router.got.material": [
+        "materiál :material",
+        "material :material",
+        "material :material"
+    ],
+    "router.got.photo": [
+        "vaše fotka",
+        "your photo",
+        "su foto"
+    ],
+    "router.got.photo_relief": [
+        "fotka jako reliéf",
+        "the photo as a relief",
+        "la foto como relieve"
+    ],
+    "router.paths.shape.title.free": [
+        "Navrhneme tvar podle popisu",
+        "We design the shape from your words",
+        "Diseñamos la forma según sus palabras"
+    ],
+    "router.paths.shape.text.free": [
+        "Soška, hračka, maskot, ozdoba: cokoli, na co nemáme hotový nástroj. Podle vašich slov rovnou vznikne 3D návrh, prohlédnete si ho, slovy řeknete, co změnit, a necháte ho vytisknout nebo si ho stáhnete. Tvar je přibližný, přesné rozměry neumí.",
+        "A statuette, a toy, a mascot, a decoration: anything we have no ready tool for. A 3D design is made from your words right away; you look at it, say in words what to change, and have it printed or download it. The shape is approximate; it cannot keep exact dimensions.",
+        "Una estatuilla, un juguete, una mascota, un adorno: cualquier cosa para la que no tenemos una herramienta lista. A partir de sus palabras se crea enseguida un diseño 3D; lo mira, dice con palabras qué cambiar y lo manda imprimir o lo descarga. La forma es aproximada; no mantiene medidas exactas."
+    ],
+    "router.paths.shape.example.free": [
+        "„Soška draka, 15 cm“ → 3D návrh za pár minut, cena hned u něj",
+        "“A dragon statuette, 15 cm” → a 3D design in a few minutes, the price right next to it",
+        "«Una estatuilla de dragón, 15 cm» → un diseño 3D en unos minutos, con el precio al lado"
+    ],
+    "router.design.guest_limit": [
+        "Volné návrhy a úpravy slovy, které jsou bez účtu zdarma (:n), jste už využili. Přihlaste se a dostanete dalších :m. Nebo zkuste některý nástroj, případně to předejte našemu návrháři.",
+        "You have used the free designs and changes in words that come without an account (:n). Sign in and you get :m more. Or try one of the tools, or hand it to our designer.",
+        "Ya ha usado los diseños libres y cambios con palabras que son gratis sin cuenta (:n). Inicie sesión y tendrá :m más. O pruebe una herramienta, o páselo a nuestro diseñador."
+    ],
+    "router.design.user_limit": [
+        "Využili jste všechny volné návrhy a úpravy slovy, které jsou zdarma. Další zatím nenabízíme. Zkuste některý nástroj, nebo to předejte našemu návrháři.",
+        "You have used all the free designs and changes in words. We do not offer more for now. Try one of the tools, or hand it to our designer.",
+        "Ha usado todos los diseños libres y cambios con palabras gratuitos. Por ahora no ofrecemos más. Pruebe una herramienta o páselo a nuestro diseñador."
+    ],
+    "router.design.pay": [
+        "Využili jste všechny volné návrhy a úpravy slovy, které jsou zdarma. Další stojí :price z kreditu.",
+        "You have used all the free designs and changes in words. Another one costs :price from your credit.",
+        "Ha usado todos los diseños libres y cambios con palabras gratuitos. Otro cuesta :price de su crédito."
+    ],
+    "router.design.credit": [
+        "Další návrh stojí :price a na kreditu chybí :missing. Dobijte kredit a zkuste to znovu.",
+        "Another design costs :price and your credit is :missing short. Top up your credit and try again.",
+        "Otro diseño cuesta :price y a su crédito le faltan :missing. Recargue el crédito e inténtelo de nuevo."
+    ],
+    "router.act.pay_design": [
+        "Další návrh za :price",
+        "Another design for :price",
+        "Otro diseño por :price"
+    ],
+    "router.act.login": [
+        "Přihlásit se",
+        "Sign in",
+        "Iniciar sesión"
+    ],
+    "router.act.topup": [
+        "Dobít kredit",
+        "Top up credit",
+        "Recargar crédito"
+    ],
+    "refine.pay": [
+        "Upravit za :price",
+        "Change it for :price",
+        "Cambiar por :price"
+    ],
+    "refine.hint.design": [
+        "Podle původního zadání a vaší úpravy vznikne nový návrh. Počítá se mezi volné návrhy.",
+        "A new design is made from the first wish and your change. It counts as one of the free designs.",
+        "Se crea un nuevo diseño a partir del primer deseo y de su cambio. Cuenta como uno de los diseños libres."
+    ]
+}

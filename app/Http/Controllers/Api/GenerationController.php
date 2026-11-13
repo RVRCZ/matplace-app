@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api;
 use App\Domain\Generation\GenerationService;
 use App\Domain\Generation\PedestalChanger;
 use App\Domain\Generation\QuotaExceeded;
+use App\Domain\Intake\IntakeDesign;
 use App\Engines\Vision\VisionDescriber;
 use App\Http\Controllers\Controller;
 use App\Models\GenerationRequest;
@@ -146,13 +147,21 @@ class GenerationController extends Controller
         if (! $service->enabled()) {
             return response()->json(['error' => 'generator_unavailable'], 503);
         }
-        $data = $request->validate(['instruction' => ['required', 'string', 'min:3', 'max:300']]);
+        $data = $request->validate(['instruction' => ['required', 'string', 'min:3', 'max:300'], 'pay' => ['nullable', 'boolean']]);
         try {
-            $req = $service->refine($generation, $data['instruction'], $request->ip(), $request->attributes->get('anon_session'), $request->user());
+            $req = $service->refine($generation, $data['instruction'], $request->ip(), $request->attributes->get('anon_session'), $request->user(), $request->boolean('pay'));
         } catch (\InvalidArgumentException) {
             return response()->json(['error' => 'not_refinable'], 422);
         } catch (QuotaExceeded $e) {
-            return response()->json(self::quotaAnswer($e, $request), 429);
+            // a free design of the home page has counts of its own (IntakeDesign, docs/AN.md §24.4): the sentence says which one
+            // was reached and what is next (sign in, the price of a further change, nothing more for now)
+            $design = ! empty($generation->description['intake']) && in_array($e->reason, IntakeDesign::TOLD, true) ? [
+                'message' => IntakeDesign::sentence($e->reason, app()->getLocale(), $e),
+                'can_pay' => $e->reason === IntakeDesign::PAY,
+                'login_url' => $e->reason === IntakeDesign::GUEST_LIMIT ? route('login') : null,
+            ] : [];
+
+            return response()->json($design + self::quotaAnswer($e, $request), 429);
         }
 
         Track::event('generate', null, ['kind' => 'refine']);

@@ -1,0 +1,23 @@
+[
+    {"text": "Busta mého táty z téhle fotky, asi 12 cm vysoká.", "photo": true, "tool": "figure", "params": {"size_mm": 120}, "values": {}, "got": ["výška 120 mm", "vaše fotka"]},
+    {"text": "Figurka našeho psa podle fotky, 10 cm, 2 kusy.", "photo": true, "tool": "pet", "params": {"size_mm": 100, "copies": 2}, "values": {"_qty": "2"}, "got": ["výška 100 mm", "počet kusů: 2", "vaše fotka"]},
+    {"text": "Přívěsek srdce se jmény Jana a Petr, 4 cm, 2 kusy.", "photo": false, "tool": "charm", "values": {"width": 40, "line1": "Jana a Petr", "body": "heart", "_qty": "2"}, "got": ["text „Jana a Petr“", "šířka 40 mm", "tvar: srdce", "počet kusů: 2"]},
+    {"text": "Ozdoba na stromek se jménem Anička, hvězda, 8 cm, rok 2026.", "photo": false, "tool": "ornament", "values": {"width": 80, "line1": "Anička", "line2": "2026", "body": "star"}, "got": ["text „Anička / 2026“", "šířka 80 mm", "tvar: hvězda"]},
+    {"text": "Klíčenka se jménem Jana, kulatá, 5 cm, PETG.", "photo": false, "tool": "keychain", "values": {"width": 50, "line1": "Jana", "body": "circle", "_material": "PETG"}, "got": ["text „Jana“", "šířka 50 mm", "tvar: kruh", "materiál PETG"]},
+    {"text": "Medaile za 2. místo na stužce, 6 cm, s nápisem Turnaj Stod.", "photo": false, "tool": "medallion", "values": {"width": 60, "preset": "place2", "line1": "2", "line2": "Turnaj Stod", "hang": "ribbon"}, "got": ["text „Turnaj Stod“", "2. místo", "šířka 60 mm", "na stužce"]},
+    {"text": "Medaile s reliéfem z fotky, se jménem Rex, 7 cm.", "photo": true, "tool": "medallion", "params": {"decor": "photo"}, "values": {"width": 70, "line1": "Rex"}, "got": ["text „Rex“", "šířka 70 mm", "fotka jako reliéf"]},
+    {"text": "3D mapa Plzně, 15 cm.", "photo": false, "tool": "map", "params": {"size_mm": 150}, "values": {}, "got": ["šířka 150 mm"]},
+    {"text": "Zápich do dortu se jménem Olivia a číslem 2, asi 12 cm široký.", "photo": false, "tool": "topper", "values": {"width": 120, "line1": "Olivia", "number": "2", "template": "number"}, "got": ["text „Olivia“", "číslo 2", "šířka 120 mm"]},
+    {"text": "Cake topper with the name Emma and a heart.", "photo": false, "tool": "topper", "values": {"line1": "Emma", "template": "heart"}, "got": ["text „Emma“", "tvar: srdce"]},
+    {"text": "Šestiúhelníkový podtácek s naší fotkou ze svatby, 10 cm, 4 kusy.", "photo": true, "tool": "coaster", "values": {"width": 100, "body": "hex", "_qty": "4"}, "got": ["šířka 100 mm", "tvar: šestiúhelník", "počet kusů: 4", "vaše fotka"]},
+    {"text": "Reliéf z téhle fotky, 15 cm.", "photo": true, "tool": "relief", "params": {"size_mm": 150}, "values": {}, "got": ["šířka 150 mm", "vaše fotka"]},
+    {"text": "Mona Lisa jako obraz na zeď, asi 20 cm.", "photo": true, "tool": "filament_art", "params": {"size_mm": 200}, "values": {}, "got": ["šířka 200 mm", "vaše fotka"]},
+    {"text": "Náušnice z tohohle motivu, 3 cm, tři barvy.", "photo": true, "tool": "earrings", "values": {"width": 30, "colors_n": 3}, "got": ["šířka 30 mm", "počet barev: 3", "vaše fotka"]},
+    {"text": "Portrét jako vystřihovánka papel picado z téhle fotky, 20 cm.", "photo": true, "tool": "papel", "values": {"width": 200}, "got": ["šířka 200 mm", "vaše fotka"]},
+    {"text": "Červená cedulka na dveře, bílé písmo, „Novákovi“, písmo 2 cm.", "photo": false, "tool": "sign", "values": {"text_height": 20, "line1": "Novákovi", "two_color": true, "part_colors": {"plate": "red", "text": "white"}}, "got": ["text „Novákovi“", "výška písma 20 mm", "barvy: červená, bílá"]},
+    {"text": "Jmenovka na stůl ve tvaru mraku, jméno Ema.", "photo": false, "tool": "sign", "values": {"line1": "Ema", "shape": "cloud"}, "got": ["text „Ema“", "tvar: mrak"]},
+    {"text": "Nápis HOME na poličku, písmena 8 cm, černá.", "photo": false, "tool": "text", "values": {"text_height": 80, "line1": "HOME", "part_colors": {"body": "black"}}, "got": ["text „HOME“", "výška písma 80 mm", "barvy: černá"]},
+    {"text": "Vykrajovátko podle téhle kresby, 7 cm.", "photo": true, "tool": "cutter", "values": {"width": 70}, "got": ["šířka 70 mm", "vaše fotka"]},
+    {"text": "Un llavero con el nombre Lucía, 6 cm, 3 piezas.", "photo": false, "tool": "keychain", "values": {"width": 60, "line1": "Lucía", "_qty": "3"}, "got": ["text „Lucía“", "šířka 60 mm", "počet kusů: 3"]},
+    {"text": "A door sign that says Smith Family, 3 cm high, blue and white.", "photo": false, "tool": "sign", "values": {"text_height": 30, "line1": "Smith Family", "two_color": true, "part_colors": {"plate": "blue", "text": "white"}}, "got": ["text „Smith Family“", "výška písma 30 mm", "barvy: modrá, bílá"]}
+]

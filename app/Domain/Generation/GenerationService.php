@@ -5,6 +5,7 @@ namespace App\Domain\Generation;
 use App\Domain\Farm\FarmSettings;
 use App\Domain\Farm\InsufficientCredit;
 use App\Domain\Farm\Wallet;
+use App\Domain\Intake\IntakeDesign;
 use App\Engines\Contracts\ModelGenerator;
 use App\Jobs\GenerateModel;
 use App\Models\AnonymousSession;
@@ -101,10 +102,32 @@ final class GenerationService
         return $this->reuseOrDispatch($req, fn ($q) => $q->where('type', 'text')->where('image_sha256', $req->image_sha256));
     }
 
-    /** What the first generation was about, in words; null when it was a personal photo (likeness cannot be described). */
+    /**
+     * A free design from the home page (App\Domain\Intake\IntakeDesign, docs/AN.md §24.4): from the words, or from a
+     * photo of the thing itself with the words as a hint. `description.intake` marks it: such a run (and every "change
+     * it in words" after it) is counted by the home page's own limits, not by the daily quota of the other tools.
+     */
+    public function fromIntake(string $intakeToken, string $prompt, ?string $imageRelPath, int $targetMm, ?string $ip, ?AnonymousSession $session, ?User $user, bool $pay = false): GenerationRequest
+    {
+        $prompt = mb_substr(trim($prompt), 0, 500);
+        $about = ['intake' => $intakeToken, 'name_en' => $prompt];
+        if ($imageRelPath !== null) {
+            $req = $this->make('image', $ip, $session, $user, ['image_path' => $imageRelPath, 'image_sha256' => null, 'prompt' => $prompt, 'description' => $about + ['delete_photo' => true], 'target_mm' => $targetMm]);
+
+            return $this->reuseOrDispatch($req, fn ($q) => $q->whereRaw('1 = 0'), $pay);
+        }
+        $req = $this->make('text', $ip, $session, $user, ['prompt' => $prompt, 'image_sha256' => hash('sha256', 'text:'.mb_strtolower($prompt)), 'description' => $about, 'target_mm' => $targetMm]);
+
+        return $this->reuseOrDispatch($req, fn ($q) => $q->where('type', 'text')->where('image_sha256', $req->image_sha256), $pay);
+    }
+
+    /**
+     * What the first generation was about, in words; null when it was a personal photo (likeness cannot be described).
+     * A free design of the home page made from a photo of a thing still has its words.
+     */
     public function basePrompt(GenerationRequest $src): ?string
     {
-        if (! empty($src->description['delete_photo'])) {
+        if (! empty($src->description['delete_photo']) && empty($src->description['intake'])) {
             return null;
         }
         $base = $src->type === 'text' ? (string) $src->prompt : (string) ($src->description['name_en'] ?? $src->prompt ?? '');
@@ -113,13 +136,20 @@ final class GenerationService
     }
 
     /** "Make the handle longer": a new text generation from the original subject plus the wish. Counts as a generation. */
-    public function refine(GenerationRequest $src, string $instruction, ?string $ip, ?AnonymousSession $session, ?User $user): GenerationRequest
+    public function refine(GenerationRequest $src, string $instruction, ?string $ip, ?AnonymousSession $session, ?User $user, bool $pay = false): GenerationRequest
     {
         $base = $this->basePrompt($src);
         if ($base === null) {
             throw new \InvalidArgumentException('not_refinable');
         }
         $prompt = mb_substr(rtrim($base, '. ').'. '.trim($instruction), 0, 500);
+        if (! empty($src->description['intake'])) {
+            // a design of the home page changed in words stays under the home page's limits
+            $req = $this->make('text', $ip, $session, $user, ['prompt' => $prompt, 'image_sha256' => hash('sha256', 'text:'.mb_strtolower($prompt)), 'target_mm' => (int) ($src->target_mm ?: config('ai.default_target_mm', 80)),
+                'source_request_id' => $src->id, 'description' => ['intake' => $src->description['intake'], 'name_en' => $prompt]]);
+
+            return $this->reuseOrDispatch($req, fn ($q) => $q->where('type', 'text')->where('image_sha256', $req->image_sha256), $pay);
+        }
 
         return $this->fromText($prompt, (int) ($src->target_mm ?: config('ai.default_target_mm', 80)), $ip, $session, $user, $src->id);
     }
@@ -133,7 +163,7 @@ final class GenerationService
     }
 
     /** Identical input already generated → copy the result (free, instant). Otherwise queue the job. */
-    private function reuseOrDispatch(GenerationRequest $req, \Closure $sameInput): GenerationRequest
+    private function reuseOrDispatch(GenerationRequest $req, \Closure $sameInput, bool $pay = false): GenerationRequest
     {
         $prev = $req->image_sha256
             ? $sameInput(GenerationRequest::query())->where('status', 'done')->whereNotNull('result_model_file_id')->latest('id')->first()
@@ -146,6 +176,15 @@ final class GenerationService
         }
         // only real (paid) generations are subject to the daily quota
         $user = $req->owner_user_id ? User::find($req->owner_user_id) : null;
+        if (! empty($req->description['intake'])) {
+            // the home page's free designs have counts of their own (/admin/intake/design): so many free without an account,
+            // so many more with one, then paid from the credit when a price is set and the visitor pressed the paid button
+            IntakeDesign::admit($req, $pay);
+            $req->save();
+            GenerateModel::dispatch($req->id);
+
+            return $req->refresh();
+        }
         $quota = $this->quota($req->ip, $req->anonymous_session_id ? AnonymousSession::find($req->anonymous_session_id) : null, $user);
         if (! $quota['allowed']) {
             // beyond the free quota a signed-in customer may pay for the generation from the farm credit

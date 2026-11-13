@@ -43,7 +43,7 @@ final class Funnel
         // payment begins with the card (checkout_started) or with a top-up of credit (topup_started, session 2)
         'sales' => [['visit'], ['upload', 'failed:upload'], ['upload'], ['calculation'], ['price_shown'], ['order_started'], ['register', 'register_visit', 'order_created'], ['order_created'], ['checkout_started', 'topup_started'], ['order_paid']],
         // the home page's router (TODO #78, docs/AN.md §22): sent → decided → a tool opened, a request left or the file in the calculator → paid
-        'intake' => [['visit'], ['intake_submitted'], ['intake_routed', 'intake_file_to_calc'], ['intake_tool_opened', 'intake_human_created', 'intake_file_to_calc'], ['order_paid']],
+        'intake' => [['visit'], ['intake_submitted'], ['intake_routed', 'intake_file_to_calc'], ['intake_tool_opened', 'intake_designed', 'intake_human_created', 'intake_file_to_calc'], ['order_paid']],
         'youtube' => [['visit'], ['intake_submitted'], ['order_started', 'order_created'], ['order_paid']],
     ];
 
