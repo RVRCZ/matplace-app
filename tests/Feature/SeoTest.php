@@ -138,7 +138,7 @@ class SeoTest extends TestCase
             ->assertSee('<link rel="alternate" hreflang="en" href="'.url('/en/tools/sign').'">', false)
             ->assertSee('<link rel="alternate" hreflang="es" href="'.url('/es/tools/sign').'">', false)
             ->assertSee('<meta property="og:image" content="'.url('/og/tool/sign.png').'">', false);
-        $this->assertEqualsCanonicalizing(['HowTo', 'FAQPage'], $this->types($page));
+        $this->assertEqualsCanonicalizing(['HowTo', 'FAQPage', 'BreadcrumbList'], $this->types($page));
         $en = ToolSeo::texts('sign', 'en');
         $this->get('/en/tools/sign')->assertOk()->assertSee($en['h1'])->assertSee($en['faq'][0]['q'])->assertDontSee($cs['h1'])
             ->assertSee('<meta property="og:image" content="'.url('/og/en/tool/sign.png').'">', false);

@@ -54,7 +54,7 @@ const LANGS = ['cs', 'en', 'es'];
 /** Entry pages that matter whether or not a map lists them (the brief of 13 Nov 2026). */
 const IMPORTANT = ['/', '/tools', '/gifts', '/3d-tisk-praha', '/business', '/farm', '/models', '/blog'];
 /** What the Christmas campaign leads to and what Google did not know on 13 Nov 2026: these come first in findings. */
-const CAMPAIGN = ['/tools/figure', '/tools/pet-figurine', '/tools/ornament', '/tools/medallion', '/tools/keychain', '/tools/charm', '/tools/organizer',
+const CAMPAIGN = ['/tools/figure', '/tools/pet-figurine', '/tools/ornament', '/tools/gingerbread', '/tools/medallion', '/tools/keychain', '/tools/charm', '/tools/organizer',
     '/gifts', '/tools', '/3d-tisk-praha', '/business', '/'];
 
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));

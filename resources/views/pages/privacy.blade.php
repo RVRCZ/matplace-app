@@ -1,6 +1,7 @@
-@extends('layouts.app', ['title' => __('privacy.title').' · matplace', 'description' => __('seo.privacy.description')])
+@extends('layouts.app', ['title' => __('privacy.title').' · matplace', 'description' => __('seo.privacy.description'), 'crumbs' => [[__('privacy.footer.privacy'), route('privacy')]]])
 
 @section('content')
+<x-crumbs :trail="[[__('privacy.footer.privacy'), route('privacy')]]" class="mx-auto -mt-2 mb-1 max-w-2xl" />
 <article class="mx-auto max-w-2xl rounded-2xl border border-slate-200 bg-white p-6 text-slate-700">
     <h1 class="text-2xl font-extrabold text-ink">{{ __('privacy.title') }}</h1>
     <p class="text-xs text-slate-500">{{ __('privacy.effective') }}</p>
