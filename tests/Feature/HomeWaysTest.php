@@ -44,7 +44,8 @@ class HomeWaysTest extends TestCase
         $this->assertStringContainsString('Nebo tisk u nás od 120', $html);
         app(FarmSettings::class)->set('min_price', 10);
         $html = (string) $this->get('/')->getContent();
-        $this->assertStringContainsString('Nebo tisk u nás od 20', $html);
+        // a minimum under the fixed fee of an order does not lower it: 30 without VAT → 36.3 → 40
+        $this->assertStringContainsString('Nebo tisk u nás od 40', $html);
         $this->assertStringNotContainsString('Nebo tisk u nás od 120', $html);
         app(FarmSettings::class)->set('min_price', 0);
         $this->assertStringNotContainsString('Nebo tisk u nás od', (string) $this->get('/')->getContent());

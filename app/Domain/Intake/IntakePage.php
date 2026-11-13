@@ -76,7 +76,9 @@ final class IntakePage
             return null;
         }
         $settings = app(FarmSettings::class);
-        $min = PriceCalculator::roundUp((float) $settings->get('min_price') * (1 + (float) $settings->get('vat_percent') / 100), (float) $settings->get('rounding'));
+        // no order is cheaper than the fixed fee of an order, whatever the minimum says (PriceCalculator: net = max(time + material + fixed_fee, min_price))
+        $net = max((float) $settings->get('min_price'), (float) $settings->get('fixed_fee'));
+        $min = PriceCalculator::roundUp($net * (1 + (float) $settings->get('vat_percent') / 100), (float) $settings->get('rounding'));
 
         return $min > 0 ? Money::of($min, Money::CZK)->format() : null;
     }
