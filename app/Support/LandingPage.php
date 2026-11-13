@@ -34,11 +34,8 @@ final class LandingPage
             fn (array $i) => ['q' => (string) $i['q'], 'a' => strtr((string) $i['a'], $numbers)],
             array_filter((array) __('landing.'.$tool.'.order'), fn ($i) => is_array($i) && ($farm || empty($i['farm']))),
         ));
-        // the farm is paused (FarmState): the honest sentence comes first, before any answer about print and delivery times
-        // (the page's FAQPage data carries it too)
-        if ($farm && ($pause = FarmState::pauseLine())) {
-            array_unshift($items, ['q' => __('farm.state.pause.faq_q'), 'a' => $pause.' '.__('farm.state.pause.order')]);
-        }
+        // a pause of the farm (FarmState) is said once on the page, under its buttons (tools/page: farm._pause); the
+        // questions and the page's FAQPage data stay the same in every state
 
         return $items;
     }

@@ -137,6 +137,23 @@ class FarmStateTest extends TestCase
         return [$title[1] ?? null, $description[1] ?? null, trim(strip_tags($h1[1] ?? ''))];
     }
 
+    /** The questions of the page's FAQPage structured data. */
+    private function faqOf(string $html): array
+    {
+        preg_match_all('/<script type="application\/ld\+json">(.*?)<\/script>/s', $html, $blocks);
+        $out = [];
+        foreach ($blocks[1] as $json) {
+            $data = json_decode($json, true);
+            foreach (isset($data['@graph']) ? $data['@graph'] : [$data] as $node) {
+                if (($node['@type'] ?? null) === 'FAQPage') {
+                    $out = array_merge($out, array_map(fn ($q) => [$q['name'] ?? null, $q['acceptedAnswer']['text'] ?? null], (array) ($node['mainEntity'] ?? [])));
+                }
+            }
+        }
+
+        return $out;
+    }
+
     public function test_the_old_switches_map_to_the_three_states(): void
     {
         $settings = app(FarmSettings::class);
@@ -330,15 +347,18 @@ class FarmStateTest extends TestCase
     {
         $open = (string) $this->get('/tools/qr')->assertOk()->assertDontSee('data-farm-pause', false)->getContent();
         $this->assertStringContainsString(e(__('param.go.hint.farm')), $open);
+        $openItems = LandingPage::order('qr');
 
         $this->pause();
         $paused = (string) $this->get('/tools/qr')->assertOk()->assertSee('data-farm-pause', false)->assertSee('Tisk začne nejdřív 20. 11. 2026.')->getContent();
         $this->assertStringContainsString(e(__('param.go.hint.farm')), $paused, 'the way on stays');
-        // "Before you order": the first question says when printing starts, on the page and in its FAQPage data
-        $items = LandingPage::order('qr');
-        $this->assertSame('Kdy začne tisk?', $items[0]['q']);
-        $this->assertStringContainsString('Tisk začne nejdřív 20. 11. 2026.', $items[0]['a']);
-        $this->assertGreaterThanOrEqual(2, substr_count($paused, 'Kdy začne tisk?'));
+        // the pause is said once, under the buttons: no extra question in "Before you order" nor in the FAQPage data
+        $this->assertSame(1, substr_count($paused, 'data-farm-pause'));
+        $this->assertSame(1, substr_count($paused, 'Tisk začne nejdřív 20. 11. 2026.'));
+        $this->assertStringNotContainsString('Kdy začne tisk?', $paused);
+        $this->assertSame($openItems, LandingPage::order('qr'), 'the questions do not follow the state');
+        $this->assertSame($this->faqOf($open), $this->faqOf($paused), 'nor does the FAQPage data');
+        $this->assertNotEmpty($this->faqOf($open));
 
         $this->close();
         $closed = (string) $this->get('/tools/qr')->assertOk()->assertDontSee('data-farm-pause', false)->assertDontSee('Kdy začne tisk?')->getContent();
