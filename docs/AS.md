@@ -63,6 +63,10 @@ Sdílené soubory, malé přídavky: `config/tools.php` (řádek `paint`), `conf
 `UploadController::describe` (`paint`, `paint_url`), `PaintedColors` (`mergeBelow`), `ModelFile::printHints`
 (vybarvený model se tiskne jako ten, přes který se malovalo), `package.json` (kontrola v `build`).
 
+Karta nástroje (`public/img/tools/paint-*`) je snímek nástroje samotného: váza z `/tools/vase` vybarvená skriptem
+(`paint_walk.mjs --card`: dvě barvy podle výšky a vlnovka štětcem), ne studiová fotka jako u ostatních karet (ty
+dělá placené AI, které jsem volat nesměl). Až bude fotka skutečného výtisku, vymění se.
+
 ## 3. Zápis vybarvení
 
 Jeden zápis nad STL modelu, verze 1. Klient ho posílá na `POST /api/files/{uuid}/paint` (multipart), server ho drží
@@ -278,6 +282,8 @@ Neověřeno:
 - Řez velkého vybarveného modelu (stovky tisíc trojúhelníků s tahy) skutečnou Orcou a čas úlohy na produkčním
   serveru.
 - Jiné prohlížeče než Chrome.
+- Tlačítko „Vytisknout barevně“ jsem v místním průchodu neviděl (hostovi se v místní databázi tisk u nás
+  nenabízí); zakázku barevně (`colors=painted`) ověřuje test přes API, řádek barev a dvě ceny průchod.
 
 Otevřené otázky pro Romana a koordinátora:
 
