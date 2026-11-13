@@ -1,0 +1,14 @@
+{
+    "router.hint.steady.3": ["3D mapa našeho města", "A 3D map of our town", "Un mapa 3D de nuestra ciudad"],
+    "router.hint.steady.3.fill": ["3D mapa Olomouce jako dárek, 15 cm.", "A 3D map of Bath as a gift, 15 cm.", "Un mapa 3D de Toledo como regalo, 15 cm."],
+    "router.hint.christmas.4": ["Čelenka se sobími parohy", "A headband with reindeer antlers", "Una diadema con astas de reno"],
+    "router.hint.christmas.4.fill": ["Čelenka se sobími parohy na vánoční besídku, obvod hlavy 54 cm, červená a hnědá.", "A headband with reindeer antlers for the Christmas party, head 54 cm around, red and brown.", "Una diadema con astas de reno para la fiesta de Navidad, contorno de cabeza 54 cm, roja y marrón."],
+    "router.hint.halloween.4": ["Čelenka s kočičíma ušima", "A headband with cat ears", "Una diadema con orejas de gato"],
+    "router.hint.halloween.4.fill": ["Černá čelenka s kočičíma ušima k halloweenskému kostýmu, obvod hlavy 54 cm.", "A black headband with cat ears for a Halloween costume, head 54 cm around.", "Una diadema negra con orejas de gato para el disfraz de Halloween, contorno de cabeza 54 cm."],
+    "router.hint.easter.4": ["Čelenka se zaječíma ušima", "A headband with bunny ears", "Una diadema con orejas de conejo"],
+    "router.hint.easter.4.fill": ["Bílá čelenka se zaječíma ušima na velikonoční besídku, obvod hlavy 52 cm.", "A white headband with bunny ears for the Easter egg hunt, head 52 cm around.", "Una diadema blanca con orejas de conejo para la fiesta de Pascua, contorno de cabeza 52 cm."],
+    "router.hint.carnival.1": ["Korunka pro princeznu", "A princess crown", "Una corona de princesa"],
+    "router.hint.carnival.1.fill": ["Čelenka s korunkou pro princeznu na karneval, obvod hlavy 52 cm, zlatá.", "A headband with a crown for a princess costume, head 52 cm around, gold.", "Una diadema con corona de princesa para el carnaval, contorno de cabeza 52 cm, dorada."],
+    "router.hint.carnival.2": ["Čelenka jednorožec", "A unicorn headband", "Una diadema de unicornio"],
+    "router.hint.carnival.2.fill": ["Čelenka s rohem a ušima jednorožce na karneval, obvod hlavy 54 cm, bílá a zlatá.", "A unicorn headband with a horn and ears for the carnival, head 54 cm around, white and gold.", "Una diadema de unicornio con cuerno y orejas para el carnaval, contorno de cabeza 54 cm, blanca y dorada."]
+}

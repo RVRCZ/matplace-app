@@ -84,7 +84,7 @@ class IntakeDecorTest extends TestCase
         $this->assertSame('ornament', config('home.intake.hints.events.christmas.examples')[0]);
         $this->assertSame('Ozdoba na stromek se jménem', IntakeHints::examples('christmas', 'cs')[0]['label']);
         $cases = IntakeCases::hintCases();
-        $this->assertCount(110, $cases);
+        $this->assertCount(122, $cases);
         foreach ($cases as $case) {
             $d = IntakeRouter::guess($case['text'], false, $case['locale']);
             $this->assertSame([$case['route'], $case['tool']], [$d['route'], $d['tool_key']], $case['code']);
