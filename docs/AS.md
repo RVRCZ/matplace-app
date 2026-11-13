@@ -250,6 +250,11 @@ důvod rámečku z §5 a věty „Nejlevnější jsou barvy nad sebou“.
   trojúhelníků, vlnitý tah bez trojúhelníků bez plochy, pás s rovnými boky do 0,5 %, počet výměn filamentu
   (barvy nad sebou 1, strana jinou barvou 50 na 50 vrstev).
 - `pint --dirty`, `npx tsc --noEmit -p .`, `npm run build`.
+- Celá sada PHPUnit jednou (13. 11., 1 206 testů, 1 h 37 min, souběžně čtyři sady jiných sessions): podle
+  `.phpunit.result.cache` spadlo 86 testů ve 32 třídách, všechny v první části běhu (třídy A až P, hlavně stránky
+  a nástroje s Pythonem). Výpis běhu se nedochoval (odkladiště je společné pro více sessions a jiná sada psala do
+  souboru téhož jména). Těch 32 tříd spuštěných hned potom zvlášť (323 testů): červené jen známé tři
+  (PapelPortraitTest, PrintPhotosTest, YouTubeChannelTest). Příčinu pádů v plném běhu neznám; nejspíš zátěž stroje.
 
 ## 9. Co nasazení nese
 
