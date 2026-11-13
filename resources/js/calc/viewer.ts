@@ -369,6 +369,14 @@ export class Viewer {
         this.placeHandles();
     }
 
+    /**
+     * The scene, the camera, the controls and the renderer, for a module that draws a mesh of its own in this viewer
+     * (the colouring tool, paint.ts): it lives in the same picture, turns with the same views and is drawn by the same loop.
+     */
+    host(): ViewerHost {
+        return { scene: this.scene, camera: this.camera, controls: this.controls, renderer: this.renderer, canvas: this.canvas };
+    }
+
     /** While on, a new model keeps the camera where the visitor left it (numbers change, the view does not jump). */
     keepView(on: boolean): void { this.hold = on; }
 
@@ -958,6 +966,8 @@ export class Viewer {
 
 /** A separately printed piece of the shown model: its name and its triangles [from, to) in the order of the file. */
 export interface Piece { name: string; tris: [number, number]; bbox?: number[] }
+
+export interface ViewerHost { scene: Scene; camera: PerspectiveCamera; controls: OrbitControls; renderer: WebGLRenderer; canvas: HTMLCanvasElement }
 /** What a drag of the frame has changed since the press: a shift in millimetres, a ratio of sizes, a turn in degrees (anticlockwise). */
 export interface FrameChange { dx: number; dy: number; scale: number; turn: number }
 

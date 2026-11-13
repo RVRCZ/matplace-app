@@ -49,7 +49,7 @@ final class PaintedColors
         $max = ColorLimit::farm();
         try {
             $r = $this->python->runScript('colors_tool.py', ['upload', $file->absolutePath(), $stlAbs, (string) json_encode([
-                'merge_below' => (float) config('engines.colors.merge_below', 1.0), 'max_colors' => $max,
+                'merge_below' => self::mergeBelow($file), 'max_colors' => $max,
             ])], (int) config('engines.colors.timeout', 180));
         } catch (\Throwable $e) {
             $r = ['ok' => false, 'error' => $e->getMessage()];
@@ -67,6 +67,16 @@ final class PaintedColors
         return ['v' => 1, 'status' => 'done', 'count' => (int) $r['count'], 'merged' => (int) ($r['merged'] ?? 0), 'too_many' => (bool) ($r['too_many'] ?? false), 'max' => $max,
             'colors' => array_values((array) $r['colors']), 'groups' => $r['groups'] ?? null, 'layers' => (array) ($r['layers'] ?? []),
             'height' => (float) ($r['height'] ?? 0), 'split_triangles' => (int) ($r['split_triangles'] ?? 0), 'ms' => $ms];
+    }
+
+    /**
+     * Under how many per cent of the area a colour joins its body: the setting for a file painted in a slicer (the
+     * turtle's eyes, 0.8 %), none for a model coloured here (App\Domain\Tools\ModelPainter): every colour of it was
+     * put there on purpose, and its specks under the nozzle's width were merged when it was written.
+     */
+    public static function mergeBelow(ModelFile $file): float
+    {
+        return $file->origin === 'paint' ? 0.0 : (float) config('engines.colors.merge_below', 1.0);
     }
 
     /** The printed colours of a file painted in two or more (largest first), as hex. */
@@ -128,7 +138,7 @@ final class PaintedColors
         try {
             // the same merge as the analysis (its `max`), so the parts are the colours the customer saw
             $r = $this->python->runScript('edit_tool.py', ['colors', $file->absolutePath(), $out, (string) json_encode([
-                'depth' => 1.2, 'in_place' => true, 'merge_below' => (float) config('engines.colors.merge_below', 1.0), 'max_colors' => (int) (($file->colors['max'] ?? 0) ?: ColorLimit::farm()),
+                'depth' => 1.2, 'in_place' => true, 'merge_below' => self::mergeBelow($file), 'max_colors' => (int) (($file->colors['max'] ?? 0) ?: ColorLimit::farm()),
             ]), $dir], (int) config('engines.colors.timeout', 180) * 2);
         } catch (\Throwable $e) {
             $r = ['ok' => false, 'error' => $e->getMessage()];

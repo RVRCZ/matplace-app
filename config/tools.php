@@ -336,6 +336,8 @@ return [
     // the card: a picture in colours (every plate its own filament) packed as a coloured 3MF and split by colour again
     // a model out of a G-code file (docs/AL.md): no card of its own yet (the drawing of tools/art), no examples
     'gcode' => ['route' => 'tools.gcode', 'intent' => 'file', 'categories' => ['edit'], 'available' => true, 'article' => 'gcode-zpet-na-stl-kdyz-se-ztratil-model', 'seo' => ['examples' => []]],
+    // colouring a model in the browser: a fill, colours by height, a brush (docs/AS.md); no generator behind its card, no examples
+    'paint' => ['route' => 'tools.paint', 'intent' => 'file', 'categories' => ['edit', 'images'], 'available' => true, 'seo' => ['examples' => []]],
     'colors' => ['route' => 'tools.colors', 'intent' => 'file', 'categories' => ['edit', 'images'], 'available' => true, 'seo' => ['examples' => []],
         'card' => ['edit' => 'colors', 'kind' => 'filament_art', 'params' => ['artwork' => 'lib:colour/snowman', 'mode' => 'layered', 'frame' => 'none', 'width' => 160, 'height' => 160, 'colors_n' => 5], 'edit_params' => ['depth' => 1.2]]],
     // the card: a dish round the footprint of a rounded plate

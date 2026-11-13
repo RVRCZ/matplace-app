@@ -20,6 +20,7 @@ import { bootFigure } from './figure';
 import { bootArt } from './art';
 import { bootEdit } from './edit';
 import { bootMap } from './map';
+import { bootPaint } from './paint';
 import { FileInfo } from './api';
 import { loadGeometryFromUrl } from './loaders';
 import { preloadIntake, showUnderstood, IntakePayload } from './intake_preload';
@@ -500,7 +501,7 @@ export function bootToolPage(): void {
     if (!cfg || !root || !canvas) return;
     fitWindow(root);   // from lg the grid fills the window under the header; the panel scrolls inside it (docs/AN.md §18)
     const stage = new Stage(cfg, canvas);
-    const modules: Record<string, (stage: Stage) => void> = { param: bootParam, relief: bootRelief, mold: bootMoldPage, repair: bootRepairPage, check: bootCheckPage, figure: bootFigure, art: bootArt, edit: bootEdit, map: bootMap };
+    const modules: Record<string, (stage: Stage) => void> = { param: bootParam, relief: bootRelief, mold: bootMoldPage, repair: bootRepairPage, check: bootCheckPage, figure: bootFigure, art: bootArt, edit: bootEdit, map: bootMap, paint: bootPaint };
     modules[cfg.module]?.(stage);
     // what the visitor handed in on the home page: the one hook for every module (intake_preload.ts)
     if (cfg.intake) { showUnderstood(cfg.intake); void preloadIntake(cfg.intake); }

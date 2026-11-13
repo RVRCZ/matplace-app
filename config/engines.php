@@ -116,6 +116,23 @@ return [
         'tower_g' => 0.5,
     ],
 
+    // colouring a model in the browser (App\Domain\Tools\ModelPainter, engines/python/paint_tool.py, docs/AS.md). A model
+    // of more triangles than `max_triangles` (on a phone or a tablet: `max_triangles_phone`) is not opened; the brush refines
+    // the mesh and may add `max_added` triangles;
+    // above `brush_triangles` (a phone: `brush_triangles_phone`) only the fill and the colours by height are offered
+    // (measured, docs/AS.md §6). A patch of one colour under `speck_mm2` joins the colour around it: a 0.4 mm nozzle
+    // cannot draw it. `edge_mm`: how finely the brush draws its rim (the shortest edge it splits down to).
+    'paint' => [
+        'max_triangles' => (int) env('PAINT_MAX_TRIANGLES', 1000000),
+        'max_triangles_phone' => (int) env('PAINT_MAX_TRIANGLES_PHONE', 500000),
+        'max_added' => (int) env('PAINT_MAX_ADDED', 400000),
+        'brush_triangles' => (int) env('PAINT_BRUSH_TRIANGLES', 500000),
+        'brush_triangles_phone' => (int) env('PAINT_BRUSH_TRIANGLES_PHONE', 200000),
+        'speck_mm2' => (float) env('PAINT_SPECK_MM2', 0.5),
+        'edge_mm' => 0.4,
+        'timeout' => 600,
+    ],
+
     'mesh' => [
         'decimate_above' => (int) env('MESH_DECIMATE_ABOVE', 400000),
         // a file whose last slice on the first page took longer than this is "big" too: the calculator shows its estimate with a

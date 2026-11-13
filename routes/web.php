@@ -30,6 +30,7 @@ use App\Http\Controllers\Api\InquiryController as ApiInquiryController;
 use App\Http\Controllers\Api\MapApiController;
 use App\Http\Controllers\Api\ModelFileController;
 use App\Http\Controllers\Api\ModelPreviewController;
+use App\Http\Controllers\Api\PaintApiController;
 use App\Http\Controllers\Api\PlateController;
 use App\Http\Controllers\Api\RefusedController;
 use App\Http\Controllers\Api\SearchController;
@@ -62,6 +63,7 @@ use App\Http\Controllers\InspirationController;
 use App\Http\Controllers\IntakeController;
 use App\Http\Controllers\LocaleRedirectController;
 use App\Http\Controllers\MapToolController;
+use App\Http\Controllers\PaintToolController;
 use App\Http\Controllers\ModelCatalogController;
 use App\Http\Controllers\OgController;
 use App\Http\Controllers\PageController;
@@ -222,6 +224,8 @@ $pages = function () {
     Route::get('/tools/gcode-model', [EditToolsController::class, 'edit'])->defaults('op', 'gcode')->name('tools.gcode');
     // session B (docs/W.md): a 3D map of a city or a landscape from OpenStreetMap and the height tiles
     Route::get('/tools/map', [MapToolController::class, 'show'])->name('tools.map');
+    // colouring a model: a fill, colours by height, a brush (docs/AS.md)
+    Route::get('/tools/paint', [PaintToolController::class, 'show'])->name('tools.paint');
 
     // ── Auth ─────────────────────────────────────────────────────────────────────
     Route::middleware('guest')->group(function () {
@@ -449,6 +453,9 @@ Route::prefix('api')->name('api.')->group(function () {
     Route::post('tools/map', [MapApiController::class, 'create'])->middleware('throttle:10,1,map_create')->name('tools.map');
     Route::post('files/{modelFile}/edit/analysis', [EditApiController::class, 'analysis'])->middleware(['file', 'throttle:30,1,editanalysis'])->name('files.edit.analysis');
     Route::post('files/{modelFile}/edit', [EditApiController::class, 'edit'])->middleware(['file', 'throttle:12,1,edit'])->name('files.edit');
+    // a model coloured in the browser → a painted 3MF made in the queue (App\Domain\Tools\ModelPainter, docs/AS.md)
+    Route::post('files/{modelFile}/paint', [PaintApiController::class, 'store'])->middleware(['file', 'throttle:12,1,paint'])->name('files.paint');
+    Route::get('tools/paint/{modelFile}/colors.3mf', [PaintApiController::class, 'download'])->middleware(['file:project', 'throttle:20,1,paint3mf'])->name('tools.paint.download');
     Route::post('inquiries', [ApiInquiryController::class, 'store'])->middleware(['feature:marketplace', 'throttle:10,1,inquiry'])->name('inquiries.store');
     Route::post('spare-parts', [ApiInquiryController::class, 'spare'])->middleware(['feature:marketplace', 'throttle:6,1,spare'])->name('spare');
     Route::get('threads/{thread}/messages', [ThreadController::class, 'messages'])->name('threads.messages');
