@@ -430,8 +430,8 @@ Skript `scripts/decor_slice.php`. Výměny po výšce jsou z poznámek návrhu (
 Podpěry nikde. Řez trvá 1–5 s. Jedna barva navíc po výšce stojí jednu výměnu a skoro nic na čase; barva ve stejných
 vrstvách stojí věž a 10–25 minut (klíčenka 7 min 34 s → 20 min 20 s).
 
-**Dvě chyby, které řezy našly, a oprava v `App\Engines\Mesh\ThreeMfWriter`** (soubor farmy, změna je v samostatném
-commitu, aby šla posoudit zvlášť):
+**Dvě chyby, které řezy našly, a oprava v `App\Engines\Mesh\ThreeMfWriter`** (soubor farmy; oprava kopií je
+samostatný commit 973f1b16, díly nad podložkou jsou v prvním commitu větve d5d664a8):
 
 1. **Díl, který nezačíná na podložce, slicer položil na podložku.** Každý díl byl v 3MF vlastní objekt a Orca objekty
    cizího 3MF pokládá na podložku. Vystouplé zdobení ve vlastní barvě tak spadlo do desky: `gcode path conflicts found
