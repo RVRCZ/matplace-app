@@ -43,6 +43,8 @@ export interface DecorPanel {
     /** One more decoration, opened for the visitor to go on with (a photo handed over from the home page). */
     add(item: Record<string, unknown>): void;
     placed(list: DecorPlaced[] | undefined, turnedUp: boolean): void;
+    /** The preview did not come back (an error): nothing is on its way any more, the "removing the background" line goes. */
+    settle(): void;
     /** The decoration that is open, as the engine laid it (null when none is open, or the open one is not built yet). */
     active(): { placed: DecorPlaced; face: 'front' | 'back' } | null;
     /** Opens the decoration the engine numbers `index` (a click on it in the preview); false when there is none. */
@@ -361,9 +363,15 @@ export function bootDecor(host: HTMLElement, cfg: DecorCfg, t: Words, nf: Intl.N
             const before = JSON.stringify([said, turned]);
             const waited = items.some((d) => d.waiting);
             said = now ?? []; turned = turnedUp;
-            items.forEach((d, i) => { if (d.waiting && placedOf(i)) d.waiting = false; });
+            // (the answer that says what became of the background ends the wait; an older preview on its way does not)
+            items.forEach((d, i) => { if (d.waiting && placedOf(i)?.cutout !== undefined) d.waiting = false; });
             // the notes under an open decoration follow what the engine made of it; a field being typed in keeps its focus
             if ((waited || before !== JSON.stringify([said, turned])) && !inLists(document.activeElement)) render();
+        },
+        settle: () => {
+            if (!items.some((d) => d.waiting)) return;
+            items.forEach((d) => { d.waiting = false; });
+            if (!inLists(document.activeElement)) render();
         },
         active: () => {
             const was = open >= 0 ? placedOf(open) : undefined;

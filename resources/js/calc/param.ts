@@ -559,7 +559,7 @@ export function bootParam(stage: Stage): void {
             renderViews();
             const res = await post({ kind: cfg.kind, params: params(), view: 'use', part: viewPart, pieces: true });
             if (mine !== seq) return;                       // a newer change is already on its way
-            if (!res.ok) { valid = false; showError(await errorOf(res)); return; }
+            if (!res.ok) { valid = false; decor?.settle(); showError(await errorOf(res)); return; }
             // the model first: a big one (a relief is megabytes) must not wait behind the request for the rest of its notes
             const stl = await res.arrayBuffer();
             lastMeta = await modelMeta<Meta>(res);
@@ -578,7 +578,7 @@ export function bootParam(stage: Stage): void {
             if (papel) papelShow();
             if (cookie) { renderPen(); armDraw(); }
         } catch {
-            if (mine === seq) { valid = false; showError(t('param.preview_failed')); }
+            if (mine === seq) { valid = false; decor?.settle(); showError(t('param.preview_failed')); }
         } finally {
             if (mine === seq) stage.busy(false);
         }

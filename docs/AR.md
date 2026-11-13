@@ -488,7 +488,10 @@ Zapuštěný text (dvě vrstvy) by v náhledu nebyl vidět: dno zapuštění se 
   upravené počty), `FarmOnePlateCopiesTest` (4 položky místo 8).
 - Sada kolem změny (`DecorTest|IntakeDecorTest|FlushDownTest|ComposeToolTest|ToolPageTest|LandingPagesTest|SeoTest|
   FarmOnePlateTest|FarmOnePlateCopiesTest|ThreeMfWriterTest|FarmToolChangerPlateTest|SliceCacheTest`): OK, 96 testů,
-  14 355 asercí. `pint --dirty`, `npx tsc --noEmit -p .`, `npm run build` prošly. Celá sada: viz zpráva řídící.
+  14 355 asercí. `pint --dirty`, `npx tsc --noEmit -p .`, `npm run build` prošly.
+- **Celá sada PHPUnit** (13. 11. 2026, 1 h 45 min, souběžně s jinými sadami): 1200 testů, 100 660 asercí, 11 přeskočených,
+  3 selhání, a to ta, která padají i na `main`: `PapelPortraitTest` (šest kroků portrétu), `PrintPhotosTest` (fotka z adminu),
+  `YouTubeChannelTest` (tabulka titulků).
 
 ### 12.8 Nasazení
 
