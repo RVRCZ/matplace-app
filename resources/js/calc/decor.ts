@@ -23,9 +23,10 @@ export interface DecorItem {
 /**
  * What the engine says about a decoration it laid: how it was really made (a face on the bed takes nothing raised),
  * whether the background of its photo went (`cutout`, absent when nobody asked), and where it lies in the preview:
- * `view.box` the frame round it, `view.hull` the corners that have to stay on the face (millimetres of the shown model).
+ * `view.box` the frame round it, `view.hull` the corners that have to stay on the face, `view.floor` the height of the
+ * floor of an engraving (millimetres of the shown model).
  */
-export interface DecorPlaced { index: number; kind: string; face: string; mode: string; on_bed: boolean; cap?: number; part?: string; cutout?: boolean; view?: { box: [number, number, number, number]; hull: [number, number][] } }
+export interface DecorPlaced { index: number; kind: string; face: string; mode: string; on_bed: boolean; cap?: number; part?: string; cutout?: boolean; view?: { box: [number, number, number, number]; hull: [number, number][]; floor?: number } }
 /** The face decorations are measured on, in the millimetres of the shown model: its middle, its width, the heights of its two sides, where decorations may lie. */
 export interface DecorFace { centre: [number, number]; width: number; front_z: number; back_z: number; region: [number, number][][] }
 /** What a drag of the frame in the preview has changed since the press (the viewer's FrameChange). */

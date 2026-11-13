@@ -572,6 +572,8 @@ export function bootParam(stage: Stage): void {
             renderParts(); paintParts(); renderWarnings(lastMeta); renderStatus();
             // (what the engine made of the decorations first: the frame in the preview is drawn round the open one by it)
             decor?.placed((lastMeta?.notes as { decor?: DecorPlaced[] } | undefined)?.decor, Boolean((lastMeta?.notes as { turned_up?: boolean } | undefined)?.turned_up));
+            // (an engraving two layers deep reads in the preview only when its floor is a shade darker than the face)
+            if (decor) viewer.setSunk(viewPart === 'all' ? ((lastMeta?.notes as { decor?: DecorPlaced[] } | undefined)?.decor ?? []).filter((d) => d.view && d.view.floor !== undefined).map((d) => ({ box: d.view!.box, z: d.view!.floor! })) : []);
             renderDownloads(); placeEyelet(); placeFrame();
             if (papel) papelShow();
             if (cookie) { renderPen(); armDraw(); }
@@ -1085,7 +1087,9 @@ export function bootParam(stage: Stage): void {
         sideBar.className = 'tool-bar pointer-events-auto absolute bottom-3 left-3 z-[5]'; sideBar.setAttribute('role', 'group'); sideBar.setAttribute('aria-label', t('decor.side')); sideBar.id = 'decor-side';
         (['front', 'back'] as const).forEach((side) => {
             const b = document.createElement('button'); b.type = 'button'; b.className = 'tool-bar-btn min-h-11 px-3 text-sm'; b.dataset.decorSide = side;
-            b.setAttribute('aria-pressed', side === 'front' ? 'true' : 'false'); b.textContent = t(`decor.side.${side}`);
+            // (on a phone the short word, so the two fit beside the "working" mark; the whole name for a reader and on wider screens)
+            b.setAttribute('aria-pressed', side === 'front' ? 'true' : 'false'); b.setAttribute('aria-label', t(`decor.side.${side}`)); b.title = t(`decor.side.${side}`);
+            b.innerHTML = `<span class="sm:hidden">${t(`decor.face.${side}`)}</span><span class="max-sm:hidden">${t(`decor.side.${side}`)}</span>`;
             b.onclick = () => showSide(side === 'back');
             sideBar.appendChild(b);
         });
@@ -1102,6 +1106,9 @@ export function bootParam(stage: Stage): void {
         if (!decor || !now || !now.placed.view || !face || !valid || viewPart !== 'all' || drawing) { if (!now) decorLooked = false; return false; }
         if ((now.face === 'back') !== viewer.isTurned()) return false;
         if (!decorLooked) lookAtFace(viewer.isTurned());        // a decoration just built (a photo uploaded): the preview comes to it
+        // a preview that comes back while the next drag is already under way must not take the frame out of the hand:
+        // the drag's own end asks for a new preview, and that one draws the frame where the decoration then lies
+        if (viewer.framingNow()) return true;
         viewer.setFrame({ box: now.placed.view.box, z: now.face === 'back' ? face.back_z : face.front_z },
             (c, phase) => decor.drag(c, phase, face), (c) => decor.hold(c, face));
         return true;

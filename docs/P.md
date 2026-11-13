@@ -1269,3 +1269,6 @@ jednou barvou, věta o jedné podložce by u nich lhala. Hint `flag.flush.hint` 
 Text, reliéf z fotky a logo na přední i zadní straně medaile, klíčenky, ozdoby a podtácku: seznam `decor`
 v parametrech, panel Zdobení, `engines/python/decor.py`. Vlastní text a obrázek nástrojů zůstaly, jak jsou. Vše
 v `docs/AR.md`.
+
+Druhé kolo (13. 11. 2026, `feature/dilna-zdobeni-2`): pozadí fotky pryč, pohled s otočením a tažení zdobení v náhledu,
+texty v kroku Vstup, reliéf ve vlastní barvě, oprava 3MF farmy pro díly nad podložkou a kopie. `docs/AR.md` §12.

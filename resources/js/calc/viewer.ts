@@ -77,6 +77,7 @@ export class Viewer {
     private handleLabel: HTMLElement | null = null;
     private onPick: ((index: number, piece: Piece | null, at: [number, number, number] | null) => void) | null = null;
     private turned = false;                             // the model is shown turned over, its back up (setTurned)
+    private sunk: Uint8Array | null = null;             // one flag per triangle that is the floor of something sunk into the model (setSunk)
     private marker: { group: Group; path: [number, number][]; z: number } | null = null;
     private onMarker: ((share: number, phase: 'move' | 'end') => string | void) | null = null;
     private draw: { z: number; color: string } | null = null;
@@ -183,6 +184,27 @@ export class Viewer {
         const dist = ((size * this.mesh.scale.x) / 2 / Math.tan(half) / Math.min(1, this.camera.aspect || 1)) * 1.1;
         this.controls.target.copy(target);
         this.anim = { from: this.camera.position.clone(), to: new Vector3(0, 1, 0.0005).normalize().multiplyScalar(dist).add(target), t0: performance.now(), ms: Math.max(1, ms) };
+    }
+
+    /**
+     * The floors of what is sunk into a flat face (a text engraved two layers deep), drawn a shade darker: lit from
+     * above, a floor and the face round it are the same colour, and a shallow engraving could not be read in the preview.
+     * `box` is where the engraving lies and `z` the height of its floor, in the millimetres of the file. Holds until the
+     * next model.
+     */
+    setSunk(floors: { box: [number, number, number, number]; z: number }[]): void {
+        const pos = this.mesh?.geometry.getAttribute('position');
+        this.sunk = null;
+        if (pos && floors.length && !this.mesh!.geometry.index && this.spread === 0) {
+            const flags = new Uint8Array(pos.count / 3); let any = false;
+            for (let t = 0; t < flags.length; t++) {
+                const z = [pos.getZ(t * 3), pos.getZ(t * 3 + 1), pos.getZ(t * 3 + 2)];
+                const x = (pos.getX(t * 3) + pos.getX(t * 3 + 1) + pos.getX(t * 3 + 2)) / 3; const y = (pos.getY(t * 3) + pos.getY(t * 3 + 1) + pos.getY(t * 3 + 2)) / 3;
+                if (floors.some((f) => z.every((v) => Math.abs(v - f.z) < 0.03) && x >= f.box[0] && x <= f.box[2] && y >= f.box[1] && y <= f.box[3])) { flags[t] = 1; any = true; }
+            }
+            if (any) this.sunk = flags;
+        }
+        this.repaint();
     }
 
     /** Whether the model is shown with its back up. */
@@ -331,6 +353,7 @@ export class Viewer {
         if (this.highlight) { this.highlight.geometry.dispose(); this.highlight = null; }
         this.selected = -1;
         this.pieces = [];
+        this.sunk = null;
         // the colours belonged to the pieces of the model before (a copper box, then a plain upload)
         this.pieceColors.clear();
         this.pieceLooks.clear();
@@ -412,7 +435,8 @@ export class Viewer {
         const beyond = this.bed && this.bedCheck ? this.beyondBed() : null;
         this.over = !!beyond;
         mesh.geometry.clearGroups();
-        if (!this.pieceColors.size && !beyond) {
+        const sunk = this.sunk && this.sunk.length === pos.count / 3 ? this.sunk : null;
+        if (!this.pieceColors.size && !beyond && !sunk) {
             if (this.baseCol) mesh.geometry.setAttribute('color', new Float32BufferAttribute(this.baseCol.slice(), 3)); else mesh.geometry.deleteAttribute('color');
             mesh.material = this.baseMaterial;
             return;
@@ -423,11 +447,12 @@ export class Viewer {
             const piece = this.pieces[index]; if (!piece) return;
             for (let v = piece.tris[0] * 3; v < piece.tris[1] * 3; v++) { col[v * 3] = c[0]; col[v * 3 + 1] = c[1]; col[v * 3 + 2] = c[2]; }
         });
+        if (sunk) for (let t = 0; t < sunk.length; t++) if (sunk[t]) for (let k = 0; k < 9; k++) col[t * 9 + k] *= 0.62;
         if (beyond) for (let t = 0; t < beyond.length; t++) if (beyond[t]) for (let k = 0; k < 3; k++) { col[(t * 3 + k) * 3] = 0.62; col[(t * 3 + k) * 3 + 1] = 0.03; col[(t * 3 + k) * 3 + 2] = 0.03; }
         mesh.geometry.setAttribute('color', new Float32BufferAttribute(col, 3));
         // a plate coloured by its height stays the plate it was (only what hangs over the bed is marked on it);
         // once its parts are given filaments of their own, it shines as they do, like everything else
-        if (this.baseMaterial === this.plateMaterial && !this.pieceColors.size) { mesh.material = this.plateMaterial; return; }
+        if (this.baseMaterial === this.plateMaterial && !this.pieceColors.size && !sunk) { mesh.material = this.plateMaterial; return; }
         creaseNormals(mesh.geometry, CREASE_DEGREES);
         const rest = this.baseCol ? this.look : this.plainLook;
         const looks = this.pieces.map((_, i) => (this.pieceColors.has(i) ? this.pieceLooks.get(i) ?? 'solid' : rest));
@@ -682,6 +707,9 @@ export class Viewer {
         this.frame = { group, grips, box: frame.box, z: frame.z };
         this.listen();
     }
+
+    /** Whether the frame is being dragged right now (a caller that would draw it anew waits for the drag to end). */
+    framingNow(): boolean { return this.framing !== null; }
 
     /** What of the frame lies under the pointer: a corner, the knob, its inside, or nothing. */
     private frameUnder(ray: Raycaster): { mode: 'move' | 'size' | 'turn'; at: Vector3 } | null {

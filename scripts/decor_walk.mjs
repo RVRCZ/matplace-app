@@ -5,7 +5,8 @@
  * over its DevTools protocol with Node's own WebSocket (Node 22+), as scripts/review_round2.mjs does. The user agent
  * says "HeadlessChrome", so the site's statistics count the run as a robot.
  *
- *   node scripts/decor_walk.mjs --base=http://127.0.0.1:8046 --steps=steps.json [--width=390] [--out=docs/img] [--port=9333]
+ *   node scripts/decor_walk.mjs --base=http://127.0.0.1:8046 --steps=steps.json [--width=390] [--height=844] [--out=docs/img] [--port=9333]
+ *        [--lang=cs] [--cookie=name=value]
  *
  * Steps (each an array):
  *   ["go", "/tools/medallion"]            a page
@@ -74,6 +75,10 @@ await cdp('Network.setUserAgentOverride', {
 });
 await cdp('Network.setCookie', { name: 'mp_test', value: '1', url: BASE });
 await cdp('Network.setCookie', { name: 'consent', value: 'a0m0', url: BASE });
+// --cookie=mp_sid=…: the visitor a stored design belongs to, so the page may open it again (?from=<uuid>)
+for (const pair of process.argv.filter((a) => a.startsWith('--cookie=')).map((a) => a.slice(9))) {
+    await cdp('Network.setCookie', { name: pair.slice(0, pair.indexOf('=')), value: pair.slice(pair.indexOf('=') + 1), url: BASE });
+}
 
 const evaluate = async (expression) => {
     const r = await cdp('Runtime.evaluate', { expression, returnByValue: true, awaitPromise: true });

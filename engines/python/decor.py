@@ -438,6 +438,9 @@ def apply(M, Invalid, p, parts, notes, face):
         xs = sorted((vx(fx0), vx(fx1)))
         hull = art.hull().to_polygons()
         entry["view"] = {"box": [round(xs[0], 1), round(fy0 - sy0, 1), round(xs[1], 1), round(fy1 - sy0, 1)], "hull": ring(hull[0], 16) if hull else []}
+        if entry["mode"] == "engraved" and entry["kind"] != "photo":
+            # the floor of the engraving: the page draws it a shade darker, or two layers of depth could not be seen
+            entry["view"]["floor"] = round(vz(entry["depth"] if entry["on_bed"] else t - entry["depth"]), 2)
 
     # ── notes: what was laid where, the parts and their filaments, how it prints ───────────────────────────────
     notes["decor"] = placed

@@ -100,7 +100,8 @@ class DecorTest extends TestCase
         $this->assertSame('red', $text['color']['code']);
         $this->assertMatchesRegularExpression('/^#[0-9a-f]{6}$/i', $text['color']['hex']);
         $this->assertArrayNotHasKey('rm', $text);
-        $this->assertSame([0.6, null, 1.0, 'circle'], [$photo['depth'], $photo['color'], $photo['smooth'], $photo['frame']]);      // a relief is the plate's filament
+        // (round 2, docs/AR.md §12: a relief may have a filament of its own; a record without a word about the background keeps it)
+        $this->assertSame([0.6, 'red', 1.0, 'circle', 'keep'], [$photo['depth'], $photo['color']['code'], $photo['smooth'], $photo['frame'], $photo['background']]);
         $this->assertSame([0.6, 'blue'], [$logo['depth'], $logo['color']['code']]);                                               // whole layers of 0.2
         // what is stored is cleaned the same again: a design opened from its stored parameters is the same design
         $this->assertSame($clean, ParametricGenerator::cleanDecor($clean));
