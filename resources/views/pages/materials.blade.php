@@ -1,4 +1,4 @@
-@extends('layouts.app', ['title' => __('site.materials.title').' · matplace', 'description' => __('site.materials.description')])
+@extends('layouts.app', ['title' => __('site.materials.title').' · matplace', 'description' => __('site.materials.description'), 'crumbs' => [[__('site.materials.title'), route('materials')]]])
 
 {{-- the materials as a list for search engines: the names and the anchors of the cards below (docs/AN.md §12.4) --}}
 @push('head')
@@ -7,6 +7,7 @@
 
 @section('content')
 <div class="mx-auto max-w-4xl">
+    <x-crumbs :trail="[[__('site.materials.title'), route('materials')]]" class="-mt-2" />
     <h1 class="text-3xl font-extrabold tracking-tight text-ink">{{ __('site.materials.title') }}</h1>
     <p class="mt-2 max-w-2xl text-lg leading-relaxed text-slate-700">{{ __('site.materials.lead') }}</p>
 

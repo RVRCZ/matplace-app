@@ -2766,5 +2766,13 @@
     "router.act.login": "Iniciar sesión",
     "router.act.topup": "Recargar crédito",
     "refine.pay": "Cambiar por :price",
-    "refine.hint.design": "Se crea un nuevo diseño a partir del primer deseo y de su cambio. Cuenta como uno de los diseños libres."
+    "refine.hint.design": "Se crea un nuevo diseño a partir del primer deseo y de su cambio. Cuenta como uno de los diseños libres.",
+    "nav.crumbs": "Dónde está en el sitio",
+    "tools.seo.h1": "Herramientas de impresión 3D: un modelo de una foto, un nombre o medidas",
+    "tools.seo.more": "¿Quiere directamente la pieza impresa?",
+    "tools.seo.more.price": "Precio de impresión de su archivo",
+    "site.blog.seo_title": "Blog de impresión 3D: guías, precios e ideas de regalo",
+    "site.blog.seo_description": "Guías y consejos sobre impresión 3D por encargo: cuánto cuesta, qué material elegir, cómo preparar el modelo y qué regalar con una foto o un nombre.",
+    "site.blog.tools_title": "Herramientas del artículo",
+    "site.blog.related": "Artículos relacionados"
 }

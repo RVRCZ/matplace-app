@@ -1,6 +1,7 @@
 ---
 title: "Cedulka, jmenovka a klíčenka se jménem z 3D tiskárny"
 excerpt: Cedulka na dveře, jmenovka na stůl, klíčenka nebo jen jméno psacím písmem. Třicet písem s diakritikou, písmo druhou barvou, rozměry se dopočítají samy. Jak ji navrhnout, jak připevnit a proč deset klíčenek stojí stejně jako jedna.
+seo_description: "Cedulka na dveře, jmenovka na stůl nebo klíčenka se jménem: třicet písem s diakritikou, dvě barvy. Jak ji navrhnout, připevnit a proč 10 kusů stojí jako 1."
 cover:
 published_at: 2026-10-18 21:00:00
 updated_at: 2026-10-18 21:00:00

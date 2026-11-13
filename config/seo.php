@@ -63,7 +63,7 @@ return [
      * linked from every page, so the pages search engines visit most (the catalogue, the blog) lead to them. Only
      * tools that are public with a page of their own are shown; the services beside them are fixed in the partial.
      */
-    'footer_tools' => ['figure', 'pet', 'charm', 'medallion', 'keychain', 'organizer'],
+    'footer_tools' => ['figure', 'pet', 'charm', 'medallion', 'keychain', 'ornament', 'gingerbread', 'organizer'],
 
     /*
      * `searchconsole:inspect` (docs/AP.md §14): the addresses whose index state is asked first, by importance (route
@@ -73,7 +73,7 @@ return [
     'inspect' => [
         'cap' => (int) env('SEARCH_CONSOLE_INSPECT_CAP', 150),
         'daily_cap' => 1800,
-        'routes' => ['home', 'tools', 'tools.gifts', 'pages.praha', 'tools.figure', 'tools.pet', 'tools.charm', 'tools.medallion', 'tools.organizer', 'blog.index', 'tools.business', 'materials', 'pages.about', 'catalog.index'],
+        'routes' => ['home', 'tools', 'tools.gifts', 'pages.praha', 'tools.figure', 'tools.pet', 'tools.charm', 'tools.medallion', 'tools.organizer', 'tools.keychain', 'tools.ornament', 'tools.gingerbread', 'blog.index', 'tools.business', 'materials', 'pages.about', 'catalog.index'],
         // further addresses by hand (paths), e.g. the two articles of the list for "Request indexing"
         'paths' => ['/blog/kolik-stoji-3d-tisk-na-zakazku-v-roce-2026', '/blog/vanocni-ozdoby-se-jmenem-z-3d-tiskarny'],
     ],

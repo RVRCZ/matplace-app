@@ -1,6 +1,8 @@
 ---
 title: "Držák na zeď na míru: kolébka, kapsa, hák a klip z 3D tiskárny"
 excerpt: Držák na ovladač, lahev, sluchátka, nářadí nebo koště podle skutečných rozměrů věci. Čtyři typy, šrouby nebo páska, vůli přidá nástroj sám. Jak držák navrhnout, z čeho ho tisknout a kolik stojí.
+seo_title: "Držák na zeď na míru z 3D tiskárny: čtyři typy a ceny"
+seo_description: "Držák na ovladač, lahev, sluchátka nebo nářadí podle rozměrů věci: kolébka, kapsa, hák a klip, na šrouby nebo pásku. Jak ho navrhnout a kolik stojí tisk."
 cover:
 published_at: 2026-10-18 22:00:00
 updated_at: 2026-10-18 22:00:00

@@ -2766,5 +2766,13 @@
     "router.act.login": "Přihlásit se",
     "router.act.topup": "Dobít kredit",
     "refine.pay": "Upravit za :price",
-    "refine.hint.design": "Podle původního zadání a vaší úpravy vznikne nový návrh. Počítá se mezi volné návrhy."
+    "refine.hint.design": "Podle původního zadání a vaší úpravy vznikne nový návrh. Počítá se mezi volné návrhy.",
+    "nav.crumbs": "Kde na webu jste",
+    "tools.seo.h1": "Nástroje pro 3D tisk: model z fotky, jména nebo rozměrů",
+    "tools.seo.more": "Chcete rovnou hotový výtisk?",
+    "tools.seo.more.price": "Cena tisku z vlastního souboru",
+    "site.blog.seo_title": "Blog o 3D tisku: návody, ceny a nápady na dárky",
+    "site.blog.seo_description": "Návody a rady k 3D tisku na zakázku: kolik tisk stojí, jaký materiál vybrat, jak připravit model a co vyrobit jako dárek z fotky nebo se jménem.",
+    "site.blog.tools_title": "Nástroje z článku",
+    "site.blog.related": "Články k tématu"
 }

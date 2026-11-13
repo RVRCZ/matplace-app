@@ -2766,5 +2766,13 @@
     "router.act.login": "Sign in",
     "router.act.topup": "Top up credit",
     "refine.pay": "Change it for :price",
-    "refine.hint.design": "A new design is made from the first wish and your change. It counts as one of the free designs."
+    "refine.hint.design": "A new design is made from the first wish and your change. It counts as one of the free designs.",
+    "nav.crumbs": "Where you are on the site",
+    "tools.seo.h1": "3D printing tools: a model from a photo, a name or dimensions",
+    "tools.seo.more": "Want the finished print straight away?",
+    "tools.seo.more.price": "Print price from your own file",
+    "site.blog.seo_title": "3D printing blog: guides, prices and gift ideas",
+    "site.blog.seo_description": "Guides and advice on made-to-order 3D printing: what a print costs, which material to choose, how to prepare a model and what to make as a gift.",
+    "site.blog.tools_title": "Tools from this article",
+    "site.blog.related": "Related articles"
 }

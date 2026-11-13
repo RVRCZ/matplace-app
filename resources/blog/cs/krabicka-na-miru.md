@@ -1,6 +1,8 @@
 ---
 title: "Krabička na míru z 3D tiskárny: s víčkem, otvory i výřezem na kabel"
 excerpt: Krabička podle věci, která se do ní má vejít: zadáte vnitřní rozměry a nástroj dopočítá zbytek. Víčko s lemem, otvory pro konektory, výřez na kabel. Jak ji navrhnout, jak nastavit vůli víčka a kolik stojí tisk.
+seo_title: "Krabička na míru z 3D tiskárny: víčko, otvory a cena"
+seo_description: "Krabička podle věci, která se do ní má vejít: zadáte vnitřní rozměry, víčko s lemem, otvory pro konektory. Jak nastavit vůli víčka a kolik stojí tisk."
 cover:
 published_at: 2026-10-18 20:00:00
 updated_at: 2026-10-18 20:00:00

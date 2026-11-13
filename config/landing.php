@@ -10,9 +10,9 @@
 return [
     'pages' => [
         'calc' => ['related' => ['repair', 'check', 'box', 'organizer'], 'blog' => ['kolik-stoji-3d-tisk-na-zakazku-v-roce-2026', 'jak-pripravit-stl-soubor-pro-3d-tisk', 'pla-vs-petg-vs-asa-jaky-material-vybrat']],
-        'figure' => ['related' => ['pet', 'relief', 'gifts'], 'blog' => ['jak-vznika-busta-z-fotky']],
-        'pet' => ['related' => ['figure', 'relief', 'gifts'], 'blog' => ['jak-vznika-busta-z-fotky']],
-        'qr' => ['related' => ['sign', 'nameplate', 'keychain'], 'blog' => ['kolik-stoji-3d-tisk-na-zakazku-v-roce-2026']],
+        'figure' => ['related' => ['pet', 'relief', 'gifts'], 'blog' => ['jak-vznika-busta-z-fotky', 'figurka-z-fotky-busta-a-mazlicek']],
+        'pet' => ['related' => ['figure', 'relief', 'gifts'], 'blog' => ['figurka-z-fotky-busta-a-mazlicek', 'jak-vznika-busta-z-fotky']],
+        'qr' => ['related' => ['sign', 'nameplate', 'keychain'], 'blog' => ['qr-cedulka-a-wifi-stojanek', 'kolik-stoji-3d-tisk-na-zakazku-v-roce-2026']],
         'organizer' => ['related' => ['modular', 'box', 'tray'], 'blog' => ['pla-vs-petg-vs-asa-jaky-material-vybrat']],
         'box' => ['related' => ['organizer', 'modular', 'cable_holder'], 'blog' => ['pla-vs-petg-vs-asa-jaky-material-vybrat']],
         // the search entry pages of session N1 (docs/AP.md §1): file tools first
@@ -56,5 +56,38 @@ return [
         'puzzle' => ['related' => ['relief', 'coaster', 'logo'], 'blog' => ['litofanie-z-fotky', 'rozdeleni-a-vyduteni-3d-modelu']],
         'cable_holder' => ['related' => ['holder', 'phone_stand', 'box'], 'blog' => ['drzak-na-zed-na-miru', 'stojanek-na-telefon-na-miru']],
         'charm' => ['related' => ['keychain', 'earrings', 'magnet'], 'blog' => ['klicenka-a-privesek-z-obrazku', 'vanocni-ozdoba-z-obrazku']],
+    ],
+
+    /*
+     * "Where next" alone (docs/AP.md §15): the tools without the blocks above still lead to the tools beside them and to
+     * the articles about them, so every tool page links to its neighbours and no article stands without a way to a tool.
+     * Same shape as `pages`, without texts in lang/<locale>/landing.php.
+     */
+    'next' => [
+        'gifts' => ['related' => ['sign', 'keychain', 'ornament', 'figure'], 'blog' => ['vanocni-darky-z-3d-tisku-do-24-12-terminy', 'vanocni-ozdoby-se-jmenem-z-3d-tiskarny', 'cedulka-jmenovka-a-klicenka-se-jmenem']],
+        'mold' => ['related' => ['hollow', 'split', 'repair'], 'blog' => ['rozdeleni-a-vyduteni-3d-modelu', 'jak-pripravit-stl-soubor-pro-3d-tisk']],
+        'papel' => ['related' => ['filament_art', 'stencil', 'relief'], 'blog' => ['litofanie-z-fotky', 'vanocni-ozdoba-z-obrazku']],
+        'notes' => ['related' => ['photo_organizer', 'name_cup', 'hair_tie'], 'blog' => ['organizer-do-supliku-na-miru']],
+        'hair_tie' => ['related' => ['notes', 'candle_stand', 'tray'], 'blog' => ['klicenka-a-privesek-z-obrazku']],
+        'candle_stand' => ['related' => ['notes', 'hair_tie', 'lightbox'], 'blog' => ['vanocni-ozdoba-z-obrazku']],
+        'stencil' => ['related' => ['stamp', 'svg_to_stl', 'papel'], 'blog' => ['svg-do-stl-logo-a-kresba-jako-3d-model']],
+        'cookie' => ['related' => ['cutter', 'gingerbread', 'magnet'], 'blog' => ['vykrajovatko-na-cukrovi-podle-vlastniho-tvaru']],
+        'beads' => ['related' => ['keychain', 'name_letter', 'charm'], 'blog' => ['cedulka-jmenovka-a-klicenka-se-jmenem']],
+        'tray' => ['related' => ['photo_organizer', 'coaster', 'organizer'], 'blog' => ['organizer-do-supliku-na-miru']],
+        'name_cup' => ['related' => ['photo_organizer', 'name_letter', 'text'], 'blog' => ['cedulka-jmenovka-a-klicenka-se-jmenem']],
+        'badge' => ['related' => ['bag_charm', 'charm', 'keychain'], 'blog' => ['klicenka-a-privesek-z-obrazku']],
+        'photo_organizer' => ['related' => ['tray', 'name_cup', 'organizer'], 'blog' => ['organizer-do-supliku-na-miru']],
+        'bag_charm' => ['related' => ['charm', 'badge', 'keychain'], 'blog' => ['klicenka-a-privesek-z-obrazku']],
+        'compose' => ['related' => ['keychain', 'nameplate', 'topper'], 'blog' => ['cedulka-jmenovka-a-klicenka-se-jmenem', 'klicenka-a-privesek-z-obrazku']],
+        'life_size' => ['related' => ['split', 'hollow', 'wearable'], 'blog' => ['rozdeleni-a-vyduteni-3d-modelu']],
+        'holder_model' => ['related' => ['holder', 'soap_model', 'cable_holder'], 'blog' => ['drzak-na-zed-na-miru']],
+        'potion' => ['related' => ['hollow', 'holder_model', 'flexi_cut'], 'blog' => ['rozdeleni-a-vyduteni-3d-modelu']],
+        'flexi_cut' => ['related' => ['slider', 'split', 'potion'], 'blog' => ['rozdeleni-a-vyduteni-3d-modelu']],
+        'colors' => ['related' => ['gcode', 'split', 'filament_art'], 'blog' => ['jak-pripravit-stl-soubor-pro-3d-tisk']],
+        'soap_model' => ['related' => ['holder_model', 'hollow', 'tray'], 'blog' => ['pla-vs-petg-vs-asa-jaky-material-vybrat']],
+        'wearable' => ['related' => ['life_size', 'split', 'hollow'], 'blog' => ['rozdeleni-a-vyduteni-3d-modelu']],
+        'slider' => ['related' => ['flexi_cut', 'puzzle', 'coaster'], 'blog' => ['jak-pripravit-stl-soubor-pro-3d-tisk']],
+        // the headband came with main on 13 Nov 2026; no article is about it yet
+        'headband' => ['related' => ['earrings', 'medallion', 'wearable'], 'blog' => []],
     ],
 ];

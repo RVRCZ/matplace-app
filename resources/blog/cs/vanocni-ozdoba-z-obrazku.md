@@ -1,6 +1,8 @@
 ---
 title: "Vánoční ozdoba z vlastního obrázku nebo jména: barevná, s očkem na stužku"
 excerpt: Plochá barevná ozdoba na stromeček z vlastní kresby, motivu z knihovny nebo jména. Až čtyři barvy v jednom tisku, každá barva z cívky, kterou máme na farmě. Jak ji navrhnout, jaký obrázek se hodí a proč šest ozdob stojí 160 Kč.
+seo_title: "Vánoční ozdoba z vlastního obrázku nebo jména: 3D tisk"
+seo_description: "Plochá barevná ozdoba na stromeček z kresby, motivu z knihovny nebo jména, až čtyři barvy v jednom tisku. Jak ji navrhnout a proč šest kusů stojí 160 Kč."
 cover:
 published_at: 2026-10-18 22:00:00
 updated_at: 2026-10-18 22:00:00

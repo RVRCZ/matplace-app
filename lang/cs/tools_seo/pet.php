@@ -1,12 +1,14 @@
 <?php
 
 return [
-    'title' => 'Figurka mazlíčka z fotky: 3D model psa nebo kočky k tisku',
+    'title' => 'Figurka psa nebo kočky z fotky: 3D tisk na zakázku',
+    // H1 stránky na dotaz „figurka psa z fotky“ (docs/AP.md §15); 'h1' zůstává nadpisem obsahu pod nástrojem
+    'heading' => 'Figurka psa nebo kočky z fotky',
     'description' => 'Z fotky psa nebo kočky 3D figurka za pár minut. Tři styly, podstavec se jménem, kontrola tenkých nohou. Tisk u nás, nebo stažení zdarma.',
     'h1' => 'Figurka mazlíčka z fotky',
     'intro' => [
         'Nástroj udělá z fotky psa, kočky nebo jiného zvířete 3D figurku k vytištění. Vyberete ze tří stylů: realistická zachová proporce a srst, miniatura na stůl má nohy, ocas a uši zesílené jako z modelíny, kreslená má velkou hlavu a zaoblené tvary. Figurka vždy stojí na podstavci, na který můžete nechat napsat jméno.',
-        'U zvířat se při tisku nejčastěji lámou tenké nohy a ocas. Proto hotovou figurku změříme a řekneme vám, jak silné je její nejtenčí místo. Když je pod 2,5 mm, poradíme jiný styl nebo větší velikost. Figurka vznikne obvykle za 1 až 3 minuty. Tisk objednáte u nás, nebo si model zdarma stáhnete pro svou tiskárnu. Fotku mažeme hned po vytvoření figurky.',
+        'U zvířat se při tisku nejčastěji lámou tenké nohy a ocas. Proto hotovou figurku změříme a řekneme vám, jak silné je její nejtenčí místo. Když je pod 2,5 mm, poradíme jiný styl nebo větší velikost. Figurka vznikne obvykle za 1 až 3 minuty. Cenu tisku vidíte v kalkulaci před objednáním; nejnižší cena zakázky je 99 Kč. Tisk objednáte u nás, nebo si model zdarma stáhnete pro svou tiskárnu. Fotku mažeme hned po vytvoření figurky.',
     ],
     'steps' => [
         ['name' => 'Nahrajte fotku mazlíčka', 'text' => 'Jedno zvíře, celé tělo včetně nohou a ocasu, z boku nebo zešikma, klidný postoj a jednobarevné pozadí. Fotky z druhého boku a zezadu jsou nepovinné.'],

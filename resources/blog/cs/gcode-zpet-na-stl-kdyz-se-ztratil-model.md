@@ -1,6 +1,8 @@
 ---
 title: "G-kód zpět na STL: když se ztratil model a zbyl jen soubor pro tiskárnu"
 excerpt: Z G-kódu na SD kartě vznikne znovu model, který zvětšíte, přebarvíte nebo vytisknete na jiné tiskárně. Jak nástroj čte vnější stěny vrstev, jak přesný je výsledek, co zvládne s barvami a co se nevrátí.
+seo_title: "G-kód zpět na STL: když zbyl jen soubor pro tiskárnu"
+seo_description: "Z G-kódu na SD kartě vznikne znovu model, který zvětšíte, přebarvíte nebo vytisknete jinde. Jak přesný je výsledek, co zvládne s barvami a co se nevrátí."
 cover:
 published_at: 2026-11-17 07:00:00
 updated_at: 2026-11-17 07:00:00

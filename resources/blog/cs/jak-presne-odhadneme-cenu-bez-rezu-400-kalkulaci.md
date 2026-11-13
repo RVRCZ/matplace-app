@@ -1,6 +1,8 @@
 ---
 title: "Jak přesně umíme odhadnout cenu 3D tisku bez řezu: 400 kalkulací z farmy"
 excerpt: Kalkulace ukáže cenu dřív, než slicer model rozřeže. Porovnali jsme odhad se skutečným řezem u 400 kalkulací z produkce: gramy se trefují na 6 %, minuty na 24 %, cena byla v ukázaném rozpětí v 82 % případů. Co z toho plyne.
+seo_title: "Jak přesný je odhad ceny 3D tisku: 400 kalkulací z farmy"
+seo_description: "Porovnali jsme odhad ceny se skutečným řezem u 400 kalkulací: gramy se trefují na 6 %, minuty na 24 %, cena byla v ukázaném rozpětí v 82 % případů."
 cover:
 published_at: 2026-11-10 07:00:00
 updated_at: 2026-11-10 07:00:00

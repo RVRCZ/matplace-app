@@ -998,3 +998,337 @@ Postup:
    a `/model/…`, více na `/tools/…` a `/blog/…`; karta Nákupy: počet „produktů“ má klesat k počtu skutečně
    indexovaných modelů s cenou. Když se deset adres do tří týdnů neobjeví, příčina není technická, ale váha webu:
    odkazy odjinud a firemní profil (studie, bod 4 a 5).
+
+## 15. Každá indexovaná stránka zvlášť: měření, opravy, před a po (větev `feature/page-optimization`, 13. 11. 2026)
+
+Zadání `zadani-optimalizace-stranek.md` (mimo repo, Roman: „všechny stránky nech perfektně optimalizovat“). Větev
+z `origin/main` 7dc7f357 (to, co běží na produkci). Na produkci jsem jen četl veřejné stránky jako návštěvník
+(nejvýš 2 dotazy za vteřinu, cookie `mp_test=1` a hlavička `X-Matplace-Test`, `docs/AJ.md`); nic jsem nenasazoval,
+žádná migrace, žádné placené volání AI, texty jsem psal sám. Místně běžel server nad **kopií** sdílené `dev.sqlite`
+(`DB_DATABASE` v proměnné prostředí, kopie ve scratchpadu, do ní `blog:sync`), sdílená databáze zůstala netknutá.
+
+### 15.1 Měření: `scripts/seo_audit.mjs`
+
+Skript bez balíčků (Node 22, Chrome přes DevTools protokol jako `scripts/review_round2.mjs`). Přečte index mapy
+stránek a všechny dílčí mapy, přidá vstupní stránky (`/`, `/tools`, `/gifts`, `/3d-tisk-praha`, `/business`, `/farm`,
+`/models`, `/blog` ve třech jazycích) a pro každou adresu zapíše: stav a řetěz přesměrování, canonical, robots (meta
+i `X-Robots-Tag`), hreflang (cs/en/es + x-default, vzájemnost), titulek a popis (délka, jedinečnost v jazyce), H1
+a osnovu nadpisů, počet slov vlastního textu (`<main>` bez skriptů, menu a seznamů formuláře), podíl textu, který stojí
+na šesti a více stránkách téhož jazyka (šablonový text), obrázky (alt, rozměry, formát, lazy, váha; u `<picture>` váží
+zdroj WebP, který si prohlížeč vezme), vnitřní odkazy ven a dovnitř (osiřelé stránky, kroky z úvodní strany, odkazy
+na přesměrování a na stránky, které nejsou), strukturovaná data (druhy, platnost JSON-LD, otázky a odpovědi FAQPage,
+kroky HowTo a ceny Product ve viditelném textu, nadpis Article proti H1), Open Graph, váhu HTML, CSS a JS, a s
+`--browser` v Chromu 390 × 844: LCP (i prvek), FCP, CLS, počet dotazů, přenesené kB, vodorovný posun.
+
+    node scripts/seo_audit.mjs --base=https://matplace.com --out=storage/app/seo-audit/prod --browser=important
+    node scripts/seo_audit.mjs --base=http://127.0.0.1:8097 --out=storage/app/seo-audit/local --rate=30 --browser=important
+    node scripts/seo_audit.mjs --compare=<složka před>,<složka po>      # tabulka před/po (cesty ve tvaru C:/…)
+
+Výstup ve složce `--out`: `pages.csv` (řádek na stránku, středník, UTF-8 s BOM, otevře ho LibreOffice), `pages.json`
+(všechno), `summary.json` a `summary.md` (čísla pro tabulku), `findings.md` (nálezy, stránky kampaně a vstupní stránky
+první). `storage/app` je mimo git. Jeden dotaz po druhém, `--rate` za vteřinu (výchozí 2); po stránce otevřené
+v Chromu čeká tak dlouho, jak dlouho by její soubory trvaly při `--rate`. `--browser=important` měří vstupní
+stránky a stránky kampaně (39 stránek), `--browser=all` všechny, `--only=<regex>` jen vybrané cesty, `--links=0`
+a `--images=0` vynechají otevírání odkazů a vážení obrázků. Celý běh proti produkci bez Chromu trvá asi 10 minut
+(236 stránek, 290 dalších odkazů, obrázky), s Chromem asi 25 minut.
+
+Co skript neumí: nevidí Search Console (stav indexu), neměří na pomalé síti (LCP je z rychlého připojení, pro
+srovnání před/po stačí; skóre Lighthouse dává `scripts/lighthouse_landing.mjs`) a slova počítá jednoduše (mezery).
+
+### 15.2 Co měření našlo (produkce 13. 11. 2026 ráno: 230 adres v mapách, 236 přečtených, všechny 200)
+
+Seřazeno podle dopadu; stránky kampaně a důležité stránky, které Google nezná, první.
+
+| # | nález | kde | stav |
+|---|---|---|---|
+| 1 | Odkaz na stránku, která odpovídá 404 | 4 články (`stojanek-na-telefon-na-miru`, `generovani-3d-modelu-pomoci-ai`, `kolik-stoji-3d-tisk-na-zakazku-v-roce-2026`, `jak-pripravit-stl-soubor-pro-3d-tisk`) → `/tools/phone-stand` a `/tools/colors`, vypnuté v `/admin/tools` | opraveno |
+| 2 | Titulek delší než 60 znaků, výsledek hledání ho usekne | 152 stránek, 28 přes 70; z kampaně klíčenka 71, ozdoba 71, mazlíček 68, Praha 68, perníček 67, organizér 67, přívěsek 66, medaile 64 | opraveno, 0 stránek |
+| 3 | Titulek a H1 neříkají slova dotazu | mazlíček („mazlíčka“, lidé hledají „figurka psa z fotky“), busta bez „na zakázku“ a ceny, `/tools` s H1 „Nástroje“ | opraveno |
+| 4 | Stránka kampaně skoro bez odkazů | `/tools/ornament` 9 odkazů a `/tools/gingerbread` 11 (ostatní 95); `/3d-tisk-praha` bez jediného odkazu z obsahu, jen z patičky | opraveno |
+| 5 | Chybí `BreadcrumbList` | 207 stránek (všechno kromě článků a modelů) | opraveno; bez něj zůstává úvodní strana (je vrchol), seznam katalogu, `/farm`, `/models` |
+| 6 | Popis článku je začátek perexu useknutý „...“ | 26 stránek článků; `/blog` má popis 70 znaků | opraveno u 31 článků z repozitáře a u `/blog` |
+| 7 | `Article` bez obrázku | 19 článků | opraveno |
+| 8 | `/materials` není v mapě stránek | tři jazyky | opraveno |
+| 9 | Nástroj bez bloku „Kam dál“ | 23 nástrojů (na produkci 17 z veřejných) | opraveno |
+| 10 | Odkaz přes přesměrování | `/models` → `/account` (302 na přihlášení) ve třech jazycích | opraveno (`nofollow`) |
+| 11 | Obrázek bez rozměrů | 170: 141 na seznamu katalogu `/model`, 29 v blogu (fotky článků a obrázky v textu) | blog opraven; katalog nechán (15.4) |
+| 12 | HTML přes 200 kB | 34 stránek nástrojů (medián všech stránek 173 kB, nejvíc 302 kB) | návrh 15.8/1 |
+| 13 | `/tools/medallion` přenese 3,9 MB | ostatní stránky 414 až 558 kB | návrh 15.8/2 |
+| 14 | Osnova nadpisů H1 → H3 | seznam katalogu `/model` (karty), článek `jak-vznika-busta-z-fotky` v en/es (text v databázi) | nechán |
+| 15 | PNG nebo JPG přes 30 kB | 24 stránek (vykreslené příklady nástrojů, fotky v článcích) | návrh 15.8/7 |
+
+**V pořádku bylo a zůstává:** žádné přesměrování ani chybový stav, canonical každé stránky na sebe, hreflang vzájemný
+a s x-default (0 chyb), titulky a popisy v rámci jazyka jedinečné, právě jedno H1 a žádné dvakrát, žádný obrázek bez
+`alt`, JSON-LD platné, každá otázka `FAQPage` a každý krok `HowTo` ve viditelném textu, Open Graph úplný, žádná
+osiřelá indexovaná stránka, všechno nejvýš dva kroky od úvodní strany (nedosažitelné jsou jen `/farm` a `/models`,
+obě `noindex`). Šablonový text: medián 7 % slov stránky, nejvýš 27 % (ozdoba na jojo, ozdoba na tašku), žádná stránka
+přes 40 %. Vlastní text stránek nástrojů 597 až 1 534 slov. Tenké jsou jen `/contact` (102 slov), `/en/blog`
+a `/es/blog` (jeden článek) a `noindex` stránky. Rychlost viz 15.4.
+
+### 15.3 Co je opraveno
+
+**Titulky.** `App\Support\PageTitle`: značka „ · matplace“ zůstává v titulku, jen dokud se celý vejde do 60 znaků;
+delší titulek si nechá vlastní slova (název webu stojí ve výsledku hledání nad každým odkazem zvlášť). Dělá to layout
+pro všechny stránky; katalog Inspirace si drží celý titulek (`titleFull`, zkracuje se v něm název modelu,
+`docs/AN.md` §16). Vlastní titulky všech nástrojů ve třech jazycích mají nejvýš 60 znaků (test). Na dotaz nově:
+
+| stránka | bylo | je |
+|---|---|---|
+| `/tools/pet-figurine` cs | Figurka mazlíčka z fotky: 3D model psa nebo kočky k tisku | Figurka psa nebo kočky z fotky: 3D tisk na zakázku; H1 „Figurka psa nebo kočky z fotky“ (název nástroje zůstává v řádku nad ním) |
+| en / es | Pet figurine from a photo: your dog or cat in 3D / Figura de mascota a partir de una foto en 3D | Dog or cat figurine from a photo: custom 3D print / Figura de su perro o gato a partir de una foto, en 3D (+ H1) |
+| `/tools/figure` cs / en / es | Busta nebo figurka z fotky: 3D model a tisk | Busta nebo figurka z fotky: 3D tisk na zakázku od 99 Kč / Bust or figurine from a photo: custom 3D print / Busto o figura a partir de una foto: impresión 3D a medida |
+| `/tools/keychain` cs | Klíčenka se jménem na 3D tisk: tvar, jméno a obrázek, zdarma | Klíčenka se jménem z 3D tiskárny: návrh zdarma, od 99 Kč |
+| `/tools/ornament` cs | Vánoční ozdoba na 3D tisk z obrázku nebo jména: model zdarma | Vánoční ozdoba z obrázku nebo jména: 3D tisk od 99 Kč |
+| `/tools/charm` cs | Přívěsek z obrázku nebo jména pro 3D tisk: návrh zdarma | Přívěsek z obrázku nebo jména: 3D tisk od 99 Kč |
+| `/tools` H1 | Nástroje | Nástroje pro 3D tisk: model z fotky, jména nebo rozměrů (`tools.seo.h1`; menu a odkazy dál „Nástroje“) |
+| `/blog` | Blog o 3D tisku · popis 70 znaků | Blog o 3D tisku: návody, ceny a nápady na dárky · popis 144 znaků (`site.blog.seo_title`, `seo_description`) |
+
+„Od 99 Kč“ je nejnižší cena zakázky (`config/farm.php` `min_price`) a text každé z těch stránek ji dokládá kalkulací.
+Titulky, popisy ani H1 se nemění podle stavu farmy (jsou to texty souborů, žádná podmínka).
+
+**Cena v úvodu.** Busta: věta s cenami z kalkulací 18. 10. 2026 (`docs/AG.md`, `config/site.php` `example_items`):
+80 mm 14 g, necelá hodina, 99 Kč; 120 mm 130 Kč; 150 mm 200 Kč (cs/en/es, v en/es „CZK“ jako u ostatních nástrojů).
+Mazlíček: změřenou cenu nemáme (model stojí kredity), proto jen pravdivá věta „cenu vidíte v kalkulaci před
+objednáním; nejnižší cena zakázky je 99 Kč“.
+
+**Drobečková navigace.** Layout bere `crumbs` (`[[název, adresa], …]` bez úvodní strany) a tiskne `BreadcrumbList`;
+komponenta `<x-crumbs>` je tatáž cesta jako řádek na stránce („matplace › 3D tisk Praha“). Stránka nástroje ji má
+sama (Nástroje › nástroj; viditelný je stávající řádek „← Nástroje · název“), řádek + data nově mají `/tools`,
+statické stránky (`/3d-tisk-praha`, `/business`, O nás, Kontakt, Časté otázky, podmínky), ochrana osobních údajů,
+podmínky farmy, `/blog`, `/materials`;
+`/gifts` jen data (řádek „← Nástroje“ už má). Článek, model a kolekce měly `BreadcrumbList` dřív. Jedna na stránku.
+
+**Blog.** `App\Support\BlogSeo`: soubor článku (`resources/blog/cs/<slug>.md`) může v hlavičce nést `seo_title`
+a `seo_description`. Do článku se nezapisují (`blog:sync` je nečte do databáze, nadpis, text ani `updated_at` se
+nemění, takže `dateModified` a `lastmod` zůstávají dnem skutečné změny textu); čte je jen stránka pro `<title>`,
+`og:title` a popis. Všech 31 článků v repozitáři má popis 110 až 155 znaků psaný jako celá věta (dřív prvních 155
+znaků perexu s „...“) a 22 článků s nadpisem přes 60 znaků má kratší titulek pro hledání. H1 i `Article.headline`
+zůstávají nadpisem článku. Článek bez souboru (z adminu, ze starého webu) se chová jako dřív. `Article.image` má
+náhradu: článek bez fotky ukazuje svou kartu pro sdílení (`/og/article/<slug>.png`), dřív pole chybělo u 19 článků.
+Fotka článku má `alt` (nadpis), rozměry a `fetchpriority="high"`; obrázky v textu dostávají rozměry (soubor
+u nás: `public/img`, veřejné úložiště) a od druhého `loading="lazy"` (`App\Support\BlogLinks::pictures`).
+
+**Odkazy článků na vypnuté nástroje.** Na produkci 13. 11. vedly čtyři články na `/tools/phone-stand` a
+`/tools/colors`, které odpovídají 404 (nástroje vypnuté v `/admin/tools`). `App\Support\BlogLinks::live` při
+vykreslení nechá z odkazu na nástroj, který není veřejný, jen jeho slova; odkaz se vrátí sám, až bude nástroj
+zapnutý. Text článku v databázi se nemění.
+
+**Prolinkování.** Každý nástroj má blok „Kam dál“ (podobné nástroje + články): `config/landing.php` `next` pro
+23 nástrojů, které neměly nic (bez textů „Než objednáte“ a „Pro koho“, ty se u nich neukazují); `figure` a `pet`
+odkazují na článek o figurce, `qr` na svůj článek. Článek má nový blok „Nástroje z článku“: nástroje, jejichž stránka
+ho jmenuje (jen veřejné). Pod seznamem `/tools` jsou odkazy na cenu ze souboru, Dárky, 3D tisk Praha, 3D tisk pro
+firmy a Materiály (`/3d-tisk-praha` dosud neměla žádný odkaz z obsahu, jen z patičky). Patička „Co vyrobíme“ má
+navíc vánoční ozdobu a perníček se jménem (`config/seo.php` `footer_tools`; stránky kampaně měly 9 a 11 odkazů,
+ostatní přes 100). Odkaz na
+účet na `/models` má `rel="nofollow"` (vedl robota přes 302 na přihlášení).
+
+**Mapa stránek.** `/materials` v ní chyběla (není ve `PageController::PAGES`); je tam ve třech jazycích.
+
+**Náhled odkazu.** Naše karty `/og/…` říkají rozměr (`og:image:width` 1200, `height` 630), první sdílení na
+Facebooku pak ukáže obrázek hned.
+
+### 15.4 Co jsem neměnil a proč
+
+- **Rychlost.** Produkce na telefonu 390 px z rychlého připojení: LCP 208 až 496 ms (medián 320), CLS nejvýš
+  0,003, 11 až 26 dotazů, medián 467 kB, žádný vodorovný posun, HTML s gzip. Písmo se přednačítá, skripty jsou
+  moduly (odložené samy), obrázky karet mají rozměry, WebP a lazy, první `fetchpriority`. Poslední Lighthouse na
+  pomalé síti (`docs/AH.md` §11.x) dal 83 až 91. Nenašel jsem levnou opravu, která by čísla zlepšila; větší jsou v 15.8.
+- **Texty 23 nástrojů bez bloků „Než objednáte“ a „Pro koho“.** Mají místně 500 až 870 slov vlastního textu (úvod,
+  postup, 6 otázek, příklady) a šablonového textu 9 až 18 % (na produkci nejvýš 27 %). Nové otázky jsem k nim
+  nepsal: otázky bez podkladu z provozu by byly vycpávka. Doplnil jsem jim jen „Kam dál“. Zadání chtělo vlastní
+  obsah ke každému nástroji; u těchto 23 tedy zůstává, jak byl.
+- **`Product` na stránkách nástrojů.** Cena nástroje závisí na tom, co si člověk nastaví, a tisk se nabízí jen
+  s otevřenou farmou; pevná cena ve strukturovaných datech by nebyla pravda v každém stavu. Návrh v 15.8.
+- **Úvodní strana.** Titulek a popis sjednotila řídící 12. 11. (`docs/AN.md` §23.6), obsah je rozhodnutí Romana.
+  H1 „Co chcete vyrobit?“ neobsahuje, co lidé hledají; návrh v 15.8.
+- **`alt` karet nástrojů** zůstává prázdný: název nástroje stojí hned pod obrázkem (čtečka by ho četla dvakrát).
+- **Katalog, `/farm`, `/models`:** `/farm` (vstup do zakázky) a `/models` (dokud nemá dost modelů) mají `noindex`
+  záměrně (`config/seo.php`, `docs/AP.md` §14); katalog je mimo index rozhodnutím Romana.
+
+### 15.5 Před a po
+
+Produkce „před“ je měření z 13. 11. ráno (HTML a odkazy bez Chromu 08:40, telefon 06:50). Místně „před“ je commit
+7dc7f357 a „po“ tato větev na stejném serveru a stejné kopii databáze (`php artisan serve`, bez komprese, blog jen
+česky, všechny nástroje zapnuté, proto má víc adres než produkce). **Produkce „po“ neexistuje**, větev není nasazená.
+
+| ukazatel | produkce před | místně před | místně po |
+|---|---|---|---|
+| adres v mapách stránek | 230 | 249 | 252 (+ `/materials` ×3) |
+| přečteno / odpovídá 200 | 236 / 236 | 257 / 255 | 260 / 258 (`/en/blog`, `/es/blog` místně nejsou) |
+| titulek přes 60 znaků | 152 | 175 | **0** |
+| titulek přes 70 znaků | 28 | 29 | **0** |
+| medián délky titulku | 65 | 65 | 55 |
+| stejný titulek nebo popis dvakrát | 0 | 0 | 0 |
+| stránek s `BreadcrumbList` | 26 | 23 | **246** |
+| stránek bez strukturovaných dat | 27 | 27 | 9 (`/model`, `/farm`, `/models` ×3 jazyky) |
+| strukturovaná data s nálezem (Article bez obrázku) | 19 | 19 | **0** |
+| vnitřní odkazy na přesměrování | 3 | 3 | **0** |
+| vnitřní odkazy na 404 | 2 adresy ze 4 článků | 0 (nástroje místně zapnuté) | 0; s vypnutým nástrojem ověřeno testem |
+| stránky s odkazy jen z menu a patičky | 33 | 33 | 30 (zbývají právní texty, O nás, Kontakt, Časté otázky) |
+| hreflang s chybou, canonical jinam, bez H1 nebo s více H1 | 0 | 0 | 0 |
+| obrázky bez `alt` | 0 | 0 | 0 |
+| šablonový text, medián | 7 % | 6 % | 6 % |
+| HTML, medián | 173 kB | 133 kB | 135 kB |
+| stránek s aspoň jedním nálezem | 233 | 254 | 73 |
+| nálezů celkem | 557 | 578 | 144 |
+| telefon 390 px, LCP medián (39 stránek) | 320 ms | 1 772 ms | 1 832 ms |
+| telefon, CLS nejvýš | 0,003 | 0 | 0 |
+| telefon, dotazů na stránku (medián) | 13 | 12 | 12 |
+| telefon, stránek širších než okno | 0 | 0 | 0 |
+
+Místní LCP se nezměnilo (60 ms je šum místního serveru; měření, které běželo souběžně s PHPUnit, dalo 2 060 ms).
+Ze 144 zbylých nálezů místně: 30× „jen z menu a patičky“, 18× PNG nad 30 kB, 17× odkaz na `/c/<token>` produkce
+nebo na článek, který je jen v produkční databázi, 15× málo slov (`/model` a `/materials` bez dat místní databáze,
+`/contact`, `noindex` stránky), 9× bez strukturovaných dat, zbytek `noindex` stránky a krátké titulky právních textů.
+
+Stránky kampaně a vstupní stránky česky (titulek ve znacích i se značkou, pokud ji má; odkazy = kolik
+stránek na ni vede celkem / z obsahu):
+
+| stránka | titulek před → po | odkazy před → po | strukturovaná data po |
+|---|---|---|---|
+| `/tools/figure` | 54 → 55 (nově „na zakázku od 99 Kč“) | 102 / 10 → 103 / 11 | BreadcrumbList, FAQPage, HowTo |
+| `/tools/pet-figurine` | 68 → 50 | 102 / 6 → 103 / 6 | BreadcrumbList, FAQPage, HowTo |
+| `/tools/keychain` | 71 → 56 | 102 / 11 → 103 / 16 | BreadcrumbList, FAQPage, HowTo |
+| `/tools/medallion` | 64 → 53 | 102 / 4 → 103 / 5 | BreadcrumbList, FAQPage, HowTo |
+| `/tools/ornament` | 71 → 53 | **9 / 7 → 103 / 8** | BreadcrumbList, FAQPage, HowTo |
+| `/tools/gingerbread` | 67 → 56 | **11 / 9 → 103 / 11** | BreadcrumbList, FAQPage, HowTo |
+| `/tools/charm` | 66 → 58 | 102 / 6 → 103 / 10 | BreadcrumbList, FAQPage, HowTo |
+| `/tools/organizer` | 67 → 56 | 102 / 8 → 103 / 11 | BreadcrumbList, FAQPage, HowTo |
+| `/gifts` | 60 → 60 | 102 / 4 → 103 / 6 | BreadcrumbList, FAQPage, HowTo, Service |
+| `/tools` | 53 → 53, H1 na dotaz | 104 / 89 → 105 / 89 | BreadcrumbList, ItemList |
+| `/3d-tisk-praha` | 68 → 57 | **102 / 0 → 103 / 1** | BreadcrumbList, FAQPage, Service |
+| `/business` | 55 → 55 | 104 / 5 → 105 / 5 | BreadcrumbList, FAQPage, Service |
+| `/` | 58 → 58 | beze změny | FAQPage, HowTo, Organization, WebSite |
+
+**Testy (13. 11. 2026, jak opravdu běžely).** `tests/Feature/PageOptimizationTest.php`, 7 testů: pravidlo titulku
+a délka titulků všech nástrojů ve třech jazycích; drobečky jako řádek i jako data; titulek a popis článku z hlavičky
+souboru, nadpis, `dateModified` a obrázek článku; „Kam dál“ u každého nástroje a nástroje v článku; odkaz na vypnutý
+nástroj; rozměry obrázků a rozměr karty náhledu; `/materials` v mapě, patička a odkazy pod seznamem nástrojů.
+`SeoTest` upraven na třech místech (titulek přes `PageTitle`, `BreadcrumbList` mezi druhy dat stránky). Celá sada
+jednou: **1 200 testů, 101 871 assertions, 3 selhání, 11 přeskočených, 1 h 55 min**; selhávají jen tři testy, které
+padají i na `main` (`PapelPortraitTest`, `PrintPhotosTest`, `YouTubeChannelTest`, stejné důvody jako v 14.9).
+Po celé sadě přišly ještě dvě změny v `config/seo.php` (perníček do patičky; klíčenka, ozdoba a perníček mezi adresy,
+na které se `searchconsole:inspect` ptá první) a jeden řádek testu; po nich znovu
+`SeoCleanupTest|PageOptimizationTest|SeoQualityTest|WebRound2Test|SearchConsole`: 32 testů OK. Celá sada po těchto
+dvou řádcích znovu neběžela. `vendor/bin/pint --dirty` bez nálezů, `npx tsc --noEmit -p .` čisté, `npm run build`
+prošel i s kontrolami bundlu.
+
+**Sloučení `main`.** `main` se během práce posunul (41f02d51: nástroj Čelenka, přímá cívka bez měniče). Sloučil jsem
+ho do větve: konflikt jen ve třech `lang/*.json` (vzal jsem soubory z `main` a znovu pustil `lang_add.py` nad
+`lang/src/page_optimization.json`, všechny tři platné), čelenka dostala „Kam dál“ (`config/landing.php` `next`; její
+titulky mají 43 až 45 znaků). Po sloučení `npm run build` a 104 testů stránek, vyhledávačů a čelenky
+(`Headband|PageOptimizationTest|SeoTest|SeoQualityTest|SeoCleanupTest|LandingPagesTest|ToolPageTest|PraguePageTest|
+PetFigurineTest|HomeWhatToMakeTest|ToolsCatalogTest|BlogTest|CatalogValueTest`): OK, 22 908 assertions.
+**Celá sada po sloučení neběžela** (běžela nad větví před ním).
+
+### 15.6 Nasazení
+
+- **Migrace: žádná vlastní. `.env`: nic.** (Větev má sloučený `main` 41f02d51 a s ním jeho migraci
+  `2026_11_13_100000_farm_printers_changer_attached`; ta patří `main`, ne této práci.) Nové třídy `App\Support\PageTitle`, `BlogSeo`, `BlogLinks`, komponenta
+  `components/crumbs.blade.php`, `config/landing.php` `next`, `config/seo.php` `footer_tools` a `inspect.routes`
+  (pondělní `searchconsole:inspect` se nově ptá i na klíčenku, ozdobu a perníček: o tři dotazy víc).
+- **`npm run build`** (nové třídy v řádku drobečků a pod seznamem nástrojů).
+- **Po nasazení `php artisan matplace:sitemap`** (přibude `/materials`; změněné soubory `tools_seo` posunou `lastmod`
+  pěti nástrojů: figure, pet, keychain, ornament, charm; jinak se mapa přepíše až ve 4:40).
+- `blog:sync` není potřeba: `seo_title` a `seo_description` čte stránka ze souboru, databáze se nemění.
+  (Když se `blog:sync` po nasazení pouští, nahlásí „unchanged“.)
+- Stránky se po nasazení vykreslí znovu samy; `php artisan optimize` jako u každého nasazení (nová konfigurace).
+- Po nasazení: `node scripts/seo_audit.mjs --base=https://matplace.com --out=storage/app/seo-audit/prod-after
+  --browser=important` a porovnat s tabulkou v 15.5.
+
+### 15.7 Co není ověřeno
+
+- **Na produkci neběželo nic z větve.** Sloupec „po“ je z místního serveru; produkce má jiná data (8 nástrojů
+  vypnutých, články ze starého webu, katalog, víc barev filamentů v konfiguraci stránky nástroje).
+- **Odkazy článků na vypnuté nástroje** jsem ověřil testem s vypnutým nástrojem, ne na produkčních datech; po
+  nasazení má audit hlásit `linksBroken: 0`.
+- **Články, které jsou jen v produkční databázi** (`jak-vznika-busta-z-fotky` cs/en/es a případné další ze starého
+  webu), nemají soubor v repozitáři: zůstává jim nadpis jako titulek (zkrátí se jen o značku) a začátek perexu jako
+  popis. Článek `jak-vznika-busta-z-fotky` má v en/es osnovu H1 → H3 (text v databázi, neměnil jsem).
+- **Rozměry obrázků v článcích** se doplní jen souborům, které na serveru jsou (`storage/app/public/blog`, `public/img`);
+  na produkčních souborech neověřeno.
+- **Stav indexu** nevidím (Search Console je jen z produkce): jestli Google nové titulky převezme a kdy, ukáže až
+  `searchconsole:inspect` a Výkon za dva až tři týdny.
+- **Rich Results Test** jsem nepouštěl (cizí služba, stránky větve nejsou veřejné). JSON-LD je platný JSON a audit
+  ověřuje shodu s viditelným textem; po nasazení stojí za ruční zkoušku `/tools/keychain` (HowTo, FAQPage,
+  BreadcrumbList), `/3d-tisk-praha` a jeden článek.
+- **Ceny v textech** („od 99 Kč“, busta 99/130/200 Kč) jsou z kalkulací z 18. 10. a z `config/farm.php`; znovu jsem
+  je na produkci nepočítal.
+- Angličtinu a španělštinu jsem psal sám, rodilý mluvčí je nečetl.
+
+### 15.8 Návrhy větších zásahů (neprovedeno)
+
+1. **Konfigurace stránky nástroje ven z HTML.** HTML stránky nástroje má na produkci 170 až 300 kB (s gzip
+   zhruba pětinu); 82 kB je `window.MP_TOOL` (texty `toolpage` a paleta barev, stejné na každém nástroji) a 30 kB
+   `MP_PARAM`. Texty rozhraní jako soubor `/build/…` na jazyk (stáhne se jednou a drží v mezipaměti) by ubraly
+   třetinu HTML každé stránky nástroje. Zásah do `tools/page.blade.php` a `tool_page.ts`.
+2. **`/tools/medallion` stahuje 3,9 MB** (ostatní stránky kolem 460 kB): výchozí model s řetězem ze 40 článků.
+   Na mobilních datech je to znát. Lehčí výchozí náhled (bez řetězu, řetěz po zapnutí) je zásah do nástroje.
+3. **Úvodní strana:** H1 „Co chcete vyrobit?“ neříká, co web je. Pod H1 nebo místo něj věta s tím, co lidé
+   hledají („3D tisk na zakázku: dárek z fotky, díl podle popisu“), případně H1 = titulek a otázka jako popisek
+   pole. Je to rozhodnutí o vzhledu první obrazovky (Roman).
+4. **`Product` s cenou „od“ u nástrojů kampaně** (busta, klíčenka, ozdoba, medaile, přívěsek): šlo by poctivě jen
+   jako `Product` s `AggregateOffer.lowPrice` = nejnižší cena zakázky a jen když farma tiskne (data by se pak měnila
+   se stavem farmy; titulky ne). Chce rozhodnutí, jestli to za to stojí: Google pro takové stránky bohaté výsledky
+   s cenou ukazuje nerad, když na stránce není jedna cena a tlačítko koupit.
+5. **Fotky skutečných výtisků** místo vykreslených příkladů u nástrojů kampaně (`config/site.php` `example_items`
+   má pořád `photo => null`). Pro hledání obrázků i pro důvěru je to nejsilnější chybějící obsah; fotit musí Roman.
+6. **`max-image-preview:large`** v `robots` meta u indexovaných stránek (větší náhled obrázku ve výsledcích
+   a v Discover). Dnes test `SeoQualityTest` žádá, aby indexovaná stránka `robots` meta neměla; změna pravidla.
+7. **Příklady nástrojů jako WebP** (`public/img/tool-examples`, 137 PNG, 3 MB, 10 z nich přes 30 kB): úspora
+   malá (načítají se líně), zásah do `matplace:tool-examples` a šablony.
+8. **Blog v angličtině a španělštině** má jeden článek (`jak-vznika-busta-z-fotky`). Doporučení: nechat, jak je,
+   dokud anglické a španělské stránky nástrojů nemají zobrazení; pak přeložit čtyři až šest článků, které vedou
+   k prodeji (cena 3D tisku, figurka z fotky, klíčenka a přívěsek, vánoční dárky, litofanie), ne všech 25. Stránka
+   blogu s jedním článkem ničemu neškodí (je v mapě, má hreflang), ale sama nic nepřivede.
+9. **Stránka `/3d-tisk-plzen`** podle stejné šablony jako Praha, pokud farmy tisknou na Plzeňsku (viz otázka 1).
+
+### 15.9 Search Console: o které adresy požádat (Roman, po nasazení)
+
+Kontrola adresy URL → Požádat o indexování, kolem deseti denně. První den:
+
+1. `https://matplace.com/gifts`
+2. `https://matplace.com/tools/figure`
+3. `https://matplace.com/tools/pet-figurine`
+4. `https://matplace.com/tools/keychain`
+5. `https://matplace.com/tools/medallion`
+6. `https://matplace.com/tools/gingerbread`
+7. `https://matplace.com/tools/ornament`
+8. `https://matplace.com/tools`
+9. `https://matplace.com/3d-tisk-praha`
+10. `https://matplace.com/business`
+
+Druhý den:
+
+11. `https://matplace.com/tools/charm`
+12. `https://matplace.com/tools/organizer`
+13. `https://matplace.com/blog/vanocni-ozdoby-se-jmenem-z-3d-tiskarny`
+14. `https://matplace.com/blog/kolik-stoji-3d-tisk-na-zakazku-v-roce-2026`
+15. `https://matplace.com/blog/figurka-z-fotky-busta-a-mazlicek`
+16. `https://matplace.com/blog/klicenka-a-privesek-z-obrazku`
+17. `https://matplace.com/tools/nameplate`
+18. `https://matplace.com/tools/relief`
+19. `https://matplace.com/tools/qr`
+20. `https://matplace.com/materials`
+
+24. 11. vyjde `vanocni-darky-z-3d-tisku-do-24-12-terminy`: požádat ten den. Proti seznamu v 14.10 jsou výš
+klíčenka, medaile a obě vánoční ozdoby (vede na ně kampaň) a přibyly `/business` a `/materials`. Úvodní stranu
+není třeba (je v indexu); po nasazení ji ale stojí za to nechat znovu načíst (Kontrola adresy URL → Otestovat
+zveřejněnou adresu → Požádat o indexování), protože z ní vedou odkazy na všechno výše.
+
+### 15.10 Otázky pro Romana
+
+1. **„Tiskneme na vlastní farmě v Praze“.** Stránka `/3d-tisk-praha` (cs/en/es), její `Service` a článek
+   `3d-tisk-praha-jak-to-u-nas-chodi` (vyjde 1. 12., říká „na vlastní farmě v Praze 1“) stojí na větě z 28. 10.
+   („město farmy je Praha“, §8). Zadání z 12. 11. ale mluví o farmách Útušice, Bory a Stod. Pokud se v Praze
+   netiskne, je to nepravdivé tvrzení na stránce, kterou chceme dostat do indexu: buď text upravit („sídlo v Praze,
+   tiskneme na farmách na Plzeňsku, do Prahy posíláme do druhého dne“), nebo potvrdit, že platí. Text jsem neměnil.
+2. **Článek o stojánku na telefon** (`stojanek-na-telefon-na-miru`) je zveřejněný, ale nástroj je na produkci
+   vypnutý. Odkazy z něj teď zmizí samy; nechat článek zveřejněný, nebo ho stáhnout, dokud se nástroj nevrátí?
+3. **„Od 99 Kč“ v titulcích** busty, klíčenky, ozdoby a přívěsku (jen česky): je to nejnižší cena zakázky a každá
+   z těch stránek ji dokládá kalkulací. Vyhovuje, že cena stojí už ve výsledku hledání?
+4. **`/farm` má `noindex`.** Zadání ji jmenuje mezi vstupními stránkami; dnes je to vstup do zakázky (94 slov,
+   zavřený robotům `/farm?`). Nechat mimo index (doporučuji), nebo z ní udělat stránku „3D tisk na zakázku“ s textem?
+5. **Fotky skutečných výtisků** k nástrojům kampaně (busta, figurka psa, klíčenka, medaile, ozdoba): bez nich
+   stránky ukazují vykreslené příklady. Fotí se v sobotu 14. 11. i tyhle kusy?
+6. **`Product` s cenou „od“ a H1 úvodní strany** (15.8/3 a 15.8/4): udělat, nebo nechat?

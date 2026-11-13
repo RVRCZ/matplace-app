@@ -1,6 +1,8 @@
 ---
 title: "Co lidé tisknou nejčastěji: čísla z naší farmy za 90 dní"
 excerpt: Skoro 500 kalkulací za 90 dní a 105 zaplacených zakázek: co lidé nahrávají, které nástroje používají, co si nakonec nechají vytisknout, z čeho a jak rychle to dostanou. Jen souhrnná čísla z naší databáze.
+seo_title: "Co lidé tisknou nejčastěji: čísla z farmy za 90 dní"
+seo_description: "Skoro 500 kalkulací a 105 zaplacených zakázek za 90 dní: co lidé nahrávají, které nástroje používají, z čeho tisknou a jak rychle výtisk dostanou."
 cover:
 published_at: 2026-11-20 07:00:00
 updated_at: 2026-11-20 07:00:00

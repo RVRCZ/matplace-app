@@ -1,6 +1,7 @@
 ---
 title: "3D mapa města nebo krajiny z OpenStreetMap: dárek k tisku"
 excerpt: Napíšete město, čtvrť nebo památku a do minuty máte 3D mapu: budovy se skutečnými výškami, ulice, řeky a parky, nebo reliéf krajiny. Jak velké území se vejde, jak se tisknou tři barvy, jestli ji smíte prodávat a kolik stojí tisk.
+seo_description: "Napíšete město nebo památku a do minuty máte 3D mapu s budovami, ulicemi a řekami. Jak velké území se vejde, jak se tisknou tři barvy a kolik stojí tisk."
 cover:
 published_at: 2026-10-18 21:00:00
 updated_at: 2026-10-18 21:00:00

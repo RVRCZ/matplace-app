@@ -1,6 +1,8 @@
 ---
 title: "SVG do STL: logo nebo kresba jako 3D model k tisku, zdarma a online"
 excerpt: Jak z vektorového loga, ikony nebo kresby udělat STL s přesnými milimetry, co si pohlídat v SVG před nahráním a kolik stojí vytištěná silueta. Příklad s kočkou 80 mm ze skutečné kalkulace.
+seo_title: "SVG do STL: logo nebo kresba jako 3D model k tisku"
+seo_description: "Jak z vektorového loga, ikony nebo kresby udělat STL s přesnými milimetry, co si pohlídat v SVG a kolik stojí vytištěná silueta. Příklad z kalkulace."
 cover:
 published_at: 2026-11-03 07:00:00
 updated_at: 2026-11-03 07:00:00

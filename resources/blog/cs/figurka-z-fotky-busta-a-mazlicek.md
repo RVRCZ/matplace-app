@@ -1,6 +1,7 @@
 ---
 title: "Figurka z fotky: busta člověka a figurka mazlíčka"
 excerpt: Z jedné fotky vytvoříte za pár minut 3D model busty se jménem na podstavci nebo figurku psa či kočky ve třech stylech. Jakou fotku poslat, jak velká figurka bude, kolik stojí tisk a proč u zvířat hlídáme tenké nohy.
+seo_description: "Z jedné fotky vznikne za pár minut busta se jménem nebo figurka psa či kočky. Jakou fotku poslat, jak velká figurka bude a kolik stojí její 3D tisk."
 cover:
 published_at: 2026-10-18 20:00:00
 updated_at: 2026-10-18 20:00:00

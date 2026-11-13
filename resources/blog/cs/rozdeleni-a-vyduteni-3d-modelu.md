@@ -1,6 +1,8 @@
 ---
 title: "Rozdělení a vydutí 3D modelu: velký model na tiskárnu a za polovinu ceny"
 excerpt: Model je větší než tiskárna, nebo je plný a zbytečně drahý? Rozdělení ho rozřeže na díly s kolíky a čísly, vydutí z něj udělá dutý model se stěnou a odtokovými otvory. Skutečný příklad: z 910 Kč na 500 Kč. Oba nástroje jsou zdarma.
+seo_title: "Rozdělení a vydutí 3D modelu: velký model za polovinu ceny"
+seo_description: "Model větší než tiskárna rozřežete na díly s kolíky, plný a drahý vydutíte se stěnou a otvory. Skutečný příklad: z 910 Kč na 500 Kč. Oba nástroje zdarma."
 cover:
 published_at: 2026-10-18 22:00:00
 updated_at: 2026-10-18 22:00:00

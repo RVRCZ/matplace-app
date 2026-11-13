@@ -1,6 +1,7 @@
 ---
 title: Kolik stojí 3D tisk na zakázku v roce 2026?
 excerpt: Cenu 3D tisku nemusíte odhadovat podle tabulek. Nahrajte model a kalkulace hned ukáže dobu tisku, spotřebu materiálu a cenu tisku na naší farmě. Skutečné ceny pěti modelů, z čeho se cena skládá, kolik stojí doprava a jak ušetřit.
+seo_description: "Kolik stojí 3D tisk na zakázku: skutečné ceny pěti modelů z naší farmy, z čeho se cena skládá, kolik stojí doprava a jak ušetřit. Cenu modelu vidíte hned."
 cover:
 published_at: 2026-04-22 22:34:00
 updated_at: 2026-10-18 20:00:00

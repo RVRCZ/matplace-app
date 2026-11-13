@@ -1,0 +1,42 @@
+{
+    "nav.crumbs": [
+        "Kde na webu jste",
+        "Where you are on the site",
+        "Dónde está en el sitio"
+    ],
+    "tools.seo.h1": [
+        "Nástroje pro 3D tisk: model z fotky, jména nebo rozměrů",
+        "3D printing tools: a model from a photo, a name or dimensions",
+        "Herramientas de impresión 3D: un modelo de una foto, un nombre o medidas"
+    ],
+    "tools.seo.more": [
+        "Chcete rovnou hotový výtisk?",
+        "Want the finished print straight away?",
+        "¿Quiere directamente la pieza impresa?"
+    ],
+    "tools.seo.more.price": [
+        "Cena tisku z vlastního souboru",
+        "Print price from your own file",
+        "Precio de impresión de su archivo"
+    ],
+    "site.blog.seo_title": [
+        "Blog o 3D tisku: návody, ceny a nápady na dárky",
+        "3D printing blog: guides, prices and gift ideas",
+        "Blog de impresión 3D: guías, precios e ideas de regalo"
+    ],
+    "site.blog.seo_description": [
+        "Návody a rady k 3D tisku na zakázku: kolik tisk stojí, jaký materiál vybrat, jak připravit model a co vyrobit jako dárek z fotky nebo se jménem.",
+        "Guides and advice on made-to-order 3D printing: what a print costs, which material to choose, how to prepare a model and what to make as a gift.",
+        "Guías y consejos sobre impresión 3D por encargo: cuánto cuesta, qué material elegir, cómo preparar el modelo y qué regalar con una foto o un nombre."
+    ],
+    "site.blog.tools_title": [
+        "Nástroje z článku",
+        "Tools from this article",
+        "Herramientas del artículo"
+    ],
+    "site.blog.related": [
+        "Články k tématu",
+        "Related articles",
+        "Artículos relacionados"
+    ]
+}

@@ -46,11 +46,28 @@ final class LandingPage
         return self::has($tool) ? array_values(array_filter((array) __('landing.'.$tool.'.who'), 'is_array')) : [];
     }
 
+    /**
+     * What a tool's page links to under "where next": a landing page's own entry, or the plain one of a tool without
+     * the other blocks (config/landing.php `pages` and `next`).
+     *
+     * @return array{related?: list<string>, blog?: list<string>}
+     */
+    public static function links(string $tool): array
+    {
+        return (array) (config('landing.pages')[$tool] ?? config('landing.next')[$tool] ?? []);
+    }
+
+    /** @return array<string, array{related?: list<string>, blog?: list<string>}> every tool with a "where next" */
+    public static function all(): array
+    {
+        return (array) config('landing.pages') + (array) config('landing.next');
+    }
+
     /** @return list<array{key: string, url: string}> similar tools a visitor can open */
     public static function related(string $tool): array
     {
         $out = [];
-        foreach ((array) (config('landing.pages')[$tool]['related'] ?? []) as $key) {
+        foreach ((array) (self::links($tool)['related'] ?? []) as $key) {
             $route = config('tools.'.$key.'.route');
             if ($route && Route::has($route) && ToolVisibility::isPublic($key)) {
                 $out[] = ['key' => $key, 'url' => route($route)];
@@ -63,7 +80,7 @@ final class LandingPage
     /** @return list<array{title: string, url: string}> articles published in the language of the page */
     public static function posts(string $tool): array
     {
-        $slugs = (array) (config('landing.pages')[$tool]['blog'] ?? []);
+        $slugs = (array) (self::links($tool)['blog'] ?? []);
         if (! $slugs) {
             return [];
         }

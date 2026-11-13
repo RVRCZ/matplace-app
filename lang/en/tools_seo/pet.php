@@ -1,12 +1,13 @@
 <?php
 
 return [
-    'title' => 'Pet figurine from a photo: your dog or cat in 3D',
+    'title' => 'Dog or cat figurine from a photo: custom 3D print',
+    'heading' => 'Dog or cat figurine from a photo',
     'description' => 'A 3D figurine of your dog or cat from a photo in minutes. Three styles, a base with the name, a check of thin legs. Printed by us, or a free download.',
     'h1' => 'A pet figurine from a photo',
     'intro' => [
         'The tool turns a photo of a dog, a cat or another animal into a 3D figurine to print. There are three styles: the realistic one keeps the proportions and the fur, the tabletop miniature has its legs, tail and ears thickened as if modelled in clay, the cartoon one has a big head and rounded shapes. The figurine always stands on a base, and the base can carry the name.',
-        'With animals it is the thin legs and the tail that break off a print most often. So we measure the finished figurine and tell you how thick its thinnest place is. Under 2.5 mm we suggest another style or a bigger size. A figurine usually takes 1 to 3 minutes. You order the print from us, or download the model for your own printer for free. We delete the photo as soon as the figurine is made.',
+        'With animals it is the thin legs and the tail that break off a print most often. So we measure the finished figurine and tell you how thick its thinnest place is. Under 2.5 mm we suggest another style or a bigger size. A figurine usually takes 1 to 3 minutes. You see the print price in the calculator before you order; the lowest price of an order is 99 CZK. You order the print from us, or download the model for your own printer for free. We delete the photo as soon as the figurine is made.',
     ],
     'steps' => [
         ['name' => 'Upload a photo of your pet', 'text' => 'One animal, the whole body with the legs and the tail, from the side or at an angle, a calm pose and a plain background. Photos of the other side and of the back are optional.'],

@@ -2,6 +2,8 @@
     // a tool's page brings its own title, description and content from lang/<locale>/tools_seo/<tool>.php
     $toolSeo = ! empty($tool) ? \App\Support\ToolSeo::texts($tool) : null;
     $title = $toolSeo ? $toolSeo['title'].' · matplace' : ($title ?? 'matplace');
+    // a search result shows about 60 characters: the brand stays in the title only while the whole fits (App\Support\PageTitle, docs/AP.md §15)
+    $title = empty($titleFull) ? \App\Support\PageTitle::fit($title) : $title;
     $description = $toolSeo['description'] ?? ($description ?? __('app.subline'));
     // a tool switched off for the public, opened by an admin (App\Http\Middleware\ToolGate): said on the page, kept out of search engines
     $hiddenTool = request()->attributes->get('hidden_tool');
@@ -10,6 +12,10 @@
     $robots = $robots ?? null;
     $canonical = $canonical ?? \App\Support\Locales::canonical();
     $alternates = $noindex ? [] : \App\Support\Locales::alternates();
+    // where the page stands, from the home page down: [[name, address], …] without the home page itself. A tool's page
+    // stands under the list of the tools (its own line above the heading says the same: Nástroje · the tool).
+    $crumbs = $crumbs ?? ($toolSeo && ! in_array($tool, ['calc'], true) && \Illuminate\Support\Facades\Route::has('tools')
+        ? [[__('tools.title'), route('tools')], [__('tools.'.$tool.'.title'), $canonical ?? url()->current()]] : []);
     $ogImage = $ogImage ?? ($toolSeo ? \App\Http\Controllers\OgController::url('tool', str_replace('_', '-', $tool)) : \App\Http\Controllers\OgController::url('site', 'home'));
 @endphp
 <!DOCTYPE html>
@@ -20,6 +26,7 @@
     <title>{{ $title }}</title>
     <meta name="description" content="{{ $description }}">
     <meta property="og:image" content="{{ $ogImage }}">
+    @if(str_contains((string) $ogImage, '/og/'))<meta property="og:image:width" content="1200"><meta property="og:image:height" content="630">@endif
     <meta property="og:title" content="{{ $title }}">
     <meta property="og:description" content="{{ $description }}">
     <meta property="og:type" content="{{ $ogType ?? 'website' }}">
@@ -58,6 +65,7 @@
         @php $faqAll = array_merge($toolSeo['faq'], \App\Support\LandingPage::order($tool)); @endphp
         @if($faqAll)<x-jsonld :data="\App\Support\Schema::faq($faqAll)" />@endif
     @endif
+    @if($crumbs && ! $noindex)<x-jsonld :data="\App\Support\Schema::breadcrumbs(array_merge([['matplace', route('home')]], $crumbs))" />@endif
     @stack('head')
 </head>
 <body class="min-h-full bg-page text-ink antialiased">

@@ -1,4 +1,4 @@
-@extends('layouts.app', ['title' => __('site.blog.title').' · matplace', 'description' => __('site.blog.description')])
+@extends('layouts.app', ['title' => __('site.blog.seo_title').' · matplace', 'description' => __('site.blog.seo_description'), 'crumbs' => [[__('site.blog.title'), route('blog.index')]]])
 
 @push('head')
 <x-jsonld :data="\App\Support\Schema::itemList(__('site.blog.title'), $posts->map(fn ($p) => ['name' => $p->titleIn(), 'url' => $p->publicUrl(), 'image' => $p->coverUrl()])->all(), __('site.blog.description'))" />
@@ -6,6 +6,7 @@
 
 @section('content')
 <div class="mx-auto max-w-3xl">
+    <x-crumbs :trail="[[__('site.blog.title'), route('blog.index')]]" class="-mt-2" />
     <h1 class="text-3xl font-extrabold tracking-tight text-ink">{{ __('site.blog.title') }}</h1>
     <p class="mt-2 text-muted">{{ __('site.blog.description') }}</p>
 

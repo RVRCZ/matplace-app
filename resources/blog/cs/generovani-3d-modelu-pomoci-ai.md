@@ -1,6 +1,8 @@
 ---
 title: "Generování 3D modelů pomocí AI: Z fotky nebo nápadu k hotovému STL během minuty"
 excerpt: Jak AI vytvoří 3D model z popisu nebo fotky, co od výsledku čekat a kdy je lepší nástroj, do kterého zadáte rozměry. Praktický postup od nápadu po výtisk na matplace.com, s cenami z kalkulace.
+seo_title: "Generování 3D modelů pomocí AI: z fotky nebo nápadu k STL"
+seo_description: "Jak AI vytvoří 3D model z popisu nebo fotky, co od výsledku čekat a kdy je lepší nástroj s rozměry. Postup od nápadu po výtisk, s cenami z kalkulace."
 cover: blog/20260523_130435_e0f041a2.png
 published_at: 2026-05-23 13:01:42
 updated_at: 2026-10-18 20:00:00

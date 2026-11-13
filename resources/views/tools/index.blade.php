@@ -16,7 +16,7 @@
     $sections = ['file' => 'have-file', 'create' => 'create', 'spare' => 'spare'];
 @endphp
 {{-- the title and the description say what is here and for whom, with today's count of tools (docs/AN.md §7) --}}
-@extends('layouts.app', ['title' => __('tools.seo.title').' · matplace', 'description' => __('tools.seo.description', ['n' => $all->count()])])
+@extends('layouts.app', ['title' => __('tools.seo.title').' · matplace', 'description' => __('tools.seo.description', ['n' => $all->count()]), 'crumbs' => [[__('tools.title'), route('tools')]]])
 
 {{-- the list of the tools as a list for search engines: each tool on offer with its own page (docs/AP.md §14) --}}
 @push('head')
@@ -25,7 +25,9 @@
 
 @section('content')
 <div class="mx-auto max-w-5xl">
-    <h1 class="text-3xl font-semibold text-ink">{{ __('tools.title') }}</h1>
+    <x-crumbs :trail="[[__('tools.title'), route('tools')]]" class="-mt-2" />
+    {{-- the heading says what the list is for a search (tools.seo.h1); menus and links keep the short name --}}
+    <h1 class="text-3xl font-semibold text-ink">{{ __('tools.seo.h1') }}</h1>
     <p class="hint">{{ __('tools.lead') }}</p>
 
     {{-- find a tool by what it makes: the name, the sentence under it and its keywords, in the visitor's language --}}
@@ -112,6 +114,18 @@
         </section>
     @endforeach
     </div>
+
+    {{-- the ways to a finished print, as plain links under the list: the price of an own file and the pages of the service (docs/AP.md §15) --}}
+    <nav id="tools-more" class="mt-10 border-t border-line pt-4 text-sm" aria-label="{{ __('tools.seo.more') }}">
+        <span class="font-semibold text-ink">{{ __('tools.seo.more') }}</span>
+        <span class="flex flex-wrap gap-x-5">
+            <a href="{{ route('home') }}" class="inline-flex min-h-11 items-center text-action-dark underline">{{ __('tools.seo.more.price') }}</a>
+            <a href="{{ route('tools.gifts') }}" class="inline-flex min-h-11 items-center text-action-dark underline">{{ __('footer.gifts') }}</a>
+            @if(\Illuminate\Support\Facades\Lang::has('pages.praha.title'))<a href="{{ route('pages.praha') }}" class="inline-flex min-h-11 items-center text-action-dark underline">{{ __('footer.praha') }}</a>@endif
+            @if(\Illuminate\Support\Facades\Lang::has('pages.business.title'))<a href="{{ route('tools.business') }}" class="inline-flex min-h-11 items-center text-action-dark underline">{{ __('footer.business') }}</a>@endif
+            <a href="{{ route('materials') }}" class="inline-flex min-h-11 items-center text-action-dark underline">{{ __('site.materials.title') }}</a>
+        </span>
+    </nav>
 </div>
 
 <script>

@@ -1,6 +1,8 @@
 ---
 title: "Vánoční dárky z 3D tisku: co stihnete do 24. 12. a kdy objednat"
 excerpt: Dárky se jménem, z fotky nebo z obrázku, u každého cena a doba tisku z kalkulace, a termíny, do kdy objednat, aby výtisk ležel pod stromečkem. Nejnižší cena zakázky je 99 Kč.
+seo_title: "Vánoční dárky z 3D tisku: co stihnete do 24. 12."
+seo_description: "Dárky se jménem, z fotky nebo z obrázku, u každého cena a doba tisku z kalkulace, a termíny, do kdy objednat, aby výtisk ležel pod stromečkem."
 cover:
 published_at: 2026-11-24 07:00:00
 updated_at: 2026-11-24 07:00:00

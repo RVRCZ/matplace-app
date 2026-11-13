@@ -1,6 +1,8 @@
 ---
 title: "PLA vs. PETG vs. ASA: Jaký materiál vybrat pro váš 3D tisk? Průvodce pro každého"
 excerpt: PLA+, PETG, ASA nebo pružné TPU? Kdy stačí běžný plast, co snese teplo, vlhko a slunce, o kolik je který dražší a jak se liší doba tisku. Srovnání materiálů, ze kterých tiskneme na naší farmě, s příkladem z kalkulace.
+seo_title: "PLA, PETG nebo ASA: jaký materiál vybrat pro 3D tisk"
+seo_description: "PLA+, PETG, ASA nebo pružné TPU? Co snese teplo, vlhko a slunce, o kolik je který dražší a jak se liší doba tisku. Srovnání s příkladem z kalkulace."
 cover: blog/20260423_212136_5717aa99.webp
 published_at: 2026-04-23 17:42:14
 updated_at: 2026-10-18 20:00:00

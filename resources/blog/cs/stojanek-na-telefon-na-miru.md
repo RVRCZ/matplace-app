@@ -1,6 +1,7 @@
 ---
 title: "Stojánek na telefon na míru: šest typů k 3D tisku"
 excerpt: Stojánek na stůl, nízký klín na video, kapsa na zeď nebo klip do auta, podle tloušťky vašeho telefonu i s obalem. Který typ vybrat, jak nastavit sklon, výřez na kabel a kolik stojí tisk.
+seo_description: "Stojánek na stůl, klín na video, kapsa na zeď nebo klip do auta podle tloušťky telefonu i s obalem. Který typ vybrat, jak nastavit sklon a kolik stojí."
 cover:
 published_at: 2026-10-18 21:00:00
 updated_at: 2026-10-18 21:00:00

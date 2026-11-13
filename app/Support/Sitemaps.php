@@ -121,6 +121,7 @@ final class Sitemaps
                 $urls[] = $all(PageController::routeName($page));
             }
         }
+        $urls[] = $all('materials');   // what we print from: a page of its own that the list of static pages does not hold
         $urls[] = $all('privacy');
         $urls[] = $all('farm.terms');
 
