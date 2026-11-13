@@ -47,7 +47,9 @@ class HomeWaysTest extends TestCase
         // a minimum under the fixed fee of an order does not lower it: 30 without VAT → 36.3 → 40
         $this->assertStringContainsString('Nebo tisk u nás od 40', $html);
         $this->assertStringNotContainsString('Nebo tisk u nás od 120', $html);
+        // nothing to name only when an order has neither a minimum nor a fixed fee
         app(FarmSettings::class)->set('min_price', 0);
+        app(FarmSettings::class)->set('fixed_fee', 0);
         $this->assertStringNotContainsString('Nebo tisk u nás od', (string) $this->get('/')->getContent());
     }
 
