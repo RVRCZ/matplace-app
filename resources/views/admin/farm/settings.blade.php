@@ -35,7 +35,7 @@
         $states = [
             'open' => ['Otevřeno', 'Běžný provoz: ceny, objednávky a tisk jako vždy.'],
             'paused' => ['Odstávka', 'Krátká pauza kvůli úpravám a opravám. Ceny zůstávají, objednat a zaplatit jde. Místo slibů rychlosti web říká „Farma má teď odstávku. Tisk začne nejdřív …“. Zaplacené zakázky zákazníků čekají ve frontě a žádná se nespustí, dokud nepřepnete na Otevřeno; vaše zkušební zakázky a tisky farmy se tisknou dál.'],
-            'closed' => ['Zavřeno', 'Delší přestávka. Tlačítko „VYTISKNOUT“, ceny tisku a texty o tisku u nás zmizí, nové zakázky nejdou založit; nástroje, náhled a stažení modelu zůstávají. Vy jako administrátor objednáte dál. Pozor: zakázky, které už ve frontě čekají, se při Zavřeno tisknou (jako dosud); mají-li čekat, nechte Odstávku.'],
+            'closed' => ['Zavřeno', 'Delší přestávka. Tlačítko „VYTISKNOUT“, ceny tisku a texty o tisku u nás zmizí, nové zakázky nejdou založit; nástroje, náhled a stažení modelu zůstávají. Vy jako administrátor objednáte dál. Zaplacené zakázky zákazníků, které už ve frontě čekají, čekají dál stejně jako při Odstávce a spustí se, až přepnete na Otevřeno; tisk, který už běží, doběhne a vaše zkušební zakázky a tisky farmy se tisknou dál.'],
         ];
     @endphp
     <section id="farm-state" class="rounded-2xl border-2 border-amber-300 bg-amber-50 p-4">

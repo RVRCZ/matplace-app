@@ -36,9 +36,9 @@ class FarmOrderStatus extends Mailable implements ShouldQueue
             return $this->status.'_card';
         }
 
-        // the farm is paused (FarmState): the order is accepted and waits, the mail says from when it may print
+        // the farm is paused or closed (FarmState): the order is accepted and waits, the mail says from when it may print
         if ($this->status === FarmOrder::STATUS_QUEUED && FarmState::holds($this->order)) {
-            return 'queued_pause';
+            return FarmState::isClosed() ? 'queued_closed' : 'queued_pause';
         }
 
         return $this->status === FarmOrder::STATUS_HANDED_OVER && $this->order->tracking_url ? 'shipped' : $this->status;
@@ -58,7 +58,7 @@ class FarmOrderStatus extends Mailable implements ShouldQueue
             'url' => route('farm.orders.show', $this->order),
             'trackingUrl' => $this->key() === 'shipped' ? $this->order->tracking_url : null,
             'reason' => $this->order->error ? CardRefunds::errorText($this->order) : null,
-            'pause' => $this->key() === 'queued_pause' ? FarmState::pauseLine() : null,
+            'pause' => in_array($this->key(), ['queued_pause', 'queued_closed'], true) ? FarmState::holdLine() : null,
         ]);
     }
 }

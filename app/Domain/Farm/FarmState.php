@@ -13,7 +13,7 @@ use Illuminate\Support\Facades\Lang;
  *  paused  – a short break for repairs: prices stay, an order can be made and paid, but no customer's print starts
  *            (Dispatcher); the pages say "the farm is paused, printing starts on … at the earliest" instead of promises of speed;
  *  closed  – a longer break: no new orders from customers and no texts or prices of printing with us (FarmGate, as
- *            the old switch `farm_open` off did).
+ *            the old switch `farm_open` off did); the customers' orders already in the queue wait, as in a pause.
  *
  * The old switches stay: `farm_open` is written with the state (closed = off, open and paused = on) and a database
  * that has no `farm_state` yet is open or closed by `farm_open` alone; `farm_public` (only admins see the farm) and
@@ -119,12 +119,26 @@ final class FarmState
     }
 
     /**
-     * Does the pause hold this order back from the printer? A customer's order waits in the queue; the farm's own
-     * prints (tests, showcase) and an admin's orders print in every state.
+     * Does the state hold this order back from the printer? While the farm is paused or closed a customer's order
+     * waits in the queue (a closed farm takes no new orders, and those it has wait until it is open again); the
+     * farm's own prints (tests, showcase) and an admin's orders print in every state.
      */
     public static function holds(FarmOrder $order): bool
     {
-        return self::isPaused() && ! $order->isFree() && ! $order->user?->isAdmin();
+        return ! self::isOpen() && ! $order->isFree() && ! $order->user?->isAdmin();
+    }
+
+    /**
+     * What an order that is held is told instead of start times: the sentence of the pause, or, while the farm is
+     * closed, that printing starts once the farm opens again. Null while the farm is open.
+     */
+    public static function holdLine(?string $locale = null): ?string
+    {
+        return match (self::current()) {
+            self::PAUSED => self::pauseLine($locale),
+            self::CLOSED => Lang::get('farm.state.closed.held', [], $locale ?? app()->getLocale()),
+            default => null,
+        };
     }
 
     /**

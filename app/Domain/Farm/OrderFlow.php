@@ -614,7 +614,7 @@ final class OrderFlow
             return $this->t('line_queue_approval');
         }
         if (FarmState::holds($order)) {
-            return Lang::get('farm.state.admin.line_queue_pause', [], 'cs');
+            return Lang::get(FarmState::isClosed() ? 'farm.state.admin.line_queue_closed' : 'farm.state.admin.line_queue_pause', [], 'cs');
         }
         if ($order->printer && ! $order->printer->isAgentDriven()) {
             return $this->t('line_queue_manual');

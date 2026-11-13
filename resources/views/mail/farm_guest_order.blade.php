@@ -1,7 +1,7 @@
 <x-mail::message>
 # {{ __('farm.guest.mail.subject', ['number' => $order->number]) }}
 
-@php $pause = \App\Domain\Farm\FarmState::holds($order) ? \App\Domain\Farm\FarmState::pauseLine() : null; @endphp
+@php $pause = \App\Domain\Farm\FarmState::holds($order) ? \App\Domain\Farm\FarmState::holdLine() : null; @endphp
 {{ __($pause ? 'farm.guest.mail.body_pause' : 'farm.guest.mail.body', ['name' => $order->modelFile?->original_name, 'total' => $total]) }}
 @if($pause)
 

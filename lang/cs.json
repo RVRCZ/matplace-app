@@ -2621,5 +2621,9 @@
     "home.start.gift.hint.closed": "Se jménem, z fotky nebo s věnováním. Vyberete a hned vidíte náhled.",
     "home.start.part.hint.closed": "Krabička, držák, krytka nebo vlastní soubor. Model přesně na míru pro vaši tiskárnu.",
     "home.farm.home.step3.closed": "Stáhněte model",
-    "home.farm.home.step3.text.closed": "Stáhněte STL nebo hotový projekt pro svou tiskárnu."
+    "home.farm.home.step3.text.closed": "Stáhněte STL nebo hotový projekt pro svou tiskárnu.",
+    "farm.state.closed.held": "Farma je teď zavřená. Tisk začne, jakmile ji znovu otevřeme.",
+    "farm.state.admin.line_queue_closed": "Fronta: farma je zavřená, zakázka čeká a spustí se, až farmu otevřete",
+    "farm.mail.queued_closed.subject": "Zakázka :number je přijatá, tisk začne po otevření farmy",
+    "farm.mail.queued_closed.body": "Váš tisk „:name“ (:color) je zaplacený a čeká ve frontě. Dáme vědět, až se začne tisknout."
 }

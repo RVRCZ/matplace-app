@@ -438,6 +438,58 @@ class FarmStateTest extends TestCase
         $this->assertNotSame('pause', $state['queue']['blocked'] ?? null);
     }
 
+    public function test_a_closed_farm_holds_the_customers_queue_too_and_the_admin_still_prints(): void
+    {
+        [$printer, $auth] = $this->agentPrinter();
+        $this->sync($auth)->assertOk();
+        $this->actingAs($this->admin)->post("/admin/farm/printers/{$printer->id}/bed", ['clear' => 1])->assertRedirect();
+
+        // paid during a pause, then the admin switches from Paused to Closed: the waiting order is not let go
+        $this->pause();
+        $order = $this->order($this->user);
+        $this->user = $this->credit($this->user);
+        $this->pay($this->user, $order)->assertOk()->assertJsonPath('status', 'queued');
+        $this->close();
+        $this->assertTrue(FarmState::holds($order->refresh()), 'closed holds a customer as a pause does');
+        $this->sync($auth)->assertOk()->assertJsonCount(0, 'commands');
+        $this->sync($auth)->assertOk()->assertJsonCount(0, 'commands');
+        $this->assertSame(0, FarmPrintJob::count());
+        $this->assertTrue($printer->refresh()->bed_clear, 'the confirmation of the plate is not used up');
+
+        // the page of the order and its mails say why, without a date and without the words of a pause
+        $state = $this->actingAs($this->user)->getJson("/farm/orders/{$order->token}/status")->json();
+        $this->assertSame('pause', $state['queue']['blocked']);
+        $this->assertSame('Farma je teď zavřená. Tisk začne, jakmile ji znovu otevřeme.', $state['pause']);
+        $this->assertSame('Farma je teď zavřená. Tisk začne, jakmile ji znovu otevřeme.', FarmState::holdLine());
+        $this->assertSame('The farm is closed right now. Printing starts as soon as we open it again.', FarmState::holdLine('en'));
+        $mail = new FarmOrderStatus($order, FarmOrder::STATUS_QUEUED);
+        $this->assertSame('Zakázka '.$order->number.' je přijatá, tisk začne po otevření farmy', $mail->envelope()->subject);
+        $this->assertStringContainsString('Tisk začne, jakmile ji znovu otevřeme.', $mail->render());
+        $this->assertStringNotContainsString('odstávk', $mail->render());
+        $this->assertStringContainsString('Tisk začne, jakmile ji znovu otevřeme.', (new FarmGuestOrder($order, false))->render());
+        // the banner of the farm's admin counts who waits, and the settings no longer say that Closed lets the queue go
+        $this->actingAs($this->admin)->get('/admin/farm')->assertOk()->assertSee('Farma je ZAVŘENÁ.')->assertSee('ve frontě čeká 1');
+        $this->actingAs($this->admin)->get('/admin/farm/settings')->assertOk()->assertDontSee('se při Zavřeno tisknou')
+            ->assertSee('čekají dál stejně jako při Odstávce');
+
+        // the admin's trial order and the farm's own prints go on while it is closed
+        $own = $this->order($this->admin);
+        $this->admin = $this->credit($this->admin);
+        $this->pay($this->admin, $own)->assertOk();
+        $this->assertFalse(FarmState::holds($own->refresh()));
+        $showcase = new FarmOrder(['kind' => 'showcase']);
+        $this->assertTrue($showcase->isFree());
+        $this->assertFalse(FarmState::holds($showcase), "the farm's own print");
+        $cmd = $this->sync($auth)->assertOk()->assertJsonCount(1, 'commands')->json('commands.0');
+        $this->assertSame($own->id, FarmPrintJob::findOrFail($cmd['job_id'])->farm_order_id, 'the admin prints past the waiting customer');
+        $this->assertSame(FarmOrder::STATUS_QUEUED, $order->refresh()->status);
+
+        // open again: nothing is held, the sentence is gone
+        $this->open();
+        $this->assertFalse(FarmState::holds($order));
+        $this->assertNull(FarmState::holdLine());
+    }
+
     public function test_an_order_paid_while_open_is_told_about_the_queue_as_always(): void
     {
         $order = $this->order($this->user);

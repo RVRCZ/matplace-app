@@ -8,7 +8,7 @@
      the farm does not serve customers, so that opening it again is not forgotten --}}
 @php
     $farmState = \App\Domain\Farm\FarmState::current();
-    $farmHeld = $farmState === 'paused'
+    $farmHeld = $farmState !== 'open'
         ? \App\Models\FarmOrder::with('user')->where('status', \App\Models\FarmOrder::STATUS_QUEUED)->get()->filter(fn ($o) => \App\Domain\Farm\FarmState::holds($o))->count()
         : 0;
     $farmUntil = \App\Domain\Farm\FarmState::pauseUntil();
@@ -20,10 +20,11 @@
         <p class="text-sm">
             @if($farmState === 'paused')
                 <strong class="text-base">Farma má ODSTÁVKU.</strong>
-                Zakázky zákazníků se nespouštějí@if($farmHeld > 0), ve frontě čeká {{ $farmHeld }}@endif.
+                Zakázky zákazníků se nespouštějí{{ $farmHeld > 0 ? ', ve frontě čeká '.$farmHeld : '' }}.
                 @if($farmUntil) Zákazníci vidí: tisk začne nejdřív {{ \App\Domain\Farm\FarmState::dateText($farmUntil, 'cs') }}.@elseif(config('farm.pause_until')) Datum konce odstávky už uplynulo, zákazníci vidí „jakmile farmu znovu spustíme“.@else Zákazníci vidí: tisk začne, jakmile farmu znovu spustíme.@endif
             @else
                 <strong class="text-base">Farma je ZAVŘENÁ.</strong> Nové zakázky nejdou založit, ceny tisku a texty o tisku u nás web neukazuje.
+                Zakázky zákazníků se nespouštějí{{ $farmHeld > 0 ? ', ve frontě čeká '.$farmHeld : '' }}.
             @endif
             Při odstávce nebo zavření zvažte pozastavení reklamy.
         </p>

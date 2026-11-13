@@ -1160,7 +1160,7 @@ class OrderController extends Controller
             'supports_url' => $order->absoluteSupportsPath() ? route('farm.orders.supports', $order).'?v='.($order->updated_at?->timestamp ?? 0) : null,
             'queue' => app(Dispatcher::class)->estimate($order, $this->settings),
             // the farm is paused and this order waits for its end (FarmState): the sentence the page says instead of start times
-            'pause' => FarmState::holds($order) ? FarmState::pauseLine() : null,
+            'pause' => FarmState::holds($order) ? FarmState::holdLine() : null,
             'timelapse_url' => $order->timelapse_path ? route('farm.orders.timelapse', $order) : null,
             // the photo of the finished print on its backdrop (PrintPhotos), once the operator took one
             'photo_url' => $order->photoUrl(),
