@@ -403,7 +403,7 @@ class HomeCreateDirectTest extends TestCase
 
         // a closed farm takes no orders: nothing is generated, the tools still open
         config(['farm.open' => false, 'farm.state' => 'closed']);
-        $r = $this->send(['text' => 'Čelenka s rohy na Mikuláše'])->assertCreated()->assertJsonPath('route', 'human');
+        $r = $this->send(['text' => 'Soška draka na stůl'])->assertCreated()->assertJsonPath('route', 'human');
         $this->assertSame(IntakeDesign::CLOSED, Intake::where('token', $r->json('token'))->firstOrFail()->answer['design_refused']);
         $r = $this->send(['text' => 'Klíčenka se jménem Jana'])->assertCreated()->assertJsonPath('route', 'tool');
         $this->assertNotNull($r->json('go'));
@@ -414,8 +414,8 @@ class HomeCreateDirectTest extends TestCase
     {
         $this->designOn();
         $this->app->instance(Assistant::class, new ClaudeAssistant(['api_key' => '']));
-        $r = $this->send(['text' => 'Čelenka s rohy na Mikuláše'])->assertCreated()->assertJsonPath('route', 'design')->assertJsonPath('fit', true);
-        $this->assertSame('Čelenka s rohy na Mikuláše', GenerationRequest::firstOrFail()->prompt, 'without a model the visitor\'s own words go to the generator');
+        $r = $this->send(['text' => 'Maska lišky na karneval'])->assertCreated()->assertJsonPath('route', 'design')->assertJsonPath('fit', true);
+        $this->assertSame('Maska lišky na karneval', GenerationRequest::firstOrFail()->prompt, 'without a model the visitor\'s own words go to the generator');
         // a part stays with a person
         $this->send(['text' => 'Náhradní kolečko do myčky, průměr 3 cm'])->assertCreated()->assertJsonPath('route', 'human');
         $this->assertSame(1, GenerationRequest::count());
