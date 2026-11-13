@@ -31,7 +31,7 @@ return [
 
     'figure' => [
         'order' => [
-            ['q' => 'How much is a printed bust and how big is it?', 'farm' => true, 'a' => 'A bust 80 mm high comes to 99 CZK with us, 120 mm to 130 CZK and 150 mm to 200 CZK (PLA+, one piece, without delivery; calculations on the live site, 17 Oct 2026). Change the size in the calculation and the price follows.'],
+            ['q' => 'How much is a printed bust and how big is it?', 'farm' => true, 'a' => 'A bust 120 mm high comes to 130 CZK with us and 150 mm to 200 CZK (PLA+, one piece, without delivery; calculations on the live site, 17 Oct 2026). Change the size in the calculation and the price follows.'],
             ['q' => 'How long do printing and delivery take?', 'farm' => true, 'a' => 'The model takes 2 to 4 minutes. An 80 mm bust prints in about an hour, a 150 mm one in just under three hours. We dispatch on the day the print ends, on working days, and Packeta usually delivers within 1 to 2 working days in the Czech Republic.'],
             ['q' => 'What is the bust printed from, and in what colour?', 'a' => 'In one colour of PLA or PLA+. Matte shades suit figures best: they show the print layers less.'],
             ['q' => 'What if I do not like the model?', 'a' => 'You look at the model in 3D first. Within the daily limit (:guest without an account, :account with one) you can try another photo; the base, the name and the dedication change without a new generation.'],
@@ -96,7 +96,7 @@ return [
         'order' => [
             ['q' => 'How do I measure what goes inside?', 'a' => 'Measure the item at its widest point and add 1 to 2 mm on each side. The tool takes the inside sizes and works out the outside from the walls and the bottom.'],
             ['q' => 'How exact is the fit?', 'a' => 'A printer keeps sizes to a few tenths of a millimetre. The lid has 0.25 mm of play, which you can change; try it on the first box of a new set.'],
-            ['q' => 'How much is it and how long does it print?', 'farm' => true, 'a' => 'A box of 84 × 54 × 32 mm with its lid prints in about 35 minutes and comes to 99 CZK (PLA+, without delivery). For other sizes the calculation shows the price and the time before you order anything. We dispatch on the day the print ends, on working days.'],
+            ['q' => 'How much is it and how long does it print?', 'farm' => true, 'a' => 'A box of 84 × 54 × 32 mm with its lid prints in about 35 minutes. For your sizes the calculation shows the price and the time before you order anything. We dispatch on the day the print ends, on working days.'],
             ['q' => 'Which material?', 'a' => 'PLA is enough for small things and electronics inside. For heat or damp choose PETG.'],
             ['q' => 'How much is delivery?', 'farm' => true, 'a' => 'With Packeta to a pickup point in the Czech Republic :cz_point, to your door :cz_home, to Slovakia from :sk_point, to other EU countries from :eu_point.'],
             ['q' => 'Do I need an account?', 'a' => 'Not for the design or the download. You need one only to order a print from us.'],
@@ -113,7 +113,7 @@ return [
         'order' => [
             ['q' => 'How high should I pull the shape so that it prints and holds?', 'a' => 'At least 0.6 mm, that is three layers of 0.2 mm; a tag or a door sign takes 2 to 3 mm, a key pendant 4 to 6 mm, and a shape that should stand on its own 20 mm or more. The higher, the more grams and minutes; the calculation recounts after every change.'],
             ['q' => 'How thin can the lines be?', 'a' => 'A 0.4 mm nozzle needs two lines side by side, so at least 0.8 mm. The tool marks lines under 0.8 mm in advance; thicken them in your editor or make the shape bigger.'],
-            ['q' => 'How much does a printed shape cost and how long does it print?', 'farm' => true, 'a' => 'The 80 mm cat pulled up to 6 mm weighs 9.6 g and prints in 17 minutes, 99 CZK from us, which is the minimum order (PLA, without delivery). A bigger or higher shape shows its grams, minutes and price in the calculation before you order anything.'],
+            ['q' => 'How much does a printed shape cost and how long does it print?', 'farm' => true, 'a' => 'The 80 mm cat pulled up to 6 mm weighs 9.6 g and prints in 17 minutes (PLA). Your shape shows its grams, minutes and price in the calculation before you order anything.'],
             ['q' => 'Can the motif be in a different colour than the base?', 'a' => 'An extruded outline is one colour. If the motif should sit on a plate in another colour, switch the style to a relief: the colours then lie one above the other and a printer manages them with a filament change at the height of the plate, at our farm or at home.'],
             ['q' => 'How long does delivery take?', 'farm' => true, 'a' => 'We dispatch on the day the print ends, on working days. Packeta usually delivers within 1 to 2 working days in the Czech Republic, to a pickup point for :cz_point, to your door for :cz_home; to Slovakia from :sk_point, to the EU from :eu_point.'],
             ['q' => 'Can I edit the result further?', 'a' => 'Yes. The STL is an ordinary model: you scale it in the calculator, the Puzzle tool cuts it into pieces, the Mold tool makes a casting mold of it, and the Cookie cutter tool makes a cutter from the same outline.'],
@@ -129,7 +129,7 @@ return [
         'order' => [
             ['q' => 'How do I know the model needs a repair?', 'a' => 'The slicer reports non-manifold, open edges or a mesh that is not watertight, pieces of the surface are missing in the preview, or the print has holes and extra layers. If you are not sure, upload the model to the check first; it says what is wrong and offers the repair with one button.'],
             ['q' => 'How long does the repair take and how big a file can it handle?', 'a' => 'A file up to 120 MB. An ordinary model is done in a few seconds, a mesh with millions of triangles within a minute; the page says what is going on.'],
-            ['q' => 'How much does printing the repaired model cost?', 'farm' => true, 'a' => 'The repair costs nothing. A print from us is priced by the calculation from the grams and the minutes; the minimum order is 99 CZK, and the 60 × 52 × 78 mm bust of the example comes to around 110 CZK (PLA, without delivery).'],
+            ['q' => 'How much does printing the repaired model cost?', 'farm' => true, 'a' => 'The repair costs nothing. A print from us is priced by the calculation from the grams and the minutes; the 60 × 52 × 78 mm bust of the example comes to around 110 CZK (PLA, without delivery).'],
             ['q' => 'Does the repair help a model for resin printing too?', 'a' => 'Yes, an STL is the same for FDM and resin, and both need a closed mesh. For resin, hollow the model after the repair with drain holes: you save resin and the part will not crack.'],
             ['q' => 'How do I get the print?', 'farm' => true, 'a' => 'We send it by Packeta to a pickup point (in the Czech Republic :cz_point) or to an address in the EU. We dispatch on the day the print ends, on working days; as soon as we hand the parcel over, an e-mail with tracking arrives.'],
             ['q' => 'What if the slicer still reports an error after the repair?', 'a' => 'The report says what could not be done: a large missing piece of the surface or a wall without thickness cannot be rebuilt. The rest is manual work in Blender or Meshmixer; a slicer often passes over small faults and the print comes out fine.'],
@@ -145,7 +145,7 @@ return [
         'order' => [
             ['q' => 'Does the check look at wall thickness too?', 'a' => 'Only the thinnest dimension of the whole model: under 0.8 mm is an error, because a 0.4 mm nozzle cannot print such a wall. A thin spot inside an otherwise thick model is not found by the check; the slicer shows that.'],
             ['q' => 'What happens to a model that does not pass?', 'a' => 'Holes and flipped faces go to the repair with one button. A model bigger than the printer is scaled down in the calculator, or split into parts with pins. Wrong units are solved by saving the file again in millimetres.'],
-            ['q' => 'If the check passes, can I order the print right away?', 'farm' => true, 'a' => 'Yes. The price button opens the model in the calculator, where you see the grams, the print time and the price; the minimum order is 99 CZK. The same check runs in the calculation, so nothing is reported twice.'],
+            ['q' => 'If the check passes, can I order the print right away?', 'farm' => true, 'a' => 'Yes. The price button opens the model in the calculator, where you see the grams, the print time and the price. The same check runs in the calculation, so nothing is reported twice.'],
             ['q' => 'Are STEP, 3MF and OBJ checked too?', 'a' => 'Yes. A STEP from a CAD program is converted to a mesh and checked like an STL; in a 3MF the shape is checked, the colours and print settings are left aside.'],
             ['q' => 'How long do printing and delivery take?', 'farm' => true, 'a' => 'The calculation shows the print time. We dispatch on the day the print ends, on working days, and Packeta usually delivers within 1 to 2 working days in the Czech Republic (to a pickup point :cz_point).'],
             ['q' => 'Do you keep my file?', 'a' => 'The file serves the check, the repair and the calculation and is passed to nobody else. The check does not touch it; the model you download is the same file you uploaded.'],
@@ -160,7 +160,7 @@ return [
     // the search entry pages of session N1, batch 2 (docs/AP.md §4): hollow, split, G-code
     'hollow' => [
         'order' => [
-            ['q' => 'How much do I save on the print price with you?', 'farm' => true, 'a' => 'It depends on the size. A cylinder of ⌀ 120 × 200 mm cost 910 CZK solid and 500 CZK hollowed with a 2.5 mm wall (PLA+, without delivery); for a small part the price does not change, because the minimum order is 99 CZK. The tool shows the difference right after hollowing and the calculation confirms it.'],
+            ['q' => 'How much do I save on the print price with you?', 'farm' => true, 'a' => 'It depends on the size. A cylinder of ⌀ 120 × 200 mm cost 910 CZK solid and 500 CZK hollowed with a 2.5 mm wall (PLA+, without delivery); for a small part the price may not change, because an order has a minimum price. The tool shows the difference right after hollowing and the calculation confirms it.'],
             ['q' => 'Does a hollow model print without supports?', 'a' => 'On the outside exactly like a solid one. Inside, the cavity has a ceiling that the slicer either bridges or props up with inner supports; you shake those out through the drain holes after printing. For FDM choose a 2 to 3 mm wall, the slicer still fills it according to its settings.'],
             ['q' => 'How do I hollow a model for resin printing?', 'a' => 'A 2 to 3 mm wall and at least two holes of 3 to 4 mm in the bottom, so that the resin drains and no vacuum forms. A solid cylinder of ⌀ 120 × 200 mm would swallow 2.3 litres of resin, a hollow one about a quarter of a litre.'],
             ['q' => 'How long do printing and delivery take?', 'farm' => true, 'a' => 'A hollow model prints in less time: the cylinder of the example in 6 h 36 min instead of 8 h 14 min. We dispatch on the day the print ends, on working days, and Packeta usually delivers within 1 to 2 working days in the Czech Republic (to a pickup point :cz_point).'],
@@ -192,7 +192,7 @@ return [
 
     'gcode' => [
         'order' => [
-            ['q' => 'How much does printing a model from G-code cost with you?', 'farm' => true, 'a' => 'As with any model: the calculation slices it for our printers and prices it from the grams and the minutes; the time and grams in the G-code header are only a guide. The minimum order is 99 CZK (PLA, without delivery).'],
+            ['q' => 'How much does printing a model from G-code cost with you?', 'farm' => true, 'a' => 'As with any model: the calculation slices it for our printers and prices it from the grams and the minutes; the time and grams in the G-code header are only a guide.'],
             ['q' => 'Can you not just print my G-code?', 'a' => 'No. G-code is written for one printer and its settings; our farm prints from a model it slices for its own machine and material. The conversion to a model makes that possible, and you can change the size or the colours on top.'],
             ['q' => 'Why is the surface of the model stepped?', 'a' => 'The model carries the layers of the print it came from, 0.2 mm say. In printing the steps are covered by new layers and do not show; after scaling the model up, sand them or print with a finer layer.'],
             ['q' => 'How long do printing and delivery take?', 'farm' => true, 'a' => 'The calculation shows the print time. We dispatch on the day the print ends, on working days, and Packeta usually delivers within 1 to 2 working days in the Czech Republic (to a pickup point :cz_point).'],
@@ -250,7 +250,7 @@ return [
             ['q' => 'Do I need an account?', 'a' => 'Not for the design or the download. You need one only when you have the gingerbreads printed by us; that is paid from credit topped up by card.'],
         ],
         'who' => [
-            ['t' => 'Tree tags for the whole family', 'text' => 'Everyone gets their own gingerbread with a name: one costs 99 CZK, six of the same 140 CZK, another design for other names.'],
+            ['t' => 'Tree tags for the whole family', 'text' => 'Everyone gets their own gingerbread with a name: six of the same cost 140 CZK, another design for other names.'],
             ['t' => 'A gift for a teacher or colleagues', 'text' => 'A 60 mm gingerbread with a name on a ribbon instead of a gift tag; after unwrapping it hangs on the tree.'],
             ['t' => 'A nursery or a club', 'text' => 'Ornaments with the children’s names from your own printer: a project with one filament change, 20 minutes a piece.'],
         ],
@@ -258,7 +258,7 @@ return [
 
     'ornament' => [
         'order' => [
-            ['q' => 'How much does an ornament cost from you and how long does it print?', 'farm' => true, 'a' => 'An 80 mm gingerbread man prints in 18 minutes and costs 99 CZK, which is the minimum order; six pieces come to 160 CZK, that is 27 CZK per ornament (PLA+, without delivery, calculation of 18 October 2026). The calculation shows the price of your ornament before you order anything.'],
+            ['q' => 'How much does an ornament cost from you and how long does it print?', 'farm' => true, 'a' => 'An 80 mm gingerbread man prints in 18 minutes; six pieces come to 160 CZK, that is 27 CZK per ornament (PLA+, without delivery, calculation of 18 October 2026). The calculation shows the price of your ornament before you order anything.'],
             ['q' => 'Can I make an ornament from a child’s drawing?', 'a' => 'Yes. Photograph the drawing on white paper from above in daylight, the tool removes the background and merges the colours into 2 to 4 filaments; thicken faint pencil lines with a marker. The ornament then follows the outline of the drawing, or you put it in a circle.'],
             ['q' => 'How long does delivery take?', 'farm' => true, 'a' => 'We dispatch on the day the print ends, on working days, and Packeta usually delivers within 1 to 2 working days in the Czech Republic (to a pickup point :cz_point). Before Christmas, order in good time.'],
             ['q' => 'How do I print the ornament at home in several colours?', 'a' => 'Flat, face up, without supports. The downloaded project carries filament changes at the heights of the colours; with one nozzle you swap spools at the pause, a printer with AMS, MMU or ACE swaps them by itself.'],
@@ -274,7 +274,7 @@ return [
 
     'cutter' => [
         'order' => [
-            ['q' => 'How much does a cutter cost from you?', 'farm' => true, 'a' => 'A cutter of the name Ela (82 × 54 mm) prints in 31 minutes and costs 99 CZK, which is the minimum order (PLA+, without delivery, calculation of 18 October 2026). Every shape is its own design and calculation; the number of pieces of one shape you enter there.'],
+            ['q' => 'How much does a cutter cost from you?', 'farm' => true, 'a' => 'A cutter of the name Ela (82 × 54 mm) prints in 31 minutes (PLA+); you see the price in the calculation before you order anything. Every shape is its own design and calculation; the number of pieces of one shape you enter there.'],
             ['q' => 'How do I cut so that the dough does not stick?', 'a' => 'Keep the dough chilled and dip the cutter in flour before every shape. Press straight down on the flange, do not twist, and push the shape out of the edge with a finger; a tapered edge cuts cleaner than a straight one.'],
             ['q' => 'How long do printing and delivery take?', 'farm' => true, 'a' => 'A cutter prints in 25 to 35 minutes. We dispatch on the day the print ends, on working days, and Packeta usually delivers within 1 to 2 working days in the Czech Republic (to a pickup point :cz_point). For Christmas baking, order in good time.'],
             ['q' => 'How do I print the cutter at home?', 'a' => 'Flange down, without supports, from PLA or PETG; the downloaded project carries the 1 mm wall and the 0.2 mm layers of the calculation. The stamp, if one was made, prints next to it as a separate part.'],
@@ -290,7 +290,7 @@ return [
 
     'nameplate' => [
         'order' => [
-            ['q' => 'How much do gift tags cost from you?', 'farm' => true, 'a' => 'A 70 mm tag with an eyelet prints in 10 minutes: one costs 99 CZK, which is the minimum order, ten of the same 120 CZK, that is 12 CZK each (PLA, without delivery, calculation of 27 October 2026). For different names you make a design for each; you see the price before you order anything.'],
+            ['q' => 'How much do gift tags cost from you?', 'farm' => true, 'a' => 'A 70 mm tag with an eyelet prints in 10 minutes: ten of the same cost 120 CZK, that is 12 CZK each (PLA, without delivery, calculation of 27 October 2026). For different names you make a design for each; you see the price before you order anything.'],
             ['q' => 'How do I hang the tag on a gift?', 'a' => 'Tick the eyelet: its 2 to 8 mm hole takes a ribbon or a string. A 70 mm tag weighs 5 g, so it hangs on a bow or a branch; without an eyelet you stick it to the wrapping paper with double-sided tape.'],
             ['q' => 'How long do printing and delivery take?', 'farm' => true, 'a' => 'A tag prints in 10 to 25 minutes depending on size. We dispatch on the day the print ends, on working days, and Packeta usually delivers within 1 to 2 working days in the Czech Republic (to a pickup point :cz_point). Before Christmas, order in good time.'],
             ['q' => 'How do I print the tag at home in several colours?', 'a' => 'Flat, without supports. The downloaded project carries a filament change at the height of every layer; with one nozzle you swap the spool at the pause, a printer with AMS, MMU or ACE does it by itself. The STL is one body for a single-colour print.'],
@@ -306,7 +306,7 @@ return [
 
     'topper' => [
         'order' => [
-            ['q' => 'How much does a topper cost from you and when does it arrive?', 'farm' => true, 'a' => 'A topper with the number 2 and the name Olivia (110 mm) prints in 55 minutes and costs 99 CZK, which is the minimum order (PLA, without delivery, calculation of 27 October 2026). We dispatch on the day the print ends, on working days, Packeta delivers within 1 to 2 working days; for a party order at least a week ahead.'],
+            ['q' => 'How much does a topper cost from you and when does it arrive?', 'farm' => true, 'a' => 'A topper with the number 2 and the name Olivia (110 mm) prints in 55 minutes (PLA); you see the price in the calculation before you order anything. We dispatch on the day the print ends, on working days, Packeta delivers within 1 to 2 working days; for a party order at least a week ahead.'],
             ['q' => 'How do I push the topper in so that it holds?', 'a' => 'Push the spikes into the cake up to the shape, best through the sponge, not just into the cream; two spikes hold better than one. Wrap them in cling film or push them into straws, and put the topper in only before serving.'],
             ['q' => 'How much is delivery?', 'farm' => true, 'a' => 'With Packeta to a pickup point in the Czech Republic :cz_point, to your door :cz_home, to Slovakia from :sk_point, to other EU countries from :eu_point.'],
             ['q' => 'How do I print the topper at home?', 'a' => 'Flat, face up, without supports, from PLA. The downloaded project carries a pause at the height of the name for the spool change; a printer with several spools does it by itself. 3 mm of thickness is enough so that it does not bend.'],
@@ -314,7 +314,7 @@ return [
             ['q' => 'Do I need an account?', 'a' => 'Not for the design or the download. You need one only when you have the topper printed by us; that is paid from credit topped up by card.'],
         ],
         'who' => [
-            ['t' => 'A child’s birthday', 'text' => 'The age as a 110 mm number with the name in a script typeface, two 60 mm spikes, for 99 CZK.'],
+            ['t' => 'A child’s birthday', 'text' => 'The age as a 110 mm number with the name in a script typeface, two 60 mm spikes.'],
             ['t' => 'A wedding or an anniversary', 'text' => 'A 120 mm heart with "Ela a Tom" or a date, gold with white.'],
             ['t' => 'New Year’s Eve and a company party', 'text' => 'Just a text without a shape: "2027", "Thank you" or the team’s name, 180 mm wide, 80 mm spikes.'],
         ],
@@ -322,7 +322,7 @@ return [
 
     'name_letter' => [
         'order' => [
-            ['q' => 'How much does a letter cost from you?', 'farm' => true, 'a' => 'A letter E 120 mm high with the name Ela prints in 40 minutes and costs 99 CZK, which is the minimum order (PLA, without delivery, calculation of 27 October 2026). A 200 mm letter costs more by its grams and minutes; you see the price before you order anything.'],
+            ['q' => 'How much does a letter cost from you?', 'farm' => true, 'a' => 'A letter E 120 mm high with the name Ela prints in 40 minutes (PLA). A 200 mm letter costs more by its grams and minutes; you see the price before you order anything.'],
             ['q' => 'How do I hang the letter on a door?', 'a' => 'Tick the eyelet and hang it on a ribbon or a hook, or stick it on with double-sided tape; a 120 mm letter weighs 27 g. For a shelf 10 mm of thickness is enough, or the base with a groove from the same file.'],
             ['q' => 'How long do printing and delivery take?', 'farm' => true, 'a' => 'A 120 mm letter prints in 40 minutes, a 200 mm one in over an hour. We dispatch on the day the print ends, on working days, and Packeta usually delivers within 1 to 2 working days in the Czech Republic (to a pickup point :cz_point).'],
             ['q' => 'How do I print the letter at home in two colours?', 'a' => 'Flat, face up, without supports. The downloaded project carries a pause at the height of the name for the spool change; the base prints next to it. A printer with AMS, MMU or ACE changes the colour by itself.'],
@@ -355,7 +355,7 @@ return [
 
     'sign' => [
         'order' => [
-            ['q' => 'How much do signs cost from you?', 'farm' => true, 'a' => 'A keyring with a name 99 CZK and ten of the same 99 CZK together, a 173 × 69 mm door sign 99 CZK (PLA+, without delivery, calculation of 18 October 2026). A bigger sign or more names is priced by grams and minutes; you see the price before you order anything.'],
+            ['q' => 'How much do signs cost from you?', 'farm' => true, 'a' => 'A sign is priced by the grams and the minutes of printing: a keyring with a name weighs 2 g and prints in 5 minutes, a 173 × 69 mm door sign weighs 30 g and prints in 46 minutes (PLA+). You enter the number of pieces in the calculation; you see the price before you order anything.'],
             ['q' => 'Which shape and typeface for a door?', 'a' => 'For the door of a flat or an office a sans or serif typeface with letters at least 15 mm high and a frame, so that the sign reads from the corridor; keep scripts for names and keyrings. Raised letters in a second colour read better than recessed ones.'],
             ['q' => 'How long do printing and delivery take?', 'farm' => true, 'a' => 'A keyring prints in 5 minutes, a door sign in 46 minutes. We dispatch on the day the print ends, on working days, and Packeta usually delivers within 1 to 2 working days in the Czech Republic (to a pickup point :cz_point).'],
             ['q' => 'How do I print the sign at home in two colours?', 'a' => 'Flat, without supports. The downloaded project carries a pause at the height where the letters begin: the printer stops, you swap the spool and the print goes on; a printer with AMS, MMU or ACE changes the colour by itself. In the two-colour version you also download the plate and the letters separately.'],
@@ -363,7 +363,7 @@ return [
             ['q' => 'Do I need an account?', 'a' => 'Not for the design or the download. You need one only when you have the signs printed by us; that is paid from credit topped up by card.'],
         ],
         'who' => [
-            ['t' => 'Name tags for a class or a team', 'text' => '46 × 22 mm keyrings with names: ten pieces for 99 CZK, every name its own design with the same layout.'],
+            ['t' => 'Name tags for a class or a team', 'text' => '46 × 22 mm keyrings with names: ten pieces in one order, every name its own design with the same layout.'],
             ['t' => 'A door sign for a flat or an office', 'text' => '"Novákovi 12" with raised letters and a frame, 173 × 69 mm, stuck on with double-sided tape.'],
             ['t' => 'A name for a child’s room', 'text' => 'Just the name in a script without a plate, with an eyelet for a ribbon, or without one for the door.'],
         ],
@@ -371,7 +371,7 @@ return [
 
     'keychain' => [
         'order' => [
-            ['q' => 'How much do keychains cost from you?', 'farm' => true, 'a' => 'A 70 mm bone with a name in two colours costs 99 CZK, which is the minimum order, ten of the same 100 CZK, that is 10 CZK each (PLA, without delivery, calculation of 28 October 2026). You pick the colours at the order from the spools we have in stock.'],
+            ['q' => 'How much do keychains cost from you?', 'farm' => true, 'a' => 'A 70 mm bone with a name in two colours: ten of the same cost 100 CZK, that is 10 CZK each (PLA, without delivery, calculation of 28 October 2026). You pick the colours at the order from the spools we have in stock.'],
             ['q' => 'How do I make keychains with different names for a team?', 'a' => 'The design stays on the page: rewrite the name, keep the shape and the picture and continue to the calculation for each name separately; the number of pieces of one name you enter there. All the keychains print side by side on one plate.'],
             ['q' => 'How long do printing and delivery take?', 'farm' => true, 'a' => 'A keychain prints in 10 minutes. We dispatch on the day the print ends, on working days, and Packeta usually delivers within 1 to 2 working days in the Czech Republic (to a pickup point :cz_point).'],
             ['q' => 'How do I print the keychain at home in several colours?', 'a' => 'Flat, without supports. The downloaded project carries a filament change at the height of every layer; with one nozzle you swap the spool at the pause, a printer with AMS, MMU or ACE does it by itself. The STL is one body for a single-colour print.'],
@@ -421,7 +421,7 @@ return [
     // batch C (docs/AP.md §9): logo, wall mount, stamp, lightbox sign
     'logo' => [
         'order' => [
-            ['q' => 'How much does a logo cost from you?', 'farm' => true, 'a' => 'A relief on a plate 100 mm wide costs 99 CZK, which is the minimum order (PLA, without delivery, calculation of 28 October 2026). A bigger sign or a standing logo is priced by grams and minutes; you see the price before you order anything, for several pieces too.'],
+            ['q' => 'How much does a logo cost from you?', 'farm' => true, 'a' => 'A relief on a plate 100 mm wide weighs 27.6 g and prints in 43 minutes (PLA). A logo is priced by grams and minutes; you see the price before you order anything, for several pieces too.'],
             ['q' => 'How do I prepare the SVG of the logo?', 'a' => 'In one colour, with fills instead of strokes (Inkscape: Stroke to Path) and text converted to paths; gradients and masks are not read. Enlarge a logo with small text to at least 100 mm so that no line is under 0.8 mm.'],
             ['q' => 'How long do printing and delivery take?', 'farm' => true, 'a' => 'A 100 mm relief prints in 43 minutes, a 250 mm sign in over two hours. We dispatch on the day the print ends, on working days, and Packeta usually delivers within 1 to 2 working days in the Czech Republic (to a pickup point :cz_point).'],
             ['q' => 'How do I print the logo at home in two colours?', 'a' => 'Flat, without supports. With a relief on a plate the downloaded project has a pause at the height where the motif begins: the printer stops, you swap the spool and the print goes on; a printer with AMS, MMU or ACE does it by itself. A standing logo and its base print as two parts.'],
@@ -437,7 +437,7 @@ return [
 
     'holder' => [
         'order' => [
-            ['q' => 'How much does a mount cost from you?', 'farm' => true, 'a' => 'A cradle for a remote 100 CZK, a hook for headphones 99 CZK, a clip for a broom 99 CZK (PLA+, without delivery, calculation of 18 October 2026); 99 CZK is the minimum order. Several mounts in one order come cheaper per piece; you see the price before you order anything.'],
+            ['q' => 'How much does a mount cost from you?', 'farm' => true, 'a' => 'A cradle for a remote, 27 g and 1 h 12 min of printing, costs 100 CZK (PLA+, without delivery, calculation of 18 October 2026). Several mounts in one order come cheaper per piece; you see the price before you order anything.'],
             ['q' => 'Which kind of mount for what?', 'a' => 'The cradle for a remote, a phone or glasses, the pocket for a bottle, tools and pens, the hook for headphones, a bag or keys with a loop, the clip for the handle of a broom, a mop or a rake. The presets set the sizes of common things, your own sizes overwrite them.'],
             ['q' => 'How long do printing and delivery take?', 'farm' => true, 'a' => 'The clip prints in 21 minutes, the hook in 27 minutes, the cradle in 1 h 12 min. We dispatch on the day the print ends, on working days, and Packeta usually delivers within 1 to 2 working days in the Czech Republic (to a pickup point :cz_point).'],
             ['q' => 'How do I fix the mount without drilling?', 'a' => 'Switch the holes off and stick the mount on with double-sided tape; it carries only light things like a remote or headphones. Where a screw is already in the wall, choose hanging on a screw: the head passes through the wide hole and the mount slides down into the slot.'],
@@ -453,7 +453,7 @@ return [
 
     'stamp' => [
         'order' => [
-            ['q' => 'How much does a stamp cost from you?', 'farm' => true, 'a' => 'A 50 mm stamp with a handle costs 99 CZK, which is the minimum order (PLA, without delivery, calculation of 28 October 2026). A bigger stamp or more pieces is priced by grams and minutes; you see the price before you order anything.'],
+            ['q' => 'How much does a stamp cost from you?', 'farm' => true, 'a' => 'A 50 mm stamp with a handle weighs 6.8 g and prints in 28 minutes (PLA). A stamp is priced by grams and minutes; you see the price before you order anything.'],
             ['q' => 'How do I make a maker’s mark for the bottom of mugs?', 'a' => 'Upload the logo as an SVG or type your initials, choose a raised motif, a width of 20 to 40 mm and a motif height of 1 to 1.5 mm; the impression in leather-hard clay is then clean. With a handle the stamp is easier to hold, without one you press it with your thumb.'],
             ['q' => 'How long do printing and delivery take?', 'farm' => true, 'a' => 'A 50 mm stamp prints in 28 minutes. We dispatch on the day the print ends, on working days, and Packeta usually delivers within 1 to 2 working days in the Czech Republic (to a pickup point :cz_point).'],
             ['q' => 'Does the stamp suit soap and dough?', 'a' => 'Yes, anything soft that keeps the impression: soap, fondant, shortcrust dough, polymer clay. For a raised logo on soap choose a recessed motif. Printed plastic is meant for a brief touch with food; wash the stamp by hand, not in the dishwasher.'],
@@ -485,7 +485,7 @@ return [
     // standing 3D text (docs/AP.md §12, batch D)
     'text' => [
         'order' => [
-            ['q' => 'How much does the text cost from you?', 'farm' => true, 'a' => 'The word HOME, 144 mm, costs 99 CZK (PLA, without delivery, calculation of 28 October 2026), the two-line text KAVÁRNA u Jany 130 CZK. The price grows with the number of letters, the height and the depth; you see it before you order anything, for several pieces too.'],
+            ['q' => 'How much does the text cost from you?', 'farm' => true, 'a' => 'The two-line text KAVÁRNA u Jany costs 130 CZK (PLA, without delivery, calculation of 28 October 2026). The price grows with the number of letters, the height and the depth; you see it before you order anything, for several pieces too.'],
             ['q' => 'Which text and typeface suit it?', 'a' => 'A short word or a name in a bold sans serif stands most firmly; use scripts from 30 mm up. The tool ties accents with a short tie, and the symbols below the fields go in with one tap.'],
             ['q' => 'How long do printing and delivery take?', 'farm' => true, 'a' => 'HOME prints in 40 minutes, the two-line text in 1 h 53 min. We ship on the day the print finishes, on working days, and Packeta in Czechia usually delivers within 1 to 2 working days (to a pick-up point :cz_point).'],
             ['q' => 'Can the text be stuck to a wall?', 'a' => 'Yes. The text prints on its back, so the back face is flat and smooth; stick it to a wall or a door with double-sided tape. For hanging, the sign with an eyelet is the better choice, the text has none.'],
@@ -501,7 +501,7 @@ return [
     // filament art (docs/AP.md §12, batch D)
     'filament_art' => [
         'order' => [
-            ['q' => 'How much does the picture cost from you?', 'farm' => true, 'a' => 'The snowman of four plates in a round 120 mm frame costs 200 CZK, the gingerbread man as one print 120 mm wide 99 CZK (PLA, without delivery, calculation of 28 October 2026). The price grows with the width and the number of plates; you see it before you order anything.'],
+            ['q' => 'How much does the picture cost from you?', 'farm' => true, 'a' => 'The snowman of four plates in a round 120 mm frame costs 200 CZK (PLA, without delivery, calculation of 28 October 2026). The price grows with the width and the number of plates; you see it before you order anything.'],
             ['q' => 'Which picture should I upload?', 'a' => 'A drawing or a logo with a few solid colours, a PNG or JPG with a clear background, or an SVG. A photo the tool simplifies to its main colours in "painting" mode; a greyscale portrait is better off as a lithophane.'],
             ['q' => 'How long do printing and delivery take?', 'farm' => true, 'a' => 'The snowman prints in 2 h 46 min, the gingerbread man in 26 minutes. We ship on the day the print finishes, on working days, and Packeta in Czechia usually delivers within 1 to 2 working days (to a pick-up point :cz_point).'],
             ['q' => 'How do I print the picture at home?', 'a' => 'Flat, without supports, 0.2 mm layers, PLA. Every plate from its own spool; for one print the project holds filament changes at the heights of the colours, the printer stops and you swap the spool.'],
@@ -533,7 +533,7 @@ return [
     // custom cap, plug or cover (docs/AP.md §12, batch E)
     'cap' => [
         'order' => [
-            ['q' => 'How much does a cap cost from you?', 'farm' => true, 'a' => 'A cap for a PET bottle costs 99 CZK, the lowest order price, a push-on lid for a 70 mm jar 99 CZK (PLA, without delivery, calculation of 28 October 2026). Several pieces of the same cap go in as the quantity and the price per piece falls.'],
+            ['q' => 'How much does a cap cost from you?', 'farm' => true, 'a' => 'A cap for a PET bottle weighs 5.7 g and prints in 22 minutes, a push-on lid for a 70 mm jar weighs 17.8 g and prints in 39 minutes (PLA); you see the price in the calculation before you order anything. Several pieces of the same cap go in as the quantity and the price per piece falls.'],
             ['q' => 'What if I do not know the pitch of the thread?', 'a' => 'Measure the length of ten threads and divide it by ten, or try a preset: PET bottles have 2.7 mm, metric threads the pitch of the M6 to M30 series. For an unknown thread print one piece before ordering more.'],
             ['q' => 'How long do printing and delivery take?', 'farm' => true, 'a' => 'The PET bottle cap prints in 22 minutes, the jar lid in 39 minutes. We ship on the day the print finishes, on working days, and Packeta in Czechia usually delivers within 1 to 2 working days (to a pick-up point :cz_point).'],
             ['q' => 'What if the cap does not fit?', 'a' => 'Check that you entered the real size without clearance; the tool adds the clearance. If the part goes on stiffly, add 0.1 mm of clearance, if it is loose, take some off, and order the new piece from the same design.'],
@@ -549,7 +549,7 @@ return [
     // coaster with a picture (docs/AP.md §12, batch E)
     'coaster' => [
         'order' => [
-            ['q' => 'How much does a coaster cost from you?', 'farm' => true, 'a' => 'A round 100 mm coaster costs 99 CZK, the lowest order price, a set of four 170 CZK (PLA, without delivery, calculation of 28 October 2026). The price grows with the thickness and the number of pieces; you see it before you order anything.'],
+            ['q' => 'How much does a coaster cost from you?', 'farm' => true, 'a' => 'A set of four round 100 mm coasters costs 170 CZK (PLA, without delivery, calculation of 28 October 2026). The price grows with the thickness and the number of pieces; you see it before you order anything.'],
             ['q' => 'Which shape and size should I choose?', 'a' => 'For a glass or a mug a circle of 90 to 100 mm is enough, for a pint glass a square of 100 to 110 mm; hexagons fit side by side as a set. A thickness of 4 mm is plenty, 6 mm looks more solid.'],
             ['q' => 'How long do printing and delivery take?', 'farm' => true, 'a' => 'One coaster prints in 40 minutes, a set of four proportionally longer. We ship on the day the print finishes, on working days, and Packeta in Czechia usually delivers within 1 to 2 working days (to a pick-up point :cz_point).'],
             ['q' => 'How do I clean the coaster?', 'a' => 'Wipe it with a damp cloth or rinse it in lukewarm water; not in the dishwasher, PLA would warp at 60 °C. The colours are plastic, they neither wash off nor fade.'],
@@ -565,7 +565,7 @@ return [
     // fridge magnet (docs/AP.md §12, batch E)
     'magnet' => [
         'order' => [
-            ['q' => 'How much does a magnet cost from you?', 'farm' => true, 'a' => 'The 60 mm paw with a pocket for the magnet costs 99 CZK, the lowest order price (PLA, without delivery, calculation of 28 October 2026). Several pieces of the same design go in as the quantity and the price per piece falls; the magnet is not in the price.'],
+            ['q' => 'How much does a magnet cost from you?', 'farm' => true, 'a' => 'The 60 mm paw with a pocket for the magnet weighs 7 g and prints in 14 minutes (PLA); you see the price in the calculation before you order anything. Several pieces of the same design go in as the quantity and the price per piece falls; the magnet is not in the price.'],
             ['q' => 'Where do I buy the magnets?', 'a' => 'Neodymium disc magnets of Ø 10 × 2 or Ø 12 × 3 mm are sold by hardware stores and online shops in tens; one is enough for a piece up to 60 mm, for 100 mm pick a bigger one such as Ø 20 × 3 mm. Enter the size of the magnet you really have.'],
             ['q' => 'How long do printing and delivery take?', 'farm' => true, 'a' => 'A 60 mm magnet prints in 14 minutes. We ship on the day the print finishes, on working days, and Packeta in Czechia usually delivers within 1 to 2 working days (to a pick-up point :cz_point).'],
             ['q' => 'Will it hold paper on the fridge?', 'a' => 'A neodymium Ø 10 × 2 mm magnet in a 60 mm piece holds a few sheets of paper; for a thicker bundle choose Ø 12 × 3 or Ø 15 × 3 mm. On stainless doors without an iron layer a magnet does not hold, test them with an ordinary magnet.'],
@@ -581,7 +581,7 @@ return [
     // earrings from a picture (docs/AP.md §12, batch E)
     'earrings' => [
         'order' => [
-            ['q' => 'How much do earrings cost from you?', 'farm' => true, 'a' => 'A pair of 28 mm hearts costs 99 CZK, the lowest order price (PLA, without delivery, calculation of 28 October 2026). Several pairs of the same design go in as the quantity and the price per pair falls; hooks are not in the price.'],
+            ['q' => 'How much do earrings cost from you?', 'farm' => true, 'a' => 'A pair of 28 mm hearts weighs 2.2 g and prints in 6 minutes (PLA); you see the price in the calculation before you order anything. Several pairs of the same design go in as the quantity and the price per pair falls; hooks are not in the price.'],
             ['q' => 'Which hooks and rings should I buy?', 'a' => 'Fish hooks or studs of surgical steel and 4 to 5 mm jump rings from a craft shop. Open the ring sideways with two pliers, thread it through the eyelet and close it; set the eyelet to 2 mm.'],
             ['q' => 'How long do printing and delivery take?', 'farm' => true, 'a' => 'A pair of earrings prints in 6 minutes. We ship on the day the print finishes, on working days, and Packeta in Czechia usually delivers within 1 to 2 working days (to a pick-up point :cz_point).'],
             ['q' => 'Does the plastic touch the ear?', 'a' => 'No, only the hook or the stud is in the ear; the plastic part hangs below it. Choose hooks of surgical steel, titanium or silver. PLA contains no nickel.'],
@@ -597,7 +597,7 @@ return [
     // puzzle from a model (docs/AP.md §12, batch F)
     'puzzle' => [
         'order' => [
-            ['q' => 'How much does a puzzle cost from you?', 'farm' => true, 'a' => 'The 100 mm coaster cut into 3 × 4 pieces costs 99 CZK (PLA, without delivery, calculation of 28 October 2026). The tool is free, you pay only for the print; the price grows with the size of the model and the tray, not with the number of pieces.'],
+            ['q' => 'How much does a puzzle cost from you?', 'farm' => true, 'a' => 'The 100 mm coaster cut into 3 × 4 pieces weighs 22.6 g and prints in 1 h 3 min (PLA); you see the price in the calculation before you order anything. The tool is free, you pay only for the print; the price grows with the size of the model and the tray, not with the number of pieces.'],
             ['q' => 'Which model should I upload?', 'a' => 'A flat one: a relief or a lithophane from a photo, a logo, a coaster from our tools, up to 25 mm high and at least 80 mm wide so that the pieces reach 25 mm. Your own STL needs a flat bottom; a model from a calculation comes here with one click.'],
             ['q' => 'How long do printing and delivery take?', 'farm' => true, 'a' => 'The puzzle from the 100 mm coaster prints in 1 h 3 min, all pieces together. We ship on the day the print finishes, on working days, and Packeta in Czechia usually delivers within 1 to 2 working days (to a pick-up point :cz_point).'],
             ['q' => 'Can every piece have another colour?', 'a' => 'Yes, for a print from us you pick the colour of every piece when ordering, in one order; a puzzle from a coaster in colours keeps the colours of the picture and the pieces differ only by outline. At home print the pieces from two spools in turns.'],
@@ -613,7 +613,7 @@ return [
     // desk cable holder (docs/AP.md §12, batch F)
     'cable_holder' => [
         'order' => [
-            ['q' => 'How much does a holder cost from you?', 'farm' => true, 'a' => 'A holder for four 6 mm cables costs 99 CZK, the lowest order price (PLA, without delivery, calculation of 28 October 2026). Several holders of the same design go in as the quantity and the price per piece falls.'],
+            ['q' => 'How much does a holder cost from you?', 'farm' => true, 'a' => 'A holder for four 6 mm cables weighs 17.1 g and prints in 42 minutes (PLA); you see the price in the calculation before you order anything. Several holders of the same design go in as the quantity and the price per piece falls.'],
             ['q' => 'Which diameter do common cables have?', 'a' => 'A headphone cable 3 to 4 mm, USB‑C and Lightning 4 to 5 mm, a laptop power cable 5 to 6 mm, HDMI 6 to 7 mm, a monitor mains cable 7 to 8 mm. Measure yours with callipers or with a strip of paper wrapped round the cable.'],
             ['q' => 'How long do printing and delivery take?', 'farm' => true, 'a' => 'The holder for four cables prints in 42 minutes, the one for six cables with tabs in 56 minutes. We ship on the day the print finishes, on working days, and Packeta in Czechia usually delivers within 1 to 2 working days (to a pick-up point :cz_point).'],
             ['q' => 'Where should the holder go?', 'a' => 'On the back edge of the desk top, where the cables come from the socket, or under the top at the front edge, so that chargers hang within reach and out of sight. Put tape under the whole holder, not just a bit of it.'],
@@ -629,7 +629,7 @@ return [
     // charm from a picture (docs/AP.md §12, batch F)
     'charm' => [
         'order' => [
-            ['q' => 'How much does a charm cost from you?', 'farm' => true, 'a' => 'The 45 mm happy ghost costs 99 CZK, the lowest order price (PLA, without delivery, calculation of 28 October 2026). Several pieces of the same design go in as the quantity and the price per piece falls; the key ring is not in the price.'],
+            ['q' => 'How much does a charm cost from you?', 'farm' => true, 'a' => 'The 45 mm happy ghost weighs 3 g and prints in 7 minutes (PLA); you see the price in the calculation before you order anything. Several pieces of the same design go in as the quantity and the price per piece falls; the key ring is not in the price.'],
             ['q' => 'Which size and thickness should I choose?', 'a' => 'For keys 35 to 45 mm and 3 mm thick, for a backpack or a bag 50 to 60 mm, for a zip pull 20 to 25 mm and 2 mm. A gift tag can be 60 to 80 mm and 2 mm thick, nothing strains it.'],
             ['q' => 'How long do printing and delivery take?', 'farm' => true, 'a' => 'The 45 mm ghost prints in 7 minutes, the name Ela at 60 mm in 12 minutes. We ship on the day the print finishes, on working days, and Packeta in Czechia usually delivers within 1 to 2 working days (to a pick-up point :cz_point).'],
             ['q' => 'Which picture suits it?', 'a' => 'A drawing, a logo or a photo with a clear motif on a calm background; the tool removes the background and the charm follows the outline. Thin spikes under 0.8 mm would break, so the tool merges them or warns; put a portrait from a photo on a circle or a rectangle.'],

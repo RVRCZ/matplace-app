@@ -8,7 +8,7 @@ return [
     'h1' => 'How the holder is made, how big it comes out and what it costs',
     'intro' => [
         'A cable holder is a small block with slots that you stick with double-sided tape or screw onto the edge of a desk. The cable clicks into a slot from above and stays in place, even when unplugged from the device; the slit above the slot is slightly narrower than the cable, so it does not fall out, and the hole is 0.6 mm larger, so the cable slides freely. Enter 1 to 8 cables and a cable diameter of 3 to 14 mm; all slots of one holder have the same diameter. Set the depth from 10 to 80 mm, the wall between the slots and the rounding of the corners too; with "With screw tabs" it gets two tabs with holes at the sides. It suits chargers, monitor and headphone cables.',
-        'An example from the production calculator (28 October 2026, PLA): a holder for four 6 mm cables, 61 mm long and 45 mm deep, weighs 17.1 g, prints in 42 minutes and costs 99 CZK (about 4 EUR) from us, the lowest order price, without delivery (calculation /c/mjyodedmxzye); a holder for six thin 4 mm cables with screw tabs weighs 24.6 g and prints in 56 minutes (calculation /c/kop5zm2dhbtw). For every desk in the office enter the quantity and the price per piece falls. The model downloads free as an STL or a project for your printer; it prints without supports. Tape and screws are not part of the print.',
+        'An example from the production calculator (28 October 2026, PLA): a holder for four 6 mm cables, 61 mm long and 45 mm deep, weighs 17.1 g and prints in 42 minutes (calculation /c/mjyodedmxzye); a holder for six thin 4 mm cables with screw tabs weighs 24.6 g and prints in 56 minutes (calculation /c/kop5zm2dhbtw). For every desk in the office enter the quantity and the price per piece falls. The model downloads free as an STL or a project for your printer; it prints without supports. Tape and screws are not part of the print.',
     ],
     'steps' => [
         ['name' => 'Measure the cable diameter', 'text' => 'Measure the diameter of the cable, not of the plug. You can enter a diameter from 3 to 14 mm in half-millimetre steps.'],
@@ -25,7 +25,7 @@ return [
         ['q' => 'Which material, and how do I print it at home?', 'a' => 'PLA for the office and home, PETG where it is warm or the cables come in and out often and the slit has to spring. It prints slots up, without supports, 0.2 mm layers; the slicer project is ready.'],
     ],
     'examples' => [
-        'Holder for four cables 6 mm in diameter, 61 mm long, fixed with tape: 17.1 g, 42 minutes, 99 CZK.',
+        'Holder for four cables 6 mm in diameter, 61 mm long, fixed with tape: 17.1 g, 42 minutes.',
         'Holder for two thick cables 10 mm in diameter, 45 mm long.',
         'Holder for six thin 4 mm cables with screw tabs, 105 mm long: 24.6 g, 56 minutes.',
     ],

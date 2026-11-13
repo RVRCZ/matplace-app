@@ -8,7 +8,7 @@ return [
     'h1' => 'Jak vykrajovátko vzniká, z jakého tvaru, z čeho se tiskne a kolik stojí',
     'intro' => [
         'Nástroj vytvoří vykrajovátko na cukroví z textu nebo z obrázku. Napíšete jméno, písmeno či číslici ve dvou řádcích po 20 znacích v jednom ze třiceti písem, nebo nahrajete kresbu tvaru, stačí i obrys nakreslený tužkou a vyfocený. Vznikne tenká stěna podle obrysu s obrubou, za kterou se vykrajovátko přitlačí: šířka tvaru 30 až 150 mm, výška stěny 10 až 30 mm, stěna 0,8 až 1,6 mm, obruba 3 až 10 mm, řezná hrana zúžená nebo rovná. Když nahraný obrázek obsahuje čáry uvnitř obrysu, například žilky listu nebo oči a úsměv, vznikne z nich samostatné razítko, které po vykrojení otisknete do těsta. Obrys je zrcadlený, takže po otočení obrubou nahoru vykrajuje tvar ve správném směru; uzavřený vnitřek písmene, třeba u O, dostane vlastní stěnu spojenou plochými příčkami.',
-        'Příklad z kalkulace na produkci (18. 10. 2026, PLA+): vykrajovátko jména Ela psacím písmem, 82 × 54 mm včetně obruby a 18 mm vysoké, má 13 g, tiskne se 31 minut a stojí u nás 99 Kč, což je nejnižší cena zakázky; vykrajovátko číslice 5 na narozeninové cukroví, 72 × 93 mm, má 12 g, tiskne se 25 minut a stojí také 99 Kč. Tiskne se obrubou dolů, bez podpěr, z PLA nebo pevnějšího PETG; myje se ručně ve vlažné vodě, do myčky nepatří. Model si stáhnete zdarma jako STL nebo projekt pro svou tiskárnu, nebo ho necháte vytisknout u nás.',
+        'Příklad z kalkulace na produkci (18. 10. 2026, PLA+): vykrajovátko jména Ela psacím písmem, 82 × 54 mm včetně obruby a 18 mm vysoké, má 13 g a tiskne se 31 minut; vykrajovátko číslice 5 na narozeninové cukroví, 72 × 93 mm, má 12 g a tiskne se 25 minut. Tiskne se obrubou dolů, bez podpěr, z PLA nebo pevnějšího PETG; myje se ručně ve vlažné vodě, do myčky nepatří. Model si stáhnete zdarma jako STL nebo projekt pro svou tiskárnu, nebo ho necháte vytisknout u nás.',
     ],
     'steps' => [
         ['name' => 'Napište text nebo nahrajte tvar', 'text' => 'Text může mít dva řádky po 20 znacích a vyberete k němu jedno ze třiceti písem. Místo textu můžete nahrát SVG nebo obrázek tvaru.'],
@@ -25,8 +25,8 @@ return [
         ['q' => 'Jak jemný může tvar být?', 'a' => 'Výběžky užší než dvojnásobek tloušťky stěny nástroj z tvaru vypustí, protože by se v nich těsto zasekávalo. Drobný text proto zvětšete, nebo zvolte kratší nápis a tučnější písmo.'],
     ],
     'examples' => [
-        'Vykrajovátko jména Ela psacím písmem, 82 × 54 mm včetně obruby, výška 18 mm: 13 g, 31 minut, 99 Kč.',
-        'Vykrajovátko číslice 5 na narozeninové cukroví, 72 × 93 mm, zúžená řezná hrana: 12 g, 25 minut, 99 Kč.',
+        'Vykrajovátko jména Ela psacím písmem, 82 × 54 mm včetně obruby, výška 18 mm: 13 g, 31 minut.',
+        'Vykrajovátko číslice 5 na narozeninové cukroví, 72 × 93 mm, zúžená řezná hrana: 12 g, 25 minut.',
         'Vykrajovátko písmen MAMA patkovým písmem, 98 × 30 mm, rovná pevnější hrana.',
     ],
 ];

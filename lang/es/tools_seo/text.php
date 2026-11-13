@@ -8,7 +8,7 @@ return [
     'h1' => 'Cómo nace el texto, qué tamaño tiene y cuánto cuesta',
     'intro' => [
         'La herramienta convierte un texto en un rótulo que se sostiene solo en una estantería, una mesa o un escaparate. Escriba de una a tres líneas de hasta 40 caracteres, elija una de treinta tipografías y la altura de las mayúsculas, de 4 a 80 mm. Las letras tienen de 1,2 a 30 mm de grosor y se apoyan en una base común, así que incluso una tipografía cuyas letras no se tocan queda unida; las líneas superpuestas las une un travesaño. Añada una silueta de la biblioteca o su propio SVG, junto a las letras o encima. El texto se imprime tumbado sobre la espalda y sin soportes, por lo que el frente queda plano y liso. Si es demasiado fino para su altura y podría volcar, la herramienta lo avisa en la vista previa.',
-        'Un ejemplo de la calculadora en producción (28 de octubre de 2026, PLA): la palabra HOME en Archivo Black, con letras de 30 mm de alto y 12 mm de grosor, mide 144 × 34 mm, pesa 21,1 g, se imprime en 40 minutos y cuesta 99 CZK (unos 4 EUR) con nosotros, sin envío (cálculo /c/bkdbbtgjavzn). El texto de dos líneas KAVÁRNA u Jany en Bebas Neue, de 20 mm de grosor, pesa 55,7 g, se imprime en 1 h 53 min y cuesta 130 CZK (cálculo /c/qxcoca4ayqkb). Ve el precio antes de encargar nada, también para varias unidades. El modelo se descarga gratis como STL o proyecto para su impresora, sin registro.',
+        'Un ejemplo de la calculadora en producción (28 de octubre de 2026, PLA): la palabra HOME en Archivo Black, con letras de 30 mm de alto y 12 mm de grosor, mide 144 × 34 mm, pesa 21,1 g y se imprime en 40 minutos (cálculo /c/bkdbbtgjavzn). El texto de dos líneas KAVÁRNA u Jany en Bebas Neue, de 20 mm de grosor, pesa 55,7 g, se imprime en 1 h 53 min y cuesta 130 CZK (cálculo /c/qxcoca4ayqkb). Ve el precio antes de encargar nada, también para varias unidades. El modelo se descarga gratis como STL o proyecto para su impresora, sin registro.',
     ],
     'steps' => [
         ['name' => 'Escriba el texto', 'text' => 'De una a tres líneas; la primera es la mayor. Los símbolos bajo los campos entran en el texto con un toque; añada una imagen de la biblioteca o suba un SVG.'],
@@ -25,7 +25,7 @@ return [
         ['q' => '¿Cómo imprimo el texto en casa?', 'a' => 'Sobre la espalda, con el frente hacia abajo, sin soportes, capas de 0,2 mm, PLA o PETG. El proyecto descargado para OrcaSlicer y PrusaSlicer ya tiene el texto tumbado; desde el STL, túmbelo usted sobre el frente. La parte inferior de la base queda lisa al despegarla de la cama.'],
     ],
     'examples' => [
-        'La palabra HOME en Archivo Black, 144 × 34 mm, 12 mm de fondo: 21,1 g, 40 minutos, 99 CZK.',
+        'La palabra HOME en Archivo Black, 144 × 34 mm, 12 mm de fondo: 21,1 g, 40 minutos.',
         'El nombre Ela en caligráfica con un corazón en la misma base, 143 × 48 mm, 15 mm de fondo.',
         'Dos líneas, KAVÁRNA u Jany, en Bebas Neue, 20 mm de fondo: 55,7 g, 1 h 53 min, 130 CZK.',
     ],

@@ -1,12 +1,12 @@
 <?php
 
 return [
-    'title' => 'Busta nebo figurka z fotky: 3D tisk na zakázku od 99 Kč',
+    'title' => 'Busta nebo figurka z fotky: 3D tisk na zakázku',
     'description' => 'Nahrajete fotku zepředu a asi za minutu máte 3D model busty nebo figurky. Zvolíte výšku a podstavec, tisk objednáte u nás nebo si model stáhnete.',
     'h1' => 'Z fotky 3D model busty nebo figurky',
     'intro' => [
         'Nástroj vytvoří z fotky 3D model: bustu s hlavou a rameny, nebo figurku celé postavy či předmětu. Hodí se na portrét, mazlíčka nebo oblíbenou hračku. Stačí jedna fotka zepředu. S fotkami zleva, zezadu a zprava model lépe vystihne podobu i účes. Výsledný tvar je umělecký dojem, ne přesná kopie.',
-        'Model vznikne asi za minutu a otevře se v kalkulaci, kde vidíte cenu tisku a můžete změnit velikost i podstavec. Příklad z kalkulace (18. 10. 2026, PLA+): busta vysoká 80 mm má 14 g, tiskne se necelou hodinu a stojí 99 Kč, což je nejnižší cena zakázky; 120 mm vyjde na 130 Kč a 150 mm na 200 Kč. Tisk objednáte u nás, nebo si model zdarma stáhnete pro svou tiskárnu. Zdarma vytvoříte jeden model denně bez účtu a tři s účtem. Fotku mažeme hned po vytvoření modelu.',
+        'Model vznikne asi za minutu a otevře se v kalkulaci, kde vidíte cenu tisku a můžete změnit velikost i podstavec. Tisk objednáte u nás, nebo si model zdarma stáhnete pro svou tiskárnu. Zdarma vytvoříte jeden model denně bez účtu a tři s účtem. Fotku mažeme hned po vytvoření modelu.',
     ],
     'steps' => [
         ['name' => 'Vyberte bustu nebo figurku', 'text' => 'Busta zachytí hlavu a ramena, figurka celou postavu nebo předmět.'],

@@ -8,7 +8,7 @@ return [
     'h1' => 'Jak chybějící víčko vzniká, co pasuje a kolik stojí',
     'intro' => [
         'Nástroj vytvoří chybějící víčko, zátku nebo krytku podle toho, co naměříte. Díl se buď nasadí na hrdlo, zasune do otvoru, nebo našroubuje na závit; tvar je kulatý, obdélníkový nebo šestihranný, průměr či šířka od 5 do 200 mm, výška 4 až 60 mm. U závitu vyberete PET lahev 28 mm, metrický závit hrubé řady M6 až M30, nebo zadáte vlastní průměr a stoupání 0,5 až 6 mm; vzniká vždy víčko nebo matice na vnější závit, šroub nástroj nevyrobí. Vůli přidá nástroj sám, zadáváte skutečný rozměr. Na tekutiny přidáte těsnicí kroužek do hrdla nebo lůžko pro vložku, po obvodu vroubkování, nahoře zaoblenou hranu. Náhled ukazuje díl zvenku i v řezu a píše, na jaký rozměr pasuje.',
-        'Příklad z kalkulace na produkci (28. 10. 2026, PLA): šroubovací víčko na PET lahev 28 mm s těsnicím kroužkem, závit vysoký 12 mm, má 5,7 g, tiskne se 22 minut a stojí u nás 99 Kč, což je nejnižší cena zakázky, bez dopravy (kalkulace /c/5omcbkke1541). Krytka do obdélníkového profilu 36 × 16 mm, zasunutá 15 mm, má 4,7 g a tiskne se 15 minut (kalkulace /c/ldniassche8t); nasazovací víčko na sklenici s hrdlem 70 mm má 17,8 g, tiskne se 39 minut a stojí 99 Kč (kalkulace /c/hgabcfckkauy). Na víc kusů klesne cena za kus, příprava se platí jednou. Model si stáhnete zdarma jako STL nebo projekt pro svou tiskárnu; tiskne se bez podpěr.',
+        'Příklad z kalkulace na produkci (28. 10. 2026, PLA): šroubovací víčko na PET lahev 28 mm s těsnicím kroužkem, závit vysoký 12 mm, má 5,7 g a tiskne se 22 minut (kalkulace /c/5omcbkke1541). Krytka do obdélníkového profilu 36 × 16 mm, zasunutá 15 mm, má 4,7 g a tiskne se 15 minut (kalkulace /c/ldniassche8t); nasazovací víčko na sklenici s hrdlem 70 mm má 17,8 g a tiskne se 39 minut (kalkulace /c/hgabcfckkauy). Na víc kusů klesne cena za kus, příprava se platí jednou. Model si stáhnete zdarma jako STL nebo projekt pro svou tiskárnu; tiskne se bez podpěr.',
     ],
     'steps' => [
         ['name' => 'Vyberte, jak má držet', 'text' => 'Nasazení na hrdlo, zasunutí do otvoru, nebo našroubování na závit. Můžete začít od předvolby, například „PET lahev (28 mm)“, „Zátka do trubky“ nebo „Krytka profilu“.'],
@@ -25,8 +25,8 @@ return [
         ['q' => 'Z jakého materiálu díl tisknout a jak doma?', 'a' => 'Zátky a víčka, která mají pružit nebo se často šroubují, z PETG; na krytky bez namáhání stačí PLA. Tiskne se vrškem dolů, bez podpěr, vrstva 0,2 mm; závit vyjde čistěji s vrstvou 0,12 mm. Když víčko jde ztuha, zvětšete vůli o 0,1 mm.'],
     ],
     'examples' => [
-        'Šroubovací víčko na PET lahev 28 mm s těsnicím kroužkem, závit vysoký 12 mm: 5,7 g, 22 minut, 99 Kč.',
+        'Šroubovací víčko na PET lahev 28 mm s těsnicím kroužkem, závit vysoký 12 mm: 5,7 g, 22 minut.',
         'Krytka do obdélníkového profilu s otvorem 36 × 16 mm, zasune se 15 mm: 4,7 g, 15 minut.',
-        'Nasazovací víčko na sklenici s hrdlem o průměru 70 mm, hluboké 14 mm: 17,8 g, 39 minut, 99 Kč.',
+        'Nasazovací víčko na sklenici s hrdlem o průměru 70 mm, hluboké 14 mm: 17,8 g, 39 minut.',
     ],
 ];

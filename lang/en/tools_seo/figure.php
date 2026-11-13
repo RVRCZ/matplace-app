@@ -6,7 +6,7 @@ return [
     'h1' => 'A 3D model of a bust or figure from your photo',
     'intro' => [
         'The tool turns a photo into a 3D model: a bust with head and shoulders, or a figure of a whole body or an object. It suits a portrait, a pet or a favourite toy. One photo from the front is enough. Photos from the left, the back and the right make the likeness and the hair closer. The shape is an artistic impression, not an exact copy.',
-        'The model takes about a minute and opens in the calculator, where you see the print price and can change the size and the base. An example from our calculator (18 Oct 2026, PLA+): a bust 80 mm tall weighs 14 g, prints in just under an hour and costs 99 CZK, the lowest price of an order; 120 mm comes to 130 CZK and 150 mm to 200 CZK. You order the print from us or download the model for your own printer for free. One model a day is free without an account, three with an account. We delete the photo as soon as the model is created.',
+        'The model takes about a minute and opens in the calculator, where you see the print price and can change the size and the base. You order the print from us or download the model for your own printer for free. One model a day is free without an account, three with an account. We delete the photo as soon as the model is created.',
     ],
     'steps' => [
         ['name' => 'Choose bust or figure', 'text' => 'A bust shows the head and shoulders, a figure the whole body or an object.'],

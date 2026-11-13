@@ -8,7 +8,7 @@ return [
     'h1' => 'Cómo nace el colgante, dónde va el ojal y cuánto cuesta',
     'intro' => [
         'La herramienta convierte una imagen o un nombre en un colgante para llaves, bolso, mochila, tirador de cremallera o etiqueta de regalo. Suba un PNG, JPG, WebP o SVG, elija un motivo de la biblioteca o escriba un nombre con una de treinta tipografías; los trozos sueltos de una tipografía se unen con un puente para que el colgante quede entero. El fondo desaparece solo y la imagen se reduce a 1 a 8 colores de filamentos que tenemos en la granja. El colgante sigue el contorno de la imagen, o es un círculo o un rectángulo, de 20 a 120 mm de ancho y de 2 a 6 mm de grosor, con un marco de hasta 3 mm alrededor de la imagen. El ojal se mueve por el contorno con un deslizador o arrastrándolo en la vista previa, con un agujero de 2 a 6 mm y una pared de 1,5 a 3 mm. Los colores van uno sobre otro, cada uno 0,6 mm más alto si no lo cambia.',
-        'Un ejemplo de la calculadora en producción (28 de octubre de 2026, PLA): el fantasma alegre de la biblioteca, de 45 mm de ancho y 3 mm de grosor, pesa 3 g, se imprime en 7 minutos y cuesta 99 CZK (unos 4 EUR) con nosotros, el pedido mínimo, sin envío (cálculo /c/mca5ddgfzctt); el nombre Ela en caligráfica, de 60 mm de ancho, pesa 3,7 g y se imprime en 12 minutos (cálculo /c/gmfsgcpwmjl8). Varias unidades del mismo diseño se indican como cantidad y el precio por pieza baja; colgantes con nombres distintos son diseños distintos. Nuestra granja imprime hasta cuatro colores en una impresión, la base y tres más; confirma la bobina de cada color al encargar. El STL, un ZIP con un STL por color y el proyecto para el slicer se descargan gratis, sin registro.',
+        'Un ejemplo de la calculadora en producción (28 de octubre de 2026, PLA): el fantasma alegre de la biblioteca, de 45 mm de ancho y 3 mm de grosor, pesa 3 g y se imprime en 7 minutos (cálculo /c/mca5ddgfzctt); el nombre Ela en caligráfica, de 60 mm de ancho, pesa 3,7 g y se imprime en 12 minutos (cálculo /c/gmfsgcpwmjl8). Varias unidades del mismo diseño se indican como cantidad y el precio por pieza baja; colgantes con nombres distintos son diseños distintos. Nuestra granja imprime hasta cuatro colores en una impresión, la base y tres más; confirma la bobina de cada color al encargar. El STL, un ZIP con un STL por color y el proyecto para el slicer se descargan gratis, sin registro.',
     ],
     'steps' => [
         ['name' => 'Suba una imagen o escriba un nombre', 'text' => 'Suba una imagen, elija una de la biblioteca o reutilice una subida antes. En lugar de una imagen puede escribir un nombre o un texto corto en una o dos líneas.'],
@@ -25,7 +25,7 @@ return [
         ['q' => '¿De qué se imprime el colgante y aguanta en las llaves?', 'a' => 'Recomendamos PLA; se imprime plano, con la cara hacia arriba y sin soportes. Un grosor de 3 mm y una pared de ojal de 2 mm aguantan las llaves en el bolsillo, y la herramienta avisa de motivos finos por debajo de 0,8 mm. Para un colgante que se calentará, por ejemplo en un coche al sol, es mejor el PETG.'],
     ],
     'examples' => [
-        'Fantasma alegre de 45 mm de ancho, blanco con ojos oscuros y mejillas rosas: 3 g, 7 minutos, 99 CZK.',
+        'Fantasma alegre de 45 mm de ancho, blanco con ojos oscuros y mejillas rosas: 3 g, 7 minutos.',
         'Estrella amarilla sonriente de 50 mm de ancho, el ojal en una punta.',
         'El nombre Ela en letra manuscrita, 60 mm de ancho, letras unidas en una pieza: 3,7 g, 12 minutos.',
     ],

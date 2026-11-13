@@ -8,7 +8,7 @@ return [
     'h1' => 'Cómo nace el soporte, qué tamaño tiene y cuánto cuesta',
     'intro' => [
         'Un sujetacables es un bloque pequeño con ranuras que se pega con cinta de doble cara o se atornilla al borde de la mesa. El cable encaja en la ranura por arriba y se queda en su sitio aunque lo desconecte del aparato; la rendija sobre la ranura es algo más estrecha que el cable, por eso no se sale, y el agujero es 0,6 mm mayor para que el cable deslice. Indique de 1 a 8 cables y un diámetro de 3 a 14 mm; todas las ranuras de un soporte tienen el mismo diámetro. El fondo se ajusta de 10 a 80 mm, también la pared entre ranuras y el redondeo de las esquinas; con «Con pestañas para tornillos» recibe dos pestañas con agujeros a los lados. Sirve para cargadores, cables de monitor o de auriculares.',
-        'Un ejemplo de la calculadora en producción (28 de octubre de 2026, PLA): un soporte para cuatro cables de 6 mm, de 61 mm de largo y 45 mm de fondo, pesa 17,1 g, se imprime en 42 minutos y cuesta 99 CZK (unos 4 EUR) con nosotros, el pedido mínimo, sin envío (cálculo /c/mjyodedmxzye); un soporte para seis cables finos de 4 mm con pestañas para tornillos pesa 24,6 g y se imprime en 56 minutos (cálculo /c/kop5zm2dhbtw). Para cada mesa de la oficina indique la cantidad y el precio por pieza baja. El modelo se descarga gratis como STL o proyecto para su impresora; se imprime sin soportes. La cinta y los tornillos no forman parte de la impresión.',
+        'Un ejemplo de la calculadora en producción (28 de octubre de 2026, PLA): un soporte para cuatro cables de 6 mm, de 61 mm de largo y 45 mm de fondo, pesa 17,1 g y se imprime en 42 minutos (cálculo /c/mjyodedmxzye); un soporte para seis cables finos de 4 mm con pestañas para tornillos pesa 24,6 g y se imprime en 56 minutos (cálculo /c/kop5zm2dhbtw). Para cada mesa de la oficina indique la cantidad y el precio por pieza baja. El modelo se descarga gratis como STL o proyecto para su impresora; se imprime sin soportes. La cinta y los tornillos no forman parte de la impresión.',
     ],
     'steps' => [
         ['name' => 'Mida el diámetro del cable', 'text' => 'Mida el diámetro del cable, no del conector. Se puede indicar un diámetro de 3 a 14 mm en pasos de medio milímetro.'],
@@ -25,7 +25,7 @@ return [
         ['q' => '¿De qué material y cómo lo imprimo en casa?', 'a' => 'PLA para la oficina y la casa; PETG donde hace calor o los cables entran y salen a menudo y la rendija debe flexar. Se imprime con las ranuras hacia arriba, sin soportes, capas de 0,2 mm; el proyecto para el slicer está listo.'],
     ],
     'examples' => [
-        'Soporte para cuatro cables de 6 mm de diámetro, 61 mm de largo, pegado con cinta: 17,1 g, 42 minutos, 99 CZK.',
+        'Soporte para cuatro cables de 6 mm de diámetro, 61 mm de largo, pegado con cinta: 17,1 g, 42 minutos.',
         'Soporte para dos cables gruesos de 10 mm de diámetro, 45 mm de largo.',
         'Soporte para seis cables finos de 4 mm con pestañas para tornillos, 105 mm de largo: 24,6 g, 56 minutos.',
     ],

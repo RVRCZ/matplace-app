@@ -2,13 +2,13 @@
 
 // Stránka pro dotaz „klíčenka se jménem 3d tisk“ (docs/AP.md §9). 'heading' = H1 stránky, 'h1' = nadpis obsahu pod nástrojem.
 return [
-    'title' => 'Klíčenka se jménem z 3D tiskárny: návrh zdarma, od 99 Kč',
+    'title' => 'Klíčenka se jménem z 3D tiskárny: návrh zdarma, tisk u nás',
     'heading' => 'Klíčenka se jménem na 3D tisk',
-    'description' => 'Poskládáte tvar, jméno a obrázek, každou vrstvu svou barvou, a přidáte očko na kroužek. Model stáhnete zdarma, nebo ji vytiskneme od 99 Kč.',
+    'description' => 'Poskládáte tvar, jméno a obrázek, každou vrstvu svou barvou, a přidáte očko na kroužek. Model stáhnete zdarma, nebo ji vytiskneme.',
     'h1' => 'Jak klíčenku poskládat z vrstev, jaký otvor na kroužek a kolik stojí',
     'intro' => [
         'Klíčenku si tu poskládáte z vrstev. Dole leží tvar (kost, srdce, kruh, štítek, zaoblený obdélník a další), na něm jméno v jednom ze třiceti písem a třeba obrázek z knihovny siluet nebo váš vlastní. Každá vrstva má svou barvu z filamentů, které máme na farmě, a leží o krok výš než ta pod ní; vrstev může být až dvanáct. Vrstvu vyberete klepnutím v náhledu, tažením ji posunete, rohem rámečku zvětšíte a kolečkem otočíte. Nahoře je očko s otvorem 2 až 8 mm. Barvy leží nad sebou, takže tiskárně stačí ve správné výšce vyměnit filament; na naší farmě vytiskneme až čtyři barvy v jednom tisku. Klíčenku z barevného obrázku, třeba z loga, dělá rychlý formulář, na který stránka odkazuje.',
-        'Příklad z kalkulace na produkci (28. 10. 2026, PLA): kost široká 70 mm se jménem Rex ve dvou barvách má 3,8 g a tiskne se 10 minut. Jedna stojí 99 Kč, což je nejnižší cena zakázky; deset stejných stojí 100 Kč, tedy 10 Kč za kus, protože příprava zakázky se platí jednou (kalkulace /c/fwgocmbyzfx6 a /c/teyrxpsrhi4k). Pro další jména uděláte další návrh: rozložení zůstane, přepíšete jen jméno. Kroužek není součástí výtisku. Model i projekt pro slicer s výměnami filamentu stáhnete zdarma a bez registrace.',
+        'Příklad z kalkulace na produkci (28. 10. 2026, PLA): kost široká 70 mm se jménem Rex ve dvou barvách má 3,8 g a tiskne se 10 minut. Deset stejných stojí 100 Kč, tedy 10 Kč za kus, protože příprava zakázky se platí jednou (kalkulace /c/fwgocmbyzfx6 a /c/teyrxpsrhi4k). Pro další jména uděláte další návrh: rozložení zůstane, přepíšete jen jméno. Kroužek není součástí výtisku. Model i projekt pro slicer s výměnami filamentu stáhnete zdarma a bez registrace.',
     ],
     'steps' => [
         ['name' => 'Začněte od klíčenky', 'text' => 'Stránka se otevře s kostí a jménem Rex. Přepište jméno, změňte tvar, nebo vyberte jinou předvolbu, třeba srdce se jménem.'],
@@ -25,7 +25,7 @@ return [
         ['q' => 'Co když prvky leží vedle sebe a nedotýkají se?', 'a' => 'Nástroj je ve spodní vrstvě spojí krátkým můstkem a upozorní na to, takže klíčenka drží pohromadě.'],
     ],
     'examples' => [
-        'Kost 70 × 32 mm se jménem Rex a očkem na kroužek, dvě barvy: 3,8 g, 10 minut, 99 Kč.',
+        'Kost 70 × 32 mm se jménem Rex a očkem na kroužek, dvě barvy: 3,8 g, 10 minut.',
         'Srdce 60 mm se jménem Ema v písmu Lobster, očko nahoře.',
         'Kulatá klíčenka 45 mm s tlapkou, černá a žlutá.',
     ],

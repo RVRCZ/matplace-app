@@ -8,7 +8,7 @@ return [
     'h1' => 'Two ways to make the picture, and what it costs',
     'intro' => [
         'The tool reduces a picture or a photo to 1 to 8 colours of filaments we really have in stock on our print farm and builds a picture for the wall of them, 50 to 250 mm wide. By default it is a layered picture: every colour is a plate of its own, 1.5 to 3 mm thick, and the plates stack one behind another like a paper cut; the back one carries the whole silhouette, the front one only its colour. Spacer posts of 2 to 5 mm between the plates give the picture depth and shadow; for a thin picture the plates lie flat. Add a round or square frame with a slot for a nail and, if you like, room for an LED strip. The second way is one print: a base plate with the colours 0.4 mm one above another, one filament per layer, so any printer prints it by swapping the filament at the heights the project names. The background of a photo goes by itself; for a photo over the whole area you switch that off. For every colour you see the spool the tool chose and can swap it for another from the catalogue, reorder the colours or merge two.',
-        'An example from the production calculator (28 October 2026, PLA): the snowman from the library as a layered picture of four plates in a round 120 mm frame weighs 105.6 g, prints in 2 h 46 min and costs 200 CZK (about 8 EUR) from us without delivery (calculation /c/tmwh0ok9ixpv); you pick the colour of every plate and of the frame when ordering, in one order. The gingerbread man as one print 120 mm wide, a base and three colours stacked, weighs 15.9 g, prints in 26 minutes and costs 99 CZK (calculation /c/etcdmot38mpy). Next to the preview is the guide: the plates in order from the back to the front, each one drawn. Download every plate as its own STL, or the whole design as a project for your slicer, free and without registration.',
+        'An example from the production calculator (28 October 2026, PLA): the snowman from the library as a layered picture of four plates in a round 120 mm frame weighs 105.6 g, prints in 2 h 46 min and costs 200 CZK (about 8 EUR) from us without delivery (calculation /c/tmwh0ok9ixpv); you pick the colour of every plate and of the frame when ordering, in one order. The gingerbread man as one print 120 mm wide, a base and three colours stacked, weighs 15.9 g and prints in 26 minutes (calculation /c/etcdmot38mpy). Next to the preview is the guide: the plates in order from the back to the front, each one drawn. Download every plate as its own STL, or the whole design as a project for your slicer, free and without registration.',
     ],
     'steps' => [
         ['name' => 'Upload a picture', 'text' => 'Upload a picture, pick one from the library, or reuse one you uploaded earlier. The background goes by itself; for a photo that is to fill the whole area, switch the removal off.'],
@@ -26,7 +26,7 @@ return [
     ],
     'examples' => [
         'A snowman as a layered picture of four plates in a round 120 mm frame: 105.6 g, 2 h 46 min, 200 CZK.',
-        'A smaller picture of 100 mm from three plates without a frame, flat: 25 g, 46 minutes, 99 CZK, the lowest order price.',
-        'A gingerbread man as one print 120 mm wide: a base and three colours 0.4 mm one above another, 15.9 g, 26 minutes, 99 CZK.',
+        'A smaller picture of 100 mm from three plates without a frame, flat: 25 g, 46 minutes.',
+        'A gingerbread man as one print 120 mm wide: a base and three colours 0.4 mm one above another, 15.9 g, 26 minutes.',
     ],
 ];

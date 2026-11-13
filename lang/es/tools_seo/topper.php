@@ -8,7 +8,7 @@ return [
     'h1' => 'Cómo nace el topper, qué tamaño debe tener y cuánto cuesta',
     'intro' => [
         'La herramienta crea un topper de tarta: un número grande, un corazón, una estrella o un círculo con el nombre encima en otra tipografía y otro color, o solo el texto sin forma. Basta escribir un nombre de hasta 20 caracteres y un número de hasta tres cifras, por ejemplo «2» y «Olivia». El ancho de la forma se ajusta de 50 a 200 mm; el nombre puede sobresalir de la forma y se mueve arriba o abajo, en treinta tipografías. Abajo el topper tiene una o dos púas de 30 a 100 mm. Todo es una sola pieza plana de 2 a 4 mm de grosor; las letras que sobresaldrían o no se tocarían las respalda una copia ensanchada en el color de la forma y las une un puente. El nombre sobresale de 0,4 a 1,2 mm y se imprime en el segundo color, así que basta un cambio de filamento; en nuestra granja el topper se imprime de una vez y los dos colores se eligen al hacer el pedido.',
-        'Un ejemplo de la calculadora en producción (27 de octubre de 2026, PLA): un número 2 de 110 mm de ancho con el nombre Olivia en tipografía manuscrita y dos púas de 60 mm pesa 30 g, se imprime en 55 minutos y cuesta 99 CZK (unos 4 EUR) con nosotros, que es el pedido mínimo (cálculo /c/4jdvyezywc3l, un color; el segundo se elige al hacer el pedido). Se imprime en plano sin soportes; con 3 mm de grosor es ligero y no se dobla. El plástico impreso no está pensado para el contacto con alimentos, así que envuelva las púas en film o métalas en una pajita. El modelo y el proyecto con el cambio de filamento se descargan gratis y sin registro; para una fiesta encargue con tiempo, el cálculo muestra el tiempo de impresión y entrega.',
+        'Un ejemplo de la calculadora en producción (27 de octubre de 2026, PLA): un número 2 de 110 mm de ancho con el nombre Olivia en tipografía manuscrita y dos púas de 60 mm pesa 30 g y se imprime en 55 minutos (cálculo /c/4jdvyezywc3l, un color; el segundo se elige al hacer el pedido). Se imprime en plano sin soportes; con 3 mm de grosor es ligero y no se dobla. El plástico impreso no está pensado para el contacto con alimentos, así que envuelva las púas en film o métalas en una pajita. El modelo y el proyecto con el cambio de filamento se descargan gratis y sin registro; para una fiesta encargue con tiempo, el cálculo muestra el tiempo de impresión y entrega.',
     ],
     'steps' => [
         ['name' => 'Escriba el nombre y el número', 'text' => 'Un nombre o un texto corto y un número, por ejemplo la edad del homenajeado. Para el corazón, la estrella y el círculo no hace falta número.'],
@@ -25,7 +25,7 @@ return [
         ['q' => '¿Y si las letras no tocan la forma?', 'a' => 'Bajo el nombre queda su copia ensanchada en el color de la forma, así que aguantan incluso las letras que sobresalen. Las piezas sueltas se unen con un puente corto y la herramienta lo avisa.'],
     ],
     'examples' => [
-        'Topper con el número 2 de 110 mm de ancho y el nombre Olivia en tipografía manuscrita, dos púas de 60 mm: 30 g, 55 minutos, 99 CZK.',
+        'Topper con el número 2 de 110 mm de ancho y el nombre Olivia en tipografía manuscrita, dos púas de 60 mm: 30 g, 55 minutos.',
         'Corazón de 120 mm con el texto Ela a Tom para una tarta de boda.',
         'Texto Všechno nejlepší de 180 mm de ancho sin forma, púas de 80 mm.',
     ],

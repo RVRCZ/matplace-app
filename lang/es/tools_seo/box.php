@@ -8,7 +8,7 @@ return [
     'h1' => 'Qué hace la caja a medida, cómo encaja la tapa y cuánto cuesta imprimirla',
     'intro' => [
         'La herramienta crea una caja a partir de las medidas interiores, es decir, de lo que debe caber dentro: ancho y fondo de 10 a 300 mm, alto de 8 a 200 mm, paredes de 1,2 a 5 mm. Calcula sola las medidas exteriores y las muestra bajo la vista previa. Puede añadir una tapa encajable con reborde (0,25 mm de holgura, ajustable), hasta ocho agujeros redondos o rectangulares en la pared delantera, trasera, izquierda o derecha, esquinas redondeadas y una ranura para cable desde el borde superior de 3 a 30 mm de ancho. La caja y la tapa se imprimen una junto a otra sin soportes. Sirve para electrónica, piezas pequeñas, tarjetas SD y como envoltorio de regalo.',
-        'Un ejemplo de la calculadora en producción (18 de octubre de 2026, PLA+): una caja con tapa encajable, de 80 × 50 × 30 mm por dentro (84 × 54 × 32 mm por fuera), pesa 28 g, se imprime en 34 minutos y cuesta 99 CZK (unos 4 EUR) con nosotros, que es el pedido mínimo (cálculo /c/nku29wz4vieb); con tapa y ranura para cable pesa 41 g, se imprime en 51 minutos y cuesta 110 CZK, ambas sin envío. En 90 días pasaron por la calculadora 13 cajas. Para un cajón basta el PLA; para el baño o junto al horno elija PETG. El modelo se descarga gratis como STL o proyecto para su impresora; la caja y la tapa, también como piezas separadas.',
+        'Un ejemplo de la calculadora en producción (18 de octubre de 2026, PLA+): una caja con tapa encajable, de 80 × 50 × 30 mm por dentro (84 × 54 × 32 mm por fuera), pesa 28 g y se imprime en 34 minutos (cálculo /c/nku29wz4vieb); con tapa y ranura para cable pesa 41 g, se imprime en 51 minutos y cuesta 110 CZK, ambas sin envío. En 90 días pasaron por la calculadora 13 cajas. Para un cajón basta el PLA; para el baño o junto al horno elija PETG. El modelo se descarga gratis como STL o proyecto para su impresora; la caja y la tapa, también como piezas separadas.',
     ],
     'steps' => [
         ['name' => 'Mida lo que debe caber', 'text' => 'Indique el ancho, el fondo y el alto interiores de la caja. Deje 1 a 2 mm de holgura por cada lado del objeto.'],
@@ -26,7 +26,7 @@ return [
         ['q' => '¿Sirve la caja para electrónica, por ejemplo un Arduino o un ESP32?', 'a' => 'Sí: indique las medidas de la placa más 2 mm por cada lado y la altura según el componente más alto, y coloque los agujeros de los conectores según su posición desde la esquina de la pared. Añada ventilación como una fila de agujeros redondos; con calor dentro, elija PETG.'],
     ],
     'examples' => [
-        'Caja con tapa encajable para cosas pequeñas, 80 × 50 × 30 mm por dentro: 28 g, 34 minutos, 99 CZK.',
+        'Caja con tapa encajable para cosas pequeñas, 80 × 50 × 30 mm por dentro: 28 g, 34 minutos.',
         'Caja con tapa y ranura para cable, 120 × 80 × 40 mm por dentro.',
         'Caja abierta sin tapa con esquinas redondeadas, 40 × 40 × 20 mm por dentro.',
     ],

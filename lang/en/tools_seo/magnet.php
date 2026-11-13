@@ -8,7 +8,7 @@ return [
     'h1' => 'How the magnet is made, which magnet goes in it and what it costs',
     'intro' => [
         'The tool turns a picture into a fridge magnet. Upload a PNG, JPG, WebP or SVG, pick a motif from the library, or type a name. The picture is reduced to 1 to 8 colours of filaments we have in stock on the farm; the background of a photo goes by itself and the magnet then follows the outline of the motif, or it is a circle or a rectangle with the whole photo. Width 40 to 100 mm, thickness 3 to 6 mm, a frame of up to 3 mm round the picture, a bevelled edge if you like. The back has a pocket for a magnet in the middle: pick a common disc magnet from Ø 6 × 2 to Ø 20 × 3 mm, or enter your own size, and glue it in, press it in, or leave a hole right through; for self-adhesive magnetic sheet choose the version with no pocket. If the magnet is tall for the chosen thickness, the tool thickens the base so that four layers of plastic stay over it. Magnets are not included.',
-        'An example from the production calculator (28 October 2026, PLA): the paw from the library in a 60 mm circle, 3 mm thick, with a pocket for a Ø 10 × 2 mm magnet, weighs 7 g, prints in 14 minutes and costs 99 CZK (about 4 EUR) from us, the lowest order price, without delivery (calculation /c/gob4imtsfmor). Several pieces of the same design go in as the quantity and the price per piece falls; magnets from the photos of the whole family are different designs. Our farm prints up to four colours in one print, the base and three more; you confirm the spool of each colour when ordering. The STL, a ZIP with one STL per colour and the slicer projects download free, without registration.',
+        'An example from the production calculator (28 October 2026, PLA): the paw from the library in a 60 mm circle, 3 mm thick, with a pocket for a Ø 10 × 2 mm magnet, weighs 7 g and prints in 14 minutes (calculation /c/gob4imtsfmor). Several pieces of the same design go in as the quantity and the price per piece falls; magnets from the photos of the whole family are different designs. Our farm prints up to four colours in one print, the base and three more; you confirm the spool of each colour when ordering. The STL, a ZIP with one STL per colour and the slicer projects download free, without registration.',
     ],
     'steps' => [
         ['name' => 'Upload a picture or a photo', 'text' => 'The background is removed automatically and the shape then follows the outline of the motif. To keep the whole photo, switch the background removal off. Sliders adjust the contrast, brightness and saturation of a photo.'],
@@ -25,7 +25,7 @@ return [
         ['q' => 'Do you print the magnet in colour?', 'a' => 'Yes, in up to four colours in one print: the base and three colours on top of it. You confirm the spool for each colour when ordering; the ones from the design are preselected. A design with more colours downloads free; the colours lie one on another, so any printer prints it by swapping filament at the heights the project contains.'],
     ],
     'examples' => [
-        'Paw in a circle 60 mm wide, with a pocket at the back for a Ø 10 × 2 mm magnet: 7 g, 14 minutes, 99 CZK.',
+        'Paw in a circle 60 mm wide, with a pocket at the back for a Ø 10 × 2 mm magnet: 7 g, 14 minutes.',
         'Red heart 50 mm wide with a press-fit Ø 8 × 3 mm magnet.',
         'A photo on a rectangle 80 mm wide, 6 colours, a hole right through for a Ø 12 × 3 mm magnet.',
     ],

@@ -23,7 +23,7 @@ Jednou za měsíc sepíšeme, co se na farmě a na webu stalo. Čísla v kartě 
 
 **Vánoční dílna.** Šest nástrojů na Vánoce: [perníček](/tools/gingerbread), [ozdoba z obrázku](/tools/ornament), [vykrajovátko](/tools/cookie-cutter), [jmenovka na dárky](/tools/nameplate), [zápich do dortu](/tools/cake-topper) a [písmeno se jménem](/tools/name-letter). Termíny, do kdy objednat, jsou v článku [vánoční dárky z 3D tisku do 24. 12.](/blog/vanocni-darky-z-3d-tisku-do-24-12-terminy).
 
-**Stránka pro Prahu.** Farma stojí v Praze a [3D tisk Praha](/3d-tisk-praha) říká, co a jak tiskneme, kolik to stojí a jak rychle výtisk v Praze dostanete. Osobní odběr zatím nemáme, Zásilkovna v Praze obvykle doručí do boxu další pracovní den.
+**Stránka pro Prahu.** [3D tisk Praha](/3d-tisk-praha) říká, co a jak tiskneme, kolik to stojí a jak rychle výtisk v Praze dostanete. Osobní odběr nemáme, Zásilkovna v Praze obvykle doručí do boxu další pracovní den.
 
 **Fotky skutečných výtisků.** U nástrojů se místo náhledu objevuje fotka výtisku z farmy, jakmile ho vyfotíme; fotky přibývají s každou zakázkou.
 
@@ -40,5 +40,5 @@ Další stránky nástrojů (víčko na míru, podtácek, magnetka z fotky, náu
 ## Co dál
 
 - [Nástroje](/tools): model bez modelování, cena před objednáním.
-- [3D tisk Praha](/3d-tisk-praha): jak to u nás v Praze chodí.
+- [3D tisk Praha](/3d-tisk-praha): co tiskneme a jak rychle výtisk v Praze dostanete.
 - [Vánoční dárky z 3D tisku do 24. 12.](/blog/vanocni-darky-z-3d-tisku-do-24-12-terminy): co stihnete a kdy objednat.

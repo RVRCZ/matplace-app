@@ -162,7 +162,9 @@ class AuditRestTest extends TestCase
         $html = (string) $this->get('/')->assertOk()->getContent();
         $this->assertStringContainsString('id="home-examples"', $html);
         $this->assertStringContainsString('Busta z fotky, výška 80 mm', $html);
-        $this->assertMatchesRegularExpression('/99\s*Kč/u', $html);
+        // a price only where the calculation gave one above the order minimum of its day (the minimum is a setting, not a text)
+        $this->assertMatchesRegularExpression('/130\s*Kč/u', $html);
+        $this->assertDoesNotMatchRegularExpression('/\b99\s*Kč/u', $html);
         $this->assertStringContainsString(e(__('site.examples.preview')), $html, 'a preview says it is not a photo of a print');
         $this->assertStringContainsString(url('/c/vxauvlvidinz'), $html);
         // in euros the block does not invent a price: the calculation shows it

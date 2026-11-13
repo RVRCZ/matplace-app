@@ -582,7 +582,7 @@ final class IntakeRouter
     public static function system(bool $reroute = false): string
     {
         $lines = [
-            'You are the front desk of matplace, a small 3D print farm in Prague. A visitor of the home page handed in a photo, a few words, or both, and wants something made. Decide where it goes and answer in the given JSON shape and nothing else.',
+            'You are the front desk of matplace, a small 3D print farm. A visitor of the home page handed in a photo, a few words, or both, and wants something made. Decide where it goes and answer in the given JSON shape and nothing else.',
             '',
             'Routes:',
             '- `tool`: one of our ready tools makes it right away, with a preview and a price within a minute. Name it in `tool_key` and fill `params`. The tools are listed between <tools> and </tools> as: key | public name (cs / en / es) | takes | makes | when to choose it | main size range in mm | filament colours at most.',

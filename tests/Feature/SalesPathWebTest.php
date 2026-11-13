@@ -132,8 +132,8 @@ class SalesPathWebTest extends TestCase
         // prices of real calculations, text only (no picture of a print exists); the home page's own examples stay behind their switch
         $html = (string) $this->get('/')->assertOk()->getContent();
         $this->assertStringContainsString('id="calc-trust"', $html);
-        $this->assertStringContainsString('Busta z fotky, výška 80 mm', $html);
-        $this->assertStringContainsString(url('/c/vxauvlvidinz'), $html);
+        $this->assertStringContainsString('Busta z fotky, výška 120 mm', $html);   // the 80 mm one has no price (config/site.php)
+        $this->assertStringContainsString(url('/c/gnqnqzws7ahv'), $html);
         $this->assertStringNotContainsString('id="home-examples"', $html);
         $this->assertStringNotContainsString('id="trust-video"', $html);   // no published video yet
         $this->assertStringNotContainsString('data-trust-numbers', $html);  // no numbers while PublicStats is not there (or says nothing)
@@ -278,8 +278,8 @@ class SalesPathWebTest extends TestCase
         // prices of real calculations in crowns; in euros no price is invented; delivery prices come from the configuration
         $cs = (string) $this->get('/business')->getContent();
         $this->assertStringContainsString('data-page-prices', $cs);
-        $this->assertStringContainsString('QR cedulka se stojánkem', $cs);
-        $this->assertMatchesRegularExpression('/99\s*Kč/u', $cs);
+        $this->assertStringContainsString('Organizér do zásuvky', $cs);
+        $this->assertMatchesRegularExpression('/250\s*Kč/u', $cs);
         $this->assertStringContainsString('výdejní místo (v Česku 99', $cs);
         $this->assertStringNotContainsString(':cz_point', $cs);
         $eur = (string) $this->withCookie('currency', 'EUR')->get('/en/business')->getContent();

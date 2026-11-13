@@ -4,7 +4,7 @@
 return [
     'title' => 'Stojánek na telefon na míru k 3D tisku: šest typů, zdarma',
     'heading' => 'Stojánek na telefon na míru k 3D tisku',
-    'description' => 'Vyberete jeden ze šesti typů, zadáte tloušťku telefonu s obalem a sklon a hned vidíte náhled. Model stáhnete zdarma, nebo stojánek vytiskneme od 120 Kč.',
+    'description' => 'Vyberete jeden ze šesti typů, zadáte tloušťku telefonu s obalem a sklon a hned vidíte náhled. Model stáhnete zdarma, nebo stojánek vytiskneme.',
     'h1' => 'Jaké stojánky nástroj umí, jak změřit telefon a kolik stojí tisk',
     'intro' => [
         'Nástroj nabízí šest typů držáku: desku s háčky, vlnku, A‑rám s poličkou, nízký klín, kapsu na zeď a klip do auta na mřížku ventilace; k tomu provedení s vyříznutým tvarem v opěrce, vlnitý plech, plochou desku se zásuvnou nohou, stuhu do Z nebo siluetu zvířete ze sedlem. Stojánek se počítá podle tloušťky telefonu i s obalem, kterou zadáte od 7 do 20 mm, a šířky; u stolních typů nastavíte sklon a výšku opěrky až 200 mm, šířku až 260 mm, takže klín a široké typy poslouží i tabletu. Podle typu přidáte výřez na nabíjecí kabel, odlehčovací okno v opěrce nebo otvory na šrouby. Sklon je daný návrhem a po vytištění se nedá měnit; stojánek telefon jen drží, nabíječku v sobě nemá.',

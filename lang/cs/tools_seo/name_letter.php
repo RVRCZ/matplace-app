@@ -4,11 +4,11 @@
 return [
     'title' => 'Velké písmeno se jménem: 3D dekorace a dárek na míru, zdarma',
     'heading' => 'Velké písmeno se jménem jako dárek',
-    'description' => 'Napíšete jméno a vznikne jeho velké první písmeno s celým jménem druhou barvou. Vytiskneme ho ve dvou barvách od 99 Kč, nebo si model stáhnete zdarma.',
+    'description' => 'Napíšete jméno a vznikne jeho velké první písmeno s celým jménem druhou barvou. Vytiskneme ho ve dvou barvách, nebo si model stáhnete zdarma.',
     'h1' => 'Jak písmeno se jménem vzniká, kdy stojí samo a kolik stojí',
     'intro' => [
         'Nástroj vytvoří velké první písmeno jména a na něj napíše celé jméno. Stačí zadat jméno do 20 znaků: písmeno se vybere samo, nebo zvolíte jiné, třeba iniciálu příjmení. Výšku nastavíte od 60 do 200 mm a tloušťku od 3 do 15 mm; od 10 mm většina písmen sama stojí na poličce a kterékoli lze postavit do podstavce s drážkou, který se vytiskne vedle něj. Velké písmeno má tři tučná písma, jméno třicet včetně psaných rukou. Jméno si nástroj umístí sám tam, kde má písmeno nejvíc místa: napříč vodorovným tahem, nebo nastojato podél svislého; vystupuje o 0,4 až 2 mm a tiskne se druhou barvou. Dvě barvy leží nad sebou, takže tisk stačí jednou zastavit a vyměnit filament; na naší farmě písmeno vytiskneme najednou a obě barvy si vyberete při objednávce.',
-        'Příklad z kalkulace na produkci (27. 10. 2026, PLA): písmeno E vysoké 120 mm a silné 8 mm se jménem Ela psacím písmem má 27 g, tiskne se 40 minut a stojí u nás 99 Kč, což je nejnižší cena zakázky (kalkulace /c/vhfifzrzy5in, jedna barva, druhou vyberete při objednávce). Při 8 mm ho postavíte do podstavce z téhož souboru, od 10 mm stojí samo. Tiskne se naplocho bez podpěr. Hodí se na dveře dětského pokoje, na poličku nebo jako dárek k narození a ke jmeninám; model i projekt s výměnou filamentu stáhnete zdarma a bez registrace.',
+        'Příklad z kalkulace na produkci (27. 10. 2026, PLA): písmeno E vysoké 120 mm a silné 8 mm se jménem Ela psacím písmem má 27 g a tiskne se 40 minut (kalkulace /c/vhfifzrzy5in, jedna barva, druhou vyberete při objednávce). Při 8 mm ho postavíte do podstavce z téhož souboru, od 10 mm stojí samo. Tiskne se naplocho bez podpěr. Hodí se na dveře dětského pokoje, na poličku nebo jako dárek k narození a ke jmeninám; model i projekt s výměnou filamentu stáhnete zdarma a bez registrace.',
     ],
     'steps' => [
         ['name' => 'Napište jméno', 'text' => 'Velké písmeno je první písmeno jména. Když chcete jiné, třeba iniciálu příjmení, napište ho do druhého pole.'],
@@ -25,7 +25,7 @@ return [
         ['q' => 'Jak velké písmeno můžete vytisknout?', 'a' => 'Až 200 mm na výšku, podložka naší farmy má 250 × 250 mm. Náhled u rozměrů ukazuje, jestli se písmeno na podložku vejde; široká písmena jako M a W jsou při stejné výšce širší.'],
     ],
     'examples' => [
-        'Písmeno E vysoké 120 mm se jménem Ela psacím písmem podél svislého tahu: 27 g, 40 minut, 99 Kč.',
+        'Písmeno E vysoké 120 mm se jménem Ela psacím písmem podél svislého tahu: 27 g, 40 minut.',
         'Patkové písmeno T vysoké 150 mm se jménem Tomáš.',
         'Písmeno I vysoké 100 mm a silné 12 mm se jménem Ivana, stojí samo.',
     ],

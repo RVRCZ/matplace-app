@@ -8,7 +8,7 @@ return [
     'h1' => 'Cómo nace la letra con nombre, cuándo se sostiene sola y cuánto cuesta',
     'intro' => [
         'La herramienta crea la primera letra del nombre en grande y escribe sobre ella el nombre completo. Basta indicar un nombre de hasta 20 caracteres: la letra se elige sola, o elige otra, por ejemplo la inicial del apellido. La altura se ajusta de 60 a 200 mm y el grosor de 3 a 15 mm; a partir de 10 mm la mayoría de las letras se sostienen solas en una estantería, y cualquiera puede ponerse en una peana con ranura que se imprime a su lado. La letra grande tiene tres tipografías en negrita; el nombre, treinta, incluidas manuscritas. La herramienta coloca el nombre donde la letra tiene más espacio: a lo largo de un trazo horizontal, o de pie junto a uno vertical; sobresale de 0,4 a 2 mm y se imprime en el segundo color. Los dos colores quedan uno sobre otro, así que basta detener la impresión una vez y cambiar el filamento; en nuestra granja la letra se imprime de una vez y los dos colores se eligen al hacer el pedido.',
-        'Un ejemplo de la calculadora en producción (27 de octubre de 2026, PLA): una letra E de 120 mm de alto y 8 mm de grosor con el nombre Ela en tipografía manuscrita pesa 27 g, se imprime en 40 minutos y cuesta 99 CZK (unos 4 EUR) con nosotros, que es el pedido mínimo (cálculo /c/vhfifzrzy5in, un color; el segundo se elige al hacer el pedido). Con 8 mm se pone en la peana del mismo archivo; a partir de 10 mm se sostiene sola. Se imprime en plano sin soportes. Va bien en la puerta de una habitación infantil, en una estantería o como regalo de nacimiento o de santo; el modelo y el proyecto con el cambio de filamento se descargan gratis y sin registro.',
+        'Un ejemplo de la calculadora en producción (27 de octubre de 2026, PLA): una letra E de 120 mm de alto y 8 mm de grosor con el nombre Ela en tipografía manuscrita pesa 27 g y se imprime en 40 minutos (cálculo /c/vhfifzrzy5in, un color; el segundo se elige al hacer el pedido). Con 8 mm se pone en la peana del mismo archivo; a partir de 10 mm se sostiene sola. Se imprime en plano sin soportes. Va bien en la puerta de una habitación infantil, en una estantería o como regalo de nacimiento o de santo; el modelo y el proyecto con el cambio de filamento se descargan gratis y sin registro.',
     ],
     'steps' => [
         ['name' => 'Escriba el nombre', 'text' => 'La letra grande es la primera letra del nombre. Si quiere otra, por ejemplo la inicial del apellido, escríbala en el segundo campo.'],
@@ -25,7 +25,7 @@ return [
         ['q' => '¿Qué tamaño de letra pueden imprimir?', 'a' => 'Hasta 200 mm de alto; la cama de nuestra granja mide 250 × 250 mm. La vista previa muestra junto a las medidas si la letra cabe en la cama; las letras anchas como M y W son más anchas a la misma altura.'],
     ],
     'examples' => [
-        'Letra E de 120 mm de alto con el nombre Ela en tipografía manuscrita a lo largo del trazo vertical: 27 g, 40 minutos, 99 CZK.',
+        'Letra E de 120 mm de alto con el nombre Ela en tipografía manuscrita a lo largo del trazo vertical: 27 g, 40 minutos.',
         'Letra T con serifa de 150 mm de alto con el nombre Tomáš.',
         'Letra I de 100 mm de alto y 12 mm de grosor con el nombre Ivana, que se sostiene sola.',
     ],

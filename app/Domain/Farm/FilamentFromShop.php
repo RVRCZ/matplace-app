@@ -560,7 +560,7 @@ final class FilamentFromShop
     public static function system(): string
     {
         return implode("\n", [
-            'You are the filament clerk of matplace, a 3D print farm in Prague. The operator bought a spool of filament in a web shop and pastes the link of the product page. You read what the page says and fill in the card of that spool for the farm\'s catalogue. You answer in the given JSON shape and nothing else.',
+            'You are the filament clerk of matplace, a 3D print farm. The operator bought a spool of filament in a web shop and pastes the link of the product page. You read what the page says and fill in the card of that spool for the farm\'s catalogue. You answer in the given JSON shape and nothing else.',
             '',
             'How to read the page:',
             '- `is_product_page`: true only for the page of ONE product (one filament, possibly in several colours or weights). A category, a search result, a list of products, a blog post, a printer or an accessory is false; then leave the rest empty (nulls, empty strings, false).',

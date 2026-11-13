@@ -8,7 +8,7 @@ return [
     'h1' => 'What the custom box does, how the lid fits and what a print costs',
     'intro' => [
         'The tool makes a box from the inner size, that is from the thing that should fit inside: width and depth 10 to 300 mm, height 8 to 200 mm, walls 1.2 to 5 mm. It computes the outer size by itself and shows it under the preview. You can add a push-on lid with a rim (0.25 mm of play, adjustable), up to eight round or rectangular holes in the front, back, left or right wall, rounded corners and a cable slot from the top edge 3 to 30 mm wide. The box and the lid print side by side without supports. It serves for electronics, small parts, SD cards and as gift packaging.',
-        'An example from the production calculator (18 October 2026, PLA+): a box with a push-on lid, 80 × 50 × 30 mm inside (84 × 54 × 32 mm outside), weighs 28 g, prints in 34 minutes and costs 99 CZK (about 4 EUR) from us, which is the minimum order (calculation /c/nku29wz4vieb); with a lid and a cable slot it weighs 41 g, prints in 51 minutes and costs 110 CZK, both without delivery. In 90 days 13 boxes went through the calculator. For a drawer PLA is enough, for a bathroom or next to the oven choose PETG. You download the model free as an STL or a project for your printer; the box and the lid also as separate parts.',
+        'An example from the production calculator (18 October 2026, PLA+): a box with a push-on lid, 80 × 50 × 30 mm inside (84 × 54 × 32 mm outside), weighs 28 g and prints in 34 minutes (calculation /c/nku29wz4vieb); with a lid and a cable slot it weighs 41 g, prints in 51 minutes and costs 110 CZK, both without delivery. In 90 days 13 boxes went through the calculator. For a drawer PLA is enough, for a bathroom or next to the oven choose PETG. You download the model free as an STL or a project for your printer; the box and the lid also as separate parts.',
     ],
     'steps' => [
         ['name' => 'Measure what should fit', 'text' => 'Enter the width, depth and height inside the box. Leave 1 to 2 mm of play on every side of the thing.'],
@@ -26,7 +26,7 @@ return [
         ['q' => 'Does the box suit electronics, an Arduino or an ESP32 say?', 'a' => 'Yes: enter the board size plus 2 mm on every side and the height by the tallest component, and place the connector holes by their position from the corner of the wall. Add vents as a row of round holes; for heat inside choose PETG.'],
     ],
     'examples' => [
-        'A box with a push-on lid for small things, 80 × 50 × 30 mm inside: 28 g, 34 minutes, 99 CZK.',
+        'A box with a push-on lid for small things, 80 × 50 × 30 mm inside: 28 g, 34 minutes.',
         'A box with a lid and a cable slot, 120 × 80 × 40 mm inside.',
         'An open box without a lid with rounded corners, 40 × 40 × 20 mm inside.',
     ],

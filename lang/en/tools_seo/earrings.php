@@ -8,7 +8,7 @@ return [
     'h1' => 'How the pair is made, what it weighs and what it costs',
     'intro' => [
         'The tool makes a pair of earrings from one picture. Both are identical, or the second one is mirrored so that the motif faces the same way on both ears. Upload a PNG, JPG, WebP or SVG, pick a motif from the library, or type a short text of up to 12 characters per line. One earring is 10 to 60 mm wide and 1.6 to 3 mm thick; it follows the outline of the picture, or is a circle, with a frame of up to 2 mm round the picture. The eyelet, with a hole of 1.5 to 3 mm, goes anywhere on the outline, by a slider or by dragging it in the preview. The picture is reduced to 1 to 8 colours of filaments we have in stock; the colours lie one on another, each 0.2 to 0.8 mm higher. Hooks and jump rings are not included; you can buy them at a craft shop.',
-        'An example from the production calculator (28 October 2026, PLA): a pair of red hearts from the library, each 28 mm wide and 2.4 mm thick, weighs 2.2 g together, prints in 6 minutes and costs 99 CZK (about 4 EUR) from us, the lowest order price, without delivery (calculation /c/5xbjn5tfg5gn). One earring weighs about a gram, so it does not pull. Several pairs of the same design go in as the quantity and the price per pair falls. Our farm prints up to four colours in one print, the base and three more; you confirm the spool of each colour when ordering. The STL and the slicer project with the colour changes download free, without registration.',
+        'An example from the production calculator (28 October 2026, PLA): a pair of red hearts from the library, each 28 mm wide and 2.4 mm thick, weighs 2.2 g together and prints in 6 minutes (calculation /c/5xbjn5tfg5gn). One earring weighs about a gram, so it does not pull. Several pairs of the same design go in as the quantity and the price per pair falls. Our farm prints up to four colours in one print, the base and three more; you confirm the spool of each colour when ordering. The STL and the slicer project with the colour changes download free, without registration.',
     ],
     'steps' => [
         ['name' => 'Upload a picture or type a text', 'text' => 'Upload a picture, pick one from the library, or reuse one you uploaded earlier. The background is removed automatically; a slider sets how much of it goes.'],
@@ -25,7 +25,7 @@ return [
         ['q' => 'How many colours do you print?', 'a' => 'Up to four in one print: the base and three colours on top of it. You confirm the spool for each colour when ordering; the ones from the design are preselected. A design with more colours you download and print on your own printer.'],
     ],
     'examples' => [
-        'A pair of red hearts, each 28 mm wide: 2.2 g, 6 minutes, 99 CZK.',
+        'A pair of red hearts, each 28 mm wide: 2.2 g, 6 minutes.',
         'A mirrored pair of ghosts, each 32 mm wide, the eyelet at the tip.',
         'Round earrings, 30 mm, with a smiling star, three colours.',
     ],

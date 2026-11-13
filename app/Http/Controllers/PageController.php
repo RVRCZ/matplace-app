@@ -18,7 +18,7 @@ class PageController extends Controller
         'about' => 'about', 'contact' => 'contact', 'faq' => 'faq', 'complaints' => 'complaints',
         'terms' => 'terms', 'business_terms' => 'business-terms', 'cookies' => 'cookies',
         'business' => 'business',   // 3D printing for businesses: the business intent of the tools as a page (docs/AN.md §8)
-        'praha' => '3d-tisk-praha',   // the local entry page: the farm prints in Prague (docs/AP.md §8)
+        'praha' => '3d-tisk-praha',   // the local entry page for the search "3D tisk Praha": we deliver there, the page names no place of the farm (docs/AP.md §8)
     ];
 
     /** The name of a page's route: `pages.<page>`, except the page for businesses, which the home page and the tools know as `tools.business`. */

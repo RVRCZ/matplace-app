@@ -8,7 +8,7 @@ return [
     'h1' => 'Jak nápis vzniká, jak velký vyjde a kolik stojí',
     'intro' => [
         'Nástroj udělá z textu nápis, který stojí sám na poličce, na stole nebo ve výloze. Napíšete jeden až tři řádky po 40 znacích, vyberete jedno ze třiceti písem a výšku velkých písmen od 4 do 80 mm. Písmena jsou silná 1,2 až 30 mm a stojí na společné patce, takže drží pohromadě i písmo, jehož písmena se nedotýkají; víc řádků nad sebou spojuje příčka. K textu přidáte siluetu z knihovny nebo vlastní SVG, stojí vedle písmen nebo nad nimi. Nápis se tiskne vleže na zádech bez podpěr, přední strana je proto rovná a hladká. Když je na svou výšku moc tenký a mohl by se převrhnout, nástroj to řekne ještě v náhledu.',
-        'Příklad z kalkulace na produkci (28. 10. 2026, PLA): slovo HOME písmem Archivo Black s písmeny 30 mm vysokými a 12 mm silnými má 144 × 34 mm, váží 21,1 g, tiskne se 40 minut a stojí u nás 99 Kč bez dopravy (kalkulace /c/bkdbbtgjavzn). Dvouřádkový nápis KAVÁRNA u Jany písmem Bebas Neue, 20 mm silný, má 55,7 g, tiskne se 1 h 53 min a stojí 130 Kč (kalkulace /c/qxcoca4ayqkb). Cenu vidíte dřív, než cokoli objednáte, i pro víc kusů. Model si stáhnete zdarma jako STL nebo projekt pro svou tiskárnu, bez registrace.',
+        'Příklad z kalkulace na produkci (28. 10. 2026, PLA): slovo HOME písmem Archivo Black s písmeny 30 mm vysokými a 12 mm silnými má 144 × 34 mm, váží 21,1 g a tiskne se 40 minut (kalkulace /c/bkdbbtgjavzn). Dvouřádkový nápis KAVÁRNA u Jany písmem Bebas Neue, 20 mm silný, má 55,7 g, tiskne se 1 h 53 min a stojí 130 Kč (kalkulace /c/qxcoca4ayqkb). Cenu vidíte dřív, než cokoli objednáte, i pro víc kusů. Model si stáhnete zdarma jako STL nebo projekt pro svou tiskárnu, bez registrace.',
     ],
     'steps' => [
         ['name' => 'Napište text', 'text' => 'Jeden až tři řádky; první je největší. Symboly pod poli vložíte do textu jedním klepnutím, obrázek přidáte z knihovny nebo nahrajete SVG.'],
@@ -25,7 +25,7 @@ return [
         ['q' => 'Jak nápis tisknout doma?', 'a' => 'Na zádech, přední stranou dolů, bez podpěr, vrstva 0,2 mm, PLA nebo PETG. Stažený projekt pro OrcaSlicer a PrusaSlicer má nápis už položený; z STL ho položte sami na přední plochu. Spodní plocha patky zůstane po sejmutí z podložky hladká.'],
     ],
     'examples' => [
-        'Slovo HOME písmem Archivo Black, 144 × 34 mm, hloubka 12 mm: 21,1 g, 40 minut, 99 Kč.',
+        'Slovo HOME písmem Archivo Black, 144 × 34 mm, hloubka 12 mm: 21,1 g, 40 minut.',
         'Jméno Ela psacím písmem se srdcem na společné patce, 143 × 48 mm, hloubka 15 mm.',
         'Dvouřádkový nápis KAVÁRNA u Jany písmem Bebas Neue, hloubka 20 mm: 55,7 g, 1 h 53 min, 130 Kč.',
     ],

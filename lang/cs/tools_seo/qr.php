@@ -8,7 +8,7 @@ return [
     'h1' => 'Jak QR cedulka vzniká, proč musí být dvoubarevná a jak velká má být',
     'intro' => [
         'Nástroj vytvoří destičku s vystouplým QR kódem. Kód může otevřít web, jídelní lístek, recenze nebo platební odkaz, případně připojit telefon k Wi‑Fi: vložíte odkaz nebo text o délce 4 až 300 znaků, u Wi‑Fi název sítě, heslo a zabezpečení, a nástroj technický zápis složí sám. Pod kód lze přidat popisek do 40 znaků, k cedulce stolní stojánek, do kterého se zasune v mírném sklonu, nebo otvor na zavěšení. Velikost kódu nastavíte od 30 do 150 mm. Nástroj hlídá čitelnost: jedno pole kódu musí mít aspoň 0,9 mm, jinak vás vyzve kód zvětšit nebo odkaz zkrátit, a hotový návrh ještě kontrolně přečte stejně, jako to udělá telefon. Kód jde přečíst jen ve dvou barvách: světlá destička, tmavý kód.',
-        'Příklad z kalkulace na produkci (18. 10. 2026, PLA+): cedulka s odkazem na web, 70 × 83 × 3 mm, jedno pole kódu kolem 2 mm, má 14 g, tiskne se 25 minut a stojí u nás 99 Kč (kalkulace /c/lomf0wzlshw4); cedulka s Wi‑Fi o velikosti 90 mm se stolním stojánkem má 35 g, tiskne se 1 h 1 min a stojí 110 Kč, obojí v jedné barvě a bez dopravy. Při tisku u nás vyberete druhou barvu při objednávce a tiskárna ji vymění sama ve výšce destičky; stažený projekt pro vlastní tiskárnu má výměnu filamentu už vloženou, STL je jedno těleso. Odkaz si z náhledu vyzkoušejte telefonem ještě před tiskem, vytištěný kód už změnit nejde.',
+        'Příklad z kalkulace na produkci (18. 10. 2026, PLA+): cedulka s odkazem na web, 70 × 83 × 3 mm, jedno pole kódu kolem 2 mm, má 14 g a tiskne se 25 minut (kalkulace /c/lomf0wzlshw4); cedulka s Wi‑Fi o velikosti 90 mm se stolním stojánkem má 35 g, tiskne se 1 h 1 min a stojí 110 Kč, obojí v jedné barvě a bez dopravy. Při tisku u nás vyberete druhou barvu při objednávce a tiskárna ji vymění sama ve výšce destičky; stažený projekt pro vlastní tiskárnu má výměnu filamentu už vloženou, STL je jedno těleso. Odkaz si z náhledu vyzkoušejte telefonem ještě před tiskem, vytištěný kód už změnit nejde.',
     ],
     'steps' => [
         ['name' => 'Vložte odkaz, text, nebo Wi‑Fi', 'text' => 'Do pole „Odkaz nebo text“ vložíte adresu nebo jiný text; u Wi‑Fi název sítě, heslo a zabezpečení. Do pole „Popisek pod kódem“ krátký nápis, třeba název sítě; může zůstat prázdné.'],
@@ -25,7 +25,7 @@ return [
         ['q' => 'Co když mám vlastní tiskárnu?', 'a' => 'Model si zdarma stáhnete jako STL, nebo jako projekt pro svou tiskárnu. Projekt má ve výšce destičky vloženou výměnu filamentu: tiskárna se zastaví, vyměníte cívku a tisk pokračuje druhou barvou. Tiskárna s více cívkami to udělá sama.'],
     ],
     'examples' => [
-        'QR cedulka 70 × 83 mm s odkazem na web a popiskem matplace.com: 14 g, 25 minut, 99 Kč.',
+        'QR cedulka 70 × 83 mm s odkazem na web a popiskem matplace.com: 14 g, 25 minut.',
         'QR cedulka 90 × 113 mm s popiskem Wi‑Fi ve stolním stojánku, pro hosty kavárny.',
         'Malá QR destička 40 × 40 mm bez popisku, například na obal výrobku.',
     ],

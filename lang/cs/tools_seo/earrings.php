@@ -8,7 +8,7 @@ return [
     'h1' => 'Jak pár náušnic vzniká, co váží a kolik stojí',
     'intro' => [
         'Nástroj vytvoří z jednoho obrázku pár náušnic. Obě jsou stejné, nebo je druhá zrcadlově obrácená, aby se motiv na obou uších díval stejným směrem. Nahrajete PNG, JPG, WebP nebo SVG, vyberete motiv z knihovny, nebo napíšete krátký text do 12 znaků na řádek. Jedna náušnice je široká 10 až 60 mm a silná 1,6 až 3 mm; kopíruje obrys obrázku, nebo má tvar kruhu, kolem obrázku je okraj do 2 mm. Očko s otvorem 1,5 až 3 mm umístíte kamkoli na obrys, posuvníkem nebo tažením v náhledu. Obrázek se převede na 1 až 8 barev filamentů, které máme skladem; barvy leží nad sebou, každá o 0,2 až 0,8 mm výš. Háčky a kroužky součástí nejsou, koupíte je v galanterii.',
-        'Příklad z kalkulace na produkci (28. 10. 2026, PLA): pár červených srdcí z knihovny, každé široké 28 mm a 2,4 mm silné, má dohromady 2,2 g, tiskne se 6 minut a stojí u nás 99 Kč, což je nejnižší cena zakázky, bez dopravy (kalkulace /c/5xbjn5tfg5gn). Jedna náušnice váží kolem gramu, takže netahá. Víc párů stejného návrhu zadáte jako počet kusů a cena za pár klesne. Na farmě vytiskneme až čtyři barvy najednou, podklad a tři další; cívku každé barvy potvrdíte při objednávce. STL i projekt pro slicer s výměnami barev si stáhnete zdarma a bez registrace.',
+        'Příklad z kalkulace na produkci (28. 10. 2026, PLA): pár červených srdcí z knihovny, každé široké 28 mm a 2,4 mm silné, má dohromady 2,2 g a tiskne se 6 minut (kalkulace /c/5xbjn5tfg5gn). Jedna náušnice váží kolem gramu, takže netahá. Víc párů stejného návrhu zadáte jako počet kusů a cena za pár klesne. Na farmě vytiskneme až čtyři barvy najednou, podklad a tři další; cívku každé barvy potvrdíte při objednávce. STL i projekt pro slicer s výměnami barev si stáhnete zdarma a bez registrace.',
     ],
     'steps' => [
         ['name' => 'Nahrajte obrázek nebo napište text', 'text' => 'Obrázek nahrajete, vyberete z knihovny, nebo použijete dříve nahraný. Pozadí se odstraní samo; posuvníkem určíte, kolik ho zmizí.'],
@@ -25,7 +25,7 @@ return [
         ['q' => 'Kolik barev vytisknete u vás?', 'a' => 'Až čtyři v jednom tisku: podklad a tři barvy nad ním. Cívku pro každou barvu potvrdíte při objednávce, ty z návrhu jsou předvybrané. Návrh s více barvami si stáhnete a vytisknete na své tiskárně.'],
     ],
     'examples' => [
-        'Pár červených srdcí, každé široké 28 mm: 2,2 g, 6 minut, 99 Kč.',
+        'Pár červených srdcí, každé široké 28 mm: 2,2 g, 6 minut.',
         'Zrcadlový pár duchů, každý široký 32 mm, očko na špičce.',
         'Kulaté náušnice 30 mm s usměvavou hvězdou, tři barvy.',
     ],

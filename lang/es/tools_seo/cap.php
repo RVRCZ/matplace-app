@@ -8,7 +8,7 @@ return [
     'h1' => 'Cómo nace la tapa que falta, en qué encaja y cuánto cuesta',
     'intro' => [
         'La herramienta crea la tapa, el tapón o la cubierta que falta a partir de lo que mida. La pieza encaja sobre un borde, se inserta en un hueco o se enrosca en una rosca; la forma es redonda, rectangular o hexagonal, el diámetro o el ancho de 5 a 200 mm y la altura de 4 a 60 mm. Para una rosca elige la botella PET de 28 mm, una rosca métrica de paso grueso de M6 a M30, o indica su propio diámetro y un paso de 0,5 a 6 mm; el resultado es siempre una tapa o una tuerca para una rosca exterior, la herramienta no hace el tornillo. La holgura la añade la herramienta, usted indica la medida real. Para líquidos añada un labio de estanqueidad en la boca o un lecho para una junta, un moleteado por fuera y un borde superior redondeado. La vista previa muestra la pieza por fuera y en corte e indica a qué medida se ajusta.',
-        'Un ejemplo de la calculadora en producción (28 de octubre de 2026, PLA): una tapa de rosca para botella PET de 28 mm con labio de estanqueidad, rosca de 12 mm de alto, pesa 5,7 g, se imprime en 22 minutos y cuesta 99 CZK (unos 4 EUR) con nosotros, el pedido mínimo, sin envío (cálculo /c/5omcbkke1541). Una cubierta para un perfil rectangular de 36 × 16 mm, insertada 15 mm, pesa 4,7 g y se imprime en 15 minutos (cálculo /c/ldniassche8t); una tapa a presión para un tarro con cuello de 70 mm pesa 17,8 g, se imprime en 39 minutos y cuesta 99 CZK (cálculo /c/hgabcfckkauy). Con varias unidades baja el precio por pieza, la preparación se paga una vez. El modelo se descarga gratis como STL o proyecto para su impresora; se imprime sin soportes.',
+        'Un ejemplo de la calculadora en producción (28 de octubre de 2026, PLA): una tapa de rosca para botella PET de 28 mm con labio de estanqueidad, rosca de 12 mm de alto, pesa 5,7 g y se imprime en 22 minutos (cálculo /c/5omcbkke1541). Una cubierta para un perfil rectangular de 36 × 16 mm, insertada 15 mm, pesa 4,7 g y se imprime en 15 minutos (cálculo /c/ldniassche8t); una tapa a presión para un tarro con cuello de 70 mm pesa 17,8 g y se imprime en 39 minutos (cálculo /c/hgabcfckkauy). Con varias unidades baja el precio por pieza, la preparación se paga una vez. El modelo se descarga gratis como STL o proyecto para su impresora; se imprime sin soportes.',
     ],
     'steps' => [
         ['name' => 'Elija cómo sujeta', 'text' => 'A presión sobre el borde, insertada en el hueco o enroscada en una rosca. Puede partir de un preajuste como «Botella PET (28 mm)», «Tapón de tubo» o «Cubierta de perfil».'],
@@ -25,8 +25,8 @@ return [
         ['q' => '¿De qué material y cómo la imprimo en casa?', 'a' => 'Tapones y tapas que deben flexar o se enroscan a menudo, en PETG; para cubiertas sin carga basta el PLA. Se imprime con la parte superior abajo, sin soportes, capas de 0,2 mm; la rosca sale más limpia con 0,12 mm. Si la tapa entra dura, añada 0,1 mm de holgura.'],
     ],
     'examples' => [
-        'Tapa de rosca para botella PET de 28 mm con labio de estanqueidad, rosca de 12 mm de alto: 5,7 g, 22 minutos, 99 CZK.',
+        'Tapa de rosca para botella PET de 28 mm con labio de estanqueidad, rosca de 12 mm de alto: 5,7 g, 22 minutos.',
         'Cubierta para un perfil rectangular con hueco de 36 × 16 mm, se inserta 15 mm: 4,7 g, 15 minutos.',
-        'Tapa a presión para un tarro con cuello de 70 mm de diámetro, 14 mm de fondo: 17,8 g, 39 minutos, 99 CZK.',
+        'Tapa a presión para un tarro con cuello de 70 mm de diámetro, 14 mm de fondo: 17,8 g, 39 minutos.',
     ],
 ];

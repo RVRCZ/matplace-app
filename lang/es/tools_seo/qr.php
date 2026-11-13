@@ -8,7 +8,7 @@ return [
     'h1' => 'Cómo nace la placa QR, por qué necesita dos colores y qué tamaño debe tener',
     'intro' => [
         'La herramienta crea una placa con un código QR en relieve. El código puede abrir una web, una carta, sus reseñas o un enlace de pago, o conectar el móvil a su Wi‑Fi: pega un enlace o un texto de 4 a 300 caracteres; para Wi‑Fi, el nombre de la red, la contraseña y la seguridad, y la herramienta compone sola la notación técnica. Bajo el código cabe un rótulo de hasta 40 caracteres, y la placa puede llevar un soporte de mesa en el que se encaja con una ligera inclinación, o un agujero para colgarla. El tamaño del código se ajusta de 30 a 150 mm. La herramienta vigila la legibilidad: cada módulo del código debe medir al menos 0,9 mm; si no, le pide agrandar el código o acortar el enlace, y vuelve a leer el diseño terminado como lo haría un móvil. Un código solo se lee en dos colores: placa clara, código oscuro.',
-        'Un ejemplo de la calculadora en producción (18 de octubre de 2026, PLA+): una placa con enlace a una web, de 70 × 83 × 3 mm y módulos de unos 2 mm, pesa 14 g, se imprime en 25 minutos y cuesta 99 CZK (unos 4 EUR) con nosotros (cálculo /c/lomf0wzlshw4); una placa Wi‑Fi de 90 mm con soporte de mesa pesa 35 g, se imprime en 1 h 1 min y cuesta 110 CZK, ambas en un color y sin envío. En la impresión con nosotros elige el segundo color al hacer el pedido y la impresora lo cambia sola a la altura de la placa; el proyecto que descarga para su propia impresora ya lleva el cambio de filamento, y el STL es un solo cuerpo. Pruebe el enlace desde la vista previa con el móvil antes de imprimir; un código impreso ya no se puede cambiar.',
+        'Un ejemplo de la calculadora en producción (18 de octubre de 2026, PLA+): una placa con enlace a una web, de 70 × 83 × 3 mm y módulos de unos 2 mm, pesa 14 g y se imprime en 25 minutos (cálculo /c/lomf0wzlshw4); una placa Wi‑Fi de 90 mm con soporte de mesa pesa 35 g, se imprime en 1 h 1 min y cuesta 110 CZK, ambas en un color y sin envío. En la impresión con nosotros elige el segundo color al hacer el pedido y la impresora lo cambia sola a la altura de la placa; el proyecto que descarga para su propia impresora ya lleva el cambio de filamento, y el STL es un solo cuerpo. Pruebe el enlace desde la vista previa con el móvil antes de imprimir; un código impreso ya no se puede cambiar.',
     ],
     'steps' => [
         ['name' => 'Pegue un enlace, un texto o su Wi‑Fi', 'text' => 'En «Enlace o texto» pegue la dirección u otro texto; para Wi‑Fi, el nombre de la red, la contraseña y la seguridad. En «Rótulo bajo el código», un texto corto, por ejemplo el nombre de la red; puede quedar vacío.'],
@@ -25,7 +25,7 @@ return [
         ['q' => '¿Y si tengo impresora propia?', 'a' => 'Descargue gratis el modelo como STL o como proyecto para su impresora. El proyecto lleva un cambio de filamento a la altura de la placa: la impresora se detiene, cambia la bobina y la impresión sigue con el segundo color. Una impresora con varias bobinas lo hace sola.'],
     ],
     'examples' => [
-        'Placa QR de 70 × 83 mm con enlace a una web y el rótulo matplace.com: 14 g, 25 minutos, 99 CZK.',
+        'Placa QR de 70 × 83 mm con enlace a una web y el rótulo matplace.com: 14 g, 25 minutos.',
         'Placa QR de 90 × 113 mm con rótulo Wi‑Fi en soporte de mesa, para los clientes de una cafetería.',
         'Placa QR pequeña de 40 × 40 mm sin rótulo, por ejemplo para el envase de un producto.',
     ],
