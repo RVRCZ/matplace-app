@@ -294,3 +294,28 @@ Otázky pro Romana:
   `compose_kind.py`, `ParametricGenerator.php`, `ToolsApiController.php`, `param.ts`, `tools/param.blade.php`,
   `lang/{cs,en,es}.json`.
 - Běžný postup: `npm ci && npm run build`, `php artisan optimize`, restart workerů. Žádný nový klíč v `.env`.
+
+## 11. Slití do `release/2026-11-14` (13. 11. 2026)
+
+Kapitola se přestěhovala z `docs/AQ.md` (tam je přehled správy farmy z `main`) sem; odkazy v kódu a v `docs/P.md` §12
+míří na `docs/AR.md`. Při slévání řídící udělal dvě věci, které §8 a §9 nechaly otevřené:
+
+- **§8 je hotové** (`app/Domain/Intake/IntakeRouter.php`): nové `takes`/`makes` u `medallion`, `keychain`, `coaster`;
+  nový klíč `ornament` s vlastním výrazem před `charm` (slova ozdoby z výrazu `charm` jsou pryč); `relief.when` říká, že
+  reliéf na medaili, klíčence, ozdobě nebo podtácku je ten nástroj s `params.decor = "photo"`; model smí vrátit
+  `params.decor = "photo"` (schéma má 7 polí s `null`, limit API je 16), `decide()` ho propustí jen u nástrojů
+  `IntakeRouter::DECORATED` a jen když přišla fotka; pravidlo v zadání pro model už netvrdí, že reliéf z fotky na medaili
+  neumíme (příklad kombinace, kterou žádný nástroj neumí, je teď zápich do dortu s reliéfem). Zlaté případy 31 a 32
+  („Chci medaili s reliéfem z fotky“) čekají `medallion`, s fotkou `params.decor = "photo"`; `matplace:intake-cases` na
+  `params.decor` případ drží. Bez klíče (klíčová slova) věta říká „Fotku na něj položíme jako reliéf v jedné barvě; jak
+  vyjde, uvidíte v náhledu.“ (`router.summary.tool_decor`). Vánoční příklad úvodní strany „Ozdoba na stromek se jménem“
+  vede na `ornament` (`config/home.php`). Test `IntakeDecorTest`; `matplace:intake-cases --hints --keywords` 110 ze 110,
+  zlaté případy klíčovými slovy 32 ze 32. **Živý model volán nebyl**: po nasazení `matplace:intake-cases --only=31,32`
+  (a celý běh) pustí řídící.
+- **§9 otázka 1 (odpověď „jak doporučuješ“):** medaile bez čísla a bez vlastního motivu, jen se zdobením, se staví lícem
+  nahoru (`motif = raised`), dokud si návštěvník provedení motivu nevybere sám: `ParametricGenerator::clean()` a
+  `shape_kinds.py`, když `motif` nepřišel, a skript stránky před náhledem (`param.ts`, `motifChosen`). Uložený návrh,
+  krok zpět a „poslední nastavení“ si své provedení nesou a drží. Holá medaile s reliéfem vpředu proto už nehlásí
+  `turned_up` (je lícem nahoru sama); medaile se zarovnaným motivem a reliéfem ho hlásí dál. Test
+  `DecorTest::test_a_medal_with_decorations_only_prints_face_up_by_default_and_a_stored_one_keeps_its_mode`.
+  V prohlížeči jsem přepnutí přepínače Motiv neviděl (jen typová kontrola a sestavení).

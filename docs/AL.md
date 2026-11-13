@@ -3252,7 +3252,7 @@ Titulky, popisy a H1 se se stavem nemění (test je porovnává ve všech třech
 Slib „do Vánoc“: `FarmState::allowsPromiseBy($den)` – Otevřeno ano; Odstávka jen když datum konce odstávky je nejpozději v den
 slibu; bez data a při Zavřeno ne.
 
-### 23.5 Úvodní strana – neupraveno (čeká na `feature/home-what-to-make` v main)
+### 23.5 Úvodní strana – neupraveno v této větvi; doplněno při slití, viz 23.8
 
 `origin/main` v době odevzdání neobsahoval `app/Domain/Intake/IntakeHints.php`, proto podle zadání zůstala úvodní strana
 beze změny a **při odstávce dál slibuje Vánoce**. Po slití stačí:
@@ -3294,3 +3294,28 @@ beze změny a **při odstávce dál slibuje Vánoce**. Po slití stačí:
 - **Nasazení:** žádná migrace, žádná změna `.env`. Po nasazení je stav Otevřeno nebo Zavřeno podle dnešního `farm_open`;
   nic se samo nepřepne. Nové klíče `farm_state`, `farm_pause_until`, `farm_pause_note` vzniknou prvním uložením formuláře.
   Workery se při nasazení restartují jako vždy (nový kód čte stav před každou úlohou).
+
+### 23.8 Slití do `release/2026-11-14` (13. 11. 2026): co se proti 23.3–23.6 změnilo
+
+Při slévání s `feature/seo-cleanup-index` a `feature/dilna-zdobeni` (větev `release/2026-11-14`) řídící doplnil tři věci,
+které tahle kapitola nechala otevřené. Body výše platí s těmito změnami:
+
+- **Úvodní strana se řídí stavem (23.5 je hotovo).** `IntakePage::christmas()` vrací `null`, když
+  `! FarmState::allowsPromiseBy($den)`; stejnou podmínku má okno události s `until_setting` v `IntakeHints::windowOf()`
+  (vánoční příklady pod polem zmizí, Mikuláš a ostatní zůstávají). Pod řádkem důvěry je `@include('farm._pause')`.
+  Při Zavřeno (pro návštěvníka, kterému farma není nabízena; administrátor vidí stránku otevřené farmy) stránka neukazuje:
+  řádek „Náhled a cena před zaplacením“, oddíl „Po odeslání se stane jedna ze tří věcí“, ceny „od …“ na kartách dárků,
+  fotky výtisků, „Nebo tisk u nás od …“; a má znění `.closed` (`lang/src/release_1114.json`): `router.submit.hint`
+  (bez „a kolik to bude stát“, i v textech pro skript), `router.gifts.lead`, `router.file.title`, `router.file.lead`,
+  `home.start.{file,gift,part}.hint`, `home.farm.home.step3(.text)`; nad tím věta „Farma teď nové zakázky nepřijímá…“.
+  Titulek, popis a H1 se nemění. Test `FarmStateHomeTest` (2 testy, tři jazyky).
+- **Zavřeno také drží frontu (mění 23.1, 23.3 a první bod 23.6).** `FarmState::holds()` drží zakázku zákazníka, kdykoli
+  farma není Otevřeno; zakázky administrátora a vlastní tisky farmy (test, showcase) běží dál, běžící tisk doběhne.
+  Přepnutí z Odstávky na Zavřeno tedy čekající zakázky nerozjede. Zadržená zakázka při Zavřeno říká
+  `FarmState::holdLine()`: „Farma je teď zavřená. Tisk začne, jakmile ji znovu otevřeme.“ (stránka zakázky, e-mail
+  `farm.mail.queued_closed.*`, e-mail hosta, řádek obsluhy `farm.state.admin.line_queue_closed`); pruh ve správě farmy
+  počítá čekající i při Zavřeno a formulář nastavení už netvrdí, že Zavřeno čekající zakázky tiskne.
+  Test `FarmStateTest::test_a_closed_farm_holds_the_customers_queue_too_and_the_admin_still_prints`.
+- **Odstávka je na stránce nástroje jednou (mění řádek „Stránky nástrojů“ v 23.4).** Věta pod tlačítky zůstává; první
+  otázka „Kdy začne tisk?“ v „Než objednáte“ a ve strukturovaných datech FAQPage je pryč (`LandingPage::order()` se se
+  stavem nemění). Klíč `farm.state.pause.faq_q` ve slovníku zůstal nepoužitý.
