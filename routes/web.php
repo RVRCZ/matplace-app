@@ -87,6 +87,8 @@ $pages = function () {
     // the home page's router (TODO #78, docs/AN.md §22): a photo, a 3D file or words → a tool, a person or the calculator;
     // the tool's page fetches the photo by the token; "a person takes it over" leaves an e-mail
     Route::post('/intake', [IntakeController::class, 'store'])->middleware('throttle:intake')->name('intake.store');
+    // what a visitor did on the first screen before sending (the page shown, an example clicked, a photo added, dictation): numbers only (§23.4)
+    Route::post('/intake/event', [IntakeController::class, 'event'])->middleware('throttle:60,1,intake-event')->name('intake.event');
     Route::get('/intake/{intake}/file', [IntakeController::class, 'file'])->name('intake.file');
     Route::post('/intake/{intake}/request', [IntakeController::class, 'request'])->middleware('throttle:10,60,intake-request')->name('intake.request');
     // "try it now without a designer" (round 2, §22.11): one more decision, counted in the same five an hour
@@ -474,6 +476,8 @@ Route::middleware(['auth', 'role:admin'])->prefix('admin/farm')->name('admin.far
     Route::post('/printers/{printer}/bed', [$orders, 'bed'])->name('printers.bed');
     Route::post('/printers/{printer}/command', [$orders, 'command'])->name('printers.command');
     Route::get('/printers/{printer}/snapshot', [$orders, 'printerSnapshot'])->name('printers.snapshot');
+    // one printer: everything the overview used to show for all of them at once, its filaments, its files (docs/AQ.md)
+    Route::get('/printers/{printer}/detail', [$orders, 'printer'])->name('printers.show');
 
     // the files on a printer's disk: list, one up to the server, delete, tidy (docs/AM.md §10)
     $files = FarmFileController::class;
@@ -508,8 +512,14 @@ Route::middleware(['auth', 'role:admin'])->prefix('admin/farm')->name('admin.far
     Route::post('/colors/proposals/{proposal}/approve', [$catalog, 'approveProposal'])->name('colors.proposals.approve');
     Route::post('/colors/proposals/{proposal}/reject', [$catalog, 'rejectProposal'])->name('colors.proposals.reject');
     Route::post('/colors/new', [$catalog, 'saveColor'])->name('colors.create');
+    // one filament (a colour = the spool in a printer): its own values, its kind's, its tuning rows (docs/AQ.md)
+    Route::get('/colors/{color}', [$catalog, 'filament'])->whereNumber('color')->name('colors.show');
     Route::post('/colors/{color}', [$catalog, 'saveColor'])->name('colors.update');
     Route::post('/colors/{color}/delete', [$catalog, 'deleteColor'])->name('colors.delete');
+    // farms: the places the printers stand at (docs/AQ.md)
+    Route::get('/farms', [$catalog, 'farms'])->name('farms');
+    Route::post('/farms/new', [$catalog, 'saveFarm'])->name('farms.create');
+    Route::post('/farms/{farm}', [$catalog, 'saveFarm'])->whereNumber('farm')->name('farms.update');
     Route::get('/settings', [$catalog, 'settings'])->name('settings');
     Route::post('/settings', [$catalog, 'saveSettings'])->name('settings.save');
     Route::get('/agents', [$catalog, 'agents'])->name('agents');
@@ -546,10 +556,15 @@ Route::middleware(['auth', 'role:admin'])->prefix('admin')->name('admin.')->grou
 
     // the home page's router: what came in, the requests a person answers (TODO #78, docs/AN.md §22)
     Route::get('/intake', [AdminIntakeController::class, 'index'])->name('intake.index');
+    // the examples under the first screen's field: events on and off, their dates and texts (docs/AN.md §23.3)
+    Route::get('/intake/hints', [AdminIntakeController::class, 'hints'])->name('intake.hints');
+    Route::post('/intake/hints', [AdminIntakeController::class, 'saveHints'])->name('intake.hints.save');
     Route::get('/intake/{intake}', [AdminIntakeController::class, 'show'])->name('intake.show');
     Route::get('/intake/{intake}/photo', [AdminIntakeController::class, 'photo'])->name('intake.photo');
     Route::post('/intake/{intake}/reply', [AdminIntakeController::class, 'reply'])->name('intake.reply');
     Route::post('/intake/{intake}/status', [AdminIntakeController::class, 'status'])->name('intake.status');
+    // held as advertising by hand, or given back and decided after all (§23.2)
+    Route::post('/intake/{intake}/spam', [AdminIntakeController::class, 'spam'])->name('intake.spam');
 
     $catalog = AdminCatalogController::class;
     Route::get('/catalog', [$catalog, 'index'])->name('catalog.index');

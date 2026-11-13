@@ -97,10 +97,12 @@ class AppServiceProvider extends ServiceProvider
         // the admin tries the tools in bursts and is not counted
         RateLimiter::for('uploads', fn (Request $r) => $r->user()?->isAdmin() ? Limit::none() : Limit::perMinute(20)->by($r->ip()));
         RateLimiter::for('calculations', fn (Request $r) => $r->user()?->isAdmin() ? Limit::none() : Limit::perMinute(60)->by($r->ip()));
-        // the home page's router (docs/AN.md §22): five decisions an hour per browser session and per address; the admin tries freely
+        // the home page's router (docs/AN.md §22): five decisions an hour per browser session and per address, twenty a day per address (config/home.php); the admin tries freely
         RateLimiter::for('intake', fn (Request $r) => $r->user()?->isAdmin() ? Limit::none() : [
-            Limit::perHour(5)->by('intake-s:'.($r->attributes->get('anon_session')?->id ?? $r->ip())),
-            Limit::perHour(5)->by('intake-ip:'.$r->ip()),
+            Limit::perHour(max(1, (int) config('home.intake.limits.per_hour', 5)))->by('intake-s:'.($r->attributes->get('anon_session')?->id ?? $r->ip())),
+            Limit::perHour(max(1, (int) config('home.intake.limits.per_hour', 5)))->by('intake-ip:'.$r->ip()),
+            // a robot that waits out the hour still meets the day (config/home.php, docs/AN.md §23.2)
+            Limit::perDay(max(1, (int) config('home.intake.limits.per_day', 20)))->by('intake-day:'.$r->ip()),
         ]);
         // registrations from one address (IPv6 by its /64): 3 an hour, 5 a day. Only a registration that made an account
         // counts (a typo in the password is no registration); over the limit the form says so, as a page (docs/AH.md §10)

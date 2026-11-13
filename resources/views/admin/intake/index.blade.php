@@ -10,8 +10,11 @@
         <p class="mt-1 text-sm text-slate-500">Co lidé poslali z hlavní strany (fotka, soubor, popis) a kam to asistent poslal. Poptávky člověku čekají na odpověď: otevřených {{ $open }}.</p>
     </div>
     <nav class="flex gap-2 text-sm" aria-label="Filtr">
-        <a href="{{ route('admin.intake.index', ['show' => 'requests']) }}" class="chip {{ $filter === 'requests' ? 'chip-on' : '' }}">Poptávky člověku</a>
-        <a href="{{ route('admin.intake.index', ['show' => 'all']) }}" class="chip {{ $filter === 'all' ? 'chip-on' : '' }}">Všechna zadání</a>
+        <a href="{{ route('admin.intake.index', array_filter(['show' => 'requests', 'spam' => $spam ? 1 : null])) }}" class="chip {{ $filter === 'requests' ? 'chip-on' : '' }}">Poptávky člověku</a>
+        <a href="{{ route('admin.intake.index', array_filter(['show' => 'all', 'spam' => $spam ? 1 : null])) }}" class="chip {{ $filter === 'all' ? 'chip-on' : '' }}">Všechna zadání</a>
+        {{-- what the rules against advertising held (docs/AN.md §23.2): out of both lists until this is on --}}
+        <a href="{{ route('admin.intake.index', array_filter(['show' => $spam ? $filter : 'all', 'spam' => $spam ? null : 1])) }}" class="chip {{ $spam ? 'chip-on' : '' }}" data-spam-toggle>{{ $spam ? 'Skrýt spam' : 'Ukázat i spam' }} ({{ $held }})</a>
+        <a href="{{ route('admin.intake.hints') }}" class="chip">Příklady pod polem</a>
     </nav>
 </div>
 
@@ -25,7 +28,7 @@
         </thead>
         <tbody class="divide-y divide-slate-100">
             @foreach($intakes as $i)
-                <tr class="align-top">
+                <tr class="align-top {{ $i->status === 'spam' ? 'bg-slate-50 text-slate-400' : '' }}" @if($i->status === 'spam') data-spam @endif>
                     <td class="whitespace-nowrap px-3 py-2 text-slate-500"><a href="{{ route('admin.intake.show', $i) }}" class="font-medium text-ink underline">{{ $i->created_at->format('j. n. H:i') }}</a><br><span class="text-xs">{{ $i->locale }}</span></td>
                     <td class="px-3 py-2">{{ ['photo' => 'fotka', 'file' => 'soubor', 'text' => 'text'][$i->kind] ?? $i->kind }}@if($i->hasPhoto()) <span class="text-xs text-ok">· s fotkou</span>@endif</td>
                     <td class="max-w-md px-3 py-2">{{ \Illuminate\Support\Str::limit((string) $i->text, 140) ?: '—' }}@if($i->modelFile)<br><span class="text-xs text-slate-500">{{ $i->modelFile->original_name }}</span>@endif</td>
@@ -34,7 +37,8 @@
                         @if($i->tool_key)<br><span class="text-xs text-slate-500">{{ __('tools.'.$i->tool_key.'.title') }}</span>@endif
                         @if($i->wants_shape)<br><span class="text-xs text-warn">chce tvar podle fotky</span>@endif
                         @if(($i->answer['origin'] ?? null) === \App\Domain\Intake\IntakeRouter::ORIGIN_REROUTE)<br><span class="text-xs text-action-dark">bez návrháře (z {{ ['tool' => 'nástroje', 'human' => 'člověka', 'shape' => 'tvaru'][collect($i->answer['history'] ?? [])->last()['route'] ?? ''] ?? '?' }})</span>@endif
-                        <br><span class="text-xs text-slate-400">{{ ['new' => 'nové', 'opened' => 'nástroj otevřen', 'human' => 'u člověka', 'closed' => 'uzavřeno'][$i->status] ?? $i->status }}</span>
+                        <br><span class="text-xs text-slate-400">{{ ['new' => 'nové', 'opened' => 'nástroj otevřen', 'human' => 'u člověka', 'closed' => 'uzavřeno', 'spam' => 'spam, model se neptal'][$i->status] ?? $i->status }}</span>
+                        @if($i->status === 'spam')<br><span class="text-xs text-warn">{{ implode(', ', array_map(fn ($r) => \App\Domain\Intake\IntakeSpam::LABELS[$r] ?? $r, (array) ($i->answer['spam']['rules'] ?? []))) }}</span>@endif
                     </td>
                     <td class="px-3 py-2">
                         @if($i->request)

@@ -1,8 +1,11 @@
 <?php
 
 return [
-    'title' => 'Precio de impresión 3D online: calcule con su modelo',
-    'description' => 'Suba un modelo 3D y vea al instante el tiempo de impresión, el peso y un precio orientativo. Elija material y unidades, pida la impresión o descargue.',
+    // the home page asks "Co chcete vyrobit?" (docs/AN.md §23.6): the title and the description say what the page is, a custom print from a photo or words
+    'title' => 'Impresión 3D a medida desde una foto o un texto',
+    'description' => 'Escriba qué quiere fabricar o añada una foto. Impresión 3D a medida: bustos, figuras, regalos con nombre y piezas de repuesto. Precio antes de pagar.',
+    // the steps below are the calculator's (a 3D file → a price): their own sentence for the HowTo data
+    'howto_description' => 'Suba un modelo 3D y vea al instante el tiempo de impresión, el peso y un precio orientativo. Elija material y unidades, pida la impresión o descargue.',
     'h1' => 'Calculadora de impresión 3D: de su modelo al precio',
     'intro' => [
         'La calculadora es para quien tiene un modelo 3D terminado y quiere saber cuánto costará imprimirlo. Suba un archivo STL, 3MF, OBJ o STEP y el modelo aparecerá en una vista giratoria. Verá al instante las dimensiones, el tiempo de impresión, el peso del material y un precio orientativo de impresión con nosotros. Para calcular no hace falta registrarse.',

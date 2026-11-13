@@ -27,6 +27,10 @@
             <label class="{{ $lb }}">Agent
                 <select name="farm_agent_id" class="{{ $in }}"><option value="">—</option>@foreach($agents as $a)<option value="{{ $a->id }}" @selected((int) old('farm_agent_id', $printer->farm_agent_id) === $a->id)>{{ $a->name }}</option>@endforeach</select>
             </label>
+            {{-- the place the machine stands at; the overview groups the printers by it (docs/AQ.md) --}}
+            <label class="{{ $lb }}">{{ __('farm.admin.farms.farm') }}
+                <select name="farm_id" class="{{ $in }}"><option value="">— {{ __('farm.admin.farms.unassigned') }} —</option>@foreach($farms as $f)<option value="{{ $f->id }}" @selected((int) old('farm_id', $printer->farm_id) === $f->id)>{{ $f->label() }}</option>@endforeach</select>
+            </label>
             <label class="mt-5 flex items-center gap-2 text-sm"><input type="checkbox" name="enabled" value="1" @checked(old('enabled', $printer->enabled)) class="h-4 w-4 accent-action"> V provozu</label>
         </div>
     </section>
@@ -167,7 +171,8 @@
     <button class="btn-primary">Uložit</button>
 </form>
 
-@if($files)
-    @include('admin.farm.partials.files', ['printer' => $printer, 'files' => $files])
+@if($printer->exists)
+    {{-- the files on the printer's disk, its camera and commands are on the printer's detail (docs/AQ.md) --}}
+    <p class="mt-4 text-sm text-slate-600">{{ __('farm.admin.pd.moved') }} <a href="{{ route('admin.farm.printers.show', $printer) }}" class="underline">{{ __('farm.admin.pd.open') }}</a></p>
 @endif
 @endsection

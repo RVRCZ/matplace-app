@@ -84,7 +84,27 @@ final class IntakeService
         if ($photo) {
             $this->storePhoto($intake, $photo);
         }
-        Track::event('intake_submitted', $intake, ['kind' => $intake->kind, 'has_text' => $text !== '']);
+        // what the visitor began with: words, words and a photo, a photo, a file; and the example they clicked, changed or not (§23.4)
+        $how = ['kind' => $intake->kind, 'has_text' => $text !== '', 'code' => $model ? 'file' : ($photo ? ($text !== '' ? 'text_photo' : 'photo') : 'text')];
+
+        // advertising stops here, before the model costs anything (IntakeSpam, config/home.php): stored, answered neutrally, the admin can give it back
+        if ($held = IntakeSpam::check($request, $text, (bool) $photo, (bool) $model)) {
+            $intake->forceFill([
+                'status' => Intake::STATUS_SPAM,
+                'summary' => __($held['reply'] === 'price' ? 'router.price_only' : 'router.held'),
+                'answer' => ['spam' => ['rules' => $held['rules'], 'points' => $held['points'], 'reply' => $held['reply'], 'at' => now()->toIso8601String()]],
+            ])->save();
+            Track::event('intake_spam', $intake, ['kind' => $intake->kind, 'code' => $held['rules'][0] ?? 'rules']);
+
+            return $intake;
+        }
+        $hint = (string) $request->input('hint');
+        if (preg_match('/^[a-z_]{1,24}\.[1-9]$/', $hint)) {
+            [$event, $n] = explode('.', $hint);
+            $example = IntakeHints::examples($event, app()->getLocale())[(int) $n - 1]['fill'] ?? null;
+            $how += ['hint' => $hint, 'edited' => $example === null || trim($example) !== $text];
+        }
+        Track::event('intake_submitted', $intake, $how);
 
         if ($model) {
             // the calculator's own way in: the file is a ModelFile like any upload, the words stay with the intake (docs/AN.md §22 F)
@@ -148,7 +168,7 @@ final class IntakeService
      */
     public function reroute(Intake $intake): Intake
     {
-        if ($intake->route === Intake::ROUTE_FILE) {
+        if ($intake->route === Intake::ROUTE_FILE || $intake->status === Intake::STATUS_SPAM) {
             throw ValidationException::withMessages(['route' => __('router.error')]);
         }
         if ($intake->route === Intake::ROUTE_TOOL && ! $intake->wants_shape) {
@@ -201,6 +221,34 @@ final class IntakeService
     }
 
     /**
+     * The admin's hand over the rules (docs/AN.md §23.2). `spam` = true holds a wish as advertising (it leaves the
+     * default list); false gives a held wish back: one that was never decided is decided now, by the model, as if it
+     * had just come in.
+     */
+    public function markSpam(Intake $intake, bool $spam): Intake
+    {
+        if ($spam) {
+            $intake->forceFill(['status' => Intake::STATUS_SPAM, 'answer' => ['spam' => ['rules' => [IntakeSpam::RULE_MANUAL], 'points' => 0, 'reply' => 'held', 'at' => now()->toIso8601String()]] + (array) $intake->answer])->save();
+
+            return $intake;
+        }
+        if ($intake->status !== Intake::STATUS_SPAM) {
+            return $intake;
+        }
+        $answer = (array) $intake->answer;
+        $was = $answer['spam'] ?? null;
+        unset($answer['spam']);
+        $decided = $intake->route !== null;   // held by hand after a decision: the decision is still there
+        $intake->forceFill(['status' => $intake->request ? Intake::STATUS_HUMAN : Intake::STATUS_NEW, 'answer' => $answer ?: null])->save();
+        if (! $decided && $intake->kind !== Intake::KIND_FILE) {
+            $this->router->route($intake);
+        }
+        $intake->forceFill(['answer' => (array) $intake->answer + ['released' => ['at' => now()->toIso8601String(), 'was' => $was]]])->save();
+
+        return $intake;
+    }
+
+    /**
      * What the page gets back: the route, the sentence, the parameters and where each way on leads.
      *
      * @return array<string, mixed>
@@ -211,10 +259,13 @@ final class IntakeService
         $file = $intake->route === Intake::ROUTE_FILE ? $intake->modelFile : null;
         $calc = $file ? route('home').'?'.http_build_query(array_filter(['open' => $file->uuid, 'note' => $intake->text])) : null;
         $rerouted = ($intake->answer['origin'] ?? null) === IntakeRouter::ORIGIN_REROUTE;
+        // held by the rules against advertising: a sentence and nothing to press (`held` = neutral, `price` = the answer about prices)
+        $held = $intake->status === Intake::STATUS_SPAM ? (string) ($intake->answer['spam']['reply'] ?? 'held') : null;
 
         return [
             'token' => $intake->token,
             'route' => $intake->route,
+            'held' => $held,
             'tool_key' => $tool,
             'tool' => $tool ? __('tools.'.$tool.'.title') : null,
             'summary' => (string) $intake->summary,
@@ -230,9 +281,9 @@ final class IntakeService
                 // the key ring opens its quick form (?form=1), the one with a picture field; the rest their plain page
                 'tool' => $tool ? ToolSeo::url($tool).'?'.http_build_query(['intake' => $intake->token] + (IntakeRouter::TOOLS[$tool]['query'] ?? [])) : null,
                 'calc' => $calc,
-                'request' => route('intake.request', $intake),
+                'request' => $held ? null : route('intake.request', $intake),
                 // "try it now without a designer": only where a person was offered, and only once
-                'reroute' => $intake->route === Intake::ROUTE_HUMAN && ! $rerouted ? route('intake.reroute', $intake) : null,
+                'reroute' => ! $held && $intake->route === Intake::ROUTE_HUMAN && ! $rerouted ? route('intake.reroute', $intake) : null,
             ],
         ];
     }

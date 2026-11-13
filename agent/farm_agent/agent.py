@@ -44,6 +44,17 @@ ERROR_AFTER_POLLS = 12          # an "error" of our print is believed after this
 # all the same: F26-000108, 29 Oct 2026)
 CONFIRM_WAIT_SECONDS = 60.0
 CONFIRM_POLL_SECONDS = 2.0
+# cancel: how long the second step (the driver's cancel_fallback) has to show in the printer's state, and how long
+# the heaters get to go off by themselves after a cancelled print before the agent switches them off
+FALLBACK_WAIT_SECONDS = 20.0
+RESULT_LIMIT = 300              # characters of a command's result the server accepts (AgentController::commandResult)
+SAID_LIMIT = 110                # of them, what the refused call itself said, so the reason after it still fits
+COOL_WAIT_SECONDS = 10.0
+
+# the answer to a pause asked while the printer still heats and levels: a Kobra S1 does not take it then, the call
+# ran into its limit and the command failed a minute later with a technical line (F26-000158, 11 Nov 2026). The server
+# words this sentence for the operator (FarmCommand::resultText), so it stays as it is.
+PAUSE_WHILE_STARTING = "the printer is getting ready (heating, levelling); a pause will work once the first layer has started"
 
 # the printer's storage: what a file may weigh to go up to the server, and which files are the farm's own (the agent
 # names every print mp<job>-<server name>, docs/AM.md §10); a cleanup never touches anything else
@@ -120,6 +131,7 @@ class Tracked:
     errors: int = 0                 # polls in a row the printer called our print an error (a Kobra S1 says so for a moment while it starts)
     final: bool = False             # a terminal state was put into a report; forget the job once the server has it
     park: Optional[list] = None     # [x, y] when the G-code parks the head after every layer for a picture
+    cancelled: bool = False         # a cancel command for this job was confirmed by the printer's state
 
 
 class PrinterWorker:
@@ -146,6 +158,14 @@ class PrinterWorker:
         if ours and j.status in (JOB_PRINTING, JOB_PAUSED):
             self.dirty = self.dirty or not t.seen_printing     # worth remembering across a restart
             t.seen_printing, t.misses, t.errors = True, 0, 0
+        # a cancel the printer's state confirmed: the job is cancelled whatever the printer says about the file now
+        # (after SDCARD_RESET_FILE it names no file at all, which used to end as "failed" eight polls later)
+        if t.cancelled and not (ours and j.status in (JOB_PRINTING, JOB_PAUSED)):
+            out["job"] = {"id": t.job_id, "status": JOB_CANCELLED, "message": (j.message if ours else "") or "cancelled on the farm's command"}
+            if ours:
+                out["job"].update(progress=j.progress, print_duration=j.print_duration, filament_used=j.filament_used)
+            t.final = True
+            return out
         # "error" has to stay: a Kobra S1 (Rinkhals) reports print_stats.state "error" for a poll or two while it heats and
         # levels, then prints on; a failure reported on that one sample closed the order, gave the credit back and left
         # the print running unwatched (F26-000059, 12 Oct 2026)
@@ -332,7 +352,7 @@ class Agent:
                 if kind == "start":
                     message = await self._start(w, cmd)
                 elif kind in ("pause", "resume", "cancel"):
-                    message = await self._control(w, kind)
+                    message = await self._control(w, kind, cmd.get("job_id"))
                 elif kind == "reset":
                     await w.driver.reset()
                 elif kind == "light":
@@ -354,7 +374,8 @@ class Agent:
                 ok, message = False, str(e)
                 log.error("%s: %s failed: %s", w.key, cmd.get("type"), e)
         try:
-            await self.server.command_result(int(cmd["id"]), ok, message)
+            # the server takes at most RESULT_LIMIT characters; a longer note would be refused and the command left open
+            await self.server.command_result(int(cmd["id"]), ok, message[:RESULT_LIMIT])
         except ServerError as e:
             log.warning("could not report the result of command %s: %s", cmd.get("id"), e)
         self._wake.set()
@@ -387,31 +408,132 @@ class Agent:
         self._save_state()
         return "; ".join(notes)
 
-    async def _control(self, w: PrinterWorker, kind: str) -> str:
+    async def _control(self, w: PrinterWorker, kind: str, job_id=None) -> str:
         """pause / resume / cancel. A call the printer refused or left unanswered is not the end of it: the printer's
         state over the next CONFIRM_WAIT_SECONDS decides (a Kobra S1 under Rinkhals answers print/resume only after it
         has fed the filament, so the call ran into TimeoutError while the print went on; the admin saw "failed" twice
-        on F26-000108). Returns a note for the command's result."""
+        on F26-000108). A cancel is judged by the state even when the call was answered (_cancel). A pause asked while
+        the printer is still getting ready is refused at once with a plain sentence. Returns a note for the command's
+        result."""
+        before = await w.driver.status()
+        if kind == "pause":
+            j = before.job
+            # the numbers the start phase is told by, in the log for the next look at a real printer (docs/AM.md §13)
+            log.info("%s: pause asked: state %s, progress %s, print_duration %s, filament_used %s, nozzle %s/%s, bed %s/%s, layer %s, starting %s",
+                     w.key, before.state, j.progress if j else None, j.print_duration if j else None, j.filament_used if j else None,
+                     before.telemetry.get("extruder"), before.telemetry.get("extruder_target"), before.telemetry.get("bed"),
+                     before.telemetry.get("bed_target"), before.telemetry.get("layer"), j.starting if j else None)
+            if before.state == PRINTING and j is not None and j.starting:
+                raise DriverError(PAUSE_WHILE_STARTING)
+        said: Optional[str] = None
         try:
             await getattr(w.driver, kind)()
-            return ""
         except DriverError as e:
             said = str(e).strip()
-        wanted = {
-            "pause": lambda st: st.state == PAUSED,
-            "resume": lambda st: st.state == PRINTING,
-            "cancel": lambda st: st.state not in (PRINTING, PAUSED) or (st.job is not None and st.job.status == JOB_CANCELLED),
-        }[kind]
+        if kind == "cancel":
+            return await self._cancel(w, before, said, job_id)
+        if said is None:
+            return ""
+        wanted = {"pause": lambda st: st.state == PAUSED, "resume": lambda st: st.state == PRINTING}[kind]
         log.warning("%s: %s said %s, watching the printer's state for %.0f s", w.key, kind, said, CONFIRM_WAIT_SECONDS)
+        took, _ = await self._watch(w, wanted, CONFIRM_WAIT_SECONDS)
+        if took is None:
+            raise DriverError(f"{said}; the printer's state did not change in {CONFIRM_WAIT_SECONDS:.0f} s")
+        log.info("%s: %s confirmed by the printer's state after %.0f s", w.key, kind, took)
+        return f"confirmed by the printer's state after {took:.0f} s; the call itself said: {said}"
+
+    async def _watch(self, w: PrinterWorker, wanted, seconds: float, at_once: bool = False) -> tuple:
+        """Reads the printer's state every CONFIRM_POLL_SECONDS until `wanted` holds or `seconds` are over; with
+        `at_once` the first look comes before the first wait. Returns (seconds it took or None, the last status that
+        was not offline or None)."""
         started = time.monotonic()
-        while time.monotonic() - started < CONFIRM_WAIT_SECONDS:
-            await asyncio.sleep(CONFIRM_POLL_SECONDS)
+        last = None
+        first = at_once
+        while first or time.monotonic() - started < seconds:
+            if not first:
+                await asyncio.sleep(CONFIRM_POLL_SECONDS)
+            first = False
             now = await w.driver.status()
-            if now.state != OFFLINE and wanted(now):
-                took = time.monotonic() - started
-                log.info("%s: %s confirmed by the printer's state after %.0f s", w.key, kind, took)
-                return f"confirmed by the printer's state after {took:.0f} s; the call itself said: {said}"
-        raise DriverError(f"{said}; the printer's state did not change in {CONFIRM_WAIT_SECONDS:.0f} s")
+            if now.state == OFFLINE:
+                continue
+            last = now
+            if wanted(now):
+                return time.monotonic() - started, now
+        return None, last
+
+    async def _cancel(self, w: PrinterWorker, before, said: Optional[str], job_id=None) -> str:
+        """A cancel is done when the printer's state says so, not when the call was answered: a Kobra S1 under Rinkhals,
+        stopped on its screen and sitting in "paused", answered print/cancel with ok and kept the file for fifteen
+        minutes; the order was "cancelled" on the web meanwhile and the printer blocked (F26-000158, 11 Nov 2026).
+        The state is watched for CONFIRM_WAIT_SECONDS; a print that stays gets the driver's second step
+        (cancel_fallback) and FALLBACK_WAIT_SECONDS more; a print that still stays fails the command with the reason,
+        and the server tells the operator. Afterwards the heaters are looked at (_cool)."""
+        ended = lambda st: st.state not in (PRINTING, PAUSED) or (st.job is not None and st.job.status == JOB_CANCELLED)  # noqa: E731
+        answered = "cancel was answered ok" if said is None else f"cancel said: {said[:SAID_LIMIT]}"
+        if said is not None:
+            log.warning("%s: %s, watching the printer's state for %.0f s", w.key, answered, CONFIRM_WAIT_SECONDS)
+        notes = []
+        took, last = await self._watch(w, ended, CONFIRM_WAIT_SECONDS, at_once=True)
+        if took is not None:
+            if said is not None:
+                notes.append(f"confirmed by the printer's state after {took:.0f} s; the call itself said: {said[:SAID_LIMIT]}")
+        else:
+            if last is None:
+                raise DriverError(f"cancel not confirmed: {answered}, but the printer has not answered for {CONFIRM_WAIT_SECONDS:.0f} s; "
+                                  "nobody knows whether the print stopped")
+            stuck = f"cancel not confirmed: {answered}, but the printer is still {last.state} after {CONFIRM_WAIT_SECONDS:.0f} s"
+            holds = last.job.filename if last.job else ""
+            has_step = type(w.driver).cancel_fallback is not PrinterDriver.cancel_fallback
+            if has_step and holds and not OUR_FILES.match(holds) and not (w.tracked and _same_file(holds, w.tracked.filename)):
+                # a print somebody started at the printer is never ended by force from here
+                raise DriverError(f"{stuck} with a file that is not the farm's ({holds}); stop it on the printer's screen")
+            log.warning("%s: %s, trying the second step", w.key, stuck)
+            try:
+                step = await w.driver.cancel_fallback()
+            except DriverError as e:
+                raise DriverError(f"{stuck} and {e}; stop the print on the printer's screen") from e
+            if step is None:
+                raise DriverError(f"{stuck} and has no second way to end a print; stop it on the printer's screen")
+            took, _ = await self._watch(w, ended, FALLBACK_WAIT_SECONDS, at_once=True)
+            if took is None:
+                raise DriverError(f"{stuck} and after {step}; stop the print on the printer's screen")
+            log.info("%s: %s ended the print the cancel left %s", w.key, step, last.state)
+            notes.append(f"{answered}, but the printer stayed {last.state} for {CONFIRM_WAIT_SECONDS:.0f} s; {step} ended the print")
+        # the job this agent tracks here is the cancelled one: its end is reported as cancelled (PrinterWorker.report)
+        t = w.tracked
+        if t and not t.final and (job_id is None or int(job_id) == t.job_id):
+            t.cancelled = True
+            self._save_state()
+        if before.state in (PRINTING, PAUSED, OFFLINE):
+            note = await self._cool(w)
+            if note:
+                notes.append(note)
+        return "; ".join(notes)
+
+    async def _cool(self, w: PrinterWorker) -> str:
+        """After a cancelled print the printer has to end at rest with the heating off. A cancel macro does that by
+        itself; a print ended by the second step, or cancelled while it was still heating, may be left hot. The targets
+        get COOL_WAIT_SECONDS to drop, then the driver is asked to switch them off. Returns a note ("" = cold)."""
+        def hot(st) -> str:
+            on = [f"{name} {st.telemetry[key]:.0f}" for name, key in (("nozzle", "extruder_target"), ("bed", "bed_target"))
+                  if isinstance(st.telemetry.get(key), (int, float)) and st.telemetry[key] > 0]
+            return ", ".join(on)
+
+        _, last = await self._watch(w, lambda st: st.state in (PRINTING, PAUSED) or not hot(st), COOL_WAIT_SECONDS, at_once=True)
+        if last is None or last.state in (PRINTING, PAUSED) or not hot(last):
+            return ""       # cold, unreachable, or printing again: nothing of ours to switch off
+        was = hot(last)
+        try:
+            step = await w.driver.heaters_off()
+        except DriverError as e:
+            return f"the heaters are still on ({was}) and could not be switched off ({e}); switch them off at the printer"
+        if step is None:
+            return f"the heaters are still on ({was}); switch them off at the printer"
+        _, last = await self._watch(w, lambda st: not hot(st), COOL_WAIT_SECONDS, at_once=True)
+        if last is not None and hot(last):
+            return f"the heaters are still on ({hot(last)}) after {step}; switch them off at the printer"
+        log.info("%s: the cancelled print left the heaters on (%s), switched off with %s", w.key, was, step)
+        return f"the heaters were left on ({was}), switched off with {step}"
 
     # -- the printer's storage -------------------------------------------------------------------------------------
     async def _files(self, w: PrinterWorker, extra: Optional[dict] = None) -> str:
@@ -502,4 +624,4 @@ class Agent:
         for key, t in data.items():
             if key in self.workers:
                 self.workers[key].tracked = Tracked(job_id=int(t["job_id"]), filename=str(t["filename"]), seen_printing=bool(t.get("seen_printing")),
-                                                    park=t.get("park"))
+                                                    park=t.get("park"), cancelled=bool(t.get("cancelled")))

@@ -1,4 +1,4 @@
-@extends('layouts.app', ['title' => $initial ? ($initial['file']['name'] ?? 'matplace') . ' · matplace' : 'matplace', 'tool' => $initial ? null : 'calc'])
+@extends('layouts.app', ['title' => $initial ? ($initial['file']['name'] ?? 'matplace') . ' · matplace' : 'matplace', 'tool' => $initial ? null : 'calc', 'ogImage' => \App\Http\Controllers\OgController::url('site', 'home')])
 
 @php
     $mode = $mode ?? 'public';
@@ -22,7 +22,8 @@
 @push('head')
 {{-- who we are and where the site's search box leads: once, on the home page --}}
 <x-jsonld :data="\App\Support\Schema::organization()" />
-<x-jsonld :data="\App\Support\Schema::website()" />
+{{-- the site says about itself what the home page's title and description say (docs/AN.md §23.6) --}}
+<x-jsonld :data="\App\Support\Schema::website() + array_filter(['description' => \App\Support\ToolSeo::texts('calc')['description'] ?? null])" />
 @endpush
 
 @section('content')

@@ -35,6 +35,9 @@ class Intake extends Model
 
     public const STATUS_CLOSED = 'closed';
 
+    /** Held by the rules against advertising (App\Domain\Intake\IntakeSpam): never sent to the model, out of the admin's default list. */
+    public const STATUS_SPAM = 'spam';
+
     /** Where an intake's files live on the local disk. */
     public const DIR = 'intake';
 

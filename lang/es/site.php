@@ -59,7 +59,7 @@ return [
     ],
     'og' => [
         'title' => 'Impresión 3D por encargo',
-        'line' => 'Suba un modelo o créelo. Ve el precio al instante, lo imprimimos y se lo enviamos.',
+        'line' => 'Escriba qué quiere fabricar o añada una foto. Ve el precio antes de pagar, lo imprimimos y se lo enviamos.',
         'print_from' => 'Lo imprimimos desde :price',
         'print_it' => 'Lo imprimimos y se lo enviamos',
     ],

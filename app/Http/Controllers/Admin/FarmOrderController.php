@@ -9,6 +9,8 @@ use App\Domain\Farm\FarmSettings;
 use App\Domain\Farm\GcodeSlot;
 use App\Domain\Farm\OrderFlow;
 use App\Domain\Farm\OrderService;
+use App\Domain\Farm\PrinterFiles;
+use App\Domain\Farm\PrinterStatus;
 use App\Domain\Farm\PrintPhotos;
 use App\Domain\Farm\PrintProfile;
 use App\Domain\Farm\PrintSettings;
@@ -18,6 +20,7 @@ use App\Engines\Shipping\ShippingCarrier;
 use App\Engines\Shipping\ShippingFailed;
 use App\Http\Controllers\Controller;
 use App\Jobs\ComposePrintPhoto;
+use App\Models\FarmColor;
 use App\Models\FarmCommand;
 use App\Models\FarmOrder;
 use App\Models\FarmPrinter;
@@ -29,6 +32,8 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
+use Illuminate\Support\Carbon;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\View\View;
 use Symfony\Component\HttpFoundation\BinaryFileResponse;
@@ -38,10 +43,70 @@ class FarmOrderController extends Controller
 {
     public function __construct(private readonly OrderFlow $flow, private readonly Dispatcher $dispatcher, private readonly FarmSettings $settings) {}
 
-    /** Printers, what runs on them, what waits, and when each waiting order will get its turn. */
+    /**
+     * "Tiskárny a fronta": the short list (docs/AQ.md). Printers grouped by farm (the place they stand at, App\Models\Farm;
+     * the ones not assigned yet are a group of their own), each on one row: status, the plate button, the order that
+     * prints or the last one printed, the next one waiting. Everything else about a printer is on its detail (printer()).
+     */
     public function dashboard(): View
     {
-        $printers = FarmPrinter::with(['slots.color.material', 'agent'])->orderBy('id')->get()->map(function (FarmPrinter $p) {
+        $rows = $this->printerRows(FarmPrinter::with(['slots.color.material', 'agent', 'farm'])->orderBy('id')->get())->map(fn (array $row) => $row + $this->overview($row));
+
+        return view('admin.farm.overview', [
+            // farms in their `sort` order, the printers not assigned to a farm last (key 0)
+            'groups' => $rows->groupBy(fn (array $row) => (int) $row['printer']->farm_id)
+                ->sortBy(fn (Collection $g, int $id) => $id === 0 ? [1, 0, 0] : [0, (int) $g->first()['printer']->farm?->sort, $id]),
+            'attention' => $this->attention()->with(['user', 'modelFile'])->latest('id')->limit(30)->get(),
+        ]);
+    }
+
+    /** One printer with everything the overview used to show for every machine at once: camera, telemetry, commands, job, queue, spools, files. */
+    public function printer(FarmPrinter $printer): View
+    {
+        $printer->load(['slots.color.material', 'agent', 'farm']);
+        $row = $this->printerRows(collect([$printer]))->first();
+        $files = app(PrinterFiles::class);
+
+        return view('admin.farm.printer', [
+            'printers' => collect([$row]),
+            'printer' => $printer,
+            'overview' => $this->overview($row),
+            'colors' => FarmColor::with('material')->where('enabled', true)->get()->sortBy(fn ($c) => [$c->material->sort, $c->sort, $c->name])->values(),
+            // the printer's disk (docs/AM.md §10): the agent's last list, the copies on the server, what must stay, what the commands said
+            'files' => $printer->isAgentDriven() ? ['listing' => $files->listing($printer), 'fetched' => $files->fetched($printer), 'keep' => $files->keep($printer), 'commands' => $files->commands($printer)] : null,
+        ]);
+    }
+
+    /**
+     * What the short list says about a printer on top of its row: the status word (PrinterStatus), the order that
+     * prints with the hour it should end, the last order printed, how many wait.
+     *
+     * @param  array{printer: FarmPrinter, job: FarmPrintJob|null, queue: Collection}  $row
+     * @return array{status: array, running: FarmOrder|null, finish_at: Carbon|null, last: FarmOrder|null, waiting: Collection<int, FarmOrder>}
+     */
+    private function overview(array $row): array
+    {
+        $p = $row['printer'];
+        // a manual printer has no job: the order the operator moved to "printing" is what runs on it
+        $running = $row['job']?->order ?? FarmOrder::where('farm_printer_id', $p->id)->where('status', FarmOrder::STATUS_PRINTING)->latest('started_at')->first();
+        $eta = $running ? $this->dispatcher->estimate($running->setRelation('printer', $p), $this->settings) : null;
+
+        return [
+            'status' => PrinterStatus::of($p, $row['job'], $running),
+            'running' => $running,
+            'finish_at' => $eta ? now()->addMinutes((int) $eta['finish_in']) : null,
+            // what waits for this printer: its queue in its order, then the paid orders that wait for the admin's approval
+            // (those hold the printer up by the admin, not by the queue; the row says which kind the first one is)
+            'waiting' => $row['queue']->pluck('order')->concat(FarmOrder::where('farm_printer_id', $p->id)->where('status', FarmOrder::STATUS_PAID)->orderBy('paid_at')->orderBy('id')->get())->values(),
+            'last' => $running ? null : FarmOrder::where('farm_printer_id', $p->id)->whereIn('status', [FarmOrder::STATUS_DONE, FarmOrder::STATUS_HANDED_OVER])
+                ->whereNotNull('finished_at')->orderByDesc('finished_at')->first(),
+        ];
+    }
+
+    /** Printers, what runs on them, what waits, and when each waiting order will get its turn. */
+    private function printerRows(Collection $printers): Collection
+    {
+        return $printers->map(function (FarmPrinter $p) {
             $queue = $this->dispatcher->queue($p)->load(['user', 'color', 'modelFile']);
 
             return [
@@ -51,14 +116,10 @@ class FarmOrderController extends Controller
                 // the last thing the agent was told to do with this machine today, and what came of it (a resume that was
                 // confirmed by the printer's state, a start refused for an empty slot...)
                 'command' => FarmCommand::where('farm_printer_id', $p->id)->where('created_at', '>', now()->subDay())->latest('id')->first(),
+                // a cancel the printer has not confirmed or did not carry out: the order is cancelled, the machine is not free
+                'cancel' => $p->isAgentDriven() ? $p->unconfirmedCancel() : null,
             ];
         });
-
-        return view('admin.farm.dashboard', [
-            'printers' => $printers,
-            'attention' => $this->attention()->with(['user', 'modelFile'])->latest('id')->limit(30)->get(),
-            'requireApproval' => (bool) $this->settings->get('require_approval'),
-        ]);
     }
 
     /**
@@ -341,6 +402,10 @@ class FarmOrderController extends Controller
             return $this->answer($request, true, __('farm.admin.command_sent'));
         }
         $job = $printer->activeJob();
+        if (! $job && $data['type'] === 'cancel') {
+            // the order is cancelled already, the printer has not let go of its print: the cancel may be sent again
+            $job = $printer->unconfirmedCancel()?->printJob;
+        }
         if (! $job) {
             return $this->answer($request, false, __('farm.admin.no_job'));
         }

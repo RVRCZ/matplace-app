@@ -47,7 +47,7 @@ class FarmPrinter extends Model
     ];
 
     protected $fillable = [
-        'name', 'code', 'model', 'key', 'farm_agent_id', 'mode', 'enabled', 'bed_x', 'bed_y', 'bed_z', 'nozzle_mm',
+        'name', 'code', 'model', 'key', 'farm_id', 'farm_agent_id', 'mode', 'enabled', 'bed_x', 'bed_y', 'bed_z', 'nozzle_mm',
         'machine_profile', 'process_profiles', 'machine_overrides', 'process_overrides', 'time_factor', 'weight_factor',
         'hourly_rate', 'bed_clear', 'bed_cleared_at', 'state', 'telemetry', 'last_seen_at', 'snapshot_path', 'snapshot_at',
         'offline_notified_at', 'offline_alerted_at', 'timelapse', 'message', 'message_at', 'files', 'files_at',
@@ -85,6 +85,12 @@ class FarmPrinter extends Model
             && ($t['mode'] === 'always' || ($t['mode'] === 'consent' && $order->video_consent));
 
         return $on ? array_intersect_key($t, array_flip(['park_x', 'park_y', 'dwell_ms', 'lift_mm', 'travel_mm_s', 'sync'])) : null;
+    }
+
+    /** The place the machine stands at (docs/AQ.md); null = not assigned to a farm yet. */
+    public function farm(): BelongsTo
+    {
+        return $this->belongsTo(Farm::class);
     }
 
     public function agent(): BelongsTo
@@ -299,6 +305,23 @@ class FarmPrinter extends Model
         }
 
         return $this->isAgentDriven() && $this->isOnline() && in_array($this->state, [self::STATE_PRINTING, self::STATE_PAUSED], true);
+    }
+
+    /**
+     * The cancel this printer has not confirmed or did not carry out (FarmCommand::cancelState), with its state in
+     * `cancel_state`; null when there is none. The order is "cancelled" on the web meanwhile, so this is the one place
+     * the operator sees that the machine still holds the print (F26-000158, docs/AM.md §13).
+     */
+    public function unconfirmedCancel(): ?FarmCommand
+    {
+        $command = FarmCommand::with('printJob.order')->where('farm_printer_id', $this->id)->where('type', FarmCommand::TYPE_CANCEL)->latest('id')->first();
+        $state = $command?->setRelation('printer', $this)->cancelState();
+        if ($state === null) {
+            return null;
+        }
+        $command->cancel_state = $state;
+
+        return $command;
     }
 
     public function activeJob(): ?FarmPrintJob

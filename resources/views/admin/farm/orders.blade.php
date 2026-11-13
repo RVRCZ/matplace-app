@@ -25,7 +25,7 @@
                     <td class="px-3 py-2">{{ $o->est_minutes }}@if($o->actual_minutes) <span class="text-xs text-slate-500">→ {{ $o->actual_minutes }}</span>@endif</td>
                     <td class="px-3 py-2">{{ $o->est_grams }}@if($o->actual_grams) <span class="text-xs text-slate-500">→ {{ $o->actual_grams }}</span>@endif</td>
                     <td class="px-3 py-2 font-semibold">@if($o->price_total)@money($o->total())@else — @endif</td>
-                    <td class="px-3 py-2">{{ __('farm.status.'.$o->status) }}@if($o->error)<span class="block text-xs text-red-700">{{ $o->error }}</span>@endif</td>
+                    <td class="px-3 py-2">{{ __('farm.status.'.$o->status) }}@if($o->error)<span class="block text-xs text-red-700">{{ $o->error }}</span>@endif @if($cs = $o->cancelState())<span class="block text-xs font-semibold {{ $cs === \App\Models\FarmCommand::CANCEL_REFUSED ? 'text-red-700' : 'text-amber-700' }}" data-cancel-state="{{ $cs }}">{{ __('farm.admin.cancel.'.$cs) }}</span>@endif</td>
                 </tr>
             @empty
                 <tr><td colspan="8" class="px-3 py-6 text-center text-slate-500">{{ __('farm.no_orders') }}</td></tr>

@@ -5,6 +5,8 @@ Moonraker (Klipper) driver - Anycubic Kobra S1 with the Rinkhals firmware overla
   upload     POST /server/files/upload            (multipart, root=gcodes)
   start      POST /printer/print/start?filename=
   control    POST /printer/print/pause | resume | cancel
+  cancel 2   POST /printer/gcode/script?script=SDCARD_RESET_FILE when the print stays after an answered cancel, then
+             TURN_OFF_HEATERS (else M104 S0, M140 S0) when the heaters were left on (docs/AM.md §13)
   reset      POST /printer/gcode/script?script=SDCARD_RESET_FILE (+ /printer/firmware_restart after a Klipper shutdown,
              /printer/print/cancel as the fallback on GoKlipper) - clears the "error" a failed print leaves behind
   changes    websocket /websocket, printer.objects.subscribe -> notify_status_update (instant state changes)
@@ -172,6 +174,11 @@ class MoonrakerDriver(PrinterDriver):
                 filament_used=float(stats.get("filament_used") or 0),
                 # a print that stands still carries the whole reason, a running one only what print_stats says
                 message=message if job_state in (JOB_PAUSED, JOB_FAILED) else str(stats.get("message") or ""),
+                # the start macro (heating, LeviQ, purge line): the file has not moved, no layer is counted, nothing
+                # was extruded. All three must hold, so a running print is never mistaken for a start; a start that
+                # is missed only means the pause is tried as before (docs/AM.md §13)
+                starting=(job_state == JOB_PRINTING and float(progress or 0) <= 0 and int(_num(info.get("current_layer")) or 0) <= 0
+                          and float(stats.get("filament_used") or 0) <= 0),
             )
         return PrinterStatus(printer_state, {k: v for k, v in telemetry.items() if v is not None}, job)
 
@@ -384,6 +391,27 @@ class MoonrakerDriver(PrinterDriver):
 
     async def cancel(self) -> None:
         await self._post("/printer/print/cancel")
+
+    async def cancel_fallback(self) -> Optional[str]:
+        """SDCARD_RESET_FILE: lets go of the file, print_stats goes to "standby". Seen on U2 (Kobra S1, Rinkhals,
+        11 Nov 2026, F26-000158): a print stopped on the screen sat in "paused", print/cancel answered ok twice and
+        changed nothing, this took it to standby at once. GoKlipper lists the command in its help. It runs no cancel
+        macro, so the agent looks at the heaters afterwards (heaters_off)."""
+        try:
+            await self._post("/printer/gcode/script", params={"script": "SDCARD_RESET_FILE"}, timeout=aiohttp.ClientTimeout(total=60))
+        except DriverError as e:
+            raise DriverError(f"SDCARD_RESET_FILE was refused ({e})") from e
+        return "SDCARD_RESET_FILE"
+
+    async def heaters_off(self) -> Optional[str]:
+        try:
+            await self._post("/printer/gcode/script", params={"script": "TURN_OFF_HEATERS"}, timeout=aiohttp.ClientTimeout(total=60))
+            return "TURN_OFF_HEATERS"
+        except DriverError as e:
+            log.info("%s: TURN_OFF_HEATERS refused (%s), sending M104 S0 and M140 S0", self.key, e)
+        for script in ("M104 S0", "M140 S0"):
+            await self._post("/printer/gcode/script", params={"script": script}, timeout=aiohttp.ClientTimeout(total=60))
+        return "M104 S0 and M140 S0"
 
     async def reset(self) -> None:
         """Clear the error the last print left behind, so the printer reports idle again and the queue may go on.

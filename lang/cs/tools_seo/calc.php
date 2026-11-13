@@ -1,8 +1,11 @@
 <?php
 
 return [
-    'title' => 'Cena 3D tisku online: kalkulačka z vašeho modelu',
-    'description' => 'Nahrajete 3D model a hned vidíte dobu tisku, hmotnost a orientační cenu. Zvolíte materiál a počet kusů, tisk objednáte u nás nebo si model stáhnete.',
+    // the home page asks "Co chcete vyrobit?" (docs/AN.md §23.6): the title and the description say what the page is, a custom print from a photo or words
+    'title' => '3D tisk na zakázku: dárek z fotky, díl z popisu',
+    'description' => 'Napište, co chcete vyrobit, nebo přidejte fotku. Výroba podle fotky nebo popisu: busta, figurka, dárek se jménem i náhradní díl. Cenu vidíte předem.',
+    // the steps below are the calculator's (a 3D file → a price): their own sentence for the HowTo data
+    'howto_description' => 'Nahrajete 3D model a hned vidíte dobu tisku, hmotnost a orientační cenu. Zvolíte materiál a počet kusů, tisk objednáte u nás nebo si model stáhnete.',
     'h1' => 'Kalkulačka 3D tisku: z modelu rovnou k ceně',
     'intro' => [
         'Kalkulačka je pro každého, kdo má hotový 3D model a chce vědět, kolik bude stát jeho tisk. Nahrajete soubor STL, 3MF, OBJ nebo STEP a model se zobrazí v otočném náhledu. Hned vidíte rozměry, dobu tisku, hmotnost materiálu a orientační cenu tisku u nás. K výpočtu se nemusíte registrovat.',

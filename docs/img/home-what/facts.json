@@ -1,0 +1,253 @@
+{
+  "home-390-cs-1": {
+    "name": "home-390-cs-1",
+    "url": "http://127.0.0.1:8123/",
+    "path": "/",
+    "h1": "Co chcete vyrobit?",
+    "h1Seen": true,
+    "leadSeen": true,
+    "goSeen": true,
+    "goLabel": "Vytvořit",
+    "main": "358x60",
+    "viewerSeen": false,
+    "viewerHeight": null,
+    "sampleSeen": false,
+    "viewButtonsSeen": null,
+    "cardsSeen": 0,
+    "firstCard": null,
+    "hScroll": false,
+    "scrollWidth": 390,
+    "wide": [
+      "button chip.min-h-11.whitespace-nowrap 426",
+      "button chip.min-h-11.whitespace-nowrap 426",
+      "button chip.min-h-11.whitespace-nowrap 593",
+      "button chip.min-h-11.whitespace-nowrap 593"
+    ],
+    "wideText": [],
+    "small": [
+      "#intake-trap topic 224x24"
+    ],
+    "smallCount": 1,
+    "bar": null,
+    "says": [
+      "Zdarma a bez registrace. Během minuty navrhneme, jak to vyrobit a kolik to bude stát."
+    ],
+    "state": null,
+    "pageHeight": 11559,
+    "fixed": [],
+    "errors": []
+  },
+  "home-390-en-1": {
+    "name": "home-390-en-1",
+    "url": "http://127.0.0.1:8123/en",
+    "path": "/en",
+    "h1": "What would you like to make?",
+    "h1Seen": true,
+    "leadSeen": true,
+    "goSeen": true,
+    "goLabel": "Create",
+    "main": "358x60",
+    "viewerSeen": false,
+    "viewerHeight": null,
+    "sampleSeen": false,
+    "viewButtonsSeen": null,
+    "cardsSeen": 0,
+    "firstCard": null,
+    "hScroll": false,
+    "scrollWidth": 390,
+    "wide": [
+      "button chip.min-h-11.whitespace-nowrap 404",
+      "button chip.min-h-11.whitespace-nowrap 404",
+      "button chip.min-h-11.whitespace-nowrap 576",
+      "button chip.min-h-11.whitespace-nowrap 576"
+    ],
+    "wideText": [],
+    "small": [
+      "#intake-trap topic 224x24"
+    ],
+    "smallCount": 1,
+    "bar": null,
+    "says": [
+      "Free, no sign-up. Within a minute we'll suggest how to make it and what it will cost."
+    ],
+    "state": null,
+    "pageHeight": 11730,
+    "fixed": [],
+    "errors": []
+  },
+  "home-390-es-1": {
+    "name": "home-390-es-1",
+    "url": "http://127.0.0.1:8123/es",
+    "path": "/es",
+    "h1": "¿Qué quiere fabricar?",
+    "h1Seen": true,
+    "leadSeen": true,
+    "goSeen": true,
+    "goLabel": "Crear",
+    "main": "358x60",
+    "viewerSeen": false,
+    "viewerHeight": null,
+    "sampleSeen": false,
+    "viewButtonsSeen": null,
+    "cardsSeen": 0,
+    "firstCard": null,
+    "hScroll": false,
+    "scrollWidth": 390,
+    "wide": [
+      "button chip.min-h-11.whitespace-nowrap 450",
+      "button chip.min-h-11.whitespace-nowrap 450",
+      "button chip.min-h-11.whitespace-nowrap 670",
+      "button chip.min-h-11.whitespace-nowrap 670"
+    ],
+    "wideText": [],
+    "small": [
+      "#intake-trap topic 224x24"
+    ],
+    "smallCount": 1,
+    "bar": null,
+    "says": [
+      "Gratis y sin registro. En un minuto le proponemos cómo fabricarlo y cuánto costará."
+    ],
+    "state": null,
+    "pageHeight": 11907,
+    "fixed": [],
+    "errors": []
+  },
+  "home-1280-cs-1": {
+    "name": "home-1280-cs-1",
+    "url": "http://127.0.0.1:8123/",
+    "path": "/",
+    "h1": "Co chcete vyrobit?",
+    "h1Seen": true,
+    "leadSeen": true,
+    "goSeen": true,
+    "goLabel": "Vytvořit",
+    "main": "320x60",
+    "viewerSeen": false,
+    "viewerHeight": null,
+    "sampleSeen": false,
+    "viewButtonsSeen": null,
+    "cardsSeen": 0,
+    "firstCard": null,
+    "hScroll": false,
+    "scrollWidth": 1280,
+    "wide": [],
+    "wideText": [],
+    "small": [
+      "#intake-trap topic 224x24"
+    ],
+    "smallCount": 1,
+    "bar": null,
+    "says": [
+      "Zdarma a bez registrace. Během minuty navrhneme, jak to vyrobit a kolik to bude stát."
+    ],
+    "state": null,
+    "pageHeight": 6258,
+    "fixed": [],
+    "errors": []
+  },
+  "home-1280-en-1": {
+    "name": "home-1280-en-1",
+    "url": "http://127.0.0.1:8123/en",
+    "path": "/en",
+    "h1": "What would you like to make?",
+    "h1Seen": true,
+    "leadSeen": true,
+    "goSeen": true,
+    "goLabel": "Create",
+    "main": "320x60",
+    "viewerSeen": false,
+    "viewerHeight": null,
+    "sampleSeen": false,
+    "viewButtonsSeen": null,
+    "cardsSeen": 0,
+    "firstCard": null,
+    "hScroll": false,
+    "scrollWidth": 1280,
+    "wide": [],
+    "wideText": [],
+    "small": [
+      "#intake-trap topic 224x24"
+    ],
+    "smallCount": 1,
+    "bar": null,
+    "says": [
+      "Free, no sign-up. Within a minute we'll suggest how to make it and what it will cost."
+    ],
+    "state": null,
+    "pageHeight": 6352,
+    "fixed": [],
+    "errors": []
+  },
+  "home-1280-es-1": {
+    "name": "home-1280-es-1",
+    "url": "http://127.0.0.1:8123/es",
+    "path": "/es",
+    "h1": "¿Qué quiere fabricar?",
+    "h1Seen": true,
+    "leadSeen": true,
+    "goSeen": true,
+    "goLabel": "Crear",
+    "main": "320x60",
+    "viewerSeen": false,
+    "viewerHeight": null,
+    "sampleSeen": false,
+    "viewButtonsSeen": null,
+    "cardsSeen": 0,
+    "firstCard": null,
+    "hScroll": false,
+    "scrollWidth": 1280,
+    "wide": [],
+    "wideText": [],
+    "small": [
+      "#intake-trap topic 224x24"
+    ],
+    "smallCount": 1,
+    "bar": null,
+    "says": [
+      "Gratis y sin registro. En un minuto le proponemos cómo fabricarlo y cuánto costará."
+    ],
+    "state": null,
+    "pageHeight": 6572,
+    "fixed": [],
+    "errors": []
+  },
+  "home-390-cs-chip": {
+    "name": "home-390-cs-chip",
+    "url": "http://127.0.0.1:8123/",
+    "path": "/",
+    "h1": "Co chcete vyrobit?",
+    "h1Seen": true,
+    "leadSeen": true,
+    "goSeen": true,
+    "goLabel": "Vytvořit",
+    "main": "358x60",
+    "viewerSeen": false,
+    "viewerHeight": null,
+    "sampleSeen": false,
+    "viewButtonsSeen": null,
+    "cardsSeen": 0,
+    "firstCard": null,
+    "hScroll": false,
+    "scrollWidth": 390,
+    "wide": [
+      "button chip.min-h-11.whitespace-nowrap 426",
+      "button chip.min-h-11.whitespace-nowrap 426",
+      "button chip.min-h-11.whitespace-nowrap 593",
+      "button chip.min-h-11.whitespace-nowrap 593"
+    ],
+    "wideText": [],
+    "small": [
+      "#intake-trap topic 224x24"
+    ],
+    "smallCount": 1,
+    "bar": null,
+    "says": [
+      "To je náš příklad. Upravte ho podle sebe (jméno, velikost, barvy), nebo ho odešlete znovu tak, jak je."
+    ],
+    "state": null,
+    "pageHeight": 11559,
+    "fixed": [],
+    "errors": []
+  }
+}

@@ -63,6 +63,7 @@ final class IntakeRouter
         'map' => ['takes' => 'the name of a place: a city, a town, a village, a landscape, a mountain', 'makes' => 'a 3D map of the place: buildings, streets and water, or the relief of the landscape, with the name on the rim', 'when' => 'the thing wanted is a place itself (a home town, a favourite mountain)', 'size' => [100, 250], 'colors' => 3],
         'topper' => ['takes' => 'a name with a number, a heart or a star', 'makes' => 'a cake topper with spikes to push into the cake', 'when' => 'anything for a cake', 'size' => [50, 200], 'colors' => 2],
         'coaster' => ['takes' => 'a photo, a painting, a drawing or a logo', 'makes' => 'a round, square or hexagonal coaster with the picture as flat areas of filament colours', 'when' => 'a well-known painting or picture for the table; a logo; a photo as a small flat thing', 'size' => [80, 120], 'colors' => 4],
+        'relief' => ['takes' => 'a photo: a portrait, a family, a pet, a landscape', 'makes' => 'a relief or a lithophane of the photo in one colour, where thickness makes the picture: a flat panel, a picture for the wall, or a lamp shade the light shines through', 'when' => 'a photo that should become a relief or a lithophane; the words relief, lithophane, embossed, a lamp from a photo', 'size' => [40, 250], 'colors' => 1],
         'filament_art' => ['takes' => 'a photo, a painting, a poster or any picture', 'makes' => 'a picture of layered filament to hang on the wall, A5 to A3, with a frame if wanted', 'when' => 'a painting, a poster or a photo meant to be looked at on a wall; the first choice for a well-known painting or a picture without any other wish', 'size' => [50, 250], 'colors' => 8],
         'earrings' => ['takes' => 'a drawing or a small motif', 'makes' => 'a pair of earrings (the same or mirrored) with an eyelet for a hook', 'when' => 'earrings or jewellery from a small motif or a child\'s drawing', 'size' => [10, 60], 'colors' => 4],
         'papel' => ['takes' => 'a photo of a face, or a picture', 'makes' => 'a papel picado panel: the portrait or the picture cut out in two colours inside a decorated border', 'when' => 'a portrait that should stay a flat picture (a cut-out panel for the wall, a fiesta decoration), not a 3D figure', 'size' => [80, 250], 'colors' => 2],
@@ -89,10 +90,11 @@ final class IntakeRouter
         'map' => '/\bmap[ayu]\b|\bmapu\b|\bm[ěe]st[oa]\b|\bvesnic|\bkrajin|\bhor[ay]\b|\bpraha\b|\bprahy\b|\bbrno\b|\bmap\b|\bcity\b|\btown\b|\bvillage\b|landscape|\bciudad\b|\bpueblo\b|paisaje/u',
         'medallion' => '/medail|\bmedal|medalla|v[íi]t[ěe]z|\bwinner|\bm[íi]sto\b|\bz[áa]vod|\bturnaj|\btournament|\brace\b|\bcampe[óo]n|\btorneo\b/u',
         'coaster' => '/podt[áa]c|\bcoaster|posavasos/u',
+        'relief' => '/reli[ée]f|litofan|lithophan|\brelieve\b/u',
         'earrings' => '/n[áa]u[šs]nic|\bearring|pendiente/u',
         'cutter' => '/vykrajov|cookie cutter|cortador/u',
         'filament_art' => '/\bobraz(u|em|y|ů|ech)?\b|\bmalb|malovan|\bpainting|\bcanvas\b|\bposter|plak[áa]t|na ze[ďd]\b|\bwall\b|\bcuadro\b|pintura|\bcartel\b/u',
-        'charm' => '/p[řr][íi]v[ěe]s|kresb|kresl|obr[áa]z|\blogo\b|pendant|\bcharm\b|drawing|colgante|dibujo/u',
+        'charm' => '/p[řr][íi]v[ěe]s|ozdob[auy]? na strom|\bornament|adorno (de|para el) [áa]rbol|kresb|kresl|obr[áa]z|\blogo\b|pendant|\bcharm\b|drawing|colgante|dibujo/u',
         'keychain' => '/kl[íi][čc]enk|kl[íi][čc]e\b|keychain|key ?ring|llavero/u',
         'text' => '/n[áa]pis|3d text|p[íi]smen|\bletters?\b|\bletras\b|\bhome\b|\blove\b/u',
         'sign' => '/cedulk|jmenovk|\bdve[řr]|\bsign\b|name ?(tag|plate)|\blabel\b|\bjm[ée]n[oa]\b|\bnombre\b|\bplaca\b|letrero|etiqueta/u',
@@ -248,9 +250,15 @@ final class IntakeRouter
             $summaries[$lang] = self::publicNames($text, (string) $lang);
         }
         $summary = trim((string) ($summaries[$locale] ?? $summaries[Locales::DEFAULT] ?? $summaries['en'] ?? ''));
-        if ($summary === '' || ($route === Intake::ROUTE_HUMAN && ($answer['route'] ?? null) !== Intake::ROUTE_HUMAN)) {
+        if ($summary === '' && $route === Intake::ROUTE_TOOL) {
+            // a tool without a sentence of the model (the keyword guess): the house says which tool, and which others would do
+            $name = fn (string $key): string => (string) __('tools.'.$key.'.title', [], Locales::supported($locale) ? $locale : Locales::DEFAULT);
+            $summary = self::sentence('router.summary.tool', $locale, ['tool' => $name((string) $tool)])
+                .($alternatives ? ' '.self::sentence('router.summary.tool_also', $locale, ['tools' => implode(', ', array_map($name, $alternatives))]) : '');
+        } elseif ($summary === '' || ($route === Intake::ROUTE_HUMAN && ($answer['route'] ?? null) !== Intake::ROUTE_HUMAN)) {
             // the assistant said a tool or a shape and the rules said a person: its sentence would promise the wrong thing
-            $summary = self::sentence($wantsShape ? 'router.summary.shape' : 'router.summary.fallback', $locale);
+            // without a photo the sentence does not speak of one (docs/AN.md §23.1: words alone are a wish too)
+            $summary = self::sentence(($wantsShape ? 'router.summary.shape' : 'router.summary.fallback').($hasPhoto ? '' : '_text'), $locale);
         }
 
         return [
@@ -284,7 +292,8 @@ final class IntakeRouter
                 return self::decide([
                     'route' => $route, 'tool_key' => $route === Intake::ROUTE_TOOL ? $target : null,
                     'params' => self::paramsFromWords($t), 'confidence' => self::GUESS_CONFIDENCE, 'summary' => [], 'questions' => [],
-                    'alternatives' => $route === Intake::ROUTE_SHAPE ? self::nearest($t, $hasPhoto) : [],
+                    // a shape names the nearest tools; a tool names the other tools the words speak of too (a medal with a relief from a photo)
+                    'alternatives' => $route === Intake::ROUTE_SHAPE ? self::nearest($t, $hasPhoto) : ($route === Intake::ROUTE_TOOL ? self::alsoNamed($t, $target) : []),
                 ], $hasPhoto, $locale);
             }
         }
@@ -293,6 +302,36 @@ final class IntakeRouter
             'route' => $hasPhoto && $t === '' ? Intake::ROUTE_SHAPE : Intake::ROUTE_HUMAN, 'params' => self::paramsFromWords($t), 'confidence' => 0.3, 'summary' => [],
             'alternatives' => $hasPhoto && $t === '' ? self::nearest($t, true) : [],
         ], $hasPhoto, $locale);
+    }
+
+    /**
+     * The other tools whose words the text says as well, in the order of self::WORDS: what else would do.
+     *
+     * @return list<string>
+     */
+    public static function alsoNamed(string $t, string $chosen): array
+    {
+        $out = [];
+        foreach (self::WORDS as $target => $pattern) {
+            if ($target !== $chosen && isset(self::TOOLS[$target]) && preg_match($pattern, $t)) {
+                $out[] = $target;
+            }
+        }
+
+        return array_slice($out, 0, self::MAX_ALTERNATIVES);
+    }
+
+    /** True when the words name something the router knows (any family of self::WORDS): a wish, whatever else it says. */
+    public static function knows(?string $text): bool
+    {
+        $t = mb_strtolower(trim((string) $text));
+        foreach (self::WORDS as $pattern) {
+            if ($t !== '' && preg_match($pattern, $t)) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     /**
@@ -367,7 +406,7 @@ final class IntakeRouter
     {
         return [
             'route' => Intake::ROUTE_HUMAN, 'tool_key' => null, 'params' => [], 'confidence' => 0.0,
-            'summary' => self::sentence('router.summary.fallback', $locale),
+            'summary' => self::sentence('router.summary.fallback'.($hasPhoto ? '' : '_text'), $locale),
             'answer' => ['route' => null, 'failed' => true, 'has_photo' => $hasPhoto, 'alternatives' => [], 'reason' => ''] + $why,
             'wants_shape' => false,
         ];
@@ -504,9 +543,11 @@ final class IntakeRouter
             '- `human`: only parts with dimensions, tolerances, threads, "so that it fits", a holder or a bracket for a specific thing, a spare part, anything technical, and things where no tool makes sense even with a few questions.',
             '- `file`: only when the visitor says they have a 3D file (STL, 3MF, STEP, OBJ) and asks for nothing else.',
             '',
-            'The main rule: a picture is never a person\'s job. A photo, a drawing, a painting, a logo, a well-known motif, a known character, a poster, a child\'s picture → the nearest tool for a picture, always. A flat motif: coaster, filament_art (a picture for the wall), charm (keys, a bag), earrings, sign. A portrait of a person: figure (a 3D bust or figure) or papel (a flat cut-out panel). An animal: pet. When two tools would do, choose the one the words point to, name the other ones in `alternatives` (up to three, the best first) and ask a question. When you are not sure between tools, still choose a tool and ask; a low confidence is no reason for a person.',
+            'The main rule: a picture is never a person\'s job. A photo, a drawing, a painting, a logo, a well-known motif, a known character, a poster, a child\'s picture → the nearest tool for a picture, always. A flat motif: coaster, filament_art (a picture for the wall), charm (keys, a bag), earrings, sign. A photo whose picture should stand out by thickness or by light: relief. A portrait of a person: figure (a 3D bust or figure) or papel (a flat cut-out panel). An animal: pet. When two tools would do, choose the one the words point to, name the other ones in `alternatives` (up to three, the best first) and ask a question. When you are not sure between tools, still choose a tool and ask; a low confidence is no reason for a person.',
             '',
-            'Rules of thumb: a face or a person → figure; an animal → pet; a drawing, a logo, a child\'s picture or a name meant to hang on keys or a bag → charm; a name as the main thing of a keychain → keychain; a name with a cake → topper; the name of a place → map; a medal, winners, places → medallion; a coaster → coaster; a picture for the wall, a painting, a poster → filament_art; earrings → earrings; a door sign, a name tag, a label → sign; a word standing on its own → text; a cookie cutter → cutter. The photo says what is there, the words say what is to be made of it: a photo of a dog with "a keychain from this" is charm, not pet. A person\'s face without any words is figure (kind bust). An animal without words is pet. A well-known painting without words is filament_art.',
+            'What a tool takes is all it takes. Never promise the customer, and never ask them for, an input that the chosen tool\'s `takes` does not list: do not ask for a photo for a tool that takes no photo, do not promise a relief of a photo on a thing whose tool takes a place, a number, a motif or a text. When the wish asks for a combination no single tool makes (a medal with a relief from a photo: the medal tool takes no photo), a picture is still not a person\'s job: choose the tool for the main thing, say plainly in `summary` what that tool makes and what it does not ("a medal with a number, a motif or a text; a relief of a photo on it is not something we can make yet"), put the tools that DO take the photo into `alternatives` (for a photo: relief, coaster, charm, filament_art, as the catalogue says) and name the best of them in `summary` by its public name. Ask only questions the chosen tool can use.',
+            '',
+            'Rules of thumb: a face or a person → figure; an animal → pet; a drawing, a logo, a child\'s picture or a name meant to hang on keys or a bag → charm; a name as the main thing of a keychain → keychain; a name with a cake → topper; the name of a place → map; a medal, winners, places → medallion; a coaster → coaster; a picture for the wall, a painting, a poster → filament_art; a photo as a relief or a lithophane → relief; earrings → earrings; a door sign, a name tag, a label → sign; a word standing on its own → text; a cookie cutter → cutter. The photo says what is there, the words say what is to be made of it: a photo of a dog with "a keychain from this" is charm, not pet. A person\'s face without any words is figure (kind bust). An animal without words is pet. A well-known painting without words is filament_art.',
             '',
             'Parameters: `size_mm` is the main size the tool asks for (the height for figure and pet, the letter height for sign and text, the width for the rest), inside the tool\'s range, converted from centimetres; null when not said. `colors`: colour names in English as the visitor named them, at most the tool\'s count. `copies`: how many pieces, null when not said. `text`: a name or an inscription to put on the thing, at most 24 characters, null otherwise. `place`: the place of a map. `kind`: bust or figure for figure, realistic, miniature or cartoon for pet; null otherwise.',
             '',

@@ -32,7 +32,7 @@
         </fieldset>
 
         <label id="relief-drop" class="block cursor-pointer rounded-xl border-2 border-dashed border-line p-5 text-center hover:border-ink">
-            <input id="relief-photo" name="photo" type="file" accept="image/jpeg,image/png,image/webp" class="sr-only">
+            <input id="relief-photo" name="photo" data-intake-photo type="file" accept="image/jpeg,image/png,image/webp" class="sr-only">
             <img id="relief-preview" alt="" class="mx-auto hidden max-h-48 rounded-lg">
             <div id="relief-pick" class="text-ink"><x-icon name="camera" class="mx-auto h-7 w-7 text-muted" /><span class="mt-1 block font-medium">{{ __('relief.pick') }}</span></div>
         </label>

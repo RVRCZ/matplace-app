@@ -48,6 +48,7 @@ export async function preloadIntake(payload: IntakePayload): Promise<void> {
     // the parameters first: the modules read the form on every change, so the photo's upload sees them set
     if (size !== null) {
         setNumber(document.getElementById('figure-size') as HTMLInputElement | null, size);        // the bust, the pet: the height
+        setNumber(document.getElementById('relief-w') as HTMLInputElement | null, size);           // the relief, the lithophane: the width
         setNumber(document.querySelector<HTMLInputElement>('[data-param="width"]'), size);          // the shape tools, the picture for the wall, the cutter: the width
         setNumber(document.querySelector<HTMLInputElement>('[data-param="size"]'), size);           // the map: the side
         setNumber(document.querySelector<HTMLInputElement>('[data-param="text_height"]'), size);    // the sign, the standing letters: the letter height

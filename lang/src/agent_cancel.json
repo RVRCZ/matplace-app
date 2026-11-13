@@ -1,0 +1,122 @@
+{
+    "farm.admin.result.pause_starting": [
+        "Tiskárna se připravuje (nahřívá a vyrovnává podložku), pauza půjde za chvíli, až začne první vrstva.",
+        "The printer is getting ready (heating and levelling), a pause will work in a moment, once the first layer starts.",
+        "La impresora se está preparando (calentando y nivelando), la pausa funcionará en un momento, cuando empiece la primera capa."
+    ],
+    "farm.admin.result.pause_refused": [
+        "Tiskárna pauzu nepřijala, její stav se :s s nezměnil. Zkuste to za chvíli znovu.",
+        "The printer did not take the pause, its state did not change in :s s. Try again in a moment.",
+        "La impresora no aceptó la pausa, su estado no cambió en :s s. Inténtelo de nuevo en un momento."
+    ],
+    "farm.admin.result.resume_refused": [
+        "Tiskárna v tisku nepokračuje, její stav se :s s nezměnil. Podívejte se na její displej.",
+        "The printer did not resume, its state did not change in :s s. Look at its screen.",
+        "La impresora no reanudó la impresión, su estado no cambió en :s s. Mire su pantalla."
+    ],
+    "farm.admin.result.cancel_unreachable": [
+        "Tiskárna na zrušení neodpověděla a agent ji nevidí. Nikdo neví, jestli tisk skončil. Zkontrolujte tiskárnu.",
+        "The printer did not answer the cancel and the agent cannot see it. Nobody knows whether the print stopped. Check the printer.",
+        "La impresora no respondió a la cancelación y el agente no la ve. Nadie sabe si la impresión se detuvo. Compruebe la impresora."
+    ],
+    "farm.admin.result.cancel_foreign": [
+        "Tiskárna tisk nezrušila a drží soubor, který není z farmy (:file). Zastavte ho na displeji tiskárny.",
+        "The printer did not cancel and holds a file that is not the farm's (:file). Stop it on the printer's screen.",
+        "La impresora no canceló y mantiene un archivo que no es de la granja (:file). Deténgalo en la pantalla de la impresora."
+    ],
+    "farm.admin.result.cancel_stuck": [
+        "Tiskárna tisk nezrušila, zůstává ve stavu „:state“. Zastavte tisk na displeji tiskárny.",
+        "The printer did not cancel the print, it stays “:state”. Stop the print on the printer's screen.",
+        "La impresora no canceló la impresión, sigue en estado «:state». Detenga la impresión en la pantalla de la impresora."
+    ],
+    "farm.admin.result.cancel_stuck_step": [
+        "Tiskárna tisk nezrušila ani druhým krokem (:step), zůstává ve stavu „:state“. Zastavte tisk na displeji tiskárny.",
+        "The printer did not cancel the print, not even by the second step (:step), it stays “:state”. Stop the print on the printer's screen.",
+        "La impresora no canceló la impresión ni con el segundo paso (:step), sigue en estado «:state». Detenga la impresión en la pantalla de la impresora."
+    ],
+    "farm.admin.result.cancel_second_step": [
+        "Tiskárna na zrušení odpověděla, ale tisk :s s držela dál (:state). Ukončil ho až druhý krok (:step).",
+        "The printer answered the cancel but kept the print for :s s (:state). The second step (:step) ended it.",
+        "La impresora respondió a la cancelación pero mantuvo la impresión :s s (:state). La terminó el segundo paso (:step)."
+    ],
+    "farm.admin.result.heaters_switched_off": [
+        "Topení zůstalo po zrušení zapnuté (:what), agent ho vypnul.",
+        "The heaters stayed on after the cancel (:what), the agent switched them off.",
+        "Los calentadores quedaron encendidos tras la cancelación (:what), el agente los apagó."
+    ],
+    "farm.admin.result.heaters_still_on": [
+        "Topení zůstává po zrušení zapnuté (:what). Vypněte ho na tiskárně.",
+        "The heaters are still on after the cancel (:what). Switch them off at the printer.",
+        "Los calentadores siguen encendidos tras la cancelación (:what). Apáguelos en la impresora."
+    ],
+    "farm.admin.result.nozzle": [
+        "tryska",
+        "nozzle",
+        "boquilla"
+    ],
+    "farm.admin.result.bed": [
+        "podložka",
+        "bed",
+        "cama"
+    ],
+    "farm.admin.cancel.waiting": [
+        "Zrušeno, čeká na potvrzení tiskárny",
+        "Cancelled, waiting for the printer to confirm",
+        "Cancelado, esperando la confirmación de la impresora"
+    ],
+    "farm.admin.cancel.waiting_hint": [
+        "Zakázka je zrušená, tiskárna ale zatím nepotvrdila, že tisk skončila. Agent to ověřuje, obvykle do dvou minut.",
+        "The order is cancelled, but the printer has not confirmed yet that it ended the print. The agent is checking, usually within two minutes.",
+        "El pedido está cancelado, pero la impresora aún no ha confirmado que terminó la impresión. El agente lo comprueba, normalmente en dos minutos."
+    ],
+    "farm.admin.cancel.refused": [
+        "Tiskárna tisk nezrušila",
+        "The printer did not cancel the print",
+        "La impresora no canceló la impresión"
+    ],
+    "farm.admin.cancel.refused_hint": [
+        "Zakázka je zrušená, tiskárna ale její tisk dál drží a farma na ni nic dalšího nepošle. Zastavte tisk na displeji tiskárny, pak potvrďte prázdnou podložku.",
+        "The order is cancelled, but the printer still holds its print and the farm sends nothing else to it. Stop the print on the printer's screen, then confirm the empty plate.",
+        "El pedido está cancelado, pero la impresora sigue con su impresión y la granja no le envía nada más. Detenga la impresión en la pantalla de la impresora y confirme la placa vacía."
+    ],
+    "farm.admin.cancel.again": [
+        "Zkusit zrušit znovu",
+        "Try the cancel again",
+        "Intentar cancelar de nuevo"
+    ],
+    "farm.admin.mail.cancel_unconfirmed": [
+        ":number: :printer tisk nezrušila",
+        ":number: :printer did not cancel the print",
+        ":number: :printer no canceló la impresión"
+    ],
+    "farm.admin.mail.cancel_unconfirmed_printer": [
+        ":printer tisk nezrušila",
+        ":printer did not cancel the print",
+        ":printer no canceló la impresión"
+    ],
+    "farm.admin.mail.cancel_heaters": [
+        ":number: :printer má po zrušení zapnuté topení",
+        ":number: :printer has its heaters on after the cancel",
+        ":number: :printer tiene los calentadores encendidos tras la cancelación"
+    ],
+    "farm.admin.mail.cancel_heaters_printer": [
+        ":printer má po zrušení zapnuté topení",
+        ":printer has its heaters on after the cancel",
+        ":printer tiene los calentadores encendidos tras la cancelación"
+    ],
+    "farm.admin.mail.line_agent_said": [
+        "Agent: :said",
+        "Agent: :said",
+        "Agente: :said"
+    ],
+    "farm.admin.mail.line_next_cancel_unconfirmed": [
+        "Co dál: zakázka je na webu zrušená, tiskárna ale její tisk dál drží a farma na ni nic dalšího nepošle. Zastavte tisk na displeji tiskárny (nebo v administraci tlačítkem Zkusit zrušit znovu), pak potvrďte prázdnou podložku.",
+        "Next: the order is cancelled on the web, but the printer still holds its print and the farm sends nothing else to it. Stop the print on the printer's screen (or use Try the cancel again in the admin), then confirm the empty plate.",
+        "Siguiente: el pedido está cancelado en la web, pero la impresora sigue con su impresión y la granja no le envía nada más. Detenga la impresión en la pantalla de la impresora (o use Intentar cancelar de nuevo en la administración) y confirme la placa vacía."
+    ],
+    "farm.admin.mail.line_next_cancel_heaters": [
+        "Co dál: tisk je zrušený, tryska nebo podložka ale dál topí. Vypněte topení na displeji tiskárny.",
+        "Next: the print is cancelled, but the nozzle or the bed is still heating. Switch the heaters off on the printer's screen.",
+        "Siguiente: la impresión está cancelada, pero la boquilla o la cama siguen calentando. Apague los calentadores en la pantalla de la impresora."
+    ]
+}

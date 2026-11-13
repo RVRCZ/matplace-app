@@ -58,5 +58,6 @@ printers:
   #   # pause_at: 30           # the printer pauses by itself at 30 %, saying pause_message (the operator's "paused" mail)
   #   # pause_message: "filament hub feed filament timeout"
   #   # resume_timeout: true   # resume works but the call times out, as a Kobra S1 under Rinkhals does
+  #   # cancel_stuck: true     # cancel answers ok and the print stays paused; the second step (cancel_fallback) ends it
   #   # slots: {0: ready, 1: empty}   # what the spool positions say before a start (missing = the printer does not tell)
   #   # files: {"old.gcode": 1200}    # what the printer's storage holds at the start (files, fetch, delete, cleanup)

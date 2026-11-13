@@ -1,0 +1,502 @@
+{
+  "router.title": [
+    "Co chcete vyrobit?",
+    "What would you like to make?",
+    "¿Qué quiere fabricar?"
+  ],
+  "router.text_label": [
+    "Popište, co chcete vyrobit",
+    "Describe what you would like to make",
+    "Describa qué quiere fabricar"
+  ],
+  "router.text_placeholder": [
+    "Napište to svými slovy: co má vzniknout, pro koho, jak velké a v jakých barvách. Fotka pomůže, nutná není.",
+    "Say it in your own words: what it should be, for whom, how big and in which colours. A photo helps but is not needed.",
+    "Dígalo con sus palabras: qué debe ser, para quién, de qué tamaño y en qué colores. Una foto ayuda, pero no hace falta."
+  ],
+  "router.photo_button": [
+    "Přidat fotku",
+    "Add a photo",
+    "Añadir foto"
+  ],
+  "router.photo_title": [
+    "Vyfotit nebo vybrat obrázek",
+    "Take a photo or choose a picture",
+    "Hacer una foto o elegir una imagen"
+  ],
+  "router.mic": [
+    "Diktovat",
+    "Dictate",
+    "Dictar"
+  ],
+  "router.mic.on": [
+    "Poslouchám, klepnutím ukončíte",
+    "Listening, tap to stop",
+    "Escuchando, toque para terminar"
+  ],
+  "router.mic.denied": [
+    "Mikrofon se nepodařilo zapnout. Napište přání do pole.",
+    "The microphone could not be turned on. Please type your wish into the field.",
+    "No se pudo activar el micrófono. Escriba su deseo en el campo."
+  ],
+  "router.file_link": [
+    "Mám hotový 3D soubor",
+    "I have a finished 3D file",
+    "Tengo un archivo 3D listo"
+  ],
+  "router.examples": [
+    "Příklady přání: klepnutím se vepíšou do pole",
+    "Example wishes: a tap writes one into the field",
+    "Ejemplos de deseos: un toque lo escribe en el campo"
+  ],
+  "router.example_nudge": [
+    "To je náš příklad. Upravte ho podle sebe (jméno, velikost, barvy), nebo ho odešlete znovu tak, jak je.",
+    "That is our example. Change it to fit you (the name, the size, the colours), or send it again as it is.",
+    "Ese es nuestro ejemplo. Cámbielo a su gusto (el nombre, el tamaño, los colores) o envíelo de nuevo tal cual."
+  ],
+  "router.held": [
+    "Děkujeme, zprávu jsme přijali. Pokud jde o přání k výrobě, popište prosím, co má vzniknout, jak velké a v jakých barvách, nebo přidejte fotku.",
+    "Thank you, we have received your message. If it is something you would like made, please describe what it should be, how big and in which colours, or add a photo.",
+    "Gracias, hemos recibido su mensaje. Si se trata de algo que quiere fabricar, describa qué debe ser, de qué tamaño y en qué colores, o añada una foto."
+  ],
+  "router.price_only": [
+    "Cena záleží na tom, co má vzniknout: na velikosti, materiálu a počtu kusů. Napište, co chcete vyrobit, a cenu uvidíte předem, před zaplacením. Máte hotový 3D soubor? Nahrajte ho a cenu spočítáme hned.",
+    "The price depends on what is to be made: its size, the material and the number of pieces. Tell us what you would like to make and you will see the price up front, before you pay. Have a finished 3D file? Upload it and we will work out the price right away.",
+    "El precio depende de lo que haya que fabricar: el tamaño, el material y el número de piezas. Escriba qué quiere fabricar y verá el precio por adelantado, antes de pagar. ¿Tiene un archivo 3D listo? Súbalo y calculamos el precio enseguida."
+  ],
+  "router.tag.held": [
+    "Přijato",
+    "Received",
+    "Recibido"
+  ],
+  "router.tag.price": [
+    "K ceně",
+    "About the price",
+    "Sobre el precio"
+  ],
+  "router.tag.design": [
+    "Navrhne náš návrhář",
+    "Our designer takes it",
+    "Lo diseña nuestro diseñador"
+  ],
+  "router.summary.fallback_text": [
+    "Tohle si raději prohlédne náš 3D návrhář. Nechte nám e-mail, ozveme se do :hours hodin s návrhem a cenou. Fotka nebo náčrt pomůže, nutná není.",
+    "Our 3D designer will take a look at this one. Leave us your e-mail and we'll get back to you within :hours hours with a proposal and a price. A photo or a sketch helps but is not needed.",
+    "Esto lo revisará nuestro diseñador 3D. Déjenos su correo y le responderemos en :hours horas con una propuesta y un precio. Una foto o un boceto ayuda, pero no hace falta."
+  ],
+  "router.summary.shape_text": [
+    "Na tohle nemáme hotovou šablonu, tvar podle vašeho popisu připraví náš návrhář. Nechte nám e-mail, do :hours hodin pošleme náhled a cenu. Fotka nebo náčrt pomůže, nutná není.",
+    "There's no ready template for this; our designer makes the shape from your description. Leave us your e-mail and within :hours hours we'll send a preview and a price. A photo or a sketch helps but is not needed.",
+    "Para esto no tenemos plantilla; nuestro diseñador prepara la forma según su descripción. Déjenos su correo y en :hours horas le enviaremos una vista previa y un precio. Una foto o un boceto ayuda, pero no hace falta."
+  ],
+  "router.hint.steady.1": [
+    "Busta z fotky",
+    "A bust from a photo",
+    "Un busto de una foto"
+  ],
+  "router.hint.steady.1.fill": [
+    "Busta mého táty z fotky, asi 12 cm vysoká, jedna barva.",
+    "A bust of my dad from a photo, about 12 cm tall, one colour.",
+    "Un busto de mi padre a partir de una foto, de unos 12 cm de alto, un color."
+  ],
+  "router.hint.steady.2": [
+    "Figurka našeho psa",
+    "A figurine of our dog",
+    "Una figura de nuestro perro"
+  ],
+  "router.hint.steady.2.fill": [
+    "Figurka našeho psa podle fotky, 10 cm, hnědá a bílá.",
+    "A figurine of our dog from a photo, 10 cm, brown and white.",
+    "Una figura de nuestro perro a partir de una foto, 10 cm, marrón y blanca."
+  ],
+  "router.hint.steady.3": [
+    "Náhradní díl",
+    "A spare part",
+    "Una pieza de repuesto"
+  ],
+  "router.hint.steady.3.fill": [
+    "Ulomené kolečko z koše myčky, průměr 3 cm, potřebuji 4 kusy, musí vydržet horkou vodu.",
+    "A replacement wheel for a dishwasher basket, 3 cm across, I need 4 pieces, it must take hot water.",
+    "Una rueda de repuesto para la cesta del lavavajillas, 3 cm de diámetro, necesito 4 unidades, debe aguantar agua caliente."
+  ],
+  "router.hint.steady.4": [
+    "Cedulka se jménem",
+    "A sign with a name",
+    "Un letrero con nombre"
+  ],
+  "router.hint.steady.4.fill": [
+    "Cedulka na dveře se jménem Novákovi, 15 cm široká, bílá s černým písmem.",
+    "A door sign with the name Smith, 15 cm wide, white with black lettering.",
+    "Un letrero para la puerta con el nombre García, 15 cm de ancho, blanco con texto negro."
+  ],
+  "router.hint.birthday.1": [
+    "Zápich do dortu",
+    "A cake topper",
+    "Un adorno para tarta"
+  ],
+  "router.hint.birthday.1.fill": [
+    "Zápich do dortu se jménem Olivia a číslem 2, asi 12 cm široký.",
+    "A cake topper with the name Olivia and the number 2, about 12 cm wide.",
+    "Un adorno para la tarta con el nombre Olivia y el número 2, de unos 12 cm de ancho."
+  ],
+  "router.hint.birthday.2": [
+    "Klíčenka se jménem",
+    "A keychain with a name",
+    "Un llavero con nombre"
+  ],
+  "router.hint.birthday.2.fill": [
+    "Klíčenka se jménem Jana k narozeninám, modrá s bílým písmem.",
+    "A keychain with the name Jane for her birthday, blue with white lettering.",
+    "Un llavero con el nombre Juana para su cumpleaños, azul con texto blanco."
+  ],
+  "router.hint.wedding.1": [
+    "Zápich na svatební dort",
+    "A wedding cake topper",
+    "Un adorno para la tarta de boda"
+  ],
+  "router.hint.wedding.1.fill": [
+    "Zápich na svatební dort se jmény Anna a Petr a srdcem, 15 cm široký.",
+    "A wedding cake topper with the names Anna and Peter and a heart, 15 cm wide.",
+    "Un adorno para la tarta de boda con los nombres Ana y Pedro y un corazón, 15 cm de ancho."
+  ],
+  "router.hint.wedding.2": [
+    "Jmenovky na svatební stůl",
+    "Name tags for the wedding table",
+    "Etiquetas para la mesa de boda"
+  ],
+  "router.hint.wedding.2.fill": [
+    "Jmenovky pro hosty na svatební stůl, 30 kusů, bílé se zlatým písmem.",
+    "Name tags for the guests at the wedding table, 30 pieces, white with gold lettering.",
+    "Etiquetas con el nombre de los invitados para la mesa de boda, 30 unidades, blancas con texto dorado."
+  ],
+  "router.hint.mikulas.1": [
+    "Čelenka s rohy na Mikuláše",
+    "A headband with horns",
+    "Una diadema con cuernos"
+  ],
+  "router.hint.mikulas.1.fill": [
+    "Čelenka s čertovskými rohy na Mikuláše pro osmileté dítě, červená a černá.",
+    "A headband with devil horns for an eight-year-old child, red and black.",
+    "Una diadema con cuernos de diablo para un niño de ocho años, roja y negra."
+  ],
+  "router.hint.mikulas.2": [
+    "Přívěsek čert a anděl",
+    "A devil and angel charm",
+    "Un colgante de diablo y ángel"
+  ],
+  "router.hint.mikulas.2.fill": [
+    "Přívěsek na batoh s čertem a andělem k Mikuláši, 5 cm, tři barvy.",
+    "A charm with a devil and an angel for St Nicholas Day, 5 cm, three colours.",
+    "Un colgante con un diablo y un ángel para San Nicolás, 5 cm, tres colores."
+  ],
+  "router.hint.mikulas.3": [
+    "Jmenovka na balíček",
+    "A name tag for the gift bag",
+    "Una etiqueta para la bolsa"
+  ],
+  "router.hint.mikulas.3.fill": [
+    "Jmenovka se jménem Tomáš na mikulášský balíček, 6 cm, červená s bílým písmem.",
+    "A name tag with the name Thomas for a St Nicholas gift bag, 6 cm, red with white lettering.",
+    "Una etiqueta con el nombre Tomás para la bolsa de San Nicolás, 6 cm, roja con texto blanco."
+  ],
+  "router.hint.christmas.1": [
+    "Ozdoba na stromek se jménem",
+    "A tree ornament with a name",
+    "Un adorno de árbol con nombre"
+  ],
+  "router.hint.christmas.1.fill": [
+    "Ozdoba na stromek se jménem Eliška, 8 cm, bílá se zlatým písmem.",
+    "A Christmas tree ornament with the name Emily, 8 cm, white with gold lettering.",
+    "Un adorno para el árbol de Navidad con el nombre Elisa, 8 cm, blanco con texto dorado."
+  ],
+  "router.hint.christmas.2": [
+    "Podtácky s rodinnou fotkou",
+    "Coasters with a family photo",
+    "Posavasos con una foto familiar"
+  ],
+  "router.hint.christmas.2.fill": [
+    "Sada 4 podtácků s naší rodinnou fotkou jako dárek, 10 cm.",
+    "A set of 4 coasters with our family photo as a gift, 10 cm.",
+    "Un juego de 4 posavasos con nuestra foto familiar como regalo, 10 cm."
+  ],
+  "router.hint.christmas.3": [
+    "Vykrajovátko na cukroví",
+    "A cookie cutter",
+    "Un cortador de galletas"
+  ],
+  "router.hint.christmas.3.fill": [
+    "Vykrajovátko na vánoční cukroví ve tvaru naší chalupy podle kresby, 7 cm.",
+    "A cookie cutter for Christmas biscuits in the shape of our cottage from a drawing, 7 cm.",
+    "Un cortador de galletas de Navidad con la forma de nuestra casa a partir de un dibujo, 7 cm."
+  ],
+  "router.hint.christmas.4": [
+    "3D mapa našeho města",
+    "A 3D map of our town",
+    "Un mapa 3D de nuestra ciudad"
+  ],
+  "router.hint.christmas.4.fill": [
+    "3D mapa Olomouce jako vánoční dárek, 15 cm.",
+    "A 3D map of Bath as a Christmas gift, 15 cm.",
+    "Un mapa 3D de Toledo como regalo de Navidad, 15 cm."
+  ],
+  "router.hint.silvestr.1": [
+    "Nápis :year na stůl",
+    "The number :year for the table",
+    "El número :year para la mesa"
+  ],
+  "router.hint.silvestr.1.fill": [
+    "Stojící nápis :year na silvestrovský stůl, číslice 8 cm vysoké, zlatý.",
+    "Standing letters :year for the New Year's Eve table, digits 8 cm tall, gold.",
+    "Letras de pie :year para la mesa de Nochevieja, cifras de 8 cm de alto, doradas."
+  ],
+  "router.hint.silvestr.2": [
+    "Zápich do dortu na Nový rok",
+    "A New Year cake topper",
+    "Un adorno de tarta de Año Nuevo"
+  ],
+  "router.hint.silvestr.2.fill": [
+    "Zápich do dortu s textem Šťastný nový rok :year, 14 cm široký.",
+    "A cake topper saying Happy New Year :year, 14 cm wide.",
+    "Un adorno para la tarta con el texto Feliz Año Nuevo :year, 14 cm de ancho."
+  ],
+  "router.hint.reyes.1": [
+    "Klíčenka se jménem",
+    "A keychain with a name",
+    "Un llavero con nombre"
+  ],
+  "router.hint.reyes.1.fill": [
+    "Klíčenka se jménem Lucie jako dárek na Tři krále, modrá s bílým písmem.",
+    "A keychain with the name Lucy as a Three Kings gift, blue with white lettering.",
+    "Un llavero con el nombre Lucía para los Reyes, azul con texto blanco."
+  ],
+  "router.hint.reyes.2": [
+    "Figurka našeho mazlíčka",
+    "A figurine of our pet",
+    "Una figura de nuestra mascota"
+  ],
+  "router.hint.reyes.2.fill": [
+    "Figurka naší kočky podle fotky, 10 cm, dárek na Tři krále.",
+    "A figurine of our cat from a photo, 10 cm, a Three Kings gift.",
+    "Una figura de nuestro gato a partir de una foto, 10 cm, regalo de Reyes."
+  ],
+  "router.hint.valentine.1": [
+    "Přívěsek srdce se jmény",
+    "A heart charm with names",
+    "Un colgante de corazón"
+  ],
+  "router.hint.valentine.1.fill": [
+    "Přívěsek ve tvaru srdce se jmény Anna a Petr, 4 cm, červený.",
+    "A heart-shaped charm with the names Anna and Peter, 4 cm, red.",
+    "Un colgante en forma de corazón con los nombres Ana y Pedro, 4 cm, rojo."
+  ],
+  "router.hint.valentine.2": [
+    "Nápis LOVE na poličku",
+    "LOVE letters for a shelf",
+    "Letras LOVE para la estantería"
+  ],
+  "router.hint.valentine.2.fill": [
+    "Stojící nápis LOVE na poličku, písmena 8 cm vysoká, červený.",
+    "Standing letters LOVE for a shelf, 8 cm tall, red.",
+    "Letras de pie LOVE para la estantería, 8 cm de alto, rojas."
+  ],
+  "router.hint.valentine.3": [
+    "Podtácek s naší fotkou",
+    "A coaster with our photo",
+    "Un posavasos con nuestra foto"
+  ],
+  "router.hint.valentine.3.fill": [
+    "Podtácek s naší společnou fotkou k Valentýnu, 10 cm.",
+    "A coaster with a photo of the two of us for Valentine's Day, 10 cm.",
+    "Un posavasos con una foto de los dos para San Valentín, 10 cm."
+  ],
+  "router.hint.easter.1": [
+    "Vykrajovátko zajíček",
+    "A bunny cookie cutter",
+    "Un cortador de conejito"
+  ],
+  "router.hint.easter.1.fill": [
+    "Vykrajovátko ve tvaru velikonočního zajíčka, 7 cm.",
+    "A cookie cutter in the shape of an Easter bunny, 7 cm.",
+    "Un cortador de galletas con forma de conejito de Pascua, 7 cm."
+  ],
+  "router.hint.easter.2": [
+    "Jmenovka na košík",
+    "A name tag for the basket",
+    "Una etiqueta para la cesta"
+  ],
+  "router.hint.easter.2.fill": [
+    "Jmenovka se jménem Adam na velikonoční košík, 6 cm, žlutá.",
+    "A name tag with the name Adam for an Easter basket, 6 cm, yellow.",
+    "Una etiqueta con el nombre Adán para la cesta de Pascua, 6 cm, amarilla."
+  ],
+  "router.hint.easter.3": [
+    "Přívěsek kuřátko",
+    "A chick charm",
+    "Un colgante de pollito"
+  ],
+  "router.hint.easter.3.fill": [
+    "Přívěsek kuřátko podle dětské kresby, 4 cm, žlutá a oranžová.",
+    "A chick charm from a child's drawing, 4 cm, yellow and orange.",
+    "Un colgante de pollito a partir de un dibujo infantil, 4 cm, amarillo y naranja."
+  ],
+  "router.hint.mothers.1": [
+    "Přívěsek z dětské kresby",
+    "A charm from a child's drawing",
+    "Un colgante de un dibujo infantil"
+  ],
+  "router.hint.mothers.1.fill": [
+    "Přívěsek z kresby od dcery jako dárek ke Dni matek, 4 cm, dvě barvy.",
+    "A charm from my daughter's drawing as a Mother's Day gift, 4 cm, two colours.",
+    "Un colgante del dibujo de mi hija como regalo, 4 cm, dos colores."
+  ],
+  "router.hint.mothers.2": [
+    "Nápis MAMINKA na poličku",
+    "Standing letters for a shelf",
+    "Letras de pie para la estantería"
+  ],
+  "router.hint.mothers.2.fill": [
+    "Stojící nápis MAMINKA na poličku, písmena 6 cm vysoká, růžový.",
+    "Standing letters THANK YOU for a shelf, 6 cm tall, pink, for Mother's Day.",
+    "Letras de pie GRACIAS para la estantería, 6 cm de alto, rosas."
+  ],
+  "router.hint.mothers.3": [
+    "Podtácek s fotkou dětí",
+    "A coaster with the kids' photo",
+    "Un posavasos con foto de los niños"
+  ],
+  "router.hint.mothers.3.fill": [
+    "Podtácek s fotkou dětí ke Dni matek, 10 cm.",
+    "A coaster with a photo of the children for Mother's Day, 10 cm.",
+    "Un posavasos con una foto de los niños como regalo, 10 cm."
+  ],
+  "router.hint.fathers.1": [
+    "Klíčenka pro tatínka",
+    "A keychain for Father's Day",
+    "Un llavero para el Día del Padre"
+  ],
+  "router.hint.fathers.1.fill": [
+    "Klíčenka s textem Nejlepší tatínek, 6 cm, černá se stříbrným písmem.",
+    "A keychain saying Best Father, 6 cm, black with silver lettering.",
+    "Un llavero con el texto El mejor del mundo, 6 cm, negro con texto plateado."
+  ],
+  "router.hint.fathers.2": [
+    "Medaile pro tatínka",
+    "A medal for the best father",
+    "Una medalla para el mejor padre"
+  ],
+  "router.hint.fathers.2.fill": [
+    "Medaile pro nejlepšího tatínka na stužce, zlatá, 6 cm.",
+    "A medal for the best father on a ribbon, gold, 6 cm.",
+    "Una medalla con el texto Número 1 con cinta, dorada, 6 cm."
+  ],
+  "router.hint.fathers.3": [
+    "Podtácek pod pivo se jménem",
+    "A beer coaster with a name",
+    "Un posavasos de cerveza"
+  ],
+  "router.hint.fathers.3.fill": [
+    "Podtácek pod pivo se jménem Karel, 10 cm, černý.",
+    "A beer coaster with the name Charles, 10 cm, black.",
+    "Un posavasos de cerveza con el nombre Carlos, 10 cm, negro."
+  ],
+  "router.hint.school_end.1": [
+    "Medaile za vysvědčení",
+    "A medal for the school report",
+    "Una medalla por las notas"
+  ],
+  "router.hint.school_end.1.fill": [
+    "Medaile za vysvědčení se jménem Matěj a jedničkou, zlatá, 6 cm.",
+    "A medal for a great school report with the name Matthew, gold, 6 cm.",
+    "Una medalla por las buenas notas con el nombre Mateo, dorada, 6 cm."
+  ],
+  "router.hint.school_end.2": [
+    "Cedulka pro paní učitelku",
+    "A desk sign for the teacher",
+    "Un letrero para la maestra"
+  ],
+  "router.hint.school_end.2.fill": [
+    "Cedulka na stůl pro paní učitelku se jménem Jana Nováková, 15 cm, dvě barvy.",
+    "A desk sign for the teacher with the name Mrs Brown, 15 cm, two colours.",
+    "Un letrero de mesa para la maestra con el nombre Sra. García, 15 cm, dos colores."
+  ],
+  "router.hint.school_end.3": [
+    "Přívěsek s logem třídy",
+    "A charm with the class logo",
+    "Un colgante con el logo de la clase"
+  ],
+  "router.hint.school_end.3.fill": [
+    "Přívěsek s logem naší třídy pro spolužáky, 20 kusů, 4 cm.",
+    "A charm with the logo of our class for classmates, 20 pieces, 4 cm.",
+    "Un colgante con el logo de nuestra clase para los compañeros, 20 unidades, 4 cm."
+  ],
+  "router.hint.school_start.1": [
+    "Jmenovka na aktovku",
+    "A name tag for the school bag",
+    "Una etiqueta para la mochila"
+  ],
+  "router.hint.school_start.1.fill": [
+    "Jmenovka na aktovku se jménem Ema, 6 cm, růžová s bílým písmem.",
+    "A name tag for a school bag with the name Emma, 6 cm, pink with white lettering.",
+    "Una etiqueta para la mochila con el nombre Ema, 6 cm, rosa con texto blanco."
+  ],
+  "router.hint.school_start.2": [
+    "Klíčenka ke skříňce",
+    "A keychain for the locker key",
+    "Un llavero para la taquilla"
+  ],
+  "router.hint.school_start.2.fill": [
+    "Klíčenka se jménem Filip na klíč od skříňky, zelená.",
+    "A keychain with the name Philip for the locker key, green.",
+    "Un llavero con el nombre Felipe para la llave de la taquilla, verde."
+  ],
+  "router.hint.school_start.3": [
+    "Zápich do dortu pro prvňáčka",
+    "A first day of school cake topper",
+    "Un adorno de tarta del primer día"
+  ],
+  "router.hint.school_start.3.fill": [
+    "Zápich do dortu pro prvňáčka se jménem Ema a číslem 1, 12 cm široký.",
+    "A cake topper for the first day of school with the name Emma and the number 1, 12 cm wide.",
+    "Un adorno para la tarta del primer día de colegio con el nombre Ema y el número 1, 12 cm de ancho."
+  ],
+  "router.hint.halloween.1": [
+    "Vykrajovátko dýně",
+    "A pumpkin cookie cutter",
+    "Un cortador de calabaza"
+  ],
+  "router.hint.halloween.1.fill": [
+    "Vykrajovátko ve tvaru dýně na halloweenské sušenky, 7 cm.",
+    "A cookie cutter in the shape of a pumpkin for Halloween biscuits, 7 cm.",
+    "Un cortador de galletas con forma de calabaza para Halloween, 7 cm."
+  ],
+  "router.hint.halloween.2": [
+    "Přívěsek netopýr",
+    "A bat charm",
+    "Un colgante de murciélago"
+  ],
+  "router.hint.halloween.2.fill": [
+    "Přívěsek netopýr na batoh, 5 cm, černý.",
+    "A bat charm for a backpack, 5 cm, black.",
+    "Un colgante de murciélago para la mochila, 5 cm, negro."
+  ],
+  "router.hint.halloween.3": [
+    "Cedulka Pozor, straší",
+    "A Beware of ghosts sign",
+    "Un letrero Cuidado, fantasmas"
+  ],
+  "router.hint.halloween.3.fill": [
+    "Cedulka na dveře Pozor, tady straší, 15 cm, oranžová a černá.",
+    "A door sign Beware of ghosts, 15 cm, orange and black.",
+    "Un letrero para la puerta Cuidado, aquí hay fantasmas, 15 cm, naranja y negro."
+  ],
+  "router.summary.tool": [
+    "Tohle umí náš nástroj :tool. Otevřete ho, velikost a barvy doladíte v náhledu.",
+    "Our tool :tool makes this. Open it and adjust the size and the colours in the preview.",
+    "Esto lo hace nuestra herramienta :tool. Ábrala y ajuste el tamaño y los colores en la vista previa."
+  ],
+  "router.summary.tool_also": [
+    "Hodit se může i: :tools.",
+    "These could also do: :tools.",
+    "También puede servir: :tools."
+  ]
+}

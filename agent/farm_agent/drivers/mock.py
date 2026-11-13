@@ -11,6 +11,12 @@ Options (config.yaml):
   resume_timeout  true: resume works, but the call answers "TimeoutError" like a Kobra S1 under Rinkhals (default false)
   slots           {index: word} what slot_status says ("ready", "empty"...); missing index = the printer does not tell
   files           {name: size} the printer's storage at the start (default empty); a started print adds its file
+  cancel_stuck    true: cancel answers ok and the print stays "paused" (a Kobra S1 under Rinkhals after a stop on its
+                  screen, F26-000158); only the second step (cancel_fallback) ends it
+  cancel_fallback "works" (default): the second step takes the printer to standby; "fails": it is answered and changes
+                  nothing; "refused": the printer refuses it; "none": this printer has no second step
+  heaters_stay    true: a cancelled print leaves the heaters on until heaters_off (default false)
+  heaters_off     "works" (default) | "none": this printer cannot be told to switch the heaters off
 
 A started print heats, runs to 100 % and finishes; pause, resume and cancel behave like on a real printer.
 After a finished print the mock stays idle with the last job reported as done - exactly what Moonraker does.
@@ -51,6 +57,12 @@ class MockDriver(PrinterDriver):
         self.pause_at = options.get("pause_at")
         self.pause_message = str(options.get("pause_message", ""))
         self.resume_timeout = bool(options.get("resume_timeout", False))
+        self.cancel_stuck = bool(options.get("cancel_stuck", False))
+        self.cancel_fallback_mode = str(options.get("cancel_fallback", "works"))
+        self.heaters_stay = bool(options.get("heaters_stay", False))
+        self.heaters_off_mode = str(options.get("heaters_off", "works"))
+        self._left_hot = False           # a cancelled print left the heaters on
+        self.steps: list[str] = []       # what the agent asked for besides the plain calls (tests read it)
         self.slot_words = {int(k): str(v) for k, v in (options.get("slots") or {}).items()}
         self.files_on_disk = {str(k): int(v) for k, v in (options.get("files") or {}).items()}
         self.total_bytes = 6_000_000_000
@@ -90,7 +102,7 @@ class MockDriver(PrinterDriver):
                 return PrinterStatus(ERROR, {"klipper_state": "error", "mock": True}, job)
         printer = {"standby": IDLE, "printing": PRINTING, "paused": PAUSED, "complete": IDLE, "cancelled": IDLE, "error": ERROR}[self._state]
         heating = self._state == "printing" and self._printed < self.heat_seconds
-        hot = self._state in ("printing", "paused")
+        hot = self._state in ("printing", "paused") or self._left_hot
         telemetry = {
             "extruder": round(25 + 195 * min(1.0, self._printed / max(self.heat_seconds, 0.1)), 1) if hot else 25.0,
             "extruder_target": 220.0 if hot else 0.0,
@@ -115,6 +127,7 @@ class MockDriver(PrinterDriver):
                 print_duration=int(self._printed),
                 filament_used=round(self.filament_mm * p / 100, 1),
                 message=self._message,
+                starting=heating,
             )
         return PrinterStatus(printer, telemetry, job)
 
@@ -125,7 +138,7 @@ class MockDriver(PrinterDriver):
         if os.path.getsize(gcode_path) == 0:
             raise DriverError("empty G-code file")
         self._file, self._state, self._printed, self._since, self._message = filename, "printing", 0.0, time.monotonic(), ""
-        self._paused_once = False
+        self._paused_once, self._left_hot = False, False
         self.files_on_disk[filename] = os.path.getsize(gcode_path)
         await self._changed()
 
@@ -172,8 +185,29 @@ class MockDriver(PrinterDriver):
         self._advance()
         if self._state not in ("printing", "paused"):
             raise DriverError("nothing to cancel")
-        self._state, self._since = "cancelled", None
+        if self.cancel_stuck:
+            self._state, self._since = "paused", None      # answered ok, the print stays
+            return
+        self._state, self._since, self._left_hot = "cancelled", None, self.heaters_stay
         await self._changed()
+
+    async def cancel_fallback(self) -> Optional[str]:
+        if self.cancel_fallback_mode == "none":
+            return None
+        self.steps.append("SDCARD_RESET_FILE")
+        if self.cancel_fallback_mode == "refused":
+            raise DriverError("SDCARD_RESET_FILE was refused (HTTP 400 Unknown command)")
+        if self.cancel_fallback_mode == "works":
+            self._state, self._since, self._file, self._left_hot = "standby", None, None, self.heaters_stay
+            await self._changed()
+        return "SDCARD_RESET_FILE"
+
+    async def heaters_off(self) -> Optional[str]:
+        if self.heaters_off_mode == "none":
+            return None
+        self.steps.append("TURN_OFF_HEATERS")
+        self._left_hot = False
+        return "TURN_OFF_HEATERS"
 
     async def head(self) -> Optional[tuple[float, float, float]]:
         return getattr(self, "head_at", None) if self._state == "printing" else None

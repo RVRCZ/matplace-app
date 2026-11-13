@@ -3,15 +3,20 @@
  * decision comes back and is shown as a short answer with its ways on: the tool with the photo, the calculator with
  * the file, or an e-mail field for a person to take it over. Texts come from the form's data-i18n (lang router.*);
  * the server's own sentences (422) are shown as they are.
+ *
+ * The first screen "Co chcete vyrobit?" (docs/AN.md §23): the field for words comes first; a photo is added from the
+ * field's own row, so is dictation where the browser can do it; the examples under the field write a sample wish into
+ * it (nothing is sent). What the visitor did before sending is counted (POST /intake/event: the page shown, an example
+ * clicked, a photo added, dictation used). The form carries the page's stamp and an unseen field against robots.
  */
 import { shrinkPhoto, overLimit } from '../calc/photo';
 
 type Words = Record<string, string>;
 interface Decision {
-    token: string; route: 'tool' | 'shape' | 'human' | 'file' | null; tool_key: string | null; tool: string | null; summary: string;
+    token: string; route: 'tool' | 'shape' | 'human' | 'file' | null; held?: 'held' | 'price' | null; tool_key: string | null; tool: string | null; summary: string;
     params: Record<string, unknown>; questions: string[]; alternatives?: string[]; wants_shape: boolean; has_photo: boolean; rerouted?: boolean; hours: number;
     file: { uuid: string; name: string } | null;
-    actions: { tool: string | null; calc: string | null; request: string; reroute?: string | null };
+    actions: { tool: string | null; calc: string | null; request: string | null; reroute?: string | null };
 }
 
 const csrf = (): string => document.querySelector<HTMLMetaElement>('meta[name="csrf-token"]')?.content ?? '';
@@ -27,8 +32,7 @@ export function bootIntake(): void {
 
     const photo = document.getElementById('intake-photo') as HTMLInputElement;
     const model = document.getElementById('intake-model') as HTMLInputElement;
-    const drop = document.getElementById('intake-drop') as HTMLElement;
-    const empty = document.getElementById('intake-empty') as HTMLElement;
+    const box = document.getElementById('intake-box') as HTMLElement;
     const preview = document.getElementById('intake-preview') as HTMLElement;
     const thumb = document.getElementById('intake-thumb') as HTMLImageElement;
     const fileName = document.getElementById('intake-file-name') as HTMLElement;
@@ -39,22 +43,36 @@ export function bootIntake(): void {
     const error = document.getElementById('intake-error') as HTMLElement;
     const assist = document.getElementById('intake-assist') as HTMLElement;
     let picked: { kind: 'photo' | 'model'; file: File } | null = null;
+    // the example the visitor clicked last (its code and its words), and whether they were already told to change it
+    let example: { code: string; fill: string } | null = null;
+    let nudged = false;
+
+    /** What the visitor did before sending, for our own numbers: the type and a short code, never a text (docs/AN.md §23.4). */
+    const told = new Set<string>();
+    const track = (type: 'view' | 'chip' | 'photo' | 'voice', code = '', once = true): void => {
+        const key = `${type}:${code}`;
+        if (once && told.has(key)) return;
+        told.add(key);
+        const url = form.dataset.eventUrl;
+        if (!url) return;
+        void fetch(url, { method: 'POST', credentials: 'same-origin', keepalive: true, headers: { 'Content-Type': 'application/json', Accept: 'application/json', 'X-CSRF-TOKEN': csrf() }, body: JSON.stringify({ type, code }) }).catch(() => undefined);
+    };
+    // the first screen was shown (not the calculator opened with a file of the address)
+    if (!new URLSearchParams(location.search).has('open')) track('view');
 
     const say = (message: string): void => { error.textContent = message; error.classList.toggle('hidden', message === ''); };
     const show = (kind: 'photo' | 'model', file: File): void => {
         picked = { kind, file };
-        empty.classList.add('hidden'); preview.classList.remove('hidden'); preview.classList.add('flex');
-        drop.classList.remove('border-dashed'); drop.classList.add('border-solid', 'bg-card');
+        preview.classList.remove('hidden'); preview.classList.add('flex');
         fileName.textContent = file.name;
         fileKind.textContent = t(kind === 'photo' ? 'router.kind.photo' : 'router.kind.file');
         if (thumb.src.startsWith('blob:')) URL.revokeObjectURL(thumb.src);
-        if (kind === 'photo') { thumb.src = URL.createObjectURL(file); thumb.classList.remove('hidden'); } else { thumb.removeAttribute('src'); thumb.classList.add('hidden'); }
+        if (kind === 'photo') { thumb.src = URL.createObjectURL(file); thumb.classList.remove('hidden'); track('photo'); } else { thumb.removeAttribute('src'); thumb.classList.add('hidden'); }
         say('');
     };
     const clear = (): void => {
         picked = null; photo.value = ''; model.value = '';
-        empty.classList.remove('hidden'); preview.classList.add('hidden'); preview.classList.remove('flex');
-        drop.classList.add('border-dashed'); drop.classList.remove('border-solid', 'bg-card');
+        preview.classList.add('hidden'); preview.classList.remove('flex');
         if (thumb.src.startsWith('blob:')) URL.revokeObjectURL(thumb.src);
         thumb.removeAttribute('src');
     };
@@ -62,15 +80,23 @@ export function bootIntake(): void {
     model.addEventListener('change', () => { const f = model.files?.[0]; if (f) { photo.value = ''; show('model', f); } });
     document.getElementById('intake-clear')?.addEventListener('click', clear);
     // a file dropped anywhere on the card: a picture is a photo, anything else a model
-    form.addEventListener('dragover', (e) => { e.preventDefault(); drop.classList.add('border-ink'); });
-    form.addEventListener('dragleave', () => drop.classList.remove('border-ink'));
+    form.addEventListener('dragover', (e) => { e.preventDefault(); box.classList.add('border-action'); });
+    form.addEventListener('dragleave', () => box.classList.remove('border-action'));
     form.addEventListener('drop', (e) => {
-        e.preventDefault(); drop.classList.remove('border-ink');
+        e.preventDefault(); box.classList.remove('border-action');
         const f = e.dataTransfer?.files?.[0];
         if (f) show(f.type.startsWith('image/') || /\.(heic|heif)$/i.test(f.name) ? 'photo' : 'model', f);
     });
     // the examples fill the words in; the visitor changes what differs
-    form.querySelectorAll<HTMLButtonElement>('[data-fill]').forEach((chip) => chip.addEventListener('click', () => { text.value = chip.dataset.fill ?? ''; text.focus(); }));
+    form.querySelectorAll<HTMLButtonElement>('[data-fill]').forEach((chip) => chip.addEventListener('click', () => {
+        text.value = chip.dataset.fill ?? '';
+        example = chip.dataset.hint ? { code: chip.dataset.hint, fill: text.value } : null;
+        nudged = false;
+        hint.textContent = t('router.submit.hint'); hint.classList.remove('font-semibold', 'text-ink');
+        text.focus();
+        if (chip.dataset.hint) track('chip', chip.dataset.hint, false);
+    }));
+    dictation();
 
     const busy = (on: boolean): void => {
         submit.disabled = on;
@@ -83,10 +109,23 @@ export function bootIntake(): void {
         say('');
         const typed = text.value.trim();
         if (!picked && typed === '') { say(t('router.need_input')); text.focus(); return; }
+        // an example sent as it stands: asked once to make it one's own (a name, a size, the colours); the second press sends it
+        if (!picked && example && typed === example.fill.trim() && !nudged) {
+            nudged = true;
+            hint.textContent = t('router.example_nudge'); hint.classList.add('font-semibold', 'text-ink');
+            text.focus();
+            return;
+        }
+        hint.classList.remove('font-semibold', 'text-ink');
         if (picked?.kind === 'photo' && overLimit(picked.file, maxMb)) { say(t('photo.too_big', { mb: maxMb })); return; }
         busy(true);
         const body = new FormData();
         if (typed !== '') body.append('text', typed);
+        // against robots (IntakeSpam): the stamp of the page and the field no person fills, as they are in the form
+        body.append('started', (document.getElementById('intake-started') as HTMLInputElement | null)?.value ?? '');
+        const trap = document.getElementById('intake-trap') as HTMLInputElement | null;
+        if (trap) body.append(trap.name, trap.value);
+        if (example) body.append('hint', example.code);
         try {
             if (picked?.kind === 'photo') {
                 // a phone's 4 000 px photo goes as 2 000 px (calc/photo.ts); what the browser cannot draw (HEIC) goes as it is
@@ -115,7 +154,9 @@ export function bootIntake(): void {
     function render(d: Decision): void {
         assist.innerHTML = '';
         assist.classList.remove('hidden');
-        const tag = d.route === 'tool' ? t('router.tag.tool', { tool: d.tool ?? d.tool_key ?? '' }) : d.route === 'file' ? t('router.tag.file') : d.wants_shape ? t('router.tag.shape') : t('router.tag.human');
+        const tag = d.held ? t(d.held === 'price' ? 'router.tag.price' : 'router.tag.held')
+            : d.route === 'tool' ? t('router.tag.tool', { tool: d.tool ?? d.tool_key ?? '' }) : d.route === 'file' ? t('router.tag.file')
+                : d.wants_shape ? t(d.has_photo ? 'router.tag.shape' : 'router.tag.design') : t('router.tag.human');
         const bubble = document.createElement('div');
         bubble.className = 'rounded-2xl bg-studio p-4';
         bubble.setAttribute('role', 'status');
@@ -133,7 +174,8 @@ export function bootIntake(): void {
         }
         if (acts.children.length) bubble.appendChild(acts);
         assist.appendChild(bubble);
-        if (d.route !== 'tool' && d.route !== 'file') human(d, bubble);
+        // a wish the rules held (an advertisement, a bare question about the price): the sentence alone, the field stays for another try
+        if (!d.held && d.route !== 'tool' && d.route !== 'file') human(d, bubble);
         bubble.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
     }
 
@@ -142,7 +184,8 @@ export function bootIntake(): void {
      * without a designer": the decision is made again with a person ruled out and the bubble is replaced (round 2).
      */
     function human(d: Decision, after: HTMLElement): void {
-        if (assist.querySelector('#intake-request')) return;
+        if (assist.querySelector('#intake-request') || !d.actions.request) return;
+        const requestUrl = d.actions.request;
         const box = document.createElement('form');
         box.id = 'intake-request';
         box.className = 'mt-3 grid gap-3 rounded-2xl border border-line bg-card p-4';
@@ -183,7 +226,7 @@ export function bootIntake(): void {
             const go = box.querySelector<HTMLButtonElement>('button[type=submit]')!;
             go.disabled = true; go.textContent = t('router.act.sending');
             try {
-                const res = await fetch(d.actions.request, { method: 'POST', credentials: 'same-origin', headers: { 'Content-Type': 'application/json', Accept: 'application/json', 'X-CSRF-TOKEN': csrf() }, body: JSON.stringify({ email, consent: true }) });
+                const res = await fetch(requestUrl, { method: 'POST', credentials: 'same-origin', headers: { 'Content-Type': 'application/json', Accept: 'application/json', 'X-CSRF-TOKEN': csrf() }, body: JSON.stringify({ email, consent: true }) });
                 const answer = await res.json().catch(() => ({})) as { message?: string; errors?: Record<string, string[]> };
                 if (!res.ok) { tell(Object.values(answer.errors ?? {})[0]?.[0] ?? answer.message ?? t('router.request.failed')); go.disabled = false; go.textContent = t('router.act.send_request'); return; }
                 box.innerHTML = `<p class="note-ok" role="status">${esc(answer.message ?? t('router.request.sent', { hours: d.hours, email }))}</p>`;
@@ -206,7 +249,62 @@ export function bootIntake(): void {
         return b;
     }
 
+    /**
+     * Dictation where the browser can do it (SpeechRecognition; Chrome, Edge, Safari): the button appears, a press
+     * starts listening in the page's language, what is heard is added to the field, another press (or silence) ends it.
+     */
+    function dictation(): void {
+        const mic = document.getElementById('intake-mic') as HTMLButtonElement | null;
+        const w = window as unknown as { SpeechRecognition?: new () => Recognition; webkitSpeechRecognition?: new () => Recognition };
+        const Ctor = w.SpeechRecognition ?? w.webkitSpeechRecognition;
+        if (!mic || !Ctor) return;
+        mic.classList.remove('hidden'); mic.classList.add('inline-flex');
+        const label = mic.querySelector<HTMLElement>('[data-mic-label]');
+        let rec: Recognition | null = null;
+        let base = '';
+        const off = (): void => {
+            rec = null;
+            mic.setAttribute('aria-pressed', 'false'); mic.classList.remove('bg-action-soft', 'text-action-dark');
+            if (label) label.textContent = t('router.mic');
+        };
+        mic.addEventListener('click', () => {
+            if (rec) { rec.stop(); return; }
+            try {
+                rec = new Ctor();
+                rec.lang = ({ cs: 'cs-CZ', en: 'en-US', es: 'es-ES' } as Record<string, string>)[document.documentElement.lang.slice(0, 2)] ?? 'cs-CZ';
+                rec.interimResults = true;
+                rec.continuous = false;
+                base = text.value.trim();
+                rec.onresult = (e) => {
+                    let heard = '';
+                    for (let i = 0; i < e.results.length; i++) heard += e.results[i][0].transcript;
+                    text.value = `${base}${base && heard ? ' ' : ''}${heard}`.slice(0, text.maxLength > 0 ? text.maxLength : 2000);
+                    example = null;
+                };
+                rec.onerror = (e) => { if (e.error === 'not-allowed' || e.error === 'service-not-allowed' || e.error === 'audio-capture') say(t('router.mic.denied')); };
+                rec.onend = off;
+                rec.start();
+                say('');
+                mic.setAttribute('aria-pressed', 'true'); mic.classList.add('bg-action-soft', 'text-action-dark');
+                if (label) label.textContent = t('router.mic.on');
+                track('voice');
+            } catch {
+                off();
+                say(t('router.mic.denied'));
+            }
+        });
+    }
+
     noteFromAddress();
+}
+
+/** The part of the browser's speech recognition the dictation uses (the type is not in every TypeScript lib). */
+interface Recognition {
+    lang: string; interimResults: boolean; continuous: boolean;
+    onresult: ((e: { results: ArrayLike<ArrayLike<{ transcript: string }>> }) => void) | null;
+    onerror: ((e: { error: string }) => void) | null;
+    onend: (() => void) | null;
+    start(): void; stop(): void;
 }
 
 /**
