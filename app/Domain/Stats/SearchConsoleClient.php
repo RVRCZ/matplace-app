@@ -23,6 +23,8 @@ class SearchConsoleClient
 
     private const API = 'https://www.googleapis.com/webmasters/v3';
 
+    private const INSPECT = 'https://searchconsole.googleapis.com/v1/urlInspection/index:inspect';
+
     public const SCOPE = 'https://www.googleapis.com/auth/webmasters.readonly';
 
     public function configured(): bool
@@ -125,6 +127,38 @@ class SearchConsoleClient
                 return;
             }
         }
+    }
+
+    /**
+     * What Google's index says of one address (URL Inspection API, docs/AP.md §14): the `indexStatusResult` of the
+     * answer, asked in English so the words can be read by code. The read-only scope is enough. Google allows 2 000
+     * such questions a day and 600 a minute for a property; a 429 is not retried here, the caller stops its run.
+     *
+     * @return array<string, mixed>
+     */
+    public function inspect(string $site, string $url): array
+    {
+        $r = $this->api()->post(self::INSPECT, ['inspectionUrl' => $url, 'siteUrl' => $site, 'languageCode' => 'en-US']);
+        if (! $r->successful()) {
+            throw SearchConsoleError::from($r, 'URL inspection');
+        }
+
+        return (array) $r->json('inspectionResult.indexStatusResult', []);
+    }
+
+    /**
+     * The sitemaps the account lists for the property, with what Google counted in each.
+     *
+     * @return list<array<string, mixed>>
+     */
+    public function sitemaps(string $site): array
+    {
+        $r = $this->api()->get(self::API.'/sites/'.rawurlencode($site).'/sitemaps');
+        if (! $r->successful()) {
+            throw SearchConsoleError::from($r, 'Sitemaps');
+        }
+
+        return array_values((array) $r->json('sitemap', []));
     }
 
     /** The property of this site among the account's: the only one, the domain property of our host, or our address as a prefix; null = the admin picks. */
