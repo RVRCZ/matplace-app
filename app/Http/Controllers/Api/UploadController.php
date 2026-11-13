@@ -8,6 +8,7 @@ use App\Domain\Files\PaintedColors;
 use App\Domain\Tools\MapBuilder;
 use App\Domain\Tools\ModelCheck;
 use App\Domain\Tools\ModelEditor;
+use App\Domain\Tools\ModelPainter;
 use App\Domain\Tools\MoldGenerator;
 use App\Domain\Tools\ParametricGenerator;
 use App\Engines\Converter\ConverterChain;
@@ -186,6 +187,9 @@ class UploadController extends Controller
             'colors' => ($painted = PaintedColors::describe($f))['colors'] ?? null,
             'groups' => $painted['groups'] ?? null,
             'colors_info' => $painted['info'] ?? null,
+            // a model coloured here (docs/AS.md): what it was painted by; and for any model, where it can be coloured (null: not offered)
+            'paint' => ModelPainter::report($f),
+            'paint_url' => ModelPainter::urlFor($f, auth()->user()),
             // lets the tool page reopen this design ("edit" from the calculator)
             'tool' => self::toolOf($f),
             // the design is drawn in free colours: which of our spools each one would be printed from (shown beside "print it with us")

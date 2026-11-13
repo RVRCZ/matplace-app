@@ -1,0 +1,211 @@
+{
+    "tools.paint.title": ["Vybarvit model", "Colour a model", "Colorear un modelo"],
+    "tools.paint.hint": [
+        "Nahrajte STL nebo 3MF a určete, která část má kterou barvu: vylitím plochy, podle výšky nebo štětcem. Bez sliceru.",
+        "Upload an STL or a 3MF and say which part gets which colour: fill a surface, colour by height or paint with a brush. No slicer needed.",
+        "Suba un STL o un 3MF y diga qué parte lleva qué color: rellene una superficie, coloree por altura o pinte con el pincel. Sin laminador."
+    ],
+    "tools.paint.action": ["Vybarvit model", "Colour the model", "Colorear el modelo"],
+    "tools.keywords.paint": [
+        "vybarvit obarvit barvy stl 3mf vícebarevný tisk malování štětec vylít plochu barva podle výšky ams mmu ace filament",
+        "colour color paint stl 3mf multicolour multicolor print brush bucket fill surface colour by height ams mmu ace filament",
+        "colorear pintar colores stl 3mf impresión multicolor pincel rellenar superficie color por altura ams mmu ace filamento"
+    ],
+
+    "paint.lead": [
+        "Nahrajte model a řekněte, která část má kterou barvu. Ťuknutím vylijete celou plochu, štětcem domalujete detaily, podle výšky obarvíte pásy.",
+        "Upload a model and say which part gets which colour. A tap fills a whole surface, the brush adds details, the height colours bands.",
+        "Suba un modelo y diga qué parte lleva qué color. Un toque rellena toda una superficie, el pincel añade detalles, la altura colorea franjas."
+    ],
+    "paint.step.model": ["Model", "Model", "Modelo"],
+    "paint.step.colors": ["Barvy", "Colours", "Colores"],
+    "paint.step.height": ["Podle výšky", "By height", "Por altura"],
+    "paint.pick": ["Přetáhněte sem model, nebo ťukněte a vyberte soubor", "Drop a model here, or tap to choose a file", "Arrastre aquí un modelo o toque para elegir un archivo"],
+    "paint.source": [":name · :n trojúhelníků", ":name · :n triangles", ":name · :n triángulos"],
+    "paint.uploading": ["Nahrávám model… :pct %", "Uploading the model… :pct %", "Subiendo el modelo… :pct %"],
+    "paint.processing": ["Zpracovávám model…", "Processing the model…", "Procesando el modelo…"],
+    "paint.loading": ["Načítám model…", "Loading the model…", "Cargando el modelo…"],
+    "paint.preparing": ["Připravuji model k malování…", "Getting the model ready for painting…", "Preparando el modelo para pintar…"],
+    "paint.model_failed": ["Model se nepodařilo zpracovat. Zkuste jiný soubor.", "The model could not be processed. Try another file.", "No se pudo procesar el modelo. Pruebe con otro archivo."],
+    "paint.bad_format": ["Tento formát nástroj nepřečte. Nahrajte :formats.", "The tool cannot read this format. Upload :formats.", "La herramienta no lee este formato. Suba :formats."],
+    "paint.too_big": ["Soubor je větší než :max MB.", "The file is larger than :max MB.", "El archivo supera los :max MB."],
+    "paint.error.too_heavy": [
+        "Model má :n trojúhelníků, nástroj jich zvládne nejvýš :max. Zjednodušte ho v programu, kde vznikl, nebo ve sliceru, a nahrajte znovu.",
+        "The model has :n triangles, the tool takes :max at most. Simplify it in the program it came from, or in a slicer, and upload it again.",
+        "El modelo tiene :n triángulos y la herramienta admite :max como máximo. Simplifíquelo en el programa de origen o en un laminador y súbalo de nuevo."
+    ],
+    "paint.brush.off": [
+        "Model má :n trojúhelníků. Štětec na tomto zařízení pracuje do :max; vylití plochy a barvy podle výšky fungují dál.",
+        "The model has :n triangles. On this device the brush works up to :max; filling a surface and colours by height still work.",
+        "El modelo tiene :n triángulos. En este dispositivo el pincel funciona hasta :max; rellenar una superficie y los colores por altura siguen funcionando."
+    ],
+    "paint.brush.full": [
+        "Štětec už síť dál nezjemní, další tahy budou hrubší. Uložte vybarvení, nebo vraťte některé tahy.",
+        "The brush cannot refine the mesh any further, the next strokes will be coarser. Save the colouring, or undo some strokes.",
+        "El pincel ya no puede refinar más la malla y los próximos trazos serán más bastos. Guarde el coloreado o deshaga algunos trazos."
+    ],
+    "paint.mode": ["Nástroj", "Tool", "Herramienta"],
+    "paint.mode.fill": ["Vylít", "Fill", "Rellenar"],
+    "paint.mode.brush": ["Štětec", "Brush", "Pincel"],
+    "paint.mode.erase": ["Guma", "Eraser", "Goma"],
+    "paint.mode.turn": ["Otáčet", "Turn", "Girar"],
+    "paint.mode.fill.hint": [
+        "Ťukněte na plochu: obarví se souvislá část až k hraně. Tažením model otáčíte.",
+        "Tap a surface: the connected part up to an edge takes the colour. Drag to turn the model.",
+        "Toque una superficie: la parte unida hasta una arista toma el color. Arrastre para girar el modelo."
+    ],
+    "paint.mode.brush.hint": [
+        "Táhněte po modelu. Otáčíte dvěma prsty nebo pravým tlačítkem myši.",
+        "Drag over the model. Turn it with two fingers or the right mouse button.",
+        "Arrastre sobre el modelo. Gírelo con dos dedos o con el botón derecho del ratón."
+    ],
+    "paint.mode.erase.hint": [
+        "Táhněte po modelu: vrátí se barva modelu.",
+        "Drag over the model: it gets the model's own colour back.",
+        "Arrastre sobre el modelo: vuelve el color propio del modelo."
+    ],
+    "paint.mode.turn.hint": [
+        "Otáčejte modelem; kolečkem nebo dvěma prsty ho přiblížíte.",
+        "Turn the model; zoom with the wheel or two fingers.",
+        "Gire el modelo; acérquelo con la rueda o con dos dedos."
+    ],
+    "paint.fill.angle": ["Citlivost na hrany", "Edge sensitivity", "Sensibilidad a las aristas"],
+    "paint.fill.angle.hint": [
+        "Menší úhel zastaví barvu už na mírné hraně, větší ji pustí i přes oblé přechody.",
+        "A smaller angle stops the colour at a gentle edge, a larger one lets it flow over rounded ones.",
+        "Un ángulo menor detiene el color en una arista suave, uno mayor lo deja pasar por las redondeadas."
+    ],
+    "paint.fill.whole": ["Celý díl", "Whole part", "Pieza entera"],
+    "paint.brush.size": ["Velikost štětce", "Brush size", "Tamaño del pincel"],
+    "paint.color.now": ["Barva, kterou malujete", "The colour you paint with", "El color con el que pinta"],
+    "paint.colors.base": ["Barva modelu", "The model's colour", "Color del modelo"],
+    "paint.colors.base.hint": ["Co nevybarvíte, zůstane v této barvě.", "What you do not paint stays in this colour.", "Lo que no pinte queda en este color."],
+    "paint.colors.add": ["Přidat barvu", "Add a colour", "Añadir un color"],
+    "paint.colors.left.one": ["Můžete přidat ještě :n barvu.", "You can add :n more colour.", "Puede añadir :n color más."],
+    "paint.colors.left.few": ["Můžete přidat ještě :n barvy.", "You can add :n more colours.", "Puede añadir :n colores más."],
+    "paint.colors.left.other": ["Můžete přidat ještě :n barev.", "You can add :n more colours.", "Puede añadir :n colores más."],
+    "paint.colors.left.none": [
+        "Víc barev se do jednoho tisku nevejde: tiskárna s měničem drží nejvýš :max cívek.",
+        "One print takes no more colours: the printer with a changer holds :max spools at most.",
+        "Una impresión no admite más colores: la impresora con cambiador lleva :max bobinas como máximo."
+    ],
+    "paint.colors.limit": [
+        "Jeden tisk zvládne nejvýš :max barev.",
+        "One print takes :max colours at most.",
+        "Una impresión admite :max colores como máximo."
+    ],
+    "paint.colors.remove": ["Odebrat barvu", "Remove the colour", "Quitar el color"],
+    "paint.colors.change": ["Změnit barvu", "Change the colour", "Cambiar el color"],
+    "paint.colors.window": ["Vyberte barvu filamentu", "Choose a filament colour", "Elija un color de filamento"],
+    "paint.colors.window.farm": [
+        "Barvy filamentů, ze kterých tiskneme. Druh plastu vyberete při objednávce.",
+        "The colours of the filaments we print from. You choose the kind of plastic when you order.",
+        "Los colores de los filamentos con los que imprimimos. El tipo de plástico se elige al hacer el pedido."
+    ],
+    "paint.colors.window.basic": [
+        "Základní barvy. Nejbližší filament vyberete při objednávce.",
+        "Basic colours. You choose the nearest filament when you order.",
+        "Colores básicos. El filamento más cercano se elige al hacer el pedido."
+    ],
+    "paint.colors.loaded": ["máme v tiskárně", "loaded in a printer", "cargado en una impresora"],
+    "paint.colors.taken": ["Tuto barvu už v modelu máte.", "The model already has this colour.", "El modelo ya tiene este color."],
+    "paint.colors.close": ["Zavřít", "Close", "Cerrar"],
+    "paint.colors.clear": ["Smazat celé vybarvení", "Clear all colouring", "Borrar todo el coloreado"],
+    "paint.colors.share": [":pct % povrchu", ":pct % of the surface", ":pct % de la superficie"],
+    "paint.height.intro": [
+        "Od zvolené výšky nahoru dostane model jinou barvu. Hranice je rovná a přesná; co jste vybarvili ručně, zůstává.",
+        "From the chosen height up the model takes another colour. The border is straight and exact; what you painted by hand stays.",
+        "Desde la altura elegida hacia arriba el modelo toma otro color. El límite es recto y exacto; lo pintado a mano se mantiene."
+    ],
+    "paint.height.add": ["Přidat změnu barvy ve výšce", "Add a colour change at a height", "Añadir un cambio de color a una altura"],
+    "paint.height.from": ["Od výšky", "From the height", "Desde la altura"],
+    "paint.height.color": ["Barva pásu", "Colour of the band", "Color de la franja"],
+    "paint.height.remove": ["Odebrat změnu", "Remove the change", "Quitar el cambio"],
+    "paint.height.need_model": ["Nejdřív nahrajte model.", "Upload a model first.", "Suba primero un modelo."],
+    "paint.honest.title": ["Co vícebarevný tisk znamená", "What a multicolour print means", "Qué supone una impresión multicolor"],
+    "paint.honest.time": [
+        "Každá vrstva, ve které se potkají dvě barvy, znamená výměnu filamentu, asi dvě minuty navíc. Barvy vedle sebe po celé výšce proto tisk výrazně prodlouží.",
+        "Every layer where two colours meet means a filament change, about two minutes more. Colours side by side over the whole height therefore make the print much longer.",
+        "Cada capa en la que se juntan dos colores supone un cambio de filamento, unos dos minutos más. Por eso los colores uno junto a otro en toda la altura alargan mucho la impresión."
+    ],
+    "paint.honest.waste": [
+        "Při každé výměně tiskárna vytlačí zbytek staré barvy do čisticí věže vedle modelu. Je to několik gramů plastu navíc; cena s nimi počítá.",
+        "At every change the printer pushes the rest of the old colour into a prime tower beside the model. That is a few grams of plastic more; the price counts them.",
+        "En cada cambio la impresora expulsa el resto del color anterior en una torre de purga junto al modelo. Son unos gramos más de plástico; el precio los incluye."
+    ],
+    "paint.honest.height": [
+        "Nejlevnější jsou barvy nad sebou (podle výšky): jedna výměna na každou změnu barvy.",
+        "Colours one above another (by height) are the cheapest: one change for each change of colour.",
+        "Lo más barato son los colores uno sobre otro (por altura): un cambio por cada cambio de color."
+    ],
+    "paint.honest.detail": [
+        "Tryska má 0,4 mm. Tenčí čárku nebo tečku nevytiskne: takové skvrny při uložení sloučíme s okolní barvou a řekneme vám to.",
+        "The nozzle is 0.4 mm. It cannot print a thinner line or dot: when you save, we merge such specks into the colour around them and tell you.",
+        "La boquilla es de 0,4 mm. No imprime una línea ni un punto más finos: al guardar unimos esas motas al color de alrededor y se lo decimos."
+    ],
+    "paint.go.need": [
+        "Vybarvěte model aspoň dvěma barvami: vylijte plochu, přidejte barvu podle výšky nebo malujte štětcem.",
+        "Colour the model in two colours at least: fill a surface, add a colour by height or paint with the brush.",
+        "Coloree el modelo con dos colores como mínimo: rellene una superficie, añada un color por altura o pinte con el pincel."
+    ],
+    "paint.saving": ["Ukládám vybarvení…", "Saving the colouring…", "Guardando el coloreado…"],
+    "paint.building": ["Připravuji barevný model…", "Making the coloured model…", "Preparando el modelo en color…"],
+    "paint.saved.specks.one": [
+        "Sloučili jsme :n drobnou skvrnu menší než tryska s okolní barvou.",
+        "We merged :n speck smaller than the nozzle into the colour around it.",
+        "Hemos unido :n mota más pequeña que la boquilla al color de alrededor."
+    ],
+    "paint.saved.specks.few": [
+        "Sloučili jsme :n drobné skvrny menší než tryska s okolní barvou.",
+        "We merged :n specks smaller than the nozzle into the colour around them.",
+        "Hemos unido :n motas más pequeñas que la boquilla al color de alrededor."
+    ],
+    "paint.saved.specks.other": [
+        "Sloučili jsme :n drobných skvrn menších než tryska s okolní barvou.",
+        "We merged :n specks smaller than the nozzle into the colour around them.",
+        "Hemos unido :n motas más pequeñas que la boquilla al color de alrededor."
+    ],
+    "paint.saved.lost": [
+        "Barvy se nepodařilo zapsat do modelu, tiskl by se jednobarevně. Zkuste to prosím znovu.",
+        "The colours could not be written into the model, it would print in one colour. Please try again.",
+        "No se pudieron escribir los colores en el modelo, se imprimiría en un solo color. Inténtelo de nuevo."
+    ],
+    "paint.error.one_color": [
+        "Po sloučení drobných skvrn zůstala modelu jediná barva. Vybarvěte větší plochu.",
+        "After the small specks were merged the model was left with one colour. Paint a larger area.",
+        "Tras unir las motas pequeñas el modelo quedó con un solo color. Pinte una zona mayor."
+    ],
+    "paint.error.failed": [
+        "Vybarvení se nepodařilo uložit. Zkuste to prosím znovu.",
+        "The colouring could not be saved. Please try again.",
+        "No se pudo guardar el coloreado. Inténtelo de nuevo."
+    ],
+    "paint.error.source_changed": [
+        "Model se mezitím změnil. Načtěte stránku znovu a vybarvěte ho ještě jednou.",
+        "The model has changed meanwhile. Reload the page and colour it once more.",
+        "El modelo ha cambiado entretanto. Recargue la página y coloréelo otra vez."
+    ],
+    "paint.error.too_many_colors": [
+        "Model má víc barev, než zvládne jeden tisk (nejvýš :max).",
+        "The model has more colours than one print takes (:max at most).",
+        "El modelo tiene más colores de los que admite una impresión (:max como máximo)."
+    ],
+    "paint.download.3mf": ["3MF s barvami", "3MF with the colours", "3MF con los colores"],
+    "paint.download.3mf.hint": [
+        "Pro Bambu Studio, OrcaSlicer a Anycubic Slicer Next: barvy jsou namalované na modelu.",
+        "For Bambu Studio, OrcaSlicer and Anycubic Slicer Next: the colours are painted on the model.",
+        "Para Bambu Studio, OrcaSlicer y Anycubic Slicer Next: los colores están pintados en el modelo."
+    ],
+    "paint.opened.painted": [
+        "Soubor už má namalované barvy. Můžete v nich pokračovat.",
+        "The file already has painted colours. You can carry on with them.",
+        "El archivo ya tiene colores pintados. Puede continuar con ellos."
+    ],
+    "paint.tip": [
+        "Barevný model vytiskneme najednou na tiskárně, která si filamenty mění sama. V kalkulaci uvidíte cenu jednobarevně i barevně.",
+        "We print the coloured model in one go on a printer that changes filaments by itself. The calculation shows the price in one colour and in colours.",
+        "Imprimimos el modelo en color de una vez en una impresora que cambia de filamento sola. El cálculo muestra el precio en un color y en colores."
+    ],
+    "paint.calc.link": ["Vybarvit model", "Colour the model", "Colorear el modelo"],
+    "paint.calc.link.edit": ["Upravit vybarvení", "Change the colouring", "Cambiar el coloreado"]
+}

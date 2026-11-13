@@ -1172,10 +1172,22 @@ function showKindTip(kind: string | undefined): void {
     el.textContent = text === key ? '' : text;
     el.classList.toggle('hidden', text === key);
     const edit = state.file?.tool?.url ?? null;
+    // where this model can be coloured (the tool "Vybarvit model", docs/AS.md); a model coloured there goes back to be changed
+    const paint = state.file?.status === 'ready' ? state.file.paint_url ?? null : null;
     const bar = document.getElementById('edit-design');
     if (bar) {
-        bar.classList.toggle('hidden', !edit); bar.classList.toggle('flex', Boolean(edit));
-        if (edit) (document.getElementById('edit-design-link') as HTMLAnchorElement).href = edit;
+        bar.classList.toggle('hidden', !edit && !paint); bar.classList.toggle('flex', Boolean(edit || paint));
+        const editLink = document.getElementById('edit-design-link') as HTMLAnchorElement;
+        editLink.classList.toggle('hidden', !edit);
+        document.getElementById('edit-design-hint')?.classList.toggle('hidden', !edit);
+        if (edit) editLink.href = edit;
+        const paintLink = document.getElementById('paint-model-link') as HTMLAnchorElement | null;
+        if (paintLink) {
+            paintLink.classList.toggle('hidden', !paint); paintLink.classList.toggle('inline-flex', Boolean(paint));
+            if (paint) paintLink.href = paint;
+            const text = paintLink.querySelector('[data-text]');
+            if (text) text.textContent = (state.file?.kind === 'paint' ? paintLink.dataset.labelEdit : paintLink.dataset.label) ?? '';
+        }
     }
     showRefine(kind === 'generated' ? state.file : null);
     showPedestal(kind === 'generated' ? state.file : null);

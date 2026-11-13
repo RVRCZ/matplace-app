@@ -27,6 +27,8 @@ export interface FileInfo {
     /** count = colours printed (at most 4, the rest merged: too_many), status of the analysis on upload */
     colors_info?: { count: number; merged: number; too_many: boolean; status: string } | null;
     check?: { status: string; items: { level: 'error' | 'advice' | 'ok'; code: string; params: Record<string, string> }[] };
+    /** where the model can be coloured (/tools/paint?from=<uuid>, docs/AS.md); null when the tool is not offered */
+    paint_url?: string | null;
 }
 
 export interface CalcInfo {

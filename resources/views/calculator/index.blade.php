@@ -64,7 +64,9 @@
                 <p id="kind-tip" class="hidden border-t border-slate-100 bg-action-soft px-4 py-2 text-sm text-action-dark"></p>
                 <div id="edit-design" class="hidden flex-wrap items-center gap-3 border-t border-slate-100 px-4 py-3">
                     <a id="edit-design-link" href="{{ route('tools') }}" class="btn-secondary text-sm">{{ __('calc.edit_design') }}</a>
-                    <span class="text-xs text-slate-500">{{ __('calc.edit_design.hint') }}</span>
+                    <span id="edit-design-hint" class="text-xs text-slate-500">{{ __('calc.edit_design.hint') }}</span>
+                    {{-- any ready model can be coloured (file.paint_url, docs/AS.md): the tool opens with this very model --}}
+                    <a id="paint-model-link" href="{{ route('tools') }}" class="btn-secondary hidden gap-1.5 text-sm" data-label="{{ __('paint.calc.link') }}" data-label-edit="{{ __('paint.calc.link.edit') }}"><x-icon name="palette" class="h-4 w-4" /><span data-text>{{ __('paint.calc.link') }}</span></a>
                 </div>
             </div>
 

@@ -99,6 +99,8 @@ class ModelFile extends Model
     public function printHints(): array
     {
         return match ($this->kind()) {
+            // a model coloured here (App\Domain\Tools\ModelPainter) prints as the model it was painted over
+            'paint' => self::where('uuid', (string) $this->origin_ref)->first()?->printHints() ?? [],
             'generated' => ['supports' => true],                                           // organic shapes: tree supports
             'lithophane' => ['infill' => 100, 'quality' => 'fine', 'supports' => false],   // must be solid, fine layers = smooth picture
             'vase' => ['supports' => false] + (($this->tool_params['purpose'] ?? 'vase') === 'vase' ? ['vase' => true] : []),   // a plain vase is one closed contour: it prints best in vase mode, one wall and no infill
