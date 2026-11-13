@@ -1213,9 +1213,18 @@ na které se `searchconsole:inspect` ptá první) a jeden řádek testu; po nich
 dvou řádcích znovu neběžela. `vendor/bin/pint --dirty` bez nálezů, `npx tsc --noEmit -p .` čisté, `npm run build`
 prošel i s kontrolami bundlu.
 
+**Sloučení `main`.** `main` se během práce posunul (41f02d51: nástroj Čelenka, přímá cívka bez měniče). Sloučil jsem
+ho do větve: konflikt jen ve třech `lang/*.json` (vzal jsem soubory z `main` a znovu pustil `lang_add.py` nad
+`lang/src/page_optimization.json`, všechny tři platné), čelenka dostala „Kam dál“ (`config/landing.php` `next`; její
+titulky mají 43 až 45 znaků). Po sloučení `npm run build` a 104 testů stránek, vyhledávačů a čelenky
+(`Headband|PageOptimizationTest|SeoTest|SeoQualityTest|SeoCleanupTest|LandingPagesTest|ToolPageTest|PraguePageTest|
+PetFigurineTest|HomeWhatToMakeTest|ToolsCatalogTest|BlogTest|CatalogValueTest`): OK, 22 908 assertions.
+**Celá sada po sloučení neběžela** (běžela nad větví před ním).
+
 ### 15.6 Nasazení
 
-- **Migrace: žádná. `.env`: nic.** Nové třídy `App\Support\PageTitle`, `BlogSeo`, `BlogLinks`, komponenta
+- **Migrace: žádná vlastní. `.env`: nic.** (Větev má sloučený `main` 41f02d51 a s ním jeho migraci
+  `2026_11_13_100000_farm_printers_changer_attached`; ta patří `main`, ne této práci.) Nové třídy `App\Support\PageTitle`, `BlogSeo`, `BlogLinks`, komponenta
   `components/crumbs.blade.php`, `config/landing.php` `next`, `config/seo.php` `footer_tools` a `inspect.routes`
   (pondělní `searchconsole:inspect` se nově ptá i na klíčenku, ozdobu a perníček: o tři dotazy víc).
 - **`npm run build`** (nové třídy v řádku drobečků a pod seznamem nástrojů).
