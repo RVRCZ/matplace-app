@@ -364,7 +364,8 @@ class SeoCleanupTest extends TestCase
         $this->assertStringContainsString('<loc>'.url('/').'</loc><xhtml:link', $read('sitemap-tools-cs.xml'), 'the home page names no date: nothing true to say');
         $index = $read('sitemap.xml');
         $this->assertStringContainsString('<loc>'.url('/sitemap-blog-cs.xml').'</loc><lastmod>'.now()->toDateString().'</lastmod>', $index, 'the newest date in the file');
-        $newest = max(array_map(fn (string $f) => date('Y-m-d', filemtime($f)), glob(lang_path('cs/tools_seo/*.php'))));
+        // the newest text among the tools the file lists (the home page's own text, calc, is not one of them)
+        $newest = max(array_map(fn (string $tool) => date('Y-m-d', filemtime(lang_path('cs/tools_seo/'.$tool.'.php'))), array_values(array_diff($tools, ['calc']))));
         $this->assertStringContainsString('<loc>'.url('/sitemap-tools-cs.xml').'</loc><lastmod>'.$newest.'</lastmod>', $index, 'not the day the sitemap was built');
         $this->assertSame(substr_count($index, '<sitemap>'), substr_count($index, '<loc>'));
 

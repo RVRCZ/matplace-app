@@ -917,13 +917,16 @@ smazat v Search Console“. Rozvrh: pondělí 6:30 před týdenním e‑mailem. 
 - Úvodní strana: titulek a obsah si odporují (studie, příčina 3); sjednocuje ji session `feature/home-what-to-make`.
 
 **Testy (13. 11. 2026, jak opravdu běžely):** celá sada má 1 109 testů. Jeden běh celé sady jsem po 895 testech
-zastavil (trval přes hodinu, stroj sdílely další session). Potom ve dvou bězích po posledních úpravách kódu: rozsah
-tříd L až Sa (234 testů) a všechno ostatní včetně Unit (917 testů), a nakonec 71 testů stránek po poslední úpravě
-textů (`SeoQualityTest|AuditRestTest|SeoCleanupTest|SeoTest|ToolPageTest|LandingPagesTest|PraguePageTest|
-SecurityHeadersTest`: OK, 18 195 asercí). Selhávají čtyři testy z důvodů mimo tuto větev (jejich soubory ani kód,
-který zkoušejí, jsem neměnil; na `main` jsem je nespouštěl): `FarmPagesTest` (formulář nastavení farmy žádá `shorts_publish_hour`), `PrintPhotosTest` (fotka
-`photo-short.jpg` ve střihu Shortu), `PapelPortraitTest` (šest kroků: `id="param-artwork-file" type="file"`),
-`YouTubeChannelTest` (název videa vlastního souboru). Pint bez nálezů.
+zastavil (trval přes hodinu, stroj sdílely další session). Potom po částech: rozsah tříd L až Se (234 testů)
+a všechno ostatní včetně Unit a znovu Se (917 testů), pak 71 a 104 testů stránek, katalogu a statistik po poslední
+úpravě textů (obojí OK). Po sloučení `origin/main` z 13. 11. do větve 172 testů stránek, katalogu, statistik a Search
+Console: selhal jeden můj test (čekal datum souboru, který v mapě není), opraven, `SeoCleanupTest` 12 testů OK.
+**Celá sada po sloučení s `main` neběžela.** Selhávají čtyři testy z důvodů mimo tuto větev (jejich soubory ani kód,
+který zkoušejí, jsem neměnil; na `main` jsem je nespouštěl): `FarmPagesTest` (formulář nastavení farmy žádá
+`shorts_publish_hour`), `PrintPhotosTest` (fotka `photo-short.jpg` ve střihu Shortu), `PapelPortraitTest` (šest
+kroků: `id="param-artwork-file" type="file"`), `YouTubeChannelTest` (název videa vlastního souboru). Pint bez
+nálezů. Pozor při testech: neupravovat `app/` a šablony, dokud běží PHPUnit. Běžící proces drží starou třídu
+a vykreslí novou šablonu; čtyři „selhání“ zastaveného běhu byla jen tohle a v novém procesu prošla.
 
 ### 14.10 Nasazení a co ověřit na produkci
 
