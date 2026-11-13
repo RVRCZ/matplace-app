@@ -2626,5 +2626,13 @@
     "farm.state.admin.line_queue_closed": "Cola: la granja está cerrada, el pedido espera y empezará cuando la abra",
     "farm.mail.queued_closed.subject": "Pedido :number aceptado, la impresión empezará cuando la granja vuelva a abrir",
     "farm.mail.queued_closed.body": "Su impresión «:name» (:color) está pagada y espera en la cola. Le avisaremos cuando empiece a imprimirse.",
-    "router.summary.tool_decor": "La foto irá encima como relieve de un solo color; la vista previa muestra cómo queda."
+    "router.summary.tool_decor": "La foto irá encima como relieve de un solo color; la vista previa muestra cómo queda.",
+    "nav.crumbs": "Dónde está en el sitio",
+    "tools.seo.h1": "Herramientas de impresión 3D: un modelo de una foto, un nombre o medidas",
+    "tools.seo.more": "¿Quiere directamente la pieza impresa?",
+    "tools.seo.more.price": "Precio de impresión de su archivo",
+    "site.blog.seo_title": "Blog de impresión 3D: guías, precios e ideas de regalo",
+    "site.blog.seo_description": "Guías y consejos sobre impresión 3D por encargo: cuánto cuesta, qué material elegir, cómo preparar el modelo y qué regalar con una foto o un nombre.",
+    "site.blog.tools_title": "Herramientas del artículo",
+    "site.blog.related": "Artículos relacionados"
 }

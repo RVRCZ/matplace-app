@@ -2626,5 +2626,13 @@
     "farm.state.admin.line_queue_closed": "Fronta: farma je zavřená, zakázka čeká a spustí se, až farmu otevřete",
     "farm.mail.queued_closed.subject": "Zakázka :number je přijatá, tisk začne po otevření farmy",
     "farm.mail.queued_closed.body": "Váš tisk „:name“ (:color) je zaplacený a čeká ve frontě. Dáme vědět, až se začne tisknout.",
-    "router.summary.tool_decor": "Fotku na něj položíme jako reliéf v jedné barvě; jak vyjde, uvidíte v náhledu."
+    "router.summary.tool_decor": "Fotku na něj položíme jako reliéf v jedné barvě; jak vyjde, uvidíte v náhledu.",
+    "nav.crumbs": "Kde na webu jste",
+    "tools.seo.h1": "Nástroje pro 3D tisk: model z fotky, jména nebo rozměrů",
+    "tools.seo.more": "Chcete rovnou hotový výtisk?",
+    "tools.seo.more.price": "Cena tisku z vlastního souboru",
+    "site.blog.seo_title": "Blog o 3D tisku: návody, ceny a nápady na dárky",
+    "site.blog.seo_description": "Návody a rady k 3D tisku na zakázku: kolik tisk stojí, jaký materiál vybrat, jak připravit model a co vyrobit jako dárek z fotky nebo se jménem.",
+    "site.blog.tools_title": "Nástroje z článku",
+    "site.blog.related": "Články k tématu"
 }

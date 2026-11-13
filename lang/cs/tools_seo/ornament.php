@@ -2,7 +2,7 @@
 
 // Stránka pro dotaz „vánoční ozdoba 3d tisk“ (docs/AP.md §6). 'heading' = H1 stránky, 'h1' = nadpis obsahu pod nástrojem.
 return [
-    'title' => 'Vánoční ozdoba na 3D tisk z obrázku nebo jména: model zdarma',
+    'title' => 'Vánoční ozdoba z obrázku nebo jména: 3D tisk od 99 Kč',
     'heading' => 'Vánoční ozdoba na 3D tisk z obrázku nebo jména',
     'description' => 'Nahrajete obrázek nebo napíšete jméno a vznikne vánoční ozdoba v barvách filamentů s očkem na stužku. Vytiskneme ji, nebo si model stáhnete zdarma.',
     'h1' => 'Jak ozdoba z obrázku vzniká, kolik barev zvládne a kolik stojí',

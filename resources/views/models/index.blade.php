@@ -52,6 +52,6 @@
         <div class="mt-5">{{ $cards->links() }}</div>
     @endif
 
-    <p class="mt-8 text-sm text-slate-600">{{ __('models.designers_pitch') }} <a href="{{ route('account') }}#designer" class="text-action-dark underline">{{ __('designer.enable') }}</a></p>
+    <p class="mt-8 text-sm text-slate-600">{{ __('models.designers_pitch') }} <a href="{{ route('account') }}#designer" rel="nofollow" class="text-action-dark underline">{{ __('designer.enable') }}</a></p>
 </div>
 @endsection

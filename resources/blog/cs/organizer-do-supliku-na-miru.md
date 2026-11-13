@@ -1,6 +1,8 @@
 ---
 title: "Organizér do šuplíku na míru: jak změřit zásuvku a kolik stojí tisk"
 excerpt: Organizér s přihrádkami přesně podle vaší zásuvky, nebo sada samostatných misek, které si poskládáte sami. Jak zásuvku změřit, kolik nechat vůle, jaké jsou limity velikosti a kolik stojí tisk.
+seo_title: "Organizér do šuplíku na míru: jak změřit zásuvku a cena"
+seo_description: "Organizér s přihrádkami přesně podle zásuvky, nebo sada volných misek. Jak zásuvku změřit, kolik nechat vůle, limity velikosti a kolik stojí tisk."
 cover:
 published_at: 2026-10-18 20:00:00
 updated_at: 2026-10-18 20:00:00

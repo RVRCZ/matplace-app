@@ -1,6 +1,7 @@
 ---
 title: "Cena 3D tisku z modelu: kalkulace krok za krokem"
 excerpt: Nahrajete STL, 3MF nebo OBJ a za pár vteřin vidíte rozměry, dobu tisku, spotřebu materiálu a cenu. Co všechno kalkulace na matplace.com ukáže, co v ní nastavíte a jak z ní objednat tisk nebo stáhnout projekt.
+seo_description: "Nahrajete STL, 3MF nebo OBJ a za pár vteřin vidíte rozměry, dobu tisku, spotřebu materiálu a cenu. Co kalkulace ukáže, co v ní nastavíte a jak objednat."
 cover:
 published_at: 2026-10-18 20:00:00
 updated_at: 2026-10-18 20:00:00

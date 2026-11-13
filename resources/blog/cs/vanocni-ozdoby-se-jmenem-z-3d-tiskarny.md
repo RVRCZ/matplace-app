@@ -1,6 +1,8 @@
 ---
 title: "Vánoční ozdoby se jménem z 3D tiskárny: perníček, ozdoba z obrázku a písmeno"
 excerpt: Tři nástroje na vánoční ozdoby se jménem, u každého cena a doba tisku ze skutečné kalkulace: perníček 99 Kč, šest kusů 140 Kč, ozdoba z dětské kresby, písmeno se jménem jako dárek. A do kdy objednat.
+seo_title: "Vánoční ozdoby se jménem z 3D tiskárny: ceny a termíny"
+seo_description: "Perníček se jménem za 99 Kč, šest kusů za 140 Kč, ozdoba z dětské kresby a písmeno se jménem. U každé cena a doba tisku z kalkulace a kdy objednat."
 cover:
 published_at: 2026-11-06 07:00:00
 updated_at: 2026-11-06 07:00:00

@@ -1,4 +1,9 @@
-@extends('layouts.app', ['title' => $page['title'].' · matplace', 'description' => $page['description'] ?? null])
+@php
+    // the page's short name, as the footer calls it: the last step of the trail (docs/AP.md §15)
+    $crumbName = collect(['footer.'.$key, 'site.footer.'.$key])->first(fn ($k) => \Illuminate\Support\Facades\Lang::has($k));
+    $crumbs = [[$crumbName ? __($crumbName) : ($page['h1'] ?? $page['title']), \App\Support\Locales::canonical() ?? url()->current()]];
+@endphp
+@extends('layouts.app', ['title' => $page['title'].' · matplace', 'description' => $page['description'] ?? null, 'crumbs' => $crumbs])
 {{-- a section may carry `tools` (keys of config/tools.php, shown as cards, the ones on offer) and `prices` (rows of real calculations,
      config/site.php example_items in the visitor's currency): the page for businesses (docs/AN.md §8) --}}
 
@@ -20,6 +25,7 @@
 @endpush
 
 @section('content')
+<x-crumbs :trail="$crumbs" class="mx-auto -mt-2 mb-1 max-w-2xl" />
 <article class="mx-auto max-w-2xl rounded-2xl border border-slate-200 bg-white p-6 text-slate-700">
     <h1 class="text-2xl font-extrabold text-ink">{{ $page['h1'] ?? $page['title'] }}</h1>
     @if(in_array($key, ['terms', 'business_terms', 'cookies', 'complaints'], true) && $updated)<p class="text-xs text-slate-500">{{ __('site.pages.updated', ['date' => $updated]) }}</p>@endif

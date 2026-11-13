@@ -1,6 +1,8 @@
 ---
 title: "Vytvoření STL z fotek pomocí AI: Kompletní návod pro 3D tisk (2026)"
 excerpt: Z jedné fotky vytvoří AI za minutu bustu, figurku mazlíčka nebo hrubý model předmětu. Přesnou kopii skutečné věci dá fotogrammetrie z desítek snímků. Kdy co použít, jak fotit a jak model připravit k tisku.
+seo_title: "STL z fotek pomocí AI: návod pro 3D tisk (2026)"
+seo_description: "Z jedné fotky vytvoří AI za minutu bustu, figurku mazlíčka nebo hrubý model předmětu; přesnou kopii dá fotogrammetrie. Kdy co použít a jak fotit."
 cover: blog/20260512_204822_96fc073b.webp
 published_at: 2026-05-12 20:48:31
 updated_at: 2026-10-18 20:00:00

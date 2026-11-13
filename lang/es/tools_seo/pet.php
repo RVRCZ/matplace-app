@@ -1,12 +1,13 @@
 <?php
 
 return [
-    'title' => 'Figura de mascota a partir de una foto en 3D',
+    'title' => 'Figura de su perro o gato a partir de una foto, en 3D',
+    'heading' => 'Figura de perro o gato a partir de una foto',
     'description' => 'De una foto de su perro o gato, una figura 3D en minutos. Tres estilos, base con nombre, control de patas finas. La imprimimos o la descarga gratis.',
     'h1' => 'Figura de mascota a partir de una foto',
     'intro' => [
         'La herramienta convierte una foto de un perro, un gato u otro animal en una figura 3D para imprimir. Hay tres estilos: la realista conserva las proporciones y el pelo, la miniatura de mesa tiene las patas, la cola y las orejas engrosadas como si estuviera modelada en arcilla, y la de dibujo animado tiene la cabeza grande y formas redondeadas. La figura siempre se apoya en una base, que puede llevar el nombre.',
-        'En los animales, lo que más se rompe al imprimir son las patas finas y la cola. Por eso medimos la figura terminada y le decimos cuánto mide su punto más fino. Por debajo de 2,5 mm le sugerimos otro estilo o un tamaño mayor. Una figura suele tardar de 1 a 3 minutos. Encarga la impresión con nosotros o descarga gratis el modelo para su impresora. Borramos la foto en cuanto la figura está hecha.',
+        'En los animales, lo que más se rompe al imprimir son las patas finas y la cola. Por eso medimos la figura terminada y le decimos cuánto mide su punto más fino. Por debajo de 2,5 mm le sugerimos otro estilo o un tamaño mayor. Una figura suele tardar de 1 a 3 minutos. El precio de impresión lo ve en la calculadora antes de pedir; el precio mínimo de un pedido es de 99 CZK. Encarga la impresión con nosotros o descarga gratis el modelo para su impresora. Borramos la foto en cuanto la figura está hecha.',
     ],
     'steps' => [
         ['name' => 'Suba una foto de su mascota', 'text' => 'Un solo animal, el cuerpo entero con las patas y la cola, de lado o en ángulo, postura tranquila y fondo liso. Las fotos del otro lado y de atrás son opcionales.'],

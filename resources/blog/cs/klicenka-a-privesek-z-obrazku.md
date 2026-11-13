@@ -1,6 +1,8 @@
 ---
 title: "Klíčenka a přívěsek z obrázku nebo jména: barevné, z 3D tiskárny"
 excerpt: Klíčenka poskládaná z tvaru, jména a obrázku, nebo přívěsek, který kopíruje obrys vašeho obrázku. Až čtyři barvy v jednom tisku, očko kamkoli po obrysu. Který nástroj zvolit, jak velký otvor na kroužek a kolik stojí tisk.
+seo_title: "Klíčenka a přívěsek z obrázku nebo jména z 3D tiskárny"
+seo_description: "Klíčenka z tvaru, jména a obrázku, nebo přívěsek podle obrysu obrázku, až čtyři barvy v jednom tisku. Který nástroj zvolit a kolik stojí tisk."
 cover:
 published_at: 2026-10-18 22:00:00
 updated_at: 2026-10-18 22:00:00

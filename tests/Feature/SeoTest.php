@@ -14,6 +14,7 @@ use App\Models\User;
 use App\Models\UserRole;
 use App\Support\Consent;
 use App\Support\HtmlCleaner;
+use App\Support\PageTitle;
 use App\Support\Sitemaps;
 use App\Support\ToolSeo;
 use Database\Seeders\FarmSeeder;
@@ -130,7 +131,8 @@ class SeoTest extends TestCase
         // the page: the form first, the content under it, in the language of the address, with its language twins
         $cs = ToolSeo::texts('sign', 'cs');
         $page = $this->get('/tools/sign')->assertOk();
-        $page->assertSee('<title>'.e($cs['title']).' · matplace</title>', false)->assertSee($cs['h1'])->assertSee($cs['steps'][0]['name'])->assertSee($cs['faq'][0]['q'])
+        // the brand follows the title only while both fit a search result (App\Support\PageTitle, docs/AP.md §15)
+        $page->assertSee('<title>'.e(PageTitle::of($cs['title'])).'</title>', false)->assertSee($cs['h1'])->assertSee($cs['steps'][0]['name'])->assertSee($cs['faq'][0]['q'])
             ->assertSee($cs['examples'][0])->assertSee('img/tool-examples/sign-1.png', false)
             ->assertSeeInOrder(['<form', 'id="about-tool"'], false)
             ->assertSee('<link rel="alternate" hreflang="en" href="'.url('/en/tools/sign').'">', false)
@@ -167,10 +169,11 @@ class SeoTest extends TestCase
         $article = $this->get('/blog/'.$post->slug)->assertOk();
         $this->assertEqualsCanonicalizing(['Article', 'BreadcrumbList'], $this->types($article));
         $this->assertSame('Jak na to', collect($this->structured($article))->firstWhere('@type', 'Article')['headline']);
-        $this->assertSame(['ItemList'], $this->types($this->get('/blog')->assertOk()));
+        // the list of the articles and the static pages say where they stand as well (the trail, docs/AP.md §15)
+        $this->assertEqualsCanonicalizing(['ItemList', 'BreadcrumbList'], $this->types($this->get('/blog')->assertOk()));
         $faq = $this->get('/faq')->assertOk();
-        $this->assertSame(['FAQPage'], $this->types($faq));
-        $this->assertGreaterThanOrEqual(10, count($this->structured($faq)[0]['mainEntity']));
+        $this->assertEqualsCanonicalizing(['FAQPage', 'BreadcrumbList'], $this->types($faq));
+        $this->assertGreaterThanOrEqual(10, count(collect($this->structured($faq))->firstWhere('@type', 'FAQPage')['mainEntity']));
         // a text can never close the script: "<" is escaped
         $post->update(['title' => ['cs' => 'Past </script><b>x']]);
         $this->assertSame('Past </script><b>x', collect($this->structured($this->get('/blog/'.$post->slug)))->firstWhere('@type', 'Article')['headline']);

@@ -1,6 +1,8 @@
 ---
 title: "Jmenovky na dárky, vykrajovátka a zápich: vánoční dílna z 3D tiskárny"
 excerpt: Deset jmenovek na dárky za 120 Kč, vykrajovátko se jménem za 99 Kč a zápich na silvestrovský dort: tři nástroje, u každého cena a doba tisku z kalkulace a rady, jak je vytisknout doma nebo objednat včas.
+seo_title: "Jmenovky na dárky, vykrajovátka a zápich z 3D tiskárny"
+seo_description: "Deset jmenovek na dárky za 120 Kč, vykrajovátko se jménem za 99 Kč a zápich na dort. U každého cena a doba tisku z kalkulace a kdy objednat."
 cover:
 published_at: 2026-11-13 07:00:00
 updated_at: 2026-11-13 07:00:00

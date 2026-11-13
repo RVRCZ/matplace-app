@@ -92,7 +92,7 @@ class BlogSync extends Command
      * may be in double quotes)
      * and the Markdown body.
      *
-     * @return array{title: string, excerpt: string, cover: string, published_at: ?Carbon, updated_at: ?Carbon, body: string}
+     * @return array{title: string, excerpt: string, cover: string, published_at: ?Carbon, updated_at: ?Carbon, body: string, seo_title: string, seo_description: string}
      */
     public static function parse(string $text): array
     {
@@ -116,6 +116,9 @@ class BlogSync extends Command
             'published_at' => $date('published_at'),
             'updated_at' => $date('updated_at'),
             'body' => trim($m[2])."\n",
+            // not written into the article: App\Support\BlogSeo reads them for the page's <title> and description (docs/AP.md §15)
+            'seo_title' => (string) ($head['seo_title'] ?? ''),
+            'seo_description' => (string) ($head['seo_description'] ?? ''),
         ];
     }
 

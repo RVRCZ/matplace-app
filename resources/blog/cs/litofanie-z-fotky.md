@@ -1,6 +1,7 @@
 ---
 title: "Litofanie z fotky: obrázek, který se ukáže proti světlu"
 excerpt: Litofanie je tenká destička z bílého plastu, na které se fotka objeví, když za ni dáte světlo. Jako panel na okno, lampa kolem žárovky nebo reliéf na zeď. Jakou fotku vybrat, jaké jsou tvary a velikosti a kolik stojí tisk.
+seo_description: "Litofanie je tenká bílá destička, na které se fotka ukáže proti světlu: panel na okno, lampa nebo reliéf. Jakou fotku vybrat, jaké velikosti a kolik stojí."
 cover:
 published_at: 2026-10-18 21:00:00
 updated_at: 2026-10-18 21:00:00

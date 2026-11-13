@@ -2,7 +2,7 @@
 
 // Stránka pro dotaz „přívěsek z obrázku“ (docs/AP.md §12). 'heading' = H1 stránky, 'h1' = nadpis obsahu pod nástrojem.
 return [
-    'title' => 'Přívěsek z obrázku nebo jména pro 3D tisk: návrh zdarma',
+    'title' => 'Přívěsek z obrázku nebo jména: 3D tisk od 99 Kč',
     'heading' => 'Přívěsek z vlastního obrázku nebo jména pro 3D tisk: na klíče, tašku i batoh',
     'description' => 'Z obrázku, fotky nebo jména vznikne přívěsek v barvách filamentů s očkem kdekoli na obrysu. Na klíče, tašku nebo dárek. Tisk, nebo stažení zdarma.',
     'h1' => 'Jak přívěsek vzniká, kam dát očko a kolik stojí',

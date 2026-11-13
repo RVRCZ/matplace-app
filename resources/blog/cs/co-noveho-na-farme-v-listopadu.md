@@ -1,6 +1,8 @@
 ---
 title: "Co nového na farmě v listopadu 2026: čísla a nové stránky"
 excerpt: Kolik výtisků farma v listopadu dokončila, jak rychle zakázky odcházely a co se za měsíc změnilo na webu: stránky nástrojů s cenami, vánoční nástroje, stránka pro Prahu a blog dvakrát týdně.
+seo_title: "Co nového na farmě v listopadu 2026: čísla a novinky"
+seo_description: "Kolik výtisků farma v listopadu dokončila, jak rychle zakázky odcházely a co přibylo na webu: stránky nástrojů s cenami, vánoční nástroje a blog."
 cover:
 published_at: 2026-12-04 07:00:00
 updated_at: 2026-12-04 07:00:00

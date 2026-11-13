@@ -1,6 +1,8 @@
 ---
 title: "Jak připravit STL soubor pro 3D tisk: Kompletní průvodce 2026"
 excerpt: Jak správně exportovat STL z CAD programu, na co si dát pozor u rozlišení, jednotek a tenkých stěn a jak model zkontrolovat a opravit online zdarma. Kalkulace na matplace.com pak model rozřeže na vrstvy sama, slicer nastavovat nemusíte.
+seo_title: "Jak připravit STL soubor pro 3D tisk: průvodce 2026"
+seo_description: "Jak exportovat STL z CAD programu, co si pohlídat u rozlišení, jednotek a tenkých stěn a jak model zkontrolovat a opravit online zdarma před tiskem."
 cover: blog/20260427_212222_fbd300f8.jpg
 published_at: 2026-04-27 19:07:37
 updated_at: 2026-10-18 20:00:00

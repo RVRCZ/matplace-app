@@ -1,6 +1,8 @@
 ---
 title: "Vykrajovátko na cukroví podle vlastního tvaru: jméno, číslice nebo kresba"
 excerpt: Vykrajovátko ze jména, číslice nebo vlastní kresby, i s razítkem na otisk uvnitř. Jak ho navrhnout, jaký obrázek se hodí, jak ho mýt a jestli je bezpečné pro těsto. Tisk stojí od 99 Kč.
+seo_title: "Vykrajovátko na cukroví podle vlastního tvaru nebo jména"
+seo_description: "Vykrajovátko ze jména, číslice nebo vlastní kresby, i s razítkem na otisk. Jak ho navrhnout, jak ho mýt a jestli je bezpečné pro těsto. Tisk od 99 Kč."
 cover:
 published_at: 2026-10-18 22:00:00
 updated_at: 2026-10-18 22:00:00

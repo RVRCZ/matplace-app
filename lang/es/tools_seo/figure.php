@@ -1,12 +1,12 @@
 <?php
 
 return [
-    'title' => 'Busto o figura a partir de una foto: modelo 3D',
+    'title' => 'Busto o figura a partir de una foto: impresión 3D a medida',
     'description' => 'Suba una foto de frente y en un minuto tendrá el modelo 3D de un busto o una figura. Elija altura y base, pida la impresión o descargue el modelo.',
     'h1' => 'De su foto, un modelo 3D de busto o figura',
     'intro' => [
         'La herramienta convierte una foto en un modelo 3D: un busto con cabeza y hombros, o una figura de cuerpo entero o de un objeto. Sirve para un retrato, una mascota o un juguete. Basta una foto de frente. Con fotos de la izquierda, de atrás y de la derecha el modelo refleja mejor el parecido y el peinado. La forma es una impresión artística, no una copia exacta.',
-        'El modelo tarda alrededor de un minuto y se abre en la calculadora, donde verá el precio de impresión y podrá cambiar el tamaño y la base. Puede pedirnos la impresión o descargar gratis el modelo para su impresora. Gratis puede crear un modelo al día sin cuenta y tres con cuenta. Borramos la foto en cuanto se crea el modelo.',
+        'El modelo tarda alrededor de un minuto y se abre en la calculadora, donde verá el precio de impresión y podrá cambiar el tamaño y la base. Un ejemplo de nuestra calculadora (18 de octubre de 2026, PLA+): un busto de 80 mm de alto pesa 14 g, se imprime en algo menos de una hora y cuesta 99 CZK, el precio mínimo de un pedido; con 120 mm sale por 130 CZK y con 150 mm por 200 CZK. Puede pedirnos la impresión o descargar gratis el modelo para su impresora. Gratis puede crear un modelo al día sin cuenta y tres con cuenta. Borramos la foto en cuanto se crea el modelo.',
     ],
     'steps' => [
         ['name' => 'Elija busto o figura', 'text' => 'El busto muestra la cabeza y los hombros; la figura, el cuerpo entero o un objeto.'],

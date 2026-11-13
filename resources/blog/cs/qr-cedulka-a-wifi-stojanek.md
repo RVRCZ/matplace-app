@@ -1,6 +1,7 @@
 ---
 title: "QR cedulka a stojánek s Wi‑Fi: návod a ceny 3D tisku"
 excerpt: Cedulka s QR kódem, který otevře web, jídelní lístek nebo připojí hosty k Wi‑Fi, s popiskem a stolním stojánkem. Jak ji navrhnout, proč musí být dvoubarevná, jak velký kód telefon přečte a kolik stojí tisk.
+seo_description: "Cedulka s QR kódem, který otevře web, jídelní lístek nebo připojí hosty k Wi‑Fi. Jak ji navrhnout, jak velký kód telefon přečte a kolik stojí tisk."
 cover:
 published_at: 2026-10-18 20:00:00
 updated_at: 2026-10-18 20:00:00

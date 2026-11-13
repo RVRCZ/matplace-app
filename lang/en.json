@@ -2626,5 +2626,13 @@
     "farm.state.admin.line_queue_closed": "Queue: the farm is closed, the order waits and starts once you open the farm",
     "farm.mail.queued_closed.subject": "Order :number is accepted, printing starts once the farm opens again",
     "farm.mail.queued_closed.body": "Your print “:name” (:color) is paid and waits in the queue. We will let you know when it starts printing.",
-    "router.summary.tool_decor": "The photo goes on it as a relief in one colour; the preview shows how it comes out."
+    "router.summary.tool_decor": "The photo goes on it as a relief in one colour; the preview shows how it comes out.",
+    "nav.crumbs": "Where you are on the site",
+    "tools.seo.h1": "3D printing tools: a model from a photo, a name or dimensions",
+    "tools.seo.more": "Want the finished print straight away?",
+    "tools.seo.more.price": "Print price from your own file",
+    "site.blog.seo_title": "3D printing blog: guides, prices and gift ideas",
+    "site.blog.seo_description": "Guides and advice on made-to-order 3D printing: what a print costs, which material to choose, how to prepare a model and what to make as a gift.",
+    "site.blog.tools_title": "Tools from this article",
+    "site.blog.related": "Related articles"
 }

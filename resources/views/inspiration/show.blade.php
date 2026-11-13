@@ -26,6 +26,8 @@
 @endphp
 @extends('layouts.app', [
     'title' => $seo['title'],
+    // the catalogue keeps its whole title with the brand (App\Domain\Catalog\InspirationSeo cuts the model's name instead)
+    'titleFull' => true,
     'description' => $seo['description'],
     'ogImage' => $images[0] ?? null,
     // only a page with something of its own is for search engines; the rest stays reachable and keeps its links followed

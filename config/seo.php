@@ -63,7 +63,7 @@ return [
      * linked from every page, so the pages search engines visit most (the catalogue, the blog) lead to them. Only
      * tools that are public with a page of their own are shown; the services beside them are fixed in the partial.
      */
-    'footer_tools' => ['figure', 'pet', 'charm', 'medallion', 'keychain', 'organizer'],
+    'footer_tools' => ['figure', 'pet', 'charm', 'medallion', 'keychain', 'ornament', 'organizer'],
 
     /*
      * `searchconsole:inspect` (docs/AP.md §14): the addresses whose index state is asked first, by importance (route

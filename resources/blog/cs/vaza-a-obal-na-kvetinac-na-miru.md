@@ -1,6 +1,8 @@
 ---
 title: "Váza a obal na květináč na míru: tvary, povrchy a ceny 3D tisku"
 excerpt: Váza s úzkým hrdlem, vypouklá, kužel nebo tulipán, hladká, žebrovaná nebo spirálová. Obal na květináč s drenáží a podmiskou. Jak vázu navrhnout, jestli udrží vodu, jak velká může být a kolik stojí tisk.
+seo_title: "Váza a obal na květináč na míru: tvary a ceny 3D tisku"
+seo_description: "Váza s úzkým hrdlem, vypouklá nebo tulipán, hladká, žebrovaná či spirálová, a obal na květináč s podmiskou. Udrží vodu, jak velká může být a kolik stojí."
 cover:
 published_at: 2026-10-18 21:00:00
 updated_at: 2026-10-18 21:00:00

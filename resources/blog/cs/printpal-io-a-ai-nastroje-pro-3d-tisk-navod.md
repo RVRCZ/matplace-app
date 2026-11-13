@@ -1,6 +1,8 @@
 ---
 title: PrintPal.io a 4 další AI nástroje, které vám vytvoří 3D model za pár minut (návod 2026)
 excerpt: PrintPal.io, Meshy, Sloyd, Luma Genie a generátory kódu pro OpenSCAD. Co který nástroj umí, pro co se hodí, kde je stejná věc na matplace.com zdarma a jak hotové STL nechat vytisknout s cenou předem.
+seo_title: "PrintPal.io a další AI nástroje pro 3D modely: návod 2026"
+seo_description: "PrintPal.io, Meshy, Sloyd, Luma Genie a generátory kódu pro OpenSCAD: co který umí, pro co se hodí a jak hotové STL nechat vytisknout s cenou předem."
 cover: blog/20260529_103838_b25cfca0.webp
 published_at:
 updated_at: 2026-10-18 20:00:00

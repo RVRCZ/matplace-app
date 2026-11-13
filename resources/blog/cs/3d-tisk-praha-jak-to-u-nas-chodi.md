@@ -1,6 +1,7 @@
 ---
 title: "3D tisk v Praze: cesta zakázky od modelu po box Zásilkovny"
 excerpt: Tiskneme na vlastní farmě v Praze 1. Jak vypadá cesta zakázky od nahrání nebo vytvoření modelu přes cenu, tisk a časosběr až k boxu Zásilkovny, co Pražané tisknou nejčastěji a proč zatím nemáme osobní odběr.
+seo_description: "Cesta zakázky od nahrání nebo vytvoření modelu přes cenu, tisk a časosběr až k boxu Zásilkovny. Co se tiskne nejčastěji a proč zatím není osobní odběr."
 cover:
 published_at: 2026-12-01 07:00:00
 updated_at: 2026-12-01 07:00:00

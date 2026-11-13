@@ -1,6 +1,8 @@
 ---
 title: "Jak zjistit cenu 3D tisku: z čeho se skládá a jak ji vidět předem"
 excerpt: Cena výtisku je materiál, doba tisku a příprava, nejnižší zakázka 99 Kč. Jak ji vidíte hned po nahrání modelu, co ji zvedá a co srazí, a proč u velkého modelu ukážeme nejdřív rozpětí.
+seo_title: "Jak zjistit cenu 3D tisku: z čeho se skládá"
+seo_description: "Cena výtisku je materiál, doba tisku a příprava, nejnižší zakázka stojí 99 Kč. Jak ji vidíte hned po nahrání modelu, co ji zvedá a co ji srazí."
 cover:
 published_at: 2026-11-27 07:00:00
 updated_at: 2026-11-27 07:00:00

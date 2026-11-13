@@ -110,7 +110,8 @@ final class Schema
     {
         return [
             '@type' => 'Article', 'headline' => $post->titleIn(), 'description' => $post->excerptIn(), 'inLanguage' => app()->getLocale(),
-            'image' => $post->coverUrl(), 'datePublished' => $post->published_at?->toIso8601String(), 'dateModified' => $post->updated_at?->toIso8601String(),
+            // an article without a photo of its own is shown by its card, the picture a shared link carries (OgController)
+            'image' => $post->coverUrl() ?: route('og', ['type' => 'article', 'id' => $post->slug]), 'datePublished' => $post->published_at?->toIso8601String(), 'dateModified' => $post->updated_at?->toIso8601String(),
             'mainEntityOfPage' => $post->publicUrl(),
             'author' => ['@type' => $post->author_id ? 'Person' : 'Organization', 'name' => $post->author?->name ?: ($post->author_name ?: 'matplace')],
             'publisher' => ['@type' => 'Organization', 'name' => 'matplace', 'logo' => ['@type' => 'ImageObject', 'url' => url('/img/logo.png')]],

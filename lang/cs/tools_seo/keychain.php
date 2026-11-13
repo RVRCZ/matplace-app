@@ -2,7 +2,7 @@
 
 // Stránka pro dotaz „klíčenka se jménem 3d tisk“ (docs/AP.md §9). 'heading' = H1 stránky, 'h1' = nadpis obsahu pod nástrojem.
 return [
-    'title' => 'Klíčenka se jménem na 3D tisk: tvar, jméno a obrázek, zdarma',
+    'title' => 'Klíčenka se jménem z 3D tiskárny: návrh zdarma, od 99 Kč',
     'heading' => 'Klíčenka se jménem na 3D tisk',
     'description' => 'Poskládáte tvar, jméno a obrázek, každou vrstvu svou barvou, a přidáte očko na kroužek. Model stáhnete zdarma, nebo ji vytiskneme od 99 Kč.',
     'h1' => 'Jak klíčenku poskládat z vrstev, jaký otvor na kroužek a kolik stojí',
