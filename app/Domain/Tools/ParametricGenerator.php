@@ -115,6 +115,35 @@ final class ParametricGenerator
     /** Tools whose product the composer can start from (tool of the catalogue → preset of `compose`): their pages show the way there. */
     public const COMPOSED = ['topper' => 'topper', 'nameplate' => 'plate', 'keychain' => 'keyring', 'ornament' => 'bauble', 'name_letter' => 'initial'];
 
+    /**
+     * Decorations (docs/AR.md): a text, a relief from a photo or a logo laid on the front or the back of a product, the
+     * same list `decor` in the parameters of every kind named here; engines/python/decor.py makes them for all of them.
+     * A decoration: kind, face, x and y (% of the face's width from its middle), size (% of that width), turn (°), mode,
+     * depth (mm), color (a filament of its own, or none = the plate's), and what it shows (lines + typeface, or image).
+     */
+    public const DECOR = ['medallion', 'keychain', 'ornament', 'coaster', 'compose'];
+
+    public const MAX_DECOR = 6;
+
+    public const DECOR_KINDS = ['text', 'photo', 'logo'];
+
+    public const DECOR_FACES = ['front', 'back'];
+
+    public const DECOR_MODES = ['raised', 'engraved', 'flush'];
+
+    public const DECOR_FRAMES = ['circle', 'rect'];
+
+    /** kind of decoration → [min, max, default] of its depth in mm: whole layers of 0.2 */
+    public const DECOR_DEPTH = ['text' => [0.4, 1.2, 0.6], 'logo' => [0.4, 1.2, 0.6], 'photo' => [0.6, 3.0, 1.2]];
+
+    /** [min, max, default] of what a decoration is placed by, and of a photo's own sliders */
+    public const DECOR_FIELDS = ['x' => [-50, 50, 0], 'y' => [-50, 50, 0], 'size' => [10, 100, 60], 'turn' => [-180, 180, 0], 'contrast' => [50, 150, 100], 'smooth' => [0, 1, 0.35]];
+
+    public const DECOR_LINE = 30;
+
+    /** where the picture of decoration n is kept with a created design: artwork-<20 + n>.<ext>, next to the layers' pictures */
+    public const DECOR_FILE = 20;
+
     /** Tools that keep to the few typefaces of their own: a letter on a bead of 8 mm has to be plain. */
     public const OWN_FACES = ['beads'];
 
@@ -387,7 +416,8 @@ final class ParametricGenerator
 
     public const PARTS = ['all', 'body', 'lid', 'saucer', 'handle', 'stand', 'post', 'stripe', 'imprint', 'cut', 'face', 'diffuser', 'back', 'plate', 'text', 'stamp', 'details',
         'rim', 'color_1', 'color_2', 'color_3', 'color_4', 'color_5', 'color_6', 'color_7', 'color_8', 'icing_1', 'icing_2', 'icing_3', 'icing_4', 'icing_5', 'icing_6',
-        'layer_1', 'layer_2', 'layer_3', 'layer_4', 'layer_5', 'layer_6', 'layer_7', 'layer_8', 'layer_9', 'layer_10', 'layer_11', 'layer_12'];
+        'layer_1', 'layer_2', 'layer_3', 'layer_4', 'layer_5', 'layer_6', 'layer_7', 'layer_8', 'layer_9', 'layer_10', 'layer_11', 'layer_12',
+        'decor_1', 'decor_2', 'decor_3', 'decor_4', 'decor_5', 'decor_6'];
 
     /** A biscuit's icing: how many strokes a drawing may have and how many points a stroke */
     public const MAX_STROKES = 60;
@@ -645,7 +675,7 @@ final class ParametricGenerator
                 'flatpack' => ['body', 'stand'], 'ribbon' => ['body', 'stripe'], default => []
             },
             'papel' => ($p['treatment'] ?? 'cutout') === 'portrait' ? ['body', 'details'] : [],             // the backing and what lies on it: two colours, one print
-            'compose' => array_values(array_filter((array) ($p['parts'] ?? []), fn ($part) => is_string($part) && preg_match('/^layer_\d{1,2}$/', $part))),
+            'compose' => array_values(array_filter((array) ($p['parts'] ?? []), fn ($part) => is_string($part) && preg_match('/^(layer_\d{1,2}|decor_[1-6])$/', $part))),
             'sign' => ! empty($p['two_color']) && ! in_array($p['style'] ?? 'emboss', ['engrave', 'stand'], true) ? ['plate', 'text'] : [],
             'qr' => ! empty($p['stand']) ? ['body', 'stand'] : [],
             'lightbox' => ['body', 'face', 'diffuser', 'back'],
@@ -653,9 +683,98 @@ final class ParametricGenerator
             'cutter' => array_values(array_intersect((array) ($p['parts'] ?? []), ['body', 'stamp'])),   // the stamp exists only when the drawing had inner lines: the tool says so
             'modular' => array_merge(! empty($p['tray']) ? ['tray'] : [], array_values(array_unique(array_map(fn ($b) => 'bin_'.$b['w'].'x'.$b['h'], (array) ($p['bins'] ?? []))))),
             // a picture in colours: the plate, every colour and the rim, as the tool listed them
-            'charm', 'keychain', 'earrings', 'ornament', 'magnet', 'coaster', 'gingerbread', 'name_letter', 'cookie', 'topper', 'tray', 'badge', 'medallion', 'photo_organizer', 'bag_charm', 'straw', 'opener' => array_values(array_filter((array) ($p['parts'] ?? []), fn ($part) => is_string($part) && preg_match('/^(body|rim|color_[1-8]|icing_[1-6])$/', $part))),
+            'charm', 'keychain', 'earrings', 'ornament', 'magnet', 'coaster', 'gingerbread', 'name_letter', 'cookie', 'topper', 'tray', 'badge', 'medallion', 'photo_organizer', 'bag_charm', 'straw', 'opener' => array_values(array_filter((array) ($p['parts'] ?? []), fn ($part) => is_string($part) && preg_match('/^(body|rim|color_[1-8]|icing_[1-6]|decor_[1-6])$/', $part))),
             default => [],
         };
+    }
+
+    /**
+     * The rules of the list of decorations: the same for every kind that takes them.
+     *
+     * @return array<string, list<mixed>>
+     */
+    public static function decorRules(mixed $color): array
+    {
+        $f = self::DECOR_FIELDS;
+        $depth = [min(array_column(self::DECOR_DEPTH, 0)), max(array_column(self::DECOR_DEPTH, 1))];
+        $rules = [
+            'params.decor' => ['nullable', 'array', 'max:'.self::MAX_DECOR],
+            'params.decor.*.kind' => ['required', Rule::in(self::DECOR_KINDS)],
+            'params.decor.*.face' => ['nullable', Rule::in(self::DECOR_FACES)],
+            'params.decor.*.mode' => ['nullable', Rule::in(self::DECOR_MODES)],
+            'params.decor.*.depth' => ['nullable', 'numeric', 'min:'.$depth[0], 'max:'.$depth[1]],
+            'params.decor.*.color' => ['nullable'],
+            'params.decor.*.lines' => ['nullable', 'array', 'max:3'],
+            'params.decor.*.lines.*' => ['nullable', 'string', 'max:'.self::DECOR_LINE],
+            'params.decor.*.typeface' => ['nullable', Rule::in(array_keys(self::FONTS))],
+            'params.decor.*.image' => ['nullable', 'string', 'regex:'.Artwork::REF],
+            'params.decor.*.image_name' => ['nullable', 'string', 'max:120'],
+            'params.decor.*.frame' => ['nullable', Rule::in(self::DECOR_FRAMES)],
+            'params.decor.*.invert' => ['nullable', 'boolean'],
+        ];
+        foreach ($f as $key => [$min, $max]) {
+            $rules['params.decor.*.'.$key] = ['nullable', 'numeric', 'min:'.$min, 'max:'.$max];
+        }
+
+        return $rules;
+    }
+
+    /**
+     * The list of decorations as it is stored and handed to the tool: known keys only, numbers inside their limits,
+     * the depth of each kind inside its own, the colour with its look. An entry that shows nothing yet (a text without
+     * a line, a photo or a logo without a picture) is left out: the panel adds an empty one before it is filled.
+     *
+     * @return list<array<string, mixed>>
+     */
+    public static function cleanDecor(array $items): array
+    {
+        $palette = app(Palette::class);
+        $out = [];
+        foreach (array_slice($items, 0, self::MAX_DECOR) as $d) {
+            if (! is_array($d) || ! in_array($d['kind'] ?? null, self::DECOR_KINDS, true)) {
+                continue;
+            }
+            $kind = $d['kind'];
+            $num = fn (string $k, float $min, float $max, float $default): float => round(min($max, max($min, is_numeric($d[$k] ?? null) ? (float) $d[$k] : $default)), 2);
+            [$lo, $hi, $deep] = self::DECOR_DEPTH[$kind];
+            $item = [
+                'kind' => $kind,
+                'face' => in_array($d['face'] ?? null, self::DECOR_FACES, true) ? $d['face'] : 'front',
+                'x' => $num('x', ...self::DECOR_FIELDS['x']), 'y' => $num('y', ...self::DECOR_FIELDS['y']),
+                'size' => $num('size', self::DECOR_FIELDS['size'][0], self::DECOR_FIELDS['size'][1], $kind === 'photo' ? 70 : 60),
+                'turn' => $num('turn', ...self::DECOR_FIELDS['turn']),
+                'mode' => in_array($d['mode'] ?? null, self::DECOR_MODES, true) ? $d['mode'] : 'raised',
+                'depth' => round(round($num('depth', $lo, $hi, $deep) / 0.2) * 0.2, 2),
+                'color' => null,
+            ];
+            $code = is_array($d['color'] ?? null) ? ($d['color']['code'] ?? null) : ($d['color'] ?? null);
+            if ($kind !== 'photo' && is_string($code) && $code !== '' && $palette->has($code)) {
+                $item['color'] = ['code' => Palette::canonical($code), 'hex' => $palette->hex($code)];
+            }
+            if ($kind === 'text') {
+                $lines = array_values(array_filter(array_map(fn ($l) => mb_substr(trim((string) (is_scalar($l) ? $l : '')), 0, self::DECOR_LINE), array_slice((array) ($d['lines'] ?? []), 0, 3)), fn ($l) => $l !== ''));
+                if (! $lines) {
+                    continue;
+                }
+                $item['lines'] = $lines;
+                $item['typeface'] = isset(self::FONTS[$d['typeface'] ?? '']) ? $d['typeface'] : 'archivo';
+            } else {
+                if (! is_string($d['image'] ?? null) || ! preg_match(Artwork::REF, $d['image'])) {
+                    continue;
+                }
+                $item['image'] = $d['image'];
+                $item['image_name'] = mb_substr((string) ($d['image_name'] ?? ''), 0, 120);
+                $item['invert'] = filter_var($d['invert'] ?? false, FILTER_VALIDATE_BOOLEAN);
+                if ($kind === 'photo') {
+                    $item['frame'] = in_array($d['frame'] ?? null, self::DECOR_FRAMES, true) ? $d['frame'] : 'circle';
+                    $item['contrast'] = $num('contrast', ...self::DECOR_FIELDS['contrast']);
+                    $item['smooth'] = $num('smooth', ...self::DECOR_FIELDS['smooth']);
+                }
+            }
+            $out[] = $item;
+        }
+
+        return $out;
     }
 
     /** Laravel rules for one kind (used by the API; the same numbers are printed into the form as min/max). */
@@ -687,6 +806,9 @@ final class ParametricGenerator
                 'params.merge' => ['nullable', 'array', 'max:8'], 'params.merge.*' => ['array', 'size:2'], 'params.merge.*.*' => ['integer', 'min:1', 'max:8'],
                 'params.order' => ['nullable', 'array', 'max:8'], 'params.order.*' => ['integer', 'min:1', 'max:8'],
             ];
+        }
+        if (in_array($kind, self::DECOR, true)) {
+            $rules += self::decorRules($color);
         }
         if ($kind === 'cookie') {
             // icing drawn by hand: every stroke a filament, a width, a nib and its points in shares of the picture's width
@@ -808,6 +930,16 @@ final class ParametricGenerator
             $out['merge'] = array_values(array_map(fn ($pair) => [(int) $pair[0], (int) $pair[1]], array_filter(array_slice((array) ($p['merge'] ?? []), 0, 8), fn ($pair) => is_array($pair) && count($pair) === 2)));
             $out['order'] = array_values(array_unique(array_map('intval', array_slice((array) ($p['order'] ?? []), 0, 8))));
         }
+        if (in_array($kind, self::DECOR, true)) {
+            $decor = self::cleanDecor((array) ($p['decor'] ?? []));
+            if ($decor) {
+                $out['decor'] = $decor;
+                if (isset(self::FAMILY[$kind]) && ($out['body'] ?? '') === 'image' && empty($out['artwork']) && trim(($out['line1'] ?? '').($out['line2'] ?? '')) === '') {
+                    // only decorations, no name and no picture to follow: the plate takes the tool's first plain shape
+                    $out['body'] = array_values(array_diff(self::CHOICES[$kind]['body'], ['image']))[0] ?? $out['body'];
+                }
+            }
+        }
         if ($kind === 'compose') {
             // a layer is drawn in a colour, never in a spool: a built-in name ("white", "blue"…) stays the name it is
             $out['layers'] = array_values(array_map(fn ($l) => [
@@ -922,12 +1054,23 @@ final class ParametricGenerator
                 }
             }
         }
+        foreach ($clean['decor'] ?? [] as $i => $item) {
+            // every decoration brings its own font or picture
+            if ($item['kind'] === 'text') {
+                $clean['decor'][$i]['font'] = self::fontPath($item['typeface'], 'archivo');
+            } else {
+                $clean['decor'][$i]['image_path'] = self::artworkPath($item['image']);
+                if (! $clean['decor'][$i]['image_path']) {
+                    throw ValidationException::withMessages(['params' => [__('param.error.artwork_gone')]])->status(422);
+                }
+            }
+        }
         if (! empty($clean['artwork'])) {
             $clean['artwork_path'] = self::artworkPath($clean['artwork']);
             if (! $clean['artwork_path']) {
                 throw ValidationException::withMessages(['params' => [__('param.error.artwork_gone')]])->status(422);
             }
-        } elseif (in_array($kind, self::ARTWORK, true) && empty($clean['lines']) && ! ($kind === 'papel' && ($clean['treatment'] ?? '') === 'portrait') && $kind !== 'phone_stand') {
+        } elseif (in_array($kind, self::ARTWORK, true) && empty($clean['lines']) && empty($clean['decor']) && ! ($kind === 'papel' && ($clean['treatment'] ?? '') === 'portrait') && $kind !== 'phone_stand') {
             // (a portrait panel without a picture is a frame round an empty plate: something to write or stick on;
             // a phone stand needs a picture only for a cut-out shape or the silhouette, and clean() gives those the library's cat)
             throw ValidationException::withMessages(['params' => [__('param.error.no_text')]])->status(422);
@@ -1158,6 +1301,14 @@ final class ParametricGenerator
                 $clean['layers'][$i]['art'] = 'file:'.$uuid.':'.$i;
             }
         }
+        foreach ($clean['decor'] ?? [] as $i => $item) {
+            // the photo or logo of a decoration is kept with the design too, after the pictures of the layers
+            if ($item['kind'] !== 'text' && ! str_starts_with($item['image'], 'lib:') && ($src = self::artworkPath($item['image']))) {
+                $n = self::DECOR_FILE + $i;
+                File::copy($src, dirname($abs).'/artwork-'.$n.'.'.pathinfo($src, PATHINFO_EXTENSION));
+                $clean['decor'][$i]['image'] = 'file:'.$uuid.':'.$n;
+            }
+        }
 
         if (isset($built['meta']['notes']['color_change_mm'])) {
             // a plate with a raised text or motif: from this height up the print farm can switch to a second colour
@@ -1209,7 +1360,19 @@ final class ParametricGenerator
                 $clean['part_colors'][$layer['part']] = ['code' => (string) $layer['code'], 'hex' => (string) $layer['hex']];
             }
             $clean['color_changes'] = array_values((array) ($built['meta']['notes']['color_changes'] ?? []));
-            $clean['multi_material'] = false;
+            // layers never share a band of the print; a decoration in its own filament beside them may
+            $clean['multi_material'] = ! empty($built['meta']['notes']['multi_material']);
+            if ($clean['multi_material'] && ! empty($built['meta']['notes']['one_plate_required'])) {
+                $clean['one_plate_required'] = true;
+            } else {
+                unset($clean['one_plate_required']);
+            }
+        }
+        foreach ((array) ($built['meta']['notes']['decor'] ?? []) as $placed) {
+            // a decoration in its own filament is a part: its colour goes with the others
+            if (! empty($placed['part']) && ! empty($placed['code'])) {
+                $clean['part_colors'][$placed['part']] = ['code' => (string) $placed['code'], 'hex' => (string) ($placed['hex'] ?? '')];
+            }
         }
         // what has to fit a printer is each part alone, not the plate they are laid out on: the check reads these sizes
         $parts = array_diff(self::partsOf($kind, $clean), ['all']);

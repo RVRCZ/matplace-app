@@ -68,6 +68,12 @@ class ToolsApiController extends Controller
                 $messages['params.'.$field.'.'.$rule] = __('param.error.out_of_range', ['n' => __('param.f.'.$field)]);
             }
         }
+        if (in_array($kind, ParametricGenerator::DECOR, true)) {
+            // a decoration out of its limits, of an unknown kind or with a line too long: one sentence, not a field's path
+            foreach (array_keys(ParametricGenerator::decorRules(null)) as $rule) {
+                $messages[$rule] = __('param.error.decor_bad');
+            }
+        }
         $data = $request->validate(ParametricGenerator::rules($kind) + [
             'params' => ['nullable', 'array'],
             'part' => ['nullable', 'string', 'regex:/^('.implode('|', ParametricGenerator::PARTS).'|tray|bin_\d{1,2}x\d{1,2})$/'],

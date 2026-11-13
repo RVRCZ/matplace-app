@@ -31,6 +31,14 @@
     if ($kind === 'cookie') {
         $i18n += collect(['draw', 'draw.on', 'count', 'hint', 'limit', 'stroke', 'stroke.move', 'stroke.remove', 'nib.round', 'nib.flat', 'nib.dots', 'nib.candy', 'nib.sprinkles'])->mapWithKeys(fn ($k) => ['cookie.'.$k => __('param.cookie.'.$k)])->all();
     }
+    // decorations: a text, a relief from a photo or a logo on a face of the product, the same panel in every tool that takes them
+    $decorated = in_array($kind, \App\Domain\Tools\ParametricGenerator::DECOR, true) && ($kind !== 'compose' || ($tool ?? $kind) === 'keychain');
+    if ($decorated) {
+        $i18n += collect(['kind.text', 'kind.photo', 'kind.logo', 'empty', 'limit', 'remove', 'line', 'line.add', 'font', 'photo.choose', 'photo.change', 'photo.hint', 'logo.choose', 'logo.change',
+            'face', 'face.front', 'face.back', 'mode', 'mode.raised', 'mode.engraved', 'mode.flush', 'frame', 'frame.circle', 'frame.rect', 'size', 'x', 'y', 'turn', 'depth', 'contrast', 'smooth', 'invert',
+            'color', 'color.same', 'color.clear', 'note.sunk', 'note.inlaid', 'note.turned', 'note.cap', 'note.flush'])->mapWithKeys(fn ($k) => ['decor.'.$k => __('param.decor.'.$k)])->all();
+        $i18n['param.part.decor'] = __('param.part.decor');
+    }
     if ($kind === 'qr') {
         // the address the code will open as the form reads it, the password's show/hide button
         $i18n += collect(['url.result', 'password.show', 'password.hide'])->mapWithKeys(fn ($k) => ['param.qr.'.$k => __('param.qr.'.$k)])->all();
@@ -59,6 +67,10 @@
         'size' => __('toolpage.section.size'),
         'colors' => __('toolpage.section.colors'),
     ]);     // the last step, the material and the number of pieces, is the page's own (tools/page.blade.php)
+    if ($decorated) {
+        // the step "Decoration" comes right after what the product is made from
+        $sections = array_merge(array_slice($sections, 0, $hasInput ? 1 : 0, true), ['decor' => __('param.decor.title')], array_slice($sections, $hasInput ? 1 : 0, null, true));
+    }
     // steps only this tool has (ParametricGenerator::SECTIONS: id → the step it follows), and its own names for the common ones
     $extra = \App\Domain\Tools\ParametricGenerator::SECTIONS[$kind] ?? [];
     if ($extra) {
@@ -77,7 +89,8 @@
     // which wall of the model a size moves when it is dragged in the viewer (x width, y depth, z height)
     $handles = \App\Domain\Tools\ParametricGenerator::HANDLES[$kind] ?? [];
     // which section a warning of the tool belongs to; everything else is about the size
-    $warnAt = ['stand_cutout_small' => 'input', 'stand_cutout_fine' => 'input', 'stand_silhouette_thin' => 'input', 'stand_silhouette_low' => 'size', 'portrait_fine' => 'input', 'portrait_whole' => 'input', 'cup_narrow' => 'input', 'thin_lines' => 'input', 'outlines_ignored' => 'input', 'missing_chars' => 'input', 'separate_pieces' => 'input', 'floating_pieces' => 'input', 'pieces_tied' => 'input', 'letters_tied' => 'input', 'qr_one_color' => 'colors', 'qr_low_contrast' => 'colors', 'qr_inverted' => 'colors'];
+    $warnAt = ['stand_cutout_small' => 'input', 'stand_cutout_fine' => 'input', 'stand_silhouette_thin' => 'input', 'stand_silhouette_low' => 'size', 'portrait_fine' => 'input', 'portrait_whole' => 'input', 'cup_narrow' => 'input', 'thin_lines' => 'input', 'outlines_ignored' => 'input', 'missing_chars' => 'input', 'separate_pieces' => 'input', 'floating_pieces' => 'input', 'pieces_tied' => 'input', 'letters_tied' => 'input', 'qr_one_color' => 'colors', 'qr_low_contrast' => 'colors', 'qr_inverted' => 'colors',
+        'decor_bed_face' => 'decor', 'decor_text_small' => 'decor', 'decor_clipped' => 'decor', 'decor_thin' => 'decor'];
     $folded = \App\Domain\Tools\ParametricGenerator::FOLDED;
     $fieldsAt = fn (string $section) => collect($fields)->filter(fn ($f, $k) => $at($k, 'size') === $section);
     // the numbers a choice of the first step writes (a straw's diameter by its kind) stand right under that choice
@@ -105,6 +118,7 @@
         preview: @json(route('api.tools.param.preview')),
         create: @json(route('api.tools.param')),
         design: @json($design ? ['url' => route('api.tools.design'), 'tool' => $tool ?? $kind] : null),
+        decor: {{ \Illuminate\Support\Js::from($decorated ? ['max' => \App\Domain\Tools\ParametricGenerator::MAX_DECOR, 'line' => \App\Domain\Tools\ParametricGenerator::DECOR_LINE, 'fonts' => array_map(fn ($f) => $f[1], $fonts ?? []), 'depth' => \App\Domain\Tools\ParametricGenerator::DECOR_DEPTH, 'fields' => \App\Domain\Tools\ParametricGenerator::DECOR_FIELDS] : null) }},
         home: @json(route('home')),
         presets: {{ \Illuminate\Support\Js::from($presets) }},
         fills: {{ \Illuminate\Support\Js::from($fills) }},
@@ -351,6 +365,14 @@
     @foreach(array_keys($extra, 'input', true) as $step)
         @include('tools._section', ['step' => $step])
     @endforeach
+
+    {{-- decorations: a text, a relief from a photo or a logo on the front or the back (resources/js/calc/decor.ts draws the panel) --}}
+    @if($decorated)
+    <x-tool-section id="decor" :title="$sections['decor']">
+        <p class="hint !text-xs">{{ __('param.decor.lead') }}</p>
+        <div id="decor-panel" class="space-y-3"></div>
+    </x-tool-section>
+    @endif
 
     {{-- 2 · sizes: the main ones with a slider (and a handle in the viewer), the rest under "more" --}}
     <x-tool-section id="size" :title="$sections['size']">

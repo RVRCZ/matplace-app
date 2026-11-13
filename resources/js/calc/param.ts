@@ -12,9 +12,11 @@ import { pickArtwork, uploadArtwork, PickedArtwork } from './artwork';
 import { icon } from '../site/icon';
 import { modelMeta } from './api';
 import { partLabel as sharedPartLabel } from './parts';
+import { bootDecor, DecorCfg, DecorPlaced } from './decor';
 
 interface Cfg {
     kind: string; family: string | null; sample: string | null; preset: string | null; captioned: boolean; preview: string; create: string; home: string; locale: string; artworkUrl: string; files: string; from: string | null;
+    decor: Omit<DecorCfg, 'library' | 'file'> | null;  // the tool takes decorations: the limits of the panel "Decoration"
     design: { url: string; tool: string } | null;      // the page has the field "describe what it should look like"
     presets: Record<string, Record<string, number | string>>;
     fills: Record<string, Record<string, Record<string, number | string>>>;
@@ -83,6 +85,11 @@ export function bootParam(stage: Stage): void {
     const layers: Layer[] = []; let chosen = 0;         // a composition: its layers from the bottom up, and which one is being edited
     const strokes: Stroke[] = [];
     let drawing = false; let pen = spoolCode('white');
+    // decorations (a text, a relief from a photo, a logo on a face of the product): one panel for every tool that takes them
+    const decorHost = document.getElementById('decor-panel');
+    // a photo handed over from the home page with the wish "a relief of it" (the router's params.decor, or ?decor=photo in the address)
+    let reliefWanted = (stage.cfg.intake?.params as { decor?: unknown } | undefined)?.decor === 'photo' || new URLSearchParams(location.search).get('decor') === 'photo';
+    const decor = decorHost && cfg.decor ? bootDecor(decorHost, { ...cfg.decor, library: stage.cfg.artwork.library, file: stage.cfg.artwork.file }, (k, r) => t(k, r), stage.nf, () => soon(60)) : null;
     /** A new picture has new colours: what was said about the old ones (which filament, which order) no longer holds. */
     const forgetColours = (): void => {
         merge = []; order = [];
@@ -104,6 +111,7 @@ export function bootParam(stage: Stage): void {
         if (shape && order.length) p.order = order;
         if (cookie && strokes.length) p.strokes = strokes;
         if (compose) p.layers = layers;
+        if (decor) { const laid = decor.read(); if (laid.length) p.decor = laid; }
         if (Object.keys(partColors).length) p.part_colors = { ...partColors };
         return p;
     };
@@ -532,15 +540,18 @@ export function bootParam(stage: Stage): void {
             const res = await post({ kind: cfg.kind, params: params(), view: 'use', part: viewPart, pieces: true });
             if (mine !== seq) return;                       // a newer change is already on its way
             if (!res.ok) { valid = false; showError(await errorOf(res)); return; }
+            // the model first: a big one (a relief is megabytes) must not wait behind the request for the rest of its notes
+            const stl = await res.arrayBuffer();
             lastMeta = await modelMeta<Meta>(res);
             // the colours of a QR sign go by height alone, so they hold for the sign and the stand shown on their own too
             const regions = viewPart === 'all' || cfg.kind === 'qr' ? ((lastMeta?.notes as { regions?: Region[] } | undefined)?.regions ?? null) : null;
-            lastStl = await res.arrayBuffer(); lastRegions = regions;
+            lastStl = stl; lastRegions = regions;
             stage.show(new STLLoader().parse(lastStl), { kind: cfg.kind, regions: tinted(regions), pieces: lastMeta?.parts ?? null });
             valid = true; showError(null); markNamed();
             if (lastMeta) { renderDims(lastMeta); renderBom(lastMeta); if (viewPart === 'all') renderPrice(); }
             renderParts(); paintParts(); renderWarnings(lastMeta); renderStatus();
             renderDownloads(); placeEyelet(); placeFrame();
+            decor?.placed((lastMeta?.notes as { decor?: DecorPlaced[] } | undefined)?.decor, Boolean((lastMeta?.notes as { turned_up?: boolean } | undefined)?.turned_up));
             if (papel) papelShow();
             if (cookie) { renderPen(); armDraw(); }
         } catch {
@@ -647,6 +658,7 @@ export function bootParam(stage: Stage): void {
             if (typeof set.artwork === 'string' && set.artwork) setArtwork({ ref: set.artwork, name: (set._artwork_name as string) ?? '', url: null });
             else setArtwork(null);
         }
+        if (decor && 'decor' in set) decor.write(set.decor);
         if ('strokes' in set) strokes.splice(0, strokes.length, ...(Array.isArray(set.strokes) ? (set.strokes as Stroke[]).map((s) => ({ c: spoolCode(s.c), w: Number(s.w), t: String(s.t), p: s.p.map((pt) => [Number(pt[0]), Number(pt[1])] as [number, number]) })) : []));
         if ('merge' in set) merge = Array.isArray(set.merge) ? (set.merge as number[][]).map((pair) => [Number(pair[0]), Number(pair[1])]) : [];
         if ('order' in set) order = Array.isArray(set.order) ? (set.order as number[]).map(Number) : [];
@@ -745,8 +757,22 @@ export function bootParam(stage: Stage): void {
             if (state) state.textContent = t('param.artwork.uploading');
             try {
                 const picked = await uploadArtwork(file);
-                setArtwork(picked);
-                strawPicked();
+                if (decor && reliefWanted) {
+                    // the wish was a relief of this photo (a medal with a face on it): the photo is a decoration of the front,
+                    // not the tool's own picture in colours; the words that came with it go on the back
+                    reliefWanted = false;
+                    const said = (stage.cfg.intake?.params as { text?: unknown } | undefined)?.text;
+                    setArtwork(null);
+                    const plain = [...form.querySelectorAll<HTMLInputElement>('[data-choice="body"]')].find((r) => r.value !== 'image');
+                    applyValues({ line1: '', line2: '', ...(plain ? { body: plain.value } : {}) });
+                    if (state) state.textContent = '';
+                    decor.add({ kind: 'photo', face: 'front', image: picked.ref, image_name: picked.name });
+                    if (typeof said === 'string' && said.trim()) decor.add({ kind: 'text', face: 'back', mode: 'engraved', lines: [said.trim()] });
+                    stage.reveal('decor');
+                } else {
+                    setArtwork(picked);
+                    strawPicked();
+                }
                 void refresh().then(commit);
             } catch (e) {
                 if (state) state.textContent = (e as Error).message || t('param.artwork.failed');
@@ -1346,6 +1372,7 @@ export function bootParam(stage: Stage): void {
         viewer.select(index);
         stage.note(piece && viewer.getPieces().length > 1 ? stage.t('toolpage.status.piece', { name: partLabel(piece.name) }) : null);
         if (!piece) return;
+        if (piece.name.startsWith('decor_')) { viewer.select(-1); stage.reveal('decor'); return; }      // a decoration in its own colour: its place is the panel
         if (cfg.kind === 'modular') { stage.reveal('size', document.getElementById('bin-grid')); return; }
         if (compose) {
             // the piece is a band of the print; its layer is the one of that number among the shown ones
@@ -1391,7 +1418,7 @@ export function bootParam(stage: Stage): void {
     // what undo, redo and "restore my last settings" carry: the whole form
     const track = (offerSaved: boolean): void => {
         commit = stage.track({
-            read: () => ({ ...params(), holes: holes.map((h) => ({ ...h })), bins: bins.map((b) => ({ ...b })), merge: merge.map((pair) => [...pair]), order: [...order], strokes: strokes.map((s) => ({ ...s, p: s.p.map((pt) => [...pt]) })), artwork: artwork ?? '', _artwork_name: artworkShown?.name ?? '', part_colors: { ...partColors },
+            read: () => ({ ...params(), holes: holes.map((h) => ({ ...h })), bins: bins.map((b) => ({ ...b })), merge: merge.map((pair) => [...pair]), order: [...order], strokes: strokes.map((s) => ({ ...s, p: s.p.map((pt) => [...pt]) })), decor: decor?.read() ?? [], artwork: artwork ?? '', _artwork_name: artworkShown?.name ?? '', part_colors: { ...partColors },
                 _material: ($('param-material') as HTMLSelectElement).value, _qty: ($('param-qty') as HTMLInputElement).value }),
             write: (s) => {
                 applyValues(s);

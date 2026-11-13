@@ -1039,6 +1039,12 @@ def main(argv):
                 parts, notes = creative_kinds.BUILDERS[kind](M, Invalid, p)
             else:
                 raise Invalid("unknown_kind")
+        # decorations (a text, a relief from a photo, a logo) are laid on a face of the product in one place for every
+        # builder: the builder only says what its face is (docs/AR.md)
+        face = parts.pop("_face", None)
+        import decor
+        if decor.wanted(p):
+            decor.apply(M, Invalid, p, parts, notes, face)
         # a builder that knows its pieces itself (a picture in colours: every colour a part) says so; the others are
         # recognised in the finished solid
         named = parts.pop("_pieces", {})
