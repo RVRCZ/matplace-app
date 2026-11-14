@@ -12,10 +12,13 @@
  * and the script exits 1. No packages: Chrome's DevTools protocol, the way of scripts/hints_walk.mjs.
  *
  *   node scripts/order_walk.mjs --base=http://127.0.0.1:8046 --out=<dir> [--tool=coaster] [--width=1280|390]
- *        [--login=email:password] [--expect=order|calc] [--name=guest-1280]
+ *        [--login=email:password] [--expect=order|calc|refused] [--then=order] [--name=guest-1280]
  *
  * `--expect=calc`: the server runs with the farm closed or the switch off: the button must end in the calculation, with
- * the design open (never a dead end). `--login`: walk as a signed-in customer (the form of /login), else as a guest.
+ * the design open (never a dead end). `--expect=refused`: the page offers the order but the server refuses it at the
+ * press (a guest over the hourly limit, the farm closed meanwhile): the calculation again, with the reason next to its
+ * button. `--then=order`: from the calculation press its own button and say what the order page does.
+ * `--login`: walk as a signed-in customer (the form of /login), else as a guest.
  * Nothing paid is called: the walk stops before the payment.
  */
 import { spawn } from 'node:child_process';
@@ -33,6 +36,7 @@ const TOOL = String(arg('tool', 'coaster'));
 const WIDTH = Number(arg('width', 1280));
 const EXPECT = String(arg('expect', 'order'));
 const LOGIN = arg('login', null);
+const THEN = arg('then', null);
 const NAME = String(arg('name', `${LOGIN ? 'user' : 'guest'}-${WIDTH}`));
 const CHROME = process.env.CHROME ?? 'C:/Program Files/Google/Chrome/Application/chrome.exe';
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
@@ -133,12 +137,14 @@ try {
     const fromTool = async (url, title) => {
         await cdp('Page.navigate', { url });
         if (!await until("document.readyState === 'complete' && !!document.getElementById('tool-go')", 30000)) throw new Error('the tool page did not load');
-        await until("(() => { const b = document.getElementById('tool-go'); return !!b && !b.disabled; })()", 60000, 500);
+        if (!await until("(() => { const b = document.getElementById('tool-go'); return !!b && !b.disabled; })()", 90000, 500)) {
+            throw new Error(`the tool's design did not come: ${await evaluate("(document.querySelector('.note-warn, #tool-error:not(.hidden)')?.innerText ?? document.getElementById('tool-status')?.innerText ?? '').trim()")}`);
+        }
         await sleep(1500);
         const label = await evaluate("document.getElementById('tool-go-label').textContent.trim()");
         const hint = await evaluate("document.querySelector('#tool-go-card p.text-muted')?.textContent.trim() ?? ''");
         const direct = await evaluate('!!window.MP_TOOL?.order');
-        await step(title, EXPECT === 'order' ? label === 'Přejít k tisku' && direct : label !== 'Přejít k tisku' && !direct, { label, hint, direct });
+        await step(title, EXPECT === 'calc' ? label !== 'Přejít k tisku' && !direct : label === 'Přejít k tisku' && direct, { label, hint, direct });
         await evaluate("document.getElementById('tool-go').click()");
         const left = await until("location.pathname.includes('/farm/orders/') || location.search.includes('open=')", 90000, 400);
         await until("document.readyState === 'complete'", 20000);
@@ -146,15 +152,30 @@ try {
     };
 
     const where = await fromTool(`${BASE}/tools/${TOOL}`, `the tool's page: ${TOOL}`);
-    if (EXPECT === 'calc') {
-        // the farm closed or the switch off: the calculation with the design open, as before
+    if (EXPECT === 'calc' || EXPECT === 'refused') {
+        // the farm closed or the switch off (calc), or the order refused at the press (refused: a guest over the limit,
+        // the farm closed meanwhile): the calculation with the design open, as before – and the reason of a refusal
         await until("!!document.getElementById('result') && !document.getElementById('result').classList.contains('hidden')", 60000, 500);
-        await sleep(6000);
-        const calc = await evaluate(`(() => ({ url: location.pathname + location.search, result: !document.getElementById('result')?.classList.contains('hidden'), cta: document.getElementById('cta-farm')?.innerText.trim() ?? null,
+        await until("(() => { const p = document.getElementById('price-main') ?? document.getElementById('price-orient-amount'); return !!p && /\\d/.test(p.textContent); })()", 60000, 500);
+        // the design's pieces come a moment later and paint the preview in its colours (calculator.ts markPainted)
+        await until("['colors', 'mismatch', 'failed'].includes(document.getElementById('viewer')?.dataset.painted ?? '')", 45000, 500);
+        await sleep(2500);
+        const calc = await evaluate(`(() => ({ url: location.pathname + location.search, painted: document.getElementById('viewer')?.dataset.painted ?? null, result: !document.getElementById('result')?.classList.contains('hidden'), cta: document.getElementById('cta-farm')?.innerText.trim() ?? null,
             note: (() => { const e = document.getElementById('cta-farm-note'); return e && !e.classList.contains('hidden') ? e.innerText.trim() : null; })(),
             edit: (() => { const e = document.getElementById('edit-design-link'); return e && !e.classList.contains('hidden') ? e.getAttribute('href') : null; })(),
             face_down: (() => { const e = document.getElementById('face-down-note'); return e && !e.classList.contains('hidden') ? e.innerText.trim() : null; })() }))()`);
-        failed = !await step('the calculation with the design open (the fallback)', where === 'calc' && calc.result && !!calc.edit, calc) || failed;
+        failed = !await step(EXPECT === 'refused' ? 'the order was refused: the calculation with the design open and the reason' : 'the calculation with the design open, as before',
+            where === 'calc' && calc.result && !!calc.edit && (EXPECT === 'refused' ? !!calc.note && !!calc.cta : true), calc) || failed;
+        if (THEN === 'order' && calc.cta) {
+            // the calculation's own button: it only leads to the order page too
+            await evaluate("document.getElementById('cta-farm').click()");
+            const there = await until("location.pathname.includes('/farm/orders/')", 60000, 400);
+            await until("!!window.MP_FARM && document.readyState === 'complete'", 30000);
+            await sleep(9000);
+            const s = await evaluate(ORDER);
+            const now = await evaluate(`fetch(location.pathname + '/status', { headers: { Accept: 'application/json' }, credentials: 'same-origin' }).then((r) => r.json()).then((j) => ({ status: j.status, slice_run: j.slice_run, on_demand: j.on_demand }))`);
+            failed = !await step(`the calculation's button "${calc.cta}" opens the order page`, there && calc.cta === 'Přejít k tisku' && (now.on_demand ? now.status === 'awaiting_choices' : now.status === 'sliced'), { ...now, price: s.price, start: s.start?.label ?? null }) || failed;
+        }
     } else {
         if (where !== 'order') throw new Error(`the button ended ${where}, not on the order page`);
         await until("!!window.MP_FARM && document.querySelectorAll('#farm-colors [data-tile]').length > 0", 30000);

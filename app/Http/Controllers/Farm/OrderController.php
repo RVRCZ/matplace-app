@@ -1130,6 +1130,9 @@ class OrderController extends Controller
             'on_demand' => OrderService::sliceOnDemand(),
             // a tool's design, not paid yet: the way back to the tool with this design open ("Upravit tvar a rozměry")
             'tool_url' => $order->paid_at === null && ! $order->designer_model_id && $order->modelFile ? (UploadController::toolOf($order->modelFile)['url'] ?? null) : null,
+            // … and its model grouped by piece (ToolsApiController::paramPieces, what the calculation paints by): until the
+            // parts are prepared by the first slice, the preview of an order by parts shows the motif in colours with it
+            'pieces_url' => $order->paid_at === null && $order->modelFile && ! $order->hidesModelFrom($request->user()) ? (UploadController::toolOf($order->modelFile)['pieces_url'] ?? null) : null,
             // built face down: the preview shows it turned over, motif up; the print pose itself does not change (§26 C)
             'face_down' => (bool) $order->modelFile?->printsFaceDown(),
             'choosing' => $choosing,

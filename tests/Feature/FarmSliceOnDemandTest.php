@@ -318,11 +318,19 @@ final class FarmSliceOnDemandTest extends TestCase
             ->assertSee('id="farm-face-down"', false)->assertSee(__('farm.face_down_note'))
             ->assertSee('id="farm-tool-link"', false)->assertSee(__('calc.edit_design'));
 
+        $this->assertNull($state['pieces_url'], 'one colour: the plain model is the preview');
+        // a design in two colours that waits: its pieces paint the preview before anything is prepared (the motif shows)
+        $two = $this->design('coaster', ['flush' => true, 'part_colors' => ['body' => ['code' => 'a', 'hex' => '#f0e0c0'], 'color_1' => ['code' => 'b', 'hex' => '#111111']]]);
+        $state = $this->state($this->order(['file' => $two, 'from' => 'tool']));
+        $this->assertSame('awaiting_choices', $state['status']);
+        $this->assertSame(route('api.tools.param.pieces', $two), $state['pieces_url']);
+
         // a plain upload: no line, no way back to a tool
         $plain = $this->order(['file' => $this->upload()]);
         $state = $this->state($plain);
         $this->assertFalse($state['face_down']);
         $this->assertNull($state['tool_url']);
+        $this->assertNull($state['pieces_url']);
         $this->actingAs($this->user)->get("/farm/orders/{$plain->token}")->assertOk()->assertDontSee('id="farm-face-down"', false)->assertDontSee('id="farm-tool-link"', false);
     }
 }

@@ -10,6 +10,8 @@ import { flash, revealIfHidden } from '../site/sticky';
 import { BufferGeometry, Float32BufferAttribute } from 'three';
 import { Viewer, FacePaint, cutAtHeight, deep } from './viewer';
 import { loadGeometryFromUrl } from './loaders';
+import { STLLoader } from 'three/examples/jsm/loaders/STLLoader.js';
+import { piecesFromHeader } from './painted';
 import { money as moneyText } from '../site/money';
 import { timelinePrint, timelineDispatch } from './order_timeline';
 import { printOnly, shippingText, totalText } from './order_price';
@@ -53,6 +55,8 @@ interface FarmState {
     big?: boolean; choosing?: boolean; slice_minutes?: number | null; slice_run?: number; estimate?: EstimateCfg | null;
     /** nothing is sliced before the customer's word (docs/AN.md §26): a small waiting order has one button, a changed choice makes the price out of date; `face_down` = shown turned over, motif up */
     on_demand?: boolean; face_down?: boolean; tool_url?: string | null;
+    /** a tool's design whose coloured parts lie in one body: its model grouped by piece, for the preview before the parts are prepared */
+    pieces_url?: string | null;
     quality: string; strength: string; copies: number; max_copies: number | null; plates: number; plates_done: number; plate_layout: number[]; plate_now: number | null;
     /** the copies of one plate of parts in a grid [columns, rows] (the parts of a design with flush colours, a painted 3MF); null otherwise */
     copies_grid?: [number, number] | null;
@@ -170,6 +174,25 @@ async function loadParts(urls: string[], together = false): Promise<{ geom: Buff
     const flags = new Uint8Array(all.length / 9);
     let t = 0;
     counts.forEach((n, i) => { flags.fill(i, t, t + n); t += n; });
+    return { geom, flags };
+}
+
+/**
+ * A tool's design by parts before anything was prepared for it (an order waiting for the customer's word, docs/AN.md
+ * §26): the design's model with its triangles grouped by piece (ToolsApiController::paramPieces, the one the
+ * calculation paints by), every triangle flagged with its part of the order, so the preview shows the motif in the
+ * colours chosen instead of one plain body. A piece the order has no part for takes the first part's colour.
+ */
+async function loadPieces(url: string, parts: string[]): Promise<{ geom: BufferGeometry; flags: Uint8Array }> {
+    const res = await fetch(url, { credentials: 'same-origin' });
+    if (!res.ok) throw new Error('pieces');
+    const loaded = new STLLoader().parse(await res.arrayBuffer());
+    const geom = loaded.index ? loaded.toNonIndexed() : loaded;
+    const triangles = geom.getAttribute('position').count / 3;
+    const pieces = piecesFromHeader(res.headers.get('X-Pieces'), triangles);
+    if (!pieces) throw new Error('pieces');
+    const flags = new Uint8Array(triangles);
+    pieces.forEach((p) => flags.fill(Math.max(0, parts.indexOf(p.name)), p.tris[0], p.tris[1]));
     return { geom, flags };
 }
 
@@ -351,6 +374,7 @@ export function bootFarmOrder(): void {
     const changeHeights = (): number[] => (state.changes ?? []).map((c) => c.z);
     let geom: BufferGeometry | null = null;
     let partFlags: Uint8Array | null = null;          // an order by parts shown as its plates: the part of every triangle
+    let piecesOff = false;                            // the design's pieces could not be had: the plain model is shown instead
     // the colour a part prints in: the spool chosen for it (none = the main colour), the design's own colour before that
     const partHex = (p: Part): string | null => {
         const c = state.colors.find((x) => x.slot === picked);
@@ -1142,13 +1166,20 @@ export function bootFarmOrder(): void {
         // printed by parts: every part's own plate, side by side in its colour (the print STL is the first plate alone)
         const partUrls = s.by_parts ? (s.parts ?? []).map((p) => p.model_url ?? '') : [];
         const asParts = partUrls.length >= 2 && partUrls.every((u) => u !== '');
-        const modelKey = asParts ? (s.one_plate ? '1 ' : '') + partUrls.join(' ') : s.model_url;
+        // … and before the parts are prepared (the order waits for the customer's word, or its first slice runs): the
+        // design's own pieces, so the motif shows in the colours chosen; the plain model when they cannot be had
+        const piecesUrl = !asParts && !piecesOff && s.by_parts && (s.parts ?? []).length >= 2 && s.pieces_url ? s.pieces_url : null;
+        const modelKey = asParts ? (s.one_plate ? '1 ' : '') + partUrls.join(' ') : piecesUrl ? `pieces ${piecesUrl}` : s.model_url;
         if (modelKey && modelKey !== shownModel) {
             shownModel = modelKey;
             shownSupports = '';
             if (asParts) {
                 viewer.setSupports(null);
                 loadParts(partUrls, !!s.one_plate).then(({ geom: g, flags }) => { geom = g; partFlags = flags; viewer.setGeometry(g, 1, null); paintTones(); }).catch(() => { shownModel = ''; });
+            } else if (piecesUrl) {
+                viewer.setSupports(null);
+                loadPieces(piecesUrl, (s.parts ?? []).map((p) => p.part)).then(({ geom: g, flags }) => { if (shownModel !== modelKey) return; geom = g; partFlags = flags; viewer.setGeometry(g, 1, null); paintTones(); })
+                    .catch(() => { piecesOff = true; shownModel = ''; render(); });
             } else {
                 partFlags = null;
                 loadGeometryFromUrl(modelKey).then((g) => { geom = cutForTones(g, (s.changes ?? []).map((x) => x.z)); viewer.setGeometry(geom, 1, null); viewer.setColor((s.choosing ? state.colors.find((x) => x.slot === picked)?.hex : s.color?.hex) ?? null); paintTones(); showSupports(); }).catch(() => { shownModel = ''; });
