@@ -46,8 +46,8 @@
     </x-tool-section>
 
     <x-tool-section id="base" :title="__('toolpage.section.base')">
-        <label class="lbl">{{ __('figure.size') }} <span id="figure-size-val" class="num font-normal text-muted">150 mm</span>
-            <input id="figure-size" name="target_mm" type="range" min="30" max="250" step="5" value="150" class="mt-1 w-full accent-ink">
+        <label class="lbl">{{ __('figure.size') }} <span id="figure-size-val" class="num font-normal text-muted">{{ (int) config('ai.default_target_mm', 150) }} mm</span>
+            <input id="figure-size" name="target_mm" type="range" min="30" max="250" step="5" value="{{ (int) config('ai.default_target_mm', 150) }}" class="mt-1 w-full accent-ink">
         </label>
 
         <fieldset>
