@@ -337,7 +337,9 @@ export function bootFarmOrder(): void {
     // the price depends on the machine, and a second or part spool may move the order to another machine holding the
     // same first colour: the quote carries those spools too
     const otherSlots = (): { change_slots: (number | null)[]; part_slots: Record<string, number | null> | undefined } => ({ change_slots: changes, part_slots: resolved().part_slots });
-    const quoteKey = (): string => `${resolved().slot}|${delivery}|${country}|${JSON.stringify(otherSlots())}`;
+    // …and the slice it was asked for: after "Přepočítat cenu" the same colour and delivery have another price (found on
+    // production 14 Nov 2026: four pieces showed the price of two, 150 Kč, while the order held 260 Kč)
+    const quoteKey = (): string => `${resolved().slot}|${delivery}|${country}|${JSON.stringify(otherSlots())}|${state.slice_run ?? 0}|${state.status}`;
     const askQuote = async (): Promise<void> => {
         const key = quoteKey();
         if (!kind() || picked === null || quoted?.key === key || quoting === key) return;
