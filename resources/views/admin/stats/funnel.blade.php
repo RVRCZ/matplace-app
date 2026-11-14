@@ -6,7 +6,7 @@
         'visit' => 'Návštěva', 'upload|generate' => 'Nahrál nebo vygeneroval model', 'calculation' => 'Spočítal cenu', 'order_paid' => 'Zaplatil tisk',
         'model_view|tool_view|calculation|generate' => 'Stránka modelu nebo výstup nástroje', 'download' => 'Stáhl model',
         'register' => 'Registrace', 'designer_enabled' => 'Zapnul designérský profil', 'designer_import' => 'Import portfolia', 'designer_file_uploaded' => 'Nahrál soubor pro farmu',
-        'model_ready' => 'Model hotový', 'price_shown' => 'Viděl přesnou cenu', 'order_started|order_created' => 'Začal objednávku', 'checkout_started' => 'Šel zaplatit',
+        'model_ready' => 'Model hotový', 'price_shown' => 'Viděl přesnou cenu', 'price_shown|order_created' => 'Viděl přesnou cenu, nebo šel z nástroje rovnou do zakázky', 'order_started|order_created' => 'Začal objednávku', 'checkout_started' => 'Šel zaplatit',
         // the sales path (docs/AN.md §9)
         'upload|failed:upload' => 'Nahrání začalo (i odmítnuté)', 'upload' => 'Nahráno', 'order_started' => 'Klepl na Vytisknout u nás',
         'register|register_visit|order_created' => 'Registrace, účet, nebo zakázka bez účtu', 'order_created' => 'Zakázka založena', 'checkout_started|topup_started' => 'Platba začala (karta nebo dobití)',

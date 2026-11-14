@@ -2912,5 +2912,16 @@
     "router.ask.picture": "For this we need your picture: add a drawing, a logo or a photo, or choose a motif from our library.",
     "router.ask.picture.button": "Add a picture or choose a motif",
     "router.ask.place": "Type a town or an address and the map appears.",
-    "map.place.others": "Did you mean another place? Choose:"
+    "map.place.others": "Did you mean another place? Choose:",
+    "param.go.order": "Continue to printing",
+    "param.go.hint.order": "On the next page you pick the colour, the material and the print settings and ask for the price. Nothing is ordered or paid yet.",
+    "farm.order.price_start": "Calculate the price",
+    "farm.order.price_start_hint": "Pick the colour and the settings and ask for the exact price and print time. This button orders nothing and charges nothing.",
+    "farm.order.price_bar_note": "Nothing is ordered or paid.",
+    "farm.order.await_note": "We work out the price when you ask for it. Pick the colour, the material and the print settings and press Calculate the price. Nothing is ordered or paid yet.",
+    "farm.order.price_stale": "You changed the settings. The price and time below belong to the earlier choices: press Recalculate the price.",
+    "farm.order.price_stale_pay": "You changed the settings: recalculate the price first, then you can pay.",
+    "farm.order.recalculate_price": "Recalculate the price",
+    "farm.order.edit_design_hint": "You go back to the tool with this design open. Send the changed design here again with Continue to printing.",
+    "farm.face_down_note": "It prints face down, so the motif comes out smooth and the colours sharp. The preview shows it turned over, motif up, the way it will be used."
 }

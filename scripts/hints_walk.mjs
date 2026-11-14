@@ -202,7 +202,8 @@ async function walk(browser, hint) {
         let calc = null;
         if (THEN === 'calc' && await evaluate(cdp, "(() => { const b = document.getElementById('tool-go'); return !!b && !b.disabled && location.pathname.includes('/tools/'); })()")) {
             await evaluate(cdp, "document.getElementById('tool-go').click()");
-            if (await until(cdp, "location.search.includes('open=')", 90000, 500)) {
+            // (the calculation, or straight the order page where the tool's page makes the order itself, docs/AN.md §26)
+            if (await until(cdp, "location.search.includes('open=') || location.pathname.includes('/farm/orders/')", 90000, 500)) {
                 await until(cdp, "document.readyState === 'complete'", 20000);
                 await sleep(12000);
                 calc = await evaluate(cdp, `(() => ({

@@ -51,6 +51,8 @@ interface FarmState {
     refunded?: number | null;
     /** a big model: sliced only on the customer's word (awaiting_choices), the rough price until then; `choosing` = the colours are on offer right now */
     big?: boolean; choosing?: boolean; slice_minutes?: number | null; slice_run?: number; estimate?: EstimateCfg | null;
+    /** nothing is sliced before the customer's word (docs/AN.md §26): a small waiting order has one button, a changed choice makes the price out of date; `face_down` = shown turned over, motif up */
+    on_demand?: boolean; face_down?: boolean; tool_url?: string | null;
     quality: string; strength: string; copies: number; max_copies: number | null; plates: number; plates_done: number; plate_layout: number[]; plate_now: number | null;
     /** the copies of one plate of parts in a grid [columns, rows] (the parts of a design with flush colours, a painted 3MF); null otherwise */
     copies_grid?: [number, number] | null;
@@ -85,10 +87,15 @@ const esc = (s: string) => s.replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&l
 const duration = (min: number) => (min >= 60 ? `${Math.floor(min / 60)} h ${min % 60} min` : `${min} min`);
 
 export function bootFarmCta(): void {
+    // a tool's page tried to make the order itself and was refused (tool_page.ts Stage.leave): the reason is said once, on
+    // the page that follows (next to the farm's button when the farm is still offered), and never kept for a later one
+    let refused = '';
+    try { refused = sessionStorage.getItem('mp_order_refused') ?? ''; if (refused) sessionStorage.removeItem('mp_order_refused'); } catch { /* private mode */ }
     const btn = $<HTMLButtonElement>('cta-farm');
     if (!btn) return;
     const note = $('cta-farm-note');
     const wait = note?.textContent ?? '';
+    if (refused && note) { note.textContent = refused; show(note, true); }
     btn.addEventListener('click', async () => {
         // the calculator rewrites the address to /c/{token} (/en/c/{token} in another language) once the calculation exists
         const m = location.pathname.match(/^(?:\/[a-z]{2})?\/c\/([A-Za-z0-9_-]+)/);
@@ -280,6 +287,9 @@ export function bootFarmOrder(): void {
     const tr = (k: string, p: Record<string, string | number> = {}) => Object.entries(p).reduce((s, [a, b]) => s.replace(`:${a}`, String(b)), cfg.i18n[k] ?? k);
     const viewer = new Viewer(canvas);
     let state = cfg.state;
+    // a design built with its face on the bed (flush colours, a medal's flush motif) is shown turned over, motif up, the
+    // way it is used; the print pose and the slice stay as they are, a line under the preview says so (docs/AN.md §26 C)
+    if (state.face_down) viewer.setTurned(true);
     let shownModel = '';
     let shownSupports = '';
     let supportsOn = true;
@@ -365,6 +375,16 @@ export function bootFarmOrder(): void {
     };
     let timer = 0;
     const wanted = { quality: state.quality, strength: state.strength, supports: state.supports_mode || 'auto', unit: state.unit, copies: state.copies || 1, scale: state.scale || 1, by_parts: !!state.by_parts, settings: { ...(state.settings ?? {}) } as Record<string, number | string> };
+    // what the page holds differs from what the order was computed with (quality, strength, supports, unit, copies, size,
+    // the advanced numbers, by parts): nothing is sliced by itself, one button recalculates
+    const choicesChanged = (): boolean => {
+        const s = state;
+        return wanted.by_parts !== !!s.by_parts || wanted.quality !== s.quality || wanted.strength !== s.strength || wanted.supports !== (s.supports_mode || 'auto') || wanted.unit !== s.unit
+            || wanted.copies !== (s.copies || 1) || Math.abs(wanted.scale - (s.scale || 1)) > 0.0005 || settingsOf(wanted.settings) !== settingsOf(s.settings);
+    };
+    // with the slice on the customer's word (docs/AN.md §26) the price on the page is then out of date: greyed, said so,
+    // and nothing can be paid until it is recalculated. With the switch off the page behaves as it did
+    const stalePrice = (): boolean => !!state.on_demand && state.status === 'sliced' && choicesChanged();
     // the parts of the design printed apart or together: a preset like the others, the order is sliced again
     $('farm-by-parts')?.addEventListener('change', (e) => { wanted.by_parts = (e.target as HTMLInputElement).checked; render(); });
     // the "advanced" numbers and choices: what the fields hold, only the filled ones (a select is a word, an input a number)
@@ -477,6 +497,8 @@ export function bootFarmOrder(): void {
     };
     // why the order cannot be paid yet, and where on the page that is fixed; null = ready
     const payBlocker = (): { el: HTMLElement | null; text: string } | null => {
+        // a choice changed after the price was computed: the price is out of date, recalculated first (stalePrice)
+        if (stalePrice()) return { el: $('farm-reslice'), text: tr('farm.order.price_stale_pay') };
         if (picked === null) return { el: $('farm-material'), text: tr('farm.order.bar.pick_color') };
         if (state.colors.find((c) => c.slot === picked)?.sliced === false) return { el: $('farm-recolor'), text: tr('farm.order.recolor_first') };
         if (noMachine()) return { el: $('farm-material'), text: tr('farm.order.colors_no_machine') };
@@ -862,7 +884,9 @@ export function bootFarmOrder(): void {
         const refunded = $('farm-refunded'); if (refunded) { refunded.textContent = s.refunded ? tr('farm.order.refunded', { amount: money(s.refunded) }) : ''; show(refunded, !!s.refunded); }
         $('farm-warnings')!.innerHTML = s.warnings.map((w) => `<li class="flex items-start gap-1.5">${icon('triangle-alert', 'mt-0.5 h-4 w-4')}<span>${esc(w)}</span></li>`).join('');
         $('farm-dims')!.textContent = s.dims ? `${s.dims.x.toFixed(1)} × ${s.dims.y.toFixed(1)} × ${s.dims.z.toFixed(1)} mm` : '';
-        show($('farm-oriented'), s.orientation_changed && s.status !== 'failed');
+        show($('farm-edit-design'), !!s.tool_url);   // the way back to the tool, until the order is paid
+        // "shown in the pose it prints in" is not true of a design shown turned over (face_down): its own line says how it prints
+        show($('farm-oriented'), s.orientation_changed && s.status !== 'failed' && !s.face_down);
         const balance = $('farm-balance'); if (balance) balance.textContent = money(s.balance);   // a guest has none
 
         // while the customer chooses, the model and the price stay in the window on a desktop (the left column, order.blade.php)
@@ -875,7 +899,12 @@ export function bootFarmOrder(): void {
         const stale = working && resultShown;
         resultShown = hasResult || stale;
         show($('farm-result'), resultShown);
-        $('farm-result')?.classList.toggle('opacity-50', stale);
+        // … and a price that a changed choice made out of date is greyed the same way, with the sentence above it
+        const outdated = stalePrice();
+        $('farm-result')?.classList.toggle('opacity-50', stale || outdated);
+        show($('farm-stale-note'), outdated);
+        // a small order waiting for the customer's word: what the button does, and that nothing is ordered or paid by it
+        show($('farm-await-note'), awaiting && !s.big);
         if (!stale) show($('farm-total-line'), false);   // filled below once the delivery on offer is known (sliced)
         if (hasResult) {
             const print = printPrice();
@@ -952,17 +981,25 @@ export function bootFarmOrder(): void {
             }
             $('farm-by-parts-title')!.textContent = tr('farm.order.by_parts', { n: s.part_count ?? 0 });
         }
-        const changed = wanted.by_parts !== !!s.by_parts || wanted.quality !== s.quality || wanted.strength !== s.strength || wanted.supports !== (s.supports_mode || 'auto') || wanted.unit !== s.unit || wanted.copies !== (s.copies || 1) || Math.abs(wanted.scale - (s.scale || 1)) > 0.0005 || settingsOf(wanted.settings) !== settingsOf(s.settings);
+        const changed = choicesChanged();
         const reslice = $<HTMLButtonElement>('farm-reslice');
         // while a big model is being sliced another colour is a change too: the running slice is for the one it started with
         show(reslice, (editable && changed) || (restartable && (changed || (picked !== null && picked !== s.slot))));
-        if (reslice && !reslice.disabled) reslice.textContent = tr(restartable ? 'farm.order.restart_slice' : 'farm.recalculate');
-        // a big model waiting for the choices: one button starts the exact computation for the colour and the settings above
+        if (reslice && !reslice.disabled) reslice.textContent = tr(restartable ? 'farm.order.restart_slice' : outdated ? 'farm.order.recalculate_price' : 'farm.recalculate');
+        // the one thing to do while the price is out of date: the button stands out like the page's other main actions
+        if (reslice) { reslice.classList.toggle('btn-primary', outdated); reslice.classList.toggle('btn-secondary', !outdated); }
+        // an order waiting for the choices: one button starts the computation for the colour and the settings above. A big
+        // model's says how long it takes (docs/AL.md §11); a small one's that nothing is ordered or paid by it (docs/AN.md §26)
         show($('farm-slice-box'), awaiting);
+        const priceBar = $('farm-price-bar');
+        if (priceBar) priceBar.hidden = !awaiting;
         if (awaiting) {
             const start = $<HTMLButtonElement>('farm-slice-start');
-            if (start && start.dataset.label === undefined) start.disabled = picked === null || noMachine() || !s.colors.length;
-            $('farm-slice-hint')!.textContent = tr('farm.order.slice_start_hint', { n: s.slice_minutes ?? 1 });
+            if (start && start.dataset.label === undefined) {
+                start.disabled = picked === null || noMachine() || !s.colors.length;
+                start.textContent = tr(s.big ? 'farm.order.slice_start' : 'farm.order.price_start');
+            }
+            $('farm-slice-hint')!.textContent = s.big ? tr('farm.order.slice_start_hint', { n: s.slice_minutes ?? 1 }) : tr('farm.order.price_start_hint');
         }
 
         payShown = s.status === 'sliced' || (working && payShown);
@@ -973,7 +1010,7 @@ export function bootFarmOrder(): void {
         const bar = $('farm-bar');
         if (bar) bar.hidden = !payShown;
         if (!payShown) say('');
-        $('farm-bar-total')?.classList.toggle('opacity-50', !!payForm?.inert);
+        $('farm-bar-total')?.classList.toggle('opacity-50', !!payForm?.inert || outdated);
         if (payForm?.inert) $('farm-pay-btn')?.setAttribute('aria-disabled', 'true');
         show($('farm-material'), !!s.choosing);
         if (s.choosing && s.status !== 'sliced') renderColors();
@@ -1124,7 +1161,8 @@ export function bootFarmOrder(): void {
     // the supports the slicer built, drawn as thin lines; the customer can hide them to see the piece alone
     const toggle = $<HTMLButtonElement>('farm-supports-toggle');
     const showSupports = (): void => {
-        const url = state.supports_url;
+        // a design shown turned over (face_down) is not in its print pose: the slicer's supports would hang in the air
+        const url = state.face_down ? null : state.supports_url;
         show(toggle, !!url);
         if (!url) { if (shownSupports) { viewer.setSupports(null); shownSupports = ''; } return; }
         if (url === shownSupports || !shownModel || partFlags) return;      // the supports belong to the first plate alone

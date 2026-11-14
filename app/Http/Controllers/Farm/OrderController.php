@@ -465,7 +465,9 @@ class OrderController extends Controller
         $new = $this->orders->create($request->user(), $file, (string) $order->quality, (string) $order->strength, $unit, (int) $order->copies, (float) ($order->scale ?: 1),
             $pick['color'], (string) $order->supports, null, $card, $order->catalog_model_id ? CatalogModel::shown()->find($order->catalog_model_id) : null,
             $pick['changes'] ?: null, $pick['by_parts'] ? $pick['parts'] : null, $order->material?->code, null, $request->user() ? null : $this->session($request),
-            ['print_settings' => $order->print_settings ?: null, 'note' => $order->note]);
+            ['print_settings' => $order->print_settings ?: null, 'note' => $order->note],
+            // the choices are those of an order already sliced and paid: this one is sliced at once, whatever the switch says
+            true);
         // a colour asked for that did not make it to the new order: not loaded now (or not with the others on one machine)
         $missing = ($order->farm_color_id && $new->farm_color_id !== $order->farm_color_id)
             || array_values(array_filter($changes)) !== array_values(array_filter(array_column($new->colorSlots(), 'color_id')))
@@ -522,10 +524,10 @@ class OrderController extends Controller
             'supports' => ['nullable', 'in:auto,off'],
             'designer_model' => ['nullable', 'integer'],
             'catalog_model' => ['nullable', 'integer'],
+            // straight from a tool's page (docs/AN.md §26): the kind of plastic picked there, as a calculation would name it
+            'material' => ['nullable', 'string', 'max:20'],
+            'from' => ['nullable', 'in:tool'],
         ]);
-        if ($text = $this->guestLimit($request)) {
-            return $request->expectsJson() ? response()->json(['error' => 'guest_limit', 'message' => $text], 429) : back()->withInput()->with('error', $text);
-        }
         $card = isset($data['designer_model']) ? DesignerModel::with('profile')->find((int) $data['designer_model']) : null;
         $calc = isset($data['calc']) && ! $card ? Calculation::with('modelFile')->where('token', $data['calc'])->first() : null;
         if (isset($data['designer_model'])) {
@@ -538,11 +540,18 @@ class OrderController extends Controller
             $file = $calc?->modelFile ?? ModelFile::where('uuid', (string) $data['file'])->firstOrFail();
             $this->claim($request, $file);
         }
+        // a design changed in its tool and sent again: the visitor's waiting order of that tool takes the new file
+        // instead of another order being made (no pile of orders nobody asked a price for, no count against the limits)
+        $replace = $card ? null : $this->replaceable($request, $file);
+        if (! $replace && ($text = $this->guestLimit($request))) {
+            return $request->expectsJson() ? response()->json(['error' => 'guest_limit', 'message' => $text], 429) : back()->withInput()->with('error', $text);
+        }
         $inspiration = isset($data['catalog_model']) && ! $card ? CatalogModel::shown()->find((int) $data['catalog_model']) : null;
         // what the calculation was made with, unless the form names it
         $from = $calc ? $this->fromCalculation($calc) : [];
         $quality = (string) ($data['quality'] ?? $from['quality'] ?? 'standard');
-        $pick = $this->preselect($file, $quality, $from['material'] ?? null, [
+        $material = $from['material'] ?? ($data['material'] ?? null);
+        $pick = $this->preselect($file, $quality, $material, [
             'color' => $data['color'] ?? null,
             'changes' => $data['change_color'] ?? (isset($data['second_color']) ? [$data['second_color']] : null),
             // "in one colour" is a wish of a painted file; on any other it decides nothing (an old link must not switch a design's parts off)
@@ -553,8 +562,13 @@ class OrderController extends Controller
         try {
             $order = $this->orders->create($request->user(), $file, $quality, (string) ($data['strength'] ?? $from['strength'] ?? 'standard'), $data['unit'] ?? null,
                 (int) ($data['copies'] ?? $from['copies'] ?? 1), (float) ($data['scale'] ?? $from['scale'] ?? 1), $pick['color'], (string) ($data['supports'] ?? $from['supports'] ?? 'auto'), null, $card, $inspiration,
-                $pick['changes'] ?: null, $pick['by_parts'] ? $pick['parts'] : null, $from['material'] ?? null, $calc, $request->user() ? null : $this->session($request));
-            Track::event('order_created', $card ?? $order->modelFile, array_filter(['order' => $order->id, 'tool' => $order->modelFile?->origin === 'tool' ? $order->modelFile->kind() : null]));
+                $pick['changes'] ?: null, $pick['by_parts'] ? $pick['parts'] : null, $material, $calc, $request->user() ? null : $this->session($request), [], false, $replace);
+            // one event per order: the design that takes a waiting order's place made none. `kind` tool = made straight
+            // from a tool's page, the calculation left out (the funnel counts it as the price step too, Funnel::PATHS)
+            if (! $replace) {
+                Track::event('order_created', $card ?? $order->modelFile, array_filter(['order' => $order->id, 'tool' => $order->modelFile?->origin === 'tool' ? $order->modelFile->kind() : null,
+                    'kind' => ($data['from'] ?? null) === 'tool' ? 'tool' : null]));
+            }
         } catch (FarmRefusal $e) {
             return $request->expectsJson()
                 ? response()->json(['error' => $e->reason, 'message' => $e->text()], 422)
@@ -564,6 +578,27 @@ class OrderController extends Controller
         return $request->expectsJson()
             ? response()->json(['url' => route('farm.orders.show', $order)], 201)
             : redirect()->route('farm.orders.show', $order);
+    }
+
+    /**
+     * The visitor's own order that a new design of the same tool may take over (docs/AN.md §26): waiting for the
+     * choices, never sliced, not paid, made for a design of that tool. Editing in the tool and coming back to the order
+     * then keeps one order (the same address) instead of leaving a row per try. An order whose price was asked for once
+     * is a real one and stays; so does everything while orders are sliced at once (the switch off).
+     */
+    private function replaceable(Request $request, ModelFile $file): ?FarmOrder
+    {
+        $user = $request->user();
+        $session = $this->session($request);
+        if (! OrderService::sliceOnDemand() || $file->origin !== 'tool' || (! $user && ! $session)) {
+            return null;
+        }
+
+        return FarmOrder::where('kind', FarmOrder::KIND_PRINT)->where('status', FarmOrder::STATUS_AWAITING_CHOICES)->where('slice_run', 0)
+            ->whereNull('paid_at')->whereNull('designer_model_id')
+            ->when($user, fn ($q) => $q->where('user_id', $user->id), fn ($q) => $q->whereNull('user_id')->where('anonymous_session_id', $session->id))
+            ->whereHas('modelFile', fn ($q) => $q->where('origin', 'tool')->where('origin_ref', $file->origin_ref))
+            ->latest('id')->first();
     }
 
     public function show(Request $request, FarmOrder $order): View
@@ -634,6 +669,11 @@ class OrderController extends Controller
     public function status(Request $request, FarmOrder $order): JsonResponse
     {
         $this->authorizeOrder($request, $order);
+        // the price asked for on this page is on it now: the same mark the calculator leaves with its exact price, once
+        // per model and only for its owner (the funnel's "saw the exact price", docs/AN.md §26)
+        if (OrderService::sliceOnDemand() && $order->status === FarmOrder::STATUS_SLICED && $order->paid_at === null && $order->modelFile) {
+            Track::outcome('price_shown', $order->modelFile, array_filter(['kind' => 'order', 'tool' => $order->modelFile->origin === 'tool' ? $order->modelFile->kind() : null]));
+        }
 
         return response()->json($this->describe($order, $request));
     }
@@ -1085,6 +1125,13 @@ class OrderController extends Controller
             'status_text' => $order->statusText(),
             // a big model (docs/AL.md §11): sliced only on the customer's word, the page estimates the price until then
             'big' => (bool) $order->big_model,
+            // no slice before the customer's word (farm.slice_on_demand, docs/AN.md §26): a small waiting order shows the
+            // choices and one button, and a changed choice makes the price out of date until it is recalculated
+            'on_demand' => OrderService::sliceOnDemand(),
+            // a tool's design, not paid yet: the way back to the tool with this design open ("Upravit tvar a rozměry")
+            'tool_url' => $order->paid_at === null && ! $order->designer_model_id && $order->modelFile ? (UploadController::toolOf($order->modelFile)['url'] ?? null) : null,
+            // built face down: the preview shows it turned over, motif up; the print pose itself does not change (§26 C)
+            'face_down' => (bool) $order->modelFile?->printsFaceDown(),
             'choosing' => $choosing,
             'slice_minutes' => $order->big_model ? BigModel::minutes($order->slice_estimate_s) : null,
             'slice_run' => (int) $order->slice_run,

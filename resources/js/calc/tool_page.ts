@@ -33,6 +33,8 @@ export interface ToolCfg {
     artwork: { upload: string; library: string; mine: string; file: string };
     i18n: Record<string, unknown>;
     intake?: IntakePayload | null;   // opened from the home page's router: the photo and the parameters to start with (docs/AN.md §22)
+    /** the main button makes the farm order itself and opens its page, the calculation left out (Stage.leave, docs/AN.md §26); null = the calculation as before */
+    order?: { store: string; busy: string; max_copies: number } | null;
 }
 export interface PriceConfig { rough: RoughConfig; orientation_profiles: Profile[]; round_to: number; materials: { code: string; density: number }[]; default_material?: string; max_colors?: number }
 export type MenuItem = { heading: string } | { label: string; hint?: string; icon?: string; href?: string; download?: string; run?: () => void | Promise<void> };
@@ -63,7 +65,7 @@ export class Stage {
         this.menu();
         this.emptyTakesFile();
         this.spy();
-        this.el('tool-go').addEventListener('click', () => { if (this.goHref) location.href = this.ordered(this.goHref); else void this.goAction?.(); });
+        this.el('tool-go').addEventListener('click', () => { if (this.goHref) void this.leave(this.ordered(this.goHref)); else void this.goAction?.(); });
         // a row with a colour swatch (class tool-swatch-row): the whole row opens the colour window, not the small circle
         // alone – people click the words "pick a colour". The row's other buttons (move, join) keep their own work.
         document.addEventListener('click', (e) => {
@@ -249,6 +251,49 @@ export class Stage {
         if (!u.searchParams.has('material')) u.searchParams.set('material', this.material());
         if (!u.searchParams.has('quantity')) u.searchParams.set('quantity', String(this.quantity()));
         return u.toString();
+    }
+
+    /**
+     * The way on with a finished model file: every tool leaves through here (the main button's link, and the modules
+     * that save their design first: param, art, paint). `url` is the calculator opening the file (…?open=<file>…).
+     *
+     * Where the page goes straight to the order (cfg.order: the farm is offered, orders wait for the customer's word,
+     * the tool is public; docs/AN.md §26) the order is made here – the file, the number of pieces and the kind of plastic
+     * of this page, what the calculator's own button would send for it – and its page opens, waiting for the choices;
+     * nothing is sliced, ordered or paid by that. A download (…&download=1) and every page without cfg.order go to the
+     * calculator as before. So does an order that could not be made (the farm closed meanwhile, a guest's limit, a
+     * refusal, the file not ready, the network): the calculator opens the very same file and says the reason next to
+     * its own button (farm.ts bootFarmCta reads it) – never a dead end, never a lost design.
+     *
+     * `idle`: the button's label to go back to when the visitor returns with the browser's back button (a module that
+     * changed it to "creating…" before calling).
+     */
+    async leave(url: string, idle?: string): Promise<void> {
+        const u = new URL(url, location.href);
+        const uuid = u.searchParams.get('open');
+        const o = this.cfg.order;
+        if (!o || !uuid || u.searchParams.has('download')) { location.href = url; return; }
+        const b = this.el<HTMLButtonElement>('tool-go');
+        const label = this.el('tool-go-label');
+        const was = idle ?? label.textContent ?? '';
+        b.disabled = true; b.setAttribute('aria-busy', 'true'); label.textContent = o.busy;
+        // back from the next page out of the browser's cache: the button works again
+        window.addEventListener('pageshow', (e) => { if (e.persisted) { b.disabled = false; b.removeAttribute('aria-busy'); label.textContent = was; } }, { once: true });
+        let why = '';
+        try {
+            // the file is processed after it is saved (seconds): the order takes a ready one
+            const info = await this.untilReady(await this.fetchFile(uuid), 40);
+            if (info.status === 'ready') {
+                const csrf = document.querySelector<HTMLMetaElement>('meta[name="csrf-token"]')?.content ?? '';
+                const res = await fetch(o.store, { method: 'POST', credentials: 'same-origin', headers: { 'Content-Type': 'application/json', Accept: 'application/json', 'X-CSRF-TOKEN': csrf },
+                    body: JSON.stringify({ file: uuid, copies: Math.min(this.quantity(), o.max_copies), material: u.searchParams.get('material') ?? this.material(), from: 'tool' }) });
+                const json = await res.json().catch(() => ({})) as { url?: string; message?: string };
+                if (res.ok && json.url) { location.href = json.url; return; }
+                why = json.message ?? '';
+            }
+        } catch { /* offline for a moment: the calculator tries on its own */ }
+        try { if (why) sessionStorage.setItem('mp_order_refused', why); } catch { /* private mode: the calculator opens without the reason */ }
+        location.href = url;
     }
 
     /**

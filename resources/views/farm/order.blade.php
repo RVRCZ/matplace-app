@@ -11,6 +11,8 @@
         'farm.delivery.free', 'farm.delivery.not_here', 'farm.delivery.too_big', 'farm.delivery.too_big_pickup', 'farm.delivery.none', 'farm.delivery.pick_point', 'farm.delivery.fill_address', 'farm.delivery.to', 'farm.delivery.track',
         'farm.order.tl.print', 'farm.order.tl.printing', 'farm.order.tl.printing_now', 'farm.order.tl.printing_end', 'farm.order.tl.done', 'farm.order.tl.dispatched', 'farm.order.tl.parcel', 'farm.order.tl.pickup', 'farm.order.tl.none', 'farm.order.why.lead', 'farm.order.why.printer', 'farm.order.why.kind', 'farm.order.why.settings', 'farm.order.why.time', 'farm.order.reslicing', 'farm.order.ship.total', 'farm.order.ship.total_estimate', 'farm.order.pay_note_round', 'farm.order.pay_note_min', 'farm.order.while_slicing', 'farm.order.while_slicing_big', 'farm.order.estimate_range', 'farm.order.estimate_time', 'farm.order.estimate_wait', 'farm.order.estimate_running', 'farm.order.slice_start', 'farm.order.slice_start_hint', 'farm.order.restart_slice', 'farm.recalculate', 'farm.order.ship.choose', 'farm.order.ship.pickup', 'farm.order.ship.parcel', 'farm.order.ship.counting', 'farm.order.ship.free', 'farm.order.pay_total', 'farm.order.refunded',
         'farm.order.bar.pay', 'farm.order.bar.pay_card', 'farm.order.bar.pay_card_rest', 'farm.order.bar.pick_color', 'farm.order.bar.total', 'farm.order.bar.total_estimate', 'farm.order.bar.email', 'farm.order.bar.terms', 'farm.order.recolor_first',
+        // the slice on the customer's word (docs/AN.md §26): the button of a small waiting order, the price out of date after a changed choice
+        'farm.order.price_start', 'farm.order.price_start_hint', 'farm.order.price_stale_pay', 'farm.order.recalculate_price',
         // the chooser by machine (docs/AL.md §19): the card of the printer with its positions, the reasons a position cannot print a part
         'farm.order.machine_title', 'farm.order.machine_hint', 'farm.order.colors_count', 'farm.order.positions_n', 'farm.order.machine_best', 'farm.order.machine_chosen', 'farm.order.preselected', 'farm.order.machine_repicked', 'farm.order.machine_fell_back',
         'farm.order.pos_reason.empty', 'farm.order.pos_reason.main', 'farm.order.pos_reason.off', 'farm.order.pos_reason.kind', 'farm.order.pos_reason.low', 'farm.order.pos_reason.manual_only', 'farm.order.pos_reason.limit'];
@@ -72,6 +74,18 @@
                     <button type="button" id="farm-supports-toggle" class="absolute right-3 top-3 hidden rounded-full bg-white/90 px-3 py-1 text-xs font-semibold text-slate-700 shadow" aria-pressed="true">{{ __('farm.order.supports_hide') }}</button>
                 </div>
                 <p id="farm-oriented" class="hidden border-t border-slate-100 bg-action-soft px-4 py-2 text-sm text-action-dark">{{ __('farm.order.oriented') }}</p>
+                @if(($state['face_down'] ?? false) && ! ($modelHidden ?? false))
+                    {{-- a design built face down: the preview shows it turned over, motif up (farm.ts); how it prints stays a line of text --}}
+                    <p id="farm-face-down" class="border-t border-slate-100 px-4 py-2 text-xs text-slate-600">{{ __('farm.face_down_note') }}</p>
+                @endif
+                @if($state['tool_url'] ?? null)
+                    {{-- a tool's design, not paid yet: back to the tool with this design open; sent again from there it comes back
+                         to this very order while no price was asked for (OrderController::replaceable, docs/AN.md §26) --}}
+                    <div id="farm-edit-design" class="flex flex-wrap items-center gap-3 border-t border-slate-100 px-4 py-3">
+                        <a id="farm-tool-link" href="{{ $state['tool_url'] }}" class="btn-secondary text-sm">{{ __('calc.edit_design') }}</a>
+                        <span class="text-xs text-slate-500">{{ __('farm.order.edit_design_hint') }}</span>
+                    </div>
+                @endif
                 {{-- the finished print photographed in the photo box, on its backdrop (PrintPhotos) --}}
                 <figure id="farm-photo-box" class="hidden border-t border-slate-100 p-3">
                     <img id="farm-photo" alt="{{ __('farm.order.photo_of_print') }}" class="w-full rounded-xl" loading="lazy">
@@ -97,6 +111,10 @@
                 {{-- money the bank has given back to the card for this order (CardRefunds) --}}
                 <p id="farm-refunded" class="mt-2 hidden rounded-lg bg-emerald-50 px-3 py-2 text-sm text-emerald-900" aria-live="polite"></p>
                 <ul id="farm-warnings" class="mt-2 space-y-1 text-sm text-amber-700"></ul>
+                {{-- an order waiting for the customer's word (docs/AN.md §26): no price yet, and why; nothing is ordered or paid by asking --}}
+                <p id="farm-await-note" class="mt-2 hidden rounded-lg bg-action-soft px-3 py-2 text-sm text-ink">{{ __('farm.order.await_note') }}</p>
+                {{-- a choice changed after the price was computed: the numbers below are greyed until they are recalculated --}}
+                <p id="farm-stale-note" class="mt-2 hidden rounded-lg bg-amber-50 px-3 py-2 text-sm text-amber-900" role="status">{{ __('farm.order.price_stale') }}</p>
 
                 {{-- a big model before its slice (docs/AL.md §11): the rough price from the model's volume and the choices below,
                      as a range like the calculator's first page; the exact one comes with the button in the form --}}
@@ -380,6 +398,11 @@
         <div id="farm-bar-total" class="action-bar-price rounded-md" aria-live="polite"></div>
         <div id="farm-bar-sub" class="action-bar-sub" hidden></div>
         <p id="farm-bar-error" class="text-xs text-red-700" role="alert" hidden></p>
+    </x-action-bar>
+    {{-- a phone, while the order waits for the customer's word: "Spočítat cenu" within reach under the long list of choices
+         (mirrors #farm-slice-start; farm.ts shows it only while the order waits) --}}
+    <x-action-bar for="farm-slice-start" id="farm-price-bar" class="lg:hidden" hidden>
+        <div class="action-bar-sub">{{ __('farm.order.price_bar_note') }}</div>
     </x-action-bar>
 </div>
 @endsection

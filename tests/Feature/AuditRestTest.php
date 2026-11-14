@@ -102,7 +102,8 @@ class AuditRestTest extends TestCase
         config(['farm.public' => true]);
         $guest = (string) $this->get('/')->assertOk()->getContent();
         $this->assertStringContainsString(e(__('farm.cta')), $guest);
-        $this->assertSame('Objednat tisk', __('farm.cta'));
+        // nothing is ordered at that moment: the button only leads to the order page (Roman, 14 Nov 2026, docs/AN.md §26)
+        $this->assertSame('Přejít k tisku', __('farm.cta'));
         $this->assertStringContainsString(e(__('farm.cta_hint_guest')), $guest, 'a guest learns the sign-in comes first and nothing is paid yet');
         $signed = (string) $this->actingAs($this->user)->get('/')->assertOk()->getContent();
         $this->assertStringContainsString(e(__('farm.cta_hint')), $signed);

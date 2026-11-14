@@ -495,6 +495,7 @@ async function showServerStl(url: string): Promise<boolean> {
         state.geo = stats(geom);
         const parts = partsByColour(geom, state.file?.tool?.params);
         const regions = parts ? null : twoColorRegions(state.file?.tool?.params);
+        viewer?.setTurned(Boolean(state.file?.face_down));   // built face down: shown motif up (showKindTip)
         viewer?.setGeometry(geom, state.params.scale, state.file?.kind ?? null, regions);
         // colours painted in a slicer: the server's STL has its triangles sorted by colour, the runs paint it (docs/AN.md §19);
         // the canvas says how it went (data-painted: colors, or mismatch when the runs do not cover this STL), for a check from outside
@@ -1180,6 +1181,11 @@ function markPainted(how: 'loading' | 'colors' | 'mismatch' | 'failed'): void {
 /** Tool-specific line under the viewer: how this kind of model is meant to be printed. */
 function showKindTip(kind: string | undefined): void {
     showNearest(state.file);
+    // a design built with its face on the bed (flush colours, a medal's flush motif; file.face_down) is shown turned
+    // over, motif up, the way it is used: the print itself stays face down and a line under the preview says so
+    const down = Boolean(state.file?.face_down);
+    viewer?.setTurned(down);
+    document.getElementById('face-down-note')?.classList.toggle('hidden', !down);
     const el = document.getElementById('kind-tip');
     if (!el) return;
     const key = `calc.tip.${kind ?? ''}`;

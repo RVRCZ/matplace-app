@@ -37,7 +37,10 @@ final class Funnel
         'customer' => [['visit'], ['upload', 'generate'], ['calculation'], ['order_paid']],
         'owner' => [['visit'], ['model_view', 'tool_view', 'calculation', 'generate'], ['download']],
         'designer' => [['visit'], ['register'], ['designer_enabled'], ['designer_import'], ['designer_file_uploaded']],
-        'order' => [['visit'], ['model_ready'], ['price_shown'], ['order_started', 'order_created'], ['checkout_started'], ['order_paid']],
+        // the price step is passed by seeing the exact price in the calculator, or by an order made straight from a tool's
+        // page (docs/AN.md §26: the calculation is left out there and the price comes on the order page, on the customer's
+        // word – recorded as price_shown kind=order when it does)
+        'order' => [['visit'], ['model_ready'], ['price_shown', 'order_created'], ['order_started', 'order_created'], ['checkout_started'], ['order_paid']],
         // "upload began" = an upload or a refused one (the browser's and the server's refusals, docs/AN.md §9); the registration gate is
         // passed by registering, by landing on /register, or by an order made with an account that was there already; the
         // payment begins with the card (checkout_started) or with a top-up of credit (topup_started, session 2)

@@ -1749,7 +1749,7 @@
     "edit.gcode.error.too_big": "Soubor je moc velký, limit je :max MB.",
     "hero.formats_short": "STL, 3MF, STEP a další formáty, do :max MB",
     "farm.cta_hint_guest": "Zatím nic neplatíte a účet nepotřebujete: vyberete barvu a doručení, uvidíte konečnou cenu a zaplatíte kartou až na konci.",
-    "farm.cta_busy": "Zakládám objednávku…",
+    "farm.cta_busy": "Otevírám objednávku…",
     "farm.order.tl.print_label": "Tisk",
     "farm.order.tl.dispatch_label": "Odeslání",
     "farm.order.tl.delivery_label": "Doručení",
@@ -2912,5 +2912,16 @@
     "router.ask.picture": "K tomuhle potřebujeme váš obrázek: nahrajte kresbu, logo nebo fotku, nebo vyberte motiv z naší knihovny.",
     "router.ask.picture.button": "Nahrát obrázek nebo vybrat motiv",
     "router.ask.place": "Napište město nebo adresu a mapu hned uvidíte.",
-    "map.place.others": "Mysleli jste jiné místo? Vyberte:"
+    "map.place.others": "Mysleli jste jiné místo? Vyberte:",
+    "param.go.order": "Přejít k tisku",
+    "param.go.hint.order": "Na další stránce vyberete barvu, materiál a nastavení tisku a necháte si spočítat cenu. Zatím nic neobjednáváte ani neplatíte.",
+    "farm.order.price_start": "Spočítat cenu",
+    "farm.order.price_start_hint": "Vyberte barvu a nastavení a nechte si spočítat přesnou cenu a dobu tisku. Tímto tlačítkem nic neobjednáváte ani neplatíte.",
+    "farm.order.price_bar_note": "Nic neobjednáváte ani neplatíte.",
+    "farm.order.await_note": "Cenu spočítáme, až si o ni řeknete. Vyberte barvu, materiál a nastavení tisku a stiskněte Spočítat cenu. Zatím nic neobjednáváte ani neplatíte.",
+    "farm.order.price_stale": "Změnili jste nastavení. Cena a čas níže platí pro původní volby: přepočítejte je tlačítkem Přepočítat cenu.",
+    "farm.order.price_stale_pay": "Změnili jste nastavení: nejdřív přepočítejte cenu, pak půjde zaplatit.",
+    "farm.order.recalculate_price": "Přepočítat cenu",
+    "farm.order.edit_design_hint": "Vrátíte se do nástroje s tímto návrhem. Upravený návrh sem pošlete znovu tlačítkem Přejít k tisku.",
+    "farm.face_down_note": "Tiskne se lícem dolů, aby byl motiv hladký a barvy ostré. Náhled ho ukazuje otočený motivem nahoru, tak jak se bude používat."
 }

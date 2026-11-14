@@ -35,17 +35,23 @@ final class OrderService
     public function __construct(private readonly FarmSettings $settings, private readonly PriceCalculator $prices, private readonly Shipping $shipping) {}
 
     /**
-     * A small model is sliced at once; a big one (BigModel: millions of triangles, or a calculation that took over a
-     * minute to slice) waits in `awaiting_choices` until the customer has chosen the settings and confirmed the colour,
-     * and the page shows a rough price meanwhile (docs/AL.md §11). `$calculation` is the one the order comes from, when
-     * it comes from the calculator: its slice time is part of the verdict and of the minutes the page promises.
+     * Nothing is sliced before the customer asks for the price (`farm.slice_on_demand`, docs/AN.md §26): the order is
+     * made `awaiting_choices`, its page shows the choices and one button. A big model (BigModel: millions of triangles,
+     * or a calculation that took over a minute to slice) always waited so (docs/AL.md §11) and still shows a rough price
+     * meanwhile; `big_model` keeps that meaning and is never set for a small one. With the switch off a small model is
+     * sliced at once, as before. `$calculation` is the one the order comes from, when it comes from the calculator: its
+     * slice time is part of the verdict and of the minutes the page promises.
+     *
+     * `$sliceNow`: a print made again (the choices are those of an order already sliced and paid): sliced at once.
+     * `$replace`: the visitor's own waiting order of an earlier design of the same tool, never sliced: the new design
+     * takes its place instead of another order being made (OrderController::replaceable).
      *
      * A guest (no `$user`) orders under the anonymous session `$session`; the card payment gives the order an account
      * (App\Domain\Farm\GuestCheckout, docs/AO.md).
      *
      * @throws FarmRefusal with a code the UI translates: not_ready, too_big, daily_limit, no_printer
      */
-    public function create(?User $user, ModelFile $file, string $quality = 'standard', string $strength = 'standard', ?string $unit = null, int $copies = 1, float $scale = 1.0, ?int $colorId = null, string $supports = 'auto', ?int $secondColorId = null, ?DesignerModel $card = null, ?CatalogModel $inspiration = null, ?array $changeColorIds = null, ?array $partColorIds = null, ?string $materialCode = null, ?Calculation $calculation = null, ?AnonymousSession $session = null, array $carry = []): FarmOrder
+    public function create(?User $user, ModelFile $file, string $quality = 'standard', string $strength = 'standard', ?string $unit = null, int $copies = 1, float $scale = 1.0, ?int $colorId = null, string $supports = 'auto', ?int $secondColorId = null, ?DesignerModel $card = null, ?CatalogModel $inspiration = null, ?array $changeColorIds = null, ?array $partColorIds = null, ?string $materialCode = null, ?Calculation $calculation = null, ?AnonymousSession $session = null, array $carry = [], bool $sliceNow = false, ?FarmOrder $replace = null): FarmOrder
     {
         $scale = max(0.25, min((float) config('pricing.max_scale', 4), $scale));
         if (! FarmGate::open($user)) {
@@ -66,7 +72,9 @@ final class OrderService
         if (! $user && ! $session?->id) {
             throw new FarmRefusal('closed');   // nobody to own the order (a robot's unsaved session)
         }
-        $this->assertDailyLimit($user ?? $session);
+        if (! $replace) {
+            $this->assertDailyLimit($user ?? $session);   // the order replaced was counted when it was made
+        }
 
         // the kind the order is sliced and first priced for: the cheapest one really loaded in a printer whose plate
         // takes the model; the price is recomputed for the kind and machine of the colour the customer picks
@@ -109,16 +117,18 @@ final class OrderService
         $partPlates = $partColorIds !== null ? $this->spoolsForParts($chosen['slot'] ?? null, self::designParts($file), $partColorIds) : [];
         // a big model is not sliced before the customer has chosen: the order waits for the button on its page
         $big = BigModel::judge($file, $calculation, max(1, min(PlateLayout::MAX_COPIES, $copies)));
+        // … and with the switch on no order is: the slice starts on the customer's word (the button of the order page)
+        $wait = $big['big'] || (self::sliceOnDemand() && ! $sliceNow);
+        $from = $replace?->status;
 
         // the order and its first event together: one that cannot write its history is not made at all (orders 218–221,
         // 25 Oct 2026: the event column was too narrow for the new state and the orders stayed without a history)
-        $order = DB::transaction(fn () => tap(FarmOrder::create(array_merge([
-            'token' => Str::random(32),
+        $order = DB::transaction(fn () => tap(($replace ?? new FarmOrder(['token' => Str::random(32)]))->forceFill(array_merge([
             'user_id' => $user?->id,
             'anonymous_session_id' => $user ? null : $session->id,
             'model_file_id' => $file->id,
-            'status' => $big['big'] ? FarmOrder::STATUS_AWAITING_CHOICES : FarmOrder::STATUS_UPLOADED,
-            'stage' => $big['big'] ? null : 'checking',
+            'status' => $wait ? FarmOrder::STATUS_AWAITING_CHOICES : FarmOrder::STATUS_UPLOADED,
+            'stage' => $wait ? null : 'checking',
             'big_model' => $big['big'],
             'slice_estimate_s' => $big['big'] ? $big['estimate_s'] : null,
             'quality' => $this->knownQuality($quality),
@@ -143,14 +153,28 @@ final class OrderService
             'catalog_model_id' => $inspiration?->id,
             'note' => $inspiration?->attribution(),
             // a repeated print (docs/AL.md §15): the advanced numbers and the note of the order it repeats
-        ], array_intersect_key($carry, array_flip(['print_settings', 'note'])))), fn (FarmOrder $order) => $order->events()->create(['to' => $order->status, 'actor' => 'user', 'actor_id' => $user?->id,
-            'note' => $big['big'] ? 'big model ('.($big['reason'] === 'slice_time' ? 'calculation sliced in '.round((float) $big['slice_s']).' s' : number_format($big['triangles'] / 1e6, 1, '.', '').' M triangles').'): the slice waits for the choices' : null])));
+        ], array_intersect_key($carry, array_flip(['print_settings', 'note'])))), function (FarmOrder $order) use ($user, $big, $wait, $from, $replace, $file) {
+            if ($replace) {
+                $order->created_at = now();   // made anew with the new design: the week the prune gives a waiting order starts again
+            }
+            $order->save();
+            $order->events()->create(['from' => $from, 'to' => $order->status, 'actor' => 'user', 'actor_id' => $user?->id,
+                'note' => $replace ? 'design changed in the tool: file '.$file->uuid.' takes the place of the one this order waited with'
+                    : ($big['big'] ? 'big model ('.($big['reason'] === 'slice_time' ? 'calculation sliced in '.round((float) $big['slice_s']).' s' : number_format($big['triangles'] / 1e6, 1, '.', '').' M triangles').'): the slice waits for the choices'
+                        : ($wait ? 'the slice waits for the word of the customer' : null))]);
+        }));
         // after the commit: a worker that picks the job up before the row is there would find no order and give up
-        if (! $big['big']) {
+        if (! $wait) {
             PrepareFarmOrder::dispatch($order->id);
         }
 
         return $order;
+    }
+
+    /** No order is sliced before its customer asks for the price (config farm.slice_on_demand, docs/AN.md §26). */
+    public static function sliceOnDemand(): bool
+    {
+        return (bool) config('farm.slice_on_demand', true);
     }
 
     /**

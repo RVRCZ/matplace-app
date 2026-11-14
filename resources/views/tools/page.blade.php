@@ -35,6 +35,9 @@
         'artwork' => ['upload' => route('api.tools.artwork'), 'library' => route('api.artwork.library'), 'mine' => route('api.artwork.mine'), 'file' => url('/api/artwork/file')],
         'zip' => route('api.tools.param.zip'),
         'shared' => route('api.shared'),   // the share event (ShareController)
+        // the main button makes the order itself and opens its page, the calculation left out (NextStep::direct, docs/AN.md
+        // §26; tool_page.ts Stage.leave). null = the calculation as before
+        'order' => \App\Support\NextStep::direct($tool) ? ['store' => route('farm.orders.store'), 'busy' => __('farm.cta_busy'), 'max_copies' => \App\Domain\Farm\PlateLayout::MAX_COPIES] : null,
         // opened from the home page's router with ?intake=<token> (App\Http\Middleware\IntakeHandoff, docs/AN.md §22): the photo's address and the parameters
         'intake' => request()->attributes->get('intake'),
         'i18n' => collect(\Illuminate\Support\Arr::dot(['toolpage' => trans('toolpage')]))->all() + ['farm.finish' => collect((array) trans('farm.finish'))->all()],
@@ -178,9 +181,9 @@
                 {{-- share the result: the phone's share sheet, else the link copied (Stage.shareable; docs/AN.md §12) --}}
                 <button type="button" id="tool-share" class="btn-secondary w-full gap-1.5 sm:w-auto" hidden data-copied="{{ __('toolpage.share.copied') }}"><x-icon name="share" class="h-4 w-4" />{{ __('toolpage.share') }}</button>
                 {{-- on a phone the way on is the bar fixed to the bottom (x-action-bar below), which mirrors this button; the button itself stays for lg --}}
-                <span class="max-lg:hidden lg:contents"><button type="button" id="tool-go" class="btn-primary gap-1.5" disabled><span id="tool-go-label">{{ \App\Support\NextStep::text('param.go') }}</span><x-icon name="arrow-right" class="h-4 w-4" /></button></span>
+                <span class="max-lg:hidden lg:contents"><button type="button" id="tool-go" class="btn-primary gap-1.5" disabled><span id="tool-go-label">{{ \App\Support\NextStep::text('param.go', [], $tool) }}</span><x-icon name="arrow-right" class="h-4 w-4" /></button></span>
             </div>
-            <p class="w-full text-xs text-muted">@hasSection('price-note')@yield('price-note')@else{{ \App\Support\NextStep::text('param.go.hint') }}@endif</p>
+            <p class="w-full text-xs text-muted">@hasSection('price-note')@yield('price-note')@else{{ \App\Support\NextStep::text('param.go.hint', [], $tool) }}@endif</p>
             {{-- the farm is paused: said where the page promises a print with us (only to visitors the farm is offered to) --}}
             @if($next === \App\Support\NextStep::FARM)@include('farm._pause', ['class' => 'w-full'])@endif
         </div>

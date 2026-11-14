@@ -2912,5 +2912,16 @@
     "router.ask.picture": "Para esto necesitamos su imagen: suba un dibujo, un logo o una foto, o elija un motivo de nuestra biblioteca.",
     "router.ask.picture.button": "Subir una imagen o elegir un motivo",
     "router.ask.place": "Escriba una ciudad o una dirección y verá el mapa.",
-    "map.place.others": "¿Era otro lugar? Elija:"
+    "map.place.others": "¿Era otro lugar? Elija:",
+    "param.go.order": "Continuar a la impresión",
+    "param.go.hint.order": "En la página siguiente elige el color, el material y los ajustes de impresión y pide el precio. Todavía no encarga ni paga nada.",
+    "farm.order.price_start": "Calcular el precio",
+    "farm.order.price_start_hint": "Elija el color y los ajustes y pida el precio y el tiempo de impresión exactos. Este botón no encarga ni cobra nada.",
+    "farm.order.price_bar_note": "No encarga ni paga nada.",
+    "farm.order.await_note": "Calculamos el precio cuando lo pida. Elija el color, el material y los ajustes de impresión y pulse Calcular el precio. Todavía no encarga ni paga nada.",
+    "farm.order.price_stale": "Ha cambiado los ajustes. El precio y el tiempo de abajo corresponden a la elección anterior: pulse Recalcular el precio.",
+    "farm.order.price_stale_pay": "Ha cambiado los ajustes: primero recalcule el precio, después podrá pagar.",
+    "farm.order.recalculate_price": "Recalcular el precio",
+    "farm.order.edit_design_hint": "Vuelve a la herramienta con este diseño abierto. Envíe aquí de nuevo el diseño cambiado con Continuar a la impresión.",
+    "farm.face_down_note": "Se imprime boca abajo para que el motivo quede liso y los colores nítidos. La vista previa lo muestra girado, con el motivo hacia arriba, tal como se usará."
 }

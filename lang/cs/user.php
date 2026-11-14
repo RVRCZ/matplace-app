@@ -88,7 +88,7 @@ return [
         'kind' => ['upload' => 'Nahraný soubor', 'generated' => 'Vygenerovaný model', 'tool' => 'Z nástroje', 'repaired' => 'Opravený model', 'mold' => 'Forma na odlévání'],
         'open_tool' => 'Otevřít v nástroji',
         'open' => 'Otevřít',
-        'order' => 'Objednat tisk',
+        'order' => 'Přejít k tisku',
         'download' => '3MF pro moji tiskárnu',
         'delete' => 'Smazat',
         'delete_confirm' => 'Opravdu smazat model „:name“? Smažou se i jeho kalkulace.',

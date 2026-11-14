@@ -773,7 +773,7 @@ export function bootPaint(stage: Stage): void {
             if (!file) return;
             // specks were merged: said first, the next click goes on
             if (fresh && (file.paint?.report?.specks?.count ?? 0) > 0) return;
-            location.href = stage.ordered(`${cfg.home}?open=${file.uuid}`);
+            await stage.leave(stage.ordered(`${cfg.home}?open=${file.uuid}`));   // the order page, or the calculator (Stage.leave)
         } });
         stage.downloads(pm ? [{ label: t('download.3mf'), hint: t('download.3mf.hint'), icon: 'file-box', run: async () => { const file = await save(); if (file) location.href = `${cfg.download}/${file.uuid}/colors.3mf`; } }] : []);
     };

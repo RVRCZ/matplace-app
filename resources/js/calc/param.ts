@@ -1533,7 +1533,8 @@ export function bootParam(stage: Stage): void {
                 ...(note ? { note: note.slice(0, 900) } : {}), open: body.file.uuid, material: stage.material(), quantity: String(stage.quantity()),
                 color: typeof plate === 'string' ? colorName(plate) : ($('param-color') as HTMLInputElement).value, ...(download ? { download: '1' } : {}),
             });
-            location.href = `${cfg.home}?${q}`;
+            // straight to the order where the page does that, else (and for a download) the calculator as before (Stage.leave)
+            await stage.leave(`${cfg.home}?${q}`, label);
         } catch {
             showError(t('param.failed')); stage.go({ disabled: false, label });
         }
