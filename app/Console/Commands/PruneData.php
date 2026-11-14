@@ -123,6 +123,8 @@ class PruneData extends Command
         $waitingDays = max(1, (int) config('farm.big_model.waiting_days', 7));
         $flow = app(OrderFlow::class);
         $waiting = 0;
+        // (every new order waits so since docs/AN.md §26; a design sent again from its tool takes the waiting order's
+        // place and the order counts as made then, OrderService::create)
         FarmOrder::where('status', FarmOrder::STATUS_AWAITING_CHOICES)->where('created_at', '<', now()->subDays($waitingDays))->get()
             ->each(function (FarmOrder $o) use (&$waiting, $dry, $flow, $waitingDays) {
                 $waiting++;

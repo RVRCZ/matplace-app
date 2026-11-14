@@ -88,7 +88,7 @@ return [
         'kind' => ['upload' => 'Archivo subido', 'generated' => 'Modelo generado', 'tool' => 'De una herramienta', 'repaired' => 'Modelo reparado', 'mold' => 'Molde de colada'],
         'open_tool' => 'Abrir en la herramienta',
         'open' => 'Abrir',
-        'order' => 'Pedir impresión',
+        'order' => 'Continuar a la impresión',
         'download' => '3MF para mi impresora',
         'delete' => 'Eliminar',
         'delete_confirm' => '¿Eliminar de verdad el modelo «:name»? También se eliminan sus cálculos.',

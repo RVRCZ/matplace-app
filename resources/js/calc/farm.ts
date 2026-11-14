@@ -10,6 +10,8 @@ import { flash, revealIfHidden } from '../site/sticky';
 import { BufferGeometry, Float32BufferAttribute } from 'three';
 import { Viewer, FacePaint, cutAtHeight, deep } from './viewer';
 import { loadGeometryFromUrl } from './loaders';
+import { STLLoader } from 'three/examples/jsm/loaders/STLLoader.js';
+import { piecesFromHeader } from './painted';
 import { money as moneyText } from '../site/money';
 import { timelinePrint, timelineDispatch } from './order_timeline';
 import { printOnly, shippingText, totalText } from './order_price';
@@ -51,6 +53,10 @@ interface FarmState {
     refunded?: number | null;
     /** a big model: sliced only on the customer's word (awaiting_choices), the rough price until then; `choosing` = the colours are on offer right now */
     big?: boolean; choosing?: boolean; slice_minutes?: number | null; slice_run?: number; estimate?: EstimateCfg | null;
+    /** nothing is sliced before the customer's word (docs/AN.md §26): a small waiting order has one button, a changed choice makes the price out of date; `face_down` = shown turned over, motif up */
+    on_demand?: boolean; face_down?: boolean; tool_url?: string | null;
+    /** a tool's design whose coloured parts lie in one body: its model grouped by piece, for the preview before the parts are prepared */
+    pieces_url?: string | null;
     quality: string; strength: string; copies: number; max_copies: number | null; plates: number; plates_done: number; plate_layout: number[]; plate_now: number | null;
     /** the copies of one plate of parts in a grid [columns, rows] (the parts of a design with flush colours, a painted 3MF); null otherwise */
     copies_grid?: [number, number] | null;
@@ -85,10 +91,15 @@ const esc = (s: string) => s.replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&l
 const duration = (min: number) => (min >= 60 ? `${Math.floor(min / 60)} h ${min % 60} min` : `${min} min`);
 
 export function bootFarmCta(): void {
+    // a tool's page tried to make the order itself and was refused (tool_page.ts Stage.leave): the reason is said once, on
+    // the page that follows (next to the farm's button when the farm is still offered), and never kept for a later one
+    let refused = '';
+    try { refused = sessionStorage.getItem('mp_order_refused') ?? ''; if (refused) sessionStorage.removeItem('mp_order_refused'); } catch { /* private mode */ }
     const btn = $<HTMLButtonElement>('cta-farm');
     if (!btn) return;
     const note = $('cta-farm-note');
     const wait = note?.textContent ?? '';
+    if (refused && note) { note.textContent = refused; show(note, true); }
     btn.addEventListener('click', async () => {
         // the calculator rewrites the address to /c/{token} (/en/c/{token} in another language) once the calculation exists
         const m = location.pathname.match(/^(?:\/[a-z]{2})?\/c\/([A-Za-z0-9_-]+)/);
@@ -163,6 +174,25 @@ async function loadParts(urls: string[], together = false): Promise<{ geom: Buff
     const flags = new Uint8Array(all.length / 9);
     let t = 0;
     counts.forEach((n, i) => { flags.fill(i, t, t + n); t += n; });
+    return { geom, flags };
+}
+
+/**
+ * A tool's design by parts before anything was prepared for it (an order waiting for the customer's word, docs/AN.md
+ * §26): the design's model with its triangles grouped by piece (ToolsApiController::paramPieces, the one the
+ * calculation paints by), every triangle flagged with its part of the order, so the preview shows the motif in the
+ * colours chosen instead of one plain body. A piece the order has no part for takes the first part's colour.
+ */
+async function loadPieces(url: string, parts: string[]): Promise<{ geom: BufferGeometry; flags: Uint8Array }> {
+    const res = await fetch(url, { credentials: 'same-origin' });
+    if (!res.ok) throw new Error('pieces');
+    const loaded = new STLLoader().parse(await res.arrayBuffer());
+    const geom = loaded.index ? loaded.toNonIndexed() : loaded;
+    const triangles = geom.getAttribute('position').count / 3;
+    const pieces = piecesFromHeader(res.headers.get('X-Pieces'), triangles);
+    if (!pieces) throw new Error('pieces');
+    const flags = new Uint8Array(triangles);
+    pieces.forEach((p) => flags.fill(Math.max(0, parts.indexOf(p.name)), p.tris[0], p.tris[1]));
     return { geom, flags };
 }
 
@@ -280,6 +310,9 @@ export function bootFarmOrder(): void {
     const tr = (k: string, p: Record<string, string | number> = {}) => Object.entries(p).reduce((s, [a, b]) => s.replace(`:${a}`, String(b)), cfg.i18n[k] ?? k);
     const viewer = new Viewer(canvas);
     let state = cfg.state;
+    // a design built with its face on the bed (flush colours, a medal's flush motif) is shown turned over, motif up, the
+    // way it is used; the print pose and the slice stay as they are, a line under the preview says so (docs/AN.md §26 C)
+    if (state.face_down) viewer.setTurned(true);
     let shownModel = '';
     let shownSupports = '';
     let supportsOn = true;
@@ -341,6 +374,7 @@ export function bootFarmOrder(): void {
     const changeHeights = (): number[] => (state.changes ?? []).map((c) => c.z);
     let geom: BufferGeometry | null = null;
     let partFlags: Uint8Array | null = null;          // an order by parts shown as its plates: the part of every triangle
+    let piecesOff = false;                            // the design's pieces could not be had: the plain model is shown instead
     // the colour a part prints in: the spool chosen for it (none = the main colour), the design's own colour before that
     const partHex = (p: Part): string | null => {
         const c = state.colors.find((x) => x.slot === picked);
@@ -365,6 +399,16 @@ export function bootFarmOrder(): void {
     };
     let timer = 0;
     const wanted = { quality: state.quality, strength: state.strength, supports: state.supports_mode || 'auto', unit: state.unit, copies: state.copies || 1, scale: state.scale || 1, by_parts: !!state.by_parts, settings: { ...(state.settings ?? {}) } as Record<string, number | string> };
+    // what the page holds differs from what the order was computed with (quality, strength, supports, unit, copies, size,
+    // the advanced numbers, by parts): nothing is sliced by itself, one button recalculates
+    const choicesChanged = (): boolean => {
+        const s = state;
+        return wanted.by_parts !== !!s.by_parts || wanted.quality !== s.quality || wanted.strength !== s.strength || wanted.supports !== (s.supports_mode || 'auto') || wanted.unit !== s.unit
+            || wanted.copies !== (s.copies || 1) || Math.abs(wanted.scale - (s.scale || 1)) > 0.0005 || settingsOf(wanted.settings) !== settingsOf(s.settings);
+    };
+    // with the slice on the customer's word (docs/AN.md §26) the price on the page is then out of date: greyed, said so,
+    // and nothing can be paid until it is recalculated. With the switch off the page behaves as it did
+    const stalePrice = (): boolean => !!state.on_demand && state.status === 'sliced' && choicesChanged();
     // the parts of the design printed apart or together: a preset like the others, the order is sliced again
     $('farm-by-parts')?.addEventListener('change', (e) => { wanted.by_parts = (e.target as HTMLInputElement).checked; render(); });
     // the "advanced" numbers and choices: what the fields hold, only the filled ones (a select is a word, an input a number)
@@ -477,6 +521,8 @@ export function bootFarmOrder(): void {
     };
     // why the order cannot be paid yet, and where on the page that is fixed; null = ready
     const payBlocker = (): { el: HTMLElement | null; text: string } | null => {
+        // a choice changed after the price was computed: the price is out of date, recalculated first (stalePrice)
+        if (stalePrice()) return { el: $('farm-reslice'), text: tr('farm.order.price_stale_pay') };
         if (picked === null) return { el: $('farm-material'), text: tr('farm.order.bar.pick_color') };
         if (state.colors.find((c) => c.slot === picked)?.sliced === false) return { el: $('farm-recolor'), text: tr('farm.order.recolor_first') };
         if (noMachine()) return { el: $('farm-material'), text: tr('farm.order.colors_no_machine') };
@@ -862,7 +908,9 @@ export function bootFarmOrder(): void {
         const refunded = $('farm-refunded'); if (refunded) { refunded.textContent = s.refunded ? tr('farm.order.refunded', { amount: money(s.refunded) }) : ''; show(refunded, !!s.refunded); }
         $('farm-warnings')!.innerHTML = s.warnings.map((w) => `<li class="flex items-start gap-1.5">${icon('triangle-alert', 'mt-0.5 h-4 w-4')}<span>${esc(w)}</span></li>`).join('');
         $('farm-dims')!.textContent = s.dims ? `${s.dims.x.toFixed(1)} × ${s.dims.y.toFixed(1)} × ${s.dims.z.toFixed(1)} mm` : '';
-        show($('farm-oriented'), s.orientation_changed && s.status !== 'failed');
+        show($('farm-edit-design'), !!s.tool_url);   // the way back to the tool, until the order is paid
+        // "shown in the pose it prints in" is not true of a design shown turned over (face_down): its own line says how it prints
+        show($('farm-oriented'), s.orientation_changed && s.status !== 'failed' && !s.face_down);
         const balance = $('farm-balance'); if (balance) balance.textContent = money(s.balance);   // a guest has none
 
         // while the customer chooses, the model and the price stay in the window on a desktop (the left column, order.blade.php)
@@ -875,7 +923,12 @@ export function bootFarmOrder(): void {
         const stale = working && resultShown;
         resultShown = hasResult || stale;
         show($('farm-result'), resultShown);
-        $('farm-result')?.classList.toggle('opacity-50', stale);
+        // … and a price that a changed choice made out of date is greyed the same way, with the sentence above it
+        const outdated = stalePrice();
+        $('farm-result')?.classList.toggle('opacity-50', stale || outdated);
+        show($('farm-stale-note'), outdated);
+        // a small order waiting for the customer's word: what the button does, and that nothing is ordered or paid by it
+        show($('farm-await-note'), awaiting && !s.big);
         if (!stale) show($('farm-total-line'), false);   // filled below once the delivery on offer is known (sliced)
         if (hasResult) {
             const print = printPrice();
@@ -952,17 +1005,25 @@ export function bootFarmOrder(): void {
             }
             $('farm-by-parts-title')!.textContent = tr('farm.order.by_parts', { n: s.part_count ?? 0 });
         }
-        const changed = wanted.by_parts !== !!s.by_parts || wanted.quality !== s.quality || wanted.strength !== s.strength || wanted.supports !== (s.supports_mode || 'auto') || wanted.unit !== s.unit || wanted.copies !== (s.copies || 1) || Math.abs(wanted.scale - (s.scale || 1)) > 0.0005 || settingsOf(wanted.settings) !== settingsOf(s.settings);
+        const changed = choicesChanged();
         const reslice = $<HTMLButtonElement>('farm-reslice');
         // while a big model is being sliced another colour is a change too: the running slice is for the one it started with
         show(reslice, (editable && changed) || (restartable && (changed || (picked !== null && picked !== s.slot))));
-        if (reslice && !reslice.disabled) reslice.textContent = tr(restartable ? 'farm.order.restart_slice' : 'farm.recalculate');
-        // a big model waiting for the choices: one button starts the exact computation for the colour and the settings above
+        if (reslice && !reslice.disabled) reslice.textContent = tr(restartable ? 'farm.order.restart_slice' : outdated ? 'farm.order.recalculate_price' : 'farm.recalculate');
+        // the one thing to do while the price is out of date: the button stands out like the page's other main actions
+        if (reslice) { reslice.classList.toggle('btn-primary', outdated); reslice.classList.toggle('btn-secondary', !outdated); }
+        // an order waiting for the choices: one button starts the computation for the colour and the settings above. A big
+        // model's says how long it takes (docs/AL.md §11); a small one's that nothing is ordered or paid by it (docs/AN.md §26)
         show($('farm-slice-box'), awaiting);
+        const priceBar = $('farm-price-bar');
+        if (priceBar) priceBar.hidden = !awaiting;
         if (awaiting) {
             const start = $<HTMLButtonElement>('farm-slice-start');
-            if (start && start.dataset.label === undefined) start.disabled = picked === null || noMachine() || !s.colors.length;
-            $('farm-slice-hint')!.textContent = tr('farm.order.slice_start_hint', { n: s.slice_minutes ?? 1 });
+            if (start && start.dataset.label === undefined) {
+                start.disabled = picked === null || noMachine() || !s.colors.length;
+                start.textContent = tr(s.big ? 'farm.order.slice_start' : 'farm.order.price_start');
+            }
+            $('farm-slice-hint')!.textContent = s.big ? tr('farm.order.slice_start_hint', { n: s.slice_minutes ?? 1 }) : tr('farm.order.price_start_hint');
         }
 
         payShown = s.status === 'sliced' || (working && payShown);
@@ -973,7 +1034,7 @@ export function bootFarmOrder(): void {
         const bar = $('farm-bar');
         if (bar) bar.hidden = !payShown;
         if (!payShown) say('');
-        $('farm-bar-total')?.classList.toggle('opacity-50', !!payForm?.inert);
+        $('farm-bar-total')?.classList.toggle('opacity-50', !!payForm?.inert || outdated);
         if (payForm?.inert) $('farm-pay-btn')?.setAttribute('aria-disabled', 'true');
         show($('farm-material'), !!s.choosing);
         if (s.choosing && s.status !== 'sliced') renderColors();
@@ -1105,13 +1166,20 @@ export function bootFarmOrder(): void {
         // printed by parts: every part's own plate, side by side in its colour (the print STL is the first plate alone)
         const partUrls = s.by_parts ? (s.parts ?? []).map((p) => p.model_url ?? '') : [];
         const asParts = partUrls.length >= 2 && partUrls.every((u) => u !== '');
-        const modelKey = asParts ? (s.one_plate ? '1 ' : '') + partUrls.join(' ') : s.model_url;
+        // … and before the parts are prepared (the order waits for the customer's word, or its first slice runs): the
+        // design's own pieces, so the motif shows in the colours chosen; the plain model when they cannot be had
+        const piecesUrl = !asParts && !piecesOff && s.by_parts && (s.parts ?? []).length >= 2 && s.pieces_url ? s.pieces_url : null;
+        const modelKey = asParts ? (s.one_plate ? '1 ' : '') + partUrls.join(' ') : piecesUrl ? `pieces ${piecesUrl}` : s.model_url;
         if (modelKey && modelKey !== shownModel) {
             shownModel = modelKey;
             shownSupports = '';
             if (asParts) {
                 viewer.setSupports(null);
                 loadParts(partUrls, !!s.one_plate).then(({ geom: g, flags }) => { geom = g; partFlags = flags; viewer.setGeometry(g, 1, null); paintTones(); }).catch(() => { shownModel = ''; });
+            } else if (piecesUrl) {
+                viewer.setSupports(null);
+                loadPieces(piecesUrl, (s.parts ?? []).map((p) => p.part)).then(({ geom: g, flags }) => { if (shownModel !== modelKey) return; geom = g; partFlags = flags; viewer.setGeometry(g, 1, null); paintTones(); })
+                    .catch(() => { piecesOff = true; shownModel = ''; render(); });
             } else {
                 partFlags = null;
                 loadGeometryFromUrl(modelKey).then((g) => { geom = cutForTones(g, (s.changes ?? []).map((x) => x.z)); viewer.setGeometry(geom, 1, null); viewer.setColor((s.choosing ? state.colors.find((x) => x.slot === picked)?.hex : s.color?.hex) ?? null); paintTones(); showSupports(); }).catch(() => { shownModel = ''; });
@@ -1124,7 +1192,8 @@ export function bootFarmOrder(): void {
     // the supports the slicer built, drawn as thin lines; the customer can hide them to see the piece alone
     const toggle = $<HTMLButtonElement>('farm-supports-toggle');
     const showSupports = (): void => {
-        const url = state.supports_url;
+        // a design shown turned over (face_down) is not in its print pose: the slicer's supports would hang in the air
+        const url = state.face_down ? null : state.supports_url;
         show(toggle, !!url);
         if (!url) { if (shownSupports) { viewer.setSupports(null); shownSupports = ''; } return; }
         if (url === shownSupports || !shownModel || partFlags) return;      // the supports belong to the first plate alone

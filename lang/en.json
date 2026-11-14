@@ -1848,7 +1848,7 @@
     "farm.order.ship.total_estimate": "About :total in total, the carrier confirms the delivery",
     "farm.order.pay_note_round": "You pay exactly :amount by card; the odd cents stay as credit.",
     "farm.order.pay_note_min": "The smallest card payment is :amount; whatever exceeds the price stays as credit for your next print.",
-    "farm.order.step_material_hint": "Pick the colour and the print settings. Nothing to pay yet; the price follows your choice.",
+    "farm.order.step_material_hint": "Pick the colour and the print settings. Nothing to pay yet; after a change you recalculate the price with the button.",
     "farm.order.step_order_hint": "Choose the delivery and pay by card or from credit. The print starts once paid.",
     "home.benefit.farm_from": "Or a print by us from :price",
     "figure.notify.lead": "It takes 2 to 4 minutes. Rather not wait? We send you the link to the finished model by e-mail.",
@@ -2917,5 +2917,16 @@
     "figure.drop.more.hint": "From the sides and from behind. It is optional, one photo is enough for a model.",
     "figure.made.height": "Model height :mm mm",
     "figure.made.rest": "width :w mm · depth :d mm",
-    "figure.made.note": "The model is :mm mm tall. You can still change the size in the next step."
+    "figure.made.note": "The model is :mm mm tall. You can still change the size in the next step.",
+    "param.go.order": "Continue to printing",
+    "param.go.hint.order": "On the next page you pick the colour, the material and the print settings and ask for the price. Nothing is ordered or paid yet.",
+    "farm.order.price_start": "Calculate the price",
+    "farm.order.price_start_hint": "Pick the colour and the settings and ask for the exact price and print time. This button orders nothing and charges nothing.",
+    "farm.order.price_bar_note": "Nothing is ordered or paid.",
+    "farm.order.await_note": "We work out the price when you ask for it. Pick the colour, the material and the print settings and press Calculate the price. Nothing is ordered or paid yet.",
+    "farm.order.price_stale": "You changed the settings. The price and time below belong to the earlier choices: press Recalculate the price.",
+    "farm.order.price_stale_pay": "You changed the settings: recalculate the price first, then you can pay.",
+    "farm.order.recalculate_price": "Recalculate the price",
+    "farm.order.edit_design_hint": "You go back to the tool with this design open. Send the changed design here again with Continue to printing.",
+    "farm.face_down_note": "It prints face down, so the motif comes out smooth and the colours sharp. The preview shows it turned over, motif up, the way it will be used."
 }

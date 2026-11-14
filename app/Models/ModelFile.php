@@ -277,6 +277,35 @@ class ModelFile extends Model
             || (in_array($this->origin_ref, ParametricGenerator::FLUSH_DOWN, true) && ! empty($this->tool_params['flush']) && ($this->tool_params['multi_material'] ?? true));
     }
 
+    /**
+     * The design is built with its face on the bed (shape_kinds.py `face_down`, docs/P.md §11): a flat plate of
+     * ParametricGenerator::FLUSH_DOWN with its colours flush, a medal with its motif flush or inlaid. A relief from a
+     * photo on the front turns the piece face up again (decor.needs_front_up). Read from the parameters, like
+     * onePlateRequired: the pages ask at every step. The calculator and the order page show such a design turned over,
+     * motif up, the way it is used; the print itself stays face down (docs/AN.md §26 C).
+     */
+    public function printsFaceDown(): bool
+    {
+        if ($this->origin !== 'tool' || ! is_array($this->tool_params)) {
+            return false;
+        }
+        $p = $this->tool_params;
+        $kind = (string) $this->origin_ref;
+        $down = $kind === 'medallion'
+            ? (($p['motif'] ?? 'flush') === 'flush' || ! empty($p['inlay']))
+            : (in_array($kind, ParametricGenerator::FLUSH_DOWN, true) && ! empty($p['flush']));
+        if (! $down) {
+            return false;
+        }
+        foreach ((array) ($p['decor'] ?? []) as $item) {
+            if (is_array($item) && ($item['kind'] ?? null) === 'photo' && ($item['face'] ?? 'front') === 'front') {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
     /** Organic AI meshes print best with tree supports. */
     public function wantsTreeSupports(): bool
     {

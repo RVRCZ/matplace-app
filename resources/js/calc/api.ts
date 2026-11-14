@@ -19,6 +19,8 @@ export interface FileInfo {
     map?: Record<string, unknown> | null;
     mold?: { parts?: number; pieces?: number; fill?: boolean; added_ml?: number; undercut_before_pct?: number; cast_url?: string; cast_flags_url?: string; type?: string; axis: string; angle_deg?: number | null; undercut_pct: number; verdict?: string; box: number[]; resin_ml: number; silicone_ml?: number; mold_cm3: number; wall: number; warnings: string[]; keys?: number; variant?: string; cast_ml?: number; core_ml?: number; vents?: number; funnel_at?: string; keys_type?: string; silicone_box_ml?: number; saving_pct?: number } | null;
     tool?: { kind: string; family?: string | null; params: Record<string, unknown>; url: string; pieces_url?: string | null } | null;   // pieces_url: a design whose coloured parts lie in one body (ToolsApiController::paramPieces)
+    /** built with its face on the bed (flush colours, a medal's flush motif): the previews show it turned over, motif up (docs/AN.md §26 C) */
+    face_down?: boolean;
     nearest?: { hex: string; spool: { code: string; name: string; hex: string; material: string; finish: string; photo: string | null; in_stock: boolean } }[];
     /** colours painted in a slicer (session 2's analysis on upload, docs/AN.md §19): the runs of the preview STL's triangles by colour */
     groups?: { hex: string; from: number; to: number }[] | null;

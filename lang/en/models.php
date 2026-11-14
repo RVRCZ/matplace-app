@@ -35,7 +35,7 @@ return [
         'note' => 'Approximate price incl. VAT, without delivery. You choose the colour and quality in the next step and see the exact price there.',
         'unavailable' => 'We cannot calculate the price in advance right now. You will see it after entering the order, before you pay.',
     ],
-    'order' => 'Order a print',
+    'order' => 'Continue to printing',
     'download' => [
         'title' => 'Do you have a printer of your own?',
         'license' => 'The author offers the file as a free download. Licence: :license.',

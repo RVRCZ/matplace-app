@@ -1,0 +1,67 @@
+{
+    "param.go.order": [
+        "Přejít k tisku",
+        "Continue to printing",
+        "Continuar a la impresión"
+    ],
+    "param.go.hint.order": [
+        "Na další stránce vyberete barvu, materiál a nastavení tisku a necháte si spočítat cenu. Zatím nic neobjednáváte ani neplatíte.",
+        "On the next page you pick the colour, the material and the print settings and ask for the price. Nothing is ordered or paid yet.",
+        "En la página siguiente elige el color, el material y los ajustes de impresión y pide el precio. Todavía no encarga ni paga nada."
+    ],
+    "farm.order.price_start": [
+        "Spočítat cenu",
+        "Calculate the price",
+        "Calcular el precio"
+    ],
+    "farm.order.price_start_hint": [
+        "Vyberte barvu a nastavení a nechte si spočítat přesnou cenu a dobu tisku. Tímto tlačítkem nic neobjednáváte ani neplatíte.",
+        "Pick the colour and the settings and ask for the exact price and print time. This button orders nothing and charges nothing.",
+        "Elija el color y los ajustes y pida el precio y el tiempo de impresión exactos. Este botón no encarga ni cobra nada."
+    ],
+    "farm.order.price_bar_note": [
+        "Nic neobjednáváte ani neplatíte.",
+        "Nothing is ordered or paid.",
+        "No encarga ni paga nada."
+    ],
+    "farm.order.await_note": [
+        "Cenu spočítáme, až si o ni řeknete. Vyberte barvu, materiál a nastavení tisku a stiskněte Spočítat cenu. Zatím nic neobjednáváte ani neplatíte.",
+        "We work out the price when you ask for it. Pick the colour, the material and the print settings and press Calculate the price. Nothing is ordered or paid yet.",
+        "Calculamos el precio cuando lo pida. Elija el color, el material y los ajustes de impresión y pulse Calcular el precio. Todavía no encarga ni paga nada."
+    ],
+    "farm.order.price_stale": [
+        "Změnili jste nastavení. Cena a čas níže platí pro původní volby: přepočítejte je tlačítkem Přepočítat cenu.",
+        "You changed the settings. The price and time below belong to the earlier choices: press Recalculate the price.",
+        "Ha cambiado los ajustes. El precio y el tiempo de abajo corresponden a la elección anterior: pulse Recalcular el precio."
+    ],
+    "farm.order.price_stale_pay": [
+        "Změnili jste nastavení: nejdřív přepočítejte cenu, pak půjde zaplatit.",
+        "You changed the settings: recalculate the price first, then you can pay.",
+        "Ha cambiado los ajustes: primero recalcule el precio, después podrá pagar."
+    ],
+    "farm.order.recalculate_price": [
+        "Přepočítat cenu",
+        "Recalculate the price",
+        "Recalcular el precio"
+    ],
+    "farm.order.edit_design_hint": [
+        "Vrátíte se do nástroje s tímto návrhem. Upravený návrh sem pošlete znovu tlačítkem Přejít k tisku.",
+        "You go back to the tool with this design open. Send the changed design here again with Continue to printing.",
+        "Vuelve a la herramienta con este diseño abierto. Envíe aquí de nuevo el diseño cambiado con Continuar a la impresión."
+    ],
+    "farm.face_down_note": [
+        "Tiskne se lícem dolů, aby byl motiv hladký a barvy ostré. Náhled ho ukazuje otočený motivem nahoru, tak jak se bude používat.",
+        "It prints face down, so the motif comes out smooth and the colours sharp. The preview shows it turned over, motif up, the way it will be used.",
+        "Se imprime boca abajo para que el motivo quede liso y los colores nítidos. La vista previa lo muestra girado, con el motivo hacia arriba, tal como se usará."
+    ],
+    "farm.cta_busy": [
+        "Otevírám objednávku…",
+        "Opening the order…",
+        "Abriendo el pedido…"
+    ],
+    "farm.order.step_material_hint": [
+        "Vyberte barvu a nastavení tisku. Zatím nic neplatíte; po změně nastavení si cenu necháte přepočítat tlačítkem.",
+        "Pick the colour and the print settings. Nothing to pay yet; after a change you recalculate the price with the button.",
+        "Elija el color y los ajustes de impresión. Todavía no paga nada; tras un cambio recalcula el precio con el botón."
+    ]
+}

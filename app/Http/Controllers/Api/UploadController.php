@@ -192,6 +192,8 @@ class UploadController extends Controller
             'paint_url' => ModelPainter::urlFor($f, auth()->user()),
             // lets the tool page reopen this design ("edit" from the calculator)
             'tool' => self::toolOf($f),
+            // built face down (flush colours, a medal's flush motif): the preview shows it turned over, motif up (docs/AN.md §26 C)
+            'face_down' => $f->printsFaceDown(),
             // the design is drawn in free colours: which of our spools each one would be printed from (shown beside "print it with us")
             'nearest' => self::nearestOf($f),
             'stl_url' => $f->stl_path ? route('api.files.stl', $f->uuid) : null,

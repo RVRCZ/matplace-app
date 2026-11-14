@@ -1848,7 +1848,7 @@
     "farm.order.ship.total_estimate": "Unos :total en total, el transportista confirma el envío",
     "farm.order.pay_note_round": "Con tarjeta paga exactamente :amount; los céntimos de más quedan como crédito.",
     "farm.order.pay_note_min": "El pago mínimo con tarjeta es :amount; lo que supere el precio queda como crédito para su próxima impresión.",
-    "farm.order.step_material_hint": "Elija el color y los ajustes de impresión. Todavía no paga nada; el precio sigue su elección.",
+    "farm.order.step_material_hint": "Elija el color y los ajustes de impresión. Todavía no paga nada; tras un cambio recalcula el precio con el botón.",
     "farm.order.step_order_hint": "Elija la entrega y pague con tarjeta o con el crédito. La impresión empieza al pagar.",
     "home.benefit.farm_from": "O una impresión con nosotros desde :price",
     "figure.notify.lead": "Tarda de 2 a 4 minutos. ¿No quiere esperar? Le enviamos el enlace al modelo terminado por correo.",
@@ -2917,5 +2917,16 @@
     "figure.drop.more.hint": "De los lados y por detrás. No es obligatorio, con una foto basta para el modelo.",
     "figure.made.height": "Altura del modelo :mm mm",
     "figure.made.rest": "ancho :w mm · fondo :d mm",
-    "figure.made.note": "El modelo mide :mm mm de alto. El tamaño aún se puede cambiar en el paso siguiente."
+    "figure.made.note": "El modelo mide :mm mm de alto. El tamaño aún se puede cambiar en el paso siguiente.",
+    "param.go.order": "Continuar a la impresión",
+    "param.go.hint.order": "En la página siguiente elige el color, el material y los ajustes de impresión y pide el precio. Todavía no encarga ni paga nada.",
+    "farm.order.price_start": "Calcular el precio",
+    "farm.order.price_start_hint": "Elija el color y los ajustes y pida el precio y el tiempo de impresión exactos. Este botón no encarga ni cobra nada.",
+    "farm.order.price_bar_note": "No encarga ni paga nada.",
+    "farm.order.await_note": "Calculamos el precio cuando lo pida. Elija el color, el material y los ajustes de impresión y pulse Calcular el precio. Todavía no encarga ni paga nada.",
+    "farm.order.price_stale": "Ha cambiado los ajustes. El precio y el tiempo de abajo corresponden a la elección anterior: pulse Recalcular el precio.",
+    "farm.order.price_stale_pay": "Ha cambiado los ajustes: primero recalcule el precio, después podrá pagar.",
+    "farm.order.recalculate_price": "Recalcular el precio",
+    "farm.order.edit_design_hint": "Vuelve a la herramienta con este diseño abierto. Envíe aquí de nuevo el diseño cambiado con Continuar a la impresión.",
+    "farm.face_down_note": "Se imprime boca abajo para que el motivo quede liso y los colores nítidos. La vista previa lo muestra girado, con el motivo hacia arriba, tal como se usará."
 }

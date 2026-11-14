@@ -35,7 +35,7 @@ return [
         'note' => 'Precio orientativo con IVA, sin envío. El color y la calidad se eligen en el paso siguiente, donde verá el precio exacto.',
         'unavailable' => 'Ahora no podemos calcular el precio por adelantado. Lo verá al introducir el pedido, antes de pagar.',
     ],
-    'order' => 'Pedir impresión',
+    'order' => 'Continuar a la impresión',
     'download' => [
         'title' => '¿Tiene su propia impresora?',
         'license' => 'El autor ofrece el archivo como descarga gratuita. Licencia: :license.',

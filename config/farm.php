@@ -17,6 +17,11 @@ return [
     // state, then matplace:prune takes them (docs/AL.md §16). Under 7 the weekly video loses the week's first prints.
     'files_retention_days' => 7,
 
+    // No order is sliced before its customer asks for the price: every new order waits for the choices (colour, kind,
+    // quality, strength, copies, size) and its page has one button, "Spočítat cenu" (docs/AN.md §26). Off = a small model
+    // is sliced the moment its order is made, as it was until 14 Nov 2026; a big model waits either way (below).
+    'slice_on_demand' => (bool) env('FARM_SLICE_ON_DEMAND', true),
+
     // A big model's order is not sliced before the customer has chosen the settings and confirmed the colour
     // (docs/AL.md §11). What is big is decided with the first page in one place (App\Domain\Calculation\BigModel:
     // engines.mesh.decimate_above triangles, engines.mesh.big_slice_s). The page says how long the slice will take: the

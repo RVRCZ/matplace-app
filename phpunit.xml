@@ -39,6 +39,10 @@
         <env name="ENGINE_PHOTO" value="fake"/>
         <env name="PACKETA_CARRIERS_FILE" value="storage/framework/testing/packeta_carriers.json"/>
         <env name="FARM_PAYMENT_GATEWAY" value="fake"/>
+        <!-- the suite's farm tests make an order and expect its slice at once, as it was until 14 Nov 2026; the slice on
+             the customer's word (the default, docs/AN.md §26) is switched on by the tests that are about it
+             (FarmSliceOnDemandTest) -->
+        <env name="FARM_SLICE_ON_DEMAND" value="false"/>
         <env name="FEATURE_MARKETPLACE" value="true"/>
         <env name="FILESYSTEM_DISK" value="local"/>
         <env name="SESSION_DRIVER" value="array"/>

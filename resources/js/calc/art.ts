@@ -286,7 +286,7 @@ export function bootArt(stage: Stage): void {
             const res = await post(cfg.create, { params: params() });
             if (!res.ok) { showError(await errorOf(res)); return; }
             const file = (await res.json()).file as FileInfo;
-            location.href = stage.ordered(`${cfg.home}?open=${file.uuid}${download ? '&download=1' : ''}`);
+            await stage.leave(stage.ordered(`${cfg.home}?open=${file.uuid}${download ? '&download=1' : ''}`));   // the order page, or the calculator (Stage.leave)
         } catch {
             showError(t('param.failed'));
         } finally {
