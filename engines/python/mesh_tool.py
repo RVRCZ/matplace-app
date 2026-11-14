@@ -492,9 +492,19 @@ def bust_cut(m):
         span = float(width[:neck + 1].max()) if neck > 0 else 0.0
         if width[neck] <= 0.9 * width[head] and span >= 1.5 * width[neck]:
             cuts.append(float(levels[neck]) - 0.92 * (z1 - float(levels[neck])))
-    broad = np.nonzero(width >= 0.8 * width.max())[0]
-    if len(broad) and width.max() >= 1.3 * width[-8:].max():               # clearly broader than the top of the head
-        line = float(levels[int(broad.max())])
+    # a bust that is short already has its shoulders in the lowest quarter, under the slices measured here: then the
+    # widest slice measured is the hair, the "shoulder line" lands in the head and the chest is cut away under the
+    # chin (a Meshy bust, 14 Nov 2026). Such a bust is left as it is.
+    below = v[v[:, 2] < levels[0]]
+    short = len(below) > 20 and float(np.ptp(below[:, axis])) > 1.15 * float(width.max())
+    if not short and width.max() >= 1.3 * width[-8:].max():                 # clearly broader than the top of the head
+        # the shoulder line is the top of the broad run that holds the widest slice. Not the highest broad slice of
+        # all: hair standing out as wide as four fifths of the shoulders put the line into the head, and the bust
+        # was cut under the chin (a portrait with wild hair, 14 Nov 2026).
+        top = int(np.argmax(width))
+        while top + 1 < len(levels) and width[top + 1] >= 0.8 * width.max():
+            top += 1
+        line = float(levels[top])
         cuts.append(line - 0.43 * (z1 - line))
     if not cuts:
         return m

@@ -37,6 +37,7 @@
         <env name="ENGINE_SOCIAL" value="fake"/>
         <env name="ENGINE_MAILBOX" value="fake"/>
         <env name="ENGINE_PHOTO" value="fake"/>
+        <env name="AI_CLEAN_PHOTO" value="auto"/>
         <env name="PACKETA_CARRIERS_FILE" value="storage/framework/testing/packeta_carriers.json"/>
         <env name="FARM_PAYMENT_GATEWAY" value="fake"/>
         <!-- the suite's farm tests make an order and expect its slice at once, as it was until 14 Nov 2026; the slice on

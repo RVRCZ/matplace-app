@@ -95,9 +95,10 @@ return [
         'image_autofix' => (bool) env('TRIPO_IMAGE_AUTOFIX', true),
         'work_dir' => storage_path('app/generated'),
     ],
-    // the photo of a pet redrawn as the animal alone (no hand, leash, shoe) before the model is made: always | never |
-    // auto = with Meshy only, which has no clean-up of its own; the picture is drawn by Tripo's image model (5 credits)
-    'clean_photo' => env('AI_CLEAN_PHOTO', 'auto'),
+    // the photo of a pet or of a person for a bust redrawn as the subject alone (no hand, leash, other people, furniture,
+    // background) before the model is made, by Tripo's image model (5 credits): always | never | auto (= with Meshy only).
+    // Always since 14 Nov 2026: photos are taken outdoors and in armchairs, and Tripo's own clean-up left a chair back in a bust.
+    'clean_photo' => env('AI_CLEAN_PHOTO', 'always'),
     // false = the miniature and the cartoon figure get the detailed geometry too (best result, 40 instead of 20 credits)
     'smooth_figures_standard' => (bool) env('AI_SMOOTH_FIGURES_STANDARD', false),
     // "describe what it should look like" on the tool pages: for everybody, or (false) for the admin alone, who tries the wishes first

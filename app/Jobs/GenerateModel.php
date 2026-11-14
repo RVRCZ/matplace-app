@@ -47,8 +47,24 @@ class GenerateModel implements ShouldQueue
      * alone. A hand on the tail, a leash or a shoe behind the legs would otherwise be modelled with it (tried 14 Nov 2026).
      */
     public const CLEAN_PROMPT = 'Photorealistic photo of exactly this same animal, unchanged: same breed, same coat pattern and colours, same pose, same proportions. '
-        .'Show the whole animal alone, complete from head to paws and tail. Remove every person, hand, leg, shoe, leash and other object; '
+        .'Show the whole animal alone, complete from head to paws and tail. Remove every person, hand, leg, shoe, leash, furniture, cushion, blanket and other object; '
         .'where something covered a part of the animal, restore that part naturally. Plain white studio background, soft even light, no shadow on the ground, no text.';
+
+    /**
+     * The same for a portrait (Roman, 14 Nov 2026: "budeme muset čistit i bustu"): the person alone, the face untouched.
+     * Tried on three portraits: children round a woman, a garden and a studio backdrop went, the faces stayed. Nothing
+     * the person wears is named here: an earlier wording that said "the glasses" drew glasses on a woman who had none.
+     * Furniture is named because the back of an armchair became part of Roman's own bust; the eyes and the upright
+     * pose are for a photo of somebody who has died, which people will send: nothing in the face may be made up.
+     */
+    public const CLEAN_BUST_PROMPT = 'Photorealistic photo of exactly this same person, unchanged: keep the face, its features and proportions, the expression, the age, '
+        .'the hair, the head pose and everything the person wears precisely as they are; add nothing, do not beautify, do not change the identity. '
+        .'Keep the eyes exactly as they are, open or closed. '
+        .'Show this one person alone from the chest up, the whole head and both shoulders in the picture. '
+        .'If the person is lying down or leaning back, show them upright as in a portrait, with the face itself unchanged. '
+        .'Remove the background, every other person, all furniture (a chair back, a headrest, a sofa, a pillow, bedding), objects in front of the body, text and logos; '
+        .'where something covered the shoulders or chest, restore them naturally with the same clothing. '
+        .'Plain white studio background, soft even front light, no hard shadows.';
 
     public function __construct(public readonly int $requestId) {}
 
@@ -62,10 +78,10 @@ class GenerateModel implements ShouldQueue
         return $generator instanceof MeshyGenerator && config('ai.tripo.api_key') ? new TripoGenerator((array) config('ai.tripo')) : null;
     }
 
-    /** AI_CLEAN_PHOTO: always | never | auto (= with Meshy only: Tripo cleans the photo itself, `enable_image_autofix`). */
+    /** AI_CLEAN_PHOTO: always (the default) | never | auto (= with Meshy only; Tripo's own `enable_image_autofix` left a chair back in a bust). */
     private function cleansPhoto(ModelGenerator $generator): bool
     {
-        return match ((string) config('ai.clean_photo', 'auto')) {
+        return match ((string) config('ai.clean_photo', 'always')) {
             'always' => true,
             'never' => false,
             default => $generator instanceof MeshyGenerator,
@@ -83,11 +99,12 @@ class GenerateModel implements ShouldQueue
             $kind = $req->description['kind'] ?? null;
             $style = $kind === 'pet' ? ($req->description['style'] ?? 'realistic') : null;
             $restyler = $this->restyler($generator);
-            // the cartoon is drawn of whatever was sent; a realistic pet is cleaned only when one photo is all there is
+            // the cartoon is drawn of whatever was sent; a realistic pet or a bust is cleaned only when one photo is all there is
             // (the redrawn picture replaces the photos, and the other sides say more than a clean front)
             $redraw = match (true) {
                 $style === 'cartoon' => self::CARTOON_PROMPT,
-                $kind === 'pet' && $req->type === 'image' && count($req->photoPaths()) <= 1 && $this->cleansPhoto($generator) => self::CLEAN_PROMPT,
+                in_array($kind, ['pet', 'bust'], true) && $req->type === 'image' && count($req->photoPaths()) <= 1 && $this->cleansPhoto($generator)
+                    => $kind === 'pet' ? self::CLEAN_PROMPT : self::CLEAN_BUST_PROMPT,
                 default => null,
             };
             if (! $req->external_id && $redraw && $restyler && empty($req->description['stage'])) {
