@@ -129,12 +129,12 @@
         <div id="figure-progress" class="hidden"><div class="h-2 w-full overflow-hidden rounded-full bg-slate-200"><div id="figure-bar" class="h-2 w-0 bg-ink transition-all"></div></div><p class="mt-1 text-xs text-muted">{{ __('pet.wait') }}</p></div>
         <p id="figure-msg" class="hint" aria-live="polite"></p>
         {{-- "send me the result": a model takes 2 to 4 minutes; one e-mail with the link, nothing else (docs/AN.md §12.5) --}}
-        <form id="figure-notify" class="mt-2 rounded-lg bg-slate-50 p-3 text-sm" hidden>
+        <div id="figure-notify" class="mt-2 rounded-lg bg-slate-50 p-3 text-sm" hidden>
             <label for="figure-notify-email" class="block text-xs text-muted">{{ __('figure.notify.lead') }}</label>
-            <div class="mt-1 flex gap-2"><input id="figure-notify-email" type="email" required maxlength="190" autocomplete="email" placeholder="{{ __('figure.notify.email') }}" class="field !mt-0 min-w-0 flex-1 text-sm"><button type="submit" class="btn-secondary !min-h-11 px-3 text-sm">{{ __('figure.notify.send') }}</button></div>
+            <div class="mt-1 flex gap-2"><input id="figure-notify-email" type="email" required maxlength="190" autocomplete="email" placeholder="{{ __('figure.notify.email') }}" class="field !mt-0 min-w-0 flex-1 text-sm"><button type="button" class="btn-secondary !min-h-11 px-3 text-sm">{{ __('figure.notify.send') }}</button></div>
             <p class="mt-1 text-xs text-muted">{{ __('figure.notify.consent') }}</p>
             <p class="mt-1 text-xs" data-notify-msg aria-live="polite"></p>
-        </form>
+        </div>
         {{-- once a figurine exists: its thinnest place, and another base under the same figure without a new generation --}}
         <p id="figure-thin-ok" class="hidden rounded-lg bg-ok-soft px-3 py-2 text-sm text-ok" aria-live="polite"></p>
         <div id="figure-rebase-box" class="hidden">

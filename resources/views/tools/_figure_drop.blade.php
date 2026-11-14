@@ -9,7 +9,12 @@
         <span class="flex items-center gap-2"><x-icon name="camera" class="h-6 w-6 text-ink" /><span data-drop-title class="text-lg font-semibold text-ink">{{ __('photo.add') }}</span></span>
         <span data-drop-hint class="text-xs text-muted">{{ __('photo.add.hint') }}</span>
     </button>
-    <div id="figure-drop-thumbs" class="hidden flex-wrap justify-center gap-2"></div>
+    {{-- once the front photo is there, the other sides are offered at once, each as a place of its own (Roman, 14 Nov 2026) --}}
+    <div id="figure-drop-more" class="hidden">
+        <p class="text-base font-semibold text-ink">{{ __('figure.drop.more') }}</p>
+        <p class="text-xs text-muted">{{ __('figure.drop.more.hint') }}</p>
+    </div>
+    <div id="figure-drop-thumbs" class="hidden flex-wrap justify-center gap-3 pt-1"></div>
     {{-- the consent (mirrored from the panel, figure.ts; its red frame stays until it is ticked), the limit and the button
          show up once the front photo is there: an empty dialog only asks for the photo (Roman, 18 Oct 2026) --}}
     <div id="figure-drop-go" class="hidden w-full flex-col gap-2">

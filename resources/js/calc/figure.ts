@@ -61,15 +61,27 @@ export function bootFigure(stage: Stage): void {
         const thumbs = document.getElementById('figure-drop-thumbs');
         if (!drop || !thumbs) return;
         const chosen = inputs.filter((i) => i.files?.length);
+        const front = Boolean(photo.files?.length);
         thumbs.innerHTML = '';
-        chosen.forEach((i) => {
+        inputs.forEach((i) => {
             const view = i.dataset.view ?? '';
-            const src = part<HTMLImageElement>('data-view-preview', view)?.getAttribute('src');
-            if (!src) return;
+            const src = i.files?.length ? part<HTMLImageElement>('data-view-preview', view)?.getAttribute('src') : null;
+            if (!src) {
+                // a side still free: its own place to tap, once the front photo is there
+                if (!front || view === 'front') return;
+                const add = document.createElement('button');
+                add.type = 'button'; add.dataset.dropAdd = view;
+                add.className = 'flex flex-col items-center gap-0.5 text-xs font-medium text-ink';
+                add.innerHTML = '<span class="flex h-14 w-14 items-center justify-center rounded-lg border-2 border-dashed border-slate-400 bg-white text-muted hover:border-ink hover:text-ink"><svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg></span>';
+                add.append(t(`figure.view.${view}`));
+                add.addEventListener('click', () => i.click());
+                thumbs.appendChild(add);
+                return;
+            }
             const box = document.createElement('span');
             box.className = 'relative flex flex-col items-center gap-0.5 text-xs text-muted';
             const img = document.createElement('img');
-            img.src = src; img.alt = ''; img.className = 'h-12 w-12 rounded-lg object-cover';
+            img.src = src; img.alt = ''; img.className = 'h-14 w-14 rounded-lg object-cover';
             const x = document.createElement('button');
             x.type = 'button'; x.dataset.dropRemove = view;
             x.className = 'absolute -right-2 -top-2 inline-flex h-7 w-7 items-center justify-center rounded-full border border-line bg-card text-ink shadow-sm hover:border-ink';
@@ -80,11 +92,10 @@ export function bootFigure(stage: Stage): void {
             thumbs.appendChild(box);
         });
         thumbs.classList.toggle('hidden', chosen.length === 0); thumbs.classList.toggle('flex', chosen.length > 0);
-        // without the front photo it asks for one again, and there is nothing to make yet
-        const front = Boolean(photo.files?.length);
-        const title = drop.querySelector('[data-drop-title]');
-        if (title) title.textContent = t(front ? 'photo.add.more' : 'photo.add');
-        drop.querySelector('[data-drop-hint]')?.classList.toggle('hidden', front);     // room for the rest once the front photo is there
+        // without the front photo it asks for one again, and there is nothing to make yet; with it the "add photos"
+        // button gives way to the sentence about more photos and the places of the free sides
+        document.getElementById('figure-drop-pick')?.classList.toggle('hidden', front);
+        document.getElementById('figure-drop-more')?.classList.toggle('hidden', !front || chosen.length === inputs.length);
         if (create) create.disabled = !front;
         // the consent, the limit and the button only once there is a photo to make the model from
         const go = document.getElementById('figure-drop-go');
@@ -177,6 +188,37 @@ export function bootFigure(stage: Stage): void {
         document.getElementById('figure-rebase-box')?.classList.toggle('hidden', pet === null);
     };
 
+    /**
+     * How big the finished model is, said large: its height on the viewer and under the size slider (Roman, 14 Nov 2026:
+     * the size was nowhere clear after the model was made). A page that brings no such texts (the pet) shows nothing.
+     */
+    const sizeOf = (file: FileInfo): void => {
+        const b = file.bbox;
+        if (!b || !cfg.i18n['figure.made.height']) return;
+        const mm = (v: number) => stage.nf.format(Math.round(v));
+        const box = viewerBox();
+        if (box) {
+            let badge = document.getElementById('figure-made-size');
+            if (!badge) {
+                badge = document.createElement('div');
+                badge.id = 'figure-made-size';
+                badge.className = 'num pointer-events-none absolute bottom-3 left-3 rounded-xl bg-card/95 px-3 py-2 text-left shadow-sm';
+                box.appendChild(badge);
+            }
+            badge.innerHTML = '<div class="text-lg font-bold leading-tight text-ink"></div><div class="text-xs text-muted"></div>';
+            badge.children[0].textContent = t('figure.made.height', { mm: mm(b.z) });
+            badge.children[1].textContent = t('figure.made.rest', { w: mm(b.x), d: mm(b.y) });
+        }
+        let note = document.getElementById('figure-made-note');
+        if (!note) {
+            note = document.createElement('p');
+            note.id = 'figure-made-note';
+            note.className = 'mt-1 text-sm font-medium text-ink';
+            size.closest('label')?.after(note);
+        }
+        note.textContent = t('figure.made.note', { mm: mm(b.z) });
+    };
+
     /** The finished model on the stage: turn it, see its size and a first price; the calculator is one click on. */
     const present = async (file: FileInfo, done: string): Promise<void> => {
         bar.style.width = '100%';
@@ -189,6 +231,7 @@ export function bootFigure(stage: Stage): void {
         await dots?.finish(); dots = null;
         made = ready;
         measured(ready);
+        sizeOf(ready);
         btn.disabled = false; $('figure-progress').classList.add('hidden');
         stage.revealResult();
     };
@@ -226,14 +269,14 @@ export function bootFigure(stage: Stage): void {
     };
 
     // "send me the result": the e-mail form shows while the model is being made, with the token the mail will link to
-    const notify = document.getElementById('figure-notify') as HTMLFormElement | null;
+    const notify = document.getElementById('figure-notify');
     let notifyToken: string | null = null;
     const notifyBox = (token: string | null): void => { notifyToken = token; if (notify) notify.hidden = token === null; };
     if (notify) {
-        notify.onsubmit = async (e) => {
-            e.preventDefault();
-            if (!notifyToken) return;
-            const email = (notify.querySelector('input[type=email]') as HTMLInputElement).value.trim();
+        const mail = notify.querySelector('input[type=email]') as HTMLInputElement;
+        const sendNotify = async (): Promise<void> => {
+            if (!notifyToken || !mail.reportValidity()) return;
+            const email = mail.value.trim();
             const out = notify.querySelector('[data-notify-msg]') as HTMLElement;
             const send = notify.querySelector('button') as HTMLButtonElement;
             try {
@@ -242,6 +285,9 @@ export function bootFigure(stage: Stage): void {
                 if (res.ok) send.disabled = true;
             } catch { out.textContent = t('figure.notify.failed'); }
         };
+        // the box lives inside the page's form: its button and Enter in its field send the e-mail, not the photos again
+        (notify.querySelector('button') as HTMLButtonElement).onclick = () => void sendNotify();
+        mail.addEventListener('keydown', (e) => { if (e.key === 'Enter') { e.preventDefault(); void sendNotify(); } });
     }
 
     const address = (token: string | null): void => {
@@ -341,6 +387,8 @@ export function bootFigure(stage: Stage): void {
         read: choices,
         write: (s) => {
             Object.entries(s).forEach(([k, v]) => {
+                // a kept 80 mm is the start of the page before 14 Nov 2026, not a choice: the page's own start stands
+                if (k === 'target_mm' && String(v) === '80') return;
                 const radio = form.querySelector<HTMLInputElement>(`input[type=radio][name="${k}"][value="${String(v)}"]`);
                 if (radio) { radio.checked = true; radio.dispatchEvent(new Event('change', { bubbles: true })); return; }
                 const el = form.querySelector<HTMLInputElement | HTMLSelectElement>(`[name="${k}"]:not([type=file]):not([type=radio]):not([type=hidden])`);
