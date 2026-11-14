@@ -165,6 +165,8 @@ class PetFigurineTest extends TestCase
     {
         $this->python();
         $this->vision(true);
+        // the cheaper geometry of the smoothed figures is a switch now (off by default: see the end of the test)
+        config(['ai.smooth_figures_standard' => true]);
         $this->make(['style' => 'cartoon', 'pedestal' => 'plaque', 'pedestal_name' => 'Micka', 'pedestal_dedication' => '2014–2026'])->assertCreated()->assertJsonPath('generation.status', 'done');
         $req = GenerationRequest::firstOrFail();
         // two tasks: the picture (5 credits) and the model in standard geometry (20), not the detailed one of a realistic figure
@@ -182,6 +184,10 @@ class PetFigurineTest extends TestCase
         $this->make(['style' => 'cartoon', 'image_left' => UploadedFile::fake()->image('left.jpg')])->assertCreated();
         $this->assertSame(25, GenerationRequest::latest('id')->firstOrFail()->cost_cents);
         $this->assertSame([], Storage::disk('local')->allFiles('photos/figures'));
+        // without the switch a miniature is made as the generator is set up, like the realistic figure
+        config(['ai.smooth_figures_standard' => false]);
+        $this->make(['style' => 'miniature'])->assertCreated();
+        $this->assertSame(0, GenerationRequest::latest('id')->firstOrFail()->cost_cents);
     }
 
     public function test_the_generator_redraws_the_photo_and_makes_the_cheaper_geometry_when_asked(): void

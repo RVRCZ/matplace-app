@@ -82,8 +82,10 @@ class GenerateModel implements ShouldQueue
                 $req->update(['image_path' => $rel, 'views' => null, 'external_id' => null, 'progress' => 30, 'description' => ['stage' => 'model'] + $req->description]);
             }
             if (! $req->external_id) {
-                // a figure that is smoothed anyway (the miniature, the cartoon) needs no fine fur: standard geometry is half the price
-                $options = new GenerationOptions(targetSizeMm: $req->target_mm ? (float) $req->target_mm : null, geometryQuality: in_array($style, ['miniature', 'cartoon'], true) ? 'standard' : null);
+                // every figure takes the geometry the generator is set up with (detailed). AI_SMOOTH_FIGURES_STANDARD=true
+                // brings back the half-price standard geometry for the figures that are smoothed anyway (miniature, cartoon)
+                $cheap = config('ai.smooth_figures_standard') && in_array($style, ['miniature', 'cartoon'], true);
+                $options = new GenerationOptions(targetSizeMm: $req->target_mm ? (float) $req->target_mm : null, geometryQuality: $cheap ? 'standard' : null);
                 $views = array_map(fn ($rel) => Storage::disk('local')->path($rel), $req->photoPaths());
                 $handle = match (true) {
                     $req->type !== 'image' => $generator->fromText((string) $req->prompt, $options),
