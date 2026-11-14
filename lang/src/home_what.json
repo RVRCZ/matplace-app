@@ -105,9 +105,9 @@
     "Una figura de nuestro perro"
   ],
   "router.hint.steady.2.fill": [
-    "Figurka našeho psa podle fotky, 10 cm, hnědá a bílá.",
-    "A figurine of our dog from a photo, 10 cm, brown and white.",
-    "Una figura de nuestro perro a partir de una foto, 10 cm, marrón y blanca."
+    "Figurka našeho psa podle fotky, 10 cm vysoká.",
+    "A figurine of our dog from a photo, 10 cm tall.",
+    "Una figura de nuestro perro a partir de una foto, 10 cm de alto."
   ],
   "router.hint.steady.3": [
     "Náhradní díl",
@@ -160,14 +160,14 @@
     "Un adorno para la tarta de boda con los nombres Ana y Pedro y un corazón, 15 cm de ancho."
   ],
   "router.hint.wedding.2": [
-    "Jmenovky na svatební stůl",
-    "Name tags for the wedding table",
-    "Etiquetas para la mesa de boda"
+    "Jmenovka na svatební stůl",
+    "A name tag for the wedding table",
+    "Una etiqueta para la mesa de boda"
   ],
   "router.hint.wedding.2.fill": [
-    "Jmenovky pro hosty na svatební stůl, 30 kusů, bílé se zlatým písmem.",
-    "Name tags for the guests at the wedding table, 30 pieces, white with gold lettering.",
-    "Etiquetas con el nombre de los invitados para la mesa de boda, 30 unidades, blancas con texto dorado."
+    "Jmenovka na svatební stůl se jménem Anna, 8 cm, bílá se zlatým písmem.",
+    "A name tag for the wedding table with the name Anna, 8 cm, white with gold lettering.",
+    "Una etiqueta para la mesa de boda con el nombre Ana, 8 cm, blanca con texto dorado."
   ],
   "router.hint.mikulas.1": [
     "Čelenka s rohy na Mikuláše",
@@ -180,14 +180,14 @@
     "Una diadema con cuernos de diablo para un niño de ocho años, roja y negra."
   ],
   "router.hint.mikulas.2": [
-    "Přívěsek čert a anděl",
-    "A devil and angel charm",
-    "Un colgante de diablo y ángel"
+    "Přívěsek anděl",
+    "An angel charm",
+    "Un colgante de ángel"
   ],
   "router.hint.mikulas.2.fill": [
-    "Přívěsek na batoh s čertem a andělem k Mikuláši, 5 cm, tři barvy.",
-    "A charm with a devil and an angel for St Nicholas Day, 5 cm, three colours.",
-    "Un colgante con un diablo y un ángel para San Nicolás, 5 cm, tres colores."
+    "Přívěsek na batoh s andělem k Mikuláši, 5 cm, zlatý.",
+    "A charm with an angel for St Nicholas Day, 5 cm, gold.",
+    "Un colgante con un ángel para San Nicolás, 5 cm, dorado."
   ],
   "router.hint.mikulas.3": [
     "Jmenovka na balíček",
@@ -205,9 +205,9 @@
     "Un adorno de árbol con nombre"
   ],
   "router.hint.christmas.1.fill": [
-    "Ozdoba na stromek se jménem Eliška, 8 cm, bílá se zlatým písmem.",
-    "A Christmas tree ornament with the name Emily, 8 cm, white with gold lettering.",
-    "Un adorno para el árbol de Navidad con el nombre Elisa, 8 cm, blanco con texto dorado."
+    "Ozdoba na stromek se jménem Ema, 8 cm, bílá se zlatým písmem.",
+    "A Christmas tree ornament with the name Emma, 8 cm, white with gold lettering.",
+    "Un adorno para el árbol de Navidad con el nombre Ema, 8 cm, blanco con texto dorado."
   ],
   "router.hint.christmas.2": [
     "Podtácky s rodinnou fotkou",
@@ -225,9 +225,9 @@
     "Un cortador de galletas"
   ],
   "router.hint.christmas.3.fill": [
-    "Vykrajovátko na vánoční cukroví ve tvaru naší chalupy podle kresby, 7 cm.",
-    "A cookie cutter for Christmas biscuits in the shape of our cottage from a drawing, 7 cm.",
-    "Un cortador de galletas de Navidad con la forma de nuestra casa a partir de un dibujo, 7 cm."
+    "Vykrajovátko na vánoční cukroví ve tvaru stromečku, 7 cm, zelené.",
+    "A cookie cutter for Christmas biscuits in the shape of a Christmas tree, 7 cm, green.",
+    "Un cortador de galletas de Navidad con forma de árbol de Navidad, 7 cm, verde."
   ],
   "router.hint.christmas.4": [
     "3D mapa našeho města",
@@ -245,9 +245,9 @@
     "El número :year para la mesa"
   ],
   "router.hint.silvestr.1.fill": [
-    "Stojící nápis :year na silvestrovský stůl, číslice 8 cm vysoké, zlatý.",
-    "Standing letters :year for the New Year's Eve table, digits 8 cm tall, gold.",
-    "Letras de pie :year para la mesa de Nochevieja, cifras de 8 cm de alto, doradas."
+    "Stojící nápis :year na silvestrovský stůl, číslice 6 cm vysoké, zlatý.",
+    "Standing letters :year for the New Year's Eve table, digits 6 cm tall, gold.",
+    "Letras de pie :year para la mesa de Nochevieja, cifras de 6 cm de alto, doradas."
   ],
   "router.hint.silvestr.2": [
     "Zápich do dortu na Nový rok",
@@ -255,9 +255,9 @@
     "Un adorno de tarta de Año Nuevo"
   ],
   "router.hint.silvestr.2.fill": [
-    "Zápich do dortu s textem Šťastný nový rok :year, 14 cm široký.",
-    "A cake topper saying Happy New Year :year, 14 cm wide.",
-    "Un adorno para la tarta con el texto Feliz Año Nuevo :year, 14 cm de ancho."
+    "Zápich do dortu s textem Nový rok :year, 14 cm široký.",
+    "A cake topper saying Happy :year, 14 cm wide.",
+    "Un adorno para la tarta con el texto Feliz :year, 14 cm de ancho."
   ],
   "router.hint.reyes.1": [
     "Klíčenka se jménem",
@@ -295,9 +295,9 @@
     "Letras LOVE para la estantería"
   ],
   "router.hint.valentine.2.fill": [
-    "Stojící nápis LOVE na poličku, písmena 8 cm vysoká, červený.",
-    "Standing letters LOVE for a shelf, 8 cm tall, red.",
-    "Letras de pie LOVE para la estantería, 8 cm de alto, rojas."
+    "Stojící nápis LOVE na poličku, písmena 5 cm vysoká, červený.",
+    "Standing letters LOVE for a shelf, 5 cm tall, red.",
+    "Letras de pie LOVE para la estantería, 5 cm de alto, rojas."
   ],
   "router.hint.valentine.3": [
     "Podtácek s naší fotkou",
@@ -315,9 +315,9 @@
     "Un cortador de conejito"
   ],
   "router.hint.easter.1.fill": [
-    "Vykrajovátko ve tvaru velikonočního zajíčka, 7 cm.",
-    "A cookie cutter in the shape of an Easter bunny, 7 cm.",
-    "Un cortador de galletas con forma de conejito de Pascua, 7 cm."
+    "Vykrajovátko ve tvaru velikonočního zajíčka, 7 cm, žluté.",
+    "A cookie cutter in the shape of an Easter bunny, 7 cm, yellow.",
+    "Un cortador de galletas con forma de conejito de Pascua, 7 cm, amarillo."
   ],
   "router.hint.easter.2": [
     "Jmenovka na košík",
@@ -355,9 +355,9 @@
     "Letras de pie para la estantería"
   ],
   "router.hint.mothers.2.fill": [
-    "Stojící nápis MAMINKA na poličku, písmena 6 cm vysoká, růžový.",
-    "Standing letters THANK YOU for a shelf, 6 cm tall, pink, for Mother's Day.",
-    "Letras de pie GRACIAS para la estantería, 6 cm de alto, rosas."
+    "Stojící nápis MAMINKA na poličku, písmena 3 cm vysoká, růžový.",
+    "Standing letters THANKS for a shelf, 4 cm tall, pink, for Mother's Day.",
+    "Letras de pie GRACIAS para la estantería, 3 cm de alto, rosas."
   ],
   "router.hint.mothers.3": [
     "Podtácek s fotkou dětí",
@@ -387,7 +387,7 @@
   "router.hint.fathers.2.fill": [
     "Medaile pro nejlepšího tatínka na stužce, zlatá, 6 cm.",
     "A medal for the best father on a ribbon, gold, 6 cm.",
-    "Una medalla con el texto Número 1 con cinta, dorada, 6 cm."
+    "Una medalla de campeón con cinta, dorada, 6 cm."
   ],
   "router.hint.fathers.3": [
     "Podtácek pod pivo se jménem",
@@ -465,9 +465,9 @@
     "Un cortador de calabaza"
   ],
   "router.hint.halloween.1.fill": [
-    "Vykrajovátko ve tvaru dýně na halloweenské sušenky, 7 cm.",
-    "A cookie cutter in the shape of a pumpkin for Halloween biscuits, 7 cm.",
-    "Un cortador de galletas con forma de calabaza para Halloween, 7 cm."
+    "Vykrajovátko ve tvaru dýně na halloweenské sušenky, 7 cm, oranžové.",
+    "A cookie cutter in the shape of a pumpkin for Halloween biscuits, 7 cm, orange.",
+    "Un cortador de galletas con forma de calabaza para Halloween, 7 cm, naranja."
   ],
   "router.hint.halloween.2": [
     "Přívěsek netopýr",
@@ -485,9 +485,9 @@
     "Un letrero Cuidado, fantasmas"
   ],
   "router.hint.halloween.3.fill": [
-    "Cedulka na dveře Pozor, tady straší, 15 cm, oranžová a černá.",
-    "A door sign Beware of ghosts, 15 cm, orange and black.",
-    "Un letrero para la puerta Cuidado, aquí hay fantasmas, 15 cm, naranja y negro."
+    "Cedulka na dveře s textem „Pozor, tady straší“, 15 cm, oranžová a černá.",
+    "A door sign saying \"Beware of ghosts\", 15 cm, orange and black.",
+    "Un letrero para la puerta con el texto «Cuidado, aquí hay fantasmas», 15 cm, naranja y negro."
   ],
   "router.summary.tool": [
     "Tohle umí náš nástroj :tool. Otevřete ho, velikost a barvy doladíte v náhledu.",

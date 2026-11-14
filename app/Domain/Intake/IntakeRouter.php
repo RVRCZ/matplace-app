@@ -81,6 +81,8 @@ final class IntakeRouter
         'sign' => ['takes' => 'a name or a short text, up to three lines; no photo', 'makes' => 'a sign, a name tag or a label with the text in relief', 'when' => 'words only: a door sign, a name tag, a label for a desk or a shelf', 'size' => [4, 80], 'colors' => 2, 'input' => 'text'],
         'text' => ['takes' => 'a word or a name; no photo', 'makes' => 'standing 3D letters for a shelf, a desk or a shop window', 'when' => 'a word or a name that stands on its own (HOME, LOVE, a name)', 'size' => [4, 80], 'colors' => 2, 'input' => 'text'],
         'cutter' => ['takes' => 'a drawing, a logo or a simple outline', 'makes' => 'a cookie cutter following the outline of the picture', 'when' => 'a cookie cutter, baking, the outline of a drawing', 'size' => [30, 150], 'colors' => 1],
+        // (docs/AN.md §25) its size is the edge of one bead; the beads and the letters on them are two colours
+        'beads' => ['takes' => 'a name or a short word, up to 16 characters; no photo', 'makes' => 'letter beads to thread on a string: one bead for every letter of the name (cubes, balls, hearts or stars), the letters raised in a second colour', 'when' => 'beads with letters, a name made of beads, a bracelet or a necklace of letter beads', 'size' => [8, 14], 'colors' => 2, 'input' => 'text'],
         // (docs/P.md §13) its size is the head's circumference; params.kind names the decoration
         'headband' => ['takes' => 'the decoration wanted and, when known, the circumference of the head or the age; no photo', 'makes' => 'a headband sized to the head with a decoration on top: devil horns, cat ears, bunny ears, reindeer antlers, a crown, a halo or a unicorn (a horn and ears); the band and the decoration can be two colours', 'when' => 'a headband, horns or ears to wear on the head, a costume for St Nicholas, a carnival, Halloween or a Christmas party; params.kind = horns, cat, bunny, antlers, crown, halo or unicorn; params.size_mm = the circumference of the head in mm, only when it is said', 'size' => [440, 640], 'colors' => 2, 'input' => 'text'],
     ];
@@ -104,6 +106,7 @@ final class IntakeRouter
         Intake::ROUTE_HUMAN => '/kole[čc]k|\bd[íi]l[yuůe]?\b|n[áa]hradn|dr[žz][áa]k|krytk|v[íi][čc]k|ozuben|rozm[ěe]r|toleranc|z[áa]vit|aby (to )?pasoval|p[řr]esn[ěe]|spare|replacement|bracket|\bmount\b|thread|toleranc|dimension|to fit|repuesto|\bpieza\b|soporte|\brosca\b|medid|\bmm\b.*\bmm\b/u',
         Intake::ROUTE_SHAPE => '/so[šs]k|statuet|ma[sš]kot|hra[čc]k|\btoy\b|mascot|statue|estatu|juguete|\bdrak|dragon|drag[óo]n/u',
         'headband' => '/[čc]elenk|headband|hair ?band|diadema|\bcintillo|\btiara|(rohy|r[ůu][žz]ky|u[šs]i|parohy) na hlavu|ko[čc]i[čc][íi] u[šs]i|zaje[čc][íi] u[šs]i|sob[íi] parohy|cat ears|bunny ears|devil horns|reindeer antlers|orejas de (gato|conejo)|cuernos de (diablo|demonio)|astas de reno/u',
+        'beads' => '/kor[áa]l|\bbeads?\b|\bcuentas\b|abalorio/u',
         'pet' => '/\bpes\b|\bpsa\b|\bps[íi]k|\bps[íi]\b|pejs|ko[čc]k|ko[čc]i[čc]|mazl[íi][čc]|kr[áa]l[íi][čc]|zv[íi][řr]|\bdog\b|\bpuppy\b|\bcat\b|kitten|\bpet\b|rabbit|horse|\bperro\b|\bgato\b|mascota|conejo|caballo/u',
         'papel' => '/papel|vyst[řr]ihov|prolamovan|paper ?cut|cut-?out|recortad/u',
         'figure' => '/\bbust|hlav[ay]\b|obli[čc]ej|portr[ée]t|\bt[áa]t[aouy]\b|\bt[áa]t[íi]k|\bd[ěe]d[aouy]\b|\bd[ěe]de[čc]|\bm[áa]m[aouy]\b|\bbab[ii][čc]k|\bbabi\b|figurk[ay] (m[ěe]|n[áa]s|t[áa]t|m[áa]m|d[ěe]d|bab|syn|dcer|kamar)|\bperson\b|\bface\b|\bhead\b|\bdad\b|\bmum\b|\bmom\b|grand(pa|ma|father|mother)|\bbusto\b|\bcara\b|abuel|\bpadre\b|\bmadre\b|\bpap[áa]\b|\bmam[áa]\b/u',
@@ -141,7 +144,7 @@ final class IntakeRouter
             $answer = $this->ask($intake);
             $decision = self::decide($answer, $hasPhoto, $intake->locale);
             // the words fill in what the model left out (a name, a count, a shape): the tool's page opens with them (docs/AN.md §24.3)
-            $decision['params'] = self::params(IntakePrefill::complete($decision['params'], $intake->text), $decision['tool_key']);
+            $decision['params'] = self::params(IntakePrefill::complete($decision['params'], $intake->text, $decision['tool_key']), $decision['tool_key']);
         } catch (\Throwable $e) {
             // the API failed or took too long: a person looks at it, the page never stays empty
             Log::warning('Intake router failed', ['intake' => $intake->id, 'error' => mb_substr($e->getMessage(), 0, 300)]);
@@ -184,7 +187,7 @@ final class IntakeRouter
             try {
                 $answer = $this->ask($intake, true);
                 $decision = self::decide($answer, $hasPhoto, $intake->locale);
-                $decision['params'] = self::params(IntakePrefill::complete($decision['params'], $intake->text), $decision['tool_key']);
+                $decision['params'] = self::params(IntakePrefill::complete($decision['params'], $intake->text, $decision['tool_key']), $decision['tool_key']);
                 $alternatives = array_merge(array_values((array) ($decision['answer']['alternatives'] ?? [])), $alternatives);
             } catch (\Throwable $e) {
                 Log::warning('Intake reroute failed', ['intake' => $intake->id, 'error' => mb_substr($e->getMessage(), 0, 300)]);
@@ -325,7 +328,7 @@ final class IntakeRouter
 
                 return self::decide([
                     'route' => $route, 'tool_key' => $route === Intake::ROUTE_TOOL ? $target : null,
-                    'params' => IntakePrefill::fromWords($text) + $decor + ($target === 'headband' ? self::headbandKind($t) : []), 'confidence' => self::GUESS_CONFIDENCE, 'summary' => [], 'questions' => [],
+                    'params' => IntakePrefill::complete([], $text, $route === Intake::ROUTE_TOOL ? $target : null) + $decor, 'confidence' => self::GUESS_CONFIDENCE, 'summary' => [], 'questions' => [],
                     // a shape names the nearest tools; a tool names the other tools the words speak of too (a medal with a relief from a photo)
                     'alternatives' => $route === Intake::ROUTE_SHAPE ? self::nearest($t, $hasPhoto) : ($route === Intake::ROUTE_TOOL ? self::alsoNamed($t, $target) : []),
                 ], $hasPhoto, $locale);
@@ -533,6 +536,13 @@ final class IntakeRouter
             $out['decor'] = 'photo';
         }
         // what a tool's page opens with besides (IntakePrefill, docs/AN.md §24.3): a second line, a number, a shape, how it hangs, a material
+        // how wide a sign of words should be (the words' own size, IntakePrefill::complete) and how old the one is a headband is for
+        if (is_numeric($raw['width_mm'] ?? null) && (int) $raw['width_mm'] > 0 && in_array($tool, ['sign', 'text'], true)) {
+            $out['width_mm'] = max(20, min(1000, (int) $raw['width_mm']));
+        }
+        if (is_numeric($raw['age'] ?? null) && (int) $raw['age'] >= 1 && $tool === 'headband') {
+            $out['age'] = min(99, (int) $raw['age']);
+        }
         foreach (['text2' => 40, 'number' => 4, 'shape' => 16, 'hang' => 8, 'material' => 8] as $key => $max) {
             if ((is_string($raw[$key] ?? null) || is_int($raw[$key] ?? null)) && trim((string) $raw[$key]) !== '') {
                 $out[$key] = mb_substr(trim((string) $raw[$key]), 0, $max);
@@ -563,19 +573,6 @@ final class IntakeRouter
         return array_slice($out, 0, self::MAX_ALTERNATIVES);
     }
 
-    /** The decoration the words of a headband name, as `params.kind`; nothing when they name none (the tool then opens with its horns). */
-    private static function headbandKind(string $t): array
-    {
-        foreach (['unicorn' => '/jednoro[žz]|unicorn/u', 'cat' => '/ko[čc]i[čc]|\bcat\b|\bgato\b/u', 'bunny' => '/zaj[íe][čc]|kr[áa]l[íi][čc]|bunny|rabbit|conej/u', 'antlers' => '/paroh|\bsob|antler|reindeer|\basta|\breno\b/u',
-            'crown' => '/korun|princez|crown|tiara|princess|corona|princesa/u', 'halo' => '/svatoz|and[ěe]l|\bhalo\b|angel|aureola|[áa]ngel/u', 'horns' => '/\broh|r[ůu][žz]k|[čc]ert|horn|devil|cuerno|diablo/u'] as $kind => $pattern) {
-            if (preg_match($pattern, $t)) {
-                return ['kind' => $kind];
-            }
-        }
-
-        return [];
-    }
-
     // ── the question to the assistant ────────────────────────────────────────
 
     /** The rules of the task; with `$reroute` the customer asked to try it without a designer and a person is no answer. */
@@ -594,9 +591,9 @@ final class IntakeRouter
             '',
             'What a tool takes is all it takes. Never promise the customer, and never ask them for, an input that the chosen tool\'s `takes` does not list: do not ask for a photo for a tool that takes no photo, do not promise a relief of a photo on a thing whose tool takes no photo (a cake topper, a sign, standing letters, a map). A medal, a key ring, a Christmas ornament and a coaster DO take a photo as a decoration: when the wish is a relief of a photo on one of them ("a medal with a relief from a photo", "an ornament with our dog\'s face in relief"), choose that tool (medallion, keychain, ornament, coaster), set `params.decor` to "photo" and say it honestly in `summary`: the photo becomes a relief in one colour on the front of the thing, how well a face reads depends on the photo and on the size, and the preview shows it before anything is ordered; a name or a year from the words goes on the back (`params.text`). When no photo is attached, choose that tool all the same and say that the photo is added on the tool\'s page, in its step "Zdobení" / "Decoration" / "Decoración". When the wish asks for a combination no single tool makes (a cake topper with a relief from a photo: the topper tool takes no photo), a picture is still not a person\'s job: choose the tool for the main thing, say plainly in `summary` what that tool makes and what it does not ("a cake topper with a name and a number; a relief of a photo on it is not something we can make"), put the tools that DO take the photo into `alternatives` (for a photo: relief, coaster, charm, filament_art, as the catalogue says) and name the best of them in `summary` by its public name. Ask only questions the chosen tool can use.',
             '',
-            'Rules of thumb: a face or a person → figure; an animal → pet; a drawing, a logo, a child\'s picture or a name meant to hang on keys or a bag → charm; a name as the main thing of a keychain → keychain; a name with a cake → topper; the name of a place → map; a medal, winners, places → medallion; a Christmas tree ornament, a bauble, a gift tag for the tree → ornament; a coaster → coaster; a picture for the wall, a painting, a poster → filament_art; a photo as a relief or a lithophane → relief; earrings → earrings; a door sign, a name tag, a label → sign; a word standing on its own → text; a cookie cutter → cutter. The photo says what is there, the words say what is to be made of it: a photo of a dog with "a keychain from this" is charm, not pet. A person\'s face without any words is figure (kind bust). An animal without words is pet. A well-known painting without words is filament_art.',
+            'Rules of thumb: a face or a person → figure; an animal → pet; a drawing, a logo, a child\'s picture or a name meant to hang on keys or a bag → charm; a name as the main thing of a keychain → keychain; a name with a cake → topper; the name of a place → map; a medal, winners, places → medallion; a Christmas tree ornament, a bauble, a gift tag for the tree → ornament; a coaster → coaster; a picture for the wall, a painting, a poster → filament_art; a photo as a relief or a lithophane → relief; earrings → earrings; a door sign, a name tag, a label → sign; a word standing on its own → text; a cookie cutter → cutter; a name made of letter beads → beads; a headband with horns, ears, antlers or a crown → headband. The photo says what is there, the words say what is to be made of it: a photo of a dog with "a keychain from this" is charm, not pet. A person\'s face without any words is figure (kind bust). An animal without words is pet. A well-known painting without words is filament_art.',
             '',
-            'Parameters: `size_mm` is the main size the tool asks for (the height for figure and pet, the letter height for sign and text, the width for the rest), inside the tool\'s range, converted from centimetres; null when not said. `colors`: colour names in English as the visitor named them, at most the tool\'s count. `copies`: how many pieces, null when not said. `text`: a name or an inscription to put on the thing, at most 24 characters, null otherwise. `place`: the place of a map. `kind`: bust or figure for figure, realistic, miniature or cartoon for pet; null otherwise. `decor`: "photo" when the attached photo should become a relief laid on a medal, a key ring, a Christmas ornament or a coaster (medallion, keychain, ornament, coaster) instead of flat areas of filament colours; null otherwise. `text2`: a second line when the wish has one (a surname, a date, a year, a dedication), null otherwise. `number`: a number that stands on its own (the age on a cake topper, the place 1, 2 or 3 on a medal), as digits, null otherwise. `shape`: the outline the visitor named, one of circle, square, rect, oval, heart, star, hex, shield, cloud, bone, house; null when none was named. The tool\'s page opens with these values filled in and the preview drawn, so fill every one the words give and invent none.',
+            'Parameters: `size_mm` is the main size the tool asks for (the height for figure and pet, the letter height for sign and text, the width for the rest), inside the tool\'s range, converted from centimetres; null when not said. `colors`: colour names in English as the visitor named them, at most the tool\'s count. `copies`: how many pieces, null when not said. `text`: a name or an inscription to put on the thing, at most 24 characters, null otherwise. `place`: the place of a map, as a map names it (the dictionary form: "Olomouc" for "mapa Olomouce", "Praha" for "mapu Prahy"), with the street and the number when an address was given; null when no place is named ("a map of our town"). `kind`: bust or figure for figure, realistic, miniature or cartoon for pet, the decoration for headband (horns, cat, bunny, antlers, crown, halo, unicorn); null otherwise. `decor`: "photo" when the attached photo should become a relief laid on a medal, a key ring, a Christmas ornament or a coaster (medallion, keychain, ornament, coaster) instead of flat areas of filament colours; null otherwise. `text2`: a second line when the wish has one (a surname, a date, a year, a dedication), null otherwise. `number`: a number that stands on its own (the age on a cake topper, the place 1, 2 or 3 on a medal), as digits, null otherwise. `shape`: the outline the visitor named, one of circle, square, rect, oval, heart, star, hex, shield, cloud, bone, house; null when none was named. The tool\'s page opens with these values filled in and the preview drawn, so fill every one the words give and invent none.',
             '',
             '`summary`: one or two short sentences to the customer, in Czech, English and Spanish (always all three): what you saw, what you suggest and with which settings. Never write a tool\'s key (figure, pet, filament_art…): call the tool by its public name from the catalogue in the language of the sentence. For `human` say that a person will look at it and what would help (dimensions, the number of pieces). For `shape` say that a first design is generated from the description and can be changed in words; say that its shape is approximate and its dimensions are not exact, and never promise that a thing to wear or a thing that has to fit will fit. Never a price, never a delivery time. `questions`: up to three short questions in the visitor\'s language (<lang>) about what is missing and matters (a size, the number of pieces, a colour, which of two tools); empty when nothing is missing. `alternatives`: keys of up to three other tools that would also do, the best first; empty when none. `reason`: one sentence in English for the operator, why this route and this tool. `prompt_en`: for `shape` only, the thing in plain English for a 3D generator: what it is, its form and its distinctive parts, up to 200 characters, no sizes, no colours, no names of people, no brands; an empty string for every other route. `photo`: what the attached photo shows: none (no photo), person, animal, object (the thing itself or a thing like it) or picture (a drawing, a painting, a logo). `confidence`: 0 to 1, how sure you are about the route and the tool together.',
             '',

@@ -368,8 +368,11 @@ final class IntakeService
         }
 
         // the parameters as this tool takes them (another tool than the chosen one may be opened from "I wanted something else")
-        $params = IntakePrefill::complete((array) $intake->params, $intake->text);
-        $values = IntakePrefill::values($tool, $params);
+        $params = IntakePrefill::complete((array) $intake->params, $intake->text, $tool);
+        if (isset(IntakeRouter::TOOLS[$tool])) {
+            $params = IntakeRouter::params($params, $tool);
+        }
+        $values = IntakePrefill::values($tool, $params, $intake->text, $intake->hasPhoto());
         $locale = app()->getLocale();
 
         return [
@@ -383,6 +386,9 @@ final class IntakeService
             // the form's own values (IntakePrefill, docs/AN.md §24.3) and the page's one line: what the assistant understood, and the way back
             'values' => $values,
             'understood' => IntakePrefill::understood($tool, $params, $values, $intake->hasPhoto(), $locale),
+            // what the tool still needs and only the visitor has (a photo, a picture, the place of a map): the page asks for
+            // it instead of showing its own sample (docs/AN.md §25)
+            'ask' => IntakePrefill::ask($tool, $params, $values, $intake->hasPhoto(), $locale),
             'unsure' => $intake->tool_key === $tool && (float) $intake->confidence < IntakeDesign::directConfidence(),
             'back' => route('home').'?'.http_build_query(['wish' => $intake->token]),
             'words' => ['lead' => __('router.got.lead'), 'unsure' => __('router.got.unsure'), 'nothing' => __('router.got.nothing'), 'back' => __('router.got.back')],

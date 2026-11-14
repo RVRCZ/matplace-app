@@ -1577,3 +1577,237 @@ generátor Tripo, takže zapnutím začnou placená volání.
   to je změna napříč kalkulačkou, tady není.
 - Texty: „Chtěl jsem něco jiného“, „Raději poptávka designérovi“ (jinde na webu „návrhář“), věty `router.design.*`.
 - Trychtýř `/admin/stats`: krok „dostal něco“ počítá nově i `intake_designed`.
+
+## 25. Každá nápověda musí skončit u věci, o kterou si člověk řekl
+
+Zadání `zadani-napovedy-musi-fungovat.md` (Roman 13.–14. 11. 2026 na živém webu: „Korálky do návrhu nejdou barevně.
+3D mapa pořád ukazuje Olomouc, i když jsem zadal Praha. Ozdoba na stromek v nápovědě nebude Eliška, ale Ema. Přívěsek
+z nápovědy s Mikulášem vrátí logo Matplace. To jsou věci, co odvádějí návštěvníky, protože web nefunguje.“). Větev
+`fix/hints-must-work` z `origin/main` e6bf81ac (= produkce), worktree `C:/matplace-edit-wt`, 14. 11. 2026. Nic
+nenasazeno, nic nemergováno, **migrace žádná**. Žádné placené volání: model asistenta ani generátor tu nikdo nevolal
+(klíčový směrovač a `FakeAssistant`); mapové služby (Nominatim, Overpass) jen pár dotazů podle pravidel `docs/W.md`.
+
+### 25.1 Pravidlo
+
+**Po kliknutí na nápovědu a na „Vytvořit“ vidí člověk návrh, který odpovídá větě v poli**: jméno, číslo, velikost,
+barvy, počet, tvar, motiv, místo. **Stránka otevřená z přání nikdy neukáže výchozí ukázku nástroje jako výsledek**
+(logo Matplace na přívěsku, golfistu na podtácku, „Ela“ na vykrajovátku, jméno „Jana“ na cedulce). Co nástroj
+potřebuje a má to jen návštěvník (fotka, obrázek, místo mapy), o to si stránka řekne jednou tučnou větou a prázdnou
+scénou s tlačítkem.
+
+Nová nápověda (v `config/home.php` i přepsaná správcem) projde jen tehdy, když to potvrdí obojí:
+
+1. **test** `tests/Feature/IntakeHintsMatchTest.php`: každá nápověda × každý jazyk nic neztratí
+   (`IntakeHintCheck::lost`), a česká nápověda má v `tests/fixtures/intake/hints_expect.json` zapsáno, s čím se její
+   stránka otevře (včetně věty: změněná věta = znovu se podívat na očekávání);
+2. **průchod v prohlížeči** `scripts/hints_walk.mjs` (§25.6): klik na nápovědu → Vytvořit → počkat na náhled → snímek
+   + výpis formuláře, porovnaný s tím, co říká `php artisan matplace:intake-hints --json`.
+
+Texty, které správce přepsal v `/admin/intake/hints`, testy nevidí: kontroluje je příkaz
+`php artisan matplace:intake-hints` na stroji, kde ty texty jsou (vrací chybu, když některá neprojde), a stránka
+`/admin/intake/hints` sama pod událostí napíše žlutě „cs, 2. příklad neodpovídá své větě: …“.
+
+### 25.2 Čtyři nahlášené chyby
+
+| co Roman viděl | příčina | oprava |
+|---|---|---|
+| **Korálky nejdou barevně** | nástroj Korálky s písmeny (`/tools/letter-beads`) v katalogu asistenta vůbec nebyl: přání skončilo u jiného nástroje nebo u člověka, a barvy se u něj nikam nepředávaly | `IntakeRouter::TOOLS['beads']` + slova (korálky, beads, cuentas); barvy jdou do dílů `body` (korálek) a `text` (písmeno), písmena „vyvýšená, jinou barvou“; jedna barva → písmena černá nebo bílá podle čitelnosti; nová nápověda `birthday.3` |
+| **Mapa ukazuje Olomouc, zadal jsem Praha** | (a) místo se předávalo jen z odpovědi modelu; (b) Nominatim bere slova, jak jsou: „Prahy“ je osada ve Francii, „Olomouce“ seznam katastrů, „Brna“ osada v Chorvatsku; (c) v nástroji samotném: přepsané pole místa bez „Hledat“ nechalo staré místo a „Vytvořit mapu“ udělalo znovu původní město | místo se čte i ze slov (`IntakePlace`), hledá se nejdřív v 1. pádu (`MapData::places`), stránka místo najde, nakreslí náhled a **mapu rovnou vytvoří**; přepsané pole staré místo zahodí a hlavní tlačítko nové místo samo dohledá; bez místa („našeho města“) se mapa zeptá |
+| **Ema místo Elišky** | text | `router.hint.christmas.1.fill` cs/en/es (Ema / Emma / Ema), opraveno i ve zdroji `lang/src/home_what.json`; jinde se Eliška u ozdoby nevyskytovala (jen v testu) |
+| **Přívěsek čert a anděl → logo Matplace** | stránka přívěsku se otevírá předvolbou `matplace`; z věty se bral jen počet barev | viz §25.4: motiv z naší knihovny, jinak výzva; nápověda přepsána na „Přívěsek anděl“ (čerta v knihovně nemáme a obrázek z textu nástroj vyrobit neumí) |
+
+### 25.3 Co se z věty čte nově (`IntakePrefill`, `IntakePlace`, `IntakeMotif`)
+
+- **Barvy do dílů** ve všech nástrojích, které barvy mají. Hodnota je barva sama (hex jedné ze 16 základních barev okna
+  barev, `Palette::BASIC`), ne kód cívky: tak to na stránkách nástrojů platí od `docs/U.md` (10. 10. 2026) a cívku
+  k barvě přiřazuje až kalkulace a stránka farmy, které také říkají, co je skladem. Dřív šel do formuláře název
+  (`red`, `gold`); devět vestavěných názvů fungovalo, **zlatá, stříbrná, růžová a dalších pět shodilo náhled chybou
+  „The selected params.part_colors.text is invalid“** (čtyři nápovědy).
+
+  | nástroj | jedna barva | dvě barvy |
+  |---|---|---|
+  | cedulka | celá cedulka | destička + písmo (`two_color`) |
+  | stojící nápis | nápis | první |
+  | klíčenka, přívěsek, ozdoba, podtácek, náušnice se jménem | destička; písmo černé nebo bílé, co je na ní čitelné | destička + písmo |
+  | totéž s motivem z knihovny (silueta) | celá věc v té barvě | motiv + destička pod ním |
+  | vykrajovátko | vykrajovátko | první |
+  | korálky | korálek; písmena černá / bílá | korálek + písmena |
+  | čelenka | pásek i ozdoba | pásek + ozdoba; jsou-li to dvě barvy kostýmu (čert „červená a černá“), drží se kostým: černý pásek, červené rohy |
+  | medaile | zlatá / stříbrná / bronzová = předvolba 1.–3. místa (beze změny) | |
+  | busta, mazlíček, mapa | nic: při otevření barvy nemají, věta nápovědy je proto nesmí jmenovat | |
+
+  U vlastního obrázku návštěvníka (kresba, fotka) barvy drží obrázek; bere se jen jejich počet. Jméno není barva
+  („Mrs Brown“).
+- **Velikost znamená to, co tím lidé myslí.** Cedulka „15 cm široká“ / „6 cm“ je šířka cedulky: výška písma se
+  dopočítá z nejdelšího řádku (`LINE_WIDTH`, změřeno na nástroji; v průchodu vyšlo 54–174 mm na chtěných 60–150, tedy do šestiny; řádek říká „šířka asi
+  150 mm“). Dřív se 15 cm bralo jako výška písma a ořízlo na 80 mm: cedulka 60 cm, „nevejde se“. Výška písma se
+  bere, když věta mluví o písmu („písmo 2 cm“, „písmena 5 cm vysoká“, „digits 6 cm tall“); rozhoduje slovo nejblíž
+  číslu. Platí i proti odpovědi modelu (ten má `size_mm` u cedulky popsané jako výšku písma).
+- **Čelenka:** obvod hlavy z centimetrů („obvod hlavy 54 cm“) nebo z věku („pro osmileté dítě“, „for a
+  four-year-old“, „de 16 años“ → velikost nástroje dítě 3–6 let / školák / dospělý); jiné číslo hlava není
+  (dřív se „rohy 5 cm“ staly obvodem 44 cm). Ozdoba ze slov i bez modelu. Hodnoty jdou formuláři jako uložený
+  návrh (předvolba kostýmu + hlava + barvy), ne klepnutím na předvolbu po načtení, které barvy přepisovalo.
+- **Text:** víceslovný nápis za „s textem“, „saying“, „con el texto“ až po čárku („Nejlepší tatínek“; dřív jen první
+  slovo), rok uvnitř nápisu už není druhý řádek, „sada 4 podtácků“ = 4 kusy. Zápich bez čísla = jen nápis (dřív
+  zůstalo ukázkové „2“ za jménem). Ozdoba se jménem = kolečko se jménem (dřív volná písmena spojená můstkem).
+- **Místo mapy** (`IntakePlace::fromWords`): za slovem mapa / map / mapa přeskočí výplň („města“, „of“, „de“) a vezme
+  jméno i s adresou („Náměstí Míru 5, Praha“), v uvozovkách celé. Známé 2. pády (asi 80 měst) převádí rovnou
+  („Olomouce“ → Olomouc), ostatní řeší hledání: `IntakePlace::tries` dá nejvýš čtyři podoby (pravidla 2. pádu, pak
+  slova jak jsou) a `MapData::places` je zkouší, dokud neodpoví sídlo přesně toho jména; to jde první s `exact`.
+  Jinak platí odpověď na slova, jak byla napsána, jako dřív. Každá podoba je dotaz na Nominatim (1/s, cache 30 dní).
+- **Motiv z knihovny** (`IntakeMotif`): 60 motivů naší knihovny siluet podle slov cs/en/es (netopýr, dýně, zajíček,
+  anděl, stromek, srdce, hvězda, kočka…), pro vykrajovátko jednodušší obrys ze složky `cookies`. Přání, které mluví
+  o vlastním obrázku (kresba, fotka, logo, „podle…“), motiv nedostane nikdy.
+
+### 25.4 Nástroje, které potřebují obrázek
+
+**Obrázek z textu nástroje vyrobit neumějí a aplikace na to nemá žádný generátor.** „Popsat slovy“
+(`GenerationService`, Tripo) dělá 3D model, ne plochý obrázek; `ImageRestyler` jen překresluje fotku. Větev zadání
+„když je volné generování zapnuté, vytvoř obrázek motivu z textu“ proto postavit nešla bez nového placeného
+generátoru obrázků, který by tu navíc nešel ověřit. Udělané je to, co jde zdarma a hned:
+
+1. slova jmenují motiv, který máme v knihovně → nástroj se otevře s ním (přívěsek netopýr, vykrajovátko dýně);
+2. přání je jméno nebo nápis → věc se jménem, bez našeho obrázku pod ním;
+3. jinak (vlastní kresba, fotka, logo, motiv, který nemáme) → **stránka se otevře bez ukázky**: přes scénu karta
+   „K tomuhle potřebujeme váš obrázek: nahrajte kresbu, logo nebo fotku, nebo vyberte motiv z naší knihovny.“, pod ní
+   věta přání a tlačítko, které otevře okno obrázků; totéž tučně v řádku „Asistent pochopil“. Náhled se nepočítá a
+   hlavní tlačítko je vypnuté, dokud obrázek nebo text nepřijde.
+
+Platí pro přívěsek, náušnice, vykrajovátko, podtácek, ozdobu, klíčenku (`IntakePrefill::PICTURE_TOOLS`; hodnota
+`_plain` řekne stránce, ať vynechá vlastní předvolbu a ukázku). Busta, mazlíček, reliéf, obraz z filamentu a papel
+picado (`PHOTO_TOOLS`) mají pole na fotku přímo ve scéně; přibyla jim věta „Teď už jen fotka: nahrajte ji a uvidíte
+návrh.“ Mapa bez místa: „Napište město nebo adresu a mapu hned uvidíte.“ a kurzor v poli.
+
+### 25.5 Nápovědy před a po (cs, 43 nápověd; snímky a `walk.json` z průchodu)
+
+„Před“ je průchod větve e6bf81ac klíčovým směrovačem (na produkci rozhoduje model: nástroj volí stejně, parametry
+doplňuje stejný kód, takže chyby předávání jsou tytéž; u mapy model místo dodával, viz §25.2).
+
+| nápověda | vede na | před | po |
+|---|---|---|---|
+| steady.1 Busta z fotky | busta | výška 120 mm; ukázka s polem na fotku | + věta „Teď už jen fotka…“ |
+| steady.2 Figurka našeho psa | mazlíček | „hnědá a bílá“ se ztratilo (nástroj barvy nemá) | **text**: bez barev, „10 cm vysoká“; věta o fotce |
+| steady.3 3D mapa našeho města | mapa | prázdná stránka bez místa | Olomouc nalezen, náhled, mapa 150 mm vytvořena |
+| steady.4 Cedulka se jménem | cedulka | písmo 80 mm (cedulka přes 50 cm) | šířka 153 mm, bílá s černým písmem |
+| birthday.1 Zápich do dortu | zápich | odpovídalo | odpovídá |
+| birthday.2 Klíčenka se jménem | klíčenka | bílá s černým místo modré s bílým | modrá s bílým písmem |
+| birthday.3 Korálky se jménem | korálky | nebyla | **nová**: EMA, růžové korálky, bílá písmena |
+| wedding.1 Zápich na svatební dort | zápich | odpovídalo | odpovídá |
+| wedding.2 Jmenovky na svatební stůl | cedulka | chyba náhledu (zlatá), ukázkové „Jana“, 30 stejných kusů | **text**: jedna jmenovka „Anna“, bílá se zlatým, 71 mm (chtěných 80) |
+| mikulas.1 Čelenka s rohy | čelenka | hlava 52 cm (věk se nečetl) | školák 54 cm, černý pásek, červené rohy |
+| mikulas.2 Přívěsek čert a anděl | přívěsek | **logo Matplace** | **text**: „Přívěsek anděl“, zlatý anděl z knihovny, 50 mm |
+| mikulas.3 Jmenovka na balíček | cedulka | písmo 60 mm (cedulka 25 cm) | šířka 64 mm, červená s bílým |
+| christmas.1 Ozdoba se jménem | ozdoba | „Eliška“ jako volná písmena, bez barev | **text** Ema; bílé kolečko 80 mm se zlatým jménem |
+| christmas.2 Podtácky s fotkou | podtácek | **golfista** | výzva k obrázku, 4 kusy, 100 mm |
+| christmas.3 Vykrajovátko | vykrajovátko | **„Ela“** | **text**: stromeček z knihovny, zelené, 70 mm |
+| christmas.4 Čelenka s parohy | čelenka | hlava 52 místo 54 | 54 cm, červená a hnědá |
+| silvestr.1 Nápis 2027 | stojící nápis | chyba náhledu (zlatá); 8 cm = 30 cm široké | **text** 6 cm; zlaté 2027, 229 mm |
+| silvestr.2 Zápich na Nový rok | zápich | jen „Šťastný“ + ukázkové číslo 2 | **text** „Nový rok 2027“ (vejde se do pole), bez čísla |
+| carnival.1 Korunka | čelenka | odpovídalo (náhodou: výchozí 52) | 52 cm, zlatá |
+| carnival.2 Jednorožec | čelenka | hlava 52 místo 54 | 54 cm, bílá a zlatá |
+| valentine.1 Přívěsek srdce | přívěsek | srdce se jmény, bílé místo červeného | červené srdce s bílým písmem |
+| valentine.2 Nápis LOVE | stojící nápis | 8 cm = 29 cm, nevejde se | **text** 5 cm; červené LOVE |
+| valentine.3 Podtácek s fotkou | podtácek | **golfista** | výzva k obrázku |
+| easter.1 Vykrajovátko zajíček | vykrajovátko | **„Ela“** | zajíček z knihovny, žluté (**text**: barva) |
+| easter.2 Jmenovka na košík | cedulka | písmo 60 mm, „nevejde se: 273 mm“ | šířka 61 mm, žlutá |
+| easter.3 Přívěsek kuřátko | přívěsek | **logo Matplace** | výzva k obrázku (kresba), 2 barvy |
+| easter.4 Čelenka zaječí uši | čelenka | odpovídalo | 52 cm, bílá |
+| mothers.1 Přívěsek z kresby | přívěsek | **logo Matplace** | výzva k obrázku |
+| mothers.2 Nápis MAMINKA | stojící nápis | chyba náhledu (růžová); 6 cm = 38 cm | **text** 3 cm; růžové, 241 mm |
+| mothers.3 Podtácek s fotkou dětí | podtácek | **golfista** | výzva k obrázku |
+| fathers.1 Klíčenka pro tatínka | klíčenka | jen „Nejlepší“, bez barev | „Nejlepší tatínek“, černá se stříbrným |
+| fathers.2 Medaile pro tatínka | medaile | odpovídalo | odpovídá |
+| fathers.3 Podtácek pod pivo | podtácek | „Karel“ na golfové předvolbě, bez černé | černý s bílým jménem |
+| school_end.1 Medaile za vysvědčení | medaile | odpovídalo | odpovídá |
+| school_end.2 Cedulka pro učitelku | cedulka | písmo 80 mm, jedna barva | šířka 174 mm (chtěných 150), dvě barvy |
+| school_end.3 Přívěsek s logem třídy | přívěsek | **logo Matplace**, 20 kusů | výzva k obrázku, 20 kusů |
+| school_start.1 Jmenovka na aktovku | cedulka | chyba náhledu (růžová) | šířka 54 mm (chtěných 60), růžová s bílým |
+| school_start.2 Klíčenka ke skříňce | klíčenka | bez zelené | zelená s bílým |
+| school_start.3 Zápich pro prvňáčka | zápich | odpovídalo | odpovídá |
+| halloween.1 Vykrajovátko dýně | vykrajovátko | **„Ela“** | dýně z knihovny, oranžové (**text**: barva) |
+| halloween.2 Přívěsek netopýr | přívěsek | **logo Matplace** | černý netopýr z knihovny, 50 mm |
+| halloween.3 Cedulka Pozor, straší | cedulka | ukázkové „Jana“ (nápis se ztratil) | **text** v uvozovkách; oranžová s černým, 151 mm |
+| halloween.4 Čelenka kočičí uši | čelenka | hlava 52 místo 54 | 54 cm, černá |
+
+Před: 8 ze 42 odpovídalo větě, 4 skončily chybou náhledu, 5 logem Matplace, 4 golfistou, 3 „Elou“. Po: 43 ze 43.
+**Změnou textu** (slib, který nástroj nesplní, nebo věta, která se nedala přečíst): steady.2, wedding.2, mikulas.2,
+christmas.1, christmas.3, silvestr.1, silvestr.2, valentine.2, mothers.2, halloween.3, barva u tří vykrajovátek,
+es fathers.2, en/es mothers.2; ostatní **předáváním**. en a es mají texty vlastní: pravidlem prošlo všech 125 příkladů a v prohlížeči všech 82 anglických a španělských (snímky prohlédnuté). Na šířce 390 px prohlédnuty čtyři (korálky, podtácek s výzvou, anděl, cedulka).
+
+Snímky čtyř nahlášených věcí po opravě: `docs/img/hints-work/` (korálky, mapa Prahy, ozdoba Ema, přívěsek anděl, výzva k obrázku, korálky v kalkulaci).
+
+### 25.6 Průchod v prohlížeči (`scripts/hints_walk.mjs`)
+
+Bez balíčků, headless Chrome přes DevTools (jako `shots_home_direct.mjs`), každá nápověda jako nový návštěvník:
+
+```
+node scripts/hints_walk.mjs --base=http://127.0.0.1:8041 --out=<složka> [--langs=cs,en,es] [--only=steady.3]
+     [--width=390] [--text="3D mapa Prahy, 15 cm"] [--then=calc]
+```
+
+Seznam a očekávání si vezme z `php artisan matplace:intake-hints --json`; nápověda, jejíž sezona dnes není otevřená,
+se vloží do prvního štítku (klik čte štítek, jak je). Klikne, dvakrát stiskne Vytvořit (první stisk je výzva „upravte
+si příklad“), počká na stránku nástroje a na náhled (mapa: na hotový model), uloží snímek `cs-steady-3.webp`,
+přečte adresu, řádek „Asistent pochopil“, všechna pole formuláře, barvu každého dílu (z řádků kroku Barvy), obrázek
+a místo, a porovná s očekáváním. Neshoda = řádek `NO` a návratový kód 1. `--then=calc` navíc stiskne hlavní tlačítko
+a vyfotí kalkulaci.
+
+Server pro průchod potřebuje vlastní databázi s tabulkou `intakes` (kopie ze schématu testů, žádné `migrate` ve
+worktree), `ENGINE_ASSISTANT=claude` bez klíče (klíčový směrovač), `INTAKE_PER_HOUR=100000 INTAKE_PER_DAY=100000`
+(nové proměnné v `config/home.php` jen pro tohle; na serveru se nenastavují) a na Windows
+`php -d variables_order=EGPCS -d max_execution_time=600 -S …` (jinak Python potomek nedostane prostředí a mapa
+ve frontě `sync` nestihne 30 s).
+
+### 25.7 Soubory
+
+- Nové: `app/Domain/Intake/IntakePlace.php`, `IntakeMotif.php`, `IntakeHintCheck.php`,
+  `app/Console/Commands/IntakeHintsCheck.php` (`matplace:intake-hints`), `scripts/hints_walk.mjs`,
+  `scripts/lang_sync_src.py`, `lang/src/hints_work.json`, `tests/Feature/IntakeHintsMatchTest.php`,
+  `tests/fixtures/intake/hints_expect.json`.
+- `IntakePrefill` (čtení slov, hodnoty, `ask`, řádek „pochopil“), `IntakeRouter` (korálky, `width_mm`, `age`, prompt:
+  místo v 1. pádu, ozdoba čelenky, korálky), `IntakeService::handoff` (+ `ask`, parametry podle otevíraného nástroje),
+  `MapData::places` (+ `lookup`, `exact`), `config/home.php` (korálky v `birthday`, limity přes env).
+- Skripty: `calc/intake_preload.ts` (věta `ask`; čelenka a místo mapy už ne tady), `calc/param.ts` (`_plain`, výzva
+  přes scénu, `form.dataset.artwork`), `calc/map.ts` (hledání s `exact`, přepsané pole, přání z úvodní strany);
+  `tools/map.blade.php` (klíč `map.place.others`), `admin/intake/hints.blade.php` (žluté upozornění).
+- Texty: `lang/src/hints_work.json` (29 klíčů `router.hint.*`, `router.got.*`, `router.ask.*`, `map.place.others`);
+  změněné klíče opravené i v `lang/src/home_what.json`, kde vznikly (`scripts/lang_sync_src.py` to dělá mechanicky a
+  zachová rozložení starého souboru).
+
+### 25.8 Testy a ověření
+
+- `IntakeHintsMatchTest` (11 testů): pravidlo nad všemi 125 příklady; české nápovědy proti `hints_expect.json`;
+  korálky v barvách; mapa a místo (slova, klíčový směrovač, stránka, „našeho města“ → otázka); 2. pád → 1. pád a
+  `MapData::places` s podvrženým Nominatimem (Prahy → Praha, vesnice před zoo, nic přesného → výběr); Ema; přívěsek
+  bez loga (motiv, výzva, fotka); barvy ve všech nástrojích; velikosti a hlava; odpověď modelu doplněná slovy
+  (`FakeAssistant`); nápověda přepsaná správcem a příkaz.
+- Upraveno: `HomeCreateDirectTest` (hodnoty barev, případy korálků, čelenky, motivu a šířky cedulky v
+  `direct.json`), `IntakeHeadbandTest`, `IntakeToolPreloadTest`, `IntakeDecorTest`, `HomeWhatToMakeTest` (125 příkladů).
+- Prohlížeč: cs 43/43, en + es 82/82 (`scripts/hints_walk.mjs`, místní server, klíčový směrovač); korálky až do
+  kalkulace (`--then=calc`): růžové korálky s bílými písmeny v náhledu i v kalkulaci, poznámka zakázky „Barvy dílů:
+  Korálky: růžová; Písmena: bílá“. Mapy: Olomouc, Praha, Bath, Toledo skutečně vytvořené (Nominatim + Overpass).
+
+### 25.9 Co není ověřené a co rozhodne Roman
+
+- **Skutečný model asistenta** (produkce): že korálky pošle na `beads`, že místo vrátí v 1. pádu, jaké parametry dá
+  nápovědám. Kód je na jeho odpovědi nezávislý tam, kde to jde (slova doplní, co chybí; šířka cedulky a hlava platí
+  proti modelu), ale nástroj vybírá model. Po nasazení `php artisan matplace:intake-cases --hints` (125 volání,
+  asi 35 Kč) a projít nápovědy rukou.
+- **Generování obrázku z textu** neexistuje (§25.4): „přívěsek čert a anděl“ dnes končí výzvou k obrázku. Chce-li
+  to Roman umět, je to nový placený generátor obrázků (zadání zvlášť).
+- **Mapa se tvoří sama** a ubírá z denního limitu 3 map na adresu bez účtu; čtvrtý pokus z téže adresy vidí místo,
+  náhled oblasti a větu o limitu. Nechat, nebo u přání z úvodní strany limit nepočítat?
+- **Sklad barev:** stránky nástrojů pracují s barvou, ne s cívkou (rozhodnutí z 10. 10., `docs/U.md`); věta „tahle
+  barva není skladem, bereme nejbližší“ z bodu 3 zadání proto patří kalkulaci a stránce farmy a tady nevznikla.
+- Vykrajovátko s obrázkem bez jmenované barvy je v náhledu bílé na bílé scéně (bylo tak i dřív); nápovědy proto barvu
+  jmenují.
+- Skutečný telefon (jen emulace 390 px), skutečný tisk, fronta na produkci (mapa běží přes pracovníky fronty; tady
+  synchronně).
+- Odhad šířky cedulky je do šestiny; přesnou šířku by dalo jen změření návrhu při otevření (jeden běh nástroje navíc).
+
+### 25.10 Nasazení
+
+Žádná migrace. `npm run build`, `config:cache`, texty v `lang/*.json`. Po nasazení:
+`php artisan matplace:intake-hints` na serveru (zkontroluje i texty, které správce přepsal v `/admin/intake/hints`:
+ty mají přednost před `lang`, takže změna Eliška → Ema a ostatní nové věty se u přepsané události neprojeví, dokud ji
+správce neupraví nebo nevyprázdní; stránka to teď žlutě hlásí).

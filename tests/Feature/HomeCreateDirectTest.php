@@ -106,7 +106,7 @@ class HomeCreateDirectTest extends TestCase
         // the tool's page: the form's own values, the line with what was understood, the way back
         $html = (string) $this->get('/tools/sign?intake='.$token)->assertOk()->getContent();
         $intake = $this->shared($html)['intake'];
-        $this->assertSame(['_qty' => '2', 'text_height' => 20, 'line1' => 'Novákovi', 'two_color' => true, 'part_colors' => ['plate' => 'red', 'text' => 'white']], $intake['values']);
+        $this->assertEquals(['_qty' => '2', 'text_height' => 20, 'line1' => 'Novákovi', 'two_color' => true, 'part_colors' => ['plate' => '#d62828', 'text' => '#ffffff']], $intake['values'], 'the colours are the colours of the colour window (docs/U.md)');
         $this->assertSame(['text „Novákovi“', 'výška písma 20 mm', 'barvy: '.__('toolpage.color.basic.red').', '.__('toolpage.color.basic.white'), 'počet kusů: 2'], $intake['understood']);
         $this->assertFalse($intake['unsure']);
         $this->assertSame(url('/').'?wish='.$token, $intake['back']);
@@ -462,11 +462,12 @@ class HomeCreateDirectTest extends TestCase
             $d = IntakeRouter::guess($case['text'], (bool) $case['photo'], 'cs');
             $this->assertSame('tool', $d['route'], "#$i {$case['text']}");
             $this->assertSame($case['tool'], $d['tool_key'], "#$i {$case['text']}");
-            $params = IntakePrefill::complete($d['params'], $case['text']);
+            // as the tool's page gets them (IntakeService::handoff): the words read for this tool, the wish itself for a picture of the library
+            $params = IntakeRouter::params(IntakePrefill::complete($d['params'], $case['text'], $case['tool']), $case['tool']);
             foreach ((array) ($case['params'] ?? []) as $k => $v) {
                 $this->assertSame($v, $params[$k] ?? null, "#$i param $k");
             }
-            $values = IntakePrefill::values($case['tool'], $params);
+            $values = IntakePrefill::values($case['tool'], $params, $case['text'], (bool) $case['photo']);
             ksort($values);
             $want = $case['values'];
             ksort($want);
@@ -475,14 +476,14 @@ class HomeCreateDirectTest extends TestCase
                 IntakePrefill::understood($case['tool'], $params, $values, (bool) $case['photo'], 'cs')), "#$i {$case['text']}");
             $seen[$case['tool']] = true;
         }
-        $this->assertSame([], array_diff(array_keys(IntakeRouter::TOOLS), array_keys($seen), ['headband']), 'every tool of the catalogue has a case');
+        $this->assertSame([], array_diff(array_keys(IntakeRouter::TOOLS), array_keys($seen)), 'every tool of the catalogue has a case');
 
         // the values are the form's own: every key is a field, a text, a choice or a flag of that tool
         foreach (array_keys(IntakePrefill::KIND) as $tool) {
             $kind = IntakePrefill::KIND[$tool];
             $values = IntakePrefill::values($tool, ['size_mm' => 5000, 'text' => str_repeat('Ž', 80), 'text2' => '2026', 'number' => '7', 'shape' => 'heart', 'colors' => ['red', 'white', 'nonsense'], 'colors_n' => 99, 'copies' => 5000, 'hang' => 'ribbon', 'material' => 'PLA']);
             foreach ($values as $key => $value) {
-                if (in_array($key, ['_qty', '_material', 'preset', 'part_colors'], true)) {
+                if (in_array($key, ['_qty', '_material', '_plain', 'preset', 'part_colors', 'artwork'], true)) {
                     continue;
                 }
                 $field = ParametricGenerator::FIELDS[$kind][$key] ?? null;

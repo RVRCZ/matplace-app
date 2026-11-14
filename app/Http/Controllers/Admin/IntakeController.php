@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Admin;
 
 use App\Domain\Generation\GenerationService;
 use App\Domain\Intake\IntakeDesign;
+use App\Domain\Intake\IntakeHintCheck;
 use App\Domain\Intake\IntakeHints;
 use App\Domain\Intake\IntakeService;
 use App\Engines\Contracts\ModelGenerator;
@@ -60,6 +61,8 @@ class IntakeController extends Controller
     {
         return view('admin.intake.hints', [
             'events' => IntakeHints::table(),
+            // the rule of docs/AN.md §25 on the texts as they stand (the admin's own included): the examples whose page would not match their sentence
+            'unmatched' => collect(IntakeHintCheck::all())->filter(fn (array $h) => $h['lost'] !== [])->groupBy(fn (array $h) => explode('.', $h['code'])[0])->all(),
             'now' => ['cs' => IntakeHints::chips('cs'), 'en' => IntakeHints::chips('en'), 'es' => IntakeHints::chips('es')],
         ]);
     }

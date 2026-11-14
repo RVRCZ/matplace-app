@@ -66,6 +66,10 @@
                     </label>
                 @endforeach
             </div>
+            @foreach(($unmatched[$key] ?? []) as $h)
+                {{-- docs/AN.md §25: a hint has to end on a design that matches its sentence --}}
+                <p class="mt-2 rounded-lg bg-amber-50 px-3 py-2 text-sm text-amber-900" data-unmatched="{{ $h['code'] }} {{ $h['locale'] }}"><strong>{{ $h['locale'] }}, {{ explode('.', $h['code'])[1] }}. příklad neodpovídá své větě:</strong> {{ implode('; ', array_map(fn ($l) => \App\Domain\Intake\IntakeHintCheck::say($l, 'cs'), $h['lost'])) }}. <span class="text-amber-800">„{{ $h['fill'] }}“</span></p>
+            @endforeach
             <p class="mt-1 text-xs text-slate-400">Řádek = Štítek | Vzorové přání, nejvýš {{ \App\Domain\Intake\IntakeHints::MAX_EXAMPLES }} řádky. Prázdné pole vrátí původní texty. <code>:year</code> se nahradí rokem události. Původní příklady vedou: {{ implode(', ', array_map(fn ($x) => $x === 'human' ? 'člověk' : $x, $e['expect'])) }}; po přepsání to ověřte vlastním zadáním.</p>
         </section>
     @endforeach

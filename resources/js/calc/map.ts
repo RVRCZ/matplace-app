@@ -11,7 +11,7 @@ import { FileInfo } from './api';
 import { loadGeometryFromUrl } from './loaders';
 
 interface Cfg { places: string; preview: string; create: string; home: string; files: string; from: string | null; sides: Record<string, number[]>; parts: Record<string, string[]>; colors: Record<string, string>; i18n: Record<string, string> }
-interface Place { name: string; kind: string; country: string; display: string; lat: number; lon: number }
+interface Place { name: string; kind: string; country: string; display: string; lat: number; lon: number; exact?: boolean }
 interface MapNotes { stage?: string; scale?: string; buildings?: number; roofs?: number; towers?: number; roads_m?: number; osm_date?: string; relief_m?: number; warnings?: string[]; regions?: Region[]; parts?: string[]; type?: string }
 type MapFile = FileInfo & { map?: MapNotes | null; tool?: { kind: string; params: Record<string, unknown>; url: string } | null };
 
@@ -30,6 +30,7 @@ export function bootMap(stage: Stage): void {
     const errorOf = async (res: Response): Promise<string> => { try { return firstError(await res.json(), res.status); } catch { return firstError({}, res.status); } };
 
     let place: Place | null = null;
+    let searched = '';                       // the words the chosen place was found by
     let previewSeq = 0; let previewTimer = 0; let polling = 0;
     let made: MapFile | null = null;
     const partColors: Record<string, string> = {};
@@ -125,18 +126,24 @@ export function bootMap(stage: Stage): void {
         stage.go(made ? { run: create, href: null, disabled: false, label: t('map.go') } : { disabled: false });
         previewSoon(0);
     };
-    const search = async (): Promise<void> => {
+    /**
+     * The places a name may mean. One place, or the place of that very name (`exact`: "Prahy" is Prague), is taken at
+     * once and the others stay offered under it; `first` takes the first one whatever it is (a wish from the home
+     * page named the place: the map opens with it, the visitor changes it in the list).
+     */
+    const search = async (first = false): Promise<void> => {
         const q = ($('map-place') as HTMLInputElement).value.trim();
         if (q.length < 2) return;
+        searched = q;
         say(t('map.place.searching'));
         $('map-places').classList.add('hidden');
         try {
             const res = await post(cfg.places, { q });
             if (!res.ok) { say(await errorOf(res)); return; }
-            const places = (await res.json()).places as Place[];
+            let places = (await res.json()).places as Place[];
             if (!places.length) { say(t('map.place.none')); return; }
             if (places.length === 1) { say(null); choose(places[0]); return; }
-            say(t('map.place.pick'));
+            if (first || places[0].exact) { choose(places[0]); places = places.slice(1); say(t('map.place.others')); } else say(t('map.place.pick'));
             const list = $('map-places'); list.innerHTML = '';
             places.forEach((p) => {
                 const b = document.createElement('button');
@@ -150,6 +157,15 @@ export function bootMap(stage: Stage): void {
     };
     $('map-search').onclick = () => { void search(); };
     ($('map-place') as HTMLInputElement).addEventListener('keydown', (e) => { if (e.key === 'Enter') { e.preventDefault(); void search(); } });
+    // another name typed over the chosen place: the old place is no longer what the map is of (it used to stay, and "Vytvořit
+    // mapu" made the old town again); the name is looked up when the field is left, or by the main button itself
+    ($('map-place') as HTMLInputElement).addEventListener('input', (e) => {
+        const typed = (e.target as HTMLInputElement).value.trim();
+        if (place && typed === searched) return;
+        if (place) { place = null; $('map-chosen').classList.add('hidden'); $('map-preview-box').classList.add('hidden'); }
+        stage.go({ run: create, href: null, disabled: typed.length < 2, label: t('map.go') });
+    });
+    ($('map-place') as HTMLInputElement).addEventListener('change', (e) => { const typed = (e.target as HTMLInputElement).value.trim(); if (typed.length >= 2 && typed !== searched) void search(); });
     form.querySelector<HTMLInputElement>('[data-text="name"]')?.addEventListener('input', (e) => { (e.target as HTMLInputElement).dataset.typed = '1'; });
 
     // ── the area from above: the server draws it from the data the model is built from ──
@@ -208,6 +224,8 @@ export function bootMap(stage: Stage): void {
         stage.warnings({ place: (n.warnings ?? []).map((w) => cfg.i18n[`map.warn.${w}`] ? t(`map.warn.${w}`) : w) });
     };
     const create = async (): Promise<void> => {
+        // a name typed and not looked up yet: looked up now, the first place it means is taken
+        if (!place && ($('map-place') as HTMLInputElement).value.trim().length >= 2) await search(true);
         if (!place) { stage.reveal('place', $('map-place')); return; }
         stage.go({ disabled: true, label: t('map.creating') });
         stage.busy(true); stage.error(null);
@@ -273,4 +291,19 @@ export function bootMap(stage: Stage): void {
     };
     applyWhen();
     if (cfg.from && /^[0-9a-f-]{36}$/.test(cfg.from)) void reopen(cfg.from);
+    else {
+        // a wish from the home page (docs/AN.md §25): the place it names is looked up and the map of it made right away, so
+        // the page opens with the visitor's own town; a wish that names none ("a map of our town") is asked for it
+        const wish = stage.cfg.intake as { params?: { place?: unknown }; ask?: { kind: string } | null } | null | undefined;
+        const named = typeof wish?.params?.place === 'string' ? wish.params.place.trim() : '';
+        const field = $('map-place') as HTMLInputElement;
+        if (named.length >= 2) {
+            field.value = named;
+            // (the area from above first, then the model: both are made of the same data, fetched once)
+            void search(true).then(async () => { if (!place) return; window.clearTimeout(previewTimer); await preview(); if (place && !made) void create(); });
+        } else if (wish?.ask?.kind === 'place') {
+            stage.reveal('place', field);
+            field.focus({ preventScroll: true });
+        }
+    }
 }

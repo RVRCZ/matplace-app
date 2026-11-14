@@ -66,12 +66,12 @@ class IntakeDecorTest extends TestCase
         }
 
         // the words: the ornament for the tree is the ornament's, no longer the charm's; a pendant stays a charm
-        foreach (['Ozdoba na stromek se jménem Eliška, 8 cm' => 'cs', 'ozdoby na stromeček pro celou rodinu' => 'cs', 'A Christmas tree ornament with the name Emily' => 'en', 'Un adorno para el árbol de Navidad' => 'es', 'Un adorno de árbol con nombre' => 'es'] as $text => $lang) {
+        foreach (['Ozdoba na stromek se jménem Ema, 8 cm' => 'cs', 'ozdoby na stromeček pro celou rodinu' => 'cs', 'A Christmas tree ornament with the name Emily' => 'en', 'Un adorno para el árbol de Navidad' => 'es', 'Un adorno de árbol con nombre' => 'es'] as $text => $lang) {
             $d = IntakeRouter::guess($text, false, $lang);
             $this->assertSame(['tool', 'ornament'], [$d['route'], $d['tool_key']], $text);
             $this->assertStringContainsString(__('tools.ornament.title', [], $lang), $d['summary'], $text);
         }
-        $this->assertSame(80, IntakeRouter::guess('Ozdoba na stromek se jménem Eliška, 8 cm', false)['params']['size_mm']);
+        $this->assertSame(80, IntakeRouter::guess('Ozdoba na stromek se jménem Ema, 8 cm', false)['params']['size_mm']);
         $this->assertSame(150, IntakeRouter::params(['size_mm' => 400], 'ornament')['size_mm'], 'the size stays inside the tool\'s range');
         foreach (['Přívěsek na klíče s logem klubu' => 'charm', 'Kresba mé dcery jako přívěsek' => 'charm', 'Klíčenka se jménem Jana.' => 'keychain', 'Sada podtácků s fotkou' => 'coaster'] as $text => $tool) {
             $this->assertSame($tool, IntakeRouter::guess($text, false)['tool_key'], $text);
@@ -84,7 +84,7 @@ class IntakeDecorTest extends TestCase
         $this->assertSame('ornament', config('home.intake.hints.events.christmas.examples')[0]);
         $this->assertSame('Ozdoba na stromek se jménem', IntakeHints::examples('christmas', 'cs')[0]['label']);
         $cases = IntakeCases::hintCases();
-        $this->assertCount(122, $cases);
+        $this->assertCount(125, $cases);
         foreach ($cases as $case) {
             $d = IntakeRouter::guess($case['text'], false, $case['locale']);
             $this->assertSame([$case['route'], $case['tool']], [$d['route'], $d['tool_key']], $case['code']);

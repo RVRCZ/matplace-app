@@ -10,7 +10,9 @@
  * marking its photo field.
  *
  * `showUnderstood` puts the one quiet line under the tool's name: what the assistant understood, and "I wanted
- * something else", which leads back to the home page with the words.
+ * something else", which leads back to the home page with the words. When the tool still needs something only the
+ * visitor has (`ask`: a photo, a picture, the place of a map), the line says so in bold: the page then opens asking
+ * for it, never with its own sample as if that were the answer (docs/AN.md §25).
  */
 export interface IntakePayload {
     token: string;
@@ -22,6 +24,7 @@ export interface IntakePayload {
     values?: Record<string, unknown>;
     understood?: string[];
     unsure?: boolean;
+    ask?: { kind: string; text: string; button: string | null } | null;
     back?: string;
     words?: { lead: string; unsure: string; nothing: string; back: string };
 }
@@ -78,6 +81,13 @@ export function showUnderstood(payload: IntakePayload): void {
     back.className = 'whitespace-nowrap font-semibold text-action-dark underline underline-offset-2';
     back.textContent = w.back;
     line.append(back);
+    if (payload.ask) {
+        const ask = document.createElement('strong');
+        ask.dataset.intakeAsk = payload.ask.kind;
+        ask.className = 'mt-1 block font-semibold text-ink';
+        ask.textContent = payload.ask.text;
+        line.append(ask);
+    }
     (document.getElementById('tool-lead') ?? head.lastElementChild ?? head).insertAdjacentElement('afterend', line);
 }
 
@@ -85,7 +95,6 @@ export async function preloadIntake(payload: IntakePayload): Promise<void> {
     const p = payload.params ?? {};
     const size = typeof p.size_mm === 'number' ? p.size_mm : null;
     const text = typeof p.text === 'string' ? p.text : null;
-    const place = typeof p.place === 'string' ? p.place : null;
     const kind = typeof p.kind === 'string' ? p.kind : null;
     // a parametric tool applied its own values already, as it applies a stored design (param.ts)
     const own = payload.values !== undefined && document.getElementById('tool-page')?.dataset.module === 'param';
@@ -97,22 +106,18 @@ export async function preloadIntake(payload: IntakePayload): Promise<void> {
         setNumber(document.querySelector<HTMLInputElement>('[data-param="width"]'), size);          // the shape tools, the picture for the wall, the cutter: the width
         setNumber(document.querySelector<HTMLInputElement>('[data-param="size"]'), size);           // the map: the side
         setNumber(document.querySelector<HTMLInputElement>('[data-param="text_height"]'), size);    // the sign, the standing letters: the letter height
-        if (size > 440) setNumber(document.querySelector<HTMLInputElement>('[data-param="head"]'), size / 10);   // the headband: the head's circumference, in cm (440 = a smaller number held at the tool's lowest: not a head)
     }
-    if (kind) {
+    if (kind && !own) {
         const radio = document.querySelector<HTMLInputElement>(`input[type=radio][name="kind"][value="${kind}"], input[type=radio][name="style"][value="${kind}"]`);
         if (radio) { radio.checked = true; fire(radio, 'change'); }
-        document.querySelector<HTMLButtonElement>(`[data-preset="hb_${kind}"]`)?.click();              // the headband: the costume (the decoration and its colours)
     }
     if (text) {
         if (!own) setText(document.querySelector<HTMLInputElement>('[data-text="line1"]'), text);    // a name or an inscription of the shape tools
         setText(document.querySelector<HTMLInputElement>('input[name="pedestal_name"]'), text);      // the name on the base of a pet or a bust
     }
-    if (place) {
-        setText(document.querySelector<HTMLInputElement>('[data-text="name"]'), place);              // the name on the rim of a map
-        const search = document.getElementById('map-place') as HTMLInputElement | null;
-        if (search) { setText(search, place); (document.getElementById('map-search') as HTMLButtonElement | null)?.click(); }
-    }
+    // (the place of a map is looked up by the map's own module, which then makes the map: map.ts)
+    // the tool waits for something only the visitor has: the field for it comes into view
+    if (payload.ask?.kind === 'photo') document.querySelector<HTMLElement>('input[type=file][data-intake-photo]')?.closest('section, form, div')?.scrollIntoView({ block: 'nearest' });
     if (!own) {
         // the last step of every tool's page: how many pieces, which plastic
         const v = payload.values ?? {};

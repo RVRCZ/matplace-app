@@ -18,7 +18,8 @@ return [
 
     'intake' => [
         // wishes (and "try it without a designer") per browser session and per IP address; the admin tries freely
-        'limits' => ['per_hour' => 5, 'per_day' => 20],
+        // (the two env names exist for the walk of all hints on a developer's machine, scripts/hints_walk.mjs: never set on the server)
+        'limits' => ['per_hour' => (int) env('INTAKE_PER_HOUR', 5), 'per_day' => (int) env('INTAKE_PER_DAY', 20)],
 
         /*
          * One press of "Vytvořit" ends on a design (docs/AN.md §24). A tool the assistant is sure of from
@@ -110,13 +111,18 @@ return [
          * each sample wish is expected to go (a tool's key, or `human`): the texts are `router.hint.<event>.<n>` (the
          * label) and `router.hint.<event>.<n>.fill` (the wish), `:year` in them is the event's year plus `year_offset`.
          * The admin switches an event off and changes its dates and texts at /admin/intake/hints, without a deploy.
+         *
+         * The rule (docs/AN.md §25): a hint ends on a design that matches its sentence, never on a tool's own sample.
+         * A new or changed example passes only when IntakeHintsMatchTest (with its page's values written into
+         * tests/fixtures/intake/hints_expect.json) and the walk in a browser (scripts/hints_walk.mjs) both say so;
+         * `php artisan matplace:intake-hints` checks the texts as they stand, the admin's own included.
          */
         'hints' => [
             'total' => 6,
             'seasonal' => 3,
             'events' => [
                 'steady' => ['name' => 'Stálé příklady', 'always' => true, 'examples' => ['figure', 'pet', 'map', 'sign']],
-                'birthday' => ['name' => 'Narozeniny', 'always' => true, 'examples' => ['topper', 'keychain']],
+                'birthday' => ['name' => 'Narozeniny', 'always' => true, 'examples' => ['topper', 'keychain', 'beads']],
                 'wedding' => ['name' => 'Svatba', 'always' => true, 'examples' => ['topper', 'sign']],
                 'mikulas' => ['name' => 'Mikuláš', 'date' => ['cs' => '12-05'], 'lead' => 30, 'stop' => 4, 'examples' => ['headband', 'charm', 'sign']],
                 'christmas' => ['name' => 'Vánoce', 'date' => ['cs' => '12-24', 'en' => '12-25', 'es' => '12-25'], 'lead' => 50, 'stop' => 9, 'until_setting' => 'christmas_deadline', 'examples' => ['ornament', 'coaster', 'cutter', 'headband']],

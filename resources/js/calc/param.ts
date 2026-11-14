@@ -68,6 +68,9 @@ export function bootParam(stage: Stage): void {
     const partColors: Record<string, string> = {};   // part → code of the spool it is printed from
     const ownColors = $('tool-parts')?.dataset.ownColors === '1';   // the design carries its colours itself (QR sign, modular set)
     let commit: () => void = () => undefined;
+    // opened from a wish that speaks of a picture only the visitor has (docs/AN.md §25): until one is given (or words are
+    // typed instead) the page asks for it over the empty stage and shows no sample of ours
+    let asking = stage.cfg.intake?.ask?.kind === 'picture';
     // a picture in colours (pendant, earrings, ornament, magnet, coaster): which of its colours were joined and their order, bottom to top
     const shape = cfg.family === 'shape';
     let merge: number[][] = []; let order: number[] = [];
@@ -553,6 +556,12 @@ export function bootParam(stage: Stage): void {
     };
 
     const refresh = async (): Promise<void> => {
+        if (asking) {
+            const worded = [...form.querySelectorAll<HTMLInputElement>('[data-text]')].some((i) => i.value.trim() !== '');
+            if (!artwork && !worded) { valid = false; stage.go({ disabled: true }); showAsk(); return; }
+            asking = false;
+            document.getElementById('tool-ask')?.remove();
+        }
         if (!fieldsOk()) { valid = false; stage.go({ disabled: true }); return; }
         const mine = ++seq;
         stage.busy(true);
@@ -700,9 +709,40 @@ export function bootParam(stage: Stage): void {
         const v = (k: string): number => Number(form.querySelector<HTMLInputElement>(`[data-param="${k}"]`)?.value ?? 100);
         img.style.filter = `contrast(${v('contrast')}%) brightness(${v('brightness')}%) saturate(${v('saturation')}%)`;
     };
+    /** The wish needs a picture and none came: the stage says so, with the wish's own words and the button that opens the picture window. */
+    const showAsk = (): void => {
+        const ask = stage.cfg.intake?.ask; const host = document.getElementById('tool-viewer')?.parentElement;
+        if (!ask || !host || document.getElementById('tool-ask')) return;
+        const box = document.createElement('div');
+        box.id = 'tool-ask';
+        box.className = 'absolute inset-0 z-10 flex items-center justify-center bg-studio p-6';
+        const card = document.createElement('div');
+        card.className = 'max-w-md rounded-2xl bg-card p-5 text-center shadow-sm';
+        const lead = document.createElement('p');
+        lead.className = 'text-base font-semibold text-ink';
+        lead.textContent = ask.text;
+        card.append(lead);
+        const words = (stage.cfg.intake?.text ?? '').trim();
+        if (words) {
+            const said = document.createElement('p');
+            said.className = 'mt-2 text-sm text-muted';
+            said.textContent = `„${words.length > 160 ? `${words.slice(0, 157)}…` : words}“`;
+            card.append(said);
+        }
+        const open = document.getElementById('param-artwork-open');
+        if (open && ask.button) {
+            const b = document.createElement('button');
+            b.type = 'button'; b.className = 'btn-primary mt-4'; b.textContent = ask.button;
+            b.onclick = () => open.click();
+            card.append(b);
+        }
+        box.append(card);
+        host.append(box);
+    };
     const setArtwork = (picked: PickedArtwork | null): void => {
         if (shape && (picked?.ref ?? null) !== artwork) { forgetColours(); strokes.length = 0; }      // another picture: what was drawn on the old one does not fit it
         artwork = picked?.ref ?? null;
+        form.dataset.artwork = artwork ?? '';
         // the thumbnail by the reference wherever it can be: an address of this very page load would not survive a reload
         const lib = /^lib:(.+)$/.exec(picked?.ref ?? ''); const own = /^[0-9a-f-]{36}$/.test(picked?.ref ?? '');
         if (picked) picked = { ...picked, url: lib ? `${stage.cfg.artwork.library}/${lib[1]}.svg` : own ? `${stage.cfg.artwork.file}/${picked.ref}` : picked.url };
@@ -1533,7 +1573,10 @@ export function bootParam(stage: Stage): void {
         const given: Record<string, unknown> = { ...((stage.cfg.intake as { values?: Record<string, unknown> } | null | undefined)?.values ?? {}) };
         const wished: Record<string, unknown> = {};
         Object.entries(given).forEach(([k, v]) => { if (k !== 'preset' && !k.startsWith('_')) wished[k] = v; });
-        const preset = (typeof given.preset === 'string' && cfg.presets[given.preset] ? given.preset : null) ?? qs.get('preset') ?? cfg.preset;      // from the wish, asked for in the address, or the one this page of the tool starts with
+        // (`_plain`: the wish names its own words or picture, or waits for the visitor's: the sample this page of the tool
+        // starts with, our logo on the charm or the golfer on the coaster, would be shown as if it were the answer)
+        const plain = given._plain === true;
+        const preset = (typeof given.preset === 'string' && cfg.presets[given.preset] ? given.preset : null) ?? qs.get('preset') ?? (plain ? null : cfg.preset);      // from the wish, asked for in the address, or the one this page of the tool starts with
         if (preset && cfg.presets[preset]) {
             applyValues(cfg.presets[preset]);
             form.querySelectorAll('[data-preset]').forEach((o) => o.classList.toggle('chip-on', (o as HTMLElement).dataset.preset === preset));
@@ -1554,7 +1597,7 @@ export function bootParam(stage: Stage): void {
         if (typeof given._material === 'string' && [...plastic.options].some((o) => o.value === given._material)) plastic.value = given._material;
         // a tool that needs a picture opens with one of ours, so the first thing a visitor sees is a finished thing
         // (a name typed in the address stands instead of the picture, unless the tool puts it under the picture)
-        if ((cfg.captioned || !Object.keys(typed).length) && cfg.sample && !artwork && (shape ? !preset : preset === cfg.preset)) setArtwork({ ref: cfg.sample, name: '', url: null });
+        if (!plain && (cfg.captioned || !Object.keys(typed).length) && cfg.sample && !artwork && (shape ? !preset : preset === cfg.preset)) setArtwork({ ref: cfg.sample, name: '', url: null });
         track(!preset && !Object.keys(typed).length && !Object.keys(wished).length);
         void refresh();
     }

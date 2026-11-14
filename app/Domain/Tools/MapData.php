@@ -2,6 +2,8 @@
 
 namespace App\Domain\Tools;
 
+use App\Domain\Farm\Palette;
+use App\Domain\Intake\IntakePlace;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Http;
@@ -40,11 +42,20 @@ final class MapData
 
     public const ATTRIBUTION = 'Data © OpenStreetMap contributors (ODbL) · Výšky: Mapzen / AWS Open Data';
 
+    /** What a name found is when it is no place to make a map of by its name alone: a shop called "Praha" is not Prague. */
+    private const NO_SETTLEMENT = ['amenity', 'shop', 'tourism', 'railway', 'highway', 'road', 'building', 'house', 'office', 'leisure', 'craft', 'residential', 'cadastral', 'cadastral_community', 'administrative'];
+
     /**
      * Places a name may mean, at most six: what Nominatim says, in the visitor's language, kept 30 days. A pair of
      * coordinates ("50.0875, 14.4213") is a place by itself and asks nobody.
      *
-     * @return list<array{name: string, kind: string, country: string, display: string, lat: float, lon: float}>
+     * People write a Czech name in the case their sentence put it in ("mapa Prahy", "Olomouce"), and Nominatim takes
+     * the words as they are: "Prahy" is a hamlet in France, "Olomouce" a list of cadastral areas (docs/AN.md §25). So
+     * the name is asked for as a map calls it first (IntakePlace::tries: the first case we are sure of or the rules
+     * make, then the words as written), and the first try that finds a place of that very name wins: it comes first
+     * and is marked `exact`. When none does, the answer to the words as written stands, as before.
+     *
+     * @return list<array{name: string, kind: string, country: string, display: string, lat: float, lon: float, exact?: bool}>
      */
     public function places(string $q, string $lang): array
     {
@@ -52,6 +63,39 @@ final class MapData
         if ($q === '') {
             return [];
         }
+        $lang = in_array($lang, ['cs', 'en', 'es'], true) ? $lang : 'en';
+        $written = null;
+        $any = null;
+        foreach (IntakePlace::tries($q, $lang) ?: [$q] as $name) {
+            $found = $this->lookup($name, $lang);
+            foreach ($found as $i => $place) {
+                if ($place['kind'] !== 'point' && Palette::plain($place['name']) === Palette::plain($name) && ! in_array($place['kind'], self::NO_SETTLEMENT, true)) {
+                    unset($found[$i]);
+
+                    return array_slice(array_merge([$place + ['exact' => true]], array_values($found)), 0, 6);
+                }
+            }
+            if ($found && $place['kind'] === 'point') {
+                return $found;
+            }
+            if ($found) {
+                $any ??= $found;
+                if ($name === $q) {
+                    $written = $found;
+                }
+            }
+        }
+
+        return $written ?? $any ?? [];
+    }
+
+    /**
+     * One name asked of Nominatim (or coordinates read): the places it may mean, kept 30 days.
+     *
+     * @return list<array{name: string, kind: string, country: string, display: string, lat: float, lon: float}>
+     */
+    private function lookup(string $q, string $lang): array
+    {
         if (preg_match('/^(-?\d{1,2}(?:[.,]\d+)?)\s*[,;\s]\s*(-?\d{1,3}(?:[.,]\d+)?)$/', $q, $m)) {
             $lat = (float) str_replace(',', '.', $m[1]);
             $lon = (float) str_replace(',', '.', $m[2]);
@@ -59,7 +103,6 @@ final class MapData
                 return [['name' => sprintf('%.5f, %.5f', $lat, $lon), 'kind' => 'point', 'country' => '', 'display' => sprintf('%.5f, %.5f', $lat, $lon), 'lat' => $lat, 'lon' => $lon]];
             }
         }
-        $lang = in_array($lang, ['cs', 'en', 'es'], true) ? $lang : 'en';
 
         return Cache::remember('map:places:'.md5($lang.'|'.mb_strtolower($q)), now()->addDays(self::KEEP_DAYS), function () use ($q, $lang) {
             $this->slot('map:nominatim', 1, 1.1);

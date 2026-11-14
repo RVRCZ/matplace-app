@@ -50,9 +50,11 @@ class IntakeHeadbandTest extends TestCase
         $plain = IntakeRouter::guess('Čelenka pro dceru', false, 'cs');
         $this->assertSame(['tool', 'headband'], [$plain['route'], $plain['tool_key']]);
         $this->assertArrayNotHasKey('kind', $plain['params']);
-        // the head's circumference is the tool's size; a number that is no head is held at the tool's lowest
+        // the head's circumference is the tool's size; a number that is no head is no size of the tool at all (docs/AN.md §25:
+        // it used to be held at the tool's lowest, and the page opened with a head nobody said)
         $this->assertSame(540, IntakeRouter::guess('Černá čelenka s kočičíma ušima, obvod hlavy 54 cm', false, 'cs')['params']['size_mm']);
-        $this->assertSame(440, IntakeRouter::guess('Čelenka s rohy 5 cm vysokými', false, 'cs')['params']['size_mm']);
+        $this->assertArrayNotHasKey('size_mm', IntakeRouter::guess('Čelenka s rohy 5 cm vysokými', false, 'cs')['params']);
+        $this->assertSame(8, IntakeRouter::guess('Čelenka s čertovskými rohy pro osmileté dítě', false, 'cs')['params']['age']);
         // what belongs elsewhere stays there: a pet from a photo, a holder for headbands, a statuette
         $this->assertSame('pet', IntakeRouter::guess('Figurka naší kočky podle fotky', true, 'cs')['tool_key']);
         $this->assertSame('human', IntakeRouter::guess('Držák na čelenky na zeď, rozměry 100 x 60 mm', false, 'cs')['route']);
@@ -76,12 +78,14 @@ class IntakeHeadbandTest extends TestCase
         $shared = (array) json_decode((string) (isset($m[2]) && $m[2] !== '' ? $m[2] : json_decode('"'.$m[1].'"')), true);
         $this->assertSame('headband', $shared['intake']['tool']);
         $this->assertNull($shared['intake']['file']);
-        $this->assertSame(['size_mm' => 540, 'kind' => 'cat'], $shared['intake']['params']);
-        // what the hand-over's script fills: the head's circumference and the costume's button (resources/js/calc/intake_preload.ts)
+        $this->assertEquals(['size_mm' => 540, 'kind' => 'cat'], $shared['intake']['params']);
+        // the form's own values, applied like a stored design (param.ts): the costume's preset, then the head (docs/AN.md §25:
+        // a click on the preset after the page had loaded used to put the costume's colours over the colours of the wish)
         $this->assertStringContainsString('data-param="head"', $html);
         $this->assertStringContainsString('data-preset="hb_cat"', $html);
+        $this->assertEquals(['preset' => 'hb_cat', 'decoration' => 'cat', 'head' => 54, 'head_size' => 'custom'], $shared['intake']['values']);
+        $this->assertSame(['ozdoba: kočičí uši', 'obvod hlavy 54 cm'], $shared['intake']['understood']);
         $script = (string) file_get_contents(resource_path('js/calc/intake_preload.ts'));
-        $this->assertStringContainsString('[data-param="head"]', $script);
-        $this->assertStringContainsString('[data-preset="hb_${kind}"]', $script);
+        $this->assertStringNotContainsString('data-preset="hb_', $script, 'the hand-over no longer clicks the costume');
     }
 }

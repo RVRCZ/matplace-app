@@ -56,7 +56,7 @@ class IntakeToolPreloadTest extends TestCase
         $this->assertSame('figure', $shared['intake']['tool']);
         $this->assertSame(url('/intake/'.$intake->token.'/file'), $shared['intake']['file']);
         $this->assertSame('original.jpg', $shared['intake']['name']);
-        $this->assertSame(['size_mm' => 120, 'kind' => 'bust', 'colors' => ['white']], $shared['intake']['params']);
+        $this->assertEquals(['size_mm' => 120, 'kind' => 'bust', 'colors' => ['white']], $shared['intake']['params']);
         $this->assertSame('Busta táty, 12 cm', $shared['intake']['text']);
         // the field the photo lands in, and the picture itself by the token
         $this->assertMatchesRegularExpression('~<input id="figure-photo"[^>]*data-intake-photo~', $html);
@@ -118,7 +118,9 @@ class IntakeToolPreloadTest extends TestCase
         foreach (['/tools/sign', '/tools/text'] as $path) {
             $shared = $this->shared((string) $this->get($path.'?intake='.$intake->token)->assertOk()->getContent());
             $this->assertNull($shared['intake']['file'], "$path gets no photo");
-            $this->assertSame(120, $shared['intake']['params']['size_mm'], $path);
+            // (12 cm said of a thing of words is how wide it is, not how tall its letters are: docs/AN.md §25)
+            $this->assertSame(120, $shared['intake']['params']['width_mm'], $path);
+            $this->assertArrayNotHasKey('size_mm', $shared['intake']['params'], $path);
             $this->assertSame('Busta táty, 12 cm', $shared['intake']['text'], $path);
         }
         $this->assertSame(1, Event::where('type', 'intake_tool_opened')->count(), 'opened once, by the first page');
