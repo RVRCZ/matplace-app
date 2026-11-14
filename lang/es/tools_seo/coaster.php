@@ -8,7 +8,7 @@ return [
     'h1' => 'Cómo nace el posavasos, cuántos colores admite y cuánto cuesta',
     'intro' => [
         'La herramienta crea un posavasos con su imagen: un círculo, un cuadrado o un hexágono de 80 a 120 mm de ancho y de 3 a 6 mm de grosor. Suba un PNG, JPG, WebP o SVG, elija un motivo de la biblioteca o escriba un nombre. Una foto entera llena el posavasos hasta el borde; un motivo recortado queda en el centro. La imagen se reduce a 1 a 8 colores de filamentos que tenemos en la granja, y los colores sobresalen de la base por escalones, de 0,4 mm por defecto, así que un vaso se apoya sin problema. Añada ranuras por debajo para que el posavasos no resbale en una mesa mojada, un marco de hasta 4 mm alrededor de la imagen o un borde biselado. Una parte superior del todo plana la da la opción «Colores a ras de la superficie», que necesita una impresora con cambio de filamento.',
-        'Un ejemplo de la calculadora en producción (28 de octubre de 2026, PLA): un posavasos redondo de 100 mm con el muñeco de nieve de la biblioteca, de 4 mm de grosor y con ranuras por debajo, pesa 20,4 g y se imprime en 40 minutos (cálculo /c/xqbu3qsmyqm0); un juego de cuatro iguales cuesta 170 CZK (cálculo /c/57k7ndo2ibxo), porque la preparación se paga una vez. Nuestra granja imprime hasta cuatro colores en una impresión, la base y tres más; confirma la bobina de cada color al encargar. El modelo y el proyecto para el slicer con los cambios de color se descargan gratis, sin registro.',
+        'Un ejemplo de la calculadora en producción (14 de noviembre de 2026, PLA): un posavasos cuadrado de 100 mm con el logotipo de Matplace, de 4 mm de grosor y con ranuras por debajo, pesa 26 g, se imprime en 42 minutos y su impresión con nosotros sale por 80 CZK. Un juego de cuatro posavasos redondos con el muñeco de nieve de la biblioteca costaba 170 CZK el 28 de octubre de 2026 (cálculo /c/57k7ndo2ibxo), porque la preparación se paga una vez. Nuestra granja imprime hasta cuatro colores en una impresión, la base y tres más; confirma la bobina de cada color al encargar. El modelo y el proyecto para el slicer con los cambios de color se descargan gratis, sin registro.',
     ],
     'steps' => [
         ['name' => 'Suba una foto o un dibujo', 'text' => 'Suba una imagen, elija una de la biblioteca o reutilice una subida antes. Para una foto entera desactive la eliminación del fondo; si la deja activada, solo queda el motivo del centro.'],
@@ -25,7 +25,7 @@ return [
         ['q' => '¿Cuántos colores imprimen y cómo lo imprimo en casa?', 'a' => 'Con nosotros hasta cuatro en una impresión: la base y tres colores encima; confirma la bobina de cada uno al encargar. En casa cualquier impresora imprime un diseño con más colores: los colores van uno sobre otro y el proyecto para OrcaSlicer, Bambu Studio y PrusaSlicer lleva los cambios de filamento a las alturas correctas.'],
     ],
     'examples' => [
-        'Posavasos redondo de 100 mm con un muñeco de nieve y ranuras por debajo: 20,4 g, 40 minutos; juego de cuatro, 170 CZK.',
+        'Posavasos cuadrado de 100 mm con el logotipo de Matplace, borde negro y ranuras por debajo: 26 g, 42 minutos, 80 CZK.',
         'Posavasos hexagonal de 95 mm con una huella, marco de 2 mm, cuatro colores.',
         'Posavasos cuadrado de 100 mm con una foto en toda la cara, 6 colores, borde biselado.',
     ],

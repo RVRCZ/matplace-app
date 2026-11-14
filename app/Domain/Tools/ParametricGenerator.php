@@ -570,7 +570,12 @@ final class ParametricGenerator
         // the coaster opens as a finished thing (Roman, 29 Oct 2026): a golfer flush in a beige disc with a black rim,
         // grooves below, printed face down. A visitor sees a product first and changes what they want; the other
         // tools get such a start one by one
+        // since 14 Nov 2026 the page opens with our own logo instead (Roman): a square beige plate, the logo flush, a black
+        // rim; the golfer stays as the second start
         'coaster' => [
+            'matplace' => ['artwork' => 'lib:colour/matplace', 'line1' => '', 'line2' => '', 'body' => 'square', 'width' => 100, 'thickness' => 4, 'frame' => 2, 'colors_n' => 4,
+                'remove_bg' => true, 'bg_strength' => 30, 'smooth' => 0.3, 'grooves' => true, 'flush' => true, 'rim' => true, 'bevel' => false,
+                'part_colors' => ['body' => ['13_PLA+_bezovy', 'PLA+_Beige', 'name:béžová', 'white'], 'rim' => self::COASTER_DARK, 'color_1' => self::COASTER_DARK]],
             'golf' => ['artwork' => 'lib:sport/golfer', 'body' => 'circle', 'width' => 100, 'thickness' => 4, 'frame' => 2, 'colors_n' => 4,
                 'remove_bg' => true, 'grooves' => true, 'flush' => true, 'rim' => true, 'bevel' => false,
                 'part_colors' => ['body' => ['13_PLA+_bezovy', 'PLA+_Beige', 'name:béžová', 'white'], 'rim' => self::COASTER_DARK, 'color_1' => self::COASTER_DARK]],

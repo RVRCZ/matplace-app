@@ -295,7 +295,7 @@ return [
     'straw' => ['route' => 'tools.straw', 'intent' => 'create', 'categories' => ['images', 'names'], 'available' => false],
     'opener' => ['route' => 'tools.opener', 'intent' => 'create', 'categories' => ['images', 'home'], 'available' => false],
     'coaster' => ['route' => 'tools.coaster', 'intent' => 'create', 'categories' => ['images', 'home'], 'available' => true, 'seo' => ['examples' => [
-        ['params' => ['artwork' => 'lib:colour/snowman', 'width' => 100, 'body' => 'circle']],
+        ['preset' => 'matplace'],
         ['params' => ['artwork' => 'lib:colour/paw-badge', 'width' => 95, 'body' => 'hex', 'grooves' => true]],
         ['params' => ['artwork' => 'lib:colour/christmas-tree-colour', 'width' => 100, 'body' => 'square']],
     ]]],

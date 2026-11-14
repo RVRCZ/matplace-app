@@ -8,7 +8,7 @@ return [
     'h1' => 'Jak podtácek vzniká, kolik barev unese a kolik stojí',
     'intro' => [
         'Nástroj vytvoří podtácek s vaším obrázkem: kruh, čtverec nebo šestiúhelník o šířce 80 až 120 mm a tloušťce 3 až 6 mm. Nahrajete PNG, JPG, WebP či SVG, vyberete motiv z knihovny, nebo napíšete jméno. Celá fotka vyplní podtácek až k okraji, vyříznutý motiv sedí uprostřed. Obrázek se převede na 1 až 8 barev filamentů, které máme na farmě skladem, a barvy vystupují nad podklad po stupních, ve výchozím nastavení po 0,4 mm, takže sklenice stojí bez potíží. Zespodu přidáte drážky, aby podtácek na mokrém stole neklouzal, a kolem obrázku okraj do 4 mm nebo zkosenou hranu. Úplně rovný vršek dává volba „Barvy zarovno s povrchem“, která potřebuje tiskárnu s výměnou filamentu.',
-        'Příklad z kalkulace na produkci (28. 10. 2026, PLA): kulatý podtácek 100 mm se sněhulákem z knihovny, 4 mm silný, s drážkami zespodu, má 20,4 g a tiskne se 40 minut (kalkulace /c/xqbu3qsmyqm0); sada čtyř stejných stojí 170 Kč (kalkulace /c/57k7ndo2ibxo), protože příprava zakázky se platí jednou. Na farmě vytiskneme až čtyři barvy najednou, podklad a tři další; cívku každé barvy potvrdíte při objednávce. Model i projekt pro slicer s výměnami barev si stáhnete zdarma a bez registrace.',
+        'Příklad z kalkulace na produkci (14. 11. 2026, PLA): čtvercový podtácek 100 mm s logem Matplace, 4 mm silný, s drážkami zespodu, má 26 g, tiskne se 42 minut a jeho tisk u nás vychází na 80 Kč. Sada čtyř kulatých podtácků se sněhulákem z knihovny stála 28. 10. 2026 170 Kč (kalkulace /c/57k7ndo2ibxo), protože příprava zakázky se platí jednou. Na farmě vytiskneme až čtyři barvy najednou, podklad a tři další; cívku každé barvy potvrdíte při objednávce. Model i projekt pro slicer s výměnami barev si stáhnete zdarma a bez registrace.',
     ],
     'steps' => [
         ['name' => 'Nahrajte fotku nebo kresbu', 'text' => 'Obrázek nahrajete, vyberete z knihovny, nebo použijete dříve nahraný. Pro celou fotku vypněte odstranění pozadí; když ho necháte zapnuté, zůstane jen motiv uprostřed.'],
@@ -25,7 +25,7 @@ return [
         ['q' => 'Kolik barev vytisknete u vás a jak doma?', 'a' => 'U nás až čtyři v jednom tisku: podklad a tři barvy nad ním, cívku každé potvrdíte při objednávce. Doma vytiskne návrh s více barvami jakákoli tiskárna: barvy leží nad sebou a projekt pro OrcaSlicer, Bambu Studio a PrusaSlicer má výměny filamentu ve správných výškách.'],
     ],
     'examples' => [
-        'Kulatý podtácek 100 mm se sněhulákem a drážkami zespodu: 20,4 g, 40 minut; sada čtyř 170 Kč.',
+        'Čtvercový podtácek 100 mm s logem Matplace, černý lem, drážky zespodu: 26 g, 42 minut, 80 Kč.',
         'Šestihranný podtácek 95 mm s tlapkou, okraj 2 mm, čtyři barvy.',
         'Čtvercový podtácek 100 mm s fotkou přes celou plochu, 6 barev, zkosená hrana.',
     ],
