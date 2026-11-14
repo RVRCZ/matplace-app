@@ -27,7 +27,10 @@ final class ModelNormalizer
 
         if ($this->python->available()) {
             if (! empty($extras['name']) || ! empty($extras['dedication'])) {
-                $extras['font'] = base_path('vendor/dompdf/dompdf/lib/fonts/DejaVuSans-Bold.ttf');
+                // Montserrat at its boldest (shape2d.text reads a variable family so): sturdy strokes for a 0.4 mm nozzle
+                // and the Czech accents; DejaVu stays as the spare when the file is not there
+                $font = base_path('engines/fonts/Montserrat-wght.ttf');
+                $extras['font'] = is_file($font) ? $font : base_path('vendor/dompdf/dompdf/lib/fonts/DejaVuSans-Bold.ttf');
             }
             $r = $this->python->run(['normalize', $inPath, $outPath, (string) $targetMaxMm, $yUp ? '1' : '0', implode(',', $options), json_encode((object) $extras, JSON_UNESCAPED_UNICODE)]);
             if (! empty($r['ok']) && is_file($outPath)) {

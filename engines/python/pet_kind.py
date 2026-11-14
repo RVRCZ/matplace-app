@@ -293,9 +293,11 @@ def stand(m, kind, extras, target):
         font = extras.get("font")
         if lines and font and os.path.isfile(font):
             try:
-                face, y_top = (face_d if along else face_w), ped_h * 0.88
+                face, y_top = (face_d if along else face_w), ped_h * 0.87
                 for i, line in enumerate(lines):
-                    band = ped_h * (0.44 if i == 0 else 0.26)
+                    # a name alone takes the whole waist of the plinth (Roman, 14 Nov 2026: the lettering was small);
+                    # with a second line the name is the big one
+                    band = ped_h * (0.70 if len(lines) == 1 else 0.44 if i == 0 else 0.26)
                     cs, info = S.text(M, [line], font, band * 0.72)
                     tw, th = S.size(cs)
                     if tw > face * 0.86:

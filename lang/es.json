@@ -1528,7 +1528,7 @@
     "pet.base.miniature": "La miniatura se apoya en una base redonda.",
     "pet.name": "Nombre de su mascota",
     "pet.name_ph": "p. ej. Rex",
-    "pet.name.hint": "El nombre sobresale de la base como parte del modelo. Déjelo vacío si no lo quiere.",
+    "pet.name.hint": "El nombre sobresale de la base como parte del modelo. Se rellena arriba, junto a la foto.",
     "pet.dedication": "Segunda línea (en letra más pequeña)",
     "pet.dedication_ph": "p. ej. 2014–2026",
     "pet.consent": "La foto es mía, o puedo usarla, y no aparece ninguna persona. Acepto que la procese nuestro proveedor de generación de modelos.",
@@ -2917,5 +2917,6 @@
     "figure.drop.more.hint": "De los lados y por detrás. No es obligatorio, con una foto basta para el modelo.",
     "figure.made.height": "Altura del modelo :mm mm",
     "figure.made.rest": "ancho :w mm · fondo :d mm",
-    "figure.made.note": "El modelo mide :mm mm de alto. El tamaño aún se puede cambiar en el paso siguiente."
+    "figure.made.note": "El modelo mide :mm mm de alto. El tamaño aún se puede cambiar en el paso siguiente.",
+    "pet.name.first": "Opcional. Con el nombre la figura recibe un zócalo con la inscripción."
 }

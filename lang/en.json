@@ -1528,7 +1528,7 @@
     "pet.base.miniature": "The miniature stands on a round base.",
     "pet.name": "Your pet's name",
     "pet.name_ph": "e.g. Rex",
-    "pet.name.hint": "The name is raised on the base as part of the model. Leave it empty if you do not want one.",
+    "pet.name.hint": "The name stands out of the base as part of the model. You fill it in above, next to the photo.",
     "pet.dedication": "Second line (in smaller letters)",
     "pet.dedication_ph": "e.g. 2014–2026",
     "pet.consent": "The photo is mine, or I may use it, and there is no person in it. I agree that our supplier of model generation processes it.",
@@ -2917,5 +2917,6 @@
     "figure.drop.more.hint": "From the sides and from behind. It is optional, one photo is enough for a model.",
     "figure.made.height": "Model height :mm mm",
     "figure.made.rest": "width :w mm · depth :d mm",
-    "figure.made.note": "The model is :mm mm tall. You can still change the size in the next step."
+    "figure.made.note": "The model is :mm mm tall. You can still change the size in the next step.",
+    "pet.name.first": "Optional. With a name the figurine gets a plinth with the lettering."
 }

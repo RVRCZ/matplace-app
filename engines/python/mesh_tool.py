@@ -814,26 +814,64 @@ def pedestal_mesh(kind, cx, cy, r, ped_h, overlap, extras, z_top=None, sizes=Non
     if kind in ("socle", "antique"):
         build = socle_mesh if kind == "socle" else antique_mesh
         return build(M, S, cx, cy, extras, overlap if z_top is None else z_top, overlap, sizes or socle_sizes(ped_h / 0.05, r, kind), note)
+    import math
+    import pet_kind
+
+    def stepped(outline):
+        """
+        A low base as a turned piece, not a slab: a wider foot and the tier the figure stands on, each with a bevel
+        at its lower edge and a rounded upper one (pet_kind._profiled); under 5 mm there is room for one tier only.
+        The part that ends inside the figure is a plain core.
+        """
+        if ped_h < 5.0:
+            body, top, _ = pet_kind._profiled(M, outline, ped_h, False)
+        else:
+            foot_h = 0.5 * ped_h
+            out = min(4.0, max(1.5, 0.08 * r))
+            foot, _, _ = pet_kind._profiled(M, outline.offset(out, M.JoinType.Round, 2.0, 96), foot_h, False)
+            tier, top, _ = pet_kind._profiled(M, outline, ped_h - foot_h + 0.3, False)
+            body = foot + tier.translate([0, 0, foot_h - 0.3])
+        return body + outline.offset(-top, M.JoinType.Round, 2.0, 96).extrude(overlap + 0.01).translate([0, 0, ped_h - 0.01])
+
     if kind == "square":
-        solid = rounded(2 * r, 2 * r, r * 0.12).extrude(ped_h + overlap)
+        solid = stepped(rounded(2 * r, 2 * r, r * 0.12))
     elif kind == "hexagon":
         a = np.linspace(0, 2 * np.pi, 6, endpoint=False) + np.pi / 6
-        solid = M.CrossSection([np.stack([r * 1.12 * np.cos(a), r * 1.12 * np.sin(a)], 1)]).extrude(ped_h + overlap)
+        solid = stepped(M.CrossSection([np.stack([r * 1.12 * np.cos(a), r * 1.12 * np.sin(a)], 1)]))
     elif kind == "column":
+        # a column as it is turned on a lathe: a plinth, a convex moulding, a cove into the shaft, a shaft that
+        # narrows a little, and a capital that flares at 45 degrees (prints without supports) under a rounded slab
         ped_h = ped_h * 2.2
-        step = ped_h * 0.35
-        solid = M.Manifold.cylinder(step, r * 1.15, r * 1.15, 96) + M.Manifold.cylinder(ped_h + overlap - step, r * 0.92, r * 0.92, 96).translate([0, 0, step])
+        R, rs = r * 1.15, r * 0.92
+        rt = rs * 0.96
+        z1, z2, z3 = 0.14 * ped_h, 0.24 * ped_h, 0.34 * ped_h
+        flare = min(0.07 * ped_h, r * 0.1)
+        slab = max(1.2, 0.07 * ped_h)
+        edge = min(0.8, 0.45 * slab)
+        z5 = ped_h - slab
+        z4 = z5 - flare
+        ovolo, cove = R - (rs + (R - rs) * 0.45), (R - rs) * 0.45
+        pts = [(0.0, 0.0), (R - 0.4, 0.0), (R, 0.4), (R, z1)]
+        pts += [(R - ovolo * (1 - math.cos(t)), z1 + (z2 - z1) * math.sin(t)) for t in np.linspace(0, math.pi / 2, 14)[1:]]
+        pts += [(rs + cove * (1 - math.sin(t)), z2 + (z3 - z2) * (1 - math.cos(t))) for t in np.linspace(0, math.pi / 2, 14)[1:]]
+        pts += [(rt, z4), (rt + flare, z5), (rt + flare, ped_h - edge)]
+        pts += [(rt + flare - edge * (1 - math.cos(t)), ped_h - edge + edge * math.sin(t)) for t in np.linspace(0, math.pi / 2, 8)[1:]]
+        pts += [(0.0, ped_h)]
+        solid = M.Manifold.revolve(M.CrossSection([np.array(pts)]), 128) + M.Manifold.cylinder(overlap + 0.01, rt, rt, 96).translate([0, 0, ped_h - 0.01])
     elif kind == "plaque":
         ped_h = max(ped_h * 2.6, 12.0)
         w, d = 2 * r * 1.05, 2 * r * 0.9
-        solid = rounded(w, d, 2.0).extrude(ped_h + overlap)
+        # a plinth with a foot and a cap; the name stands on the waist between them, which is the box it always was
+        solid, _, _ = pet_kind._profiled(M, rounded(w, d, 2.0), ped_h, True)
+        solid = solid + rounded(w, d, 2.0).extrude(overlap + 0.01).translate([0, 0, ped_h - 0.01])
         lines = [t for t in (str(extras.get("name", "")).strip()[:24], str(extras.get("dedication", "")).strip()[:40]) if t]
         font = extras.get("font")
         if lines and font and os.path.isfile(font):
             try:
                 y_top = ped_h * 0.86
                 for i, line in enumerate(lines):
-                    band = ped_h * (0.42 if i == 0 else 0.24)            # the name is the big line, the dedication the small one
+                    # the name is the big line, the dedication the small one; a name alone takes the whole waist
+                    band = ped_h * (0.66 if len(lines) == 1 else 0.42 if i == 0 else 0.24)
                     cs, info = S.text(M, [line], font, band * 0.72)
                     tw, th = S.size(cs)
                     if tw > w * 0.86:
@@ -851,7 +889,7 @@ def pedestal_mesh(kind, cx, cy, r, ped_h, overlap, extras, z_top=None, sizes=Non
                 note["text_error"] = str(e)[:120]
     else:
         kind = "round"
-        solid = M.Manifold.cylinder(ped_h + overlap, r, r, 96)
+        solid = stepped(M.CrossSection.circle(r, 128))
     # the top of the base ends `overlap` inside the figure
     mesh = solid.translate([cx, cy, (overlap if z_top is None else z_top) - (ped_h + overlap)]).to_mesh()
     note["pedestal"] = kind
@@ -1336,6 +1374,22 @@ def main(argv):
                 extras = {}
             ped_note = {}
             m.apply_scale(target / ext)
+            if len(m.faces) > 2_500_000:
+                # Meshy's 4k geometry of a head is eight million triangles (14 Nov 2026): the steps below ran over ten
+                # minutes on it. Merged exactly, within a tolerance far under a layer, until the rest can work.
+                try:
+                    whole_man, came = as_manifold(m), len(m.faces)
+                    if not whole_man.is_empty():
+                        for share in (0.0003, 0.0005, 0.0008, 0.0012):
+                            slim = whole_man.simplify(target * share)
+                            if slim.num_tri() <= 2_500_000:
+                                break
+                        thin = from_manifold(slim)
+                        if len(thin.faces):
+                            m = thin
+                            ped_note["thinned_from"] = came
+                except Exception as e:  # noqa: BLE001 - the model as it came is better than none
+                    ped_note["thin_error"] = str(e)[:120]
             removed = 0
             if "clean" in opts:
                 # generated meshes carry tiny floating fragments; keep everything that is a real part (glasses, hair)

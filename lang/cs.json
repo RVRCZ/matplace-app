@@ -1528,7 +1528,7 @@
     "pet.base.miniature": "Miniatura stojí na kulatém podstavci.",
     "pet.name": "Jméno mazlíčka",
     "pet.name_ph": "např. Rex",
-    "pet.name.hint": "Jméno vystoupí z podstavce jako součást modelu. Nechte prázdné, když ho nechcete.",
+    "pet.name.hint": "Jméno vystoupí z podstavce jako součást modelu. Vyplníte ho nahoře u fotky.",
     "pet.dedication": "Druhý řádek (menším písmem)",
     "pet.dedication_ph": "např. 2014–2026",
     "pet.consent": "Fotka je moje, nebo ji smím použít, a není na ní člověk. Souhlasím, že ji zpracuje náš dodavatel generování modelů.",
@@ -2917,5 +2917,6 @@
     "figure.drop.more.hint": "Z boků a zezadu. Není to povinné, model vytvoříme i z jedné fotky.",
     "figure.made.height": "Výška modelu :mm mm",
     "figure.made.rest": "šířka :w mm · hloubka :d mm",
-    "figure.made.note": "Model je vysoký :mm mm. Velikost můžete změnit i v dalším kroku."
+    "figure.made.note": "Model je vysoký :mm mm. Velikost můžete změnit i v dalším kroku.",
+    "pet.name.first": "Nepovinné. Se jménem dostane figurka sokl s nápisem."
 }

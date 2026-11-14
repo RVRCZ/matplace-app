@@ -1,0 +1,4 @@
+{
+    "pet.name.first": ["Nepovinné. Se jménem dostane figurka sokl s nápisem.", "Optional. With a name the figurine gets a plinth with the lettering.", "Opcional. Con el nombre la figura recibe un zócalo con la inscripción."],
+    "pet.name.hint": ["Jméno vystoupí z podstavce jako součást modelu. Vyplníte ho nahoře u fotky.", "The name stands out of the base as part of the model. You fill it in above, next to the photo.", "El nombre sobresale de la base como parte del modelo. Se rellena arriba, junto a la foto."]
+}

@@ -108,7 +108,7 @@ return [
         'base_url' => env('MESHY_BASE_URL', 'https://api.meshy.ai'),
         'model' => env('MESHY_MODEL', 'meshy-7.1'),
         'geometry_quality' => env('MESHY_GEOMETRY_QUALITY', 'detailed'),      // detailed = the finer geometry below, 5 credits more
-        'detail_resolution' => env('MESHY_DETAIL_RESOLUTION', '4k'),          // 2k | 4k (same price; several pictures take 2k at most)
+        'detail_resolution' => env('MESHY_DETAIL_RESOLUTION', '2k'),          // 2k | 4k (same price). 4k came back as a hollow shell 0.5 mm thick for a portrait (14 Nov 2026): 2k until that is understood
         'credit_cents' => (float) env('MESHY_CREDIT_CENTS', 2),               // an assumption: see prices.models above
         'work_dir' => storage_path('app/generated'),
     ],
