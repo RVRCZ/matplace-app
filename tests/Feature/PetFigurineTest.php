@@ -190,6 +190,12 @@ class PetFigurineTest extends TestCase
         $clean = GenerationRequest::latest('id')->firstOrFail();
         $this->assertSame(['realistic', 'model', 5], [$clean->description['style'], $clean->description['stage'], $clean->cost_cents]);
         $this->assertSame([], Storage::disk('local')->allFiles('photos/figures'));
+        // a bust from one photo is cleaned the same way (the person alone), with its own wording
+        $this->post('/api/generate', ['image' => UploadedFile::fake()->image('me.jpg', 600, 800), 'kind' => 'bust', 'consent' => 1], ['Accept' => 'application/json'])->assertCreated();
+        $bust = GenerationRequest::latest('id')->firstOrFail();
+        $this->assertSame(['bust', 'model', 5], [$bust->description['kind'], $bust->description['stage'], $bust->cost_cents]);
+        $this->assertStringContainsString('same person', GenerateModel::CLEAN_BUST_PROMPT);
+        $this->assertStringNotContainsString('glasses', GenerateModel::CLEAN_BUST_PROMPT);
         // with more sides the photos go as they are: the redrawn picture would replace them all
         $this->make(['image_left' => UploadedFile::fake()->image('left.jpg')])->assertCreated();
         $this->assertArrayNotHasKey('stage', GenerationRequest::latest('id')->firstOrFail()->description);
