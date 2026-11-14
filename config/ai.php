@@ -112,7 +112,7 @@ return [
         'credit_cents' => (float) env('MESHY_CREDIT_CENTS', 2),               // an assumption: see prices.models above
         'work_dir' => storage_path('app/generated'),
     ],
-    'default_target_mm' => 80,
+    'default_target_mm' => (int) env('AI_DEFAULT_TARGET_MM', 150),   // the longest side of a generated model when nobody says otherwise
     // photo size guess → volume: box volume × typical fill of a printed part (hollow-ish objects)
     'photo_fill_factor' => 0.35,
 ];
