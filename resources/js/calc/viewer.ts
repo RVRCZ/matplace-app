@@ -1,7 +1,7 @@
 import {
     AmbientLight, BufferGeometry, Color, ConeGeometry, CylinderGeometry, DirectionalLight, GridHelper, Group, HemisphereLight, Line, LineBasicMaterial,
     LineSegments, Material, Mesh, MeshBasicMaterial, MeshStandardMaterial, PerspectiveCamera, Raycaster, Scene, SphereGeometry, Vector2, Vector3,
-    WebGLRenderer, Box3, Float32BufferAttribute, PlaneGeometry, EdgesGeometry, DoubleSide,
+    WebGLRenderer, Box3, Float32BufferAttribute, PlaneGeometry, EdgesGeometry, DoubleSide, Plane, RingGeometry,
 } from 'three';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
 import { mergeVertices } from 'three/examples/jsm/utils/BufferGeometryUtils.js';
@@ -331,6 +331,89 @@ export class Viewer {
         this.framed = true;
     }
 
+    // ── "Being printed": what the visitor watches while the slicer works (the order page, the calculator) ──────
+
+    private printing: { plane: Plane; ghost: Mesh; head: Group; ring: Mesh; t0: number; still: boolean } | null = null;
+
+    /**
+     * While on, the model is shown as if it were being printed: a pale ghost of the whole, the solid part growing from
+     * the bed layer by layer under a nozzle that runs over it, again and again until it is switched off. It shows that
+     * something is being worked on; it is not the progress of the slicer (nobody knows that). A visitor who asked the
+     * system for less motion gets the ghost and the model half built, standing still.
+     */
+    setPrinting(on: boolean): void {
+        if (on === (this.printing !== null)) return;
+        if (!on) {
+            const p = this.printing!;
+            this.printing = null;
+            [this.material, this.sculptureMaterial, this.plateMaterial, ...this.paints.values(), this.mesh?.material as Material | undefined]
+                .forEach((m) => { if (m && m.clippingPlanes) { m.clippingPlanes = null; m.needsUpdate = true; } });
+            this.printSides.forEach((side, m) => { m.side = side; m.needsUpdate = true; });
+            this.printSides.clear();
+            this.scene.remove(p.ghost, p.head, p.ring);
+            (p.ghost.material as Material).dispose();
+            p.head.traverse((o) => { const m = o as Mesh; if (m.geometry) { m.geometry.dispose(); (m.material as Material).dispose(); } });
+            p.ring.geometry.dispose(); (p.ring.material as Material).dispose();
+            return;
+        }
+        this.renderer.localClippingEnabled = true;
+        const ghost = new Mesh(new BufferGeometry(), new MeshBasicMaterial({ color: 0x64748b, transparent: true, opacity: 0.13, depthWrite: false }));
+        ghost.renderOrder = 2;
+        // the nozzle: a cone on its tip under a short block, in the ink of the page, with a hot orange tip
+        const head = new Group();
+        const cone = new Mesh(new ConeGeometry(1, 1.6, 20), new MeshStandardMaterial({ color: 0x1e293b, roughness: 0.5, metalness: 0.4 }));
+        cone.rotation.x = Math.PI; cone.position.y = 0.8;
+        const block = new Mesh(new CylinderGeometry(1.25, 1.25, 1.1, 20), new MeshStandardMaterial({ color: 0x334155, roughness: 0.5, metalness: 0.4 }));
+        block.position.y = 2.15;
+        const tip = new Mesh(new SphereGeometry(0.28, 12, 8), new MeshBasicMaterial({ color: 0xf97316 }));
+        head.add(cone, block, tip);
+        // the layer being laid: a thin orange ring round the nozzle's tip, lying in the layer
+        const ring = new Mesh(new RingGeometry(0.7, 1, 32), new MeshBasicMaterial({ color: 0xf97316, transparent: true, opacity: 0.55, side: DoubleSide, depthWrite: false }));
+        ring.rotation.x = -Math.PI / 2; ring.renderOrder = 3;
+        this.scene.add(ghost, head, ring);
+        const still = typeof matchMedia === 'function' && matchMedia('(prefers-reduced-motion: reduce)').matches;
+        this.printing = { plane: new Plane(new Vector3(0, -1, 0), 0), ghost, head, ring, t0: performance.now(), still };
+    }
+
+    private printSides = new Map<Material, Material['side']>();
+
+    /** One frame of the print: how high the solid part stands and where the nozzle is. */
+    private printTick(): void {
+        const p = this.printing;
+        const mesh = this.mesh;
+        if (!p) return;
+        p.ghost.visible = p.head.visible = p.ring.visible = !!mesh;
+        if (!mesh) return;
+        // the ghost is the model itself, wherever it stands now (a new model, a turn, another scale)
+        if (p.ghost.geometry !== mesh.geometry) p.ghost.geometry = mesh.geometry;
+        p.ghost.position.copy(mesh.position); p.ghost.rotation.copy(mesh.rotation); p.ghost.scale.copy(mesh.scale);
+        const m = mesh.material as Material;
+        if (!m.clippingPlanes || m.clippingPlanes[0] !== p.plane) {
+            if (!this.printSides.has(m)) this.printSides.set(m, m.side);
+            m.clippingPlanes = [p.plane]; m.side = DoubleSide; m.needsUpdate = true;      // the cut shows the inside of the shell, not a hole
+        }
+        const box = new Box3().setFromObject(mesh);
+        const size = box.getSize(new Vector3());
+        const center = box.getCenter(new Vector3());
+        // one print takes a few seconds whatever the height, rests a moment when done, and starts again
+        const build = 5200 + Math.min(2800, size.y * 20), rest = 900;
+        const t = p.still ? build * 0.55 : (performance.now() - p.t0) % (build + rest);
+        const k = Math.min(1, t / build);
+        const eased = k * k * (3 - 2 * k) * 0.85 + k * 0.15;
+        const y = box.min.y + Math.max(size.y * eased, size.y * 0.02);
+        p.plane.constant = y;
+        // the nozzle runs a figure over the footprint, a little inside its box, and lifts off when the print is done
+        const s = Math.max(size.x, size.z, size.y) || 1;
+        const a = (performance.now() - p.t0) / 1000;
+        const done = k >= 1;
+        const hx = p.still ? 0 : Math.sin(a * 2.3) * size.x * 0.3, hz = p.still ? 0 : Math.sin(a * 3.1 + 0.7) * size.z * 0.3;
+        p.head.scale.setScalar(s * 0.045);
+        p.head.position.set(center.x + hx, y + (done ? s * 0.08 : 0), center.z + hz);
+        p.ring.scale.setScalar(s * 0.05);
+        p.ring.position.set(center.x + hx, y + s * 0.002, center.z + hz);
+        p.ring.visible = !done;
+    }
+
     private resize(): void {
         const w = this.canvas.clientWidth || 300;
         const h = this.canvas.clientHeight || 300;
@@ -341,6 +424,7 @@ export class Viewer {
 
     private loop = (): void => {
         this.tick();
+        this.printTick();
         this.controls.update();
         this.renderer.render(this.scene, this.camera);
         requestAnimationFrame(this.loop);

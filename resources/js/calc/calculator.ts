@@ -91,14 +91,16 @@ function plural(key: string, n: number, r: Record<string, string | number>): str
 /** A calculation that failed because the file is no model we can read says so: "Recalculate" would not help (docs/AH.md §9). */
 const failedKey = (c: { error?: string | null; file?: { status?: string; error?: string | null } | null } | null): string => (c?.file?.error === 'too_many_triangles' ? 'calc.status.too_many_triangles' : (c?.error === 'file_processing_failed' || c?.file?.status === 'failed' ? 'calc.status.not_model' : 'calc.status.failed'));
 
-function setStatus(key: string, spinning: boolean): void {
+function setStatus(key: string, spinning: boolean, slicing = false): void {
     $('status').textContent = t(key);
     $('status-spinner').classList.toggle('hidden', !spinning);
+    // while the slicer works the model is shown being printed (Viewer.setPrinting); any other status ends it
+    viewer?.setPrinting(slicing);
 }
 
 /** "Počítám přesně…" – and, for a model of millions of triangles, why it takes minutes (the server thins it first, docs/AL.md §10.11). */
 function setComputing(file: FileInfo | null | undefined, key = 'calc.status.queued'): void {
-    setStatus(key, true);
+    setStatus(key, true, true);
     if (file?.big_model && file.triangles) {
         const million = (file.triangles / 1e6).toFixed(1).replace('.', document.documentElement.lang === 'en' ? '.' : ',');
         $('status').textContent += ` ${t('calc.status.big_model').replace(':n', million)}`;

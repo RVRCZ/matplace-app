@@ -886,6 +886,7 @@ export function bootFarmOrder(): void {
     const render = (): void => {
         const s = state;
         const working = s.status === 'uploaded';
+        viewer.setPrinting(working);      // while the order is being prepared and sliced the model is shown being printed
         // a big model (docs/AL.md §11): waiting for the choices and the colour before any slice; while its slice runs a
         // change of the choices starts it over
         const awaiting = s.status === 'awaiting_choices';
