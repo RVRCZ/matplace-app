@@ -2912,5 +2912,10 @@
     "router.ask.picture": "Para esto necesitamos su imagen: suba un dibujo, un logo o una foto, o elija un motivo de nuestra biblioteca.",
     "router.ask.picture.button": "Subir una imagen o elegir un motivo",
     "router.ask.place": "Escriba una ciudad o una dirección y verá el mapa.",
-    "map.place.others": "¿Era otro lugar? Elija:"
+    "map.place.others": "¿Era otro lugar? Elija:",
+    "figure.drop.more": "Añade más fotos y el parecido será más fiel",
+    "figure.drop.more.hint": "De los lados y por detrás. No es obligatorio, con una foto basta para el modelo.",
+    "figure.made.height": "Altura del modelo :mm mm",
+    "figure.made.rest": "ancho :w mm · fondo :d mm",
+    "figure.made.note": "El modelo mide :mm mm de alto. El tamaño aún se puede cambiar en el paso siguiente."
 }

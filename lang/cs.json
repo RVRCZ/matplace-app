@@ -2912,5 +2912,10 @@
     "router.ask.picture": "K tomuhle potřebujeme váš obrázek: nahrajte kresbu, logo nebo fotku, nebo vyberte motiv z naší knihovny.",
     "router.ask.picture.button": "Nahrát obrázek nebo vybrat motiv",
     "router.ask.place": "Napište město nebo adresu a mapu hned uvidíte.",
-    "map.place.others": "Mysleli jste jiné místo? Vyberte:"
+    "map.place.others": "Mysleli jste jiné místo? Vyberte:",
+    "figure.drop.more": "Přidejte více fotek a podoba bude přesnější",
+    "figure.drop.more.hint": "Z boků a zezadu. Není to povinné, model vytvoříme i z jedné fotky.",
+    "figure.made.height": "Výška modelu :mm mm",
+    "figure.made.rest": "šířka :w mm · hloubka :d mm",
+    "figure.made.note": "Model je vysoký :mm mm. Velikost můžete změnit i v dalším kroku."
 }

@@ -2912,5 +2912,10 @@
     "router.ask.picture": "For this we need your picture: add a drawing, a logo or a photo, or choose a motif from our library.",
     "router.ask.picture.button": "Add a picture or choose a motif",
     "router.ask.place": "Type a town or an address and the map appears.",
-    "map.place.others": "Did you mean another place? Choose:"
+    "map.place.others": "Did you mean another place? Choose:",
+    "figure.drop.more": "Add more photos and the likeness will be more accurate",
+    "figure.drop.more.hint": "From the sides and from behind. It is optional, one photo is enough for a model.",
+    "figure.made.height": "Model height :mm mm",
+    "figure.made.rest": "width :w mm · depth :d mm",
+    "figure.made.note": "The model is :mm mm tall. You can still change the size in the next step."
 }
