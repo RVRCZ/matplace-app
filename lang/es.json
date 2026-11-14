@@ -1528,11 +1528,11 @@
     "pet.base.miniature": "La miniatura se apoya en una base redonda.",
     "pet.name": "Nombre de su mascota",
     "pet.name_ph": "p. ej. Rex",
-    "pet.name.hint": "El nombre sobresale de la base como parte del modelo. Déjelo vacío si no lo quiere.",
+    "pet.name.hint": "El nombre sobresale de la base como parte del modelo. Se rellena arriba, junto a la foto.",
     "pet.dedication": "Segunda línea (en letra más pequeña)",
     "pet.dedication_ph": "p. ej. 2014–2026",
     "pet.consent": "La foto es mía, o puedo usarla, y no aparece ninguna persona. Acepto que la procese nuestro proveedor de generación de modelos.",
-    "pet.privacy": "La foto solo va al proveedor Tripo, que construye el modelo a partir de ella, y la borramos en cuanto la figura está hecha. En la figura de dibujo animado borramos también la imagen redibujada. Solo quien tiene el enlace ve la figura; a los visitantes sin cuenta se la borramos a los 30 días.",
+    "pet.privacy": "La foto solo va a los proveedores Tripo y Meshy, que construyen el modelo a partir de ella, y la borramos en cuanto la figura está hecha. Borramos también la imagen que se crea de la foto antes de construir el modelo (el animal sin fondo, o la figura de dibujo animado). Solo quien tiene el enlace ve la figura; a los visitantes sin cuenta se la borramos a los 30 días.",
     "pet.submit": "Crear la figura",
     "pet.wait": "Suele tardar de 2 a 4 minutos. Puede salir y volver con el enlace que ahora está en la barra de direcciones.",
     "pet.generating": "Creando la figura, suele tardar de 2 a 4 minutos…",
@@ -2928,5 +2928,6 @@
     "farm.order.price_stale_pay": "Ha cambiado los ajustes: primero recalcule el precio, después podrá pagar.",
     "farm.order.recalculate_price": "Recalcular el precio",
     "farm.order.edit_design_hint": "Vuelve a la herramienta con este diseño abierto. Envíe aquí de nuevo el diseño cambiado con Continuar a la impresión.",
-    "farm.face_down_note": "Se imprime boca abajo para que el motivo quede liso y los colores nítidos. La vista previa lo muestra girado, con el motivo hacia arriba, tal como se usará."
+    "farm.face_down_note": "Se imprime boca abajo para que el motivo quede liso y los colores nítidos. La vista previa lo muestra girado, con el motivo hacia arriba, tal como se usará.",
+    "pet.name.first": "Opcional. Con el nombre la figura recibe un zócalo con la inscripción."
 }

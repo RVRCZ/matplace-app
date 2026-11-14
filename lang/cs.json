@@ -1528,11 +1528,11 @@
     "pet.base.miniature": "Miniatura stojí na kulatém podstavci.",
     "pet.name": "Jméno mazlíčka",
     "pet.name_ph": "např. Rex",
-    "pet.name.hint": "Jméno vystoupí z podstavce jako součást modelu. Nechte prázdné, když ho nechcete.",
+    "pet.name.hint": "Jméno vystoupí z podstavce jako součást modelu. Vyplníte ho nahoře u fotky.",
     "pet.dedication": "Druhý řádek (menším písmem)",
     "pet.dedication_ph": "např. 2014–2026",
     "pet.consent": "Fotka je moje, nebo ji smím použít, a není na ní člověk. Souhlasím, že ji zpracuje náš dodavatel generování modelů.",
-    "pet.privacy": "Fotka jde jen k dodavateli Tripo, který z ní postaví model, a hned po vytvoření figurky ji mažeme. U kreslené figurky mažeme i překreslený obrázek. Figurku vidí jen ten, kdo má odkaz; nepřihlášeným ji po 30 dnech mažeme.",
+    "pet.privacy": "Fotka jde jen k dodavatelům Tripo a Meshy, kteří z ní postaví model, a hned po vytvoření figurky ji mažeme. Mažeme i obrázek, který z fotky vznikne před stavbou modelu (zvíře bez pozadí, nebo kreslená figurka). Figurku vidí jen ten, kdo má odkaz; nepřihlášeným ji po 30 dnech mažeme.",
     "pet.submit": "Vytvořit figurku",
     "pet.wait": "Obvykle to trvá 2 až 4 minuty. Můžete odejít a vrátit se odkazem, který je teď v adresním řádku.",
     "pet.generating": "Vytvářím figurku, obvykle to trvá 2 až 4 minuty…",
@@ -2928,5 +2928,6 @@
     "farm.order.price_stale_pay": "Změnili jste nastavení: nejdřív přepočítejte cenu, pak půjde zaplatit.",
     "farm.order.recalculate_price": "Přepočítat cenu",
     "farm.order.edit_design_hint": "Vrátíte se do nástroje s tímto návrhem. Upravený návrh sem pošlete znovu tlačítkem Přejít k tisku.",
-    "farm.face_down_note": "Tiskne se lícem dolů, aby byl motiv hladký a barvy ostré. Náhled ho ukazuje otočený motivem nahoru, tak jak se bude používat."
+    "farm.face_down_note": "Tiskne se lícem dolů, aby byl motiv hladký a barvy ostré. Náhled ho ukazuje otočený motivem nahoru, tak jak se bude používat.",
+    "pet.name.first": "Nepovinné. Se jménem dostane figurka sokl s nápisem."
 }

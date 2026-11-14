@@ -18,6 +18,13 @@
     {{-- the consent (mirrored from the panel, figure.ts; its red frame stays until it is ticked), the limit and the button
          show up once the front photo is there: an empty dialog only asks for the photo (Roman, 18 Oct 2026) --}}
     <div id="figure-drop-go" class="hidden w-full flex-col gap-2">
+        {{-- the pet's name with the photo (Roman, 14 Nov 2026): only where the tool hands a label ($name); the page's own
+             script keeps it in step with the field of the panel --}}
+        @isset($name)
+            <label class="block text-left text-xs font-medium text-ink">{{ $name }}<input id="figure-drop-name" type="text" maxlength="24" autocomplete="off" placeholder="{{ $namePlaceholder ?? '' }}" class="field !mt-1 text-sm">
+                @isset($nameHint)<span class="mt-0.5 block font-normal text-muted">{{ $nameHint }}</span>@endisset
+            </label>
+        @endisset
         <label class="flex items-start gap-2 text-left text-xs text-ink"><input id="figure-drop-consent" type="checkbox" required class="mt-0.5 h-5 w-5 shrink-0 accent-ink"><span>{{ $consent }}</span></label>
         <p class="text-xs text-muted">{{ $limits }}</p>
         <button type="button" id="figure-create" class="btn-primary w-full gap-1.5" disabled><x-icon name="sparkles" class="h-4 w-4" />{{ $submit }}</button>

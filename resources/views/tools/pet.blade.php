@@ -25,7 +25,7 @@
 
 @section('viewer-empty'){{ __('pet.step.model') }}@endsection
 
-@section('viewer-drop')@include('tools._figure_drop', ['consent' => __('pet.consent'), 'limits' => trans_choice('figure.limits', $guestLimit, ['n' => $guestLimit, 'm' => $userLimit]), 'submit' => __('pet.submit')])@endsection
+@section('viewer-drop')@include('tools._figure_drop', ['consent' => __('pet.consent'), 'limits' => trans_choice('figure.limits', $guestLimit, ['n' => $guestLimit, 'm' => $userLimit]), 'submit' => __('pet.submit'), 'name' => __('pet.name'), 'namePlaceholder' => __('pet.name_ph'), 'nameHint' => __('pet.name.first')])@endsection
 
 @section('panel')
 <form id="figure-form" data-kind="pet" novalidate>
@@ -44,6 +44,12 @@
         </details>
 
         @include('tools._figure_photos', ['pick' => __('pet.pick_photo'), 'tips' => __('pet.photo_tips'), 'betterHint' => __('pet.views.better_hint'), 'viewsTips' => __('pet.views.tips')])
+
+        {{-- asked with the photo (Roman, 14 Nov 2026): a figurine with the name is a gift; with a name the plinth that
+             carries it is the base offered first. Not required. --}}
+        <label class="lbl">{{ __('pet.name') }}<input name="pedestal_name" maxlength="24" class="field" placeholder="{{ __('pet.name_ph') }}" autocomplete="off">
+            <span class="mt-1 block text-xs font-normal text-muted">{{ __('pet.name.first') }}</span>
+        </label>
     </x-tool-section>
 
     <x-tool-section id="style" :title="__('toolpage.section.style')">
@@ -71,8 +77,8 @@
     </x-tool-section>
 
     <x-tool-section id="base" :title="__('toolpage.section.base')">
-        <label class="lbl">{{ __('pet.size') }} <span id="figure-size-val" class="num font-normal text-muted">80 mm</span>
-            <input id="figure-size" name="target_mm" type="range" min="30" max="250" step="5" value="80" class="mt-1 w-full accent-ink">
+        <label class="lbl">{{ __('pet.size') }} <span id="figure-size-val" class="num font-normal text-muted">{{ (int) config('ai.default_target_mm', 150) }} mm</span>
+            <input id="figure-size" name="target_mm" type="range" min="30" max="250" step="5" value="{{ (int) config('ai.default_target_mm', 150) }}" class="mt-1 w-full accent-ink">
             <span class="mt-1 block text-xs font-normal text-muted">{{ __('pet.size.hint') }}</span>
         </label>
 
@@ -86,9 +92,8 @@
             <p id="pet-base-note" class="mt-2 hidden text-xs text-ink">{{ __('pet.base.miniature') }}</p>
             <p id="pet-base-none" class="tool-warn mt-2 hidden text-sm">{{ __('pet.base.none.hint') }}</p>
             <p class="mt-2 text-xs text-muted">{{ __('pet.base.hint') }}</p>
-            {{-- the name and the dedication live on a base: without one there is nothing to write them on --}}
+            {{-- where the name stands and the second line live on a base: without one there is nothing to write them on --}}
             <div id="pet-name-box" class="mt-3 grid gap-3">
-                <label class="lbl">{{ __('pet.name') }}<input name="pedestal_name" maxlength="24" class="field" placeholder="{{ __('pet.name_ph') }}" autocomplete="off"></label>
                 <label class="lbl">{{ __('pet.name_side') }}
                     <select name="name_side" class="field">
                         @foreach(\App\Domain\Generation\PedestalChanger::PET_NAME_SIDES as $side)<option value="{{ $side }}">{{ __('pet.name_side.'.$side) }}</option>@endforeach
@@ -114,8 +119,24 @@
                     document.getElementById('pet-name-box').classList.toggle('hidden', picked('pedestal') === 'none');
                     document.getElementById('pet-base-none').classList.toggle('hidden', picked('pedestal') !== 'none');
                 };
-                form.querySelectorAll('input[name=style], input[name=pedestal]').forEach((r) => r.addEventListener('change', fields));
-                form.addEventListener('figure:filled', fields);
+                // with a name the plinth that carries it is the base, without one the low oval; only until the visitor
+                // picks a base (or a stored figurine brings its own). The dialog in the viewer has the same field.
+                const name = form.querySelector('input[name=pedestal_name]');
+                const first = document.getElementById('figure-drop-name');
+                let own = false;
+                const byName = () => {
+                    if (first && first.value !== name.value) first.value = name.value;
+                    if (!own && picked('style') !== 'miniature') {
+                        const base = form.querySelector('input[name=pedestal][value=' + (name.value.trim() ? 'plaque' : 'oval') + ']');
+                        if (base && !base.checked) { base.checked = true; base.dispatchEvent(new Event('change', { bubbles: true })); }
+                    }
+                    fields();
+                };
+                name.addEventListener('input', byName);
+                first?.addEventListener('input', () => { name.value = first.value; name.dispatchEvent(new Event('input', { bubbles: true })); name.dispatchEvent(new Event('change', { bubbles: true })); });
+                form.querySelectorAll('input[name=pedestal]').forEach((r) => r.addEventListener('change', (e) => { if (e.isTrusted) own = true; fields(); }));
+                form.querySelectorAll('input[name=style]').forEach((r) => r.addEventListener('change', byName));
+                form.addEventListener('figure:filled', () => { own = true; if (first) first.value = name.value; fields(); });
                 fields();
             })();
         </script>

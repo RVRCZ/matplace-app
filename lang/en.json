@@ -1528,11 +1528,11 @@
     "pet.base.miniature": "The miniature stands on a round base.",
     "pet.name": "Your pet's name",
     "pet.name_ph": "e.g. Rex",
-    "pet.name.hint": "The name is raised on the base as part of the model. Leave it empty if you do not want one.",
+    "pet.name.hint": "The name stands out of the base as part of the model. You fill it in above, next to the photo.",
     "pet.dedication": "Second line (in smaller letters)",
     "pet.dedication_ph": "e.g. 2014–2026",
     "pet.consent": "The photo is mine, or I may use it, and there is no person in it. I agree that our supplier of model generation processes it.",
-    "pet.privacy": "The photo goes only to the supplier Tripo, which builds the model of it, and we delete it as soon as the figurine is made. For a cartoon figurine we delete the redrawn picture too. Only those with the link see the figurine; for visitors without an account we delete it after 30 days.",
+    "pet.privacy": "The photo goes only to the suppliers Tripo and Meshy, which build the model of it, and we delete it as soon as the figurine is made. We also delete the picture made of the photo before the model is built (the animal without its background, or the cartoon figure). Only those with the link see the figurine; for visitors without an account we delete it after 30 days.",
     "pet.submit": "Make the figurine",
     "pet.wait": "It usually takes 2 to 4 minutes. You can leave and come back by the link that is in the address bar now.",
     "pet.generating": "Making the figurine, it usually takes 2 to 4 minutes…",
@@ -2928,5 +2928,6 @@
     "farm.order.price_stale_pay": "You changed the settings: recalculate the price first, then you can pay.",
     "farm.order.recalculate_price": "Recalculate the price",
     "farm.order.edit_design_hint": "You go back to the tool with this design open. Send the changed design here again with Continue to printing.",
-    "farm.face_down_note": "It prints face down, so the motif comes out smooth and the colours sharp. The preview shows it turned over, motif up, the way it will be used."
+    "farm.face_down_note": "It prints face down, so the motif comes out smooth and the colours sharp. The preview shows it turned over, motif up, the way it will be used.",
+    "pet.name.first": "Optional. With a name the figurine gets a plinth with the lettering."
 }

@@ -269,7 +269,10 @@ class FigureToolTest extends TestCase
         $this->assertSame(1, GenerationRequest::count());                         // no new generation, no credits
         $new = ModelFile::where('uuid', $p->json('file.uuid'))->firstOrFail();
         $this->assertTrue($new->isReady());
-        $this->assertGreaterThan(ModelFile::where('uuid', $uuid)->firstOrFail()->triangles + 500, $new->triangles);   // the raised name is in the mesh
+        // the raised name is in the mesh: the same plinth without a name has fewer triangles (the round base is no
+        // measure any more: it is a turned piece with its own curves now)
+        $bare = $this->postJson('/api/files/'.$uuid.'/pedestal', ['type' => 'plaque', 'front' => 'right', 'sink' => 20])->assertCreated();
+        $this->assertGreaterThan(ModelFile::where('uuid', $bare->json('file.uuid'))->firstOrFail()->triangles + 500, $new->triangles);
         Storage::disk('models')->assertExists('files/'.$new->uuid.'/source.stl');
 
         // an uploaded model has no base to change
