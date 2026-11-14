@@ -1811,3 +1811,129 @@ ve frontě `sync` nestihne 30 s).
 `php artisan matplace:intake-hints` na serveru (zkontroluje i texty, které správce přepsal v `/admin/intake/hints`:
 ty mají přednost před `lang`, takže změna Eliška → Ema a ostatní nové věty se u přepsané události neprojeví, dokud ji
 správce neupraví nebo nevyprázdní; stránka to teď žlutě hlásí).
+
+## 26. Z nástroje rovnou do zakázky, řez až na slovo zákazníka (větev `feature/tool-to-order`, 14. 11. 2026)
+
+Zadání `zadani-cesta-nastroj-objednavka.md` (Roman 14. 11. 2026 u podtácku): stránka kalkulace mezi nástrojem a
+zakázkou „nic nedělá“, tlačítko „Objednat tisk“ nic neobjednává, stránka zakázky řeže hned, ačkoli zákazník ještě
+nevybral barvu ani počet kusů, a návrh tištěný lícem dolů se ukazuje zespodu. Tři části: A řez na slovo zákazníka,
+B nástroj → zakázka, C náhled motivem nahoru.
+
+### 26.1 A: každá nová zakázka čeká na volby (`farm.slice_on_demand`)
+
+- **Přepínač** `config/farm.php` `slice_on_demand` (env `FARM_SLICE_ON_DEMAND`, výchozí **zapnuto**). Zapnuto:
+  `OrderService::create` založí každou zakázku tisku ve stavu `awaiting_choices` a `PrepareFarmOrder` nespustí.
+  `big_model` si nechává svůj význam (odhad doby řezu, restart během řezu) a malému modelu se nenastavuje; událost
+  v historii má poznámku „the slice waits for the word of the customer“. Vypnuto: malý model se řeže hned jako dosud.
+- **Stránka zakázky** malého čekajícího modelu: volby jako dosud (barva a druh, kvalita, pevnost, podpěry, rozměr,
+  kusy, jednotky, pokročilé), **žádné rozpětí ceny** (`estimate` je `null`, velký model si rozpětí nechává), v kartě
+  věta „Cenu spočítáme, až si o ni řeknete… Zatím nic neobjednáváte ani neplatíte“ (`#farm-await-note`) a jedno
+  tlačítko **„Spočítat cenu“** (`#farm-slice-start`, texty `farm.order.price_start*`; velký model dál „Spočítat přesnou
+  cenu“ s minutami). Na telefonu je tlačítko i v liště dole (`#farm-price-bar`, zrcadlí `#farm-slice-start`), protože
+  je pod dlouhým seznamem voleb. Stisk je stejný požadavek jako dřív u velkého modelu (`reslice`, první řez čekající
+  zakázky; do denního limitu se nepočítá podruhé).
+- **Po prvním řezu se nic neřeže samo.** Tak to bylo už dřív (změna volby ukázala tlačítko „Přepočítat“, změna barvy
+  na jiný stroj „Přepočítat pro zvolenou barvu“ a platba čekala), jen cena vypadala platně a **zaplatit šlo i se
+  změněnou volbou** (zaplatilo se původní nastavení). Nově (`farm.ts` `choicesChanged`, `stalePrice`, jen se zapnutým
+  přepínačem – stav posílá `on_demand`): změněná volba cenu zešedí, nad ní žlutá věta „Změnili jste nastavení…“
+  (`#farm-stale-note`), tlačítko se jmenuje **„Přepočítat cenu“** a je oranžové, a platba řekne „nejdřív přepočítejte
+  cenu“ (`payBlocker`, i v liště dole). Změna barvy, která řez nepotřebuje (stejný stroj a druh), je dál okamžitá.
+- **Náhled před řezem.** Čekající zakázka po dílech (podtácek se zarovnanými barvami) dřív dostala modely dílů pár
+  vteřin po založení; teď by do stisku tlačítka ukazovala jednobarevný kotouč. Stav proto nese `pieces_url`
+  (`ToolsApiController::paramPieces`, model seskupený po kusech – tím maluje i kalkulace) a `farm.ts loadPieces`
+  náhled vybarví barvami vybraných cívek, dokud nepřijdou připravené díly.
+- **Čtenáři stavu** (`awaitsChoices()`, `big_model`, `STATUS_AWAITING_CHOICES`), prošlé jeden po druhém:
+  úklid `matplace:prune` (čekající zakázky po 7 dnech `cancelled`; platí i pro malé, zakázky hosta navíc po
+  `farm.guest.unpaid_days`), `AccountEraser` (zruší), `ProcessModelFile` (selhaný soubor → `failed`), „Moje tisky“
+  (filtr Rozpracované, stav „Čeká na vaše volby“), admin seznam zakázek (bez filtru ukazuje jen zaplacené, čekající
+  jsou pod filtrem stavu), maily (žádné: `OrderFlow::NOTIFY` stav nezná), denní počítadlo (`slicesToday` počítá
+  zakázku při založení, první řez ne), limit hosta (10 zakázek za hodinu z adresy), `sliceRestartable()` (jen velký
+  model: malý se během řezu přeřezat nedá, tlačítko přijde s výsledkem jako dosud), `alignCurrency` (jen `sliced`).
+- **Ostatní cesty k zakázce:** „Tisknout znovu“ (`again`, zakázka od zaplacení dál) **řeže hned** i se zapnutým
+  přepínačem (`$sliceNow`): volby jsou z už spočítané a zaplacené zakázky. Karta designéra, inspirace, vlastní soubor
+  přes `/farm` i tlačítko kalkulace jdou přes `store` a **čekají** jako všechno ostatní. Admin objednává stejnými
+  cestami; `overrideByAdmin` čekající zakázku nevezme (`locked`), přepisy se zadávají po prvním řezu.
+- **Testy:** sada běží s `FARM_SLICE_ON_DEMAND=false` (`phpunit.xml`): stovky testů farmy zakládají zakázku a čekají
+  řez hned, a tak ověřují vypnutý přepínač. Zapnutý ověřuje `FarmSliceOnDemandTest`.
+
+### 26.2 B: nástroj → zakázka, kalkulace z cesty venku
+
+- **Kdy** (`NextStep::direct($tool)`): farma je návštěvníkovi nabízena (`FarmGate::offered`), přepínač A je zapnutý
+  a nástroj je veřejný (`ToolVisibility::isPublic`; skrytý nástroj, který zkouší admin, jde přes kalkulaci jako dosud).
+  Hlavní tlačítko se pak jmenuje **„Přejít k tisku“** (`param.go.order`; en „Continue to printing“, es „Continuar a
+  la impresión“) a věta pod ním říká pravdu: „Na další stránce vyberete barvu, materiál a nastavení tisku a necháte
+  si spočítat cenu. Zatím nic neobjednáváte ani neplatíte.“ (`param.go.hint.order`). Mapa si text dalšího kroku bere
+  sama (`tools/map.blade.php`), dostala stejné slovo.
+- **Jedno místo:** `tool_page.ts` `Stage.leave(url)`. Volá ho hlavní tlačítko (odkaz hotového souboru: reliéf,
+  forma, oprava, mapa, úpravy…) a moduly, které návrh nejdřív ukládají (`param.ts`, `art.ts`, `paint.ts`). Kde stránka
+  jde rovnou (`MP_TOOL.order`), počká na zpracování souboru a pošle `POST farm.orders.store` se souborem, počtem kusů
+  (nejvýš 64) a druhem plastu ze stránky (`material`, nové pole `store`: zakázka na něm začne, je-li založený) a
+  `from=tool`; barvy dílů si farma bere z návrhu (`preselect`) stejně jako u tlačítka kalkulace. Stažení
+  (`…&download=1`) jde do kalkulace jako dosud.
+- **Když zakázku založit nejde** (farma mezitím zavřela, host je blokovaný nebo přes hodinový limit, odmítnutí,
+  soubor se nezpracoval, výpadek sítě): otevře se **kalkulace s týmž souborem** jako dosud a důvod se řekne u jejího
+  tlačítka (`sessionStorage` `mp_order_refused` → `bootFarmCta`). Zavřená farma, skrytý nástroj, vypnutý přepínač a
+  tržiště: stránka do zakázky vůbec nejde a tlačítko má staré jméno. **Odstávka** (FarmState `paused`) zakázky bere,
+  proto cesta zůstává přímá; věta o odstávce je na stránce nástroje i zakázky.
+- **Zpět do nástroje:** stránka zakázky má pod náhledem „Upravit tvar a rozměry“ (`state.tool_url`,
+  `UploadController::toolOf`), dokud zakázka není zaplacená.
+- **Žádná hromada čekajících zakázek** (rozhodnutí): návrh poslaný z nástroje znovu **převezme čekající zakázku**
+  téhož návštěvníka (účet, nebo anonymní relace) a téhož nástroje, která ještě nebyla řezaná (`slice_run` 0) a není
+  zaplacená (`OrderController::replaceable`, `OrderService::create(… $replace)`): stejný řádek, stejná adresa, nový
+  soubor a volby, událost „design changed in the tool…“, `created_at` znovu od teď (týden úklidu běží od posledního
+  návrhu). Nepočítá se do denního ani hostova limitu a nevzniká druhá událost `order_created`. Jakmile si zákazník
+  nechal spočítat cenu, je zakázka „skutečná“ a další návrh založí novou. Nahraný soubor a karta designéra nikdy nic
+  nepřevezmou; s vypnutým přepínačem také ne. Opuštěné soubory uklidí úklid modelů bez zakázky (AL §16.5).
+- **Kalkulace zůstává** pro nahrané soubory („Cena ze souboru“), sdílené odkazy `/c/{token}` a uložené kalkulace.
+  Její tlačítko (`farm.cta`) se jmenuje „Přejít k tisku“; stejně `models.order` (karta designéra, inspirace) a
+  `user.models.order` (Moje modely), která vedou jen na vstup do zakázky. `farm.cta_busy` česky „Otevírám objednávku…“.
+- **Měření:** `order_created` má u přímé cesty `kind: tool`. Cesta `order` ve `Funnel::PATHS` má krok ceny
+  `['price_shown', 'order_created']` (viděl přesnou cenu v kalkulaci, nebo šel z nástroje rovnou do zakázky; popis
+  v `/admin/stats/funnel`), stará data se nemění. Když se na stránce zakázky poprvé objeví cena, zapíše se
+  `price_shown` s `kind: order` (jednou na model, jen vlastníkovi; `OrderController::status`). Cesta `sales` začíná
+  nahráním souboru a přímé cesty se netýká.
+
+### 26.3 C: návrh tištěný lícem dolů se ukazuje motivem nahoru
+
+`ModelFile::printsFaceDown()` (z parametrů, jako `onePlateRequired`): druh z `ParametricGenerator::FLUSH_DOWN` se
+`flush`, medaile s motivem `flush` nebo `inlay`; reliéf z fotky na líci návrh otáčí zpět (jako `decor.needs_front_up`).
+Soubor to hlásí jako `file.face_down`, zakázka jako `state.face_down`. Kalkulace (`calculator.ts showKindTip`) i
+stránka zakázky (`farm.ts`) pak volají `viewer.setTurned(true)`: model je v náhledu obrácený motivem k divákovi, jako
+„Přední strana“ na stránce nástroje. Poloha tisku, řez ani soubor se nemění. Pod náhledem je řádek „Tiskne se lícem
+dolů, aby byl motiv hladký a barvy ostré. Náhled ho ukazuje otočený motivem nahoru…“ (`farm.face_down_note`); věta
+„v náhledu je v poloze, ve které se bude tisknout“ a podpěry sliceru se u otočeného náhledu neukazují. Admin stránka
+zakázky ukazuje dál polohu tisku.
+
+### 26.4 Ověření
+
+- `FarmSliceOnDemandTest` (9 testů): malý model čeká a nic se neřeže, ani opakovaným dotazem na stav; tlačítko, jeden
+  řez, denní počet; `price_shown` jednou; vypnutý přepínač = řez hned a druhý návrh = druhá zakázka; tisk znovu řeže
+  hned; převzetí čekající zakázky (stejný token, jedna událost, jiný nástroj, nahraný soubor, po ceně nová, cizí
+  ne); druh plastu ze stránky nástroje; stránka nástroje přímá jen tam, kde zakázka jde (cs/en/es, mapa, čtyři
+  důvody proč ne); texty tlačítek; líc dolů a cesta zpět do nástroje, `pieces_url`.
+- Prohlížeč (`scripts/order_walk.mjs`, bezhlavý Chrome, místní server nad kopií databáze ve scratchpadu, falešný
+  slicer): podtácek → „Přejít k tisku“ → zakázka čeká → barva a 2 kusy (pořád žádný řez) → „Spočítat cenu“ → cena →
+  4 kusy (cena šedá, platba drží) → „Přepočítat cenu“ → zpět do nástroje → znovu: po ceně nová zakázka, bez ceny
+  tatáž. Host i přihlášený, 1280 i 390 px, krabička navíc (návrh, který se lícem dolů netiskne): vše OK. Záložní
+  cesty: host přes limit (kalkulace s důvodem u tlačítka), zavřená farma a vypnutý přepínač (kalkulace jako dosud,
+  její „Přejít k tisku“ pak zakázku s vypnutým přepínačem řeže hned).
+
+### 26.5 Co není ověřené a co rozhodne Roman
+
+- **Skutečný slicer, fronta a tiskárny:** místně falešný slicer a synchronní fronta; na produkci první řez trvá
+  desítky vteřin a běží přes pracovníky. Skutečný telefon (jen emulace 390 px), platba kartou po přepočtu.
+- **Cesta z nástrojů, které jsem v prohlížeči neprošel:** jen podtácek a krabička (`param.ts`). Filament art
+  (`art.ts`), vybarvení (`paint.ts`), mapa, reliéf, forma, figurka a úpravy jdou stejným `Stage.leave`, ale stisk
+  jejich tlačítka jsem neviděl (mapa a figurka potřebují síť nebo placené služby).
+- **Texty SEO stránek nástrojů** (`lang/*/tools_seo/*.php`, asi 70 nástrojů × 3 jazyky, „přesnou cenu ukáže kalkulace
+  po „Pokračovat““) a `tools.create.lead.farm` popisují starou cestu přes kalkulaci. Patří obsahové session; tady
+  nezměněno.
+- **Nástroje, jejichž soubor není návrh** (kontrola a oprava modelu): tlačítko „Přejít k tisku“ založí zakázku
+  s nahraným souborem; nikdy nepřevezme čekající zakázku.
+- Otázky pro Romana jsou v hlášení session (odstávka a přímá cesta, převzetí čekající zakázky, výchozí stav testů).
+
+### 26.6 Nasazení
+
+Žádná migrace. `npm run build`, `config:cache`. Přepínač je zapnutý, dokud `.env` neřekne `FARM_SLICE_ON_DEMAND=false`.
+Po nasazení: z podtácku na produkci projít nástroj → zakázka → „Spočítat cenu“ se skutečným slicerem; ve
+`/admin/stats/funnel` cesta `order` má nový popis třetího kroku.
