@@ -1532,7 +1532,7 @@
     "pet.dedication": "Druhý řádek (menším písmem)",
     "pet.dedication_ph": "např. 2014–2026",
     "pet.consent": "Fotka je moje, nebo ji smím použít, a není na ní člověk. Souhlasím, že ji zpracuje náš dodavatel generování modelů.",
-    "pet.privacy": "Fotka jde jen k dodavateli Tripo, který z ní postaví model, a hned po vytvoření figurky ji mažeme. U kreslené figurky mažeme i překreslený obrázek. Figurku vidí jen ten, kdo má odkaz; nepřihlášeným ji po 30 dnech mažeme.",
+    "pet.privacy": "Fotka jde jen k dodavatelům Tripo a Meshy, kteří z ní postaví model, a hned po vytvoření figurky ji mažeme. Mažeme i obrázek, který z fotky vznikne před stavbou modelu (zvíře bez pozadí, nebo kreslená figurka). Figurku vidí jen ten, kdo má odkaz; nepřihlášeným ji po 30 dnech mažeme.",
     "pet.submit": "Vytvořit figurku",
     "pet.wait": "Obvykle to trvá 2 až 4 minuty. Můžete odejít a vrátit se odkazem, který je teď v adresním řádku.",
     "pet.generating": "Vytvářím figurku, obvykle to trvá 2 až 4 minuty…",

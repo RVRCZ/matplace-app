@@ -1532,7 +1532,7 @@
     "pet.dedication": "Second line (in smaller letters)",
     "pet.dedication_ph": "e.g. 2014–2026",
     "pet.consent": "The photo is mine, or I may use it, and there is no person in it. I agree that our supplier of model generation processes it.",
-    "pet.privacy": "The photo goes only to the supplier Tripo, which builds the model of it, and we delete it as soon as the figurine is made. For a cartoon figurine we delete the redrawn picture too. Only those with the link see the figurine; for visitors without an account we delete it after 30 days.",
+    "pet.privacy": "The photo goes only to the suppliers Tripo and Meshy, which build the model of it, and we delete it as soon as the figurine is made. We also delete the picture made of the photo before the model is built (the animal without its background, or the cartoon figure). Only those with the link see the figurine; for visitors without an account we delete it after 30 days.",
     "pet.submit": "Make the figurine",
     "pet.wait": "It usually takes 2 to 4 minutes. You can leave and come back by the link that is in the address bar now.",
     "pet.generating": "Making the figurine, it usually takes 2 to 4 minutes…",

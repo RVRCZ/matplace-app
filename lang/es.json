@@ -1532,7 +1532,7 @@
     "pet.dedication": "Segunda línea (en letra más pequeña)",
     "pet.dedication_ph": "p. ej. 2014–2026",
     "pet.consent": "La foto es mía, o puedo usarla, y no aparece ninguna persona. Acepto que la procese nuestro proveedor de generación de modelos.",
-    "pet.privacy": "La foto solo va al proveedor Tripo, que construye el modelo a partir de ella, y la borramos en cuanto la figura está hecha. En la figura de dibujo animado borramos también la imagen redibujada. Solo quien tiene el enlace ve la figura; a los visitantes sin cuenta se la borramos a los 30 días.",
+    "pet.privacy": "La foto solo va a los proveedores Tripo y Meshy, que construyen el modelo a partir de ella, y la borramos en cuanto la figura está hecha. Borramos también la imagen que se crea de la foto antes de construir el modelo (el animal sin fondo, o la figura de dibujo animado). Solo quien tiene el enlace ve la figura; a los visitantes sin cuenta se la borramos a los 30 días.",
     "pet.submit": "Crear la figura",
     "pet.wait": "Suele tardar de 2 a 4 minutos. Puede salir y volver con el enlace que ahora está en la barra de direcciones.",
     "pet.generating": "Creando la figura, suele tardar de 2 a 4 minutos…",

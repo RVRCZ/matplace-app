@@ -184,6 +184,16 @@ class PetFigurineTest extends TestCase
         $this->make(['style' => 'cartoon', 'image_left' => UploadedFile::fake()->image('left.jpg')])->assertCreated();
         $this->assertSame(25, GenerationRequest::latest('id')->firstOrFail()->cost_cents);
         $this->assertSame([], Storage::disk('local')->allFiles('photos/figures'));
+        // a realistic pet from one photo can be cleaned first (always with Meshy): the picture (5) and the model of it
+        config(['ai.clean_photo' => 'always', 'ai.smooth_figures_standard' => false]);
+        $this->make()->assertCreated()->assertJsonPath('generation.status', 'done');
+        $clean = GenerationRequest::latest('id')->firstOrFail();
+        $this->assertSame(['realistic', 'model', 5], [$clean->description['style'], $clean->description['stage'], $clean->cost_cents]);
+        $this->assertSame([], Storage::disk('local')->allFiles('photos/figures'));
+        // with more sides the photos go as they are: the redrawn picture would replace them all
+        $this->make(['image_left' => UploadedFile::fake()->image('left.jpg')])->assertCreated();
+        $this->assertArrayNotHasKey('stage', GenerationRequest::latest('id')->firstOrFail()->description);
+        config(['ai.clean_photo' => 'auto']);
         // without the switch a miniature is made as the generator is set up, like the realistic figure
         config(['ai.smooth_figures_standard' => false]);
         $this->make(['style' => 'miniature'])->assertCreated();

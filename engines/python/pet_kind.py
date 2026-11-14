@@ -13,6 +13,7 @@ Why this is its own module: an animal stands on four thin legs. The bases of a b
 by a circle round the chest and would be a slab as wide as the dog is long; and the legs and the tail are exactly what
 breaks off a print, so their thickness is measured and, for the miniature, made up.
 """
+import math
 import os
 import sys
 
@@ -137,6 +138,54 @@ def _text(M, S, extras, cap, width):
     return cs.translate([-x0, -y0]), ({"missing_chars": info["missing_chars"]} if info.get("missing_chars") else {})
 
 
+def _profiled(M, outline, ped_h, tall):
+    """
+    The base as a turned piece instead of a slab: (body, top inset, how far the foot stands out of the outline).
+
+    A low base (oval, round) has a small bevel at the bed and a quarter-round top edge. The plinth has a foot that
+    stands out and runs into the waist through a cove, a cap that flares out at 45 degrees (prints without supports)
+    and a rounded top edge; the waist between them is the outline itself, so the name is set on it as before.
+    Curves are cut into slices 0.1 mm high: finer than a layer, so the print shows a curve and not steps.
+    """
+    foot = min(1.6, 0.1 * ped_h) if tall else 0.0
+    r = min(1.0, 0.08 * ped_h) if tall else min(1.6, 0.4 * ped_h)
+    bevel = 0.4
+    # (from, to, offset at the height z): straight parts are one slice, curved ones many
+    parts = [(0.0, bevel, lambda z: foot - (bevel - z), True)]
+    if tall:
+        foot_h, cap_h = 0.16 * ped_h, 0.11 * ped_h
+        cove0 = 0.55 * foot_h
+        flare = min(0.9, 0.35 * cap_h)
+        c0 = ped_h - cap_h
+        parts += [
+            (bevel, cove0, lambda z: foot, False),
+            (cove0, foot_h, lambda z: foot * (1.0 - math.sin(0.5 * math.pi * (z - cove0) / (foot_h - cove0))), True),
+            (foot_h, c0, lambda z: 0.0, False),
+            (c0, c0 + flare, lambda z: z - c0, True),
+            (c0 + flare, ped_h - r, lambda z: flare, False),
+            (ped_h - r, ped_h, lambda z: flare - (r - math.sqrt(max(0.0, r * r - (z - (ped_h - r)) ** 2))), True),
+        ]
+    else:
+        parts += [
+            (bevel, ped_h - r, lambda z: 0.0, False),
+            (ped_h - r, ped_h, lambda z: -(r - math.sqrt(max(0.0, r * r - (z - (ped_h - r)) ** 2))), True),
+        ]
+    slices = []
+    for z0, z1, off, curved in parts:
+        if z1 - z0 < 1e-6:
+            continue
+        n = max(1, int(math.ceil((z1 - z0) / 0.1))) if curved else 1
+        for i in range(n):
+            a, b = z0 + (z1 - z0) * i / n, z0 + (z1 - z0) * (i + 1) / n
+            d = min(off(a), off(b))                       # never wider than the curve: a slice is a step inside it
+            cs = outline if abs(d) < 1e-6 else outline.offset(d, M.JoinType.Round, 2.0, 48)
+            slices.append(cs.extrude(b - a + 0.01).translate([0, 0, a - (0.01 if a > 0 else 0.0)]))
+    body = slices[0]
+    for piece in slices[1:]:
+        body = body + piece
+    return body, r, foot
+
+
 def stand(m, kind, extras, target):
     """
     The base under the paws: one body with the figure. Returns (mesh, note).
@@ -175,7 +224,7 @@ def stand(m, kind, extras, target):
     sink = max(1.0, 0.015 * target)
     tall = kind == "plaque"
     ped_h = max(12.0, 0.13 * target) if tall else max(4.0, 0.05 * target)
-    chamfer = min(1.0, 0.25 * ped_h)
+    chamfer = min(1.0, 0.08 * ped_h) if tall else min(1.6, 0.4 * ped_h)     # the rounded top edge (see _profiled)
 
     # the name: where it was asked for, else beside a long animal along its flank (+X) and under a compact one in front (-Y)
     side = str(extras.get("name_side") or "")
@@ -208,13 +257,27 @@ def stand(m, kind, extras, target):
     elif kind == "plaque":
         outline = S.rounded_rect(M, w, d, 2.0).translate([-w / 2, -d / 2])
     else:
-        outline = S.rounded_rect(M, w, d, min(w, d) / 2 - 0.02).translate([-w / 2, -d / 2])
+        # round the paws themselves, not round their box: a stadium cuts the corners of the box, and a paw of an
+        # animal standing wide is exactly there (seen 14 Nov 2026: a hind paw over the edge). The side with the name
+        # keeps its full width.
+        pts = low[:, :2] - np.array([cx, cy])
+        hx, hy = (x1 - x0) / 2, (y1 - y0) / 2
+        if strip:
+            edge = {"right": [[hx, -hy], [hx, hy]], "left": [[-hx, -hy], [-hx, hy]],
+                    "back": [[-hx, hy], [hx, hy]], "front": [[-hx, -hy], [hx, -hy]]}[side]
+            pts = np.vstack([pts, np.array(edge)])
+        try:
+            from scipy.spatial import ConvexHull
+            ring = pts[ConvexHull(pts).vertices]
+            outline = M.CrossSection([ring.tolist()]).offset(margin, M.JoinType.Round, 2.0, 96)
+            if outline.area() <= 0:
+                raise ValueError("empty footprint")
+        except Exception:  # noqa: BLE001 - the stadium is still a base
+            outline = S.rounded_rect(M, w, d, min(w, d) / 2 - 0.02).translate([-w / 2, -d / 2])
 
-    body = outline.extrude(ped_h - chamfer)
-    steps = 4
-    for i in range(steps):
-        # the chamfer as four steps of a quarter millimetre: each is a layer of the print
-        body = body + outline.offset(-chamfer * (i + 1) / steps, M.JoinType.Round, 2.0, 32).extrude(chamfer / steps + 0.01).translate([0, 0, ped_h - chamfer + chamfer * i / steps - 0.01])
+    body, _, foot = _profiled(M, outline, ped_h, tall)
+    w, d = w + 2 * foot, d + 2 * foot
+    face_w, face_d = w - 2 * foot, d - 2 * foot                          # the waist of the plinth, where the name stands
     if label is not None:
         tw, th = S.size(label)
         # set at the front edge (the feet of the letters outwards, read from that side), then turned to its side
@@ -230,7 +293,7 @@ def stand(m, kind, extras, target):
         font = extras.get("font")
         if lines and font and os.path.isfile(font):
             try:
-                face, y_top = (d if along else w), ped_h * 0.88
+                face, y_top = (face_d if along else face_w), ped_h * 0.88
                 for i, line in enumerate(lines):
                     band = ped_h * (0.44 if i == 0 else 0.26)
                     cs, info = S.text(M, [line], font, band * 0.72)
@@ -242,7 +305,7 @@ def stand(m, kind, extras, target):
                     y_top -= band
                     flat = cs.translate([-bx - tw / 2, -by]).extrude(1.2).rotate([90, 0, 0]).translate([0, 0.2, y_top + (band - th) / 2])
                     # built on the front (-Y) face, then turned to its side
-                    body = body + flat.translate([0, -(w if along else d) / 2, 0]).rotate([0, 0, SIDES[side]])
+                    body = body + flat.translate([0, -(face_w if along else face_d) / 2, 0]).rotate([0, 0, SIDES[side]])
                     if info.get("missing_chars"):
                         note["missing_chars"] = info["missing_chars"]
                 note["engraved_lines"] = len(lines)

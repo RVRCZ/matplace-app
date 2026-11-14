@@ -8,6 +8,8 @@ use App\Engines\Contracts\ModelGenerator;
 use App\Engines\DTO\GenerationHandle;
 use App\Engines\DTO\GenerationOptions;
 use App\Engines\DTO\GenerationStatus;
+use App\Engines\Generator\MeshyGenerator;
+use App\Engines\Generator\TripoGenerator;
 use App\Mail\GenerationReady;
 use App\Models\GenerationRequest;
 use App\Models\ModelFile;
@@ -40,7 +42,35 @@ class GenerateModel implements ShouldQueue
     public const CARTOON_PROMPT = 'Turn this pet into a cute stylized cartoon character figurine: big head, large friendly eyes, simplified rounded shapes, '
         .'thick sturdy legs and tail, smooth surface, full body, same pose and breed, plain white background, 3D toy look';
 
+    /**
+     * What the photo of a pet becomes before a generator without its own clean-up (Meshy) makes the model: the animal
+     * alone. A hand on the tail, a leash or a shoe behind the legs would otherwise be modelled with it (tried 14 Nov 2026).
+     */
+    public const CLEAN_PROMPT = 'Photorealistic photo of exactly this same animal, unchanged: same breed, same coat pattern and colours, same pose, same proportions. '
+        .'Show the whole animal alone, complete from head to paws and tail. Remove every person, hand, leg, shoe, leash and other object; '
+        .'where something covered a part of the animal, restore that part naturally. Plain white studio background, soft even light, no shadow on the ground, no text.';
+
     public function __construct(public readonly int $requestId) {}
+
+    /** Who redraws a photo: the generator itself, or Tripo's image model beside a generator that draws no pictures (Meshy). */
+    private function restyler(ModelGenerator $generator): ?ImageRestyler
+    {
+        if ($generator instanceof ImageRestyler) {
+            return $generator;
+        }
+
+        return $generator instanceof MeshyGenerator && config('ai.tripo.api_key') ? new TripoGenerator((array) config('ai.tripo')) : null;
+    }
+
+    /** AI_CLEAN_PHOTO: always | never | auto (= with Meshy only: Tripo cleans the photo itself, `enable_image_autofix`). */
+    private function cleansPhoto(ModelGenerator $generator): bool
+    {
+        return match ((string) config('ai.clean_photo', 'auto')) {
+            'always' => true,
+            'never' => false,
+            default => $generator instanceof MeshyGenerator,
+        };
+    }
 
     public function handle(ModelGenerator $generator, ModelNormalizer $normalizer): void
     {
@@ -52,14 +82,22 @@ class GenerateModel implements ShouldQueue
         try {
             $kind = $req->description['kind'] ?? null;
             $style = $kind === 'pet' ? ($req->description['style'] ?? 'realistic') : null;
-            if (! $req->external_id && $style === 'cartoon' && $generator instanceof ImageRestyler && empty($req->description['stage'])) {
-                // first task: the photo redrawn as a cartoon figure
-                $handle = $generator->restyle(Storage::disk('local')->path((string) $req->image_path), self::CARTOON_PROMPT);
+            $restyler = $this->restyler($generator);
+            // the cartoon is drawn of whatever was sent; a realistic pet is cleaned only when one photo is all there is
+            // (the redrawn picture replaces the photos, and the other sides say more than a clean front)
+            $redraw = match (true) {
+                $style === 'cartoon' => self::CARTOON_PROMPT,
+                $kind === 'pet' && $req->type === 'image' && count($req->photoPaths()) <= 1 && $this->cleansPhoto($generator) => self::CLEAN_PROMPT,
+                default => null,
+            };
+            if (! $req->external_id && $redraw && $restyler && empty($req->description['stage'])) {
+                // first task: the photo redrawn (as a cartoon figure, or as the animal alone)
+                $handle = $restyler->restyle(Storage::disk('local')->path((string) $req->image_path), $redraw);
                 $req->update(['external_id' => $handle->externalId, 'engine' => $handle->engine, 'status' => 'running',
                     'cost_cents' => (int) ($handle->meta['credits'] ?? 5), 'description' => ['stage' => 'image'] + $req->description]);
             }
-            if (($req->description['stage'] ?? null) === 'image' && $generator instanceof ImageRestyler) {
-                $drawn = $generator->pollImage(new GenerationHandle((string) $req->engine, (string) $req->external_id));
+            if (($req->description['stage'] ?? null) === 'image' && $restyler) {
+                $drawn = $restyler->pollImage(new GenerationHandle((string) $req->engine, (string) $req->external_id));
                 if ($drawn->state === GenerationStatus::FAILED) {
                     $req->update(['status' => 'failed', 'error' => $drawn->error]);
                     $this->forgetPhoto($req);

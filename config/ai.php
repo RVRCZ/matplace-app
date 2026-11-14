@@ -95,6 +95,9 @@ return [
         'image_autofix' => (bool) env('TRIPO_IMAGE_AUTOFIX', true),
         'work_dir' => storage_path('app/generated'),
     ],
+    // the photo of a pet redrawn as the animal alone (no hand, leash, shoe) before the model is made: always | never |
+    // auto = with Meshy only, which has no clean-up of its own; the picture is drawn by Tripo's image model (5 credits)
+    'clean_photo' => env('AI_CLEAN_PHOTO', 'auto'),
     // false = the miniature and the cartoon figure get the detailed geometry too (best result, 40 instead of 20 credits)
     'smooth_figures_standard' => (bool) env('AI_SMOOTH_FIGURES_STANDARD', false),
     // "describe what it should look like" on the tool pages: for everybody, or (false) for the admin alone, who tries the wishes first
