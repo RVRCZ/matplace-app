@@ -1911,6 +1911,10 @@ zakázky ukazuje dál polohu tisku.
   hned; převzetí čekající zakázky (stejný token, jedna událost, jiný nástroj, nahraný soubor, po ceně nová, cizí
   ne); druh plastu ze stránky nástroje; stránka nástroje přímá jen tam, kde zakázka jde (cs/en/es, mapa, čtyři
   důvody proč ne); texty tlačítek; líc dolů a cesta zpět do nástroje, `pieces_url`.
+- Celá sada na větvi: 1289 testů, 109 462 tvrzení, 12 přeskočených, 3 červené – ty tři, které jsou červené i na
+  mainu (`PapelPortraitTest`, `PrintPhotosTest`, `YouTubeChannelTest`). `tsc --noEmit`, `npm run build`, `pint` čisté.
+- Text pod nadpisem kroku (`farm.order.step_material_hint`) říkal „cena se přepočítá podle vaší volby“; teď „po
+  změně nastavení si cenu necháte přepočítat tlačítkem“ (platí se zapnutým i vypnutým přepínačem).
 - Prohlížeč (`scripts/order_walk.mjs`, bezhlavý Chrome, místní server nad kopií databáze ve scratchpadu, falešný
   slicer): podtácek → „Přejít k tisku“ → zakázka čeká → barva a 2 kusy (pořád žádný řez) → „Spočítat cenu“ → cena →
   4 kusy (cena šedá, platba drží) → „Přepočítat cenu“ → zpět do nástroje → znovu: po ceně nová zakázka, bez ceny

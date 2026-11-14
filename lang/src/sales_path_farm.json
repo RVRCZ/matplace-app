@@ -20,9 +20,9 @@
         "El pago mínimo con tarjeta es :amount; lo que supere el precio queda como crédito para su próxima impresión."
     ],
     "farm.order.step_material_hint": [
-        "Vyberte barvu a nastavení tisku. Zatím nic neplatíte; cena se přepočítá podle vaší volby.",
-        "Pick the colour and the print settings. Nothing to pay yet; the price follows your choice.",
-        "Elija el color y los ajustes de impresión. Todavía no paga nada; el precio sigue su elección."
+        "Vyberte barvu a nastavení tisku. Zatím nic neplatíte; po změně nastavení si cenu necháte přepočítat tlačítkem.",
+        "Pick the colour and the print settings. Nothing to pay yet; after a change you recalculate the price with the button.",
+        "Elija el color y los ajustes de impresión. Todavía no paga nada; tras un cambio recalcula el precio con el botón."
     ],
     "farm.order.step_order_hint": [
         "Zvolte doručení a zaplaťte kartou nebo z kreditu. Tisk začne po zaplacení.",

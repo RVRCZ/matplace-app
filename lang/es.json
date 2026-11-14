@@ -1848,7 +1848,7 @@
     "farm.order.ship.total_estimate": "Unos :total en total, el transportista confirma el envío",
     "farm.order.pay_note_round": "Con tarjeta paga exactamente :amount; los céntimos de más quedan como crédito.",
     "farm.order.pay_note_min": "El pago mínimo con tarjeta es :amount; lo que supere el precio queda como crédito para su próxima impresión.",
-    "farm.order.step_material_hint": "Elija el color y los ajustes de impresión. Todavía no paga nada; el precio sigue su elección.",
+    "farm.order.step_material_hint": "Elija el color y los ajustes de impresión. Todavía no paga nada; tras un cambio recalcula el precio con el botón.",
     "farm.order.step_order_hint": "Elija la entrega y pague con tarjeta o con el crédito. La impresión empieza al pagar.",
     "home.benefit.farm_from": "O una impresión con nosotros desde :price",
     "figure.notify.lead": "Tarda de 2 a 4 minutos. ¿No quiere esperar? Le enviamos el enlace al modelo terminado por correo.",

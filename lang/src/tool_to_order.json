@@ -58,5 +58,10 @@
         "Otevírám objednávku…",
         "Opening the order…",
         "Abriendo el pedido…"
+    ],
+    "farm.order.step_material_hint": [
+        "Vyberte barvu a nastavení tisku. Zatím nic neplatíte; po změně nastavení si cenu necháte přepočítat tlačítkem.",
+        "Pick the colour and the print settings. Nothing to pay yet; after a change you recalculate the price with the button.",
+        "Elija el color y los ajustes de impresión. Todavía no paga nada; tras un cambio recalcula el precio con el botón."
     ]
 }
