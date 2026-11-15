@@ -77,8 +77,9 @@ class GenerateModel implements ShouldQueue
         .'add nothing, do not beautify, do not change the identity, keep the eyes exactly as they are, open or closed. '
         .'The animal: keep its breed, coat pattern and colours, its pose and proportions precisely as they are. '
         .'Show both of them whole, the person from the head to the feet and the animal from the head to the paws and the tail, '
-        .'standing or sitting as in the photo and in the same position to each other; the leash between them may stay. '
-        .'Remove the background, every other person, all furniture (a bench, a chair, a sofa), objects on the ground and in the hands, text and logos; '
+        .'standing or sitting as in the photo and in the same position to each other. '
+        .'Remove the leash (Roman, 15 Nov 2026: the photo is cleaned anyway, and a leash is the thinnest thing of the print), the background, every other person, '
+        .'all furniture (a bench, a chair, a sofa), objects on the ground and in the hands, text and logos; the hand that held the leash rests naturally; '
         .'where something covered a part of the person or of the animal, restore that part naturally with the same clothing and the same coat. '
         .'Plain white studio background, soft even light, no shadow on the ground.';
 

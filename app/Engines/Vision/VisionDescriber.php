@@ -58,9 +58,9 @@ final class VisionDescriber
                 .'Besides the content rules, set ok=false with exactly one of these words as the reason: '
                 .'"no_animal" when no animal is in the picture; "no_person" when no person is in the picture (a hand or a pair of legs only is no person); '
                 .'"several" when there is more than one animal; "several_people" when there is more than one person; '
-                .'"cropped" when the frame cuts off the person (the legs, the feet or the head) or the animal (the legs or most of the body), or the person or the animal is mostly hidden. '
+                .'"cropped" when the frame cuts off the person (the legs, the feet or the head) or the animal (the legs or most of the body), or the person or the animal is mostly hidden, or the person holds the animal in their arms or on their lap (its legs would hang in the air: Roman, 15 Nov 2026). '
                 .'A person in the background, far behind the two, does not count as a second person only when they are clearly a passer-by; when in doubt about a second person use "several_people". '
-                .'A collar, a leash, a toy, grass or furniture are fine. One whole animal and one whole person, sitting or standing, is ok.';
+                .'A collar, a leash, a toy, grass or furniture are fine. One whole animal and one whole person, each on the ground, sitting or standing, is ok.';
         }
         if ($view !== 'front') {
             $system .= ' This photo is an additional view of a subject whose front photo was already accepted: it shows the subject from the '
