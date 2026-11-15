@@ -10,6 +10,8 @@ use App\Mail\FarmAdminAlert;
 use App\Mail\FarmVideoPublished;
 use App\Models\FarmOrder;
 use App\Models\FarmVideo;
+use App\Models\GenerationRequest;
+use App\Models\ModelFile;
 use App\Models\YouTubeAccount;
 use App\Support\Money;
 use Illuminate\Support\Carbon;
@@ -640,12 +642,44 @@ class FarmVideos
         $file = $order?->modelFile;
         $route = match (true) {
             $file === null => null,
-            $file->origin === 'generated' => 'tools.figure',
+            // a pet figurine has a page of its own (until 15 Nov 2026 its videos sent the viewer to the bust's page)
+            $file->origin === 'generated' => $this->generatedKind($file) === 'pet' ? 'tools.pet' : 'tools.figure',
             $file->origin === 'tool' => 'tools.'.(in_array($file->origin_ref, ['lithophane', 'relief'], true) ? 'relief' : $file->origin_ref),
             default => null,
         };
 
         return $route && Route::has($route) ? $base.route($route, [], false) : $base;
+    }
+
+    /** What a generated model was asked to be (bust, figure, pet), from its generation; null for any other file. */
+    private function generatedKind(?ModelFile $file): ?string
+    {
+        if (! $file || $file->origin !== 'generated' || ! $file->origin_ref) {
+            return null;
+        }
+        $kind = GenerationRequest::where('token', $file->origin_ref)->value('description');
+        $kind = is_string($kind) ? json_decode($kind, true) : $kind;
+
+        return is_array($kind) && is_string($kind['kind'] ?? null) ? $kind['kind'] : null;
+    }
+
+    /**
+     * The name of the tool that made the model, as its page is called ("Busta nebo figurka z fotky"), for the captions
+     * of the videos (Roman, 15 Nov 2026); null for a customer's own file or a tool without a page.
+     */
+    public function toolName(?FarmOrder $order, ?string $locale = null): ?string
+    {
+        $locale ??= (string) config('youtube.language');
+        $file = $order?->modelFile;
+        $key = match (true) {
+            $file === null => null,
+            $file->origin === 'generated' => $this->generatedKind($file) === 'pet' ? 'pet' : 'figure',
+            $file->origin === 'tool' => in_array($file->origin_ref, ['lithophane', 'relief'], true) ? 'relief' : (string) $file->origin_ref,
+            default => null,
+        };
+        $name = $key ? 'tools.'.$key.'.title' : null;
+
+        return $name !== null && __($name, [], $locale) !== $name ? (string) __($name, [], $locale) : null;
     }
 
     /** "matplace.com/tools/vase": the address as the end card shows it. */
@@ -778,8 +812,13 @@ class FarmVideos
         if ($order->price_total === null || (float) $order->price_total <= 0) {
             return null;
         }
+        $currency = (string) ($order->currency ?: Money::CZK);
+        // a model made from a photo costs its generation too (the farm's `generation_price`, in crowns): the price a
+        // video names is the print with the generation, what the whole thing comes to (Roman, 15 Nov 2026)
+        $generation = $order->modelFile?->origin === 'generated' ? max(0.0, (float) app(FarmSettings::class)->get('generation_price')) : 0.0;
+        $extra = $generation > 0 ? (float) Money::czk($generation)->to($currency)->amount : 0.0;
 
-        return Money::of(round((float) $order->price_total), (string) ($order->currency ?: Money::CZK))->format($locale ?? (string) config('youtube.language'));
+        return Money::of(round((float) $order->price_total + $extra), $currency)->format($locale ?? (string) config('youtube.language'));
     }
 
     /** The admin's switch (/admin/farm/settings): may the price series and comments show what a print cost? */

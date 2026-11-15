@@ -180,6 +180,11 @@ class TimelapseCutter
             $dir.'/short_title.txt' => implode("\n", $this->wrap($video?->title ?: $this->videos->defaultTitle($order), (int) round($h * 0.045), $w)),
             $dir.'/short_url.txt' => 'matplace.com',
         ];
+        // the tool that made the model, said by its name above the address (a customer's own file has none)
+        $tool = $this->videos->toolName($order);
+        if ($tool !== null) {
+            $texts[$dir.'/short_tool.txt'] = implode("\n", $this->wrap($tool, (int) round($h * 0.036), $w));
+        }
         $lists = [$dir.'/short.txt' => $this->timed($frames, $per)];
         $inputs = $paths['turn'] ? ['-i', $paths['turn']] : ['-loop', '1', '-t', '3', '-i', $last];
         array_push($inputs, '-f', 'concat', '-safe', '0', '-i', $dir.'/short.txt');
@@ -216,10 +221,11 @@ class TimelapseCutter
         }
         $sequence[] = '[closing]';
         $graph[] = implode('', $sequence).'concat=n='.count($sequence).':v=1:a=0[body]';
-        $line = fn (string $file, int $size, string $y, string $enable) => sprintf("drawtext=fontfile='%s':textfile='%s':expansion=none:text_align=C:line_spacing=%d:fontsize=%d:fontcolor=white:box=1:boxcolor=black@0.55:boxborderw=%d:x=(w-text_w)/2:y=%s:enable='%s'",
-            $this->font(), $this->path($file), (int) round($size * 0.3), $size, (int) round($h * 0.012), $y, $enable);
+        $line = fn (string $file, int $size, string $y, string $enable, string $color = 'white') => $this->caption($file, $size, 'x=(w-text_w)/2:y='.$y, $color).":enable='".$enable."'";
+        $closing = 'gte(t,'.VideoCut::number($seconds - 1).')';
         $graph[] = '[body]'.$line($dir.'/short_title.txt', (int) round($h * 0.045), 'h*0.16', 'lt(t,1)').','
-            .$line($dir.'/short_url.txt', (int) round($h * 0.04), 'h*0.78', 'gte(t,'.VideoCut::number($seconds - 1).')').',settb=AVTB[v]';
+            .($tool !== null ? $line($dir.'/short_tool.txt', (int) round($h * 0.036), 'h*0.78-text_h-h*0.02', $closing, self::TEAL).',' : '')
+            .$line($dir.'/short_url.txt', (int) round($h * 0.04), 'h*0.78', $closing).',settb=AVTB[v]';
 
         return $this->withMusic(new VideoCut('short', $dir.'/short.mp4', $lists, $texts, $inputs, implode(';', $graph), $seconds, $growth, $fps, null), $this->music($order), removal: $removal);
     }
@@ -241,6 +247,10 @@ class TimelapseCutter
         $seconds = $title + $growth + $hold + ($photo ? $photoSeconds : 0) + $end;
         $facts = $this->videos->cardFacts($order, $locale);
         $texts = [$dir.'/wide_name.txt' => $facts['name'], $dir.'/wide_facts.txt' => $facts['line'], $dir.'/wide_url.txt' => $this->videos->address($order)];
+        $tool = $this->videos->toolName($order, $locale);
+        if ($tool !== null) {
+            $texts[$dir.'/wide_tool.txt'] = $tool;
+        }
         $inputs = ['-f', 'concat', '-safe', '0', '-i', $dir.'/wide.txt', '-loop', '1', '-t', VideoCut::number($seconds + 1), '-i', public_path('img/logo.png')];
         $graph = [
             '[1:v]format=rgba,split[logo_c][logo_e]',
@@ -249,7 +259,7 @@ class TimelapseCutter
             sprintf('[0:v]%s,fps=%d,tpad=stop_mode=clone:stop_duration=%s,format=yuv420p,setsar=1[grown]', $this->fit($w, $h), $fps, VideoCut::number($hold)),
             sprintf('[logo_c]scale=%d:-2[logo_corner]', (int) round($w * 0.1)),
             sprintf('[grown][logo_corner]overlay=%d:%d:shortest=1,format=yuv420p[print]', (int) round($w * 0.025), (int) round($h * 0.035)),
-            $this->endCard('logo_e', $dir.'/wide_url.txt', $w, $h, $fps, $end, 'end'),
+            $this->endCard('logo_e', $dir.'/wide_url.txt', $w, $h, $fps, $end, 'end', $tool !== null ? $dir.'/wide_tool.txt' : null),
         ];
         if ($photo) {
             array_push($inputs, '-loop', '1', '-t', VideoCut::number($photoSeconds + 1), '-i', $photo);
@@ -294,8 +304,8 @@ class TimelapseCutter
             $lists[$list] = $this->timed($frames, $per);
             $texts[$work.'_name_'.$i.'.txt'] = $name = $this->videos->cardFacts($order, $locale)['name'];
             array_push($inputs, '-f', 'concat', '-safe', '0', '-i', $list);
-            $graph[] = sprintf("[%d:v]%s,fps=%d,tpad=stop_mode=clone:stop_duration=%s,drawtext=fontfile='%s':textfile='%s':expansion=none:fontsize=%d:fontcolor=white:box=1:boxcolor=black@0.55:boxborderw=%d:x=w*0.04:y=h*0.86,fade=in:st=0:d=0.25,format=yuv420p,setsar=1[p%d]",
-                $i, $this->fit($w, $h), $fps, VideoCut::number($hold), $this->font(), $this->path($work.'_name_'.$i.'.txt'), (int) round($h * 0.045), (int) round($h * 0.015), $i);
+            $graph[] = sprintf('[%d:v]%s,fps=%d,tpad=stop_mode=clone:stop_duration=%s,%s,fade=in:st=0:d=0.25,format=yuv420p,setsar=1[p%d]',
+                $i, $this->fit($w, $h), $fps, VideoCut::number($hold), $this->caption($work.'_name_'.$i.'.txt', (int) round($h * 0.045), 'x=w*0.04:y=h*0.86'), $i);
             // YouTube wants the first chapter at 0:00 and every one 10 s or longer: the first print takes the intro in
             $chapters[] = [$chapters ? $at : 0.0, $name, $this->videos->link($order, FarmVideo::KIND_WEEKLY), $order->id];
             $at += $grow + $hold;
@@ -526,11 +536,27 @@ class TimelapseCutter
         return sprintf("drawtext=fontfile='%s':textfile='%s':expansion=none:fontsize=%d:fontcolor=%s:x=(w-text_w)/2:y=%s", $this->font(), $this->path($file), $size, $color, $y);
     }
 
-    /** The closing card: the logo and an address under it, fading in. */
-    private function endCard(string $logo, string $urlFile, int $w, int $h, int $fps, float $seconds, string $label): string
+    /** The teal of the logo: the colour of a tool's name in the captions. */
+    public const TEAL = '0x2ca697';
+
+    /**
+     * A caption over the picture (Roman, 15 Nov 2026, the style he picked): bold letters with a dark outline and a soft
+     * shadow, no box behind them; white, or the logo's teal for the name of a tool. Lines are centred on each other.
+     * $place: the drawtext position, "x=…:y=…".
+     */
+    private function caption(string $file, int $size, string $place, string $color = 'white'): string
     {
+        return sprintf("drawtext=fontfile='%s':textfile='%s':expansion=none:text_align=C:line_spacing=%d:fontsize=%d:fontcolor=%s:borderw=%d:bordercolor=black@0.9:shadowx=%d:shadowy=%d:shadowcolor=black@0.55:%s",
+            $this->font(), $this->path($file), (int) round($size * 0.3), $size, $color, max(2, (int) round($size * 0.09)), max(1, (int) round($size * 0.06)), max(1, (int) round($size * 0.06)), $place);
+    }
+
+    /** The closing card: the logo, the name of the tool that made the model (when there is one) and the address, fading in. */
+    private function endCard(string $logo, string $urlFile, int $w, int $h, int $fps, float $seconds, string $label, ?string $toolFile = null): string
+    {
+        $words = ($toolFile !== null ? $this->text($toolFile, (int) round($h * 0.045), 'h*0.58', self::TEAL).',' : '').$this->text($urlFile, (int) round($h * 0.06), 'h*0.66');
+
         return sprintf('[%s]scale=%d:-2[%s_logo];color=c=black:s=%dx%d:r=%d:d=%s[%s_bg];[%s_bg][%s_logo]overlay=(W-w)/2:H*0.26:shortest=1,%s,fade=in:st=0:d=0.4,format=yuv420p,setsar=1[%s]',
-            $logo, (int) round($w * 0.34), $label, $w, $h, $fps, VideoCut::number($seconds), $label, $label, $label, $this->text($urlFile, (int) round($h * 0.06), 'h*0.66'), $label);
+            $logo, (int) round($w * 0.34), $label, $w, $h, $fps, VideoCut::number($seconds), $label, $label, $label, $words, $label);
     }
 
     /** The cleaned piece from the photo box, whole, on black, fading in and out. */
