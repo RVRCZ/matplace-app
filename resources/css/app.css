@@ -238,6 +238,11 @@
     .stick-scroll { @apply lg:min-h-0 lg:overflow-y-auto lg:overscroll-contain lg:pr-2; scrollbar-gutter: stable; scroll-padding-top: 3.5rem; scroll-padding-bottom: 1rem; }
     /* the window must not follow what moves inside these boxes: Chrome's scroll anchoring took a node in the panel for its anchor and moved the page by 132 px when the panel scrolled (measured 28 Oct 2026) */
     .stick-scroll, .stick-col { overflow-anchor: none; }
+    /* the box is the containing block of what is absolutely placed inside it. Without it a hidden radio (sr-only) of a
+       choice low in the panel lay in the page at its unscrolled place: the document grew by the panel's whole length,
+       and a click on the choice focused the radio there, so the window jumped down by as much as the panel was
+       scrolled and the model left the screen (the pet's bases, 1 750 px, found by Roman 15 Nov 2026) */
+    .stick-scroll, .stick-col { position: relative; }
     /* a grid that fills the window under what stands above it (the site's header, the margins): --fit-top is measured by site/sticky.ts fitWindow() */
     @media (min-width: 64rem) { .stick-fit { height: calc(100vh - var(--fit-top, 6rem) - 0.75rem - var(--consent-h, 0px) - var(--action-bar-h, 0px)); min-height: 36rem; } }
     /* the action row that stays at the bottom of a .stick-col (and of the page under lg) */
