@@ -16,6 +16,9 @@ final class FakeGenerator implements ImageRestyler, ModelGenerator
     /** The prompts the photos were redrawn with, in order: a test can tell which wording a request was cleaned by. */
     public static array $restyled = [];
 
+    /** A test of a cleaning that fails: the picture task then ends as the real one does when the image model refuses. */
+    public static bool $imageFails = false;
+
     public function name(): string
     {
         return 'fake';
@@ -47,6 +50,9 @@ final class FakeGenerator implements ImageRestyler, ModelGenerator
 
     public function pollImage(GenerationHandle $handle): GenerationStatus
     {
+        if (self::$imageFails) {
+            return new GenerationStatus(GenerationStatus::FAILED, error: 'fake_image_failed');
+        }
         $path = sys_get_temp_dir().'/mp_fakeimg_'.Str::random(8).'.png';
         $img = imagecreatetruecolor(8, 8);
         imagefill($img, 0, 0, imagecolorallocate($img, 240, 200, 120));

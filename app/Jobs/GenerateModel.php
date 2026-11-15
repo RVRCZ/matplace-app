@@ -131,26 +131,34 @@ class GenerateModel implements ShouldQueue
             }
             if (($req->description['stage'] ?? null) === 'image' && $restyler) {
                 $drawn = $restyler->pollImage(new GenerationHandle((string) $req->engine, (string) $req->external_id));
-                if ($drawn->state === GenerationStatus::FAILED) {
+                // a cleaning the image model refuses or fails must not cost the customer the figure (a portrait failed twice
+                // with tripo_image_failed, 15 Nov 2026): a bust or a pet alone is then made of the photo as it is, the way
+                // it was before the cleaning existed. A cartoon and a pet with its owner are nothing without the picture
+                $cleaningOnly = $style !== 'cartoon' && empty($req->description['with_person']);
+                if ($drawn->state === GenerationStatus::FAILED && ! $cleaningOnly) {
                     $req->update(['status' => 'failed', 'error' => $drawn->error]);
                     $this->forgetPhoto($req);
 
                     return;
                 }
-                if ($drawn->state !== GenerationStatus::DONE) {
+                if ($drawn->state === GenerationStatus::FAILED) {
+                    Log::warning('Photo cleaning failed, the model is made of the photo as it is', ['id' => $req->id, 'error' => $drawn->error]);
+                    $req->update(['external_id' => null, 'progress' => 30, 'description' => ['stage' => 'model', 'clean_failed' => (string) $drawn->error] + $req->description]);
+                } elseif ($drawn->state !== GenerationStatus::DONE) {
                     // the picture is the first third of the way
                     $req->update(['progress' => max((int) $req->progress, min(30, (int) round($drawn->progress * 0.3)))]);
                     $this->waitOrGiveUp($req);
 
                     return;
+                } else {
+                    // the picture takes the place of the photo (and of the other sides: the model is made of it alone);
+                    // it is a picture of the customer's pet, so it is deleted with the photos when the run ends
+                    $rel = 'photos/figures/'.Str::uuid().'.png';
+                    Storage::disk('local')->put($rel, (string) file_get_contents((string) $drawn->previewPath));
+                    @unlink((string) $drawn->previewPath);
+                    Storage::disk('local')->delete(array_values($req->photoPaths()));
+                    $req->update(['image_path' => $rel, 'views' => null, 'external_id' => null, 'progress' => 30, 'description' => ['stage' => 'model'] + $req->description]);
                 }
-                // the picture takes the place of the photo (and of the other sides: the model is made of it alone);
-                // it is a picture of the customer's pet, so it is deleted with the photos when the run ends
-                $rel = 'photos/figures/'.Str::uuid().'.png';
-                Storage::disk('local')->put($rel, (string) file_get_contents((string) $drawn->previewPath));
-                @unlink((string) $drawn->previewPath);
-                Storage::disk('local')->delete(array_values($req->photoPaths()));
-                $req->update(['image_path' => $rel, 'views' => null, 'external_id' => null, 'progress' => 30, 'description' => ['stage' => 'model'] + $req->description]);
             }
             if (! $req->external_id) {
                 // every figure takes the geometry the generator is set up with (detailed). AI_SMOOTH_FIGURES_STANDARD=true

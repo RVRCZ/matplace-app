@@ -220,6 +220,25 @@ class PetWithOwnerTest extends TestCase
         }
     }
 
+    public function test_a_cleaning_that_fails_does_not_cost_a_bust_or_a_pet_alone_its_model(): void
+    {
+        // Roman's portrait, 15 Nov 2026: the image model failed twice and the bust with it
+        $this->vision(true);
+        FakeGenerator::$imageFails = true;
+        try {
+            $this->post('/api/generate', ['image' => UploadedFile::fake()->image('me.jpg', 600, 800), 'kind' => 'bust', 'consent' => 1], ['Accept' => 'application/json'])
+                ->assertCreated()->assertJsonPath('generation.status', 'done');
+            $bust = GenerationRequest::latest('id')->firstOrFail();
+            $this->assertSame(['model', 'fake_image_failed'], [$bust->description['stage'], $bust->description['clean_failed']]);
+            $this->make()->assertCreated()->assertJsonPath('generation.status', 'done');
+            // a cartoon and a pet with its owner are nothing without the redrawn picture: those still fail
+            $this->make(['with_person' => '1'])->assertCreated()->assertJsonPath('generation.status', 'failed');
+            $this->make(['style' => 'cartoon'])->assertCreated()->assertJsonPath('generation.status', 'failed');
+        } finally {
+            FakeGenerator::$imageFails = false;
+        }
+    }
+
     public function test_one_base_carries_the_person_and_the_animal_and_the_bust_cut_never_runs(): void
     {
         $this->python();
