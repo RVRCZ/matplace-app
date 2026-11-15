@@ -65,6 +65,7 @@ final class PedestalChanger
             'name' => (string) ($own['name'] ?? $req->description['pedestal_name'] ?? ''),
             'dedication' => (string) ($own['dedication'] ?? $req->description['pedestal_dedication'] ?? ''),
             'name_side' => (string) ($own['name_side'] ?? $req->description['name_side'] ?? 'auto'),
+            'with_person' => ! empty($req->description['with_person']),
             'thinnest_mm' => $thin !== null ? (float) $thin : null,
             'safe_mm' => self::PET_SAFE_MM,
         ];
@@ -102,6 +103,7 @@ final class PedestalChanger
         try {
             $this->normalizer->toPrintableStl($source, $abs, (float) ($req->target_mm ?: config('ai.default_target_mm', 80)), false, ['pedestal', 'solid'], array_filter([
                 'pet' => true, 'pedestal' => $type, 'name' => $name ?: null, 'dedication' => $dedication ?: null, 'name_side' => $side !== 'auto' ? $side : null, 'source_out' => $newSource,
+                'person' => $now['with_person'] ? true : null,
             ]));
         } catch (\Throwable $e) {
             File::deleteDirectory(dirname($abs));

@@ -1,0 +1,67 @@
+{
+    "pet.owner.label": [
+        "Co má být na figurce",
+        "Who is on the figurine",
+        "Quién sale en la figura"
+    ],
+    "pet.owner.alone": [
+        "Jen mazlíček",
+        "Just the pet",
+        "Solo la mascota"
+    ],
+    "pet.owner.with": [
+        "Mazlíček s páníčkem",
+        "Pet with its owner",
+        "Mascota con su dueño"
+    ],
+    "pet.owner.alone.hint": [
+        "Figurka zvířete. Člověk na fotce se z obrázku odstraní.",
+        "A figurine of the animal. A person in the photo is removed from the picture.",
+        "Una figura del animal. Si hay una persona en la foto, se quita de la imagen."
+    ],
+    "pet.owner.with.hint": [
+        "Figurka zvířete i člověka na jednom podstavci. Na fotce má být jedno zvíře a jeden člověk, oba celí od hlavy k nohám, stojící nebo sedící vedle sebe. Vodítko může zůstat. Pozadí, nábytek a další lidé se z obrázku odstraní, obličej a oblečení se mají zachovat.",
+        "A figurine of the animal and the person on one base. The photo shows one animal and one person, both whole from the head to the feet, standing or sitting side by side. The leash may stay. The background, furniture and other people are removed from the picture; the face and the clothes are meant to stay as they are.",
+        "Una figura del animal y de la persona sobre una misma base. En la foto debe haber un animal y una persona, ambos enteros de la cabeza a los pies, de pie o sentados uno al lado del otro. La correa puede quedar. El fondo, los muebles y otras personas se quitan de la imagen; la cara y la ropa deben quedar como están."
+    ],
+    "pet.owner.style": [
+        "S páníčkem je jen realistická podoba. Miniatura by ztluštila i obličej a kreslená by postavu překreslila, a to by se podobě nevyplatilo.",
+        "With the owner there is only the realistic style. The miniature would thicken the face too, and the cartoon would redraw the person, which does the likeness no good.",
+        "Con el dueño solo hay el estilo realista. La miniatura engrosaría también la cara y la de dibujos animados redibujaría a la persona, lo que no favorece al parecido."
+    ],
+    "pet.owner.size": [
+        "S člověkem je figurka vyšší a obličej drobný: pro rozpoznatelnou podobu volte 150 mm a víc.",
+        "With a person the figurine is taller and the face is small: for a recognisable likeness choose 150 mm or more.",
+        "Con una persona la figura es más alta y la cara pequeña: para un parecido reconocible elija 150 mm o más."
+    ],
+    "pet.consent.owner": [
+        "Na fotce jsem já, nebo mám souhlas vyfotografované osoby. Souhlasím, že fotku zpracují naši dodavatelé generování modelů.",
+        "The photo shows me, or I have the consent of the person photographed. I agree that our model-generation providers process the photo.",
+        "En la foto salgo yo, o tengo el consentimiento de la persona fotografiada. Acepto que nuestros proveedores de generación de modelos procesen la foto."
+    ],
+    "pet.privacy.owner": [
+        "Fotka jde jen k dodavatelům Tripo a Meshy, kteří z ní model staví, a smažeme ji, jakmile je figurka hotová. Smažeme i obrázek, který z fotky vznikne před stavbou modelu (zvíře a člověk bez pozadí). Figurku uvidí jen ten, kdo má odkaz; u návštěvníků bez účtu ji po 30 dnech smažeme. Podobu člověka nikdy neupravujeme.",
+        "The photo goes only to the suppliers Tripo and Meshy, which build the model of it, and we delete it as soon as the figurine is made. We also delete the picture made of the photo before the model is built (the animal and the person without the background). Only those with the link see the figurine; for visitors without an account we delete it after 30 days. We never change how the person looks.",
+        "La foto va solo a los proveedores Tripo y Meshy, que construyen el modelo, y la borramos en cuanto la figura está hecha. También borramos la imagen creada a partir de la foto antes de construir el modelo (el animal y la persona sin el fondo). Solo la ve quien tenga el enlace; a los visitantes sin cuenta se la borramos a los 30 días. Nunca cambiamos el aspecto de la persona."
+    ],
+    "pet.rejected.owner.no_person": [
+        "Na fotce nikdo není, a vybrali jste mazlíčka s páníčkem. Fotku jsme smazali: vyberte fotku, na které je i člověk, nebo zvolte „Jen mazlíček“.",
+        "There is nobody in the photo, and you chose the pet with its owner. We have removed it: choose a photo with a person too, or choose \"Just the pet\".",
+        "No hay nadie en la foto y eligió la mascota con su dueño. La hemos borrado: elija una foto en la que también salga una persona, o elija «Solo la mascota»."
+    ],
+    "pet.rejected.owner.several_people": [
+        "Na fotce je víc lidí. Figurka má jen jednoho člověka. Fotku jsme smazali, vyberte fotku s jedním zvířetem a jedním člověkem.",
+        "There is more than one person in the photo. The figurine has one person only. We have removed it, please choose a photo of one animal and one person.",
+        "Hay más de una persona en la foto. La figura lleva solo una persona. La hemos borrado, elija una foto de un animal y una persona."
+    ],
+    "pet.rejected.owner.cropped": [
+        "Zvíře nebo člověk nejsou na fotce celí. Fotku jsme smazali, vyberte fotku, na které jsou oba celí, člověk od hlavy k nohám a zvíře i s tlapkami.",
+        "The animal or the person is not whole in the photo. We have removed it, please choose a photo where both are whole, the person from head to feet and the animal with its paws.",
+        "El animal o la persona no salen enteros en la foto. La hemos borrado, elija una foto en la que ambos salgan enteros, la persona de la cabeza a los pies y el animal con las patas."
+    ],
+    "pet.thin.owner": [
+        "Nejtenčí místo (vodítko, ruka, noha nebo ocas) má asi :mm mm. Pod 2,5 mm se v tisku snadno ulomí. Zvolte větší velikost; tenké vodítko se dá po tisku odstřihnout.",
+        "The thinnest place (the leash, a hand, a leg or the tail) is about :mm mm. Under 2.5 mm it breaks easily in print. Choose a bigger size; a thin leash can be cut off after printing.",
+        "El punto más fino (la correa, una mano, una pierna o la cola) mide unos :mm mm. Por debajo de 2,5 mm se rompe fácilmente al imprimir. Elija un tamaño mayor; una correa fina se puede cortar después de imprimir."
+    ]
+}

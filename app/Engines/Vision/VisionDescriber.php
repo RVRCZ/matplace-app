@@ -51,6 +51,17 @@ final class VisionDescriber
                 .'People in the picture are fine and are NOT a reason to refuse: an owner standing behind or beside the animal, legs, hands, somebody holding the leash. '
                 .'A collar, a leash, a toy, grass or furniture are fine too. One whole animal, sitting, standing or lying, is ok.';
         }
+        if ($want === 'pet_owner' && $view === 'front') {
+            // a figurine of ONE animal TOGETHER WITH ONE person (the choice "pet with its owner", 15 Nov 2026): both have to be
+            // there and whole, the page offers the animal alone when there is no person
+            $system .= ' This photo is for a figurine of a PET TOGETHER WITH ITS OWNER: exactly one animal and exactly one person, side by side. '
+                .'Besides the content rules, set ok=false with exactly one of these words as the reason: '
+                .'"no_animal" when no animal is in the picture; "no_person" when no person is in the picture (a hand or a pair of legs only is no person); '
+                .'"several" when there is more than one animal; "several_people" when there is more than one person; '
+                .'"cropped" when the frame cuts off the person (the legs, the feet or the head) or the animal (the legs or most of the body), or the person or the animal is mostly hidden. '
+                .'A person in the background, far behind the two, does not count as a second person only when they are clearly a passer-by; when in doubt about a second person use "several_people". '
+                .'A collar, a leash, a toy, grass or furniture are fine. One whole animal and one whole person, sitting or standing, is ok.';
+        }
         if ($view !== 'front') {
             $system .= ' This photo is an additional view of a subject whose front photo was already accepted: it shows the subject from the '
                 .$view.'. The face may be hidden or turned away, and a back view shows only hair, the back of a head or the back of an object. '

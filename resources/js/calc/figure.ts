@@ -180,7 +180,8 @@ export function bootFigure(stage: Stage): void {
         const calmLine = document.getElementById('figure-thin-ok');
         const thin = pet?.thinnest_mm ?? null;
         const risky = pet !== null && thin !== null && thin < pet.safe_mm;
-        stage.warnings(risky ? { style: [t('figure.thin', { mm: stage.nf.format(thin!) })] } : {});
+        // beside a person the thin place may be the leash or a hand, and the miniature is not there to be advised
+        stage.warnings(risky ? { style: [t(pet!.with_person && cfg.i18n['figure.thin.owner'] ? 'figure.thin.owner' : 'figure.thin', { mm: stage.nf.format(thin!) })] } : {});
         if (calmLine) {
             calmLine.textContent = pet !== null && thin !== null && !risky ? t('figure.thin.ok', { mm: stage.nf.format(thin) }) : '';
             calmLine.classList.toggle('hidden', calmLine.textContent === '');
@@ -259,7 +260,7 @@ export function bootFigure(stage: Stage): void {
             const radio = value === undefined || value === null ? null : form.querySelector<HTMLInputElement>(`input[type=radio][name="${name}"][value="${String(value)}"]`);
             if (radio) { radio.checked = true; radio.dispatchEvent(new Event('change', { bubbles: true })); }
         };
-        pick('kind', o.kind); pick('style', o.style); pick('roughness', o.roughness); pick('pedestal', o.pedestal);
+        pick('kind', o.kind); pick('style', o.style); pick('roughness', o.roughness); pick('pedestal', o.pedestal); pick('with_person', o.with_person);
         const write = (name: string, value: unknown): void => { const el = form.querySelector<HTMLInputElement>(`input[name="${name}"]`); if (el && typeof value === 'string') el.value = value; };
         write('pedestal_name', o.pedestal_name); write('pedestal_dedication', o.pedestal_dedication);
         const side = form.querySelector<HTMLSelectElement>('select[name="name_side"]');
@@ -335,7 +336,10 @@ export function bootFigure(stage: Stage): void {
                 // only the front photo stops the work; it leaves the form, so the next try does not send it again
                 clear('front');
                 mark('front', true);
-                return idle(say(`figure.rejected.${String(body.reason ?? '')}`, 'figure.rejected'));
+                // a pet with its owner has words of its own for what is wrong with the picture; the rest is the pet's
+                const why = String(body.reason ?? '');
+                const owner = form.querySelector<HTMLInputElement>('input[name="with_person"]:checked')?.value === '1';
+                return idle(say(owner && cfg.i18n[`figure.rejected.owner.${why}`] ? `figure.rejected.owner.${why}` : `figure.rejected.${why}`, 'figure.rejected'));
             }
             if (!res.ok) throw new Error(body.message ?? 'generate');
             // refused sides were left out: the model is made from the rest, and the visitor is told which ones
