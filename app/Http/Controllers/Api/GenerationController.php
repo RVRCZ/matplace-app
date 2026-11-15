@@ -106,7 +106,7 @@ class GenerationController extends Controller
                     // redraws the animal alone (docs/X.md, the pet with its owner)
                     $style = $pet ? ($withPerson ? 'realistic' : ($data['style'] ?? 'realistic')) : null;
                     // a miniature stands on its disc; every base of a pet carries the name, only the plinth a dedication
-                    $base = $pet ? ($style === 'miniature' ? 'round' : (in_array($data['pedestal'] ?? '', PedestalChanger::PET_TYPES, true) ? $data['pedestal'] : 'oval')) : null;
+                    $base = $pet ? ($style === 'miniature' ? 'round' : (in_array($data['pedestal'] ?? '', PedestalChanger::PET_TYPES, true) ? $data['pedestal'] : 'plaque')) : null;
                     $req = $service->fromPhoto($stored['front'], $data['kind'], (int) ($data['target_mm'] ?? config('ai.default_target_mm', 80)), $request->ip(), $session, $user, $pet ? [
                         'type' => $base, 'name' => $data['pedestal_name'] ?? null, 'dedication' => $base === 'plaque' ? ($data['pedestal_dedication'] ?? null) : null,
                     ] : [

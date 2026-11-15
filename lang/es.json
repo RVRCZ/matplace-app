@@ -2942,5 +2942,9 @@
     "pet.rejected.owner.no_person": "No hay nadie en la foto y eligió la mascota con su dueño. La hemos borrado: elija una foto en la que también salga una persona, o elija «Solo la mascota».",
     "pet.rejected.owner.several_people": "Hay más de una persona en la foto. La figura lleva solo una persona. La hemos borrado, elija una foto de un animal y una persona.",
     "pet.rejected.owner.cropped": "El animal o la persona no salen enteros en la foto. La hemos borrado, elija una foto en la que ambos salgan enteros, la persona de la cabeza a los pies y el animal con las patas.",
-    "pet.thin.owner": "El punto más fino (la correa, una mano, una pierna o la cola) mide unos :mm mm. Por debajo de 2,5 mm se rompe fácilmente al imprimir. Elija un tamaño mayor; una correa fina se puede cortar después de imprimir."
+    "pet.thin.owner": "El punto más fino (la correa, una mano, una pierna o la cola) mide unos :mm mm. Por debajo de 2,5 mm se rompe fácilmente al imprimir. Elija un tamaño mayor; una correa fina se puede cortar después de imprimir.",
+    "figure.again": "Generar de nuevo",
+    "figure.again.why": "Ha cambiado los ajustes: la figura de la vista previa sigue siendo la anterior. Una nueva generación cuenta en los modelos gratuitos del día.",
+    "figure.again.rebase": "Cambiar la base",
+    "figure.again.rebase.why": "Ha cambiado la base o el nombre: la figura de la vista previa sigue siendo la anterior. El cambio es gratis, sin nueva generación."
 }

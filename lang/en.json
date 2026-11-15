@@ -2942,5 +2942,9 @@
     "pet.rejected.owner.no_person": "There is nobody in the photo, and you chose the pet with its owner. We have removed it: choose a photo with a person too, or choose \"Just the pet\".",
     "pet.rejected.owner.several_people": "There is more than one person in the photo. The figurine has one person only. We have removed it, please choose a photo of one animal and one person.",
     "pet.rejected.owner.cropped": "The animal or the person is not whole in the photo. We have removed it, please choose a photo where both are whole, the person from head to feet and the animal with its paws.",
-    "pet.thin.owner": "The thinnest place (the leash, a hand, a leg or the tail) is about :mm mm. Under 2.5 mm it breaks easily in print. Choose a bigger size; a thin leash can be cut off after printing."
+    "pet.thin.owner": "The thinnest place (the leash, a hand, a leg or the tail) is about :mm mm. Under 2.5 mm it breaks easily in print. Choose a bigger size; a thin leash can be cut off after printing.",
+    "figure.again": "Generate again",
+    "figure.again.why": "You changed the settings: the figurine in the preview still matches the old ones. A new generation counts against the daily free models.",
+    "figure.again.rebase": "Change the base",
+    "figure.again.rebase.why": "You changed the base or the name: the figurine in the preview still matches the old ones. The change is free, with no new generation."
 }

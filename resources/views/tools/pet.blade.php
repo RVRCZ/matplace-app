@@ -9,7 +9,8 @@
         'need_photo' => 'figure.need_photo', 'need_consent' => 'figure.need_consent', 'limit.register' => 'figure.limit.register', 'remove' => 'figure.remove', 'back' => 'pet.back', 'gone' => 'pet.gone', 'thin' => 'pet.thin', 'thin.ok' => 'pet.thin.ok',
         'rebase.working' => 'pet.rebase.working', 'rebase.failed' => 'pet.rebase.failed', 'notify.sent' => 'figure.notify.sent', 'notify.failed' => 'figure.notify.failed',
         'rejected.no_animal' => 'pet.rejected.no_animal', 'rejected.person' => 'pet.rejected.person', 'rejected.several' => 'pet.rejected.several', 'rejected.cropped' => 'pet.rejected.cropped',
-        'rejected.owner.no_person' => 'pet.rejected.owner.no_person', 'rejected.owner.several_people' => 'pet.rejected.owner.several_people', 'rejected.owner.cropped' => 'pet.rejected.owner.cropped', 'thin.owner' => 'pet.thin.owner'];
+        'rejected.owner.no_person' => 'pet.rejected.owner.no_person', 'rejected.owner.several_people' => 'pet.rejected.owner.several_people', 'rejected.owner.cropped' => 'pet.rejected.owner.cropped', 'thin.owner' => 'pet.thin.owner',
+        'again' => 'figure.again', 'again.why' => 'figure.again.why', 'again.rebase' => 'figure.again.rebase', 'again.rebase.why' => 'figure.again.rebase.why'];
     $i18n = collect($say)->mapWithKeys(fn ($key, $as) => ['figure.'.$as => __($key, ['n' => ':n', 'm' => ':m', 'mm' => ':mm', 'view' => ':view'])])->all()
         + ['photo.too_big' => __('photo.too_big', ['mb' => \App\Http\Controllers\Api\GenerationController::PHOTO_MB]), 'photo.add' => __('photo.add'), 'photo.add.more' => __('photo.add.more'), 'figure.view.front' => __('figure.view.front')];
     $choice = 'cursor-pointer rounded-lg border border-slate-300 bg-white text-ink has-[:checked]:border-ink has-[:checked]:ring-1 has-[:checked]:ring-ink has-[:focus-visible]:outline has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-action has-[:disabled]:cursor-not-allowed has-[:disabled]:opacity-50';
@@ -115,7 +116,7 @@
             <div id="pet-name-box" class="mt-3 grid gap-3">
                 <label class="lbl">{{ __('pet.name_side') }}
                     <select name="name_side" class="field">
-                        @foreach(\App\Domain\Generation\PedestalChanger::PET_NAME_SIDES as $side)<option value="{{ $side }}">{{ __('pet.name_side.'.$side) }}</option>@endforeach
+                        @foreach(['front', 'right', 'back', 'left', 'auto'] as $side)<option value="{{ $side }}" @selected($side === 'front')>{{ __('pet.name_side.'.$side) }}</option>@endforeach
                     </select>
                 </label>
                 <label id="pet-dedication" class="lbl hidden">{{ __('pet.dedication') }}<input name="pedestal_dedication" maxlength="40" class="field" placeholder="{{ __('pet.dedication_ph') }}" autocomplete="off"></label>
@@ -161,29 +162,41 @@
                     document.getElementById('pet-name-box').classList.toggle('hidden', picked('pedestal') === 'none');
                     document.getElementById('pet-base-none').classList.toggle('hidden', picked('pedestal') !== 'none');
                 };
-                // with a name the plinth that carries it is the base, without one the low oval; only until the visitor
-                // picks a base (or a stored figurine brings its own). The dialog in the viewer has the same field.
+                // the plinth with the name on its front is the base the page opens with (Roman, 15 Nov 2026); the miniature
+                // takes the disc and gives the plinth back when it is left, until the visitor picks a base by hand (or a stored
+                // figurine brings its own). The name field of the dialog in the viewer is the same field: the dialog comes
+                // later in the page than this script, so it is found by delegation, not by id at this moment.
                 const name = form.querySelector('input[name=pedestal_name]');
-                const first = document.getElementById('figure-drop-name');
                 let own = false;
                 const byName = () => {
+                    const first = document.getElementById('figure-drop-name');
                     if (first && first.value !== name.value) first.value = name.value;
                     if (!own && picked('style') !== 'miniature') {
-                        const base = form.querySelector('input[name=pedestal][value=' + (name.value.trim() ? 'plaque' : 'oval') + ']');
+                        const base = form.querySelector('input[name=pedestal][value=plaque]');
                         if (base && !base.checked) { base.checked = true; base.dispatchEvent(new Event('change', { bubbles: true })); }
                     }
                     fields();
                 };
                 name.addEventListener('input', byName);
-                first?.addEventListener('input', () => { name.value = first.value; name.dispatchEvent(new Event('input', { bubbles: true })); name.dispatchEvent(new Event('change', { bubbles: true })); });
-                form.querySelectorAll('input[name=pedestal]').forEach((r) => r.addEventListener('change', (e) => { if (e.isTrusted) own = true; fields(); }));
+                document.addEventListener('input', (e) => {
+                    if (e.target?.id !== 'figure-drop-name') return;
+                    name.value = e.target.value;
+                    name.dispatchEvent(new Event('input', { bubbles: true })); name.dispatchEvent(new Event('change', { bubbles: true }));
+                });
+                form.querySelectorAll('input[name=pedestal]').forEach((r) => r.addEventListener('change', (e) => { if (e.isTrusted) { own = true; form.dataset.pedestalOwn = '1'; } fields(); }));
                 form.querySelectorAll('input[name=style]').forEach((r) => r.addEventListener('change', byName));
                 form.querySelectorAll('input[name=with_person]').forEach((r) => r.addEventListener('change', byName));
-                document.querySelectorAll('input[name=drop_with_person]').forEach((r) => r.addEventListener('change', () => {
+                document.addEventListener('change', (e) => {
+                    const r = e.target;
+                    if (r?.name !== 'drop_with_person' || !r.checked) return;
                     const panel = form.querySelector('input[name=with_person][value="' + r.value + '"]');
-                    if (panel && r.checked && !panel.checked) { panel.checked = true; panel.dispatchEvent(new Event('change', { bubbles: true })); }
-                }));
-                form.addEventListener('figure:filled', () => { own = true; if (first) first.value = name.value; fields(); });
+                    if (panel && !panel.checked) { panel.checked = true; panel.dispatchEvent(new Event('change', { bubbles: true })); }
+                });
+                form.addEventListener('figure:filled', () => {
+                    own = form.dataset.pedestalOwn === '1' || own;
+                    const first = document.getElementById('figure-drop-name'); if (first) first.value = name.value;
+                    fields();
+                });
                 fields();
             })();
         </script>

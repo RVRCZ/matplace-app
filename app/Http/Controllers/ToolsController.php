@@ -4,7 +4,6 @@ namespace App\Http\Controllers;
 
 use App\Domain\Calculation\MaterialCatalog;
 use App\Domain\Generation\GenerationService;
-use App\Domain\Generation\PedestalChanger;
 use App\Domain\Tools\ModelRepair;
 use App\Domain\Tools\MoldGenerator;
 use App\Domain\Tools\ParametricGenerator;
@@ -134,7 +133,8 @@ class ToolsController extends Controller
             'generator' => $generation->enabled(),
             // the cartoon figurine needs a generator that can redraw the photo first
             'styles' => array_values(array_filter(GenerationController::PET_STYLES, fn ($style) => $style !== 'cartoon' || app(ModelGenerator::class) instanceof ImageRestyler)),
-            'bases' => PedestalChanger::PET_TYPES,
+            // the plinth with the name is the base the page opens with, so it is the first one shown (15 Nov 2026)
+            'bases' => ['plaque', 'oval', 'round', 'none'],
             'guestLimit' => (int) config('ai.daily_limits.generate_guest'),
             'userLimit' => max((int) config('ai.daily_limits.generate_user'), auth()->user()?->isAdmin() ? 0 : $generation->limitFor(auth()->user())),
         ]);

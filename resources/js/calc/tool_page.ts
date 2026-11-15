@@ -53,6 +53,7 @@ export class Stage {
     private first = true;
     private goAction: (() => void | Promise<void>) | null = null;
     private goHref: string | null = null;
+    private againAction: (() => void | Promise<void>) | null = null;
     private history: { stack: string[]; at: number; io: TrackIo } | null = null;
 
     constructor(readonly cfg: ToolCfg, canvas: HTMLCanvasElement) {
@@ -66,6 +67,8 @@ export class Stage {
         this.emptyTakesFile();
         this.spy();
         this.el('tool-go').addEventListener('click', () => { if (this.goHref) void this.leave(this.ordered(this.goHref)); else void this.goAction?.(); });
+        // the second action (secondary(): the card's button and its copy in the phone's bar)
+        document.addEventListener('click', (e) => { if ((e.target as HTMLElement).closest('[data-again]')) void this.againAction?.(); });
         // a row with a colour swatch (class tool-swatch-row): the whole row opens the colour window, not the small circle
         // alone – people click the words "pick a colour". The row's other buttons (move, join) keep their own work.
         document.addEventListener('click', (e) => {
@@ -309,6 +312,16 @@ export class Stage {
         if (o.href !== undefined) this.goHref = o.href;
         if (o.run !== undefined) this.goAction = o.run;
         if (o.disabled !== undefined) b.disabled = o.disabled;
+    }
+
+    /**
+     * A second action beside the main one, with the line that says why it is there (the card and the phone's bar both
+     * have it, data-again / data-again-why); `null` takes it away. Nothing else is changed: the main button stays as it is.
+     */
+    secondary(o: { label: string; why: string; run: () => void | Promise<void> } | null): void {
+        this.againAction = o?.run ?? null;
+        document.querySelectorAll<HTMLElement>('[data-again]').forEach((b) => { b.hidden = !o; if (o) b.textContent = o.label; });
+        document.querySelectorAll<HTMLElement>('[data-again-why]').forEach((p) => { p.hidden = !o; if (o) p.textContent = o.why; });
     }
 
     // ── the download menu ───────────────────────────────────────────────────────────────────────────

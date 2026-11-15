@@ -32,6 +32,36 @@ export function bootFigure(stage: Stage): void {
     const btn = $('figure-submit') as HTMLButtonElement;
     const viewsMsg = $('figure-views-msg');
     let made: FileInfo | null = null;                  // the figure on the stage, once there is one
+    let madeWith: Record<string, string> | null = null; // the choices it was made with (and the photos): what "changed" is measured against
+
+    // what the model on the stage was made with, to tell when the panel no longer says the same (Roman, 15 Nov 2026): every
+    // field of the form but the consent, and the photos by name, size and date. After a change the card offers the way to
+    // the figure that matches the panel: the free change of the base for a pet (what only the base, the name, its side
+    // or the dedication differs in), a new generation for everything else (the size is applied at the generation too).
+    const snapshot = (): Record<string, string> => {
+        const o: Record<string, string> = {};
+        new FormData(form).forEach((v, k) => {
+            if (typeof v === 'string') { if (k !== 'consent') o[k] = v; } else o[`file:${k}`] = v.size ? `${v.name}|${v.size}|${v.lastModified}` : '';
+        });
+        return o;
+    };
+    const BASE_KEYS = ['pedestal', 'pedestal_name', 'pedestal_dedication', 'name_side'];
+    const stale = (): void => {
+        if (!madeWith || !cfg.i18n['figure.again']) { stage.secondary(null); return; }
+        const now = snapshot();
+        let base = false; let other = false;
+        for (const k of new Set([...Object.keys(now), ...Object.keys(madeWith)])) {
+            if ((now[k] ?? '') === (madeWith[k] ?? '')) continue;
+            if (form.dataset.kind === 'pet' && cfg.files && BASE_KEYS.includes(k)) base = true; else other = true;
+        }
+        if (!base && !other) { stage.secondary(null); return; }
+        stage.secondary(other
+            ? { label: t('figure.again'), why: t('figure.again.why'), run: () => form.requestSubmit() }
+            : { label: t('figure.again.rebase'), why: t('figure.again.rebase.why'), run: () => { document.getElementById('figure-rebase')?.click(); } });
+    };
+    form.addEventListener('change', stale);
+    form.addEventListener('input', stale);
+    form.addEventListener('figure:filled', stale);
 
     const sized = (): void => { $('figure-size-val').textContent = `${size.value} mm`; };
     size.oninput = sized;
@@ -50,6 +80,7 @@ export function bootFigure(stage: Stage): void {
         }
         part('data-view-remove', view)?.classList.toggle('hidden', !f);
         dropped();
+        stale();
     };
     // the photos picked in the empty viewer (tools/_figure_drop.blade.php): the same inputs, small pictures of them there,
     // each with a cross that takes it away again (as the cross in the panel does), and the model made from there
@@ -162,8 +193,10 @@ export function bootFigure(stage: Stage): void {
     const idle = (text: string): void => {
         msg.textContent = text; btn.disabled = false; $('figure-progress').classList.add('hidden'); bar.style.width = '0';
         void dots?.fail(); dots = null;
+        stale();
     };
     const working = (text: string): void => {
+        stage.secondary(null);
         btn.disabled = true; $('figure-progress').classList.remove('hidden'); msg.textContent = text;
         const box = viewerBox();
         if (box) { dots ??= startParticles(box); dots.say(text); }
@@ -231,6 +264,8 @@ export function bootFigure(stage: Stage): void {
         try { await stage.fileResult(ready); } catch { return idle(t('figure.failed')); }
         await dots?.finish(); dots = null;
         made = ready;
+        madeWith = snapshot();
+        stale();
         measured(ready);
         sizeOf(ready);
         btn.disabled = false; $('figure-progress').classList.add('hidden');
@@ -266,6 +301,8 @@ export function bootFigure(stage: Stage): void {
         const side = form.querySelector<HTMLSelectElement>('select[name="name_side"]');
         if (side && typeof o.name_side === 'string') side.value = o.name_side;
         if (g.target_mm) { size.value = String(g.target_mm); sized(); }
+        // a figurine brings the base it was made with, and it stays whatever the name field says
+        form.dataset.pedestalOwn = '1';
         form.dispatchEvent(new Event('figure:filled'));
     };
 
@@ -385,6 +422,9 @@ export function bootFigure(stage: Stage): void {
     const choices = (): Record<string, string> => {
         const out: Record<string, string> = {};
         new FormData(form).forEach((v, k) => { if (typeof v === 'string' && k !== 'consent') out[k] = v; });
+        // the base is kept only when the visitor picked it by hand: the page's own start (the plinth, since 15 Nov 2026) is
+        // not a choice, and a base kept before that day was the old start (the same question as the 80 mm below)
+        if (form.dataset.kind === 'pet') { if (form.dataset.pedestalOwn === '1') out.pedestal_own = '1'; else delete out.pedestal; }
         return out;
     };
     const commit = stage.track({
@@ -393,6 +433,8 @@ export function bootFigure(stage: Stage): void {
             Object.entries(s).forEach(([k, v]) => {
                 // a kept 80 mm is the start of the page before 14 Nov 2026, not a choice: the page's own start stands
                 if (k === 'target_mm' && String(v) === '80') return;
+                if (k === 'pedestal_own') { form.dataset.pedestalOwn = '1'; return; }
+                if (k === 'pedestal' && s.pedestal_own !== '1' && form.dataset.kind === 'pet') return;
                 const radio = form.querySelector<HTMLInputElement>(`input[type=radio][name="${k}"][value="${String(v)}"]`);
                 if (radio) { radio.checked = true; radio.dispatchEvent(new Event('change', { bubbles: true })); return; }
                 const el = form.querySelector<HTMLInputElement | HTMLSelectElement>(`[name="${k}"]:not([type=file]):not([type=radio]):not([type=hidden])`);

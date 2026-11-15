@@ -2942,5 +2942,9 @@
     "pet.rejected.owner.no_person": "Na fotce nikdo není, a vybrali jste mazlíčka s páníčkem. Fotku jsme smazali: vyberte fotku, na které je i člověk, nebo zvolte „Jen mazlíček“.",
     "pet.rejected.owner.several_people": "Na fotce je víc lidí. Figurka má jen jednoho člověka. Fotku jsme smazali, vyberte fotku s jedním zvířetem a jedním člověkem.",
     "pet.rejected.owner.cropped": "Zvíře nebo člověk nejsou na fotce celí. Fotku jsme smazali, vyberte fotku, na které jsou oba celí, člověk od hlavy k nohám a zvíře i s tlapkami.",
-    "pet.thin.owner": "Nejtenčí místo (vodítko, ruka, noha nebo ocas) má asi :mm mm. Pod 2,5 mm se v tisku snadno ulomí. Zvolte větší velikost; tenké vodítko se dá po tisku odstřihnout."
+    "pet.thin.owner": "Nejtenčí místo (vodítko, ruka, noha nebo ocas) má asi :mm mm. Pod 2,5 mm se v tisku snadno ulomí. Zvolte větší velikost; tenké vodítko se dá po tisku odstřihnout.",
+    "figure.again": "Přegenerovat",
+    "figure.again.why": "Změnili jste nastavení: figurka v náhledu je ještě podle původního. Nová generace se počítá do denního počtu modelů zdarma.",
+    "figure.again.rebase": "Změnit podstavec",
+    "figure.again.rebase.why": "Změnili jste podstavec nebo jméno: figurka v náhledu je ještě podle původního. Změna je zdarma, bez nové generace."
 }
