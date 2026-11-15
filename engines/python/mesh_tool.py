@@ -488,10 +488,12 @@ def bust_cut(m):
     #  - one head below the neck (needs a visible neck; long hair or a scarf hide it)
     #  - a good third of the crown-to-shoulder height below the shoulder line (always there)
     cuts = []
+    by_neck = None
     if head is not None and neck is not None:
         span = float(width[:neck + 1].max()) if neck > 0 else 0.0
         if width[neck] <= 0.9 * width[head] and span >= 1.5 * width[neck]:
-            cuts.append(float(levels[neck]) - 0.92 * (z1 - float(levels[neck])))
+            by_neck = float(levels[neck]) - 0.92 * (z1 - float(levels[neck]))
+            cuts.append(by_neck)
     # a bust that is short already has its shoulders in the lowest quarter, under the slices measured here: then the
     # widest slice measured is the hair, the "shoulder line" lands in the head and the chest is cut away under the
     # chin (a Meshy bust, 14 Nov 2026). Such a bust is left as it is.
@@ -509,7 +511,16 @@ def bust_cut(m):
     if not cuts:
         return m
     cut = float(np.mean(cuts))
-    if cut < z0 + 0.04 * h or (z1 - cut) < 0.45 * h:
+    if (z1 - cut) < 0.45 * h and by_neck is not None and (z1 - by_neck) >= 0.12 * h:
+        # a whole standing figure where a bust was asked for (the generator drew a body down to the shoes under a
+        # chest-up photo, 15 Nov 2026, and the figure went out uncut as a "bust"): most of the height lies below the
+        # shoulders, the broadest slice is at the elbows and the mean lands low. The neck is still where it is, so
+        # the first measure alone is the sculptor's cut. A little lower than for a bust (1.3 heads below the neck, not
+        # 0.92): the shoulder measure that pulls a bust's cut down onto the chest is the one that is missing here.
+        cut = float(levels[neck]) - 1.3 * (z1 - float(levels[neck]))
+    elif (z1 - cut) < 0.45 * h:
+        return m
+    if cut < z0 + 0.04 * h:
         return m
     try:
         out_mesh = from_manifold(as_manifold(m).trim_by_plane([0, 0, 1], cut))
