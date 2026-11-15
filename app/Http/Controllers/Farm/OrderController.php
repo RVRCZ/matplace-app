@@ -232,6 +232,15 @@ class OrderController extends Controller
             $preselect = collect($offeredNow)->sortBy(fn ($c) => self::hexDistance((string) $c['hex'], $oneHex))->first()['id'] ?? $preselect;
             $machine = collect(collect($colors)->firstWhere('id', $preselect)['seconds'] ?? [])->pluck('id')->push($preselect);
         }
+        // a bust, a figure or a pet made from a photo starts in bronze, the way its preview shows it (Roman, 15 Nov 2026:
+        // the order opened in orange): the spool named in farm.figure_color when it is loaded with enough on it, else
+        // the loaded one nearest to that bronze. A colour the customer asked for stays theirs
+        if ($preselect === null && ! $said && $file->origin === 'generated' && ($offeredNow = array_filter($colors, fn ($c) => $c['enough']))) {
+            $wanted = Str::lower(Str::ascii((string) config('farm.figure_color.name', 'marrakes')));
+            $preselect = collect($offeredNow)->first(fn ($c) => $wanted !== '' && str_contains(Str::lower(Str::ascii((string) $c['name'])), $wanted))['id']
+                ?? collect($offeredNow)->sortBy(fn ($c) => self::hexDistance((string) $c['hex'], (string) config('farm.figure_color.hex', '#a9713f')))->first()['id'] ?? null;
+            $machine = collect(collect($colors)->firstWhere('id', $preselect)['seconds'] ?? [])->pluck('id')->push($preselect);
+        }
         if ($byParts && ! $wantedColor && ! $partWanted && count(array_filter($partHex)) >= 1 && ($near = self::nearestSet($colors, $partHex[$parts[0]] ?? null, array_values(array_map(fn ($h) => (string) ($h ?: ''), array_slice($partHex, 1)))))) {
             // nothing chosen yet: the first colour follows the first part (the box), the other parts take the spool of that
             // machine nearest to their own colour (the first colour itself counts: "the main colour")

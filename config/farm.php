@@ -22,6 +22,10 @@ return [
     // is sliced the moment its order is made, as it was until 14 Nov 2026; a big model waits either way (below).
     'slice_on_demand' => (bool) env('FARM_SLICE_ON_DEMAND', true),
 
+    // The colour an order of a figure made from a photo (bust, figure, pet) opens with: the loaded spool whose name holds
+    // `name` (accents and case do not matter), else the loaded one nearest to `hex`. Roman, 15 Nov 2026: Marrakech bronze.
+    'figure_color' => ['name' => env('FARM_FIGURE_COLOR', 'marrakes'), 'hex' => '#a9713f'],
+
     // A big model's order is not sliced before the customer has chosen the settings and confirmed the colour
     // (docs/AL.md §11). What is big is decided with the first page in one place (App\Domain\Calculation\BigModel:
     // engines.mesh.decimate_above triangles, engines.mesh.big_slice_s). The page says how long the slice will take: the
