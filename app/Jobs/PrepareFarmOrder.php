@@ -510,6 +510,12 @@ class PrepareFarmOrder implements ShouldQueue
         $noSupports = $order->supports === 'off' || ($order->supports !== 'on' && $builtWithout);
         if ($noSupports) {
             $overrides['process']['enable_support'] = '0';
+        } elseif (! $order->isTest() && ! array_key_exists('enable_support', $overrides['process'])) {
+            // a printer whose own settings say nothing about supports builds them where the shape needs them, like the
+            // machines that say so (found 15 Nov 2026: the Kobra X and the Core One had no such line, "automatic" then
+            // meant none at all, and a bust and a dog were printed without). "0" in the printer's settings still means none
+            $overrides['process']['enable_support'] = '1';
+            $overrides['process'] += ['support_type' => 'tree(auto)'];
         }
         $overrides['process'] = PrintSettings::process($custom) + $overrides['process'];
         if ((isset($custom['ironing']) || ($hints['ironing_type'] ?? 'no ironing') !== 'no ironing') && abs((float) $printer->nozzle_mm - 0.4) > 0.001) {

@@ -41,12 +41,15 @@ final class VisionDescriber
             .'Set ok=false for nudity or sexual content, violence or gore, hate symbols, weapons presented as the main subject, '
             .'or when no clear single subject is visible. Ordinary portraits, pets, toys and objects are ok.';
         if ($want === 'pet' && $view === 'front') {
-            // a pet figurine is made of one animal: a person in the picture would become part of the figure
+            // a pet figurine is made of one animal. A person beside it is no reason to refuse any more (Roman, 15 Nov 2026:
+            // a dog on a leash with its owner's legs behind it was refused): the photo is redrawn as the animal alone
+            // before the model is made (GenerateModel, the cleaning stage). What still stops it is an animal that
+            // cannot be seen whole
             $system .= ' This photo is for a figurine of a PET. Besides the content rules, set ok=false with exactly one of these words as the reason: '
-                .'"no_animal" when no animal is the subject; "person" when a person is in the picture as a subject or holds the animal '
-                .'(a hand on a leash at the edge is fine); "several" when there is more than one animal; '
-                .'"cropped" when the frame cuts off the legs or most of the body, or only the head is shown. '
-                .'A collar, a leash, a toy, grass or furniture are fine. One whole animal, sitting, standing or lying, is ok.';
+                .'"no_animal" when no animal is the subject; "several" when there is more than one animal; '
+                .'"cropped" when the frame cuts off the legs or most of the body, only the head is shown, or a person holding the animal hides most of its body. '
+                .'People in the picture are fine and are NOT a reason to refuse: an owner standing behind or beside the animal, legs, hands, somebody holding the leash. '
+                .'A collar, a leash, a toy, grass or furniture are fine too. One whole animal, sitting, standing or lying, is ok.';
         }
         if ($view !== 'front') {
             $system .= ' This photo is an additional view of a subject whose front photo was already accepted: it shows the subject from the '

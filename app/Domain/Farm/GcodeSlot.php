@@ -239,10 +239,26 @@ final class GcodeSlot
             .($temps ? '-'.substr(sha1(json_encode($temps)), 0, 8) : '');
         $target = preg_replace('/\.gcode$/', '', $gcodePath).$tag.'.gcode';
         if (! is_file($target) || filemtime($target) < filemtime($gcodePath)) {
+            self::room($gcodePath);
             file_put_contents($target, self::retargetMany((string) file_get_contents($gcodePath), $slots, $temps));
         }
 
         return $target;
+    }
+
+    /**
+     * Memory for a big file: the copy is made by rewriting the whole text several times over, so a file needs about
+     * eight times its size. A bust with supports (134 MB of G-code) ran into the 512 MB limit and the printer's start
+     * failed with "G-code download: HTTP 500" (U26-000010, 15 Nov 2026). The limit is only ever raised, never lowered.
+     */
+    private static function room(string $gcodePath): void
+    {
+        $need = (int) @filesize($gcodePath) * 8 + 256 * 1024 * 1024;
+        $limit = trim((string) ini_get('memory_limit'));
+        $now = $limit === '-1' ? PHP_INT_MAX : (int) $limit * (['k' => 1024, 'm' => 1024 ** 2, 'g' => 1024 ** 3][strtolower(substr($limit, -1))] ?? 1);
+        if ($need > $now) {
+            @ini_set('memory_limit', (string) $need);
+        }
     }
 
     /** @return array{nozzle?: int, nozzle_first?: int, bed?: int} the spool's own temperatures, else its kind's */
@@ -271,6 +287,7 @@ final class GcodeSlot
             .($changes ? '.map.then'.implode('_', array_map(fn ($c) => $c['slot'].'at'.str_replace('.', '_', (string) $c['z']), $changes)) : '');
         $target = preg_replace('/\.gcode$/', '', $gcodePath).$tag.'.gcode';
         if (! is_file($target) || filemtime($target) < filemtime($gcodePath)) {
+            self::room($gcodePath);
             $gcode = self::retarget((string) file_get_contents($gcodePath), $slot, $temps);
             file_put_contents($target, $changes ? self::withFilamentsLine(self::colorChanges($gcode, $changes)) : $gcode);
         }

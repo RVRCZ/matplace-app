@@ -141,18 +141,21 @@ class PetFigurineTest extends TestCase
         $this->assertSame('round', GenerationRequest::latest('id')->firstOrFail()->description['pedestal']);
     }
 
-    public function test_the_photo_has_to_show_one_whole_animal_and_no_person(): void
+    public function test_the_photo_has_to_show_one_whole_animal_and_a_person_beside_it_is_fine(): void
     {
         // the first photo is refused, the second one (a bust) passes
         Http::fake(['api.anthropic.com/*' => Http::sequence()
-            ->push(['content' => [['type' => 'text', 'text' => json_encode(['ok' => false, 'subject' => 'person', 'reason' => 'person'])]]])
+            ->push(['content' => [['type' => 'text', 'text' => json_encode(['ok' => false, 'subject' => 'pet', 'reason' => 'cropped'])]]])
             ->push(['content' => [['type' => 'text', 'text' => json_encode(['ok' => true, 'subject' => 'person', 'reason' => ''])]]])]);
-        $this->make()->assertStatus(422)->assertJsonPath('error', 'photo_rejected')->assertJsonPath('reason', 'person');
+        $this->make()->assertStatus(422)->assertJsonPath('error', 'photo_rejected')->assertJsonPath('reason', 'cropped');
         $this->assertSame(0, GenerationRequest::count());
         $this->assertSame([], Storage::disk('local')->allFiles('photos/figures'));
         $system = Http::recorded()[0][0]['system'];
         $this->assertStringContainsString('figurine of a PET', $system);
-        foreach (['no_animal', 'person', 'several', 'cropped'] as $reason) {
+        // a person beside the animal is no reason to refuse any more: the photo is redrawn as the animal alone (15 Nov 2026)
+        $this->assertStringNotContainsString('"person" when', $system);
+        $this->assertStringContainsString('People in the picture are fine', $system);
+        foreach (['no_animal', 'several', 'cropped'] as $reason) {
             $this->assertStringContainsString('"'.$reason.'"', $system);
             $this->assertNotSame('pet.rejected.'.$reason, __('pet.rejected.'.$reason));
         }
