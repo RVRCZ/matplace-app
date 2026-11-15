@@ -66,6 +66,22 @@ class GenerateModel implements ShouldQueue
         .'where something covered the shoulders or chest, restore them naturally with the same clothing. '
         .'Plain white studio background, soft even front light, no hard shadows.';
 
+    /**
+     * The same for a pet WITH its owner (the choice "Mazlíček s páníčkem", 15 Nov 2026): this one animal and this one person,
+     * both whole and in the same places to each other, nothing of either changed. Built on the lessons of the two above:
+     * what must stay is said first and in general words (nothing the person wears is named), then what goes. The leash
+     * between them may stay: it is the one thing that joins the two and it is thin, the page says so.
+     */
+    public const CLEAN_PET_OWNER_PROMPT = 'Photorealistic photo of exactly this same person and exactly this same animal, unchanged. '
+        .'The person: keep the face, its features and proportions, the expression, the age, the hair and everything the person wears precisely as they are; '
+        .'add nothing, do not beautify, do not change the identity, keep the eyes exactly as they are, open or closed. '
+        .'The animal: keep its breed, coat pattern and colours, its pose and proportions precisely as they are. '
+        .'Show both of them whole, the person from the head to the feet and the animal from the head to the paws and the tail, '
+        .'standing or sitting as in the photo and in the same position to each other; the leash between them may stay. '
+        .'Remove the background, every other person, all furniture (a bench, a chair, a sofa), objects on the ground and in the hands, text and logos; '
+        .'where something covered a part of the person or of the animal, restore that part naturally with the same clothing and the same coat. '
+        .'Plain white studio background, soft even light, no shadow on the ground.';
+
     public function __construct(public readonly int $requestId) {}
 
     /** Who redraws a photo: the generator itself, or Tripo's image model beside a generator that draws no pictures (Meshy). */
@@ -103,8 +119,7 @@ class GenerateModel implements ShouldQueue
             // (the redrawn picture replaces the photos, and the other sides say more than a clean front)
             $redraw = match (true) {
                 $style === 'cartoon' => self::CARTOON_PROMPT,
-                in_array($kind, ['pet', 'bust'], true) && $req->type === 'image' && count($req->photoPaths()) <= 1 && $this->cleansPhoto($generator)
-                    => $kind === 'pet' ? self::CLEAN_PROMPT : self::CLEAN_BUST_PROMPT,
+                in_array($kind, ['pet', 'bust'], true) && $req->type === 'image' && count($req->photoPaths()) <= 1 && $this->cleansPhoto($generator) => $kind === 'bust' ? self::CLEAN_BUST_PROMPT : (! empty($req->description['with_person']) ? self::CLEAN_PET_OWNER_PROMPT : self::CLEAN_PROMPT),
                 default => null,
             };
             if (! $req->external_id && $redraw && $restyler && empty($req->description['stage'])) {
@@ -188,6 +203,8 @@ class GenerateModel implements ShouldQueue
                 // a pet stands on four thin legs: its own bases, its thinnest place measured, the miniature grown (pet_kind.py)
                 'pet' => $kind === 'pet' ? true : null,
                 'style' => $style,
+                // an animal and a person on one base: the footprint of both feet and the paws (pet_kind.stand), never the bust cut
+                'person' => $kind === 'pet' && ! empty($req->description['with_person']) ? true : null,
                 'roughness' => $style === 'miniature' ? (int) ($req->description['roughness'] ?? 2) : null,
                 'name_side' => $kind === 'pet' ? ($req->description['name_side'] ?? null) : null,
             ]));

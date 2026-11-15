@@ -135,10 +135,48 @@ class PetFigurineTest extends TestCase
         $mini = GenerationRequest::latest('id')->firstOrFail();
         $this->assertSame(['miniature', 'round', 3], [$mini->description['style'], $mini->description['pedestal'], $mini->description['roughness']]);
         $this->make(['pedestal' => 'socle'])->assertCreated();
-        $this->assertSame('oval', GenerationRequest::latest('id')->firstOrFail()->description['pedestal']);
+        $this->assertSame('plaque', GenerationRequest::latest('id')->firstOrFail()->description['pedestal']);
         // a figure keeps the bases it had
         $this->post('/api/generate', ['image' => UploadedFile::fake()->image('me.jpg'), 'kind' => 'figure', 'consent' => 1, 'pedestal' => 'oval'], ['Accept' => 'application/json'])->assertCreated();
         $this->assertSame('round', GenerationRequest::latest('id')->firstOrFail()->description['pedestal']);
+    }
+
+    public function test_the_plinth_with_the_name_on_its_front_is_what_the_page_opens_with(): void
+    {
+        $this->python();
+        foreach (['cs' => '/tools/pet-figurine', 'en' => '/en/tools/pet-figurine'] as $lang => $path) {
+            app()->setLocale($lang);
+            $html = $this->get($path)->assertOk()->getContent();
+            // the bases in the order shown: the plinth first and chosen, then the oval, the disc and none
+            preg_match_all('/name="pedestal" value="(\w+)"([^>]*)>/', $html, $m, PREG_SET_ORDER);
+            $this->assertSame(['plaque', 'oval', 'round', 'none'], array_column($m, 1), $lang);
+            $this->assertSame([true, false, false, false], array_map(fn ($x) => str_contains($x[2], 'checked'), $m), $lang);
+            // the name stands on the front unless said otherwise: "we choose" is still there for a figurine made before
+            $this->assertMatchesRegularExpression('/<select name="name_side".*?<option value="front" selected>/s', $html);
+            $this->assertMatchesRegularExpression('/<option value="auto"\s*>'.preg_quote(__('pet.name_side.auto'), '/').'<\/option>/', $html);
+            // the name of the dialog in the viewer is the panel's field, found when it is typed in (the dialog comes later in the page)
+            $this->assertStringContainsString('id="figure-drop-name"', $html);
+            $this->assertStringContainsString("e.target?.id !== 'figure-drop-name'", $html);
+            $this->assertStringContainsString('name="pedestal_name"', $html);
+        }
+        // a request without a base gets the plinth, and one without a name is a sound model: no lettering, no error
+        $this->vision(true);
+        $this->make()->assertCreated();
+        $req = GenerationRequest::latest('id')->firstOrFail();
+        $this->assertSame('plaque', $req->description['pedestal']);
+        $this->assertArrayNotHasKey('stand_error', $req->description);
+        $this->assertArrayNotHasKey('text_error', $req->description);
+        $this->assertArrayNotHasKey('engraved_lines', $req->description);
+        $file = ModelFile::findOrFail($req->result_model_file_id);
+        $this->assertGreaterThan(0, $file->size_bytes);
+        // the name given and the side chosen by the page's default travel as they are
+        $this->make(['pedestal_name' => 'Rex', 'name_side' => 'front'])->assertCreated();
+        $named = GenerationRequest::latest('id')->firstOrFail();
+        $this->assertSame(['plaque', 'Rex', 'front', 1], [$named->description['pedestal'], $named->description['pedestal_name'], $named->description['name_side'], $named->description['engraved_lines']]);
+        // the figurine opened by its address brings the base it was made with
+        $this->assertSame('plaque', $this->getJson('/api/generate/'.$named->token)->json('generation.options.pedestal'));
+        $this->make(['pedestal' => 'oval'])->assertCreated();
+        $this->assertSame('oval', $this->getJson('/api/generate/'.GenerationRequest::latest('id')->firstOrFail()->token)->json('generation.options.pedestal'));
     }
 
     public function test_the_photo_has_to_show_one_whole_animal_and_a_person_beside_it_is_fine(): void

@@ -25,7 +25,18 @@
                 @isset($nameHint)<span class="mt-0.5 block font-normal text-muted">{{ $nameHint }}</span>@endisset
             </label>
         @endisset
-        <label class="flex items-start gap-2 text-left text-xs text-ink"><input id="figure-drop-consent" type="checkbox" required class="mt-0.5 h-5 w-5 shrink-0 accent-ink"><span>{{ $consent }}</span></label>
+        {{-- the animal alone or with its owner (the pet page only): not part of the form, the page's script mirrors it into the panel --}}
+        @isset($owner)
+            <fieldset class="text-left">
+                <legend class="text-xs font-medium text-ink">{{ $owner['label'] }}</legend>
+                <div class="mt-1 grid grid-cols-2 gap-1.5 text-xs" role="radiogroup">
+                    @foreach(['0' => 'alone', '1' => 'with'] as $value => $key)
+                        <label class="cursor-pointer rounded-lg border border-slate-300 bg-white px-2 py-1.5 text-center text-ink has-[:checked]:border-ink has-[:checked]:ring-1 has-[:checked]:ring-ink has-[:focus-visible]:outline has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-action"><input type="radio" id="figure-drop-owner-{{ $value }}" name="drop_with_person" value="{{ $value }}" class="sr-only" @checked((string) $value === '0')>{{ $owner[$key] }}</label>
+                    @endforeach
+                </div>
+            </fieldset>
+        @endisset
+        <label class="flex items-start gap-2 text-left text-xs text-ink"><input id="figure-drop-consent" type="checkbox" required class="mt-0.5 h-5 w-5 shrink-0 accent-ink"><span data-drop-consent="0">{{ $consent }}</span>@isset($owner)<span data-drop-consent="1" class="hidden">{{ $owner['consentOwner'] }}</span>@endisset</label>
         <p class="text-xs text-muted">{{ $limits }}</p>
         <button type="button" id="figure-create" class="btn-primary w-full gap-1.5" disabled><x-icon name="sparkles" class="h-4 w-4" />{{ $submit }}</button>
     </div>

@@ -180,9 +180,13 @@
                 </div>
                 {{-- share the result: the phone's share sheet, else the link copied (Stage.shareable; docs/AN.md §12) --}}
                 <button type="button" id="tool-share" class="btn-secondary w-full gap-1.5 sm:w-auto" hidden data-copied="{{ __('toolpage.share.copied') }}"><x-icon name="share" class="h-4 w-4" />{{ __('toolpage.share') }}</button>
+                {{-- a second action beside the main one, for a page that needs to say "this is stale, do that" (Stage.secondary: the
+                     figure pages after a change that needs a new model, 15 Nov 2026); the phone has its copy in the bar below --}}
+                <button type="button" data-again class="btn-secondary w-full gap-1.5 sm:w-auto max-lg:hidden" hidden></button>
                 {{-- on a phone the way on is the bar fixed to the bottom (x-action-bar below), which mirrors this button; the button itself stays for lg --}}
                 <span class="max-lg:hidden lg:contents"><button type="button" id="tool-go" class="btn-primary gap-1.5" disabled><span id="tool-go-label">{{ \App\Support\NextStep::text('param.go', [], $tool) }}</span><x-icon name="arrow-right" class="h-4 w-4" /></button></span>
             </div>
+            <p data-again-why class="w-full text-xs text-ink max-lg:hidden" hidden></p>
             <p class="w-full text-xs text-muted">@hasSection('price-note')@yield('price-note')@else{{ \App\Support\NextStep::text('param.go.hint', [], $tool) }}@endif</p>
             {{-- the farm is paused: said where the page promises a print with us (only to visitors the farm is offered to) --}}
             @if($next === \App\Support\NextStep::FARM)@include('farm._pause', ['class' => 'w-full'])@endif
@@ -191,5 +195,8 @@
     </div>
 </div>
 {{-- a phone: the way on in a bar fixed to the bottom, the status of the model as its second line (components/action-bar, docs/AN.md §18) --}}
-<x-action-bar for="tool-go" sub="tool-status" class="lg:hidden" />
+<x-action-bar for="tool-go" sub="tool-status" class="lg:hidden">
+    <p data-again-why class="mb-1 text-xs text-ink" hidden></p>
+    <button type="button" data-again class="btn-secondary mb-1 w-full text-sm" hidden></button>
+</x-action-bar>
 @endsection

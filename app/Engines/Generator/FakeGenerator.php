@@ -13,6 +13,9 @@ use Illuminate\Support\Str;
 /** Deterministic generator for tests and offline development: always "generates" a unit cube STL. */
 final class FakeGenerator implements ImageRestyler, ModelGenerator
 {
+    /** The prompts the photos were redrawn with, in order: a test can tell which wording a request was cleaned by. */
+    public static array $restyled = [];
+
     public function name(): string
     {
         return 'fake';
@@ -37,6 +40,8 @@ final class FakeGenerator implements ImageRestyler, ModelGenerator
     /** The photo "redrawn": a new little picture, so a test can tell the model was made of it and not of the photo. */
     public function restyle(string $imagePath, string $prompt): GenerationHandle
     {
+        self::$restyled[] = $prompt;
+
         return new GenerationHandle('fake', 'fake-image-'.Str::random(8), ['credits' => 5]);
     }
 

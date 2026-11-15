@@ -206,6 +206,11 @@ def stand(m, kind, extras, target):
 
     kind = kind if kind in ("oval", "round", "plaque", "none") else "oval"
     note = {"pedestal": kind}
+    if extras.get("person"):
+        # an animal and a person (the choice "with its owner"): the footprint below is taken from everything that touches the
+        # ground in the lowest 12 % of the figure, so the soles of the person and the paws of the animal are both in it,
+        # and the hull between them is the base. The bust cut never runs for a pet (mesh_tool.normalize).
+        note["with_person"] = True
     z0, h = float(m.bounds[0][2]), float(m.extents[2])
     if kind == "none":
         cut = min(1.0, max(0.3, 0.012 * target))

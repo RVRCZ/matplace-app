@@ -1,0 +1,14 @@
+{
+    "figure.again": ["Přegenerovat", "Generate again", "Generar de nuevo"],
+    "figure.again.why": [
+        "Změnili jste nastavení: figurka v náhledu je ještě podle původního. Nová generace se počítá do denního počtu modelů zdarma.",
+        "You changed the settings: the figurine in the preview still matches the old ones. A new generation counts against the daily free models.",
+        "Ha cambiado los ajustes: la figura de la vista previa sigue siendo la anterior. Una nueva generación cuenta en los modelos gratuitos del día."
+    ],
+    "figure.again.rebase": ["Změnit podstavec", "Change the base", "Cambiar la base"],
+    "figure.again.rebase.why": [
+        "Změnili jste podstavec nebo jméno: figurka v náhledu je ještě podle původního. Změna je zdarma, bez nové generace.",
+        "You changed the base or the name: the figurine in the preview still matches the old ones. The change is free, with no new generation.",
+        "Ha cambiado la base o el nombre: la figura de la vista previa sigue siendo la anterior. El cambio es gratis, sin nueva generación."
+    ]
+}

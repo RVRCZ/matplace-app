@@ -183,3 +183,69 @@ Ke zkoušce po nasazení: jedna figurka v každém stylu, u miniatury a kreslen�
 Dvě zvířata na jednom podstavci, výběr pózy, barevné oči a obojek jako druhá barva (zadání bod 3.7.5). K tomu z této
 práce: adresa figurky má ukazovat poslední soubor; náhled překresleného obrázku u kreslené před stavbou modelu (jako
 předloha: „vylepšená fotka se ukáže v panelu“), aby zákazník neplatil za model z obrázku, který se mu nelíbí.
+
+## 8. Mazlíček s páníčkem (15 Nov 2026, větev feature/pet-with-owner)
+
+Roman vyfotil psa na vodítku s majitelem za ním; kontrola fotky ho ten den přestala odmítat a čištění ho překreslilo
+na samotné zvíře. Teď je na stránce volba: **Jen mazlíček** (výchozí, beze změny) a **Mazlíček s páníčkem**.
+
+1. **Volba.** Pole `with_person` (`0`/`1`), dva radio v panelu u fotky a stejné dva v okně v prohlížeči (`figure-drop-owner-*`,
+   mimo formulář, vložený skript stránky je drží ve shodě; změna na „s páníčkem“ zruší už odškrtnutý souhlas). Do žádosti
+   jde `description.with_person = true` a `consent_kind = person`; adresa figurky vrací `options.with_person = "1"`
+   (u samotného zvířete klíč chybí) a `generation.pet.with_person`; uložené volby stránky ho berou jako každé radio.
+2. **Kontrola fotky** (`VisionDescriber::moderate($path, 'front', 'pet_owner')`): právě jedno zvíře a právě jeden člověk.
+   Důvody: `no_animal`, `no_person`, `several`, `several_people`, `cropped` (ořez člověka i zvířete). Obsahová pravidla
+   zůstávají. Stránka má pro `no_person`, `several_people`, `cropped` slova s volbou „Jen mazlíček“ v textu
+   (`pet.rejected.owner.*`), pro `no_animal` a `several` slova zvířete.
+3. **Čištění** `GenerateModel::CLEAN_PET_OWNER_PROMPT` (jedna fotka, stejná fáze): tutéž osobu a tutéž zvíře beze změny
+   (obličej, rysy, výraz, věk, vlasy, oděv, oči; plemeno, kresba srsti, pozice), obě celé, ve stejném postavení k sobě,
+   vodítko smí zůstat; pryč pozadí, další lidé, nábytek, předměty. Poučení z `CLEAN_BUST_PROMPT`: nic, co člověk nosí,
+   není jmenováno, nejdřív co zůstane, potom co pryč. Test hlídá slova, pořadí a že tam není brýle, klobouk, sako…
+4. **Model a podstavec.** Cesta `normalize` je cesta zvířete (`pet`, `solid`, `clean`), ne busty: `cut=bust`, `front=auto`
+   a `tidy` se nespustí (hrudník by přeřízl postavu v pase). Podstavec `pet_kind.stand` bere všechny body v nejnižších
+   12 % výšky celé postavy: u člověka s psem to jsou podrážky i tlapky, a oválný podstavec je jejich konvexní obal,
+   takže nese obojí i mezeru mezi nimi (obal jen tlapek by nechal nohy člověka ve vzduchu; není to tak, protože výška
+   se měří z celé postavy, ne ze zvířete). Test `personAndDogStl`: podstavec je širší než 70 mm, jedno těleso,
+   vodotěsné. Jméno na podstavci jako u zvířete. Příznak `person` jde do Pythonu jen jako značka v hlášení.
+   **Nejtenčí místo** se měří beze změny (vodítko ani prsty nejde z geometrie spolehlivě rozeznat od nohy); upozornění
+   pro postavu s člověkem má vlastní větu (`pet.thin.owner`): jmenuje vodítko, ruku, nohu, ocas, radí větší velikost
+   a že tenké vodítko jde po tisku odstřihnout. Rada „zvolte miniaturu“ se tam nedává.
+   **Styly:** s páníčkem jen realistický (server ho vynutí, stránka ostatní vypne a řekne proč). Miniatura ztluští
+   i obličej a kulatý podstavec pod dvěma postavami je zbytečně velký; kreslená by překreslila člověka a podobnost
+   by se ztratila (její prompt je psaný pro zvíře). Podstavce: oválný, plinta, žádný; kulatý též (jen se nenabízí jako vynucený).
+5. **Souhlas.** S volbou se zobrazí souhlas busty („na fotce jsem já, nebo mám souhlas vyfotografované osoby“) a text
+   soukromí (`pet.consent.owner`, `pet.privacy.owner`, včetně věty, že podobu člověka neupravujeme); v panelu i v okně.
+6. **Limity a cena:** beze změny (5 kreditů za čisticí obrázek, potom model jako u zvířete).
+7. Testy: `tests/Feature/PetWithOwnerTest.php` (8 testů). `FakeGenerator::$restyled` si pamatuje prompty čištění.
+
+Co není ověřené: skutečný výsledek překreslené fotky a vygenerovaného páru (viz zpráva koordinátorovi).
+
+### 8.1 Sokl jako výchozí podstavec, jméno předem (15 Nov 2026, přání Romana)
+
+- Stránka se otevírá s **plintou** (sokl) vybranou a první v řadě (plinta, ovál, kruh, žádný); server bez `pedestal`
+  dělá plintu (dřív ovál). Miniatura stále vynutí kruh a po opuštění miniatury se vrátí plinta, dokud si zákazník
+  podstavec nevybral rukou.
+- **Strana jména:** výběr se otevírá na „Vpředu“ (`front`); „Vybereme sami“ (`auto`) zůstává poslední možností, protože
+  ho mají starší figurky. Kdo si nechá `auto`: u dlouhého zvířete jméno vyjde na boku, u kompaktního vpředu
+  (`pet_kind.stand`), proto výchozí není `auto`.
+- **Jméno v okně ve vizoru** (`#figure-drop-name`) je totéž pole jako v panelu: příčina, že dřív přepnutí podstavce
+  z okna nefungovalo, byla, že vložený skript stránky běží dřív, než okno v DOM je (`getElementById` vrátil `null`).
+  Teď skript poslouchá na `document` (`input` pro jméno, `change` pro volbu s páníčkem). Přepnutí oval/plinta podle
+  jména odpadlo (plinta je výchozí).
+- **Plinta bez jména** je sourodý model: `stand` pro plintu bez textu nic nevyrývá (test: žádný `engraved_lines`,
+  žádná chyba, jedno těleso).
+- **Uložené volby:** podstavec se do uložených voleb stránky (a do adresy figurky) dostane jen, když ho zákazník vybral
+  rukou (`form.dataset.pedestalOwn`, v úložišti `pedestal_own`); dřív uložený „ovál“ byl výchozí hodnota a nové
+  výchozí nepřebíjí. Figurka otevřená adresou si nese podstavec, s nímž vznikla.
+
+### 8.2 „Přegenerovat“ / „Změnit podstavec“ vedle „Přejít k tisku“ (15 Nov 2026)
+
+- `figure.ts` si po `present()` zapamatuje, s čím model na scéně vznikl (všechna pole formuláře kromě souhlasu a
+  fotky podle jména, velikosti a data), a při každé změně formuláře to porovná. Rozdíl jen v podstavci, jménu, druhé
+  řádce nebo straně jména na stránce zvířete = **„Změnit podstavec“** (spustí `#figure-rebase`, zdarma). Cokoli jiného
+  (styl, hrubost, s páníčkem, jiná fotka, druh, i velikost: ta se používá při generování, i při změně podstavce) =
+  **„Přegenerovat“** (`form.requestSubmit()`, souhlas a limity hlásí panel jako dosud) a řádek říká, že nová generace
+  se počítá do denního počtu zdarma.
+- `ToolPage.secondary({label, why, run} | null)` v `tool_page.ts` je obecná druhá akce (`[data-again]` a
+  `[data-again-why]` v kartě `#tool-go-card` a kopie v dolní liště telefonu); jiné nástroje ji mohou použít. „Přejít
+  k tisku“ zůstává funkční. Tlačítko zmizí při generování, po změně podstavce a když se volby vrátí na původní.

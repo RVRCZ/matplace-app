@@ -61,6 +61,8 @@ class GenerationController extends Controller
             'style' => ['nullable', 'in:'.implode(',', self::PET_STYLES)],
             'roughness' => ['nullable', 'integer', 'min:1', 'max:3'],
             'name_side' => ['nullable', Rule::in(PedestalChanger::PET_NAME_SIDES)],
+            // a pet figurine together with its owner: "1" (the animal alone is the default, "0" or nothing)
+            'with_person' => ['nullable', 'in:0,1'],
             'pedestal' => ['nullable', Rule::in([...PedestalChanger::TYPES, ...PedestalChanger::PET_TYPES])],
             'pedestal_name' => ['nullable', 'string', 'max:24'],
             'pedestal_dedication' => ['nullable', 'string', 'max:40'],
@@ -72,6 +74,7 @@ class GenerationController extends Controller
 
         try {
             if ($request->hasFile('image')) {
+                $withPerson = ($data['kind'] ?? null) === 'pet' && ($data['with_person'] ?? '0') === '1';
                 // every photo is stored and moderated; a refused front photo stops the request,
                 // a refused side is left out and the model is made from the rest
                 $disk = Storage::disk('local');
@@ -83,7 +86,7 @@ class GenerationController extends Controller
                     }
                     $rel = 'photos/figures/'.Str::uuid().'.'.(strtolower($request->file($field)->getClientOriginalExtension()) ?: 'jpg');
                     $disk->put($rel, file_get_contents($request->file($field)->getRealPath()));
-                    $check = app(VisionDescriber::class)->moderate($disk->path($rel), $view, ($data['kind'] ?? null) === 'pet' ? 'pet' : null);
+                    $check = app(VisionDescriber::class)->moderate($disk->path($rel), $view, ($data['kind'] ?? null) === 'pet' ? ($withPerson ? 'pet_owner' : 'pet') : null);
                     if ($check['ok']) {
                         $stored[$view] = $rel;
 
@@ -91,7 +94,7 @@ class GenerationController extends Controller
                     }
                     $disk->delete($rel);
                     // the reason is the only trace of why a photo was not used
-                    Log::info('figure photo rejected', ['view' => $view, 'subject' => $check['subject'], 'reason' => $check['reason'], 'kind' => $data['kind'] ?? null]);
+                    Log::info('figure photo rejected', ['view' => $view, 'subject' => $check['subject'], 'reason' => $check['reason'], 'kind' => $data['kind'] ?? null, 'with_person' => $withPerson]);
                     if ($view === 'front') {
                         return response()->json(['error' => 'photo_rejected', 'reason' => $check['reason'], 'view' => $view], 422);
                     }
@@ -99,16 +102,20 @@ class GenerationController extends Controller
                 }
                 try {
                     $pet = $data['kind'] === 'pet';
-                    $style = $pet ? ($data['style'] ?? 'realistic') : null;
+                    // with the owner only the realistic look: the miniature thickens everything (a face too) and the cartoon
+                    // redraws the animal alone (docs/X.md, the pet with its owner)
+                    $style = $pet ? ($withPerson ? 'realistic' : ($data['style'] ?? 'realistic')) : null;
                     // a miniature stands on its disc; every base of a pet carries the name, only the plinth a dedication
-                    $base = $pet ? ($style === 'miniature' ? 'round' : (in_array($data['pedestal'] ?? '', PedestalChanger::PET_TYPES, true) ? $data['pedestal'] : 'oval')) : null;
+                    $base = $pet ? ($style === 'miniature' ? 'round' : (in_array($data['pedestal'] ?? '', PedestalChanger::PET_TYPES, true) ? $data['pedestal'] : 'plaque')) : null;
                     $req = $service->fromPhoto($stored['front'], $data['kind'], (int) ($data['target_mm'] ?? config('ai.default_target_mm', 80)), $request->ip(), $session, $user, $pet ? [
                         'type' => $base, 'name' => $data['pedestal_name'] ?? null, 'dedication' => $base === 'plaque' ? ($data['pedestal_dedication'] ?? null) : null,
                     ] : [
                         'type' => in_array($data['pedestal'] ?? '', PedestalChanger::TYPES, true) ? $data['pedestal'] : 'round',
                         'name' => in_array($data['pedestal'] ?? '', PedestalChanger::NAMED, true) ? ($data['pedestal_name'] ?? null) : null,
                         'dedication' => in_array($data['pedestal'] ?? '', PedestalChanger::DEDICATED, true) ? ($data['pedestal_dedication'] ?? null) : null,
-                    ], array_diff_key($stored, ['front' => 1]), $pet ? ['style' => $style, 'roughness' => $style === 'miniature' ? (int) ($data['roughness'] ?? 2) : null, 'name_side' => ($data['name_side'] ?? 'auto') !== 'auto' ? $data['name_side'] : null] : []);
+                    ], array_diff_key($stored, ['front' => 1]), $pet ? ['style' => $style, 'roughness' => $style === 'miniature' ? (int) ($data['roughness'] ?? 2) : null, 'name_side' => ($data['name_side'] ?? 'auto') !== 'auto' ? $data['name_side'] : null,
+                        // the consent of this request is the one for a person in the figure (what the page showed with the choice)
+                        'with_person' => $withPerson ? true : null, 'consent_kind' => $withPerson ? 'person' : null] : []);
                 } catch (QuotaExceeded $e) {
                     $disk->delete(array_values($stored));
                     throw $e;
@@ -200,6 +207,7 @@ class GenerationController extends Controller
             'options' => isset($d['kind']) ? array_filter([
                 'kind' => $d['kind'], 'style' => $d['style'] ?? null, 'roughness' => $d['roughness'] ?? null, 'pedestal' => $d['pedestal'] ?? null,
                 'pedestal_name' => $d['pedestal_name'] ?? null, 'pedestal_dedication' => $d['pedestal_dedication'] ?? null, 'name_side' => $d['name_side'] ?? null,
+                'with_person' => ! empty($d['with_person']) ? '1' : null,
             ], fn ($v) => $v !== null) : null,
         ];
     }

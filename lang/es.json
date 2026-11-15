@@ -2929,5 +2929,22 @@
     "farm.order.recalculate_price": "Recalcular el precio",
     "farm.order.edit_design_hint": "Vuelve a la herramienta con este diseño abierto. Envíe aquí de nuevo el diseño cambiado con Continuar a la impresión.",
     "farm.face_down_note": "Se imprime boca abajo para que el motivo quede liso y los colores nítidos. La vista previa lo muestra girado, con el motivo hacia arriba, tal como se usará.",
-    "pet.name.first": "Opcional. Con el nombre la figura recibe un zócalo con la inscripción."
+    "pet.name.first": "Opcional. Con el nombre la figura recibe un zócalo con la inscripción.",
+    "pet.owner.label": "Quién sale en la figura",
+    "pet.owner.alone": "Solo la mascota",
+    "pet.owner.with": "Mascota con su dueño",
+    "pet.owner.alone.hint": "Una figura del animal. Si hay una persona en la foto, se quita de la imagen.",
+    "pet.owner.with.hint": "Una figura del animal y de la persona sobre una misma base. En la foto debe haber un animal y una persona, ambos enteros de la cabeza a los pies, de pie o sentados uno al lado del otro. La correa puede quedar. El fondo, los muebles y otras personas se quitan de la imagen; la cara y la ropa deben quedar como están.",
+    "pet.owner.style": "Con el dueño solo hay el estilo realista. La miniatura engrosaría también la cara y la de dibujos animados redibujaría a la persona, lo que no favorece al parecido.",
+    "pet.owner.size": "Con una persona la figura es más alta y la cara pequeña: para un parecido reconocible elija 150 mm o más.",
+    "pet.consent.owner": "En la foto salgo yo, o tengo el consentimiento de la persona fotografiada. Acepto que nuestros proveedores de generación de modelos procesen la foto.",
+    "pet.privacy.owner": "La foto va solo a los proveedores Tripo y Meshy, que construyen el modelo, y la borramos en cuanto la figura está hecha. También borramos la imagen creada a partir de la foto antes de construir el modelo (el animal y la persona sin el fondo). Solo la ve quien tenga el enlace; a los visitantes sin cuenta se la borramos a los 30 días. Nunca cambiamos el aspecto de la persona.",
+    "pet.rejected.owner.no_person": "No hay nadie en la foto y eligió la mascota con su dueño. La hemos borrado: elija una foto en la que también salga una persona, o elija «Solo la mascota».",
+    "pet.rejected.owner.several_people": "Hay más de una persona en la foto. La figura lleva solo una persona. La hemos borrado, elija una foto de un animal y una persona.",
+    "pet.rejected.owner.cropped": "El animal o la persona no salen enteros en la foto. La hemos borrado, elija una foto en la que ambos salgan enteros, la persona de la cabeza a los pies y el animal con las patas.",
+    "pet.thin.owner": "El punto más fino (la correa, una mano, una pierna o la cola) mide unos :mm mm. Por debajo de 2,5 mm se rompe fácilmente al imprimir. Elija un tamaño mayor; una correa fina se puede cortar después de imprimir.",
+    "figure.again": "Generar de nuevo",
+    "figure.again.why": "Ha cambiado los ajustes: la figura de la vista previa sigue siendo la anterior. Una nueva generación cuenta en los modelos gratuitos del día.",
+    "figure.again.rebase": "Cambiar la base",
+    "figure.again.rebase.why": "Ha cambiado la base o el nombre: la figura de la vista previa sigue siendo la anterior. El cambio es gratis, sin nueva generación."
 }
