@@ -96,6 +96,20 @@ class GenerateModel implements ShouldQueue
     }
 
     /** AI_CLEAN_PHOTO: always (the default) | never | auto (= with Meshy only; Tripo's own `enable_image_autofix` left a chair back in a bust). */
+    /**
+     * The same for a whole figure (a person, a toy, an object): the subject alone and whole. Until 15 Nov 2026 a figure
+     * was the only kind that went to the generator with its background, so a chair or a wall could become part of it.
+     * Nothing is to be invented: what the photo does not show stays out (a figure asked of a photo to the waist is
+     * refused by the photo check before it gets here).
+     */
+    public const CLEAN_FIGURE_PROMPT = 'Photorealistic photo of exactly this same main subject, unchanged: if it is a person, keep the face, its features and proportions, '
+        .'the expression, the age, the hair, the pose and everything the person wears precisely as they are, the eyes as they are, add nothing and do not beautify; '
+        .'if it is a toy or an object, keep its shape, proportions, colours and every detail precisely as they are. '
+        .'Show this one subject alone and whole, in the same pose and from the same side. '
+        .'Remove the background, every other person, furniture and other things that do not belong to the subject, text and logos; '
+        .'where something covered a part of the subject, restore that part naturally. '
+        .'Plain white studio background, soft even light, no shadow on the ground.';
+
     private function cleansPhoto(ModelGenerator $generator): bool
     {
         return match ((string) config('ai.clean_photo', 'always')) {
@@ -120,7 +134,12 @@ class GenerateModel implements ShouldQueue
             // (the redrawn picture replaces the photos, and the other sides say more than a clean front)
             $redraw = match (true) {
                 $style === 'cartoon' => self::CARTOON_PROMPT,
-                in_array($kind, ['pet', 'bust'], true) && $req->type === 'image' && count($req->photoPaths()) <= 1 && $this->cleansPhoto($generator) => $kind === 'bust' ? self::CLEAN_BUST_PROMPT : (! empty($req->description['with_person']) ? self::CLEAN_PET_OWNER_PROMPT : self::CLEAN_PROMPT),
+                in_array($kind, ['pet', 'bust', 'figure'], true) && $req->type === 'image' && count($req->photoPaths()) <= 1 && $this->cleansPhoto($generator) => match (true) {
+                    $kind === 'bust' => self::CLEAN_BUST_PROMPT,
+                    $kind === 'figure' => self::CLEAN_FIGURE_PROMPT,
+                    ! empty($req->description['with_person']) => self::CLEAN_PET_OWNER_PROMPT,
+                    default => self::CLEAN_PROMPT,
+                },
                 default => null,
             };
             if (! $req->external_id && $redraw && $restyler && empty($req->description['stage'])) {

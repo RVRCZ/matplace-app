@@ -37,7 +37,8 @@ export function bootFigure(stage: Stage): void {
     // what the model on the stage was made with, to tell when the panel no longer says the same (Roman, 15 Nov 2026): every
     // field of the form but the consent, and the photos by name, size and date. After a change the card offers the way to
     // the figure that matches the panel: the free change of the base for a pet (what only the base, the name, its side
-    // or the dedication differs in), a new generation for everything else (the size is applied at the generation too).
+    // or the dedication differs in) and of a bust or a figure, a new generation for everything else. The size is no
+    // reason for either: the model on the stage is shown and ordered in the size of the slider (resized below).
     const snapshot = (): Record<string, string> => {
         const o: Record<string, string> = {};
         new FormData(form).forEach((v, k) => {
@@ -51,8 +52,8 @@ export function bootFigure(stage: Stage): void {
         const now = snapshot();
         let base = false; let other = false;
         for (const k of new Set([...Object.keys(now), ...Object.keys(madeWith)])) {
-            if ((now[k] ?? '') === (madeWith[k] ?? '')) continue;
-            if (form.dataset.kind === 'pet' && cfg.files && BASE_KEYS.includes(k)) base = true; else other = true;
+            if (k === 'target_mm' || (now[k] ?? '') === (madeWith[k] ?? '')) continue;
+            if (cfg.files && BASE_KEYS.includes(k)) base = true; else other = true;
         }
         if (!base && !other) { stage.secondary(null); return; }
         stage.secondary(other
@@ -63,7 +64,22 @@ export function bootFigure(stage: Stage): void {
     form.addEventListener('input', stale);
     form.addEventListener('figure:filled', stale);
 
-    const sized = (): void => { $('figure-size-val').textContent = `${size.value} mm`; };
+    const sized = (): void => { $('figure-size-val').textContent = `${size.value} mm`; resized(); };
+    // After the model is made the slider still means what it says (Roman, 15 Nov 2026: a new size asked for a paid new
+    // generation, while the note beside it said the size can be changed later): the model on the stage is shown in
+    // that size, the status line and the badge say it, and the order is made with it (ToolPage.orderScale). The file
+    // that is downloaded stays as it was made.
+    const resized = (): void => {
+        const b = made?.bbox;
+        if (!b) return;
+        const longest = Math.max(b.x, b.y, b.z) || 1;
+        const k = Math.min(4, Math.max(0.25, Number(size.value) / longest));
+        stage.viewer.setScale(k);
+        stage.orderScale(k);
+        const shown = { x: b.x * k, y: b.y * k, z: b.z * k };
+        stage.status({ bbox: shown, pieces: (made?.parts ?? []).length || 1 });
+        sizeOf({ ...made!, bbox: shown });
+    };
     size.oninput = sized;
 
     // every photo (front and the optional sides) can be picked, replaced and taken away again
@@ -268,6 +284,10 @@ export function bootFigure(stage: Stage): void {
         stale();
         measured(ready);
         sizeOf(ready);
+        // a model opened by its address or made in another size than the slider says now: shown in the slider's size
+        resized();
+        // a bust or a figure can change its base without a new generation too (the pet's box is switched in measured())
+        if (form.dataset.kind !== 'pet' && cfg.files) document.getElementById('figure-rebase-box')?.classList.remove('hidden');
         btn.disabled = false; $('figure-progress').classList.add('hidden');
         stage.revealResult();
     };

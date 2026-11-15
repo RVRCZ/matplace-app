@@ -62,6 +62,15 @@ final class VisionDescriber
                 .'A person in the background, far behind the two, does not count as a second person only when they are clearly a passer-by; when in doubt about a second person use "several_people". '
                 .'A collar, a leash, a toy, grass or furniture are fine. One whole animal and one whole person, each on the ground, sitting or standing, is ok.';
         }
+        if ($want === 'figure' && $view === 'front') {
+            // a whole figure is made of what the photo shows: of a photo to the waist the generator invents the legs, and
+            // of a bust's photo comes a stranger's body (15 Nov 2026). Such a photo is sent back with the advice to make
+            // a bust of it, or to take a photo of the whole subject
+            $system .= ' This photo is for a figurine of the WHOLE subject (a whole person from head to feet, a whole toy or a whole object). '
+                .'Besides the content rules, set ok=false with exactly the word "cropped" as the reason when the subject is a person '
+                .'and the frame cuts the person off above the knees (a portrait, head and shoulders, a photo to the waist), or when most of a toy or an object is outside the frame. '
+                .'A person seen down to the knees or lower, sitting or standing, is ok; so is any whole toy or object.';
+        }
         if ($view !== 'front') {
             $system .= ' This photo is an additional view of a subject whose front photo was already accepted: it shows the subject from the '
                 .$view.'. The face may be hidden or turned away, and a back view shows only hair, the back of a head or the back of an object. '

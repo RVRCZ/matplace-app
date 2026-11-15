@@ -86,7 +86,9 @@ class GenerationController extends Controller
                     }
                     $rel = 'photos/figures/'.Str::uuid().'.'.(strtolower($request->file($field)->getClientOriginalExtension()) ?: 'jpg');
                     $disk->put($rel, file_get_contents($request->file($field)->getRealPath()));
-                    $check = app(VisionDescriber::class)->moderate($disk->path($rel), $view, ($data['kind'] ?? null) === 'pet' ? ($withPerson ? 'pet_owner' : 'pet') : null);
+                    $check = app(VisionDescriber::class)->moderate($disk->path($rel), $view, match ($data['kind'] ?? null) {
+                        'pet' => $withPerson ? 'pet_owner' : 'pet', 'figure' => 'figure', default => null
+                    });
                     if ($check['ok']) {
                         $stored[$view] = $rel;
 

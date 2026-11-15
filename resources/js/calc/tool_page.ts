@@ -271,6 +271,11 @@ export class Stage {
      * `idle`: the button's label to go back to when the visitor returns with the browser's back button (a module that
      * changed it to "creating…" before calling).
      */
+    /** The size the order is made in, as a factor of the file's own (a figure resized on its page after it was made). */
+    orderScale(k: number): void { this.scaleForOrder = Math.abs(k - 1) < 0.005 ? 1 : k; }
+
+    private scaleForOrder = 1;
+
     async leave(url: string, idle?: string): Promise<void> {
         const u = new URL(url, location.href);
         const uuid = u.searchParams.get('open');
@@ -289,7 +294,7 @@ export class Stage {
             if (info.status === 'ready') {
                 const csrf = document.querySelector<HTMLMetaElement>('meta[name="csrf-token"]')?.content ?? '';
                 const res = await fetch(o.store, { method: 'POST', credentials: 'same-origin', headers: { 'Content-Type': 'application/json', Accept: 'application/json', 'X-CSRF-TOKEN': csrf },
-                    body: JSON.stringify({ file: uuid, copies: Math.min(this.quantity(), o.max_copies), material: u.searchParams.get('material') ?? this.material(), from: 'tool' }) });
+                    body: JSON.stringify({ file: uuid, copies: Math.min(this.quantity(), o.max_copies), material: u.searchParams.get('material') ?? this.material(), from: 'tool', ...(this.scaleForOrder !== 1 ? { scale: Math.round(this.scaleForOrder * 1000) / 1000 } : {}) }) });
                 const json = await res.json().catch(() => ({})) as { url?: string; message?: string };
                 if (res.ok && json.url) { location.href = json.url; return; }
                 why = json.message ?? '';

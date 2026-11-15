@@ -1,5 +1,5 @@
 @php
-    $i18n = collect(['figure.generating', 'figure.done', 'figure.failed', 'figure.rejected', 'figure.skipped_view', 'figure.view.left', 'figure.view.back', 'figure.view.right', 'figure.limit', 'figure.global_limit', 'figure.need_photo', 'figure.need_consent', 'figure.limit.register', 'figure.remove', 'figure.again', 'figure.again.why', 'figure.notify.sent', 'figure.notify.failed', 'figure.made.height', 'figure.made.rest', 'figure.made.note'])
+    $i18n = collect(['figure.generating', 'figure.done', 'figure.failed', 'figure.rejected', 'figure.skipped_view', 'figure.view.left', 'figure.view.back', 'figure.view.right', 'figure.limit', 'figure.global_limit', 'figure.need_photo', 'figure.need_consent', 'figure.limit.register', 'figure.remove', 'figure.again', 'figure.again.why', 'figure.notify.sent', 'figure.notify.failed', 'figure.made.height', 'figure.made.rest', 'figure.made.note', 'figure.again.rebase', 'figure.again.rebase.why', 'figure.rebase.working', 'figure.rebase.failed', 'figure.rejected.cropped'])
         ->mapWithKeys(fn ($k) => [$k => __($k, ['n' => ':n', 'm' => ':m', 'mm' => ':mm', 'w' => ':w', 'd' => ':d'])])->all() + ['photo.too_big' => __('photo.too_big', ['mb' => \App\Http\Controllers\Api\GenerationController::PHOTO_MB]), 'photo.add' => __('photo.add'), 'photo.add.more' => __('photo.add.more'), 'figure.view.front' => __('figure.view.front')];
     $choice = 'cursor-pointer rounded-lg border border-slate-300 bg-white text-center text-ink has-[:checked]:border-ink has-[:checked]:ring-1 has-[:checked]:ring-ink has-[:focus-visible]:outline has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-action';
 @endphp
@@ -9,7 +9,7 @@
 
 @push('head')
 <script>
-    window.MP_FIGURE = { generate: @json(route('api.generate.store')), show: @json(url('/api/generate')), home: @json(route('home')), maxMb: {{ \App\Http\Controllers\Api\GenerationController::PHOTO_MB }}, register: @json(auth()->guest() && \Illuminate\Support\Facades\Route::has('register') ? route('register') : null), i18n: @json($i18n) };
+    window.MP_FIGURE = { generate: @json(route('api.generate.store')), show: @json(url('/api/generate')), home: @json(route('home')), files: @json(url('/api/files')), maxMb: {{ \App\Http\Controllers\Api\GenerationController::PHOTO_MB }}, register: @json(auth()->guest() && \Illuminate\Support\Facades\Route::has('register') ? route('register') : null), i18n: @json($i18n) };
 </script>
 @endpush
 
@@ -36,13 +36,15 @@
             <summary class="cursor-pointer font-medium text-ink">{{ __('figure.howto') }}</summary>
             <ol class="mt-2 list-decimal space-y-1 pl-5 text-ink">
                 @foreach(['distance', 'frame', 'height', 'arms', 'wall', 'sides'] as $step)
-                    <li>{{ __('figure.howto.'.$step) }}</li>
+                    {{-- how much of the body the photo has to show depends on what is made: a bust or a whole figure --}}
+                    <li @if($step === 'frame') data-by-kind data-bust="{{ __('figure.howto.frame') }}" data-figure="{{ __('figure.howto.frame.figure') }}" @endif>{{ __('figure.howto.'.$step) }}</li>
                 @endforeach
             </ol>
             <p class="mt-2 text-xs text-muted">{{ __('figure.howto.note') }}</p>
         </details>
 
         @include('tools._figure_photos')
+        <span id="figure-tips-by-kind" hidden data-bust="{{ __('figure.photo_tips') }}" data-figure="{{ __('figure.photo_tips.figure') }}"></span>
     </x-tool-section>
 
     <x-tool-section id="base" :title="__('toolpage.section.base')">
@@ -52,10 +54,10 @@
 
         <fieldset>
             <legend class="lbl">{{ __('figure.pedestal') }}</legend>
-            <p class="mt-1 text-xs text-muted">{{ __('figure.pedestal.styles') }}</p>
+            <p id="figure-bust-styles" class="mt-1 text-xs text-muted">{{ __('figure.pedestal.styles') }}</p>
             <div class="mt-2 grid grid-cols-3 gap-1.5 text-sm" role="radiogroup">
                 @foreach(['socle', 'antique', 'cut', 'round', 'square', 'hexagon', 'column', 'plaque', 'none'] as $pk)
-                    <label class="{{ $choice }} px-2 py-1.5">
+                    <label class="{{ $choice }} px-2 py-1.5" @if(in_array($pk, \App\Domain\Generation\PedestalChanger::BUST_STYLES, true)) data-bust-style @endif>
                         <input type="radio" name="pedestal" value="{{ $pk }}" class="sr-only" @checked($pk === 'socle')>{{ __('figure.pedestal.'.$pk) }}
                     </label>
                 @endforeach
@@ -82,8 +84,22 @@
                     const to = picked('kind') === 'figure' ? (styles.includes(now) ? 'round' : now) : (now === 'round' ? 'socle' : now);
                     document.querySelector('input[name=pedestal][value=' + to + ']').checked = true;
                     fields();
+                    byKind();
                 }));
+                // what belongs to a bust only (its three styles of the chest and the words about them) is not offered for a
+                // whole figure, and the photo tips say how much of the body has to be in the picture (15 Nov 2026)
+                const byKind = () => {
+                    const figure = picked('kind') === 'figure';
+                    document.querySelectorAll('[data-bust-style]').forEach((el) => el.classList.toggle('hidden', figure));
+                    document.getElementById('figure-bust-styles').classList.toggle('hidden', figure);
+                    const tips = document.getElementById('figure-tips-by-kind');
+                    const shown = document.querySelector('[data-photo-tips]');
+                    if (tips && shown) shown.textContent = figure ? tips.dataset.figure : tips.dataset.bust;
+                    document.querySelectorAll('[data-by-kind]').forEach((el) => { el.textContent = figure ? el.dataset.figure : el.dataset.bust; });
+                };
+                document.getElementById('figure-form').addEventListener('figure:filled', () => { fields(); byKind(); });
                 fields();
+                byKind();
             })();
         </script>
 
@@ -96,6 +112,11 @@
         <button id="figure-submit" type="submit" class="btn-ink w-full gap-1.5"><x-icon name="sparkles" class="h-4 w-4" />{{ __('figure.submit') }}</button>
         <div id="figure-progress" class="hidden"><div class="h-2 w-full overflow-hidden rounded-full bg-slate-200"><div id="figure-bar" class="h-2 w-0 bg-ink transition-all"></div></div><p class="mt-1 text-xs text-muted">{{ __('figure.step.wait') }}</p></div>
         <p id="figure-msg" class="hint" aria-live="polite"></p>
+        {{-- another base or another name under the model that is on the stage: seconds of geometry, no new generation --}}
+        <div id="figure-rebase-box" class="hidden">
+            <button id="figure-rebase" type="button" class="btn-quiet w-full">{{ __('figure.rebase') }}</button>
+            <p class="mt-1 text-xs text-muted">{{ __('figure.rebase.hint') }}</p>
+        </div>
         {{-- "send me the result": a model takes 2 to 4 minutes; one e-mail with the link, nothing else (docs/AN.md §12.5) --}}
         {{-- a block, not a form: a form inside the page's form is dropped by the browser and the box then showed all the time --}}
         <div id="figure-notify" class="mt-2 rounded-lg bg-slate-50 p-3 text-sm" hidden>

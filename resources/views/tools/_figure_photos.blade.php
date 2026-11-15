@@ -5,7 +5,7 @@
                 <img id="figure-preview" data-view-preview="front" src="" alt="" class="mb-2 hidden max-h-44 rounded-lg">
                 <x-icon name="camera" class="h-7 w-7 text-muted" />
                 <span class="mt-1 font-medium text-ink">{{ $pick ?? __('figure.pick_photo') }}</span>
-                <span class="text-sm text-muted">{{ $tips ?? __('figure.photo_tips') }}</span>
+                <span data-photo-tips class="text-sm text-muted">{{ $tips ?? __('figure.photo_tips') }}</span>
                 <input id="figure-photo" name="image" data-view="front" data-intake-photo type="file" accept="image/*" class="sr-only">
             </label>
             <button type="button" data-view-remove="front" class="tool-icon-btn absolute right-2 top-2 hidden" aria-label="{{ __('figure.remove') }}" title="{{ __('figure.remove') }}"><x-icon name="x" class="h-4 w-4" /></button>
