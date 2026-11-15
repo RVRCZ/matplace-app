@@ -1524,7 +1524,7 @@
     "pet.base.oval": "Oválný",
     "pet.base.round": "Kulatý",
     "pet.base.plaque": "Sokl se jmenovkou",
-    "pet.base.hint": "Oválný podstavec sleduje tlapky, kulatý je stabilnější, sokl je vyšší a má jméno na boku. Bez podstavce stojí figurka na vlastních tlapkách.",
+    "pet.base.hint": "Sokl je vyšší a nese jméno, zepředu nebo na straně, kterou vyberete níže. Oválný podstavec sleduje tlapky, kulatý je stabilnější. Bez podstavce stojí figurka na vlastních tlapkách.",
     "pet.base.miniature": "Miniatura stojí na kulatém podstavci.",
     "pet.name": "Jméno mazlíčka",
     "pet.name_ph": "např. Rex",

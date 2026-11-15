@@ -1524,7 +1524,7 @@
     "pet.base.oval": "Ovalada",
     "pet.base.round": "Redonda",
     "pet.base.plaque": "Peana con nombre",
-    "pet.base.hint": "La base ovalada sigue las patas, la redonda es más estable, la peana es más alta y lleva el nombre en el lateral. Sin base, la figura se apoya en sus propias patas.",
+    "pet.base.hint": "El zócalo es más alto y lleva el nombre, delante o en el lado que elija abajo. La base ovalada sigue las patas, la redonda es más estable. Sin base, la figura se apoya en sus propias patas.",
     "pet.base.miniature": "La miniatura se apoya en una base redonda.",
     "pet.name": "Nombre de su mascota",
     "pet.name_ph": "p. ej. Rex",
