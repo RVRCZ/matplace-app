@@ -517,6 +517,12 @@ class PrepareFarmOrder implements ShouldQueue
             $overrides['process']['enable_support'] = '1';
             $overrides['process'] += ['support_type' => 'tree(auto)'];
         }
+        // a figure made from a photo stands on its own base: with the farm's "supports from the bed only" nothing can
+        // grow under a dog's belly or a chin, the base is in the way (F26-000171, 15 Nov 2026: the belly sagged). For
+        // such a model the supports may stand on the model too; a printer's own setting still wins
+        if (! $noSupports && $order->modelFile?->origin === 'generated') {
+            $overrides['process'] += ['support_on_build_plate_only' => '0'];
+        }
         $overrides['process'] = PrintSettings::process($custom) + $overrides['process'];
         if ((isset($custom['ironing']) || ($hints['ironing_type'] ?? 'no ironing') !== 'no ironing') && abs((float) $printer->nozzle_mm - 0.4) > 0.001) {
             // the profiles write the ironing pass for a 0.4 nozzle; a finer or coarser one irons at its own spacing
