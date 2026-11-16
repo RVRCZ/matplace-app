@@ -24,6 +24,10 @@ return [
 
     // The colour an order of a figure made from a photo (bust, figure, pet) opens with: the loaded spool whose name holds
     // `name` (accents and case do not matter), else the loaded one nearest to `hex`. Roman, 15 Nov 2026: Marrakech bronze.
+    // Supports of a figure made from a photo (bust, figure, pet): overhangs flatter than this are propped. The farm's own
+    // angle (support_threshold_angle, 25) left a dog's belly with too little under it (F26-000171).
+    'support_threshold_angle_figure' => (int) env('FARM_SUPPORT_ANGLE_FIGURE', 40),
+
     'figure_color' => ['name' => env('FARM_FIGURE_COLOR', 'marrakes'), 'hex' => '#a9713f'],
 
     // A big model's order is not sliced before the customer has chosen the settings and confirmed the colour
