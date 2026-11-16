@@ -524,8 +524,9 @@ class PrepareFarmOrder implements ShouldQueue
             $overrides['process'] += ['support_on_build_plate_only' => '0'];
             // …and a rounded belly is propped only where it is flattest at the farm's 25°: the same dog got 6.6 g of
             // supports more at 40° (78.5 → 85.1 g, 222 → 258 min, measured on production 16 Nov 2026). A figure made
-            // from a photo is sliced with the figures' angle, never with a smaller one
-            $overrides['process']['support_threshold_angle'] = (string) max((int) ($overrides['process']['support_threshold_angle'] ?? 0), (int) config('farm.support_threshold_angle_figure', 40));
+            // from a photo is sliced with the figures' angle (farm.support_threshold_angle_figure, 32 by Roman's choice), never
+            // with a smaller one
+            $overrides['process']['support_threshold_angle'] = (string) max((int) ($overrides['process']['support_threshold_angle'] ?? 0), (int) config('farm.support_threshold_angle_figure', 32));
         }
         $overrides['process'] = PrintSettings::process($custom) + $overrides['process'];
         if ((isset($custom['ironing']) || ($hints['ironing_type'] ?? 'no ironing') !== 'no ironing') && abs((float) $printer->nozzle_mm - 0.4) > 0.001) {
