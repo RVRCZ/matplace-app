@@ -609,10 +609,40 @@ def trim_loose(m, target):
     return cut, share
 
 
+def mirror_axis(m):
+    """
+    The axis a head looks along, by its symmetry: a head is the same left and right and not front and back, so the
+    upper half of the model mirrors onto itself across the left-right axis only. Returns the depth axis (0 = X, 1 = Y)
+    or None when the two mirrors are about as good (a ball of hair, a hood).
+    """
+    import numpy as np
+    z0, h = float(m.bounds[0][2]), float(m.extents[2])
+    pts = m.vertices[m.vertices[:, 2] > z0 + 0.5 * h]
+    if len(pts) < 200:
+        return None
+    pitch = h / 60.0
+    grid = set(map(tuple, np.round(pts / pitch).astype(int)))
+    scores = []
+    for axis in (0, 1):
+        q = pts.copy()
+        q[:, axis] = float(q[:, axis].min() + q[:, axis].max()) - q[:, axis]
+        mirrored = set(map(tuple, np.round(q / pitch).astype(int)))
+        scores.append(len(grid & mirrored) / max(1, len(grid | mirrored)))
+    if abs(scores[0] - scores[1]) < 0.03:
+        return None
+    return 1 - int(np.argmax(scores))        # the head mirrors across the left-right axis; it looks along the other
+
+
 def face_front(m):
     """
-    Busts do not always arrive looking at -Y. Shoulders are the wide axis; the head sits in front of the chest.
-    Returns the quarter turns about Z (0-3) that bring the face to -Y; 0 when the shape gives no clear answer.
+    Busts do not always arrive looking at -Y. Returns the quarter turns about Z (0-3) that bring the face to -Y; 0 when
+    the shape gives no clear answer.
+
+    Which axis the head looks along: the one it does not mirror across (mirror_axis), else the old rule that the
+    shoulders are the wide axis. Which way along it: the head sits in front of the chest, or the face shows by its
+    relief. Where neither says so and the head looks along X, the face is taken to be at +X: that is how the generator
+    hands its models over (seven busts of seven, 14-16 Nov 2026), and a girl with a bun and a hood, whose shoulders
+    were no wider than deep, kept her name on her side because the old rule gave up there (17 Nov 2026).
     """
     import numpy as np
     c, a = m.triangles_center, m.area_faces
@@ -621,18 +651,23 @@ def face_front(m):
     top = (c[:, 2] > z0 + 0.62 * h)
     if low.sum() < 10 or top.sum() < 10:
         return 0
-    spread = c[low][:, :2].max(0) - c[low][:, :2].min(0)
-    if max(spread) < 1.25 * min(spread):
-        return 0                                                          # no clear shoulder line
-    depth_axis = 0 if spread[1] > spread[0] else 1
+    depth_axis = mirror_axis(m)
+    if depth_axis is None:
+        spread = c[low][:, :2].max(0) - c[low][:, :2].min(0)
+        if max(spread) < 1.25 * min(spread):
+            return 0                                                      # no clear shoulder line either
+        depth_axis = 0 if spread[1] > spread[0] else 1
     chest = np.average(c[low][:, depth_axis], weights=a[low])
     head = np.average(c[top][:, depth_axis], weights=a[top])
-    if abs(head - chest) >= 0.05 * h:
-        forward = 1 if head > chest else -1
+    offset = (1 if head > chest else -1) if abs(head - chest) >= 0.05 * h else 0
+    # an upright head stands right above the chest; then the face gives itself away by its relief:
+    # brows, nose, lips and chin make surfaces that look up and down, the back of a head falls straight
+    relief = face_side(c, a, m.face_normals, z0, h, depth_axis)
+    if depth_axis == 0:
+        # the generator's own front, unless both signs of the shape say the opposite
+        forward = -1 if offset == -1 and relief == -1 else 1
     else:
-        # an upright head stands right above the chest; then the face gives itself away by its relief:
-        # brows, nose, lips and chin make surfaces that look up and down, the back of a head falls straight
-        forward = face_side(c, a, m.face_normals, z0, h, depth_axis)
+        forward = offset or relief
         if forward == 0:
             return 0
     # quarter turns counter-clockwise: +X -> 3 (to -Y), +Y -> 2, -X -> 1, -Y -> 0
