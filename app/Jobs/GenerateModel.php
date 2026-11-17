@@ -223,6 +223,9 @@ class GenerateModel implements ShouldQueue
                 'dedication' => $req->description['pedestal_dedication'] ?? null,
                 // busts do not always arrive facing the front; the name belongs under the face
                 'front' => $kind === 'bust' ? 'auto' : null,
+                // where the generator's own models look when the shape of the bust does not say (mesh_tool.face_front):
+                // Tripo hands them over facing +X, three quarter turns from the front (eight busts of eight, Nov 2026)
+                'front_prior' => $kind === 'bust' && str_starts_with((string) $req->engine, 'tripo') ? 3 : null,
                 // cut flat across the chest like a sculpted bust, instead of arms that end at the elbows
                 'cut' => $kind === 'bust' ? 'bust' : null,
                 'tidy' => in_array($kind, ['bust', 'figure'], true) ? true : null,

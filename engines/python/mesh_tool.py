@@ -633,10 +633,12 @@ def mirror_axis(m):
     return 1 - int(np.argmax(scores))        # the head mirrors across the left-right axis; it looks along the other
 
 
-def face_front(m):
+def face_front(m, prior=0):
     """
-    Busts do not always arrive looking at -Y. Returns the quarter turns about Z (0-3) that bring the face to -Y; 0 when
-    the shape gives no clear answer.
+    Busts do not always arrive looking at -Y. Returns the quarter turns about Z (0-3) that bring the face to -Y; `prior`
+    when the shape gives no clear answer: the turns that suit the way the generator hands its models over (Tripo: 3,
+    the face at +X; the job says so), 0 without one. A second bust with a bun and a hood had neither a clear mirror
+    nor clear shoulders, and its name went to the side again (17 Nov 2026).
 
     Which axis the head looks along: the one it does not mirror across (mirror_axis), else the old rule that the
     shoulders are the wide axis. Which way along it: the head sits in front of the chest, or the face shows by its
@@ -650,12 +652,12 @@ def face_front(m):
     low = (c[:, 2] < z0 + 0.45 * h)
     top = (c[:, 2] > z0 + 0.62 * h)
     if low.sum() < 10 or top.sum() < 10:
-        return 0
+        return prior
     depth_axis = mirror_axis(m)
     if depth_axis is None:
         spread = c[low][:, :2].max(0) - c[low][:, :2].min(0)
         if max(spread) < 1.25 * min(spread):
-            return 0                                                      # no clear shoulder line either
+            return prior                                                  # no clear shoulder line either
         depth_axis = 0 if spread[1] > spread[0] else 1
     chest = np.average(c[low][:, depth_axis], weights=a[low])
     head = np.average(c[top][:, depth_axis], weights=a[top])
@@ -669,7 +671,7 @@ def face_front(m):
     else:
         forward = offset or relief
         if forward == 0:
-            return 0
+            return prior
     # quarter turns counter-clockwise: +X -> 3 (to -Y), +Y -> 2, -X -> 1, -Y -> 0
     return {(0, 1): 3, (1, 1): 2, (0, -1): 1, (1, -1): 0}[(depth_axis, forward)]
 
@@ -1471,7 +1473,7 @@ def main(argv):
                     ped_note["bust_cut"] = True
                     m.apply_scale(target / float(max(m.extents)))
             front = str(extras.get("front", "keep"))
-            turns = face_front(m) if front == "auto" else {"right": 3, "back": 2, "left": 1}.get(front, 0)      # where the face looks now, seen from the front
+            turns = face_front(m, int(extras.get("front_prior") or 0) % 4) if front == "auto" else {"right": 3, "back": 2, "left": 1}.get(front, 0)      # where the face looks now, seen from the front
             if turns:
                 m.apply_transform(trimesh.transformations.rotation_matrix(turns * np.pi / 2, [0, 0, 1]))
                 ped_note["turned"] = turns * 90
