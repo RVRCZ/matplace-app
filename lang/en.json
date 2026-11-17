@@ -3080,5 +3080,14 @@
     "affiliate.account.payout_carried": ":missing is missing to the payout minimum (:min); the payable sum is carried over to the next payout (:date).",
     "affiliate.account.page_pick": "A page from the list",
     "router.gift.qr": "QR code on a sign",
-    "router.gift.headband": "Headband for a costume"
+    "router.gift.headband": "Headband for a costume",
+    "figure.pedestal.classic": "Bust on a block",
+    "figure.pedestal.classic_round": "Bust on a disc",
+    "figure.pedestal.classic_stem": "Bust on a stem",
+    "figure.pedestal.about.classic": "The arms are cut away by two flat faces just outside the shoulders, the chest ends flat and stands on a low square block with rounded corners. The name can stand on its front.",
+    "figure.pedestal.about.classic_round": "The same cut of the chest, a little narrower, on a low round disc with a rounded edge. The name can run round its rim.",
+    "figure.pedestal.about.classic_stem": "The chest without arms is rounded underneath and narrows to a short stem on a round foot. The name can run round the foot.",
+    "figure.pedestal.about.socle": "The chest with its arms is cut in an arc underneath and lies on a turned foot with the name round its band.",
+    "figure.pedestal.about.antique": "A deeply rounded chest stands on a tablet with the name and a socle with a wide foot.",
+    "figure.pedestal.about.cut": "No base, the bust stands on its own flat cut with the shoulders cut at a slant."
 }

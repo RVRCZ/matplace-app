@@ -3,6 +3,7 @@
 namespace Tests\Feature;
 
 use App\Domain\Generation\ModelNormalizer;
+use App\Domain\Generation\PedestalChanger;
 use App\Engines\Contracts\MeshRepair;
 use App\Engines\Mesh\StlFile;
 use App\Engines\Repair\PythonTool;
@@ -244,6 +245,177 @@ class FigureToolTest extends TestCase
             }
         }
         File::deleteDirectory($dir);
+    }
+
+    /**
+     * The three classic busts (the owner's pictures of 17 Nov 2026): the arms are cut away by two flat faces that lean
+     * in going down, and the chest stands on a rounded-square block, on a round disc, or is rounded to a stem on a
+     * round foot. The name is raised on the foot only.
+     */
+    public function test_classic_busts_have_flat_side_faces_and_a_foot_sized_from_the_chest(): void
+    {
+        $python = app(PythonTool::class);
+        if (! $python->available()) {
+            $this->markTestSkipped('Python is not installed.');
+        }
+        $dir = sys_get_temp_dir().'/mp_classic_'.uniqid();
+        File::ensureDirectoryExists($dir);
+        MeshFixtures::tornBustStl($dir.'/in.stl');
+        $font = base_path('engines/fonts/Montserrat-wght.ttf');
+        $triangles = [];
+        foreach (['classic', 'classic_round', 'classic_stem'] as $kind) {
+            foreach (['bare' => [], 'named' => ['name' => 'Lucian', 'font' => $font]] as $variant => $name) {
+                $out = $dir.'/'.$kind.'-'.$variant.'.stl';
+                $r = $python->run(['normalize', $dir.'/in.stl', $out, '80', '0', 'clean,pedestal,solid', json_encode(['pedestal' => $kind] + $name)]);
+                $tag = $kind.' '.$variant;
+                $this->assertTrue($r['ok'] ?? false, $tag.' '.json_encode($r));
+                $this->assertSame($kind, $r['pedestal'], $tag.' '.json_encode($r));          // no fallback to the plain round base
+                $this->assertTrue($r['watertight'], $tag);
+                $this->assertSame(1, $r['shells'], $tag);
+                $this->assertEqualsWithDelta(80, max($r['bbox']['x'], $r['bbox']['y'], $r['bbox']['z']), 0.1, $tag);
+                $this->assertSame($variant === 'named' ? 1 : null, $r['engraved_lines'] ?? null, $tag);
+                $triangles[$kind][$variant] = $r['triangles'];
+
+                [$zc, $xl, $xr, $fx, $fy] = [$r['cut_z'], $r['side_left_x'], $r['side_right_x'], $r['foot_x'], $r['foot_y']];
+                $lean = deg2rad($r['side_lean']);
+                $this->assertGreaterThan(5, $r['side_lean'], $tag);
+                $this->assertLessThan(30, $r['side_lean'], $tag);                             // an overhang that prints without supports
+                $onFace = [-1 => 0.0, 1 => 0.0];
+                $letters = 0;
+                // the worst of every measure over all corners of the mesh (asserted once below, not per corner)
+                $past = $wide = $back = $front = $letterX = $round = 0.0;
+                foreach (StlFile::triangles($out) as [$a, $b, $c]) {
+                    $n = [($b[1] - $a[1]) * ($c[2] - $a[2]) - ($b[2] - $a[2]) * ($c[1] - $a[1]), ($b[2] - $a[2]) * ($c[0] - $a[0]) - ($b[0] - $a[0]) * ($c[2] - $a[2]), ($b[0] - $a[0]) * ($c[1] - $a[1]) - ($b[1] - $a[1]) * ($c[0] - $a[0])];
+                    $len = sqrt($n[0] ** 2 + $n[1] ** 2 + $n[2] ** 2);
+                    foreach ([$a, $b, $c] as $p) {
+                        if ($p[2] > $zc + 0.05) {
+                            // the chest: how far anything reaches past the two faces (the arms are gone)
+                            $reach = tan($lean) * ($p[2] - $zc);
+                            $past = max($past, $p[0] - ($xr + $reach), ($xl - $reach) - $p[0]);
+                        } elseif ($kind === 'classic') {
+                            // the block: a rounded square round the chest's underside; only the name stands out, and only in front
+                            $wide = max($wide, abs($p[0] - $fx) - $r['block_w_mm'] / 2);
+                            $back = max($back, $p[1] - ($fy + $r['block_d_mm'] / 2));
+                            $out_of_front = ($fy - $r['block_d_mm'] / 2) - $p[1];
+                            $front = max($front, $out_of_front);
+                            if ($out_of_front > 0.2) {
+                                // a letter: on the flat of the front face, away from the rounded corners
+                                $letterX = max($letterX, abs($p[0] - $fx));
+                                $letters++;
+                            }
+                        } else {
+                            // the round feet: a disc that covers the underside, or a foot under a stem; the letters stand out of the rim
+                            $round = max($round, hypot($p[0] - $fx, $p[1] - $fy) - $r['foot_r']);
+                        }
+                    }
+                    if ($len < 1e-9 || min($a[2], $b[2], $c[2]) < $zc + 0.05) {
+                        continue;
+                    }
+                    foreach ([-1, 1] as $side) {
+                        // a flat side face: its normal points out and a little down, its triangles lie in one plane
+                        if (($n[0] * $side * cos($lean) - $n[2] * sin($lean)) / $len > 0.9995) {
+                            foreach ([$a, $b, $c] as $p) {
+                                $plane = ($side > 0 ? $xr : $xl) + $side * tan($lean) * ($p[2] - $zc);
+                                if (abs($p[0] - $plane) < 0.05) {
+                                    continue;
+                                }
+
+                                continue 2;                                                   // a facet of the relief that happens to look the same way
+                            }
+                            $onFace[$side] += $len / 2;
+                        }
+                    }
+                }
+                // both faces are there, each a real plane of the chest's side (the torn bust is 80 mm tall)
+                $this->assertGreaterThan(150.0, $onFace[-1], $tag.': the left side face');
+                $this->assertGreaterThan(150.0, $onFace[1], $tag.': the right side face');
+                $this->assertLessThanOrEqual(0.05, $past, $tag.': something reaches past a side face');
+                $letter = $variant === 'named' ? 1.4 : 0.05;                                  // how far the raised name may stand out
+                if ($kind === 'classic') {
+                    $this->assertLessThanOrEqual(0.05, $wide, $tag.': the block is wider than it says');
+                    $this->assertLessThanOrEqual(0.05, $back, $tag.': something stands out of the back of the block');
+                    $this->assertLessThanOrEqual($letter, $front, $tag.': the front of the block');
+                    $this->assertLessThan(0.36 * $r['block_w_mm'], $letterX, $tag.': the name runs to the corner');
+                } else {
+                    $this->assertLessThanOrEqual($letter, $round, $tag.': the foot is wider than it says');
+                }
+
+                if ($kind === 'classic') {
+                    // a little wider and deeper than the chest above it, never a tray; a tenth of the whole height
+                    $this->assertGreaterThan($r['chest_w_mm'] + 2.0, $r['block_w_mm'], $tag);
+                    $this->assertGreaterThan($r['chest_d_mm'] + 2.0, $r['block_d_mm'], $tag);
+                    $this->assertLessThan(1.3 * $r['chest_w_mm'], $r['block_w_mm'], $tag);
+                    $this->assertLessThan(1.3 * $r['chest_d_mm'], $r['block_d_mm'], $tag);
+                    $this->assertEqualsWithDelta(0.1 * $r['bbox']['z'], $r['block_h_mm'], 0.02 * $r['bbox']['z'], $tag);
+                    $this->assertEqualsWithDelta($zc, $r['block_h_mm'], 0.01, $tag);          // the block's top is the plane of the chest's flat cut
+                    $this->assertSame($variant === 'named', $letters > 0, $tag);
+                } elseif ($kind === 'classic_round') {
+                    $this->assertGreaterThanOrEqual(0.5 * hypot($r['chest_w_mm'], $r['chest_d_mm']) * 0.9, $r['foot_r'], $tag);   // the disc covers the underside
+                    $this->assertLessThan(0.13 * $r['bbox']['z'], $zc, $tag);                 // and is low
+                } else {
+                    $this->assertLessThan(0.5 * $r['chest_w_mm'], $r['foot_r'], $tag);       // the foot under the stem is narrower than the chest
+                }
+            }
+            $this->assertGreaterThan($triangles[$kind]['bare'] + 200, $triangles[$kind]['named'], $kind.': the letters are in the mesh');
+        }
+        File::deleteDirectory($dir);
+    }
+
+    public function test_bust_page_offers_the_classic_styles_first_and_hides_them_for_a_figure(): void
+    {
+        foreach (['' => ['Busta na bloku', 'Busta na disku', 'Busta na noze'], '/en' => ['Bust on a block', 'Bust on a disc', 'Bust on a stem'], '/es' => ['Busto sobre bloque', 'Busto sobre disco', 'Busto sobre pie']] as $prefix => $names) {
+            $html = $this->get($prefix.'/tools/figure')->assertOk()->assertSeeInOrder($names)->getContent();
+            preg_match_all('/<label[^>]*?( data-bust-style)?\s*>\s*<input type="radio" name="pedestal" value="(\w+)"([^>]*)>/', $html, $m, PREG_SET_ORDER);
+            // the three classic styles first, in the order of the owner's picture; then the older styles; then the plain bases
+            $this->assertSame(['classic', 'classic_round', 'classic_stem', 'socle', 'antique', 'cut', 'round', 'square', 'hexagon', 'column', 'plaque', 'none'], array_column($m, 2), $prefix);
+            foreach ($m as [, $bustOnly, $value, $rest]) {
+                // what the page hides for a whole figure carries the mark its script goes by
+                $this->assertSame(in_array($value, PedestalChanger::BUST_STYLES, true), $bustOnly !== '', $value);
+                // the page starts with the turned foot until the owner chooses otherwise (BustStylesTest)
+                $this->assertSame($value === 'socle', str_contains($rest, 'checked'), $value);
+            }
+            // a line about each style, the name field for the styles that carry a name
+            $this->assertStringContainsString(__('figure.pedestal.about.classic', [], ltrim($prefix, '/') ?: 'cs'), $html);
+        }
+        foreach (['classic', 'classic_round', 'classic_stem'] as $style) {
+            $this->assertContains($style, PedestalChanger::NAMED);
+            $this->assertNotContains($style, PedestalChanger::DEDICATED);
+            foreach (['cs', 'en', 'es'] as $locale) {
+                foreach (['figure.pedestal.'.$style, 'figure.pedestal.about.'.$style] as $key) {
+                    $this->assertNotSame($key, __($key, [], $locale), $key.' '.$locale);
+                }
+            }
+        }
+    }
+
+    public function test_a_bust_changes_to_a_classic_style_and_back_without_a_new_generation(): void
+    {
+        if (! app(PythonTool::class)->available()) {
+            $this->markTestSkipped('Python is not installed.');
+        }
+        $this->moderation(true);
+        $r = $this->post('/api/generate', ['image' => UploadedFile::fake()->image('me.jpg', 600, 800), 'kind' => 'bust', 'consent' => 1, 'pedestal' => 'classic', 'pedestal_name' => 'Ema', 'pedestal_dedication' => 'x'], ['Accept' => 'application/json'])->assertCreated();
+        $uuid = $r->json('generation.file.uuid');
+        // made with the classic block and its name; the block has no room for a dedication
+        $r->assertJsonPath('generation.file.generation.pedestal.type', 'classic')->assertJsonPath('generation.file.generation.pedestal.name', 'Ema');
+        $this->assertSame(['classic', 'Ema', null], [GenerationRequest::firstOrFail()->description['pedestal'], GenerationRequest::firstOrFail()->description['pedestal_name'], GenerationRequest::firstOrFail()->description['pedestal_dedication'] ?? null]);
+
+        // away from it …
+        $round = $this->postJson('/api/files/'.$uuid.'/pedestal', ['type' => 'round'])->assertCreated()->assertJsonPath('file.generation.pedestal.type', 'round');
+        // … and back to it, and to the other two, from the changed file: with a name and without
+        $files = [];
+        foreach (['classic', 'classic_round', 'classic_stem'] as $style) {
+            foreach (['Lucian', ''] as $name) {
+                $p = $this->postJson('/api/files/'.$round->json('file.uuid').'/pedestal', ['type' => $style, 'name' => $name, 'dedication' => 'x'])->assertCreated()
+                    ->assertJsonPath('file.generation.pedestal.type', $style)->assertJsonPath('file.generation.pedestal.name', $name)->assertJsonPath('file.generation.pedestal.dedication', '');
+                $files[$style][$name] = ModelFile::where('uuid', $p->json('file.uuid'))->firstOrFail();
+                $this->assertTrue($files[$style][$name]->isReady(), $style);
+                Storage::disk('models')->assertExists('files/'.$files[$style][$name]->uuid.'/source.stl');
+            }
+            // the name is in the mesh, so the style was really built (a fallback to the round base carries no name)
+            $this->assertGreaterThan($files[$style]['']->triangles + 200, $files[$style]['Lucian']->triangles, $style);
+        }
+        $this->assertSame(1, GenerationRequest::count());                         // no new generation, no credits
     }
 
     public function test_base_of_a_generated_bust_can_be_changed_without_a_new_generation(): void
