@@ -89,7 +89,7 @@ class FarmVideosCutTest extends TestCase
 
         // the Short: the finished piece, 6 s of growth and the opening shot again; the 16:9: 28 s of growing, under 45 s
         $this->assertEqualsWithDelta(6.0, $cuts['short']->growth, 0.05);
-        $this->assertEqualsWithDelta(7.0, $cuts['short']->seconds, 0.05, '6 s of growth and the held plate');
+        $this->assertEqualsWithDelta(8.0, $cuts['short']->seconds, 0.05, 'no picture of the design: the finished plate opens for a second, 6 s of growth, the held plate');
         $this->assertSame([1080, 1920, 24], [config('youtube.cut.short.width'), config('youtube.cut.short.height'), $cuts['short']->fps]);
         $this->assertStringContainsString('pad=1080:1920', $cuts['short']->graph, 'the whole camera picture fits into the portrait frame');
         $this->assertContains(app(FarmVideos::class)->defaultTitle($order), array_map(fn (string $text) => str_replace("\n", ' ', $text), $cuts['short']->texts), 'the public title opens the Short, wrapped to the frame');
@@ -412,7 +412,7 @@ class FarmVideosCutTest extends TestCase
         // nothing stored: the template as it was (growth, the held plate), no stills
         $bare = $cutter->short($order->fresh());
         $this->assertSame(['model' => null, 'source' => null, 'photo' => null], $cutter->shortStills($order->fresh(), $video));
-        $this->assertStringContainsString('[growth][closing]concat=n=2', $bare->graph);
+        $this->assertStringContainsString('[opening][growth][closing]concat=n=3', $bare->graph, 'no picture of the design: the finished plate opens the Short');
 
         $this->stillsFor($order);
         $order = $order->fresh();

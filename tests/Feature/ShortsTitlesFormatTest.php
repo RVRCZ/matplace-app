@@ -177,7 +177,7 @@ class ShortsTitlesFormatTest extends TestCase
         $this->assertStringContainsString('adelay=', $cut->graph);
         $this->assertSame('matplace.com', $cut->texts[array_search('matplace.com', $cut->texts, true)]);
         $this->assertContains('Veřejný název', $cut->texts);
-        $this->assertGreaterThanOrEqual(7, $cut->seconds);
+        $this->assertGreaterThanOrEqual(8, $cut->seconds);
         $this->assertLessThanOrEqual(15, $cut->seconds);
 
         $fallback = $this->order();
@@ -187,7 +187,7 @@ class ShortsTitlesFormatTest extends TestCase
         $plain = app(TimelapseCutter::class)->short($fallback);
         $this->assertStringEndsWith('/99.jpg', $plain->inputs[array_keys($plain->inputs, '-i', true)[0] + 1]);
         $this->assertStringNotContainsString('removal_sound', $plain->graph);
-        $this->assertGreaterThanOrEqual(7, $plain->seconds);
+        $this->assertGreaterThanOrEqual(8, $plain->seconds);
     }
 
     public function test_analytics_utm_audit_funnel_and_retitles_csv(): void

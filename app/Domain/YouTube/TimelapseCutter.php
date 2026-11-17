@@ -192,7 +192,10 @@ class TimelapseCutter
             'extra' => $paths['with_source'] || $paths['in_hand'] ? 1.0 : null,
         ], fn ($duration, $kind) => $kind === 'removal' ? (bool) $paths['removal'] : $duration !== null, ARRAY_FILTER_USE_BOTH);
         // the design first, then the process, then the result: the photographed piece closes when there is one, else the held plate
-        $fixed = ($stills['photo'] ? (float) $still['photo'] : 1.0) + array_sum($used);
+        // without a picture of the design (no stored preview, no source) the finished plate opens for a second, as it used to:
+        // the Short must not start on the dark band of the first layers
+        $opening = ! $stills['model'] && ! $stills['source'];
+        $fixed = ($stills['photo'] ? (float) $still['photo'] : 1.0) + ($opening ? 1.0 : 0.0) + array_sum($used);
         $growth = min(6.0, max($frames->count() * $per, 8.0 - $fixed));
         $per = $growth / max(1, $frames->count());
         $seconds = $fixed + $growth;
@@ -210,16 +213,19 @@ class TimelapseCutter
         array_push($inputs, '-f', 'concat', '-safe', '0', '-i', $dir.'/short.txt');
         $fit = fn (int $input, float $duration, string $label) => sprintf('[%d:v]scale=%d:%d:force_original_aspect_ratio=increase:flags=lanczos,crop=%d:%d,fps=%d,trim=duration=%s,setpts=PTS-STARTPTS,format=yuv420p,setsar=1[%s]',
             $input, $w, $h, $w, $h, $fps, VideoCut::number($duration), $label);
-        $split = array_filter([$stills['photo'] ? null : '[finish_close]', $paths['turn'] ? '[finish_turn]' : null]);
+        $split = array_filter([$opening ? '[finish_open]' : null, $stills['photo'] ? null : '[finish_close]', $paths['turn'] ? '[finish_turn]' : null]);
         $graph = $split ? ['[0:v]split='.count($split).implode('', $split)] : [];
         $normal = fn (string $source, float $duration, string $label) => sprintf('[%s]scale=%d:%d:force_original_aspect_ratio=increase:flags=lanczos,crop=%d:%d,fps=%d,trim=duration=%s,setpts=PTS-STARTPTS,format=yuv420p,setsar=1[%s]',
             $source, $w, $h, $w, $h, $fps, VideoCut::number($duration), $label);
+        if ($opening) {
+            $graph[] = $normal('finish_open', 1.0, 'opening');
+        }
         if (! $stills['photo']) {
             $graph[] = $normal('finish_close', 1.0, 'closing');
         }
         $graph[] = sprintf('[1:v]%s,fps=%d,trim=duration=%s,setpts=PTS-STARTPTS,format=yuv420p,setsar=1[growth]', $this->fit($w, $h), $fps, VideoCut::number($growth));
         // the customer's source (when allowed) and the model as it went to print open the Short
-        $sequence = [];
+        $sequence = $opening ? ['[opening]'] : [];
         $input = 2;
         $matte = fn (int $in, float $duration, string $label) => sprintf('[%d:v]scale=%d:%d:force_original_aspect_ratio=decrease:flags=lanczos,pad=%d:%d:(ow-iw)/2:(oh-ih)/2:black,setsar=1,fps=%d,trim=duration=%s,setpts=PTS-STARTPTS,fade=in:st=0:d=0.2,format=yuv420p,setsar=1[%s]',
             $in, $w, $h, $w, $h, $fps, VideoCut::number($duration + 0.0), $label);
@@ -237,7 +243,7 @@ class TimelapseCutter
             array_push($inputs, '-i', $paths['removal']);
             $graph[] = $fit($input, 2.5, 'removal');
             $sequence[] = '[removal]';
-            $removal = ['input' => $input, 'start' => array_sum(array_filter([$used['model'] ?? null, $used['source'] ?? null])) + $growth, 'duration' => 2.5];
+            $removal = ['input' => $input, 'start' => ($opening ? 1.0 : 0.0) + array_sum(array_filter([$used['model'] ?? null, $used['source'] ?? null])) + $growth, 'duration' => 2.5];
             $input++;
         }
         if ($paths['turn']) {
