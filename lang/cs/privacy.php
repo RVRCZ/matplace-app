@@ -18,6 +18,7 @@ return [
                 'Údaje o zakázkách – zvolený materiál, barva, cena, způsob převzetí, doručovací adresa, stav tisku.',
                 'Záznam tisku – snímky z kamery v tiskárně a z nich sestavené časosběrné video. Zachycují jen tiskovou podložku a vytištěný předmět.',
                 'Platební údaje – zpracovává výhradně platební brána Stripe; my ukládáme jen identifikátor a stav platby a zůstatek kreditu.',
+                'Údaje partnerského programu – jen pokud se do něj zapojíte: váš kód, údaje k výplatě provize, které sami uvedete (například číslo účtu), počty kliknutí na váš odkaz bez IP adres a přehled provizí.',
                 'Technické údaje – IP adresa, typ prohlížeče, čas přístupu, nezbytné cookies.',
             ],
         ],
@@ -66,6 +67,7 @@ return [
                 'Fotky pro rozpoznání a generování – nejdéle 1 den; nahrané soubory bez objednávky 30 dní.',
                 'Časosběrná videa – u zakázky po dobu trvání účtu; na YouTube do odmítnutí zveřejnění, odvolání souhlasu nebo do našeho smazání.',
                 'Technické záznamy – nejvýše 12 měsíců.',
+                'Údaje partnerského programu – po dobu vaší účasti; záznamy o vyplacených provizích 5 let (účetní a daňové předpisy).',
             ],
         ],
         [

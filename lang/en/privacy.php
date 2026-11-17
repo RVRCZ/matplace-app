@@ -18,6 +18,7 @@ return [
                 'Order data – material, colour, price, delivery method, shipping address, print status.',
                 'Print recording – pictures from the camera inside the printer and the time-lapse video made from them. They show only the print bed and the printed object.',
                 'Payment data – processed solely by the payment gateway Stripe; we store only the payment identifier and status and your credit balance.',
+                'Partner programme data – only if you join it: your code, the payout details you give us yourself (for example an account number), the number of clicks on your link without IP addresses, and the list of your commissions.',
                 'Technical data – IP address, browser type, time of access, necessary cookies.',
             ],
         ],
@@ -66,6 +67,7 @@ return [
                 'Photos for recognition and generation – at most 1 day; uploaded files without an order 30 days.',
                 'Time-lapse videos – with the order while your account exists; on YouTube until you refuse publishing, take the consent back or we delete them.',
                 'Technical logs – at most 12 months.',
+                'Partner programme data – for as long as you take part; records of commissions paid out for 5 years (accounting and tax rules).',
             ],
         ],
         [
