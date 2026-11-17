@@ -3077,5 +3077,6 @@
     "affiliate.land.faq.7.q": "Co nesmím?",
     "affiliate.land.faq.7.a": "Slibovat, co nenabízíme, vydávat se za Matplace, kupovat reklamu na slovo „Matplace“ bez našeho souhlasu nebo odkaz rozesílat jako nevyžádanou poštu. Celé znění je v podmínkách níže.",
     "affiliate.account.payout_due": "Splatné provize se vyplácejí :date; minimum výplaty máte splněné.",
-    "affiliate.account.payout_carried": "Do minima výplaty (:min) chybí :missing, splatná částka se převádí do další výplaty (:date)."
+    "affiliate.account.payout_carried": "Do minima výplaty (:min) chybí :missing, splatná částka se převádí do další výplaty (:date).",
+    "affiliate.account.page_pick": "Stránka z nabídky"
 }

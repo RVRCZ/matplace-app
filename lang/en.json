@@ -3077,5 +3077,6 @@
     "affiliate.land.faq.7.q": "What must I not do?",
     "affiliate.land.faq.7.a": "Promise what we do not offer, pose as Matplace, buy ads on the word \"Matplace\" without our consent, or send the link as unsolicited mail. The full wording is in the terms below.",
     "affiliate.account.payout_due": "Payable commissions are paid out on :date; you have reached the payout minimum.",
-    "affiliate.account.payout_carried": ":missing is missing to the payout minimum (:min); the payable sum is carried over to the next payout (:date)."
+    "affiliate.account.payout_carried": ":missing is missing to the payout minimum (:min); the payable sum is carried over to the next payout (:date).",
+    "affiliate.account.page_pick": "A page from the list"
 }

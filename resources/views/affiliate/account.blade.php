@@ -19,7 +19,7 @@
         {{-- the link builder: a page of ours or any path; no script, the page just asks again with ?to= --}}
         <form method="get" action="{{ route('account.partner') }}" class="mt-4 grid gap-3 sm:grid-cols-[1fr_1fr_auto] sm:items-end">
             <div class="sm:col-span-3"><h3 class="text-sm font-semibold">{{ __('affiliate.account.builder') }}</h3><p class="hint">{{ __('affiliate.account.builder_hint') }}</p></div>
-            <label class="lbl">{{ __('affiliate.account.builder') }}
+            <label class="lbl">{{ __('affiliate.account.page_pick') }}
                 <select onchange="this.form.to.value = this.value" class="field">
                     <option value="">—</option>
                     @foreach($pages as $path => $label)<option value="{{ $path }}" @selected($to === $path)>{{ __($label) }}</option>@endforeach

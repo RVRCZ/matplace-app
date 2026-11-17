@@ -3077,5 +3077,6 @@
     "affiliate.land.faq.7.q": "¿Qué no puedo hacer?",
     "affiliate.land.faq.7.a": "Prometer lo que no ofrecemos, hacerte pasar por Matplace, comprar anuncios con la palabra «Matplace» sin nuestro consentimiento o enviar el enlace como correo no solicitado. El texto completo está en las condiciones de abajo.",
     "affiliate.account.payout_due": "Las comisiones a cobrar se pagan el :date; has alcanzado el mínimo de pago.",
-    "affiliate.account.payout_carried": "Faltan :missing para el mínimo de pago (:min); la suma a cobrar se traslada al siguiente pago (:date)."
+    "affiliate.account.payout_carried": "Faltan :missing para el mínimo de pago (:min); la suma a cobrar se traslada al siguiente pago (:date).",
+    "affiliate.account.page_pick": "Una página de la lista"
 }
