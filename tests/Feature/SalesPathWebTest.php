@@ -205,6 +205,24 @@ class SalesPathWebTest extends TestCase
         return AnonymousSession::where('token', $token ?? $this->unencryptedCookies[AnonymousSession::COOKIE])->firstOrFail();
     }
 
+    public function test_the_steps_on_a_tools_page_before_the_model_are_recorded(): void
+    {
+        Humans::forget();
+        $session = $this->openAsBrowser('/');
+        // the page's script: the picker opened, a photo chosen, "Create" without the consent, left after 41 s of waiting
+        foreach ([['pick', null], ['photo', null], ['no_consent', null], ['create', null], ['wait_left', 41000]] as [$step, $ms]) {
+            $this->postJson('/api/step', array_filter(['tool' => 'pet', 'step' => $step, 'ms' => $ms], fn ($v) => $v !== null), ['User-Agent' => self::BROWSER])->assertNoContent();
+        }
+        // nothing else is taken: an unknown step, a tool that is no code, a time that is no number
+        $this->postJson('/api/step', ['tool' => 'pet', 'step' => 'paid'], ['User-Agent' => self::BROWSER])->assertStatus(422);
+        $this->postJson('/api/step', ['tool' => 'Pet figurine!', 'step' => 'pick'], ['User-Agent' => self::BROWSER])->assertStatus(422);
+        $this->postJson('/api/step', ['tool' => 'pet', 'step' => 'shown', 'ms' => 'long'], ['User-Agent' => self::BROWSER])->assertStatus(422);
+        $steps = Event::where('session_id', $session->id)->where('type', 'tool_step')->orderBy('id')->get();
+        $this->assertSame(['pick', 'photo', 'no_consent', 'create', 'wait_left'], $steps->map(fn ($e) => $e->meta['step'])->all());
+        $this->assertSame(['tool' => 'pet', 'step' => 'wait_left', 'ms' => 41000], $steps->last()->meta);
+        $this->assertSame(['tool' => 'pet', 'step' => 'pick'], $steps->first()->meta);
+    }
+
     public function test_a_refused_upload_counts_in_the_funnel_as_an_upload_that_began(): void
     {
         Humans::forget();
