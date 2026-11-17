@@ -1,0 +1,47 @@
+{
+    "figure.pedestal.classic": [
+        "Busta na bloku",
+        "Bust on a block",
+        "Busto sobre bloque"
+    ],
+    "figure.pedestal.classic_round": [
+        "Busta na disku",
+        "Bust on a disc",
+        "Busto sobre disco"
+    ],
+    "figure.pedestal.classic_stem": [
+        "Busta na noze",
+        "Bust on a stem",
+        "Busto sobre pie"
+    ],
+    "figure.pedestal.about.classic": [
+        "Paže jsou seříznuté dvěma rovnými plochami těsně za rameny, hruď končí rovně a stojí na nízkém hranatém bloku se zaoblenými rohy. Jméno může být na jeho přední straně.",
+        "The arms are cut away by two flat faces just outside the shoulders, the chest ends flat and stands on a low square block with rounded corners. The name can stand on its front.",
+        "Los brazos se cortan con dos caras planas justo por fuera de los hombros, el pecho termina plano y descansa sobre un bloque bajo y cuadrado de esquinas redondeadas. El nombre puede ir en su frente."
+    ],
+    "figure.pedestal.about.classic_round": [
+        "Stejně seříznutá hruď, jen užší, na nízkém kulatém disku se zaoblenou hranou. Jméno může být po jeho obvodu.",
+        "The same cut of the chest, a little narrower, on a low round disc with a rounded edge. The name can run round its rim.",
+        "El mismo corte del pecho, algo más estrecho, sobre un disco bajo y redondo de canto redondeado. El nombre puede ir alrededor de su borde."
+    ],
+    "figure.pedestal.about.classic_stem": [
+        "Hruď bez paží je zespodu zaoblená a zužuje se do krátké nohy na kulaté patě. Jméno může být po obvodu paty.",
+        "The chest without arms is rounded underneath and narrows to a short stem on a round foot. The name can run round the foot.",
+        "El pecho sin brazos es redondeado por debajo y se estrecha hasta un pie corto sobre una base redonda. El nombre puede ir alrededor de la base."
+    ],
+    "figure.pedestal.about.socle": [
+        "Hruď s pažemi je zespodu seříznutá do oblouku a leží na soustruženém soklu se jménem po obvodu.",
+        "The chest with its arms is cut in an arc underneath and lies on a turned foot with the name round its band.",
+        "El pecho con los brazos se corta en arco por debajo y descansa sobre un pie torneado con el nombre alrededor."
+    ],
+    "figure.pedestal.about.antique": [
+        "Hluboce zaoblená hruď stojí na tabulce se jménem a soklu se širokou patou.",
+        "A deeply rounded chest stands on a tablet with the name and a socle with a wide foot.",
+        "Un pecho muy redondeado descansa sobre una tablilla con el nombre y una peana de pie ancho."
+    ],
+    "figure.pedestal.about.cut": [
+        "Bez podstavce, busta stojí na vlastním rovném řezu se šikmo seříznutými rameny.",
+        "No base, the bust stands on its own flat cut with the shoulders cut at a slant.",
+        "Sin base, el busto se apoya en su propio corte plano con los hombros cortados en diagonal."
+    ]
+}

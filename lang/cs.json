@@ -3078,5 +3078,14 @@
     "affiliate.land.faq.7.a": "Slibovat, co nenabízíme, vydávat se za Matplace, kupovat reklamu na slovo „Matplace“ bez našeho souhlasu nebo odkaz rozesílat jako nevyžádanou poštu. Celé znění je v podmínkách níže.",
     "affiliate.account.payout_due": "Splatné provize se vyplácejí :date; minimum výplaty máte splněné.",
     "affiliate.account.payout_carried": "Do minima výplaty (:min) chybí :missing, splatná částka se převádí do další výplaty (:date).",
-    "affiliate.account.page_pick": "Stránka z nabídky"
+    "affiliate.account.page_pick": "Stránka z nabídky",
+    "figure.pedestal.classic": "Busta na bloku",
+    "figure.pedestal.classic_round": "Busta na disku",
+    "figure.pedestal.classic_stem": "Busta na noze",
+    "figure.pedestal.about.classic": "Paže jsou seříznuté dvěma rovnými plochami těsně za rameny, hruď končí rovně a stojí na nízkém hranatém bloku se zaoblenými rohy. Jméno může být na jeho přední straně.",
+    "figure.pedestal.about.classic_round": "Stejně seříznutá hruď, jen užší, na nízkém kulatém disku se zaoblenou hranou. Jméno může být po jeho obvodu.",
+    "figure.pedestal.about.classic_stem": "Hruď bez paží je zespodu zaoblená a zužuje se do krátké nohy na kulaté patě. Jméno může být po obvodu paty.",
+    "figure.pedestal.about.socle": "Hruď s pažemi je zespodu seříznutá do oblouku a leží na soustruženém soklu se jménem po obvodu.",
+    "figure.pedestal.about.antique": "Hluboce zaoblená hruď stojí na tabulce se jménem a soklu se širokou patou.",
+    "figure.pedestal.about.cut": "Bez podstavce, busta stojí na vlastním rovném řezu se šikmo seříznutými rameny."
 }

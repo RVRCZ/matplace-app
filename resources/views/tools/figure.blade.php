@@ -1,6 +1,7 @@
 @php
     $i18n = collect(['figure.generating', 'figure.done', 'figure.failed', 'figure.rejected', 'figure.skipped_view', 'figure.view.left', 'figure.view.back', 'figure.view.right', 'figure.limit', 'figure.global_limit', 'figure.need_photo', 'figure.need_consent', 'figure.limit.register', 'figure.remove', 'figure.again', 'figure.again.why', 'figure.notify.sent', 'figure.notify.failed', 'figure.made.height', 'figure.made.rest', 'figure.made.note', 'figure.again.rebase', 'figure.again.rebase.why', 'figure.rebase.working', 'figure.rebase.failed', 'figure.rejected.cropped'])
         ->mapWithKeys(fn ($k) => [$k => __($k, ['n' => ':n', 'm' => ':m', 'mm' => ':mm', 'w' => ':w', 'd' => ':d'])])->all() + ['photo.too_big' => __('photo.too_big', ['mb' => \App\Http\Controllers\Api\GenerationController::PHOTO_MB]), 'photo.add' => __('photo.add'), 'photo.add.more' => __('photo.add.more'), 'figure.view.front' => __('figure.view.front')];
+    $bust = app(\App\Domain\Generation\BustStyles::class);
     $choice = 'cursor-pointer rounded-lg border border-slate-300 bg-white text-center text-ink has-[:checked]:border-ink has-[:checked]:ring-1 has-[:checked]:ring-ink has-[:focus-visible]:outline has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-action';
 @endphp
 
@@ -54,11 +55,17 @@
 
         <fieldset>
             <legend class="lbl">{{ __('figure.pedestal') }}</legend>
-            <p id="figure-bust-styles" class="mt-1 text-xs text-muted">{{ __('figure.pedestal.styles') }}</p>
+            {{-- one line about every bust style on offer: what the chest and the foot look like, where the name stands --}}
+            <ul id="figure-bust-styles" class="mt-1 space-y-0.5 text-xs text-muted">
+                @foreach($bust->shown() as $pk)
+                    <li><span class="font-medium text-ink">{{ __('figure.pedestal.'.$pk) }}:</span> {{ __('figure.pedestal.about.'.$pk) }}</li>
+                @endforeach
+            </ul>
             <div class="mt-2 grid grid-cols-3 gap-1.5 text-sm" role="radiogroup">
-                @foreach(['socle', 'antique', 'cut', 'round', 'square', 'hexagon', 'column', 'plaque', 'none'] as $pk)
+                {{-- the bust's own styles first, the ones the owner shows (BustStyles, /admin/ai), then the plain bases --}}
+                @foreach($bust->allowed() as $pk)
                     <label class="{{ $choice }} px-2 py-1.5" @if(in_array($pk, \App\Domain\Generation\PedestalChanger::BUST_STYLES, true)) data-bust-style @endif>
-                        <input type="radio" name="pedestal" value="{{ $pk }}" class="sr-only" @checked($pk === 'socle')>{{ __('figure.pedestal.'.$pk) }}
+                        <input type="radio" name="pedestal" value="{{ $pk }}" class="sr-only" @checked($pk === $bust->default())>{{ __('figure.pedestal.'.$pk) }}
                     </label>
                 @endforeach
             </div>
@@ -81,7 +88,7 @@
                 document.querySelectorAll('input[name=kind]').forEach((r) => r.addEventListener('change', () => {
                     const styles = {{ \Illuminate\Support\Js::from(\App\Domain\Generation\PedestalChanger::BUST_STYLES) }};
                     const now = picked('pedestal');
-                    const to = picked('kind') === 'figure' ? (styles.includes(now) ? 'round' : now) : (now === 'round' ? 'socle' : now);
+                    const to = picked('kind') === 'figure' ? (styles.includes(now) ? 'round' : now) : (now === 'round' ? {{ \Illuminate\Support\Js::from($bust->default()) }} : now);
                     document.querySelector('input[name=pedestal][value=' + to + ']').checked = true;
                     fields();
                     byKind();

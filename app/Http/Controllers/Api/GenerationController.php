@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Api;
 
+use App\Domain\Generation\BustStyles;
 use App\Domain\Generation\GenerationService;
 use App\Domain\Generation\PedestalChanger;
 use App\Domain\Generation\QuotaExceeded;
@@ -63,7 +64,8 @@ class GenerationController extends Controller
             'name_side' => ['nullable', Rule::in(PedestalChanger::PET_NAME_SIDES)],
             // a pet figurine together with its owner: "1" (the animal alone is the default, "0" or nothing)
             'with_person' => ['nullable', 'in:0,1'],
-            'pedestal' => ['nullable', Rule::in([...PedestalChanger::TYPES, ...PedestalChanger::PET_TYPES])],
+            // a bust style the owner has hidden (BustStyles, /admin/ai) is not made anew
+            'pedestal' => ['nullable', Rule::in([...app(BustStyles::class)->allowed(), ...PedestalChanger::PET_TYPES])],
             'pedestal_name' => ['nullable', 'string', 'max:24'],
             'pedestal_dedication' => ['nullable', 'string', 'max:40'],
             'target_mm' => ['nullable', 'integer', 'min:5', 'max:1000'],
@@ -109,12 +111,15 @@ class GenerationController extends Controller
                     $style = $pet ? ($withPerson ? 'realistic' : ($data['style'] ?? 'realistic')) : null;
                     // a miniature stands on its disc; every base of a pet carries the name, only the plinth a dedication
                     $base = $pet ? ($style === 'miniature' ? 'round' : (in_array($data['pedestal'] ?? '', PedestalChanger::PET_TYPES, true) ? $data['pedestal'] : 'plaque')) : null;
+                    // a bust that names no base gets the style the bust page starts with (the owner's choice, BustStyles);
+                    // a standing figure the plain round base
+                    $plain = in_array($data['pedestal'] ?? '', PedestalChanger::TYPES, true) ? $data['pedestal'] : ($data['kind'] === 'bust' ? app(BustStyles::class)->default() : 'round');
                     $req = $service->fromPhoto($stored['front'], $data['kind'], (int) ($data['target_mm'] ?? config('ai.default_target_mm', 80)), $request->ip(), $session, $user, $pet ? [
                         'type' => $base, 'name' => $data['pedestal_name'] ?? null, 'dedication' => $base === 'plaque' ? ($data['pedestal_dedication'] ?? null) : null,
                     ] : [
-                        'type' => in_array($data['pedestal'] ?? '', PedestalChanger::TYPES, true) ? $data['pedestal'] : 'round',
-                        'name' => in_array($data['pedestal'] ?? '', PedestalChanger::NAMED, true) ? ($data['pedestal_name'] ?? null) : null,
-                        'dedication' => in_array($data['pedestal'] ?? '', PedestalChanger::DEDICATED, true) ? ($data['pedestal_dedication'] ?? null) : null,
+                        'type' => $plain,
+                        'name' => in_array($plain, PedestalChanger::NAMED, true) ? ($data['pedestal_name'] ?? null) : null,
+                        'dedication' => in_array($plain, PedestalChanger::DEDICATED, true) ? ($data['pedestal_dedication'] ?? null) : null,
                     ], array_diff_key($stored, ['front' => 1]), $pet ? ['style' => $style, 'roughness' => $style === 'miniature' ? (int) ($data['roughness'] ?? 2) : null, 'name_side' => ($data['name_side'] ?? 'auto') !== 'auto' ? $data['name_side'] : null,
                         // the consent of this request is the one for a person in the figure (what the page showed with the choice)
                         'with_person' => $withPerson ? true : null, 'consent_kind' => $withPerson ? 'person' : null] : []);

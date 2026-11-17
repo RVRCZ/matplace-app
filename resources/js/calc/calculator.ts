@@ -966,7 +966,11 @@ function showPedestal(file: FileInfo | null): void {
     const hint = msg.dataset.hint ?? (msg.dataset.hint = msg.textContent ?? '');
     // the turned foot and the plinth carry a name, only the plinth has room for a dedication
     const field = (sel: string, on: boolean) => box.querySelectorAll<HTMLElement>(sel).forEach((e) => { e.classList.toggle('hidden', !on); e.classList.toggle('block', on); });
-    const plaque = () => { field('[data-pedestal-name]', ['socle', 'antique', 'plaque'].includes(type.value)); field('[data-pedestal-dedication]', type.value === 'plaque'); };
+    // which bases carry a name comes from the page (PedestalChanger::NAMED), so a new style needs no change here
+    const named = (box.dataset.named ?? 'socle,antique,plaque').split(',');
+    const plaque = () => { field('[data-pedestal-name]', named.includes(type.value)); field('[data-pedestal-dedication]', type.value === 'plaque'); };
+    // a bust style the owner has hidden is offered only to the model that already has it
+    type.querySelectorAll<HTMLOptionElement>('option[data-hidden]').forEach((o) => { o.hidden = o.disabled = o.value !== ped.type; });
     type.value = ped.type; front.value = 'keep'; sink.value = String(ped.sink ?? 0); tidy.checked = ped.tidy ?? true; name.value = ped.name; dedication.value = ped.dedication;
     msg.textContent = hint; btn.disabled = false;
     plaque(); type.onchange = plaque;
