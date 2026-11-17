@@ -336,6 +336,7 @@ class FarmOrderController extends Controller
     {
         $data = $request->validate(['note' => ['required', 'string', 'max:300']]);
         $amount = $wallet->giveBack($order, $request->user()->id, $data['note']);
+        \App\Domain\Affiliate\Affiliates::safely(fn () => app(\App\Domain\Affiliate\Affiliates::class)->sync($order), 'commission refund');
 
         return back()->with('status', __('farm.admin.refunded', ['amount' => Money::of($amount, $order->currency)->format()]));
     }

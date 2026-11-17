@@ -15,6 +15,8 @@
         'farm.order.price_start', 'farm.order.price_start_hint', 'farm.order.price_stale_pay', 'farm.order.recalculate_price',
         // the chooser by machine (docs/AL.md §19): the card of the printer with its positions, the reasons a position cannot print a part
         'farm.order.machine_title', 'farm.order.machine_hint', 'farm.order.colors_count', 'farm.order.positions_n', 'farm.order.machine_best', 'farm.order.machine_chosen', 'farm.order.preselected', 'farm.order.machine_repicked', 'farm.order.machine_fell_back',
+        // the discount code field (docs/AT.md; only on the page while the codes are switched on)
+        'farm.promo.applied', 'farm.promo.line', 'farm.promo.empty',
         'farm.order.pos_reason.empty', 'farm.order.pos_reason.main', 'farm.order.pos_reason.off', 'farm.order.pos_reason.kind', 'farm.order.pos_reason.low', 'farm.order.pos_reason.manual_only', 'farm.order.pos_reason.limit'];
     $farmCfg = [
         'state' => $state,
@@ -22,6 +24,7 @@
         'routes' => [
             'status' => route('farm.orders.status', $order), 'reslice' => route('farm.orders.reslice', $order), 'pay' => route('farm.orders.pay', $order),
             'checkout' => route('farm.orders.checkout', $order), 'quote' => route('farm.orders.quote', $order),
+            'promo' => route('farm.orders.promo', $order),
             'cancel' => route('farm.orders.cancel', $order), 'credit' => route('account.credit'),
             // the top-up page comes back here; "need" (what is missing) is appended by the page
             'topup' => route('account.credit', ['back' => $order->token]),
@@ -332,6 +335,21 @@
                     <p class="mt-1 text-xs text-slate-500">{{ __('farm.guest.email_hint') }}</p>
                 @endif
                 <textarea name="note" rows="2" maxlength="500" placeholder="{{ __('farm.order.note') }}" aria-label="{{ __('farm.order.note') }}" class="mt-2 w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm">{{ isset($intakeNote) ? mb_substr((string) $intakeNote, 0, 500) : '' }}</textarea>
+
+                {{-- the discount code (docs/AT.md): the field is on the page only while the codes are switched on; the price it changes is
+                     asked from the server (POST promo answers with the order's state, whose prices are priceFor's) --}}
+                @if(app(\App\Domain\Affiliate\Coupons::class)->enabled())
+                    <div id="farm-promo" class="mt-3" data-promo>
+                        <label for="farm-promo-code" class="block text-sm font-semibold text-slate-700">{{ __('farm.promo.label') }}</label>
+                        <div class="mt-1 flex gap-2">
+                            <input id="farm-promo-code" type="text" maxlength="40" autocomplete="off" autocapitalize="characters" spellcheck="false" placeholder="{{ __('farm.promo.placeholder') }}" class="min-w-0 grow rounded-lg border border-slate-300 bg-white px-3 py-2 font-mono text-sm uppercase">
+                            <button type="button" id="farm-promo-apply" class="btn-quiet min-h-0 px-3 py-2 text-sm">{{ __('farm.promo.apply') }}</button>
+                            <button type="button" id="farm-promo-remove" class="btn-quiet hidden min-h-0 px-3 py-2 text-sm">{{ __('farm.promo.remove') }}</button>
+                        </div>
+                        <p id="farm-promo-msg" class="mt-1 hidden text-sm" role="status" aria-live="polite"></p>
+                        <p class="mt-1 text-xs text-slate-500">{{ __('farm.promo.not_delivery') }}</p>
+                    </div>
+                @endif
 
                 <label class="mt-3 flex items-start gap-2 text-sm text-slate-700">
                     <input type="checkbox" id="farm-terms" required class="mt-1 h-4 w-4 accent-action">

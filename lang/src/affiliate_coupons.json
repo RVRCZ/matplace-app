@@ -1,0 +1,141 @@
+{
+    "affiliate.title": ["Partnerský program", "Partner programme", "Programa de socios"],
+    "affiliate.lead": [
+        "Sdílejte odkaz na Matplace. Když si přes něj někdo objedná tisk a zaplatí, dostanete provizi.",
+        "Share a link to Matplace. When somebody orders a print through it and pays, you earn a commission.",
+        "Comparte un enlace de Matplace. Cuando alguien encarga una impresión a través de él y paga, recibes una comisión."
+    ],
+    "affiliate.how.h": ["Jak to funguje", "How it works", "Cómo funciona"],
+    "affiliate.how.1": [
+        "Dostanete svůj odkaz. Můžete ho dát do blogu, videa nebo příspěvku, a to na kterýkoli náš nástroj nebo stránku.",
+        "You get your own link. Put it in a blog, a video or a post, pointing at any of our tools or pages.",
+        "Recibes tu propio enlace. Puedes ponerlo en un blog, un vídeo o una publicación, hacia cualquiera de nuestras herramientas o páginas."
+    ],
+    "affiliate.how.2": [
+        "Kdo přes odkaz přijde, nese si vaši značku v prohlížeči :days dní. Platí poslední kliknutí.",
+        "Whoever comes through the link carries your mark in their browser for :days days. The last click counts.",
+        "Quien llega por el enlace lleva tu marca en su navegador durante :days días. Cuenta el último clic."
+    ],
+    "affiliate.how.3": [
+        "Z každé zaplacené zakázky dostanete :percent % z ceny bez DPH (tisk po slevě a doprava). K výplatě je provize, až se zakázka dotiskne.",
+        "From every paid order you earn :percent % of the price without VAT (the print after any discount, and delivery). The commission becomes payable when the order has been printed.",
+        "De cada pedido pagado recibes el :percent % del precio sin IVA (la impresión tras el posible descuento y el envío). La comisión se puede cobrar cuando el pedido está impreso."
+    ],
+    "affiliate.terms.h": ["Podmínky programu", "Terms of the programme", "Condiciones del programa"],
+    "affiliate.terms.v": ["Verze podmínek: :v", "Version of the terms: :v", "Versión de las condiciones: :v"],
+    "affiliate.terms.1": [
+        "Provize je :percent % z ceny zaplacené zakázky bez DPH: z tisku po případné slevě a z dopravy, bez odměn návrhářů. Procento platí v okamžiku, kdy zákazník zaplatí; pozdější změna se na tuto zakázku nevztahuje.",
+        "The commission is :percent % of the price of the paid order without VAT: of the print after any discount and of the delivery, without designers' rewards. The percentage is the one in force when the customer pays; a later change does not apply to that order.",
+        "La comisión es el :percent % del precio del pedido pagado sin IVA: de la impresión tras el posible descuento y del envío, sin las recompensas de los diseñadores. Vale el porcentaje del momento en que el cliente paga; un cambio posterior no afecta a ese pedido."
+    ],
+    "affiliate.terms.2": [
+        "Provize vzniká zaplacením zakázky a stává se splatnou, až je zakázka dotištěná. Vyplácíme ji ručně na údaje, které uvedete při registraci; neplatí se automaticky a nemáme pevný termín výplat.",
+        "The commission arises when the order is paid and becomes payable once the order has been printed. We pay it out by hand to the details you give at registration; nothing is paid automatically and there is no fixed payout date.",
+        "La comisión nace al pagarse el pedido y se puede cobrar cuando el pedido está impreso. La pagamos a mano a los datos que indiques al registrarte; no se paga automáticamente y no hay una fecha fija de pago."
+    ],
+    "affiliate.terms.3": [
+        "Zrušená, nepovedená nebo zákazníkovi vrácená zakázka provizi ruší, částečné vrácení ji úměrně snižuje. O provizi už vyplacené za zakázku, kterou zákazník později vrátí, rozhodne provozovatel.",
+        "A cancelled or failed order, or one refunded to the customer, cancels the commission; a partial refund reduces it in proportion. What happens to a commission already paid out for an order the customer later gets refunded is for the operator to decide.",
+        "Un pedido cancelado, fallido o reembolsado al cliente anula la comisión; un reembolso parcial la reduce en proporción. Lo que ocurra con una comisión ya pagada de un pedido que el cliente recupere después lo decide el operador."
+    ],
+    "affiliate.terms.4": [
+        "Provizi nedostanete za vlastní objednávky, za objednávky provozovatele ani za zakázky, které nepřišly přes váš odkaz nebo kód. Platí poslední kliknutí; slevový kód, který patří vám, má přednost před odkazem.",
+        "You earn nothing on your own orders, on the operator's orders or on orders that did not come through your link or code. The last click counts; a discount code that belongs to you takes precedence over the link.",
+        "No recibes comisión por tus propios pedidos, por los del operador ni por los que no llegaron por tu enlace o código. Cuenta el último clic; un código de descuento que sea tuyo tiene prioridad sobre el enlace."
+    ],
+    "affiliate.terms.5": [
+        "Odkaz nesmíte propagovat klamavě: neslibujte ceny, termíny ani vlastnosti, které nenabízíme, nevydávejte se za Matplace a nekupujte reklamu na slova „Matplace“ bez našeho souhlasu. Nerozesílejte ho jako nevyžádanou poštu.",
+        "You must not promote the link deceptively: do not promise prices, dates or features we do not offer, do not pose as Matplace and do not buy ads on the word \"Matplace\" without our consent. Do not send it as unsolicited mail.",
+        "No puedes promocionar el enlace de forma engañosa: no prometas precios, plazos ni características que no ofrecemos, no te hagas pasar por Matplace y no compres anuncios con la palabra «Matplace» sin nuestro consentimiento. No lo envíes como correo no solicitado."
+    ],
+    "affiliate.terms.6": [
+        "Provozovatel může partnera kdykoli vypnout. Provize za zakázky zaplacené před vypnutím zůstávají, pokud k vypnutí nevedlo porušení těchto podmínek.",
+        "The operator may switch a partner off at any time. Commissions for orders paid before that remain, unless the switch-off was caused by a breach of these terms.",
+        "El operador puede desactivar a un socio en cualquier momento. Las comisiones de pedidos pagados antes se mantienen, salvo que la desactivación se deba a un incumplimiento de estas condiciones."
+    ],
+    "affiliate.terms.7": [
+        "Údaje k výplatě a e-mail používáme jen pro vyplacení provize a komunikaci o programu. Daň z příjmu z provize odvádíte sami.",
+        "We use your payout details and e-mail only to pay the commission and to talk about the programme. You pay any income tax on the commission yourself.",
+        "Usamos tus datos de pago y tu e-mail solo para pagar la comisión y comunicarnos sobre el programa. El impuesto sobre la renta de la comisión lo pagas tú."
+    ],
+    "affiliate.terms.8": [
+        "Podmínky programu můžeme změnit; změna se týká zakázek zaplacených po ní a oznámíme ji e-mailem.",
+        "We may change the terms; a change applies to orders paid after it and we will announce it by e-mail.",
+        "Podemos cambiar las condiciones; el cambio afecta a los pedidos pagados después y lo comunicaremos por e-mail."
+    ],
+    "affiliate.form.h": ["Zaregistrovat se", "Register", "Registrarse"],
+    "affiliate.form.signin": [
+        "Pro registraci se přihlaste (nebo si založte účet) a potvrďte e-mail.",
+        "To register, sign in (or create an account) and confirm your e-mail.",
+        "Para registrarte, inicia sesión (o crea una cuenta) y confirma tu e-mail."
+    ],
+    "affiliate.form.signin_btn": ["Přihlásit se", "Sign in", "Iniciar sesión"],
+    "affiliate.form.name": ["Jméno, pod kterým vystupujete", "The name you go by", "El nombre con el que actúas"],
+    "affiliate.form.code": ["Kód v odkazu (A–Z, 0–9, _ a -, nejvýš 20 znaků)", "Code in the link (A–Z, 0–9, _ and -, up to 20 characters)", "Código en el enlace (A–Z, 0–9, _ y -, hasta 20 caracteres)"],
+    "affiliate.form.channels": ["Kde odkaz budete sdílet (blog, kanál, profil…)", "Where you will share the link (blog, channel, profile…)", "Dónde compartirás el enlace (blog, canal, perfil…)"],
+    "affiliate.form.payout": ["Údaje pro výplatu (číslo účtu, PayPal… vidí je jen provozovatel)", "Payout details (account number, PayPal… only the operator sees them)", "Datos para el pago (número de cuenta, PayPal… solo los ve el operador)"],
+    "affiliate.form.accept": ["Souhlasím s podmínkami programu výše.", "I agree to the terms of the programme above.", "Acepto las condiciones del programa de arriba."],
+    "affiliate.form.submit": ["Stát se partnerem", "Become a partner", "Hacerme socio"],
+    "affiliate.already": ["Už jste partner.", "You are already a partner.", "Ya eres socio."],
+    "affiliate.open_account": ["Otevřít partnerskou stránku", "Open your partner page", "Abrir tu página de socio"],
+    "affiliate.err.code": ["Kód smí mít jen A–Z, 0–9, _ a -, nejvýš 20 znaků.", "The code may only have A–Z, 0–9, _ and -, up to 20 characters.", "El código solo puede tener A–Z, 0–9, _ y -, hasta 20 caracteres."],
+    "affiliate.err.taken": ["Tento kód je obsazený, zvolte jiný.", "This code is taken, choose another.", "Este código está ocupado, elige otro."],
+    "affiliate.err.terms": ["Bez souhlasu s podmínkami se registrovat nedá.", "You cannot register without agreeing to the terms.", "No puedes registrarte sin aceptar las condiciones."],
+    "affiliate.registered": ["Hotovo, jste partner. Odkaz najdete níže.", "Done, you are a partner. Your link is below.", "Listo, eres socio. Tu enlace está abajo."],
+    "affiliate.account.title": ["Partnerská stránka", "Partner page", "Página de socio"],
+    "affiliate.account.link": ["Váš odkaz", "Your link", "Tu enlace"],
+    "affiliate.account.off": ["Váš odkaz je teď vypnutý: neukládá kliknutí a nevzniká z něj provize. Napište nám.", "Your link is switched off for now: it records no clicks and earns no commission. Write to us.", "Tu enlace está desactivado: no registra clics ni genera comisión. Escríbenos."],
+    "affiliate.account.rate": ["Provize :percent % z ceny bez DPH, odkaz platí :days dní.", "Commission :percent % of the price without VAT, the link lasts :days days.", "Comisión del :percent % del precio sin IVA, el enlace dura :days días."],
+    "affiliate.account.builder": ["Odkaz na konkrétní stránku", "A link to a particular page", "Un enlace a una página concreta"],
+    "affiliate.account.builder_hint": ["Vyberte stránku nebo napište cestu na našem webu (například /tools/map).", "Pick a page or type a path on our site (for example /tools/map).", "Elige una página o escribe una ruta de nuestro sitio (por ejemplo /tools/map)."],
+    "affiliate.account.path": ["Cesta na našem webu", "Path on our site", "Ruta en nuestro sitio"],
+    "affiliate.account.make": ["Vytvořit odkaz", "Make the link", "Crear el enlace"],
+    "affiliate.page.home": ["Úvodní stránka", "Home page", "Página de inicio"],
+    "affiliate.page.tools": ["Všechny nástroje", "All tools", "Todas las herramientas"],
+    "affiliate.page.farm": ["Objednat tisk", "Order a print", "Encargar una impresión"],
+    "affiliate.account.clicks": ["Kliky (30 dní)", "Clicks (30 days)", "Clics (30 días)"],
+    "affiliate.account.clicks_total": ["Kliky celkem", "Clicks in total", "Clics en total"],
+    "affiliate.account.orders": ["Zakázky", "Orders", "Pedidos"],
+    "affiliate.account.paid_orders": ["Zaplacené", "Paid", "Pagados"],
+    "affiliate.account.turnover": ["Obrat bez DPH", "Turnover without VAT", "Facturación sin IVA"],
+    "affiliate.account.pending": ["Čeká na dotištění", "Waiting for the print", "Esperando la impresión"],
+    "affiliate.account.payable": ["K výplatě", "Payable", "A pagar"],
+    "affiliate.account.paid": ["Vyplaceno", "Paid out", "Pagado"],
+    "affiliate.account.commissions": ["Provize", "Commissions", "Comisiones"],
+    "affiliate.account.none": ["Zatím žádná provize.", "No commission yet.", "Aún ninguna comisión."],
+    "affiliate.account.col_order": ["Zakázka", "Order", "Pedido"],
+    "affiliate.account.col_base": ["Základ bez DPH", "Base without VAT", "Base sin IVA"],
+    "affiliate.account.col_amount": ["Provize", "Commission", "Comisión"],
+    "affiliate.account.col_state": ["Stav", "State", "Estado"],
+    "affiliate.state.pending": ["čeká na dotištění", "waiting for the print", "esperando la impresión"],
+    "affiliate.state.payable": ["k výplatě", "payable", "a pagar"],
+    "affiliate.state.paid": ["vyplaceno", "paid out", "pagado"],
+    "affiliate.state.void": ["zrušeno", "cancelled", "anulada"],
+    "affiliate.account.link_nav": ["Partnerský program", "Partner programme", "Programa de socios"],
+    "farm.promo.label": ["Slevový kód", "Discount code", "Código de descuento"],
+    "farm.promo.placeholder": ["Máte slevový kód?", "Have a discount code?", "¿Tienes un código de descuento?"],
+    "farm.promo.apply": ["Použít", "Apply", "Aplicar"],
+    "farm.promo.remove": ["Odebrat", "Remove", "Quitar"],
+    "farm.promo.applied": ["Kód :code je použit.", "Code :code is applied.", "El código :code está aplicado."],
+    "farm.promo.line": ["Sleva (kód :code)", "Discount (code :code)", "Descuento (código :code)"],
+    "farm.promo.not_delivery": ["Sleva se počítá z ceny tisku, ne z dopravy.", "The discount is taken from the price of the print, not from delivery.", "El descuento se calcula sobre el precio de la impresión, no sobre el envío."],
+    "farm.promo.empty": ["Zadejte kód.", "Enter a code.", "Introduce un código."],
+    "farm.promo.refuse.unknown": ["Tento kód neznáme. Zkontrolujte ho prosím.", "We do not know this code. Please check it.", "No conocemos este código. Revísalo, por favor."],
+    "farm.promo.refuse.inactive": ["Tento kód už neplatí.", "This code is no longer valid.", "Este código ya no es válido."],
+    "farm.promo.refuse.not_started": ["Tento kód ještě neplatí.", "This code is not valid yet.", "Este código aún no es válido."],
+    "farm.promo.refuse.expired": ["Platnost kódu skončila.", "The code has expired.", "El código ha caducado."],
+    "farm.promo.refuse.used_up": ["Kód už byl využit celý.", "The code has been used up.", "El código ya se ha agotado."],
+    "farm.promo.refuse.min_order": ["Kód platí od ceny tisku :min.", "The code is valid from a print price of :min.", "El código vale a partir de un precio de impresión de :min."],
+    "farm.promo.refuse.already_used": ["Tento kód jste už použili, platí jednou na účet.", "You have already used this code; it is valid once per account.", "Ya has usado este código; vale una vez por cuenta."],
+    "farm.promo.refuse.locked": ["Zakázka je už zaplacená, kód už změnit nejde.", "The order is already paid, the code can no longer be changed.", "El pedido ya está pagado, el código ya no se puede cambiar."],
+    "farm.refuse.coupon_used_up": [
+        "Slevový kód mezitím využil někdo jiný. Odeberte ho nebo zkontrolujte cenu a potvrďte znovu.",
+        "Somebody else used the discount code in the meantime. Remove it, or check the price and confirm again.",
+        "Alguien más usó el código de descuento mientras tanto. Quítalo o revisa el precio y confirma de nuevo."
+    ],
+    "farm.refuse.free_needs_account": [
+        "Zakázka je se slevou zdarma, a ta se bez účtu nedá potvrdit. Přihlaste se nebo se zaregistrujte; zakázka vám zůstane.",
+        "With the discount the order is free, and that cannot be confirmed without an account. Sign in or register; your order stays.",
+        "Con el descuento el pedido es gratis, y eso no se puede confirmar sin cuenta. Inicia sesión o regístrate; tu pedido se conserva."
+    ]
+}

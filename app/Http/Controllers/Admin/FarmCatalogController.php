@@ -637,6 +637,9 @@ class FarmCatalogController extends Controller
             'christmas_deadline' => ['nullable', 'date_format:Y-m-d'],
             'intake_reply_hours' => ['nullable', 'integer', 'min:1', 'max:168'],
             'shorts_publish_hour' => ['required', 'date_format:H:i'],
+            // the partner programme and the discount codes (docs/AT.md)
+            'affiliate_percent' => ['nullable', 'numeric', 'min:0', 'max:50'],
+            'affiliate_cookie_days' => ['nullable', 'integer', 'min:1', 'max:365'],
             // the state of the service (FarmState): one of three, with the day printing starts again and a note per language
             'farm_state' => ['nullable', 'in:'.implode(',', FarmState::ALL)],
             'farm_pause_until' => ['nullable', 'date_format:Y-m-d'],
@@ -672,6 +675,13 @@ class FarmCatalogController extends Controller
         }
         $data['farm_public'] = $request->boolean('farm_public');
         $data['video_prices'] = $request->boolean('video_prices');
+        $data['affiliate_enabled'] = $request->boolean('affiliate_enabled');
+        $data['promo_codes_enabled'] = $request->boolean('promo_codes_enabled');
+        foreach (['affiliate_percent', 'affiliate_cookie_days'] as $key) {
+            if (! isset($data[$key])) {
+                unset($data[$key]);   // an empty box keeps the number as it was
+            }
+        }
         $data['eshop_photos_public'] = $request->boolean('eshop_photos_public');
         // which events the operator is mailed about (OrderFlow::alertAdmin); a box left empty switches that kind off
         foreach (OrderFlow::ADMIN_KINDS as $kind) {

@@ -1,6 +1,8 @@
 <?php
 
 use App\Http\Controllers\AccountController;
+use App\Http\Controllers\Admin\AffiliateAdminController;
+use App\Http\Controllers\AffiliateController;
 use App\Http\Controllers\AccountSecurityController;
 use App\Http\Controllers\Admin\CatalogController as AdminCatalogController;
 use App\Http\Controllers\Admin\CollectionController as AdminCollectionController;
@@ -227,6 +229,10 @@ $pages = function () {
     // colouring a model: a fill, colours by height, a brush (docs/AS.md)
     Route::get('/tools/paint', [PaintToolController::class, 'show'])->name('tools.paint');
 
+    // ── Partner programme: the page with the true numbers, the terms and the registration (404 while the programme is off, docs/AT.md) ──
+    Route::get('/partner', [AffiliateController::class, 'program'])->name('affiliate.program');
+    Route::post('/partner', [AffiliateController::class, 'register'])->middleware(['auth', 'verified.email', 'throttle:5,60,partner-register'])->name('affiliate.register');
+
     // ── Auth ─────────────────────────────────────────────────────────────────────
     Route::middleware('guest')->group(function () {
         Route::get('/login', [AuthController::class, 'showLogin'])->name('login');
@@ -254,6 +260,8 @@ $pages = function () {
         Route::get('/profile', [AccountController::class, 'profile'])->name('.profile');
         Route::post('/profile', [AccountController::class, 'updateProfile'])->name('.profile.update');
         Route::get('/orders', [OrderController::class, 'index'])->name('.orders');
+        // the partner's own page (App\Http\Controllers\AffiliateController; 404 while the programme is off)
+        Route::get('/partner', [AffiliateController::class, 'account'])->name('.partner');
         Route::get('/models', [AccountController::class, 'models'])->name('.models');
         Route::post('/models/{modelFile}/delete', [AccountController::class, 'deleteModel'])->name('.models.delete');
         Route::get('/calculations', [AccountController::class, 'calculations'])->name('.calculations');
@@ -309,6 +317,8 @@ $pages = function () {
     Route::get('/farm/orders/{order}/status', [OrderController::class, 'status'])->name('farm.orders.status');
     Route::post('/farm/orders/{order}/reslice', [OrderController::class, 'reslice'])->middleware('throttle:20,1,farm_reslice')->name('farm.orders.reslice');
     Route::post('/farm/orders/{order}/quote', [OrderController::class, 'quote'])->middleware('throttle:120,1,farm_quote')->name('farm.orders.quote');
+    // a discount code on the order (App\Domain\Affiliate\Coupons; 404 while the codes are switched off); a guess at codes is slowed down
+    Route::post('/farm/orders/{order}/promo', [OrderController::class, 'promo'])->middleware('throttle:20,1,farm_promo')->name('farm.orders.promo');
     // by card: a guest too (the e-mail goes with the payment); from credit: a signed-in account with a confirmed e-mail
     Route::post('/farm/orders/{order}/checkout', [OrderController::class, 'checkout'])->middleware('throttle:10,1,farm_checkout')->name('farm.orders.checkout');
     Route::post('/farm/orders/{order}/cancel', [OrderController::class, 'cancel'])->name('farm.orders.cancel');
@@ -372,6 +382,9 @@ Route::get('/og/{locale}/{type}/{id}.png', [OgController::class, 'showIn'])->whe
 Route::get('/sitemap.xml', [SitemapController::class, 'index'])->name('sitemap');
 Route::get('/sitemap-{name}.xml', [SitemapController::class, 'show'])->where('name', '[a-z0-9-]+')->name('sitemap.file');
 Route::get('/robots.txt', [SitemapController::class, 'robots'])->name('robots');
+
+// ── A partner's link: counts the click, remembers the partner, goes on (one address for every language) ──
+Route::get('/r/{code}', [AffiliateController::class, 'go'])->middleware('throttle:120,1,partner-link')->where('code', '[A-Za-z0-9_-]{1,20}')->name('affiliate.go');
 
 // ── Files of a farm order (not pages: one address for every language; a guest's order too, OrderController::authorizeOrder) ──
 Route::get('/farm/orders/{order}/model.stl', [OrderController::class, 'model'])->name('farm.orders.model');
@@ -461,6 +474,18 @@ Route::prefix('api')->name('api.')->group(function () {
     Route::get('threads/{thread}/messages', [ThreadController::class, 'messages'])->name('threads.messages');
     Route::post('threads/{thread}/messages', [ThreadController::class, 'post'])->middleware('throttle:30,1,thread')->name('threads.post');
     Route::get('threads/{thread}/attachments/{message}', [ThreadController::class, 'attachment'])->name('threads.attachment');
+});
+
+// ── Admin: partners and discount codes (docs/AT.md) ──
+Route::middleware(['auth', 'role:admin'])->group(function () {
+    $a = AffiliateAdminController::class;
+    Route::get('/admin/affiliates', [$a, 'partners'])->name('admin.affiliates');
+    Route::post('/admin/affiliates', [$a, 'savePartner'])->name('admin.affiliates.create');
+    Route::post('/admin/affiliates/{partner}', [$a, 'savePartner'])->whereNumber('partner')->name('admin.affiliates.update');
+    Route::post('/admin/affiliates/{partner}/paid', [$a, 'markPaid'])->whereNumber('partner')->name('admin.affiliates.paid');
+    Route::get('/admin/promo-codes', [$a, 'codes'])->name('admin.promo-codes');
+    Route::post('/admin/promo-codes', [$a, 'saveCode'])->name('admin.promo-codes.create');
+    Route::post('/admin/promo-codes/{code}', [$a, 'saveCode'])->whereNumber('code')->name('admin.promo-codes.update');
 });
 
 // ── Admin: farm operation and data ───────────────────────────────────────────

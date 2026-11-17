@@ -2,6 +2,8 @@
 
 namespace App\Domain\Farm;
 
+use App\Domain\Affiliate\Affiliates;
+use App\Domain\Affiliate\Coupons;
 use App\Domain\Files\PaintedColors;
 use App\Domain\YouTube\FarmVideos;
 use App\Engines\Shipping\ShippingCarrier;
@@ -45,7 +47,7 @@ final class OrderFlow
     ];
 
     /** The kinds of mail the operator can switch off one by one in the farm's settings (`notify_<kind>`). */
-    public const ADMIN_KINDS = ['paid', 'printing', 'done', 'problem', 'paused', 'inquiry'];
+    public const ADMIN_KINDS = ['paid', 'printing', 'done', 'problem', 'paused', 'inquiry', 'partner'];
 
     /** A camera picture bigger than this is shrunk before it rides along with the "done" mail, or left out. */
     public const SNAPSHOT_MAX_BYTES = 300 * 1024;
@@ -151,6 +153,12 @@ final class OrderFlow
             throw new FarmRefusal('price_changed', ['total' => Money::of($price['total'], $currency)->format()]);
         }
 
+        // an order a discount code made free has no card to pay it: it needs an account to belong to (a guest's order
+        // is given its account by the card payment, and there is none to be made here). Said before anything is held.
+        if ($order->user_id === null && isset($price['coupon']) && (float) $price['total'] <= 0.004) {
+            throw new FarmRefusal('free_needs_account');
+        }
+
         $slicedFor = $order->farm_printer_id;
         $partSpoolsBefore = array_map('intval', array_column($order->partPlates(), 'slot_id'));
         DB::transaction(function () use ($order, $offer, $delivery, $destination, $ip, $price, $note, $second, $picked, $partPlates, $currency) {
@@ -165,10 +173,18 @@ final class OrderFlow
                 'price' => $price, 'price_total' => $price['total'], 'royalty_czk' => $price['royalty_unit'] ?? null,
                 'terms_version' => (string) $this->settings->get('terms_version'), 'terms_accepted_at' => now(), 'terms_ip' => $ip,
             ])->save();
-            $this->wallet->hold($order);
+            // nothing to hold for an order a code made free (the total is exactly what was held: 0); everything else as ever
+            if (! isset($price['coupon']) || (float) $price['total'] > 0.004) {
+                $this->wallet->hold($order);
+            }
+            // the use of a discount code is counted with the payment, in its transaction: the last use cannot be paid twice
+            app(Coupons::class)->redeem($order, $price);
             $order->forceFill(['paid_at' => now(), 'number' => $this->nextNumber()])->save();
             $this->move($order, FarmOrder::STATUS_PAID, 'user', $order->user_id);
         });
+
+        // the partner's commission, written once when the order is paid (credit and card both end here)
+        Affiliates::safely(fn () => app(Affiliates::class)->onPaid($order->refresh()), 'commission');
 
         $wanted = PrintProfile::for($offer['printer'], $offer['color']->material, $offer['color'])->sliceFingerprint();
         // an order by parts was sliced for the spools it had: other spools for the parts mean other kinds, another
@@ -428,6 +444,8 @@ final class OrderFlow
     private function onDone(FarmOrder $order): void
     {
         $this->wallet->capture($order);
+        // the partner's commission becomes payable: the customer's money is final
+        Affiliates::safely(fn () => app(Affiliates::class)->onDone($order), 'commission payable');
         // the same moment the customer's money becomes final, the designer of the printed model gets the reward
         $this->wallet->creditRoyalty($order);
         BuildFarmTimelapse::dispatch($order->id);
@@ -468,6 +486,10 @@ final class OrderFlow
             // what the card paid goes back to the card (the gateway is asked after the commit); credit stays credit
             app(CardRefunds::class)->afterGiveBack($order, $back, ! $cancelPrint ? PaymentRefund::REASON_PRINT_FAILED : ($keep > 0 ? PaymentRefund::REASON_CANCELLED_RUNNING : PaymentRefund::REASON_CANCELLED));
         }
+        if ($this->reprinting !== $order->id) {
+            // the money went back (all or the part not kept): the commission and the use of the code follow it
+            Affiliates::safely(fn () => app(Affiliates::class)->sync($order), 'commission refund');
+        }
         if ($keep > 0) {
             $order->forceFill(['price' => ['charged_on_cancel' => $keep, 'printed_percent' => round($progress, 1)] + (array) $order->price])->save();
             $order->events()->create(['from' => $order->status, 'to' => $order->status, 'actor' => 'system', 'note' => "kept {$keep} for {$progress} % printed"]);
@@ -489,6 +511,10 @@ final class OrderFlow
         }
         $net = (float) $price['fixed'] + $share * ((float) $price['time'] + (float) $price['material']);
         $gross = $net * (1 + (float) ($price['inputs']['vat_percent'] ?? 0) / 100);
+        // a discount code lowered the print price: the share kept is lowered in the same proportion (docs/AT.md)
+        if (isset($price['print_before_discount']) && (float) $price['print_before_discount'] > 0) {
+            $gross *= (float) $price['print_total'] / (float) $price['print_before_discount'];
+        }
         $step = ($price['currency'] ?? Money::CZK) === Money::EUR ? 0.1 : 1.0;
 
         return min((float) $price['print_total'], PriceCalculator::roundUp($gross, $step));
@@ -541,7 +567,7 @@ final class OrderFlow
      * failure is logged; the farm never stops for it.
      *
      * @param  string[]  $lines
-     * @param  string  $kind  paid | printing | done | problem | paused | inquiry (ADMIN_KINDS)
+     * @param  string  $kind  paid | printing | done | problem | paused | inquiry | partner (ADMIN_KINDS)
      * @param  string|null  $attachment  a JPEG to ride along (the camera's last picture)
      * @param  string|null  $url  where the mail's button leads when it is not an order (a request of the home page's router)
      */
