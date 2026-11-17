@@ -496,6 +496,20 @@ class FarmVideosCutTest extends TestCase
         $this->assertNotContains($source, $short());
     }
 
+    public function test_a_pet_figurine_is_titled_as_a_pet_figurine_and_a_bust_as_a_bust(): void
+    {
+        $videos = app(\App\Domain\YouTube\FarmVideos::class);
+        foreach (['pet' => 'Figurka mazlíčka z fotky', 'bust' => 'Busta z jedné fotky'] as $kind => $title) {
+            $order = $this->order();
+            $req = \App\Models\GenerationRequest::create(['token' => 'tok'.$kind.'12345678', 'type' => 'image', 'engine' => 'fake', 'status' => 'done', 'progress' => 100,
+                'description' => ['kind' => $kind]]);
+            $order->modelFile->forceFill(['origin' => 'generated', 'origin_ref' => $req->token])->save();
+            $order->refresh();
+            $this->assertSame($kind === 'pet' ? 'pet' : 'figure', $videos->toolKind($order));
+            $this->assertStringStartsWith($title, $videos->defaultTitle($order), 'the opening words of the Short name the right tool');
+        }
+    }
+
     public function test_the_front_photo_of_a_bust_or_pet_is_held_copied_to_the_order_found_by_the_videos_and_pruned_with_the_frames(): void
     {
         $order = $this->order();

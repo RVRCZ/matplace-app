@@ -795,7 +795,7 @@ class FarmVideos
     }
 
     /**
-     * The tool that made the model, as the texts know it (figure for a generated model, relief for a lithophane, the
+     * The tool that made the model, as the texts know it (figure for a generated bust or figure, pet for a generated pet figurine, relief for a lithophane, the
      * kind of a tool's design), null for a customer's own file.
      */
     public function toolKind(FarmOrder $order): ?string
@@ -805,7 +805,7 @@ class FarmVideos
             return null;
         }
         if ($file->origin === 'generated') {
-            return 'figure';
+            return $this->generatedKind($file) === 'pet' ? 'pet' : 'figure';
         }
 
         return $file->origin === 'tool' ? (in_array($file->origin_ref, ['lithophane', 'relief'], true) ? 'relief' : (string) $file->kind()) : null;
@@ -973,7 +973,7 @@ class FarmVideos
             return null;
         }
         $kind = $file->kind();
-        $tool = $kind === 'generated' ? 'figure' : ($file->origin === 'tool' ? $kind : null);
+        $tool = $kind === 'generated' ? ($this->generatedKind($file) === 'pet' ? 'pet' : 'figure') : ($file->origin === 'tool' ? $kind : null);
 
         return $tool && ($title = __('tools.'.$tool.'.title', [], $locale)) !== 'tools.'.$tool.'.title' ? $title : null;
     }
