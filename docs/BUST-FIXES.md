@@ -119,3 +119,106 @@ a projde novým kódem.
   na soklu a těžiště busty zůstává nad nohou.
 - Strop zvednutí řezu 8 % výšky: vzorek 4eb484d3 (drsný do 6,5 mm z 49 mm) se nechává být.
 - `trim_loose`, `bust_cut` a `rebuild_solid` se neměnily; příčina roztřepení není v nich, ale v tom, kde se řezalo.
+
+---
+
+# Tři klasické busty: na bloku, na disku, na noze (17. 11. 2026)
+
+Větev `feature/bust-classic` (z `origin/main` 71a8685c). Zadání: Romanův obrázek vytištěné busty („potřebujeme
+takovýhle typ busty, podstavec bez jména i s jménem“) a druhý obrázek tří bust vedle sebe („všechny 3 typy přidat,
+projdu je pak s ideálními fotkami a pak nějaké skryjeme a nějakou nastavíme jako default“). Obrázky a vzorky:
+`Documents\MatPlace\conceprt19092026\busta-klasicka\`, výsledky v podsložce `vysledky\`.
+
+## Co přibylo
+
+| typ (`pedestal`) | na stránce | hruď | noha | jméno |
+|---|---|---|---|---|
+| `classic` | Busta na bloku | paže seříznuté dvěma rovinami, sklon 13°, rovná spodní plocha | nízký zaoblený čtverec se zkosenou horní hranou, 11 % výšky busty (desetina celku) | vystouplé na přední stěně bloku |
+| `classic_round` | Busta na disku | totéž, sklon 20° (hruď dole užší) | nízký kulatý disk se zaoblenou hranou, 8,5 % | ohnuté po přední části obvodu disku |
+| `classic_stem` | Busta na noze | totéž se sklonem 10°, zespodu zaoblená do krátké nohy | noha na kulaté patě se zaoblenou hranou, 16 % | ohnuté po obvodu paty |
+
+Hruď a noha jsou v kódu dvě věci: `classic_shape()` udělá hruď a změří spodek, `classic_foot()` postaví nohu
+(`stand`: `block`, `disc`, `stem`). Všechno je v `BUST_STYLES` v `engines/python/mesh_tool.py`; staré styly
+`socle`, `antique`, `cut` a obyčejné podstavce se nezměnily (kontrola níže).
+
+## Jak se hruď měří (`classic_sides`, `chest_yaw`)
+
+1. **Natočení hrudi.** Generátor vrací bustu pootočenou o libovolný úhel a `face_front` zná jen čtvrtotáčky.
+   Hruď s pažemi je zřetelně delší přes ramena než do hloubky, takže hlavní osa jejích řezů (druhé momenty plochy,
+   pět řezů ve spodní šestině) je osa ramen. Tělo se o ten úhel srovná (3° až 40°; kulatější obrys než 1,25 : 1
+   se nechá být). Vzorek 159 byl pootočený o 32°: bez srovnání přišel o lopatku a druhá paže zůstala.
+2. **Šířka.** Mezi rovným řezem a krkem (`neck_level`) se tělo krájí na 25 řezů, z každého se bere jen největší
+   obrys (volně visící paže je vlastní obrys). Střed je střed krku. Polovina šířky hrudi s pažemi je medián spodní
+   poloviny řezů, každá strana zvlášť (zvednutá paže neposune druhou plochu), obě držené do 10 % od průměru.
+3. **Linie ramen** je nejvyšší řez, který má ještě 85 % té šířky; nad ním obrys ubíhá ke krku.
+4. **Roviny.** Každá prochází na linii ramen ve vzdálenosti `keep` = 0,78 poloviny šířky od středu a dolů se
+   naklání dovnitř o `lean`. U spodního řezu nikdy blíž než 0,55 poloviny šířky (dlouhá hruď). Když nad krkem
+   něco přesahuje rovinu (vlasy, kapuce, hlava), řeže se jen pod krkem (`side_top_z`); u pěti vzorků to nenastalo.
+5. Krátká hruď se protáhne dolů jako u stylu `cut` (nejvýš o 10 % výšky).
+
+## Noha (`classic_foot`)
+
+- **Blok**: obdélník kolem spodní plochy hrudi, na každé straně o 3,5 % její šířky větší (nejméně o zkosení
+  + 1 mm, aby celá spodní plocha ležela na rovné horní ploše; nejvýš po šířku ramen, pokud není spodek sám širší),
+  rohy o poloměru 14 % kratší strany, zkosení horní hrany 20 % výšky (nejvýš 3 mm), fazetka 0,4 mm u podložky.
+  Blok není vynucený čtverec: kopíruje hloubku hrudi, jinak by z něj vpředu a vzadu byl tác.
+- **Disk**: poloměr = nejvzdálenější bod spodní plochy + 1 mm + část zaoblení; zaoblení horní hrany 38 % výšky.
+- **Noha na patě**: poloměr nohy 8,5 % výšky busty (nejvýš 0,3 kratšího rozměru spodku), pata 20 %, výkružek mezi
+  nimi; hruď se zespodu zaoblí stávajícím `round_under` do výšky nejvýš 26 % výšky busty a nejvýš tří čtvrtin
+  cesty k linii ramen. Hruď se pro tenhle typ neprotahuje o čtvrtinu jako u `antique` (u vzorku 158 by z překřížených
+  paží vznikl 30 mm vysoký vytažený sloup).
+- **Jméno**: jedna řádka verzálkami (`raised_name`, Montserrat), vystouplé 0,7 až 1,2 mm. Na bloku 60 % výšky
+  přední stěny a nejvýš 92 % její rovné části; dlouhé jméno se zmenší, za zaoblený roh nikdy nejde. Na disku a patě
+  ohnuté po obvodu jako u `socle`, nejvýš 130°. Věnování tyhle typy nemají (blok je na druhou řádku nízký).
+- Hruď zasahuje 1 mm do bloku nebo disku, noha 2,5 mm do hrudi: výsledek je jedno uzavřené těleso.
+
+Do hlášení `normalize` přibylo: `side_lean`, `side_left_x`, `side_right_x`, `side_top_z`, `cut_z`, `foot_x`,
+`foot_y`, `chest_w_mm`, `chest_d_mm`, `block_w_mm`, `block_d_mm`, `block_h_mm`, `name_cap_mm`, `foot_r`,
+`chest_squared` (o kolik stupňů se hruď srovnala). Klíče končící `_mm` se přepočítávají do měřítka výsledného souboru.
+
+## Porovnání s levou bustou z obrázku
+
+`socle` (Moderní busta) i `antique` (Antická busta) nechávají paže a celou šířku ramen; `socle` má hruď seříznutou
+do oblouku na noze s pásem, `antique` má zaoblený spodek, ale stojí na tabulce a soklu. Levá busta z obrázku má paže
+pryč, hruď zaoblenou do krátké nohy a kulatou patu: siluetou je nejblíž `antique`, ale ani jeden styl jí není, proto
+vlastní typ `classic_stem`. Stávající styly jsem neměnil. Na vzorku 158 (překřížené paže) `socle` spadne na obyčejný
+kulatý podstavec (`collar_does_not_fit`) a `antique` protáhne hruď o 28 mm do vytaženého sloupu; to je stav před
+touto prací, vidět je na listu `porovnani-se-vzorem.png` jen vzorek 156.
+
+## Výběr typů bez kódu: `/admin/ai` → „Typy busty“
+
+`App\Domain\Generation\BustStyles`, uložené ve `farm_settings` pod `ai.bust_styles` jako
+`{shown: [...], default: "..."}` (žádná migrace). U každého typu zaškrtávátko (zobrazený / skrytý) a jedna volba
+„výchozí“ mezi zobrazenými; `POST /admin/ai/bust-styles`. Čte to:
+
+- stránka busty (`tools/figure.blade.php`): nabídka = zobrazené typy + obyčejné podstavce, zaškrtnutý výchozí,
+  u každého zobrazeného typu jedna věta (`figure.pedestal.about.*`);
+- validace `pedestal` v `POST /api/generate`: skrytý typ → 422;
+- busta bez uvedeného podstavce dostane výchozí typ (dřív `round`); postava dál `round`;
+- volná změna podstavce (`POST /api/files/{uuid}/pedestal` a výběr v kalkulačce): skrytý typ nejde zvolit znovu,
+  ale model, který ho má, ho v nabídce vidí a může si u něj změnit jméno nebo přejít jinam.
+
+Dokud Roman nic nezmění: zobrazené všechny (pořadí `classic`, `classic_round`, `classic_stem`, `socle`,
+`antique`, `cut`), výchozí `socle` jako dosud. Když skryje všechny, busta začíná na kulatém podstavci.
+
+## Ověření
+
+- **Vzorky**: pět surových výstupů generátoru přes celé `normalize` tak, jak ho volá `GenerateModel` pro bustu
+  (`clean,pedestal,solid`, `front: auto`, `front_prior: 3`, `cut: bust`, `tidy: true`), ve třech typech, se jménem
+  a bez: 30 běhů, obrázky zepředu zleva, zepředu a z boku ve `vysledky\vzorek-<n>-<typ>[-name].png`, přehled
+  `prehled-vsech.png`, porovnání s Romanovými obrázky `porovnani-se-vzorem.png`.
+- **Staré styly beze změny**: 36 kombinací (fixtury `cubeStl` a `tornBustStl` × `socle`, `antique`, `cut`, `round`,
+  `square`, `hexagon`, `column`, `plaque`, `none` × se jménem a bez) vyrobeno starým a novým `mesh_tool.py`,
+  sha256 výstupních STL shodné. K tomu čtyři běhy cestou busty (`cut: bust`, `front: auto`, `tidy: true`): `antique`
+  a `cut` shodné, `socle` a `round` se liší o setiny procenta objemu, a stejně se liší i dva běhy starého kódu mezi
+  sebou (`trim_loose` vzorkuje povrch náhodně), takže tam bajtová shoda neexistuje ani bez mé změny.
+- **Testy**: `FigureToolTest` (tvar tří typů na roztřepené bustě: rovné boční plochy, nic za nimi, půdorys bloku
+  proti hrudi, jméno jen vpředu a mimo rohy, jedno uzavřené těleso; stránka; změna podstavce tam a zpět)
+  a `BustStylesTest` (skrytí, výchozí, uložené modely).
+
+## Co ukáže až tisk
+
+Sklon bočních ploch 10 až 20° je převis hluboko pod hranicí podpěr, ale lesk a vrstvy na velké rovné ploše ukáže
+až tisk. Zaoblený spodek typu „na noze“ je převis jako u `antique`: bez podpěr se nevytiskne. Písmo na bloku je
+při 150 mm vysoké 7 až 9,5 mm, na disku a patě 4,5 až 6 mm (vyšší číslo je jméno s háčky a čárkami); pod 3 mm (malé busty) hlásí `small_text_mm`. Hloubka
+písma 0,7 až 1,2 mm a zkosená hrana bloku jsou odhad podle ostatních podstavců.
