@@ -496,6 +496,24 @@ class FarmVideosCutTest extends TestCase
         $this->assertNotContains($source, $short());
     }
 
+    public function test_a_bust_or_pet_order_finds_the_front_photo_of_its_generation_while_it_is_kept(): void
+    {
+        $order = $this->order();
+        Storage::fake('local');
+        Storage::disk('local')->put('photos/figures/front.jpg', $this->picture(100, 'F'));
+        Storage::disk('local')->put('photos/figures/left.jpg', $this->picture(50, 'L'));
+        $req = \App\Models\GenerationRequest::create(['token' => 'abcdef123456', 'type' => 'image', 'engine' => 'fake', 'status' => 'done', 'progress' => 100,
+            'image_path' => 'photos/figures/front.jpg', 'views' => ['left' => 'photos/figures/left.jpg'], 'description' => ['kind' => 'pet', 'delete_photo' => true]]);
+        $order->modelFile->forceFill(['origin' => 'generated', 'origin_ref' => $req->token])->save();
+        $cutter = app(TimelapseCutter::class);
+
+        $this->assertSame(Storage::disk('local')->path('photos/figures/front.jpg'), $cutter->sourcePicture($order->fresh()), 'the front photo, not a side view');
+
+        // the worker deletes personal photos when the run is over: nothing is invented, the Short has no source still
+        $req->forgetPhotos();
+        $this->assertNull($cutter->sourcePicture($order->fresh()));
+    }
+
     public function test_a_waiting_short_is_rebuilt_from_the_admin_page_with_the_source_tick_remembered(): void
     {
         $order = $this->order();

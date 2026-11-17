@@ -8,6 +8,7 @@ use App\Domain\Farm\TimelapseFrames;
 use App\Models\FarmOrder;
 use App\Models\FarmVideo;
 use App\Models\FarmVideoClip;
+use App\Models\GenerationRequest;
 use App\Models\ModelFile;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Collection;
@@ -657,6 +658,15 @@ class TimelapseCutter
         $file = $order->modelFile;
         if (! $file) {
             return null;
+        }
+
+        // a bust or a pet figurine from a photo: the generation the model came from (origin_ref = its token) keeps the front photo
+        // (image_path, never the side views) only until the run is over: GenerateModel::forgetPhoto deletes personal photos
+        if ($file->origin === 'generated' && $file->origin_ref) {
+            $rel = GenerationRequest::where('token', $file->origin_ref)->value('image_path');
+            if ($rel && Storage::disk('local')->exists($rel)) {
+                return Storage::disk('local')->path($rel);
+            }
         }
 
         return collect(glob($disk->path($file->dir()).'/artwork.*') ?: [])->first(fn ($f) => is_file($f) && preg_match('/\.(jpe?g|png|webp)$/i', $f));
