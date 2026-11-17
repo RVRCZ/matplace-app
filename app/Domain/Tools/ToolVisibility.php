@@ -74,6 +74,12 @@ final class ToolVisibility
         return (self::state()->flags()[$tool]['home'] ?? null) === true;
     }
 
+    /** The admin switched the tool off for the home page (not merely left it as config/home.php has it). */
+    public static function refusedForHome(string $tool): bool
+    {
+        return (self::state()->flags()[$tool]['home'] ?? null) === false;
+    }
+
     /** The tool whose page a route is (the name with or without the language prefix), null for any other page. */
     public static function ofRoute(?string $name): ?string
     {

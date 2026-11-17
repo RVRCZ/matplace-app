@@ -18,6 +18,7 @@ return [
                 'Datos del pedido – material, color, precio, forma de entrega, dirección de envío, estado de la impresión.',
                 'Grabación de la impresión – imágenes de la cámara de la impresora y el vídeo time-lapse hecho con ellas. Solo muestran la base de impresión y el objeto impreso; en un modelo hecho a partir de una foto, el vídeo muestra también la foto con la que se hizo (véase el punto 5).',
                 'Datos de pago – los trata únicamente la pasarela de pago Stripe; nosotros guardamos solo el identificador y el estado del pago y su saldo de crédito.',
+                'Datos del programa de socios – solo si participa en él: su código, los datos de pago de la comisión que usted mismo indique (por ejemplo un número de cuenta), el número de clics en su enlace sin direcciones IP y el listado de sus comisiones.',
                 'Datos técnicos – dirección IP, tipo de navegador, hora de acceso, cookies necesarias.',
             ],
         ],
@@ -66,6 +67,7 @@ return [
                 'Fotos para reconocimiento y generación – como máximo 1 día; archivos subidos sin pedido 30 días.',
                 'Vídeos time-lapse – con el pedido mientras exista su cuenta (la copia de la foto frontal de un modelo hecho a partir de una foto solo 14 días, véase el punto 5); en YouTube hasta que rechace la publicación, retire el consentimiento o los borremos.',
                 'Registros técnicos – como máximo 12 meses.',
+                'Datos del programa de socios – mientras participe; los registros de comisiones pagadas, 5 años (normas contables y fiscales).',
             ],
         ],
         [

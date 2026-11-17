@@ -17,7 +17,7 @@ import { timelinePrint, timelineDispatch } from './order_timeline';
 import { printOnly, shippingText, totalText } from './order_price';
 import { estimate as roughEstimate, shapeOf, rangeFactors, type RoughConfig } from './rough';
 
-interface Price { time: number; material: number; fixed: number; min_price_applied: boolean; net: number; vat: number; shipping: number; total: number; print_total: number; royalty?: number; inputs: { vat_percent: number } }
+interface Price { time: number; material: number; fixed: number; min_price_applied: boolean; net: number; vat: number; shipping: number; total: number; print_total: number; royalty?: number; discount?: number; print_before_discount?: number; coupon?: { code: string }; inputs: { vat_percent: number } }
 /** A colour on offer: one per colour and kind (`group` joins the kinds of one colour into one tile, docs/AL.md §20). The admin's state names where its spools sit (`codes`, "Farm U #3 · ACE 3"), the customer's names no spool. Its price once sliced; before that the rates the page estimates with. */
 interface Color { slot: number; name: string; kind?: string; hex: string; finish?: string | null; photo: string | null; code?: string | null; codes?: string[]; group?: string; enough: boolean; price: Price | null; total: number | null; rates?: Rates; starts_now: boolean; sliced: boolean; second?: Second[]; color_id?: number; machines?: Machine[] }
 /** What the price of a colour is made of on its machine: the kind's price per gram and density, the machine's rate and factors (PriceCalculator). */
@@ -67,6 +67,8 @@ interface FarmState {
     minutes: number | null; grams: number | null; meters: number | null; price: Price | null; total: number | null; currency: string;
     /** the smallest amount the card can be charged in this currency (the gateway's floor); a smaller shortfall is charged as this */
     min_charge?: number;
+    /** the discount code field (docs/AT.md): null while the codes are switched off; the page then has no field at all */
+    promo?: { code: string | null; applied: boolean; problem: string | null; editable: boolean } | null;
     shipping: Shipping | null; destination: string | null; tracking_url: string | null;
     colors: Color[]; color: { name: string; hex: string; finish?: string | null; code?: string | null } | null; spools?: SpoolLine[]; delivery: string; balance: number; model_url: string | null; supports_url: string | null;
     queue: { start_in: number; finish_in: number; ahead: number; blocked: string | null } | null; pause?: string | null; stopped?: string | null; cancel_keep: number | null;
@@ -339,7 +341,7 @@ export function bootFarmOrder(): void {
     const otherSlots = (): { change_slots: (number | null)[]; part_slots: Record<string, number | null> | undefined } => ({ change_slots: changes, part_slots: resolved().part_slots });
     // …and the slice it was asked for: after "Přepočítat cenu" the same colour and delivery have another price (found on
     // production 14 Nov 2026: four pieces showed the price of two, 150 Kč, while the order held 260 Kč)
-    const quoteKey = (): string => `${resolved().slot}|${delivery}|${country}|${JSON.stringify(otherSlots())}|${state.slice_run ?? 0}|${state.status}`;
+    const quoteKey = (): string => `${resolved().slot}|${delivery}|${country}|${JSON.stringify(otherSlots())}|${state.slice_run ?? 0}|${state.status}|${state.promo?.code ?? ''}`;
     const askQuote = async (): Promise<void> => {
         const key = quoteKey();
         if (!kind() || picked === null || quoted?.key === key || quoting === key) return;
@@ -1046,6 +1048,7 @@ export function bootFarmOrder(): void {
             renderColors();
             renderSummary();
             renderDelivery();
+            renderPromo();
             // short of credit: the button pays what is missing by card (the order starts when the bank confirms it);
             // a top-up of the account stays as the second way
             // the sum with the delivery right under the price: exact from the quote, until then from the carrier's list
@@ -1307,6 +1310,35 @@ export function bootFarmOrder(): void {
         if (r.json.error === 'price_changed' || r.json.error === 'color_gone' || r.json.error === 'filament_low') await poll();
         render();
     });
+
+    // the discount code (docs/AT.md): the field only sends the code; the price with it is the server's (the answer is the order's state)
+    const promoBox = $('farm-promo');
+    const promoMsg = $('farm-promo-msg');
+    let promoSaid: { text: string; ok: boolean } | null = null;
+    const promoSay = (text: string, ok: boolean): void => { promoSaid = text ? { text, ok } : null; renderPromo(); };
+    const renderPromo = (): void => {
+        if (!promoBox || !state.promo) return;
+        const input = $<HTMLInputElement>('farm-promo-code')!;
+        const code = state.promo.code;
+        const open = state.status === 'sliced' && state.promo.editable;
+        show(promoBox, open || !!code);
+        input.disabled = !open || !!code;
+        if (code && document.activeElement !== input) input.value = code;
+        show($('farm-promo-apply'), open && !code);
+        show($('farm-promo-remove'), open && !!code);
+        const off = priceNow()?.discount;
+        // what is said: the server's refusal of the last try, else why a code on the order takes nothing, else what it takes
+        const text = promoSaid?.text ?? (state.promo.problem ?? (code && state.promo.applied && off ? `${tr('farm.promo.applied', { code })} ${tr('farm.promo.line', { code })}: −${money(off)}` : ''));
+        if (promoMsg) { promoMsg.textContent = text; show(promoMsg, text !== ''); promoMsg.classList.toggle('text-red-700', !!promoSaid && !promoSaid.ok || (!promoSaid && !!state.promo.problem)); promoMsg.classList.toggle('text-ok', !!text && !(!!promoSaid && !promoSaid.ok) && !(!promoSaid && !!state.promo.problem)); }
+    };
+    const sendPromo = async (code: string): Promise<void> => {
+        const r = await post(cfg.routes.promo, { code });
+        if (r.ok) { state = r.json as unknown as FarmState; quoted = null; promoSaid = null; render(); return; }
+        promoSay(String(r.json.message ?? (r.json.errors ? Object.values(r.json.errors as Record<string, string[]>)[0][0] : '')), false);
+    };
+    $('farm-promo-apply')?.addEventListener('click', () => { const v = ($('farm-promo-code') as HTMLInputElement).value.trim(); if (v === '') { promoSay(tr('farm.promo.empty'), false); return; } void sendPromo(v); });
+    $('farm-promo-remove')?.addEventListener('click', () => { ($('farm-promo-code') as HTMLInputElement).value = ''; void sendPromo(''); });
+    $('farm-promo-code')?.addEventListener('keydown', (e) => { if ((e as KeyboardEvent).key === 'Enter') { e.preventDefault(); $('farm-promo-apply')?.click(); } });
 
     $('farm-cancel')?.addEventListener('click', async () => {
         const keep = state.status === 'printing' ? state.cancel_keep : null;

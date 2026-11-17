@@ -38,7 +38,8 @@ return [
     'to_legacy' => [
         'tiskarny', 'tiskar', 'designer', 'ucet', 'moje-poptavka', 'poptat', 'poptat-vlastni-model', 'poptavka', 'objednat', 'kosik', 'pokladna',
         'platba', 'zaplatit', 'zaplatit-qr', 'zaplatit-prevodem', 'zaplatit-gopay', 'dekujeme', 'chat', 'ohodnotit', 'overit-poptavku', 'notifikace', 'stazeni',
-        'prihlaseni', 'odhlaseni', 'zapomenute-heslo', 'heslo-reset', 'r',
+        'prihlaseni', 'odhlaseni', 'zapomenute-heslo', 'heslo-reset',
+        // `r` (the old site's partner link /r/CODE) is ours again: the partner programme's link, App\Http\Controllers\AffiliateController::go (docs/AT.md)
         'thumbnails', 'stl', 'banner', 'blog-img', 'assets',
     ],
 

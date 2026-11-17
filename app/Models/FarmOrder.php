@@ -92,6 +92,7 @@ class FarmOrder extends Model
         'started_at' => 'datetime', 'finished_at' => 'datetime', 'handed_at' => 'datetime', 'attention_cleared_at' => 'datetime',
         'video_consent' => 'bool', 'video_consent_at' => 'datetime', 'royalty_czk' => 'float',
         'shipping_price' => 'float', 'shipped_at' => 'datetime', 'timings' => 'array', 'color_changes' => 'array', 'by_parts' => 'bool', 'part_plates' => 'array',
+        'discount' => 'float', 'promo_counted_at' => 'datetime', 'promo_released_at' => 'datetime',
         'big_model' => 'bool', 'slice_run' => 'int', 'slice_estimate_s' => 'int', 'photo_meta' => 'array', 'files_pruned_at' => 'datetime',
     ];
 
@@ -394,6 +395,18 @@ class FarmOrder extends Model
     public function printerMaterial(): BelongsTo
     {
         return $this->belongsTo(FarmPrinterMaterial::class, 'farm_printer_material_id');
+    }
+
+    /** Who earns a commission on this order (App\Domain\Affiliate\Affiliates). */
+    public function partner(): BelongsTo
+    {
+        return $this->belongsTo(Partner::class);
+    }
+
+    /** The discount code applied to the print price (App\Domain\Affiliate\Coupons). */
+    public function promoCode(): BelongsTo
+    {
+        return $this->belongsTo(PromoCode::class);
     }
 
     public function isTest(): bool

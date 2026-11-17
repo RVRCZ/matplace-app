@@ -47,7 +47,7 @@ return [
 
     // robots.txt: where crawlers need not go at all (the pages themselves say noindex as well)
     'robots_disallow' => [
-        '/admin/', '/account/', '/api/', '/farm/orders/', '/webhooks/',
+        '/admin/', '/account/', '/api/', '/farm/orders/', '/webhooks/', '/r/',
         // docs/AP.md §14 (12 Nov 2026): what a crawler only wastes its visits on. The order's entrance with parameters
         // (a link on every model page; a crawler following it wrote 942 "order started" a day), sign-in redirects to
         // Google and others, private calculation pages, the catalogue's search and the lists' sorting. Nothing here is

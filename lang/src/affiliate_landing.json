@@ -1,0 +1,77 @@
+{
+    "affiliate.land.title": [
+        "Doporučujte Matplace a berte provizi z každé zaplacené zakázky",
+        "Recommend Matplace and earn a commission on every paid order",
+        "Recomienda Matplace y recibe una comisión por cada pedido pagado"
+    ],
+    "affiliate.land.sub": [
+        "Děláme 3D tisk na zakázku: busty a figurky z fotky, podtácky s logem, přívěsky, mapy. Kdo si přes váš odkaz objedná a zaplatí, dostanete :percent % z ceny bez DPH.",
+        "We make custom 3D prints: busts and figurines from a photo, coasters with a logo, charms, maps. When somebody orders through your link and pays, you get :percent % of the price without VAT.",
+        "Hacemos impresión 3D a medida: bustos y figuras a partir de una foto, posavasos con logo, colgantes, mapas. Quien encargue a través de tu enlace y pague, te da el :percent % del precio sin IVA."
+    ],
+    "affiliate.land.cta": ["Chci být partner", "I want to be a partner", "Quiero ser socio"],
+    "affiliate.land.cta_note": ["Registrace je zdarma, stačí účet s potvrzeným e-mailem.", "Registration is free; you need an account with a confirmed e-mail.", "El registro es gratis; basta una cuenta con el e-mail confirmado."],
+    "affiliate.land.who.h": ["Pro koho to je", "Who it is for", "Para quién es"],
+    "affiliate.land.who.lead": ["Pro každého, kdo má lidi, kterým by se takový dárek nebo výrobek hodil.", "For anyone with people who might want a gift or a part like this.", "Para cualquiera que tenga una audiencia a la que le pueda interesar un regalo o una pieza así."],
+    "affiliate.land.who.1.t": ["Tvůrci a kutilové", "Makers and tinkerers", "Creadores y aficionados al bricolaje"],
+    "affiliate.land.who.1.p": ["Pokud si modely kreslíte a nemáte tiskárnu, nebo nechcete tisknout sami, odkážete na tisk u nás.", "If you design models but have no printer, or do not want to print yourself, you can point to printing with us.", "Si diseñas modelos y no tienes impresora, o no quieres imprimir tú, puedes remitir a nuestra impresión."],
+    "affiliate.land.who.2.t": ["Videa a Instagram o 3D tisku", "3D-print videos and Instagram", "Vídeos e Instagram sobre impresión 3D"],
+    "affiliate.land.who.2.p": ["Pod video nebo do profilu patří odkaz na nástroj, který se v něm ukazuje.", "A link to the tool shown in the video or post belongs in its description or profile.", "El enlace a la herramienta que sale en el vídeo o la publicación va en su descripción o perfil."],
+    "affiliate.land.who.3.t": ["Blogeři a recenzenti", "Bloggers and reviewers", "Bloggers y reseñadores"],
+    "affiliate.land.who.3.p": ["Článek o dárcích, domácích pomůckách nebo koníčku s odkazem na konkrétní nástroj.", "An article about gifts, household helpers or a hobby, linking to one particular tool.", "Un artículo sobre regalos, ayudas para la casa o una afición, con enlace a una herramienta concreta."],
+    "affiliate.land.who.4.t": ["Komunity majitelů psů a dárků", "Dog-owner and gift communities", "Comunidades de dueños de perros y de regalos"],
+    "affiliate.land.who.4.p": ["Figurka mazlíčka z fotky je dárek, který se v takových skupinách hledá.", "A pet figurine from a photo is the kind of gift such groups look for.", "Una figura de mascota a partir de una foto es un regalo que se busca en esos grupos."],
+    "affiliate.land.who.5.t": ["Školy, kluby a spolky", "Schools, clubs and societies", "Escuelas, clubes y asociaciones"],
+    "affiliate.land.who.5.p": ["Medaile, podtácky nebo přívěsky se jménem pro soutěž, akci nebo oddíl.", "Medals, coasters or name charms for a contest, an event or a team.", "Medallas, posavasos o colgantes con nombre para un concurso, un evento o un equipo."],
+    "affiliate.land.earn.h": ["Co z toho máte", "What you earn", "Lo que ganas"],
+    "affiliate.land.earn.example": [
+        "Příklad: zákazník zaplatí za tisk :gross. Bez DPH (:vat %) je to :net, vaše provize :percent % je :commission.",
+        "Example: a customer pays :gross for a print. Without VAT (:vat %) that is :net, and your commission of :percent % is :commission.",
+        "Ejemplo: un cliente paga :gross por una impresión. Sin IVA (:vat %) son :net, y tu comisión del :percent % es :commission."
+    ],
+    "affiliate.land.earn.note": [
+        "Částka v příkladu je jen ilustrace, ne slib výdělku. Počítá se z toho, co zákazník skutečně zaplatil (tisk po případné slevě a doprava), bez DPH.",
+        "The amount in the example is an illustration, not a promise of earnings. It is counted from what the customer actually paid (the print after any discount, and delivery), without VAT.",
+        "La cantidad del ejemplo es solo una ilustración, no una promesa de ingresos. Se calcula sobre lo que el cliente pagó realmente (la impresión tras el posible descuento y el envío), sin IVA."
+    ],
+    "affiliate.land.steps.h": ["Jak to funguje", "How it works", "Cómo funciona"],
+    "affiliate.land.steps.1.t": ["Zaregistrujte se", "Register", "Regístrate"],
+    "affiliate.land.steps.1.p": ["Vyberete si kód a řeknete, kde odkaz budete sdílet. Hned dostanete svůj odkaz.", "You choose a code and tell us where you will share the link. You get your link at once.", "Eliges un código y nos dices dónde compartirás el enlace. Recibes tu enlace al instante."],
+    "affiliate.land.steps.2.t": ["Sdílejte odkaz", "Share the link", "Comparte el enlace"],
+    "affiliate.land.steps.2.p": ["Odkaz vede na úvodní stránku nebo na kterýkoli nástroj. Kdo přes něj přijde, nese si vaši značku :days dní.", "The link leads to the home page or to any tool. Whoever comes through it carries your mark for :days days.", "El enlace lleva a la página de inicio o a cualquier herramienta. Quien llega por él lleva tu marca :days días."],
+    "affiliate.land.steps.3.t": ["Výplata každý měsíc", "Paid every month", "Pago cada mes"],
+    "affiliate.land.steps.3.p": ["Provize se vyplácí jednou měsíčně od :min. Menší částka se převede do další výplaty.", "Commissions are paid once a month from :min. A smaller sum is carried over to the next payout.", "Las comisiones se pagan una vez al mes a partir de :min. Una suma menor pasa al siguiente pago."],
+    "affiliate.land.share.h": ["Co můžete sdílet", "What you can share", "Qué puedes compartir"],
+    "affiliate.land.share.lead": ["Odkaz může vést na kterýkoli z našich nástrojů. Tady jsou ty, které lidé sdílejí nejsnáz; v partnerské stránce si odkaz na libovolný nástroj vytvoříte.", "A link can lead to any of our tools. These are the ones that are easiest to share; on your partner page you can make a link to any tool.", "Un enlace puede llevar a cualquiera de nuestras herramientas. Estas son las más fáciles de compartir; en tu página de socio puedes crear un enlace a cualquier herramienta."],
+    "affiliate.land.faq.h": ["Obvyklé otázky", "Common questions", "Preguntas habituales"],
+    "affiliate.land.faq.1.q": ["Kdy provize vznikne?", "When does a commission arise?", "¿Cuándo nace una comisión?"],
+    "affiliate.land.faq.1.a": ["Když zákazník objednávku zaplatí. Splatná je, až je zakázka dotištěná. Do té doby ji vidíte jako čekající.", "When the customer pays the order. It becomes payable once the order has been printed. Until then you see it as waiting.", "Cuando el cliente paga el pedido. Se puede cobrar cuando el pedido está impreso. Hasta entonces la ves como pendiente."],
+    "affiliate.land.faq.2.q": ["Jak dlouho se odkaz pamatuje?", "How long is the link remembered?", "¿Cuánto tiempo se recuerda el enlace?"],
+    "affiliate.land.faq.2.a": ["Prohlížeč návštěvníka si ho pamatuje :days dní od posledního kliknutí. Platí poslední kliknutí: když přijde přes odkaz jiného partnera, provize jde jemu.", "The visitor's browser remembers it for :days days from the last click. The last click counts: if they then come through another partner's link, that partner gets the commission.", "El navegador del visitante lo recuerda :days días desde el último clic. Cuenta el último clic: si luego llega por el enlace de otro socio, la comisión es de ese socio."],
+    "affiliate.land.faq.3.q": ["Co když zákazník peníze dostane zpět?", "What if the customer gets the money back?", "¿Y si el cliente recupera el dinero?"],
+    "affiliate.land.faq.3.a": ["U zrušené nebo nepovedené zakázky provize zaniká, při částečném vrácení se úměrně sníží.", "For a cancelled or failed order the commission lapses; with a partial refund it is reduced in proportion.", "En un pedido cancelado o fallido la comisión se anula; con un reembolso parcial se reduce en proporción."],
+    "affiliate.land.faq.4.q": ["Mohu si objednat přes svůj odkaz sám?", "Can I order through my own link?", "¿Puedo pedir a través de mi propio enlace?"],
+    "affiliate.land.faq.4.a": ["Můžete, ale z vlastních objednávek provize není.", "You can, but there is no commission on your own orders.", "Puedes, pero no hay comisión por tus propios pedidos."],
+    "affiliate.land.faq.5.q": ["Jak a kdy se vyplácí?", "How and when is it paid?", "¿Cómo y cuándo se paga?"],
+    "affiliate.land.faq.5.a": ["Ručně, jednou měsíčně (:day. dne v měsíci), jakmile splatné provize dosáhnou :min. Menší částka se převádí. Peníze posíláme na údaje z registrace.", "By hand, once a month (on day :day), as soon as the payable commissions reach :min. A smaller sum is carried over. We send the money to the details from your registration.", "A mano, una vez al mes (el día :day), en cuanto las comisiones a cobrar alcanzan :min. Una suma menor se traslada. Enviamos el dinero a los datos de tu registro."],
+    "affiliate.land.faq.6.q": ["Platí se z provize daň?", "Is tax paid on the commission?", "¿Se paga impuesto por la comisión?"],
+    "affiliate.land.faq.6.a": ["Daň z příjmu z provize odvádíte sami; my vám jen provizi vyplatíme.", "You pay any income tax on the commission yourself; we only pay you the commission.", "El impuesto sobre la renta de la comisión lo pagas tú; nosotros solo te pagamos la comisión."],
+    "affiliate.land.faq.7.q": ["Co nesmím?", "What must I not do?", "¿Qué no puedo hacer?"],
+    "affiliate.land.faq.7.a": ["Slibovat, co nenabízíme, vydávat se za Matplace, kupovat reklamu na slovo „Matplace“ bez našeho souhlasu nebo odkaz rozesílat jako nevyžádanou poštu. Celé znění je v podmínkách níže.", "Promise what we do not offer, pose as Matplace, buy ads on the word \"Matplace\" without our consent, or send the link as unsolicited mail. The full wording is in the terms below.", "Prometer lo que no ofrecemos, hacerte pasar por Matplace, comprar anuncios con la palabra «Matplace» sin nuestro consentimiento o enviar el enlace como correo no solicitado. El texto completo está en las condiciones de abajo."],
+    "affiliate.terms.2": [
+        "Provize vzniká zaplacením zakázky a stává se splatnou, až je zakázka dotištěná. Vyplácíme ji ručně jednou měsíčně (:day. dne v měsíci), jakmile splatné provize dosáhnou :min; menší částka se převádí do další výplaty. Peníze posíláme na údaje, které uvedete při registraci; nic se neplatí automaticky. Provize v eurech se vyplácí v eurech a k minimu se počítá kurzem :rate Kč za euro.",
+        "The commission arises when the order is paid and becomes payable once the order has been printed. We pay it out by hand once a month (on day :day), as soon as the payable commissions reach :min; a smaller sum is carried over to the next payout. We send the money to the details you give at registration; nothing is paid automatically. A commission in euros is paid in euros and counts towards the minimum at :rate CZK per euro.",
+        "La comisión nace al pagarse el pedido y se puede cobrar cuando el pedido está impreso. La pagamos a mano una vez al mes (el día :day), en cuanto las comisiones a cobrar alcanzan :min; una suma menor se traslada al siguiente pago. Enviamos el dinero a los datos que indiques al registrarte; nada se paga automáticamente. Una comisión en euros se paga en euros y cuenta para el mínimo a :rate CZK por euro."
+    ],
+    "affiliate.account.payable": ["Splatné (zakázka dotištěna)", "Payable (order printed)", "A cobrar (pedido impreso)"],
+    "affiliate.account.payout_due": [
+        "Splatné provize se vyplácejí :date; minimum výplaty máte splněné.",
+        "Payable commissions are paid out on :date; you have reached the payout minimum.",
+        "Las comisiones a cobrar se pagan el :date; has alcanzado el mínimo de pago."
+    ],
+    "affiliate.account.payout_carried": [
+        "Do minima výplaty (:min) chybí :missing, splatná částka se převádí do další výplaty (:date).",
+        ":missing is missing to the payout minimum (:min); the payable sum is carried over to the next payout (:date).",
+        "Faltan :missing para el mínimo de pago (:min); la suma a cobrar se traslada al siguiente pago (:date)."
+    ]
+}

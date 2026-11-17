@@ -26,6 +26,9 @@ use Illuminate\Support\Str;
  */
 final class OrcaSlicer implements Slicer
 {
+    /** Process keys an override may give as one value where the profile keeps a list, one per extruder. */
+    private const PER_EXTRUDER = ['outer_wall_speed'];
+
     public function __construct(private readonly array $config) {}
 
     public function name(): string
@@ -95,7 +98,9 @@ final class OrcaSlicer implements Slicer
                 }
                 // the printer's own process settings win over everything above (farm: supports on auto, no prime tower…)
                 foreach (($params->overrides['process'] ?? []) + $pairing as $k => $v) {
-                    $proc[$k] = $v;
+                    // a profile that keeps the speed per extruder (the Core One's lists) gets the one value for each of them.
+                    // Only for the keys named here: the overrides written so far went in as they are and slice fine
+                    $proc[$k] = in_array($k, self::PER_EXTRUDER, true) && is_array($proc[$k] ?? null) && ! is_array($v) ? array_fill(0, max(1, count($proc[$k])), (string) $v) : $v;
                 }
                 $tag = $supports ? 'sup' : 'std';
                 $procFile = $work.'/process_'.$tag.'.json';
