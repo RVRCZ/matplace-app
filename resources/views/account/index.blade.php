@@ -15,6 +15,11 @@
     {{-- the designer profile card (step B) sits above everything else --}}
     @includeIf('account._designer_card')
 
+    {{-- the partner programme (docs/AT.md): a link only while it is switched on --}}
+    @if(app(\App\Domain\Affiliate\Affiliates::class)->enabled())
+        <p class="mt-4 text-sm"><a href="{{ \App\Models\Partner::where('user_id', auth()->id())->exists() ? route('account.partner') : route('affiliate.program') }}" class="font-semibold text-action-dark underline">{{ __('affiliate.account.link_nav') }}</a></p>
+    @endif
+
     {{-- 1. prints --}}
     @if($farm)
         <section id="prints" class="mt-6">

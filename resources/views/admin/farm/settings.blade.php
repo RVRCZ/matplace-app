@@ -77,6 +77,21 @@
         </div>
     </section>
 
+    {{-- docs/AT.md: both OFF by default; with them off nothing of this is visible to a visitor and no price changes --}}
+    <section id="farm-affiliate" class="rounded-2xl border border-amber-200 bg-amber-50 p-4">
+        <h2 class="font-bold">Partneři a slevové kódy</h2>
+        <div class="mt-2 grid gap-3 text-sm">
+            <label class="flex items-start gap-2"><input type="checkbox" name="affiliate_enabled" value="1" @checked($settings['affiliate_enabled'] ?? false) class="mt-1 h-4 w-4 accent-action"><span><strong>Partnerský program</strong><br><span class="text-xs text-slate-600">Zapnuto: odkaz /r/KÓD počítá kliky a pamatuje si partnera, stránka programu s registrací, partnerova stránka v účtu a provize ze zaplacených zakázek. Vypnuto: odkaz jen přesměruje, nic jiného není vidět. <a href="{{ route('admin.affiliates') }}" class="underline">Partneři</a></span></span></label>
+            <label class="flex items-start gap-2"><input type="checkbox" name="promo_codes_enabled" value="1" @checked($settings['promo_codes_enabled'] ?? false) class="mt-1 h-4 w-4 accent-action"><span><strong>Slevové kódy</strong><br><span class="text-xs text-slate-600">Zapnuto: na stránce zakázky je pole „Slevový kód“ a sleva se počítá v ceně tisku (ne dopravy). Vypnuto: pole není a žádná cena se nemění, ani u zakázky, na které už kód je. <a href="{{ route('admin.promo-codes') }}" class="underline">Kódy</a></span></span></label>
+        </div>
+        <div class="mt-3 grid gap-3 sm:grid-cols-3">
+            <label class="{{ $lb }}">Provize nového partnera (% ze zakázky bez DPH)<input type="number" step="0.01" min="0" max="50" name="affiliate_percent" value="{{ old('affiliate_percent', $settings['affiliate_percent'] ?? 10) }}" class="{{ $in }}"></label>
+            <label class="{{ $lb }}">Odkaz si prohlížeč pamatuje (dní)<input type="number" step="1" min="1" max="365" name="affiliate_cookie_days" value="{{ old('affiliate_cookie_days', $settings['affiliate_cookie_days'] ?? 30) }}" class="{{ $in }}"></label>
+            <label class="{{ $lb }}">Výplata provizí: od částky (Kč; v eurech se počítá kurzem)<input type="number" step="1" min="0" name="affiliate_payout_min_czk" value="{{ old('affiliate_payout_min_czk', $settings['affiliate_payout_min_czk'] ?? 100) }}" class="{{ $in }}"></label>
+            <label class="{{ $lb }}">Výplata provizí: den v měsíci (1–28)<input type="number" step="1" min="1" max="28" name="affiliate_payout_day" value="{{ old('affiliate_payout_day', $settings['affiliate_payout_day'] ?? 1) }}" class="{{ $in }}"></label>
+        </div>
+    </section>
+
     <section class="rounded-2xl border border-slate-200 bg-white p-4">
         <h2 class="font-bold">Ostatní</h2>
         <div class="mt-2 grid gap-3 sm:grid-cols-3">
@@ -93,7 +108,7 @@
         {{-- what goes to that address: one mail per event of an order (OrderFlow::alertAdmin); problems also cover a printer offline or a start that failed --}}
         <div class="mt-3 flex flex-wrap items-center gap-4 text-sm" id="farm-notify">
             <span class="text-xs font-semibold text-slate-600">E-maily obsluze:</span>
-            @foreach(['paid' => 'zaplaceno (nová zakázka)', 'printing' => 'tiskne se', 'done' => 'dotištěno (se snímkem z kamery)', 'problem' => 'problémy (selhání, zrušení, tiskárna offline)', 'paused' => 'pauza tiskárny (s hláškou, jeden e‑mail na pauzu)', 'inquiry' => 'poptávka z rozcestníku (fotka a popis pro modeláře)'] as $kind => $label)
+            @foreach(['paid' => 'zaplaceno (nová zakázka)', 'printing' => 'tiskne se', 'done' => 'dotištěno (se snímkem z kamery)', 'problem' => 'problémy (selhání, zrušení, tiskárna offline)', 'paused' => 'pauza tiskárny (s hláškou, jeden e‑mail na pauzu)', 'inquiry' => 'poptávka z rozcestníku (fotka a popis pro modeláře)', 'partner' => 'nový partner se zaregistroval'] as $kind => $label)
                 <label class="flex items-center gap-2"><input type="checkbox" name="notify_{{ $kind }}" value="1" @checked($settings['notify_'.$kind]) class="h-4 w-4 accent-action"> {{ $label }}</label>
             @endforeach
             <span class="text-xs text-slate-500">Jeden e-mail na událost; bez e-mailu obsluhy nechodí nic.</span>

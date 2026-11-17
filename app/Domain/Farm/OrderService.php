@@ -2,6 +2,8 @@
 
 namespace App\Domain\Farm;
 
+use App\Domain\Affiliate\Affiliates;
+use App\Domain\Affiliate\Coupons;
 use App\Domain\Files\PaintedColors;
 use App\Domain\Tools\ArtGenerator;
 use App\Domain\Tools\ModelEditor;
@@ -32,7 +34,7 @@ use Illuminate\Support\Str;
 /** Everything the customer can do with a farm order before it is paid: create, change presets, see colours and price. */
 final class OrderService
 {
-    public function __construct(private readonly FarmSettings $settings, private readonly PriceCalculator $prices, private readonly Shipping $shipping) {}
+    public function __construct(private readonly FarmSettings $settings, private readonly PriceCalculator $prices, private readonly Shipping $shipping, private readonly Coupons $coupons) {}
 
     /**
      * Nothing is sliced before the customer asks for the price (`farm.slice_on_demand`, docs/AN.md §26): the order is
@@ -163,6 +165,8 @@ final class OrderService
                     : ($big['big'] ? 'big model ('.($big['reason'] === 'slice_time' ? 'calculation sliced in '.round((float) $big['slice_s']).' s' : number_format($big['triangles'] / 1e6, 1, '.', '').' M triangles').'): the slice waits for the choices'
                         : ($wait ? 'the slice waits for the word of the customer' : null))]);
         }));
+        // the partner whose link brought the customer (docs/AT.md); never lets an order down
+        Affiliates::safely(fn () => app(Affiliates::class)->attributeNew($order), 'attribution');
         // after the commit: a worker that picks the job up before the row is there would find no order and give up
         if (! $wait) {
             PrepareFarmOrder::dispatch($order->id);
@@ -827,7 +831,11 @@ final class OrderService
         ]));
         $parcel = $this->shipping->price($delivery, $country, $this->shipping->parcelGrams($order), $currency);
 
-        return self::inCurrency($price, $currency, (float) $parcel?->amount) + ['delivery' => $delivery, 'country' => $delivery === Shipping::PICKUP ? null : $country,
+        // THE one place a price is made: a usable discount code takes its share off the print price here (App\Domain\Affiliate\Coupons),
+        // so the page, the quote, the stored price, the credit held and the card's amount are all this number (docs/AT.md §3)
+        $breakdown = $this->coupons->applyToPrice($order, self::inCurrency($price, $currency, (float) $parcel?->amount), (float) $price['print_total']);
+
+        return $breakdown + ['delivery' => $delivery, 'country' => $delivery === Shipping::PICKUP ? null : $country,
             // a plate of several filaments: how often the machine changes the spool (the purge is in the grams already; the time in the minutes)
             'changes' => (int) ($order->slice_result['changes'] ?? 0)];
     }
@@ -868,6 +876,22 @@ final class OrderService
         }
         $price = $this->priceFor($order, $order->printer, Shipping::PICKUP, null, null, $currency);
         $order->forceFill(['currency' => $currency, 'price' => $price, 'price_total' => $price['total']])->save();
+
+        return $order;
+    }
+
+    /**
+     * The code on the order was applied or taken off: the stored price follows (the same priceFor as everything else).
+     * Only an unpaid order that has been priced.
+     */
+    public function reprice(FarmOrder $order): FarmOrder
+    {
+        $order->unsetRelation('promoCode');
+        if ($order->paid_at !== null || $order->status !== FarmOrder::STATUS_SLICED || ! $order->printer || ! $order->material) {
+            return $order;
+        }
+        $price = $this->priceFor($order, $order->printer, Shipping::PICKUP, null, null, (string) $order->currency);
+        $order->forceFill(['price' => $price, 'price_total' => $price['total']])->save();
 
         return $order;
     }

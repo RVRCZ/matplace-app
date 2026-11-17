@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Farm;
 
+use App\Domain\Affiliate\Coupons;
 use App\Domain\Calculation\BigModel as Threshold;
 use App\Domain\Farm\BigModel;
 use App\Domain\Farm\CardRefunds;
@@ -799,6 +800,12 @@ class OrderController extends Controller
             $request->session()->put('farm.guest_email', $data['email']);
         }
 
+        // a guest's e-mail that belongs to an account which already used a code made for one use per account: said before any money is asked for
+        if ($guest && $order->promo_code_id && ($code = $order->promoCode) && app(Coupons::class)->enabled()
+            && ($reason = app(Coupons::class)->problemForEmail($code, $order, $data['email'])) !== null) {
+            return response()->json(['error' => 'promo_'.$reason, 'message' => __('farm.promo.refuse.'.$reason)], 422);
+        }
+
         try {
             // a guest's order holds no credit (Wallet::hold): the card pays all of it
             return $this->payFromRequest($request, $order, $flow, $videos, $data);
@@ -1001,12 +1008,70 @@ class OrderController extends Controller
         return (string) ($owner?->currency ?: ($mine ? Currency::current($owner) : $order->currency));
     }
 
+    /**
+     * The state of the discount code field: the code on the order, whether it takes anything off now, and why not when it
+     * does not (a code that expired, a minimum not reached). Null while the codes are switched off.
+     *
+     * @return array<string, mixed>|null
+     */
+    private function promoState(FarmOrder $order): ?array
+    {
+        $coupons = app(Coupons::class);
+        if (! $coupons->enabled()) {
+            return null;
+        }
+        $code = $order->promo_code_id ? $order->promoCode : null;
+        $problem = $code ? $coupons->problem($code, $order, Coupons::printCzkOf((array) $order->price ?: null)) : null;
+
+        return [
+            'code' => $code?->code,
+            'applied' => isset($order->price['discount']),
+            'problem' => $problem ? __('farm.promo.refuse.'.$problem, ['min' => Money::czk((float) $code->min_order_czk)->to((string) $order->currency)->format()]) : null,
+            'editable' => $order->paid_at === null && in_array($order->status, [FarmOrder::STATUS_SLICED, FarmOrder::STATUS_UPLOADED, FarmOrder::STATUS_AWAITING_CHOICES], true),
+        ];
+    }
+
+    /**
+     * Apply a discount code to the order, or take it off (an empty code). The answer is the order's state, whose prices
+     * are the ones priceFor makes with the code (the same number as the quote and the payment); a refusal says why.
+     */
+    public function promo(Request $request, FarmOrder $order, Coupons $coupons): JsonResponse
+    {
+        $this->authorizeOrder($request, $order);
+        abort_unless($coupons->enabled(), 404);
+        $data = $request->validate(['code' => ['nullable', 'string', 'max:40']]);
+        $refuse = fn (string $reason, array $data = []) => response()->json(['error' => 'promo_'.$reason, 'message' => __('farm.promo.refuse.'.$reason, $data)], 422);
+        if ($order->paid_at !== null || ! in_array($order->status, [FarmOrder::STATUS_SLICED, FarmOrder::STATUS_UPLOADED, FarmOrder::STATUS_AWAITING_CHOICES], true)) {
+            return $refuse('locked');
+        }
+        $text = trim((string) ($data['code'] ?? ''));
+        if ($text === '') {
+            $order->forceFill(['promo_code_id' => null])->save();
+        } else {
+            $code = $coupons->find($text);
+            if (! $code) {
+                return $refuse('unknown');
+            }
+            if ($reason = $coupons->problem($code, $order, Coupons::printCzkOf((array) $order->price ?: null))) {
+                return $refuse($reason, ['min' => Money::czk((float) $code->min_order_czk)->to($this->currencyFor($order, $request))->format()]);
+            }
+            $order->forceFill(['promo_code_id' => $code->id])->save();
+        }
+        $this->orders->reprice($order);
+
+        return response()->json($this->describe($order->refresh(), $request));
+    }
+
     /** Everything the order page needs, in one JSON object. */
     private function describe(FarmOrder $order, Request $request): array
     {
         $order->loadMissing(['color', 'printer', 'material', 'modelFile', 'slot.printer']);
         $currency = $this->currencyFor($order, $request);
         $this->orders->alignCurrency($order, $currency);
+        // a discount code on the order: the stored price is the one priceFor makes now (a code that expired, or a switch turned off, since)
+        if ($order->status === FarmOrder::STATUS_SLICED && $order->paid_at === null && ($order->promo_code_id || isset($order->price['discount']))) {
+            $this->orders->reprice($order);
+        }
         $job = $order->latestJob();
         $check = (array) $order->check;
         // a design that must print on one plate takes only machines that change spools (an operator feeds one at a time)
@@ -1196,6 +1261,8 @@ class OrderController extends Controller
             'price' => $order->price,
             'total' => $order->price_total,
             'currency' => $currency,
+            // the discount code field of the page (null while the codes are switched off: the page has no field at all)
+            'promo' => $this->promoState($order),
             // what delivery is on offer and for how much, while it can still be chosen
             'shipping' => $order->status === FarmOrder::STATUS_SLICED ? $this->shipping->offer($order, $currency) : null,
             'destination' => $order->isParcel() ? $this->destinationText($order) : null,

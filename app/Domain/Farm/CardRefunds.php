@@ -202,6 +202,10 @@ final class CardRefunds
                 'currency' => $refund->currency, 'note' => trim('#'.$refund->id.' '.$number), 'created_by' => $refund->created_by]);
             $order?->events()->create(['from' => $order->status, 'to' => $order->status, 'actor' => 'system', 'note' => 'refunded '.number_format((float) $refund->amount, 2, '.', '')." {$refund->currency} to the card ({$refund->reason}, {$ref})"]);
         });
+        if ($order) {
+            // a refund to the card of an order that held the money: the commission and the code's use follow it (the credit route did it already)
+            \App\Domain\Affiliate\Affiliates::safely(fn () => app(\App\Domain\Affiliate\Affiliates::class)->sync($order), 'commission refund');
+        }
         Track::refunded($refund);
         $user = $payment->user;
         if ($order && $user?->email && $user->notify_email !== false) {
