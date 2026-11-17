@@ -528,6 +528,13 @@ class PrepareFarmOrder implements ShouldQueue
             // with a smaller one
             $overrides['process']['support_threshold_angle'] = (string) max((int) ($overrides['process']['support_threshold_angle'] ?? 0), (int) config('farm.support_threshold_angle_figure', 32));
         }
+        // the skin of a face is what the customer looks at: a figure made from a photo prints its outer wall slowly
+        // (Roman, 17 Nov 2026). The profiles' 200 mm/s is never reached on such a shape – the test dog sliced the same
+        // at 200 and at 80 – so the number has to go under what the machine really does: 45 mm/s is 5 % more time
+        // (238 → 250 min, 280 → 286 Kč on that dog). Supports or not, a printer's own setting still wins
+        if ($order->modelFile?->origin === 'generated' && ! $order->isTest() && ($slow = (int) config('farm.figure_outer_wall_speed', 45)) > 0) {
+            $overrides['process'] += ['outer_wall_speed' => (string) $slow];
+        }
         $overrides['process'] = PrintSettings::process($custom) + $overrides['process'];
         if ((isset($custom['ironing']) || ($hints['ironing_type'] ?? 'no ironing') !== 'no ironing') && abs((float) $printer->nozzle_mm - 0.4) > 0.001) {
             // the profiles write the ironing pass for a 0.4 nozzle; a finer or coarser one irons at its own spacing

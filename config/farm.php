@@ -29,6 +29,10 @@ return [
     // (+6.6 g, +36 min on a test dog), Roman chose 32 on 16 Nov 2026.
     'support_threshold_angle_figure' => (int) env('FARM_SUPPORT_ANGLE_FIGURE', 32),
 
+    // The outer wall of a figure made from a photo, mm/s (0 = the profile's own). Measured on the test dog, Kobra X,
+    // 0.2 mm: 200 and 80 → 238 min, 60 → 243, 45 → 250, 35 → 261.
+    'figure_outer_wall_speed' => (int) env('FARM_FIGURE_OUTER_WALL', 45),
+
     'figure_color' => ['name' => env('FARM_FIGURE_COLOR', 'marrakes'), 'hex' => '#a9713f'],
 
     // A big model's order is not sliced before the customer has chosen the settings and confirmed the colour
