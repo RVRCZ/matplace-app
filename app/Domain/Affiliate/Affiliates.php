@@ -9,6 +9,8 @@ use App\Models\Partner;
 use App\Models\PartnerClick;
 use App\Models\PartnerCommission;
 use App\Support\Bots;
+use App\Support\Money;
+use Carbon\CarbonInterface;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
@@ -43,6 +45,42 @@ final class Affiliates
     public function defaultDays(): int
     {
         return max(1, (int) $this->settings->get('affiliate_cookie_days'));
+    }
+
+    // ── the payout rule (Roman, 17 Nov 2026): monthly, once the payable sum reaches a minimum, smaller sums carried over ──
+
+    public function payoutMinCzk(): float
+    {
+        return max(0.0, (float) $this->settings->get('affiliate_payout_min_czk'));
+    }
+
+    public function payoutDay(): int
+    {
+        return max(1, min(28, (int) $this->settings->get('affiliate_payout_day')));
+    }
+
+    /** The next payout day: this month's when it has not passed (today counts), else next month's. */
+    public function nextPayout(?CarbonInterface $from = null): CarbonInterface
+    {
+        $from = ($from ?? now())->copy()->startOfDay();
+        $this_month = $from->copy()->day($this->payoutDay());
+
+        return $this_month->gte($from) ? $this_month : $from->copy()->startOfMonth()->addMonthNoOverflow()->day($this->payoutDay());
+    }
+
+    /**
+     * The payable sums of a partner measured against the minimum: each currency is paid in its own, but whether the
+     * partner has reached the minimum is decided on the sum of all of them in crowns (euros at the farm's rate).
+     *
+     * @param  array<string, float>  $payable  currency → amount
+     * @return array{czk: float, due: bool, missing_czk: float}
+     */
+    public function dueState(array $payable): array
+    {
+        $czk = round(array_sum(array_map(fn ($amount, $cur) => $cur === 'CZK' ? (float) $amount : (float) $amount * Money::rate(), $payable, array_keys($payable))), 2);
+        $min = $this->payoutMinCzk();
+
+        return ['czk' => $czk, 'due' => $czk > 0 && $czk + 0.004 >= $min, 'missing_czk' => max(0.0, round($min - $czk, 2))];
     }
 
     // ── the link ────────────────────────────────────────────────────────────────────────────────────────────────
@@ -257,6 +295,7 @@ final class Affiliates
             'pending' => $sums(PartnerCommission::STATE_PENDING),
             'payable' => $sums(PartnerCommission::STATE_PAYABLE),
             'paid' => $sums(PartnerCommission::STATE_PAID),
+            'payout' => $this->dueState($sums(PartnerCommission::STATE_PAYABLE)) + ['min_czk' => $this->payoutMinCzk(), 'next' => $this->nextPayout()->toDateString()],
         ];
     }
 }

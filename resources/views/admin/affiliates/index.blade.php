@@ -18,7 +18,7 @@
 @unless($enabled)
     <p class="mt-2 rounded-xl border border-amber-300 bg-amber-50 px-4 py-3 text-sm text-amber-900">Partnerský program je <strong>vypnutý</strong> (<a href="{{ route('admin.farm.settings') }}#farm-affiliate" class="underline">nastavení farmy</a>): odkaz /r/KÓD jen přesměruje, veřejná stránka neexistuje a nové provize nevznikají. Tabulky níže ukazují, co už vzniklo.</p>
 @endunless
-<p class="mt-2 text-xs text-slate-600">Provize se počítá ze zaplacené zakázky bez DPH (tisk po slevě a doprava, bez odměn návrhářů) v procentu partnera v okamžiku zaplacení. Je „k výplatě“, až se zakázka dotiskne. Systém nic nevyplácí: zaplatíte sami a tady to označíte.</p>
+<p class="mt-2 text-xs text-slate-600">Výplata je jednou měsíčně ({{ app(\App\Domain\Affiliate\Affiliates::class)->payoutDay() }}. dne) od {{ number_format(app(\App\Domain\Affiliate\Affiliates::class)->payoutMinCzk(), 0, ',', ' ') }} Kč (platí v nastavení farmy); menší částka se převádí. Provize se počítá ze zaplacené zakázky bez DPH (tisk po slevě a doprava, bez odměn návrhářů) v procentu partnera v okamžiku zaplacení. Je „k výplatě“, až se zakázka dotiskne. Systém nic nevyplácí: zaplatíte sami a tady to označíte.</p>
 
 <div class="mt-4 space-y-4">
     @foreach($partners as $p)
@@ -32,7 +32,7 @@
                 <span class="text-xs text-slate-500">{{ $p->email }}@if($p->user) · účet #{{ $p->user_id }}@endif · <a href="{{ $p->link() }}" class="underline">{{ $p->link() }}</a></span>
             </div>
             <dl class="mt-2 grid grid-cols-2 gap-2 text-sm sm:grid-cols-4 lg:grid-cols-8">
-                @foreach([['Kliky', $st['clicks']], ['Zakázky', $st['orders']], ['Zaplacené', $st['paid_orders']], ['Obrat bez DPH', $money($st['turnover'])], ['Čeká', $money($st['pending'])], ['K výplatě', $money($st['payable'])], ['Vyplaceno', $money($st['paid'])]] as [$label, $value])
+                @foreach([['Kliky', $st['clicks']], ['Zakázky', $st['orders']], ['Zaplacené', $st['paid_orders']], ['Obrat bez DPH', $money($st['turnover'])], ['Čeká', $money($st['pending'])], ['Splatné (zakázky dotištěny)', $money($st['payable'])], ['Vyplaceno', $money($st['paid'])]] as [$label, $value])
                     <div class="rounded-lg bg-slate-50 px-3 py-2"><dt class="text-xs text-slate-500">{{ $label }}</dt><dd class="font-semibold">{{ $value }}</dd></div>
                 @endforeach
             </dl>
@@ -44,6 +44,13 @@
                 @endforeach
             </div>
 
+            @php($po = $st['payout'])
+            @if($st['payable'])
+                <p class="mt-3 rounded-lg px-3 py-2 text-sm {{ $po['due'] ? 'bg-ok-soft text-ok' : 'bg-slate-100 text-slate-700' }}" data-payout="{{ $po['due'] ? 'due' : 'carried' }}">
+                    @if($po['due'])<strong>K výplatě {{ \Illuminate\Support\Carbon::parse($po['next'])->format('j. n. Y') }}:</strong> {{ $money($st['payable']) }} (v přepočtu {{ number_format($po['czk'], 0, ',', ' ') }} Kč, minimum je {{ number_format($po['min_czk'], 0, ',', ' ') }} Kč).
+                    @else<strong>Převádí se do další výplaty ({{ \Illuminate\Support\Carbon::parse($po['next'])->format('j. n. Y') }}):</strong> {{ $money($st['payable']) }}, do minima {{ number_format($po['min_czk'], 0, ',', ' ') }} Kč chybí {{ number_format($po['missing_czk'], 0, ',', ' ') }} Kč.@endif
+                </p>
+            @endif
             @if($open->isNotEmpty())
                 <form method="post" action="{{ route('admin.affiliates.paid', $p) }}" class="mt-3 rounded-xl border border-slate-200 p-3 text-sm">
                     @csrf
@@ -62,7 +69,7 @@
                     </table>
                     <div class="mt-2 flex flex-wrap items-end gap-3">
                         <label class="{{ $lb }} grow">Poznámka k výplatě (povinná, např. „převod 20. 11.“)<input name="note" required maxlength="300" class="{{ $in }}"></label>
-                        <button name="all" value="1" class="btn-primary min-h-0 px-3 py-2 text-sm" onclick="return confirm('Označit všechny provize k výplatě tohoto partnera jako vyplacené?')">Vše k výplatě je vyplaceno</button>
+                        @if($po['due'])<button name="all" value="1" class="btn-primary min-h-0 px-3 py-2 text-sm" onclick="return confirm('Označit všechny splatné provize tohoto partnera jako vyplacené?')">Vše k výplatě je vyplaceno</button>@endif
                         <button class="btn-quiet min-h-0 px-3 py-2 text-sm">Jen zaškrtnuté</button>
                     </div>
                 </form>

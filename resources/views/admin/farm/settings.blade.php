@@ -87,6 +87,8 @@
         <div class="mt-3 grid gap-3 sm:grid-cols-3">
             <label class="{{ $lb }}">Provize nového partnera (% ze zakázky bez DPH)<input type="number" step="0.01" min="0" max="50" name="affiliate_percent" value="{{ old('affiliate_percent', $settings['affiliate_percent'] ?? 10) }}" class="{{ $in }}"></label>
             <label class="{{ $lb }}">Odkaz si prohlížeč pamatuje (dní)<input type="number" step="1" min="1" max="365" name="affiliate_cookie_days" value="{{ old('affiliate_cookie_days', $settings['affiliate_cookie_days'] ?? 30) }}" class="{{ $in }}"></label>
+            <label class="{{ $lb }}">Výplata provizí: od částky (Kč; v eurech se počítá kurzem)<input type="number" step="1" min="0" name="affiliate_payout_min_czk" value="{{ old('affiliate_payout_min_czk', $settings['affiliate_payout_min_czk'] ?? 100) }}" class="{{ $in }}"></label>
+            <label class="{{ $lb }}">Výplata provizí: den v měsíci (1–28)<input type="number" step="1" min="1" max="28" name="affiliate_payout_day" value="{{ old('affiliate_payout_day', $settings['affiliate_payout_day'] ?? 1) }}" class="{{ $in }}"></label>
         </div>
     </section>
 

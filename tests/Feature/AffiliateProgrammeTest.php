@@ -16,9 +16,11 @@ use App\Models\PartnerCommission;
 use App\Models\Payment;
 use App\Models\PromoCode;
 use App\Models\User;
+use App\Support\Money;
 use Database\Seeders\FarmSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Storage;
 use Tests\Support\MeshFixtures;
@@ -335,6 +337,7 @@ class AffiliateProgrammeTest extends TestCase
 
     public function test_a_commission_already_paid_out_is_not_touched_by_a_later_refund(): void
     {
+        app(FarmSettings::class)->set('affiliate_payout_min_czk', 0);
         $partner = $this->partner();
         $order = $this->paidOrder('ANNA');
         $this->done($order);
@@ -379,7 +382,7 @@ class AffiliateProgrammeTest extends TestCase
         $this->assertSame(10.0, $p->commission_percent);
         $this->assertSame(30, $p->cookie_days);
         $this->assertNotNull($p->terms_accepted_at);
-        $this->assertSame('2026-11', $p->terms_version);
+        $this->assertSame('2026-11-b', $p->terms_version);
         Mail::assertQueued(FarmAdminAlert::class, fn (FarmAdminAlert $m) => $m->kind === 'partner' && str_contains($m->subjectLine, 'EVA'));
 
         // one partner per account
@@ -438,6 +441,101 @@ class AffiliateProgrammeTest extends TestCase
         $this->actingAs($buyer)->get('/account/partner')->assertRedirect(route('affiliate.program'));
     }
 
+    // ── the payout rule: monthly, from a minimum, smaller sums carried over ───────────────────────────────────────
+
+    private function payable(Partner $partner, float $amount, string $currency = 'CZK'): PartnerCommission
+    {
+        static $n = 0;
+        $file = ModelFile::first() ?? ModelFile::forceCreate(['uuid' => (string) \Illuminate\Support\Str::uuid(), 'original_name' => 'x.stl', 'ext' => 'stl', 'sha256' => str_repeat('a', 64), 'storage_path' => 'x.stl', 'size_bytes' => 1, 'status' => 'ready']);
+        $order = FarmOrder::forceCreate(['model_file_id' => $file->id, 'farm_material_id' => \App\Models\FarmMaterial::firstOrFail()->id, 'farm_printer_id' => \App\Models\FarmPrinter::firstOrFail()->id, 'token' => 'pay'.(++$n).str_repeat('x', 28), 'user_id' => $this->user->id, 'status' => 'done', 'kind' => 'print', 'currency' => $currency]);
+
+        return PartnerCommission::create(['partner_id' => $partner->id, 'farm_order_id' => $order->id, 'base_amount' => $amount * 10, 'percent' => 10, 'amount' => $amount, 'currency' => $currency, 'state' => 'payable']);
+    }
+
+    public function test_the_next_payout_day_follows_the_setting(): void
+    {
+        $a = app(Affiliates::class);
+        $this->assertSame(100.0, $a->payoutMinCzk());
+        $this->assertSame(1, $a->payoutDay());
+        $this->assertSame('2026-12-01', $a->nextPayout(Carbon::parse('2026-11-17'))->toDateString());
+        $this->assertSame('2026-11-01', $a->nextPayout(Carbon::parse('2026-11-01'))->toDateString(), 'the day itself counts');
+        app(FarmSettings::class)->set('affiliate_payout_day', 20);
+        $this->assertSame('2026-11-20', app(Affiliates::class)->nextPayout(Carbon::parse('2026-11-17'))->toDateString());
+        $this->assertSame('2027-01-20', app(Affiliates::class)->nextPayout(Carbon::parse('2026-12-21'))->toDateString());
+    }
+
+    public function test_under_the_minimum_the_sum_is_carried_over_and_at_it_the_sum_is_due(): void
+    {
+        $partner = $this->partner(['user_id' => $this->user->id]);
+        $this->payable($partner, 60);
+        $page = $this->actingAs($this->user)->get('/account/partner')->assertOk();
+        $page->assertSee('data-payout="carried"', false);
+        $page->assertSee(Money::czk(40)->format(), false);   // 40 Kč missing to 100
+        $stats = app(Affiliates::class)->stats($partner);
+        $this->assertFalse($stats['payout']['due']);
+        $this->assertSame(40.0, $stats['payout']['missing_czk']);
+
+        $admin = $this->admin();
+        $this->actingAs($admin)->get('/admin/affiliates')->assertOk()->assertSee('data-payout="carried"', false)->assertSee('Převádí se do další výplaty');
+        $this->actingAs($admin)->post("/admin/affiliates/{$partner->id}/paid", ['all' => 1, 'note' => 'x'])->assertRedirect()->assertSessionHas('error');
+        $this->assertSame('payable', PartnerCommission::first()->state, '"all" works on what is due only');
+
+        $this->payable($partner, 40);   // exactly the minimum
+        $this->actingAs($this->user)->get('/account/partner')->assertSee('data-payout="due"', false);
+        $this->actingAs($admin)->get('/admin/affiliates')->assertSee('data-payout="due"', false)->assertSee('Vše k výplatě je vyplaceno');
+        $this->actingAs($admin)->post("/admin/affiliates/{$partner->id}/paid", ['all' => 1, 'note' => 'převod'])->assertRedirect();
+        $this->assertSame(['paid', 'paid'], PartnerCommission::orderBy('id')->pluck('state')->all());
+    }
+
+    public function test_two_currencies_are_compared_in_crowns_and_paid_each_in_its_own(): void
+    {
+        $partner = $this->partner();
+        $rate = Money::rate();
+        $this->payable($partner, 60);
+        $this->payable($partner, 1.0, 'EUR');   // worth $rate Kč
+        $state = app(Affiliates::class)->stats($partner)['payout'];
+        $this->assertEqualsWithDelta(60 + $rate, $state['czk'], 0.01);
+        $this->assertSame(60 + $rate >= 100, $state['due']);
+        $this->payable($partner, 2.0, 'EUR');
+        $state = app(Affiliates::class)->stats($partner)['payout'];
+        $this->assertEqualsWithDelta(60 + 3 * $rate, $state['czk'], 0.01);
+        $this->assertTrue($state['due'], '60 Kč + 3 € counts as '.(60 + 3 * $rate).' Kč');
+        $stats = app(Affiliates::class)->stats($partner);
+        $this->assertSame(['CZK' => 60.0, 'EUR' => 3.0], $stats['payable'], 'never added across currencies');
+        $this->assertSame(3, app(Affiliates::class)->markPaid($partner, null, 'převod'));
+        $this->assertSame(0, PartnerCommission::where('state', 'payable')->count());
+    }
+
+    public function test_the_settings_change_the_numbers_on_the_pages_and_in_the_terms(): void
+    {
+        $settings = app(FarmSettings::class);
+        $settings->set('affiliate_payout_min_czk', 250);
+        $settings->set('affiliate_payout_day', 15);
+        $page = $this->get('/partner')->assertOk();
+        $page->assertSee(Money::czk(250)->format(), false)->assertSee('15. dne v měsíci', false);
+        $this->get('/en/partner')->assertOk()->assertSee('on day 15', false);
+        $partner = $this->partner(['user_id' => $this->user->id]);
+        $this->payable($partner, 120);
+        $acct = $this->actingAs($this->user)->get('/account/partner')->assertOk();
+        $acct->assertSee('data-payout="carried"', false)->assertSee(Money::czk(130)->format(), false);
+        $settings->set('affiliate_payout_min_czk', 100);
+        $this->actingAs($this->user)->get('/account/partner')->assertSee('data-payout="due"', false);
+    }
+
+    public function test_the_landing_page_example_is_counted_from_the_settings(): void
+    {
+        $settings = app(FarmSettings::class);
+        $settings->set('affiliate_percent', 12);
+        $settings->set('vat_percent', 21);
+        $net = round(500 / 1.21, 2);
+        $page = $this->get('/partner')->assertOk();
+        $page->assertSee(Money::czk(500)->format(), false)->assertSee(Money::czk($net)->format(), false)
+            ->assertSee(Money::czk(round($net * 0.12, 2))->format(), false)->assertSee('noindex', false);
+        foreach (['figure', 'pet', 'coaster'] as $tool) {
+            $page->assertSee('data-key="'.$tool.'"', false);
+        }
+    }
+
     // ── the operator's pages ──────────────────────────────────────────────────────────────────────────────────────
 
     public function test_the_admin_pages_are_the_admins_and_both_switches_start_off(): void
@@ -453,6 +551,7 @@ class AffiliateProgrammeTest extends TestCase
     public function test_the_operator_adds_changes_and_switches_off_a_partner_and_marks_commissions_paid(): void
     {
         $admin = $this->admin();
+        app(FarmSettings::class)->set('affiliate_payout_min_czk', 0);
         $this->actingAs($admin)->post('/admin/affiliates', ['name' => 'Cyril', 'code' => 'cyril', 'email' => 'c@example.com', 'commission_percent' => 12.5, 'cookie_days' => 60, 'active' => 1, 'user_email' => 'customer@example.com'])->assertRedirect(route('admin.affiliates'));
         $p = Partner::where('code', 'CYRIL')->firstOrFail();
         $this->assertSame(12.5, $p->commission_percent);

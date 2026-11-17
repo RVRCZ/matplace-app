@@ -640,6 +640,8 @@ class FarmCatalogController extends Controller
             // the partner programme and the discount codes (docs/AT.md)
             'affiliate_percent' => ['nullable', 'numeric', 'min:0', 'max:50'],
             'affiliate_cookie_days' => ['nullable', 'integer', 'min:1', 'max:365'],
+            'affiliate_payout_min_czk' => ['nullable', 'integer', 'min:0', 'max:100000'],
+            'affiliate_payout_day' => ['nullable', 'integer', 'min:1', 'max:28'],
             // the state of the service (FarmState): one of three, with the day printing starts again and a note per language
             'farm_state' => ['nullable', 'in:'.implode(',', FarmState::ALL)],
             'farm_pause_until' => ['nullable', 'date_format:Y-m-d'],
@@ -677,7 +679,7 @@ class FarmCatalogController extends Controller
         $data['video_prices'] = $request->boolean('video_prices');
         $data['affiliate_enabled'] = $request->boolean('affiliate_enabled');
         $data['promo_codes_enabled'] = $request->boolean('promo_codes_enabled');
-        foreach (['affiliate_percent', 'affiliate_cookie_days'] as $key) {
+        foreach (['affiliate_percent', 'affiliate_cookie_days', 'affiliate_payout_min_czk', 'affiliate_payout_day'] as $key) {
             if (! isset($data[$key])) {
                 unset($data[$key]);   // an empty box keeps the number as it was
             }

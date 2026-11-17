@@ -35,6 +35,13 @@
                 <div><dt class="text-xs text-slate-500">{{ __($label) }}</dt><dd class="text-lg font-bold">{{ $value }}</dd></div>
             @endforeach
         </dl>
+        @php($po = $stats['payout'])
+        @if($stats['payable'])
+            <p class="mt-3 rounded-lg px-3 py-2 text-sm {{ $po['due'] ? 'bg-ok-soft text-ok' : 'bg-slate-100 text-slate-700' }}" data-payout="{{ $po['due'] ? 'due' : 'carried' }}">
+                @if($po['due']){{ __('affiliate.account.payout_due', ['date' => \Illuminate\Support\Carbon::parse($po['next'])->locale(app()->getLocale())->isoFormat('LL')]) }}
+                @else{{ __('affiliate.account.payout_carried', ['missing' => \App\Support\Money::czk($po['missing_czk'])->format(), 'min' => \App\Support\Money::czk($po['min_czk'])->format(), 'date' => \Illuminate\Support\Carbon::parse($po['next'])->locale(app()->getLocale())->isoFormat('LL')]) }}@endif
+            </p>
+        @endif
         @php($max = max(1, max($stats['clicks_by_day'] ?: [0])))
         <h3 class="mt-4 text-sm font-semibold">{{ __('affiliate.account.clicks') }}</h3>
         <div class="mt-1 flex h-16 items-end gap-px">

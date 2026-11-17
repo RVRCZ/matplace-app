@@ -7,6 +7,7 @@ use App\Domain\Farm\FarmSettings;
 use App\Domain\Farm\OrderFlow;
 use App\Models\Partner;
 use App\Models\PartnerCommission;
+use App\Support\Bots;
 use App\Support\Money;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -36,7 +37,7 @@ class AffiliateController extends Controller
             return $response;
         }
         $partner = $this->affiliates->click($request, $code);
-        if ($partner && \App\Support\Bots::name($request) === null) {
+        if ($partner && Bots::name($request) === null) {
             // HttpOnly (no script reads it), Secure on https (always on the real site), SameSite Lax (a link from elsewhere carries it)
             $response->withCookie(cookie(Affiliates::COOKIE, $partner->code, $partner->cookie_days * 1440, '/', null, $request->isSecure() || app()->environment('production'), true, false, 'lax'));
         }
@@ -50,9 +51,25 @@ class AffiliateController extends Controller
         abort_unless($this->affiliates->enabled(), 404);
         $user = $request->user();
 
+        // the worked example: an order of 500 Kč with VAT, counted from the farm's own VAT and the programme's percent
+        $gross = 500.0;
+        $vat = (float) $this->settings->get('vat_percent');
+        $net = round($gross / (1 + $vat / 100), 2);
+        $percent = $this->affiliates->defaultPercent();
+
         return view('affiliate.program', [
-            'percent' => $this->numberText($this->affiliates->defaultPercent()),
+            'percent' => $this->numberText($percent),
             'days' => $this->affiliates->defaultDays(),
+            'terms' => [
+                'percent' => $this->numberText($percent), 'days' => $this->affiliates->defaultDays(),
+                'min' => Money::czk($this->affiliates->payoutMinCzk())->format(), 'day' => $this->affiliates->payoutDay(),
+                'rate' => $this->numberText(Money::rate()),
+            ],
+            'example' => [
+                'gross' => Money::czk($gross)->format(), 'net' => Money::czk($net)->format(), 'vat' => $this->numberText($vat),
+                'commission' => Money::czk(round($net * $percent / 100, 2))->format(), 'percent' => $this->numberText($percent),
+            ],
+            'tools' => ['figure', 'pet', 'coaster', 'keychain', 'charm', 'map'],
             'partner' => $user ? Partner::where('user_id', $user->id)->first() : null,
             'suggested' => $user ? $this->suggestCode($user->name ?: Str::before((string) $user->email, '@')) : '',
             'termsVersion' => (string) $this->settings->get('affiliate_terms_version'),

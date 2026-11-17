@@ -3,12 +3,14 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Domain\Affiliate\Affiliates;
+use App\Domain\Affiliate\Coupons;
 use App\Http\Controllers\Controller;
 use App\Models\Partner;
 use App\Models\PartnerCommission;
 use App\Models\PromoCode;
 use App\Models\User;
 use App\Support\Money;
+use Carbon\Carbon;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
@@ -69,6 +71,10 @@ class AffiliateAdminController extends Controller
     public function markPaid(Request $request, Partner $partner): RedirectResponse
     {
         $data = $request->validate(['note' => ['required', 'string', 'max:300'], 'ids' => ['nullable', 'array'], 'ids.*' => ['integer']]);
+        // "all" is what is due at the payout: a partner under the minimum carries the sum over (single ids stay possible)
+        if ($request->boolean('all') && ! $this->affiliates->stats($partner, 1)['payout']['due']) {
+            return redirect()->route('admin.affiliates')->with('error', 'Partner je pod minimem výplaty, částka se převádí do dalšího měsíce.');
+        }
         $n = $this->affiliates->markPaid($partner, $request->boolean('all') ? null : array_map('intval', (array) ($data['ids'] ?? [])), $data['note']);
 
         return redirect()->route('admin.affiliates')->with('status', $n.' provizí označeno jako vyplacené.');
@@ -76,7 +82,7 @@ class AffiliateAdminController extends Controller
 
     public function codes(): View
     {
-        return view('admin.promo.index', ['codes' => PromoCode::with('partner:id,name,code')->orderByDesc('active')->latest('id')->get(), 'partners' => Partner::orderBy('name')->get(['id', 'name', 'code']), 'enabled' => app(\App\Domain\Affiliate\Coupons::class)->enabled()]);
+        return view('admin.promo.index', ['codes' => PromoCode::with('partner:id,name,code')->orderByDesc('active')->latest('id')->get(), 'partners' => Partner::orderBy('name')->get(['id', 'name', 'code']), 'enabled' => app(Coupons::class)->enabled()]);
     }
 
     public function saveCode(Request $request, ?PromoCode $code = null): RedirectResponse
@@ -97,7 +103,7 @@ class AffiliateAdminController extends Controller
             return back()->withInput()->withErrors(['value' => 'Procento je nejvýš 100.']);
         }
         $data['min_order_czk'] = (float) ($data['min_order_czk'] ?? 0);
-        $data['valid_until'] = ! empty($data['valid_until']) ? \Carbon\Carbon::parse($data['valid_until'])->endOfDay() : null;   // "until" is the whole day
+        $data['valid_until'] = ! empty($data['valid_until']) ? Carbon::parse($data['valid_until'])->endOfDay() : null;   // "until" is the whole day
         $data['active'] = $request->boolean('active');
         $data['once_per_account'] = $request->boolean('once_per_account');
         $code ? $code->update($data) : PromoCode::create($data);

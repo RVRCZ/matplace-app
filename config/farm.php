@@ -137,7 +137,9 @@ return [
         'promo_codes_enabled' => false,     // the "Slevový kód" field on the order page and every discount
         'affiliate_percent' => 10,          // commission of a new partner, % of the order net of VAT (Roman, 17 Nov 2026)
         'affiliate_cookie_days' => 30,      // how long a click is remembered (Roman, 17 Nov 2026)
-        'affiliate_terms_version' => '2026-11',
+        'affiliate_payout_min_czk' => 100,  // commissions are paid out monthly once a partner's payable sum reaches this (Roman, 17 Nov 2026); smaller sums are carried over
+        'affiliate_payout_day' => 1,        // the day of the month the payout is made (1-28)
+        'affiliate_terms_version' => '2026-11-b',
         'notify_partner' => true,           // a new partner registered themselves: the operator is mailed
         // the e-shop's product photo of a filament shows to customers too (Roman 9 Nov 2026); off = admin only, as before
         'eshop_photos_public' => true,
