@@ -334,7 +334,7 @@ class YouTubeVideosTest extends TestCase
         $this->assertCount(1, Mail::queued(FarmAdminAlert::class, fn ($m) => str_contains($m->subjectLine, 'Video ke schválení')), 'one mail for the print, not one per version');
 
         // side by side on the approval page, one button each; the page and Instagram only for the Short
-        $page = $this->actingAs($this->admin)->get('/admin/youtube')->assertOk()->assertSee('Short (čtverec)')->assertSee('Klasické video 16:9');
+        $page = $this->actingAs($this->admin)->get('/admin/youtube')->assertOk()->assertSee('Short (na výšku)')->assertSee('Klasické video 16:9');
         $this->assertSame(2, substr_count($page->getContent(), 'Nahrát na YouTube a zveřejnit'));
         $this->actingAs($this->admin)->get("/admin/youtube/videos/{$wide->id}/video.mp4")->assertOk()->assertHeader('Content-Type', 'video/mp4');
 
@@ -366,7 +366,7 @@ class YouTubeVideosTest extends TestCase
 
         $page = $this->actingAs($this->admin)->get('/admin/youtube')->assertOk()->assertSee('Podle druhu videa')->getContent();
         $row = fn (string $name) => preg_match('/'.preg_quote($name, '/').'<\/td>(.*?)<\/tr>/s', $page, $m) ? preg_replace('/\s+/', ' ', strip_tags($m[1])) : '';
-        $this->assertSame(' 0 vid. · 0 zhl. · 0 lajků 1 vid. · 900 zhl. · 40 lajků 1 vid. · 900 zhl. · 40 lajků ', $row('Short (čtverec)'));
+        $this->assertSame(' 0 vid. · 0 zhl. · 0 lajků 1 vid. · 900 zhl. · 40 lajků 1 vid. · 900 zhl. · 40 lajků ', $row('Short (na výšku)'));
         $this->assertSame(' 1 vid. · 120 zhl. · 7 lajků 1 vid. · 120 zhl. · 7 lajků 1 vid. · 120 zhl. · 7 lajků ', $row('Klasické video 16:9'));
         $this->assertSame(' 0 vid. · 0 zhl. · 0 lajků 0 vid. · 0 zhl. · 0 lajků 1 vid. · 55 zhl. · 3 lajků ', $row('Týdenní sestřih'));
     }

@@ -231,11 +231,11 @@ M83
         $order->forceFill(['test_params' => ['photos' => [['file' => $order->dir().'/photos/left.jpg', 'view' => 'left']]]])->save();
         $this->artisan('farm:timelapse', ['number' => $order->number])->assertSuccessful();
         $order->refresh();
-        $this->assertEqualsWithDelta($without[0] + 1.5, $seconds($order->timelapse_short_path), 0.3, 'the Short: + 2 s photo - 0.5 s crossfade');
+        $this->assertEqualsWithDelta($without[0] + 0.5, $seconds($order->timelapse_short_path), 0.3, 'the Short: the 1.5 s photographed piece closes it instead of the 1 s held plate');
         $this->assertEqualsWithDelta($without[1] + 3.0, $seconds($order->timelapse_path), 0.3, 'the landscape video: + 3 s photo');
-        $this->assertMatchesRegularExpression('/Video: h264.*\b720x720\b/', Process::run([$ffmpeg, '-hide_banner', '-i', $disk->path($order->timelapse_short_path)])->errorOutput());
+        $this->assertMatchesRegularExpression('/Video: h264.*\b1080x1920\b/', Process::run([$ffmpeg, '-hide_banner', '-i', $disk->path($order->timelapse_short_path)])->errorOutput());
         $info = Process::run([$ffmpeg, '-hide_banner', '-i', $disk->path($order->timelapse_short_path)])->errorOutput();
-        $this->assertMatchesRegularExpression('/Video: h264.*\b720x720\b/', $info, 'a square Short');
+        $this->assertMatchesRegularExpression('/Video: h264.*\b1080x1920\b/', $info, 'a vertical Short');
     }
 
     public function test_pictures_that_caught_the_head_printing_are_left_out(): void

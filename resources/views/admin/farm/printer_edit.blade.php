@@ -94,7 +94,7 @@
                     <img id="tl-snap" src="{{ route('admin.farm.printers.snapshot', $printer) }}?t={{ $printer->snapshot_at?->timestamp }}" alt="Poslední snímek kamery" class="block w-full rounded-lg border border-slate-200">
                     <div id="tl-crop" class="pointer-events-none absolute hidden border-2 border-action" style="box-shadow: 0 0 0 9999px rgba(0,0,0,.45)"></div>
                 </div>
-                <figcaption class="mt-1 text-xs text-slate-500">Poslední snímek kamery ({{ $printer->snapshot_at?->format('j. n. H:i') }}); světlý čtverec = výřez Shortu. Pro aktuální snímek rozsviťte v přehledu tiskáren světlo.</figcaption>
+                <figcaption class="mt-1 text-xs text-slate-500">Poslední snímek kamery ({{ $printer->snapshot_at?->format('j. n. H:i') }}); světlý rámeček = výřez Shortu. Pro aktuální snímek rozsviťte v přehledu tiskáren světlo.</figcaption>
             </figure>
             <script>
                 (() => {

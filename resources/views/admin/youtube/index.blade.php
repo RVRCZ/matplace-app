@@ -5,7 +5,7 @@
     $tz = config('youtube.publish_timezone', 'Europe/Prague');
     $when = fn ($t) => ['Ne', 'Po', 'Út', 'St', 'Čt', 'Pá', 'So'][$t->dayOfWeek].' '.$t->format('j. n. H:i');
     $viewNames = ['top' => 'shora', 'left' => 'zleva', 'right' => 'zprava', 'phone' => 'z mobilu'];
-    $kindNames = ['short' => 'Short (čtverec)', 'wide' => 'Klasické video 16:9', 'weekly' => 'Týdenní sestřih', 'howto' => 'Instruktážní video', 'price' => 'Short „Kolik stojí 3D tisk?“', 'monthly' => 'Měsíční video o farmě'];
+    $kindNames = ['short' => 'Short (na výšku)', 'wide' => 'Klasické video 16:9', 'weekly' => 'Týdenní sestřih', 'howto' => 'Instruktážní video', 'price' => 'Short „Kolik stojí 3D tisk?“', 'monthly' => 'Měsíční video o farmě'];
 @endphp
 
 @section('content')
