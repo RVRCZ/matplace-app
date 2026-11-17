@@ -2223,9 +2223,9 @@
     "router.paths.human.title": "Vezme si to člověk",
     "router.paths.human.text": "Náhradní díl, držák na míru, cokoli s rozměry a tolerancemi. Fotka a popis přijdou našemu 3D návrháři, nabídku s cenou dostanete do :hours hodin.",
     "router.paths.human.example": "„Kolečko do myčky, 4 ks“ → poptávka, nabídka do :hours hodin",
-    "router.gifts.eyebrow": "Dárky z fotky",
-    "router.gifts.title": "Dárky, které umíme z vaší fotky",
-    "router.gifts.lead": "Každý vzniká z vaší fotky, kresby nebo jména. Cena je za hotový kus bez dopravy; přesnou uvidíte před zaplacením.",
+    "router.gifts.eyebrow": "Dárky na míru",
+    "router.gifts.title": "Dárky a drobnosti, které vyrobíme na míru",
+    "router.gifts.lead": "Každý vzniká z vaší fotky, kresby, jména nebo pár údajů. Cena je za hotový kus bez dopravy; přesnou uvidíte před zaplacením.",
     "router.gifts.from": "od :price",
     "router.gift.figure": "Busta nebo figurka z fotky",
     "router.gift.pet": "Figurka mazlíčka",
@@ -2614,7 +2614,7 @@
     "param.warn.decor_clipped": "Část zdobení přesahuje okraj výrobku a je oříznutá. Posuňte ho nebo zmenšete.",
     "param.warn.decor_thin": "Zdobení má tenké čáry, které tryska 0,4 mm nemusí vytisknout. Zvětšete ho nebo zvolte tučnější písmo.",
     "router.submit.hint.closed": "Zdarma a bez registrace. Během minuty navrhneme, jak to vyrobit.",
-    "router.gifts.lead.closed": "Každý vzniká z vaší fotky, kresby nebo jména. Návrh si prohlédnete a model stáhnete pro svou tiskárnu.",
+    "router.gifts.lead.closed": "Každý vzniká z vaší fotky, kresby, jména nebo pár údajů. Návrh si prohlédnete a model stáhnete pro svou tiskárnu.",
     "router.file.title.closed": "Doba tisku a materiál ze souboru během minuty",
     "router.file.lead.closed": "Nahrajte STL, 3MF nebo STEP, zvolte materiál a uvidíte dobu tisku, spotřebu materiálu a náhled.",
     "home.start.file.hint.closed": "Nahrajte model a hned uvidíte dobu tisku a spotřebu materiálu.",
@@ -3078,5 +3078,7 @@
     "affiliate.land.faq.7.a": "Slibovat, co nenabízíme, vydávat se za Matplace, kupovat reklamu na slovo „Matplace“ bez našeho souhlasu nebo odkaz rozesílat jako nevyžádanou poštu. Celé znění je v podmínkách níže.",
     "affiliate.account.payout_due": "Splatné provize se vyplácejí :date; minimum výplaty máte splněné.",
     "affiliate.account.payout_carried": "Do minima výplaty (:min) chybí :missing, splatná částka se převádí do další výplaty (:date).",
-    "affiliate.account.page_pick": "Stránka z nabídky"
+    "affiliate.account.page_pick": "Stránka z nabídky",
+    "router.gift.qr": "QR kód na cedulce",
+    "router.gift.headband": "Čelenka ke kostýmu"
 }

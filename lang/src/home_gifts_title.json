@@ -1,0 +1,8 @@
+{
+    "router.gifts.eyebrow": ["Dárky na míru", "Made-to-order gifts", "Regalos a medida"],
+    "router.gifts.title": ["Dárky a drobnosti, které vyrobíme na míru", "Gifts and small things we make to order", "Regalos y detalles que hacemos a medida"],
+    "router.gifts.lead": ["Každý vzniká z vaší fotky, kresby, jména nebo pár údajů. Cena je za hotový kus bez dopravy; přesnou uvidíte před zaplacením.", "Each one is made from your photo, drawing, name or a few details. The price is for the finished piece without delivery; you see the exact one before you pay.", "Cada uno nace de su foto, dibujo, nombre o unos pocos datos. El precio es por la pieza terminada sin envío; el exacto lo ve antes de pagar."],
+    "router.gifts.lead.closed": ["Každý vzniká z vaší fotky, kresby, jména nebo pár údajů. Návrh si prohlédnete a model stáhnete pro svou tiskárnu.", "Each one is made from your photo, drawing, name or a few details. You see the design and download the model for your own printer.", "Cada uno nace de su foto, dibujo, nombre o unos pocos datos. Verá el diseño y descargará el modelo para su impresora."],
+    "router.gift.qr": ["QR kód na cedulce", "QR code on a sign", "Código QR en un cartel"],
+    "router.gift.headband": ["Čelenka ke kostýmu", "Headband for a costume", "Diadema para un disfraz"]
+}

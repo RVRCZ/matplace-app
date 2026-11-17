@@ -2223,9 +2223,9 @@
     "router.paths.human.title": "Lo toma una persona",
     "router.paths.human.text": "Una pieza de repuesto, un soporte a medida, cualquier cosa con dimensiones y tolerancias. La foto y el texto van a nuestro diseñador; recibe una oferta con el precio en :hours horas.",
     "router.paths.human.example": "«Ruedecilla del lavavajillas, 4 uds.» → solicitud, oferta en :hours horas",
-    "router.gifts.eyebrow": "Regalos de una foto",
-    "router.gifts.title": "Regalos que hacemos de su foto",
-    "router.gifts.lead": "Cada uno nace de su foto, dibujo o nombre. El precio es por la pieza terminada sin envío; el exacto lo ve antes de pagar.",
+    "router.gifts.eyebrow": "Regalos a medida",
+    "router.gifts.title": "Regalos y detalles que hacemos a medida",
+    "router.gifts.lead": "Cada uno nace de su foto, dibujo, nombre o unos pocos datos. El precio es por la pieza terminada sin envío; el exacto lo ve antes de pagar.",
     "router.gifts.from": "desde :price",
     "router.gift.figure": "Busto o figura de una foto",
     "router.gift.pet": "Figura de mascota",
@@ -2614,7 +2614,7 @@
     "param.warn.decor_clipped": "Una parte de la decoración sobrepasa el borde del producto y queda recortada. Muévala o redúzcala.",
     "param.warn.decor_thin": "Una decoración tiene líneas finas que una boquilla de 0,4 mm puede no imprimir. Agrándela o elija una letra más gruesa.",
     "router.submit.hint.closed": "Gratis y sin registro. En un minuto le proponemos cómo fabricarlo.",
-    "router.gifts.lead.closed": "Cada uno nace de su foto, dibujo o nombre. Verá el diseño y descargará el modelo para su impresora.",
+    "router.gifts.lead.closed": "Cada uno nace de su foto, dibujo, nombre o unos pocos datos. Verá el diseño y descargará el modelo para su impresora.",
     "router.file.title.closed": "Tiempo de impresión y material de su archivo en un minuto",
     "router.file.lead.closed": "Suba un STL, 3MF o STEP, elija el material y verá el tiempo de impresión, el material necesario y una vista previa.",
     "home.start.file.hint.closed": "Suba el modelo y vea al instante el tiempo de impresión y el material.",
@@ -3078,5 +3078,7 @@
     "affiliate.land.faq.7.a": "Prometer lo que no ofrecemos, hacerte pasar por Matplace, comprar anuncios con la palabra «Matplace» sin nuestro consentimiento o enviar el enlace como correo no solicitado. El texto completo está en las condiciones de abajo.",
     "affiliate.account.payout_due": "Las comisiones a cobrar se pagan el :date; has alcanzado el mínimo de pago.",
     "affiliate.account.payout_carried": "Faltan :missing para el mínimo de pago (:min); la suma a cobrar se traslada al siguiente pago (:date).",
-    "affiliate.account.page_pick": "Una página de la lista"
+    "affiliate.account.page_pick": "Una página de la lista",
+    "router.gift.qr": "Código QR en un cartel",
+    "router.gift.headband": "Diadema para un disfraz"
 }

@@ -12,6 +12,7 @@ use App\Support\Currency;
 use App\Support\Money;
 use App\Support\ToolSeo;
 use Carbon\Carbon;
+use Illuminate\Support\Facades\Lang;
 
 /**
  * What the home page's router shows besides the form (TODO #78, docs/AN.md §22): the gift cards, the Christmas
@@ -20,8 +21,28 @@ use Carbon\Carbon;
  */
 final class IntakePage
 {
-    /** The gifts made from a photo, a drawing or a name, in the order of the page: keys of config/tools.php. */
-    public const GIFTS = ['figure', 'pet', 'charm', 'medallion', 'map', 'topper', 'coaster', 'earrings'];
+    /**
+     * The gift cards of the first screen when the admin says nothing, in the order of the page: keys of config/tools.php.
+     * Roman, 17 Nov 2026: the map and the earrings out, the QR code and the headband in.
+     */
+    public const GIFTS = ['figure', 'pet', 'charm', 'medallion', 'qr', 'topper', 'coaster', 'headband'];
+
+    /** How many gift cards the first screen shows. */
+    public const GIFTS_SHOWN = 8;
+
+    /**
+     * The tools of the gift cards: what the admin switched on for the home page at /admin/tools comes first, what was
+     * switched off there is left out, the rest is the list above (until 17 Nov 2026 the cards were that list alone and
+     * the admin's switch moved only the block further down the page: "nejde mi z adminu měnit nástroje na homepage").
+     *
+     * @return list<string>
+     */
+    public static function giftKeys(): array
+    {
+        $chosen = array_values(array_filter(array_keys((array) config('tools')), fn (string $tool) => ToolVisibility::chosenForHome($tool)));
+
+        return array_slice(array_values(array_filter(array_unique([...$chosen, ...self::GIFTS]), fn (string $tool) => ! ToolVisibility::refusedForHome($tool))), 0, self::GIFTS_SHOWN);
+    }
 
     /** The tools that need the generator of shapes from a photo (no generator, no card). */
     private const GENERATED = ['figure', 'pet'];
@@ -41,11 +62,12 @@ final class IntakePage
     public static function gifts(?User $user, bool $generator): array
     {
         $out = [];
-        foreach (self::GIFTS as $key) {
+        foreach (self::giftKeys() as $key) {
             if (! config('tools.'.$key) || ! ToolVisibility::canOpen($user, $key) || (in_array($key, self::GENERATED, true) && ! $generator)) {
                 continue;
             }
-            $out[] = ['key' => $key, 'url' => ToolSeo::url($key), 'title' => __('router.gift.'.$key), 'from' => self::fromPrice($key)];
+            // a card's own short name where one was written, else the name of the tool's page
+            $out[] = ['key' => $key, 'url' => ToolSeo::url($key), 'title' => Lang::has('router.gift.'.$key) ? __('router.gift.'.$key) : __('tools.'.$key.'.title'), 'from' => self::fromPrice($key)];
         }
 
         return $out;
@@ -116,7 +138,7 @@ final class IntakePage
     public static function prints(int $limit = 3): array
     {
         $out = [];
-        foreach (self::GIFTS as $key) {
+        foreach (self::giftKeys() as $key) {
             if (! config('tools.'.$key)) {
                 continue;
             }

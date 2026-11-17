@@ -2223,9 +2223,9 @@
     "router.paths.human.title": "A person takes it over",
     "router.paths.human.text": "A spare part, a custom holder, anything with dimensions and tolerances. Your photo and description go to our designer; you'll get an offer with the price within :hours hours.",
     "router.paths.human.example": "“A dishwasher wheel, 4 pcs” → a request, an offer within :hours hours",
-    "router.gifts.eyebrow": "Gifts from a photo",
-    "router.gifts.title": "Gifts we make from your photo",
-    "router.gifts.lead": "Each one is made from your photo, drawing or name. The price is for the finished piece without delivery; you see the exact one before you pay.",
+    "router.gifts.eyebrow": "Made-to-order gifts",
+    "router.gifts.title": "Gifts and small things we make to order",
+    "router.gifts.lead": "Each one is made from your photo, drawing, name or a few details. The price is for the finished piece without delivery; you see the exact one before you pay.",
     "router.gifts.from": "from :price",
     "router.gift.figure": "Bust or figure from a photo",
     "router.gift.pet": "Pet figurine",
@@ -2614,7 +2614,7 @@
     "param.warn.decor_clipped": "A part of a decoration reaches over the product's edge and is cut off. Move it or make it smaller.",
     "param.warn.decor_thin": "A decoration has thin lines a 0.4 mm nozzle may not print. Make it bigger or choose a bolder typeface.",
     "router.submit.hint.closed": "Free, no sign-up. Within a minute we'll suggest how to make it.",
-    "router.gifts.lead.closed": "Each one is made from your photo, drawing or name. You see the design and download the model for your own printer.",
+    "router.gifts.lead.closed": "Each one is made from your photo, drawing, name or a few details. You see the design and download the model for your own printer.",
     "router.file.title.closed": "Print time and material from your file within a minute",
     "router.file.lead.closed": "Upload an STL, 3MF or STEP, choose the material and you see the print time, the material used and a preview.",
     "home.start.file.hint.closed": "Upload the model and see its print time and material use at once.",
@@ -3078,5 +3078,7 @@
     "affiliate.land.faq.7.a": "Promise what we do not offer, pose as Matplace, buy ads on the word \"Matplace\" without our consent, or send the link as unsolicited mail. The full wording is in the terms below.",
     "affiliate.account.payout_due": "Payable commissions are paid out on :date; you have reached the payout minimum.",
     "affiliate.account.payout_carried": ":missing is missing to the payout minimum (:min); the payable sum is carried over to the next payout (:date).",
-    "affiliate.account.page_pick": "A page from the list"
+    "affiliate.account.page_pick": "A page from the list",
+    "router.gift.qr": "QR code on a sign",
+    "router.gift.headband": "Headband for a costume"
 }
