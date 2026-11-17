@@ -3,12 +3,12 @@
 namespace App\Domain\YouTube;
 
 use App\Domain\Farm\PrintPhotos;
+use App\Domain\Generation\SourcePhotos;
 use App\Domain\Farm\TestPhotos;
 use App\Domain\Farm\TimelapseFrames;
 use App\Models\FarmOrder;
 use App\Models\FarmVideo;
 use App\Models\FarmVideoClip;
-use App\Models\GenerationRequest;
 use App\Models\ModelFile;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Collection;
@@ -170,7 +170,7 @@ class TimelapseCutter
             [$thanks => __('farm.timelapse.thanks', [], $order->user?->locale ?? config('app.locale'))], $inputs, implode(';', $graph), $seconds, $growth, $fps, null, 26), $music);
     }
 
-    /** Finished piece first, 4–6 s of growth, available supplementary clips, then the same opening shot as a loop. */
+    /** The design (source photo when allowed, the model as it went to print), 4–6 s of growth, the supplementary clips, the finished piece (photo, else the held plate). */
     public function short(FarmOrder $order): VideoCut
     {
         $c = (array) config('youtube.cut.short');
@@ -191,8 +191,8 @@ class TimelapseCutter
             'detail' => $paths['detail'] ? 1.0 : null,
             'extra' => $paths['with_source'] || $paths['in_hand'] ? 1.0 : null,
         ], fn ($duration, $kind) => $kind === 'removal' ? (bool) $paths['removal'] : $duration !== null, ARRAY_FILTER_USE_BOTH);
-        // the finished piece opens for a second (the hook) and closes: the photographed piece when there is one, else the held plate
-        $fixed = 1.0 + ($stills['photo'] ? (float) $still['photo'] : 1.0) + array_sum($used);
+        // the design first, then the process, then the result: the photographed piece closes when there is one, else the held plate
+        $fixed = ($stills['photo'] ? (float) $still['photo'] : 1.0) + array_sum($used);
         $growth = min(6.0, max($frames->count() * $per, 8.0 - $fixed));
         $per = $growth / max(1, $frames->count());
         $seconds = $fixed + $growth;
@@ -210,20 +210,20 @@ class TimelapseCutter
         array_push($inputs, '-f', 'concat', '-safe', '0', '-i', $dir.'/short.txt');
         $fit = fn (int $input, float $duration, string $label) => sprintf('[%d:v]scale=%d:%d:force_original_aspect_ratio=increase:flags=lanczos,crop=%d:%d,fps=%d,trim=duration=%s,setpts=PTS-STARTPTS,format=yuv420p,setsar=1[%s]',
             $input, $w, $h, $w, $h, $fps, VideoCut::number($duration), $label);
-        $graph = ['[0:v]split='.(2 + ($paths['turn'] ? 1 : 0) - ($stills['photo'] ? 1 : 0)).'[finish_open]'.($stills['photo'] ? '' : '[finish_close]').($paths['turn'] ? '[finish_turn]' : '')];
+        $split = array_filter([$stills['photo'] ? null : '[finish_close]', $paths['turn'] ? '[finish_turn]' : null]);
+        $graph = $split ? ['[0:v]split='.count($split).implode('', $split)] : [];
         $normal = fn (string $source, float $duration, string $label) => sprintf('[%s]scale=%d:%d:force_original_aspect_ratio=increase:flags=lanczos,crop=%d:%d,fps=%d,trim=duration=%s,setpts=PTS-STARTPTS,format=yuv420p,setsar=1[%s]',
             $source, $w, $h, $w, $h, $fps, VideoCut::number($duration), $label);
-        $graph[] = $normal('finish_open', 1.0, 'opening');
         if (! $stills['photo']) {
             $graph[] = $normal('finish_close', 1.0, 'closing');
         }
         $graph[] = sprintf('[1:v]%s,fps=%d,trim=duration=%s,setpts=PTS-STARTPTS,format=yuv420p,setsar=1[growth]', $this->fit($w, $h), $fps, VideoCut::number($growth));
-        // 'the piece as it went to print' (and, when the admin allowed it, the customer's source) follow the one-second hook
-        $sequence = ['[opening]'];
+        // the customer's source (when allowed) and the model as it went to print open the Short
+        $sequence = [];
         $input = 2;
         $matte = fn (int $in, float $duration, string $label) => sprintf('[%d:v]scale=%d:%d:force_original_aspect_ratio=decrease:flags=lanczos,pad=%d:%d:(ow-iw)/2:(oh-ih)/2:black,setsar=1,fps=%d,trim=duration=%s,setpts=PTS-STARTPTS,fade=in:st=0:d=0.2,format=yuv420p,setsar=1[%s]',
             $in, $w, $h, $w, $h, $fps, VideoCut::number($duration + 0.0), $label);
-        foreach (['model', 'source'] as $kind) {
+        foreach (['source', 'model'] as $kind) {
             if ($stills[$kind]) {
                 array_push($inputs, '-loop', '1', '-t', VideoCut::number((float) $still[$kind] + 1), '-i', $stills[$kind]);
                 $graph[] = $matte($input, (float) $still[$kind], 'still_'.$kind);
@@ -237,7 +237,7 @@ class TimelapseCutter
             array_push($inputs, '-i', $paths['removal']);
             $graph[] = $fit($input, 2.5, 'removal');
             $sequence[] = '[removal]';
-            $removal = ['input' => $input, 'start' => 1.0 + array_sum(array_filter([$used['model'] ?? null, $used['source'] ?? null])) + $growth, 'duration' => 2.5];
+            $removal = ['input' => $input, 'start' => array_sum(array_filter([$used['model'] ?? null, $used['source'] ?? null])) + $growth, 'duration' => 2.5];
             $input++;
         }
         if ($paths['turn']) {
@@ -660,13 +660,9 @@ class TimelapseCutter
             return null;
         }
 
-        // a bust or a pet figurine from a photo: the generation the model came from (origin_ref = its token) keeps the front photo
-        // (image_path, never the side views) only until the run is over: GenerateModel::forgetPhoto deletes personal photos
-        if ($file->origin === 'generated' && $file->origin_ref) {
-            $rel = GenerationRequest::where('token', $file->origin_ref)->value('image_path');
-            if ($rel && Storage::disk('local')->exists($rel)) {
-                return Storage::disk('local')->path($rel);
-            }
+        // a bust or a pet figurine from a photo: the front photo kept with the order (SourcePhotos), for these videos only
+        if ($kept = app(SourcePhotos::class)->path($order)) {
+            return $kept;
         }
 
         return collect(glob($disk->path($file->dir()).'/artwork.*') ?: [])->first(fn ($f) => is_file($f) && preg_match('/\.(jpe?g|png|webp)$/i', $f));

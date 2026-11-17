@@ -95,10 +95,32 @@ class PruneData extends Command
                 $frameDirs++;
                 if (! $dry) {
                     $farm->deleteDirectory(substr($dir, strlen($farm->path(''))));
+                    // the source photo of the order goes at the same moment as its frames (once both frame folders are gone)
+                    if (! is_dir(dirname($dir).'/frames') && ! is_dir(dirname($dir).'/frames_layer')) {
+                        array_map('unlink', glob(dirname($dir).'/source.*') ?: []);
+                    }
                 }
             }
         }
         $this->line("farm frame folders removed: {$frameDirs}");
+
+        // the customer's front photo of a bust or a pet (SourcePhotos): held a day beside the model, then with the order exactly
+        // as long as the frames: it goes with them, or (an order that never had frames) after the same number of days
+        $sources = 0;
+        foreach (glob(Storage::disk(ModelFile::DISK)->path('files').'/*/source_hold.*') ?: [] as $held) {
+            if (filemtime($held) < time() - \App\Domain\Generation\SourcePhotos::HOLD_HOURS * 3600) {
+                $sources++;
+                $dry || @unlink($held);
+            }
+        }
+        foreach (glob($farm->path('orders').'/*/source.*') ?: [] as $copy) {
+            $dir = dirname($copy);
+            if (! is_dir($dir.'/frames') && ! is_dir($dir.'/frames_layer') && filemtime($copy) < time() - BuildFarmTimelapse::KEEP_FRAMES_DAYS * 86400) {
+                $sources++;
+                $dry || @unlink($copy);
+            }
+        }
+        $this->line("source photos removed: {$sources}");
 
         // uploaded artwork and half-built tool previews live for a day (a created model keeps its own copy)
         $temp = 0;

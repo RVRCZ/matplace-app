@@ -16,7 +16,7 @@ return [
                 'Datos de la cuenta – nombre, correo, teléfono, dirección (si los rellena), cuenta de Google o Facebook vinculada.',
                 'Archivos y solicitudes – modelos 3D, fotos y descripciones de texto con los que calculamos el precio o generamos un modelo.',
                 'Datos del pedido – material, color, precio, forma de entrega, dirección de envío, estado de la impresión.',
-                'Grabación de la impresión – imágenes de la cámara de la impresora y el vídeo time-lapse hecho con ellas. Solo muestran la base de impresión y el objeto impreso.',
+                'Grabación de la impresión – imágenes de la cámara de la impresora y el vídeo time-lapse hecho con ellas. Solo muestran la base de impresión y el objeto impreso; en un modelo hecho a partir de una foto, el vídeo muestra también la foto con la que se hizo (véase el punto 5).',
                 'Datos de pago – los trata únicamente la pasarela de pago Stripe; nosotros guardamos solo el identificador y el estado del pago y su saldo de crédito.',
                 'Datos técnicos – dirección IP, tipo de navegador, hora de acceso, cookies necesarias.',
             ],
@@ -47,7 +47,7 @@ return [
         [
             'h' => '5. Vídeos de impresión y YouTube API Services',
             'p' => [
-                'La cámara de la impresora graba cada impresión de nuestra granja y con sus imágenes hacemos un breve vídeo time-lapse. Puede verlo en la página de su pedido.',
+                'La cámara de la impresora graba cada impresión de nuestra granja y con sus imágenes hacemos un breve vídeo time-lapse. Puede verlo en la página de su pedido. En un modelo hecho a partir de una foto (busto, figura) conservamos la foto frontal como máximo 24 horas junto al modelo creado y, al pedir, una copia con el pedido, solo para estos vídeos, durante los 14 días en que guardamos las imágenes de la impresión; después la borramos. La foto aparece siempre en su propio vídeo y en un vídeo publicado en YouTube solo con su consentimiento.',
                 'Salvo que lo rechace, nuestro servidor sube el vídeo a nuestro propio canal de YouTube «Matplace – 3D» como privado; solo se hace público después de que nuestro equipo lo revise. La casilla de consentimiento de publicación viene marcada al pedir: si la desmarca, el vídeo no va a YouTube. En las impresiones hechas a partir de fotos (bustos, figuras, litofanías, relieves), que pueden mostrar el aspecto de una persona o una foto privada, la casilla viene vacía y el vídeo solo se publica si la marca usted mismo. Para subirlo usamos YouTube API Services. A YouTube enviamos solo el vídeo con su título y descripción (material, color, tipo de impresora, tiempo de impresión); nunca su nombre, correo ni archivos subidos. En el pedido guardamos solo el identificador del vídeo en YouTube y su estado.',
                 'Puede rechazar la publicación o retirar el consentimiento en cualquier momento en la página del pedido, aunque el vídeo ya esté en YouTube. Entonces borramos el vídeo de YouTube automáticamente. También puede pedir el borrado en info@matplace.com.',
                 'Nuestra aplicación no accede a su cuenta de Google ni de YouTube y no lee ninguno de sus datos de YouTube. El acceso a la API de YouTube lo usa solo nuestro equipo para nuestro propio canal.',
@@ -64,7 +64,7 @@ return [
                 'Cuenta – mientras exista; se borra o anonimiza en 30 días tras cerrarla.',
                 'Pedidos y pagos – 5 años desde su finalización (normas contables y fiscales), facturas hasta 10 años según la ley.',
                 'Fotos para reconocimiento y generación – como máximo 1 día; archivos subidos sin pedido 30 días.',
-                'Vídeos time-lapse – con el pedido mientras exista su cuenta; en YouTube hasta que rechace la publicación, retire el consentimiento o los borremos.',
+                'Vídeos time-lapse – con el pedido mientras exista su cuenta (la copia de la foto frontal de un modelo hecho a partir de una foto solo 14 días, véase el punto 5); en YouTube hasta que rechace la publicación, retire el consentimiento o los borremos.',
                 'Registros técnicos – como máximo 12 meses.',
             ],
         ],

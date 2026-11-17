@@ -2002,6 +2002,8 @@ Shorty mají vlastní denní slot `shorts_publish_hour` (výchozí 18:00, Europe
 
 **Neověřeno:** zda nástroje fotku/bustu/figurku vůbec ukládají `artwork.*` (v kódu jen ArtGenerator); skutečný náhled modelu na produkci; datum `YOUTUBE_PHOTO_CONSENT_SINCE` musí nastavit řídící při nasazení.
 
+**Kolo 2 (Roman 17. 11.).** Pořadí Shortu: předloha (je-li dovolena) -> model -> růst -> klipy -> fotka hotového kusu; úvodní hák s hotovou podložkou je pryč (zákazníkův střih ho nemá). Přední fotka busty / mazlíčka: `GenerateModel` ji po dokončení smaže dřív, než existuje zakázka, proto ji `App\Domain\Generation\SourcePhotos::hold` na nejvýš 24 h odloží k souboru modelu (`files/{uuid}/source_hold.*`; `matplace:prune` ji maže) a `OrderService::create` z ní udělá kopii u zakázky (`orders/{token}/source.*`). Kopie se čte jen při stavbě videí (`TimelapseCutter::sourcePicture`) a maže se spolu se snímky (`matplace:prune`, `KEEP_FRAMES_DAYS` = 14; zakázka bez snímků po stejném počtu dní) a v `OrderFiles::prune`; smazání zakázky ji bere s adresářem. Zakázka vytvořená déle než 24 h po dokončení generování fotku nemá. Smluvní texty (`lang/{cs,en,es}/farm.php` a `privacy.php`, bod 5) jsou upravené; soubory jsou PHP, ne `lang/src`.
+
 ## 14. Import 3MF s namalovanými barvami (TODO #50, 28. 10. 2026)
 
 Zadání `docs/prompts/import-3mf-barvy.md`, větev `feature/import-3mf-colors` z main 78f4e203. Roman: želva

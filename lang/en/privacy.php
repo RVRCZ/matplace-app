@@ -16,7 +16,7 @@ return [
                 'Account data – name, email, phone, address (if you fill them in), linked Google or Facebook account.',
                 'Uploaded files and requests – 3D models, photos and text descriptions we price or generate a model from.',
                 'Order data – material, colour, price, delivery method, shipping address, print status.',
-                'Print recording – pictures from the camera inside the printer and the time-lapse video made from them. They show only the print bed and the printed object.',
+                'Print recording – pictures from the camera inside the printer and the time-lapse video made from them. They show only the print bed and the printed object; for a model made from a photo the video also shows the photo the model was made from (see section 5).',
                 'Payment data – processed solely by the payment gateway Stripe; we store only the payment identifier and status and your credit balance.',
                 'Technical data – IP address, browser type, time of access, necessary cookies.',
             ],
@@ -47,7 +47,7 @@ return [
         [
             'h' => '5. Print videos and YouTube API Services',
             'p' => [
-                'Every print on our farm is filmed by the camera inside the printer, and we make a short time-lapse video from the pictures. You can watch it on your order page.',
+                'Every print on our farm is filmed by the camera inside the printer, and we make a short time-lapse video from the pictures. You can watch it on your order page. For a model made from a photo (bust, figurine) we keep the front photo for at most 24 hours beside the created model and, when you order, a copy of it with the order, only for these videos, for the 14 days we keep the print pictures; then we delete it. The photo is always in your own video, and in a video published on YouTube only with your consent.',
                 'Unless you refuse, our server uploads the video to our own YouTube channel "Matplace – 3D" as a private video; it becomes public only after our team has checked it. The publishing consent box is ticked in advance when you order – untick it and the video does not go to YouTube. For prints made from photos (busts, figures, lithophanes, reliefs), which may show a person\'s likeness or a private photo, the box starts empty and the video is published only if you tick it yourself. For the upload we use YouTube API Services. We send YouTube only the video itself and its title and description (material, colour, printer type, print time); never your name, email or uploaded files. With the order we store only the YouTube video ID and its status.',
                 'You can refuse publishing or take the consent back at any time on the order page, even when the video is already on YouTube. The video is then deleted from YouTube automatically. You can also ask for deletion at info@matplace.com.',
                 'Our application does not access your Google or YouTube account and does not read any of your YouTube data. Access to the YouTube API is used only by our team for our own channel.',
@@ -64,7 +64,7 @@ return [
                 'Account – while it exists; deleted or anonymised within 30 days after closing it.',
                 'Orders and payments – 5 years after completion (accounting and tax rules), invoices up to 10 years as the law requires.',
                 'Photos for recognition and generation – at most 1 day; uploaded files without an order 30 days.',
-                'Time-lapse videos – with the order while your account exists; on YouTube until you refuse publishing, take the consent back or we delete them.',
+                'Time-lapse videos – with the order while your account exists (the copy of the front photo of a model made from a photo only 14 days, see section 5); on YouTube until you refuse publishing, take the consent back or we delete them.',
                 'Technical logs – at most 12 months.',
             ],
         ],

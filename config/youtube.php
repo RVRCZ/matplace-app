@@ -40,7 +40,7 @@ return [
         // the customer's video on the order page: logo, 3 2 1, the print, the finished piece, the photo, thank you
         'customer' => ['growth' => [12, 28], 'hold' => 3.0, 'photo' => 3.0, 'source' => 2.0, 'fps' => 24],
         // the vertical Short (9:16, docs/AL.md §13.9): finished piece, 4–6 s of growth, supplementary clips, looping end card
-        // stills: seconds of the model as it went to print, the customer's source picture (only when ticked per video), the photographed piece at the end; the one-second hook of the finished piece stays first
+        // stills: seconds of the model as it went to print, the customer's source picture (only when ticked per video), the photographed piece at the end; the design first, the process, the result last (no hook with the finished plate)
         'short' => ['growth' => [4, 6], 'stills' => ['model' => 1.5, 'source' => 1.5, 'photo' => 1.5], 'fps' => 24, 'width' => 1080, 'height' => 1920],
         // the classic 16:9: title, the print, the piece held, the photo, the card with the tool's address; under 45 s
         'wide' => ['growth' => [20, 28], 'title' => 1.5, 'hold' => 2.0, 'photo' => 3.0, 'end' => 3.0, 'fps' => 30, 'width' => 1920, 'height' => 1080],
