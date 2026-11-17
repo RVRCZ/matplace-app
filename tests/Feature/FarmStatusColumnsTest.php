@@ -9,7 +9,9 @@ use App\Models\FarmPrinter;
 use App\Models\FarmPrinterMaterial;
 use App\Models\FarmPrintJob;
 use App\Models\FarmVideo;
+use App\Models\PartnerCommission;
 use App\Models\PaymentRefund;
+use App\Models\PromoCode;
 use Tests\TestCase;
 
 /**
@@ -80,6 +82,9 @@ final class FarmStatusColumnsTest extends TestCase
             ['payment_refunds', 'status', self::constants(PaymentRefund::class, 'STATUS_')],
             ['payment_refunds', 'reason', self::constants(PaymentRefund::class, 'REASON_')],
             ['credit_transactions', 'type', self::constants(CreditTransaction::class, 'TYPE_')],
+            // partner commissions and discount codes (docs/AT.md)
+            ['partner_commissions', 'state', self::constants(PartnerCommission::class, 'STATE_')],
+            ['promo_codes', 'kind', self::constants(PromoCode::class, 'KIND_')],
         ];
         foreach ($cases as [$table, $column, $values]) {
             $this->assertNotEmpty($values, "$table.$column: no states to check");
