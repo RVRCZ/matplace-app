@@ -30,13 +30,18 @@ return [
     // one frame (a layer, or a minute of printing) = `frame_seconds`, stretched or squeezed into the kind's `growth`
     // range; never slower than `slowest_frame` (a short print stays short), every n-th frame taken when one frame
     // would be shorter than a video frame. First and last frame always stay.
+    // consents given from this moment on (ISO date) were given under the wording that names the photo: the published Short then
+    // shows the customer's source picture by default. Set it at the deploy of that wording; empty = never automatic.
+    'photo_consent_since' => env('YOUTUBE_PHOTO_CONSENT_SINCE'),
+
     'cut' => [
         'frame_seconds' => 0.1,
         'slowest_frame' => 0.2,
         // the customer's video on the order page: logo, 3 2 1, the print, the finished piece, the photo, thank you
-        'customer' => ['growth' => [12, 28], 'hold' => 3.0, 'photo' => 3.0, 'fps' => 24],
+        'customer' => ['growth' => [12, 28], 'hold' => 3.0, 'photo' => 3.0, 'source' => 2.0, 'fps' => 24],
         // the vertical Short (9:16, docs/AL.md §13.9): finished piece, 4–6 s of growth, supplementary clips, looping end card
-        'short' => ['growth' => [4, 6], 'fps' => 24, 'width' => 1080, 'height' => 1920],
+        // stills: seconds of the model as it went to print, the customer's source picture (only when ticked per video), the photographed piece at the end; the one-second hook of the finished piece stays first
+        'short' => ['growth' => [4, 6], 'stills' => ['model' => 1.5, 'source' => 1.5, 'photo' => 1.5], 'fps' => 24, 'width' => 1080, 'height' => 1920],
         // the classic 16:9: title, the print, the piece held, the photo, the card with the tool's address; under 45 s
         'wide' => ['growth' => [20, 28], 'title' => 1.5, 'hold' => 2.0, 'photo' => 3.0, 'end' => 3.0, 'fps' => 30, 'width' => 1920, 'height' => 1080],
         // "Tento týden na farmě": intro, every print of the week with its name, the closing card; 2 to 4 min

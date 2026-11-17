@@ -2,7 +2,7 @@
 
 return [
     'consent' => [
-        'label' => 'Souhlasím, aby Matplace zveřejnil časosběrné video mého tisku na svém YouTube kanálu. (Nepovinné, souhlas můžete kdykoli odvolat.)',
+        'label' => 'Souhlasím, aby Matplace zveřejnil časosběrné video mého tisku včetně fotky na svém YouTube kanálu. (Nepovinné, souhlas můžete kdykoli odvolat.)',
     ],
 
     'order' => [

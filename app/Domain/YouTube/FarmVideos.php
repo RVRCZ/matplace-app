@@ -622,7 +622,12 @@ class FarmVideos
     {
         $short = $order->timelapse_short_path;
 
-        return $short && Storage::disk(config('farm.disk'))->exists($short) ? $short : (string) $order->timelapse_path;
+        if ($short && Storage::disk(config('farm.disk'))->exists($short)) {
+            return $short;
+        }
+
+        // the customer's own video may carry the customer's source picture (TimelapseCutter::customer): never the published one
+        return app(TimelapseCutter::class)->sourcePicture($order) ? '' : (string) $order->timelapse_path;
     }
 
     /** The file that goes to YouTube for this video (relative to the farm disk): the Short, the 16:9 or the week's cut. */

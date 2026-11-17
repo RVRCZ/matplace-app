@@ -2,7 +2,7 @@
 
 return [
     'consent' => [
-        'label' => 'I agree that Matplace may publish the time-lapse video of my print on its YouTube channel. (Optional; you can take it back at any time.)',
+        'label' => 'I agree that Matplace may publish the time-lapse video of my print, including the photo, on its YouTube channel. (Optional; you can take it back at any time.)',
     ],
 
     'order' => [

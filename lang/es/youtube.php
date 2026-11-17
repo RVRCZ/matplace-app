@@ -2,7 +2,7 @@
 
 return [
     'consent' => [
-        'label' => 'Acepto que Matplace publique el vídeo time-lapse de mi impresión en su canal de YouTube. (Opcional; puede retirarlo en cualquier momento.)',
+        'label' => 'Acepto que Matplace publique el vídeo time-lapse de mi impresión, incluida la foto, en su canal de YouTube. (Opcional; puede retirarlo en cualquier momento.)',
     ],
 
     'order' => [

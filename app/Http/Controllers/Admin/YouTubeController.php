@@ -211,8 +211,14 @@ class YouTubeController extends Controller
     }
 
     /** "Postavit znovu": the waiting Short again from its frames, with today's settings (e.g. without the price). */
-    public function rebuild(FarmVideo $video): RedirectResponse
+    public function rebuild(Request $request, FarmVideo $video): RedirectResponse
     {
+        // "ukázat předlohu": the customer's picture only ever goes in when an admin ticks it for this video
+        if ($request->boolean('source_form')) {
+            $meta = (array) $video->meta;
+            $meta['show_source'] = $request->boolean('show_source');
+            $video->update(['meta' => $meta]);
+        }
         if (! $this->videos->rebuild($video)) {
             return back()->with('error', 'Video teď nejde postavit znovu: snímky tisku už jsou smazané, nebo se právě staví.');
         }
