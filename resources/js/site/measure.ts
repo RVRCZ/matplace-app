@@ -1,9 +1,10 @@
 /**
  * Measurement in the browser. Our own statistics are written by the server; the only thing asked of the browser is
  * to say "a page was really shown" (seen(): one small request without any data about the visitor), which is how
- * people are told from robots that never run a script. Google Analytics 4
- * and the Meta pixel are third parties: they are loaded only after the visitor allowed them in the cookie bar, and
- * they hear about the same events the server records:
+ * people are told from robots that never run a script. Google Analytics 4,
+ * the Meta pixel, the Google Ads tag and Sklik's retargeting code are third parties: they are loaded only after the
+ * visitor allowed them in the cookie bar (the last three under "marketing": they fill the remarketing audiences and
+ * tell the ad accounts about paid orders), and they hear about the same events the server records:
  *
  *   on a page        window.MP_MEASURE.events (printed by the layout, incl. what a redirect left behind)
  *   after a fetch    the response header X-Matplace-Events
@@ -12,15 +13,18 @@
  * The choice lives in the cookie `consent` ("a1m0" = analytics yes, marketing no) for 180 days.
  */
 interface Fired { type: string; meta?: Record<string, unknown> }
-interface MeasureCfg { ga: string | null; pixel: string | null; consent: { analytics: boolean; marketing: boolean } | null; days: number; events: Fired[] }
+interface MeasureCfg { ga: string | null; pixel: string | null; ads?: string | null; adsPurchase?: string | null; sklik?: number | null; sklikConversion?: number | null; consent: { analytics: boolean; marketing: boolean } | null; days: number; events: Fired[] }
 type Gtag = (...args: unknown[]) => void;
 type Fbq = ((...args: unknown[]) => void) & { callMethod?: (...a: unknown[]) => void; queue?: unknown[]; loaded?: boolean; version?: string; push?: unknown };
 
-const w = window as unknown as { MP_MEASURE?: MeasureCfg; dataLayer?: unknown[]; gtag?: Gtag; fbq?: Fbq; _fbq?: Fbq };
+type Rc = { retargetingHit?: (conf: Record<string, unknown>) => void; conversionHit?: (conf: Record<string, unknown>) => void };
+const w = window as unknown as { MP_MEASURE?: MeasureCfg; dataLayer?: unknown[]; gtag?: Gtag; fbq?: Fbq; _fbq?: Fbq; rc?: Rc };
 const cfg = (): MeasureCfg => w.MP_MEASURE ?? { ga: null, pixel: null, consent: null, days: 180, events: [] };
 let choice = cfg().consent;
 let gaReady = false;
 let pixelReady = false;
+let adsReady = false;
+let sklikReady = false;
 const waiting: Fired[] = [];
 
 /** our event → [Google Analytics name, Meta pixel name (standard events are tracked, the rest as custom)] */
@@ -38,23 +42,38 @@ const NAMES: Record<string, [string, string, boolean]> = {
     search: ['search', 'Search', true],
 };
 
-function loadScript(src: string): void {
+function loadScript(src: string, loaded?: () => void): void {
     if (document.querySelector(`script[src="${src}"]`)) return;
     const s = document.createElement('script');
     s.async = true;
     s.src = src;
+    if (loaded) s.onload = loaded;
     document.head.appendChild(s);
+}
+
+/** What Google may keep, said in its own words (consent mode): the same choice the cookie bar holds. */
+function googleConsent(): Record<string, string> {
+    const ad = choice?.marketing ? 'granted' : 'denied';
+    return { ad_storage: ad, ad_user_data: ad, ad_personalization: ad, analytics_storage: choice?.analytics ? 'granted' : 'denied' };
+}
+
+/** The one gtag both Google Analytics and Google Ads speak through. */
+function gtagBase(): Gtag {
+    if (!w.gtag) {
+        w.dataLayer = w.dataLayer ?? [];
+        // gtag must push the arguments object itself, not an array
+        // eslint-disable-next-line prefer-rest-params, @typescript-eslint/no-unused-vars
+        w.gtag = function gtag(..._args: unknown[]) { w.dataLayer!.push(arguments); };
+        w.gtag('consent', 'default', googleConsent());
+        w.gtag('js', new Date());
+    }
+    return w.gtag;
 }
 
 function startGa(): void {
     const id = cfg().ga;
     if (gaReady || !id || !choice?.analytics) return;
-    w.dataLayer = w.dataLayer ?? [];
-    // gtag must push the arguments object itself, not an array
-    // eslint-disable-next-line prefer-rest-params, @typescript-eslint/no-unused-vars
-    w.gtag = w.gtag ?? function gtag(..._args: unknown[]) { w.dataLayer!.push(arguments); };
-    w.gtag('js', new Date());
-    w.gtag('config', id, { anonymize_ip: true });
+    gtagBase()('config', id, { anonymize_ip: true });
     loadScript(`https://www.googletagmanager.com/gtag/js?id=${encodeURIComponent(id)}`);
     gaReady = true;
 }
@@ -73,6 +92,23 @@ function startPixel(): void {
     pixelReady = true;
 }
 
+/** The Google Ads tag: visitors for the remarketing audiences, and paid orders as conversions. */
+function startAds(): void {
+    const id = cfg().ads;
+    if (adsReady || !id || !choice?.marketing) return;
+    gtagBase()('config', id);
+    loadScript(`https://www.googletagmanager.com/gtag/js?id=${encodeURIComponent(id)}`);
+    adsReady = true;
+}
+
+/** Sklik's retargeting code: visitors for Seznam's retargeting lists. */
+function startSklik(): void {
+    const id = cfg().sklik;
+    if (sklikReady || !id || !choice?.marketing) return;
+    sklikReady = true;
+    loadScript('https://c.seznam.cz/js/rc.js', () => w.rc?.retargetingHit?.({ rtgId: id, consent: 1 }));
+}
+
 /** Pass one event on to whoever the visitor allowed. Before a choice exists the event waits; refused, it is dropped. */
 export function send(event: Fired): void {
     const names = NAMES[event.type];
@@ -89,11 +125,20 @@ export function send(event: Fired): void {
         // the server reports the same conversion through the Conversions API: one id, counted once
         w.fbq(names[2] ? 'track' : 'trackCustom', names[1], params, meta.event_id ? { eventID: String(meta.event_id) } : undefined);
     }
+    if (event.type === 'order_paid') {
+        const label = cfg().adsPurchase;
+        if (adsReady && label && w.gtag) w.gtag('event', 'conversion', { send_to: label, value: meta.value, currency: meta.currency, transaction_id: String(meta.order ?? '') });
+        const conversion = cfg().sklikConversion;
+        if (sklikReady && conversion) w.rc?.conversionHit?.({ id: conversion, value: meta.value, consent: 1 });
+    }
 }
 
 function apply(): void {
+    if (w.gtag) w.gtag('consent', 'update', googleConsent());
     startGa();
     startPixel();
+    startAds();
+    startSklik();
     waiting.splice(0).forEach(send);
 }
 

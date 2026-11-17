@@ -36,6 +36,10 @@ final class Consent
         return [
             'ga' => config('services.ga4.id') ?: null,
             'pixel' => config('services.meta.pixel_id') ?: null,
+            'ads' => config('services.google_ads.tag') ?: null,
+            'adsPurchase' => config('services.google_ads.purchase') ?: null,
+            'sklik' => ((int) config('services.sklik.retargeting')) ?: null,
+            'sklikConversion' => ((int) config('services.sklik.conversion')) ?: null,
             'consent' => self::given(),
             'days' => self::DAYS,
             'events' => Track::forBrowser(),

@@ -35,14 +35,15 @@ return [
         'report_uri' => '/csp-report',
         'directives' => [
             'default-src' => ["'self'"],
-            'script-src' => ["'self'", "'unsafe-inline'", 'https://www.googletagmanager.com', 'https://connect.facebook.net', 'https://challenges.cloudflare.com', 'https://widget.packeta.com'],
+            'script-src' => ["'self'", "'unsafe-inline'", 'https://www.googletagmanager.com', 'https://connect.facebook.net', 'https://challenges.cloudflare.com', 'https://widget.packeta.com', 'https://www.googleadservices.com', 'https://googleads.g.doubleclick.net', 'https://www.google.com', 'https://c.seznam.cz'],
             'style-src' => ["'self'", "'unsafe-inline'"],
             // media.printables.com: pictures of the inspiration catalogue's models without a thumbnail of our own (CatalogModel::thumbUrl, the first report-only hit of 25 Oct 2026)
-            'img-src' => ["'self'", 'data:', 'blob:', 'https://media.printables.com', 'https://www.google-analytics.com', 'https://*.google-analytics.com', 'https://www.googletagmanager.com', 'https://www.facebook.com', 'https://connect.facebook.net', 'https://i.ytimg.com', 'https://widget.packeta.com', 'https://*.packeta.com'],
+            'img-src' => ["'self'", 'data:', 'blob:', 'https://media.printables.com', 'https://www.google-analytics.com', 'https://*.google-analytics.com', 'https://www.googletagmanager.com', 'https://www.facebook.com', 'https://connect.facebook.net', 'https://i.ytimg.com', 'https://widget.packeta.com', 'https://*.packeta.com', 'https://www.googleadservices.com', 'https://googleads.g.doubleclick.net', 'https://www.google.com', 'https://www.google.cz', 'https://*.seznam.cz'],
             'font-src' => ["'self'", 'data:'],
-            'connect-src' => ["'self'", 'https://www.google-analytics.com', 'https://*.google-analytics.com', 'https://analytics.google.com', 'https://stats.g.doubleclick.net', 'https://www.googletagmanager.com', 'https://www.facebook.com', 'https://widget.packeta.com', 'https://*.packeta.com'],
+            'connect-src' => ["'self'", 'https://www.google-analytics.com', 'https://*.google-analytics.com', 'https://analytics.google.com', 'https://stats.g.doubleclick.net', 'https://www.googletagmanager.com', 'https://www.facebook.com', 'https://widget.packeta.com', 'https://*.packeta.com', 'https://www.googleadservices.com', 'https://googleads.g.doubleclick.net', 'https://www.google.com', 'https://google.com', 'https://pagead2.googlesyndication.com', 'https://*.seznam.cz'],
+            // the Google Ads tag and Sklik's retargeting code (17 Nov 2026): googleadservices, doubleclick, google.com/.cz, seznam.cz above; the tag's frames below
             // www.facebook.com in frame-src and form-action: the Meta pixel's own frame and form (reports of 26 Oct 2026 on /c/ pages)
-            'frame-src' => ['https://www.youtube-nocookie.com', 'https://www.youtube.com', 'https://challenges.cloudflare.com', 'https://widget.packeta.com', 'https://www.facebook.com'],
+            'frame-src' => ['https://www.youtube-nocookie.com', 'https://www.youtube.com', 'https://challenges.cloudflare.com', 'https://widget.packeta.com', 'https://www.facebook.com', 'https://td.doubleclick.net', 'https://bid.g.doubleclick.net', 'https://www.googletagmanager.com'],
             'media-src' => ["'self'", 'blob:'],
             'worker-src' => ["'self'", 'blob:'],
             'object-src' => ["'none'"],

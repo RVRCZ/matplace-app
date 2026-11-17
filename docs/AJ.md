@@ -178,3 +178,15 @@ a `generate` se nezapisovalo nic, takže nebylo vidět, kde lidé končí. Dopln
 - Přehled kampaně po kanálech a reklamách se čte dotazem nad `events` (na serveru
   `/root/reklama-figurka/funnel.php`); do `Funnel::PATHS` a do administrace tyto kroky zatím nejdou.
 - Test: `SalesPathWebTest::test_the_steps_on_a_tools_page_before_the_model_are_recorded`.
+
+### 7.1 Stránka v administraci a značky reklamních sítí (týž den)
+
+- `/admin/stats/campaigns` (`CampaignFunnel`, záložka „Kampaně“): pro zvolenou `utm_campaign` řádek za kanál a reklamu,
+  kroky od návštěvy po zaplacení a tabulka „Co je zastavilo“. První sloupec jsou všechny návštěvy bez robotů, další
+  se počítají jen z návštěv, které prohlížeč potvrdil.
+- Remarketing: na webu nebyla žádná značka Googlu (prázdné `GA_MEASUREMENT_ID`, žádná značka Google Ads) ani kód
+  Skliku. `measure.ts` teď po souhlasu s reklamními cookies načte značku Google Ads (`GOOGLE_ADS_TAG_ID`, consent mode
+  s `ad_user_data` a `ad_personalization`) a retargetingový kód Skliku (`SKLIK_RETARGETING_ID`); zaplacenou
+  objednávku hlásí jako konverzi (`GOOGLE_ADS_PURCHASE_LABEL`, `SKLIK_CONVERSION_ID`). Bez hodnot v `.env` se
+  nenačte nic. CSP rozšířeno o googleadservices, doubleclick, google.com/.cz a seznam.cz.
+- Testy: `CampaignFunnelTest` (3).

@@ -7,6 +7,7 @@ use App\Domain\Stats\Humans;
 use App\Models\AnonymousSession;
 use App\Models\Event;
 use App\Models\User;
+use App\Support\Consent;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
@@ -79,6 +80,28 @@ class CampaignFunnelTest extends TestCase
         $page->assertSee('figurka-vanoce-2026')->assertSee('Facebook')->assertSee('Seznam')->assertSee('video-real')->assertSee('Odešel při čekání')->assertSee('40 s');
         $this->actingAs($admin)->get('/admin/stats/campaigns?days=30&campaign=nothing-like-it')->assertOk()->assertSee('figurka-vanoce-2026');
         $this->actingAs($admin)->get('/admin/stats')->assertOk()->assertSee(route('admin.stats.campaigns'), false);
+    }
+
+    public function test_the_ad_tags_reach_the_page_only_when_set_and_the_security_header_lets_them_work(): void
+    {
+        // nothing set: the page's script hears of no Google Ads tag and no Sklik code
+        config(['services.google_ads.tag' => null, 'services.google_ads.purchase' => null, 'services.sklik.retargeting' => null, 'services.sklik.conversion' => null]);
+        $none = Consent::forScripts();
+        $this->assertNull($none['ads']);
+        $this->assertNull($none['sklik']);
+        $this->get('/tools', ['User-Agent' => self::BROWSER, 'Accept-Language' => 'cs'])->assertOk()->assertDontSee('AW-123', false);
+
+        // set: their ids travel with the page (the script loads them after the marketing consent, measure.ts)
+        config(['services.google_ads.tag' => 'AW-123', 'services.google_ads.purchase' => 'AW-123/abc', 'services.sklik.retargeting' => '4567', 'services.sklik.conversion' => '89']);
+        $set = Consent::forScripts();
+        $this->assertSame(['AW-123', 'AW-123/abc', 4567, 89], [$set['ads'], $set['adsPurchase'], $set['sklik'], $set['sklikConversion']]);
+        $page = $this->get('/tools', ['User-Agent' => self::BROWSER, 'Accept-Language' => 'cs'])->assertOk()->assertSee('AW-123', false);
+        // no third-party script is printed without the consent
+        $page->assertDontSee('googletagmanager.com/gtag/js', false)->assertDontSee('c.seznam.cz', false);
+        $csp = (string) ($page->headers->get('Content-Security-Policy') ?? $page->headers->get('Content-Security-Policy-Report-Only'));
+        foreach (['https://www.googleadservices.com', 'https://googleads.g.doubleclick.net', 'https://c.seznam.cz', 'https://td.doubleclick.net'] as $host) {
+            $this->assertStringContainsString($host, $csp);
+        }
     }
 
     public function test_the_campaign_page_says_so_when_nobody_came_by_a_campaign_link(): void

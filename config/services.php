@@ -57,6 +57,10 @@ return [
 
     // Measurement, loaded in the browser only after the visitor agreed in the cookie bar (App\Support\Consent)
     'ga4' => ['id' => env('GA_MEASUREMENT_ID')],
+    // the Google Ads tag (AW-…) for the remarketing audiences, and the label of its purchase conversion (AW-…/…)
+    'google_ads' => ['tag' => env('GOOGLE_ADS_TAG_ID'), 'purchase' => env('GOOGLE_ADS_PURCHASE_LABEL')],
+    // Sklik: the retargeting id of the account and the id of its conversion (numbers from Sklik → Nástroje)
+    'sklik' => ['retargeting' => env('SKLIK_RETARGETING_ID'), 'conversion' => env('SKLIK_CONVERSION_ID')],
     'meta' => [
         'pixel_id' => env('META_PIXEL_ID'),
         // Graph API: a System User token of the business, the Facebook page, the Instagram account, the ad account
