@@ -77,6 +77,7 @@ class EngineServiceProvider extends ServiceProvider
     public function register(): void
     {
         $this->app->singleton(PythonTool::class, fn () => new PythonTool(config('engines.python')));
+        $this->app->bind(\App\Engines\Repair\ScriptRunner::class, PythonTool::class);
         $this->app->singleton(MeshDecimator::class, fn ($app) => new MeshDecimator($app->make(PythonTool::class), (array) config('engines.mesh')));
         // asked only where the Python engines run at all (the tests and a machine without them slice as before)
         $this->app->singleton(SupportsCheck::class, fn ($app) => new SupportsCheck($app->make(PythonTool::class),

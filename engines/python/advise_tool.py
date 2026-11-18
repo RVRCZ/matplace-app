@@ -1,6 +1,7 @@
 """Print advice for a model: numbers the geometry can tell for sure, and pictures for the advisor. One JSON on stdout.
 
   advise_tool.py analyze <in.stl> <out_dir> [overhang_deg]
+  advise_tool.py preview <in.stl> <out.png> [colour_hex] [width] [height]   one picture of the model for a video (see preview())
 
 Numbers (all in the model's own orientation, Z up, millimetres): size, volume, surface, closedness, separate bodies,
 the area touching the plate, the footprint, overhang area steeper than <overhang_deg> (default 45) from vertical
@@ -24,6 +25,9 @@ VIEWS = [  # (elevation, azimuth, label)
     (0, -90, "front, level"),
     (-35, -45, "from below"),
 ]
+
+
+BACKGROUND = (244, 243, 240)   # the plain light ground of a model picture; TimelapseCutter pads its stills with the same colour
 
 
 def out(obj):
@@ -226,9 +230,52 @@ def analyze(src, folder, overhang_deg):
     out({"ok": True, "facts": facts, "views": views})
 
 
+def preview(src, dest, colour="b9bec6", width=1080, height=1920):
+    """One picture of the model as it stands (Z up): three-quarter view from the front left and above, plain light
+    background, one colour, framed to fill a portrait video frame. Drawn on the light copy so a million-face scan is
+    no slower than a small part (painter's algorithm in Pillow, 2x supersampled)."""
+    import trimesh
+    from PIL import Image, ImageDraw
+
+    m = trimesh.load(src, force="mesh")
+    if m.is_empty or len(m.faces) == 0:
+        out({"ok": False, "error": "empty"})
+    light = clustered(m, 220)
+    base = np.array([int(colour[i:i + 2], 16) for i in (0, 2, 4)], dtype=float) / 255 if len(colour) == 6 else np.array([0.73, 0.75, 0.78])
+    el, az = math.radians(24), math.radians(-52)
+    eye = np.array([math.cos(el) * math.cos(az), math.cos(el) * math.sin(az), math.sin(el)])
+    right = np.cross([0.0, 0.0, 1.0], eye)
+    right = right / np.linalg.norm(right)
+    up = np.cross(eye, right)
+    v = light.vertices - (light.bounds[0] + light.bounds[1]) / 2
+    sx, sy, depth = v @ right, v @ up, v @ eye
+    k = 2
+    bw, bh = width * k, height * k
+    span_x, span_y = float(sx.max() - sx.min()) or 1.0, float(sy.max() - sy.min()) or 1.0
+    scale = min(bw * 0.84 / span_x, bh * 0.70 / span_y)
+    pts = np.stack([bw / 2 + (sx - (sx.max() + sx.min()) / 2) * scale, bh / 2 - (sy - (sy.max() + sy.min()) / 2) * scale], axis=1)
+    facing = light.face_normals @ eye
+    order = np.argsort(depth[light.faces].mean(axis=1))
+    order = order[facing[order] > -0.05]
+    light_dir = eye * 0.55 + up * 0.55 + right * 0.3
+    light_dir /= np.linalg.norm(light_dir)
+    shade = 0.40 + 0.60 * np.clip(light.face_normals @ light_dir, 0, 1)
+    rgb = np.clip(base[None, :] * shade[:, None], 0, 1) * 255
+    im = Image.new("RGB", (bw, bh), BACKGROUND)
+    draw = ImageDraw.Draw(im)
+    tri = pts[light.faces]
+    for f in order:
+        c = (int(rgb[f, 0]), int(rgb[f, 1]), int(rgb[f, 2]))
+        draw.polygon([tuple(tri[f, 0]), tuple(tri[f, 1]), tuple(tri[f, 2])], fill=c, outline=c)
+    im.resize((width, height), Image.LANCZOS).save(dest, optimize=True)
+    out({"ok": True, "file": dest, "faces": int(len(m.faces)), "drawn": int(len(order))})
+
+
 def main(argv):
     if len(argv) >= 3 and argv[0] == "analyze":
         analyze(argv[1], argv[2], float(argv[3]) if len(argv) > 3 else 45.0)
+    if len(argv) >= 3 and argv[0] == "preview":
+        preview(argv[1], argv[2], *(argv[3:4] or ["b9bec6"]), *(int(a) for a in argv[4:6]))
     out({"ok": False, "error": "usage"})
 
 

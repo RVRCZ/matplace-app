@@ -41,6 +41,14 @@ class FarmVideosCutTest extends TestCase
     {
         parent::setUp();
         Storage::fake('models');
+        // the server's model picture is drawn only by the tests that want it: here python is "not there", the Short opens as it did
+        $this->app->instance(\App\Engines\Repair\ScriptRunner::class, new class implements \App\Engines\Repair\ScriptRunner
+        {
+            public function runScript(string $script, array $args, int $timeout = 90): array
+            {
+                throw new \App\Engines\Exceptions\EngineException('no python in this test');
+            }
+        });
         Storage::fake('farm');
         Mail::fake();
         $this->seed(FarmSeeder::class);
@@ -496,16 +504,111 @@ class FarmVideosCutTest extends TestCase
         $this->assertNotContains($source, $short());
     }
 
+    public function test_without_a_stored_preview_the_server_draws_the_model_once_and_never_over_a_browser_preview(): void
+    {
+        $order = $this->order();
+        $disk = Storage::disk('models');
+        $file = $order->modelFile;
+        $this->assertNull($file->preview_path);
+        $cutter = app(TimelapseCutter::class);
+
+        $calls = 0;
+        $this->app->instance(\App\Engines\Repair\ScriptRunner::class, new class($calls, $this) implements \App\Engines\Repair\ScriptRunner
+        {
+            public function __construct(private int &$calls, private $test) {}
+
+            public function runScript(string $script, array $args, int $timeout = 90): array
+            {
+                $this->calls++;
+                $this->test->assertSame(['advise_tool.py', 'preview'], [$script, $args[0]]);
+                $this->test->assertLessThanOrEqual(120, $timeout, 'the render has a time limit');
+                file_put_contents($args[2], str_repeat('x', 3000));
+
+                return ['ok' => true];
+            }
+        });
+        $first = $cutter->shortStills($order->fresh(), null)['model'];
+        $this->assertNotNull($first, 'the plan picks the server picture when no preview exists');
+        $this->assertTrue(\App\Domain\YouTube\ModelPicture::isOurs($first));
+        $this->assertSame($first, $cutter->shortStills($order->fresh(), null)['model']);
+        $this->assertSame(1, $calls, 'a rebuild finds the cached picture and does not render again');
+        $graph = $cutter->short($order->fresh())->graph;
+        $this->assertStringContainsString('pad=1080:1920:(ow-iw)/2:(oh-ih)/2:0xF4F3F0', $graph, 'the light picture is padded with its own light colour, not black');
+        $this->assertStringNotContainsString('[opening]', $graph);
+
+        // a browser preview wins and is never overwritten
+        $this->stillsFor($order, source: false, photo: false);
+        $browser = $disk->path($order->fresh()->modelFile->preview_path);
+        $before = file_get_contents($browser);
+        $this->assertSame($browser, $cutter->shortStills($order->fresh(), null)['model']);
+        $this->assertSame($before, file_get_contents($browser));
+        $this->assertStringContainsString(':black,', $cutter->short($order->fresh())->graph);
+    }
+
+    public function test_a_failed_or_timed_out_model_render_keeps_the_old_opening_and_is_not_retried_at_once(): void
+    {
+        $order = $this->order();
+        $this->frames($order, 600);
+        $calls = 0;
+        $this->app->instance(\App\Engines\Repair\ScriptRunner::class, new class($calls) implements \App\Engines\Repair\ScriptRunner
+        {
+            public function __construct(private int &$calls) {}
+
+            public function runScript(string $script, array $args, int $timeout = 90): array
+            {
+                $this->calls++;
+
+                throw new \App\Engines\Exceptions\EngineException('timed out');   // what PythonTool gives for a script that printed nothing
+            }
+        });
+        $cutter = app(TimelapseCutter::class);
+        $this->assertNull($cutter->shortStills($order->fresh(), null)['model']);
+        $this->assertStringContainsString('[opening][growth][closing]concat=n=3', $cutter->short($order->fresh())->graph);
+        $this->assertSame(1, $calls, 'a failure is remembered for a day: no second render at the next build');
+    }
+
+    public function test_a_real_short_opens_with_a_picture_the_server_drew_of_the_model(): void
+    {
+        $this->ffmpeg();
+        $this->app->instance(\App\Engines\Repair\ScriptRunner::class, app(\App\Engines\Repair\PythonTool::class));
+        $order = $this->order();
+        $disk = Storage::disk('farm');
+        $order->forceFill(['status' => FarmOrder::STATUS_DONE])->save();
+        $this->frames($order, 200, real: true, layer: true);
+        (new BuildFarmTimelapse($order->id, rebuild: true))->handle();
+        $order->refresh();
+        $picture = app(TimelapseCutter::class)->shortStills($order, null)['model'];
+        $this->assertNotNull($picture, 'the real python drew the cube');
+        $info = $this->probe($disk->path($order->timelapse_short_path));
+        $this->assertSame([1080, 1920], [$info['width'], $info['height']]);
+        $this->samples([], [[$order->timelapse_short_path, 0.8, 'short-still-server-model']], $disk);
+        if (($dir = (string) env('FARM_VIDEO_SAMPLES', '')) !== '' && is_dir($dir)) {
+            copy($picture, $dir.'/model-picture-cube.png');
+        }
+    }
+
+    public function test_the_model_picture_keeps_its_shading_for_black_and_white_filaments(): void
+    {
+        $picture = app(\App\Domain\YouTube\ModelPicture::class);
+        $order = $this->order();
+        foreach (['#0a0a0a' => '4a4d52', '#ffffff' => \App\Domain\YouTube\ModelPicture::NEUTRAL, '#C8873A' => 'c8873a', 'nonsense' => \App\Domain\YouTube\ModelPicture::NEUTRAL] as $hex => $drawn) {
+            $order->setRelation('color', (new \App\Models\FarmColor)->forceFill(['hex' => $hex]));
+            $this->assertSame($drawn, $picture->colour($order), 'a black filament is drawn dark grey, a white one neutral grey, any other in its own colour');
+        }
+    }
+
     public function test_a_pet_figurine_is_titled_as_a_pet_figurine_and_a_bust_as_a_bust(): void
     {
         $videos = app(\App\Domain\YouTube\FarmVideos::class);
-        foreach (['pet' => 'Figurka mazlíčka z fotky', 'bust' => 'Busta z jedné fotky'] as $kind => $title) {
+        foreach (['pet' => 'Figurka mazlíčka z fotky', 'bust' => 'Busta z jedné fotky', 'figure' => 'Figurka z jedné fotky', 'none' => 'Busta z jedné fotky'] as $kind => $title) {
             $order = $this->order();
             $req = \App\Models\GenerationRequest::create(['token' => 'tok'.$kind.'12345678', 'type' => 'image', 'engine' => 'fake', 'status' => 'done', 'progress' => 100,
-                'description' => ['kind' => $kind]]);
+                'description' => $kind === 'none' ? [] : ['kind' => $kind]]);
             $order->modelFile->forceFill(['origin' => 'generated', 'origin_ref' => $req->token])->save();
             $order->refresh();
-            $this->assertSame($kind === 'pet' ? 'pet' : 'figure', $videos->toolKind($order));
+            $this->assertSame(['pet' => 'pet', 'figure' => 'figurine'][$kind] ?? 'figure', $videos->toolKind($order));
+            $this->assertStringContainsString('figure' === $kind ? 'figurka' : ('pet' === $kind ? 'mazlíčka' : 'busta'), $videos->hook($order, 'cs'), 'the hook follows the kind');
+            $this->assertStringContainsString('figure' === $kind ? '#figurka' : ('pet' === $kind ? '#mazlíček' : '#figurka'), $videos->hashtags($order, 'cs'));
             $this->assertStringStartsWith($title, $videos->defaultTitle($order), 'the opening words of the Short name the right tool');
         }
     }

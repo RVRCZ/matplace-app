@@ -227,12 +227,13 @@ class TimelapseCutter
         // the customer's source (when allowed) and the model as it went to print open the Short
         $sequence = $opening ? ['[opening]'] : [];
         $input = 2;
-        $matte = fn (int $in, float $duration, string $label) => sprintf('[%d:v]scale=%d:%d:force_original_aspect_ratio=decrease:flags=lanczos,pad=%d:%d:(ow-iw)/2:(oh-ih)/2:black,setsar=1,fps=%d,trim=duration=%s,setpts=PTS-STARTPTS,fade=in:st=0:d=0.2,format=yuv420p,setsar=1[%s]',
-            $in, $w, $h, $w, $h, $fps, VideoCut::number($duration + 0.0), $label);
+        $matte = fn (int $in, float $duration, string $label, string $ground = 'black') => sprintf('[%d:v]scale=%d:%d:force_original_aspect_ratio=decrease:flags=lanczos,pad=%d:%d:(ow-iw)/2:(oh-ih)/2:%s,setsar=1,fps=%d,trim=duration=%s,setpts=PTS-STARTPTS,fade=in:st=0:d=0.2,format=yuv420p,setsar=1[%s]',
+            $in, $w, $h, $w, $h, $ground, $fps, VideoCut::number($duration + 0.0), $label);
         foreach (['source', 'model'] as $kind) {
             if ($stills[$kind]) {
                 array_push($inputs, '-loop', '1', '-t', VideoCut::number((float) $still[$kind] + 1), '-i', $stills[$kind]);
-                $graph[] = $matte($input, (float) $still[$kind], 'still_'.$kind);
+                // the server-made model picture stands on a light ground: its bars are that colour, not black (advise_tool.py BACKGROUND)
+                $graph[] = $matte($input, (float) $still[$kind], 'still_'.$kind, $kind === 'model' && ModelPicture::isOurs($stills[$kind]) ? '0xF4F3F0' : 'black');
                 $sequence[] = '[still_'.$kind.']';
                 $input++;
             }
@@ -636,6 +637,8 @@ class TimelapseCutter
         $disk = Storage::disk(ModelFile::DISK);
         $file = $order->modelFile;
         $model = $file?->preview_path && $disk->exists($file->preview_path) ? $disk->path($file->preview_path) : null;
+        // no preview from the browser: the server draws the model itself (ModelPicture; cached, a failure leaves null)
+        $model ??= $file ? app(ModelPicture::class)->get($order) : null;
         $source = $this->showsSource($order, $video) ? $this->sourcePicture($order) : null;
 
         return ['model' => $model, 'source' => $source, 'photo' => $this->finishPhoto($order, 'short')];

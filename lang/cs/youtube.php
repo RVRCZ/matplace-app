@@ -40,7 +40,7 @@ return [
 
     // the first second of a Short: what the viewer is about to see, by the tool that made the model (the hook)
     'hook' => [
-        'figure' => 'Z jedné fotky → busta', 'pet' => 'Z fotky mazlíčka → figurka', 'relief' => 'Z fotky → reliéf', 'papel' => 'Z fotky → portrét v papíru',
+        'figure' => 'Z jedné fotky → busta', 'figurine' => 'Z jedné fotky → figurka', 'pet' => 'Z fotky mazlíčka → figurka', 'relief' => 'Z fotky → reliéf', 'papel' => 'Z fotky → portrét v papíru',
         'qr' => 'QR kód, který se dá vzít do ruky', 'box' => 'Zákazník poslal rozměr → krabička', 'organizer' => 'Rozměr šuplíku → organizér',
         'vase' => 'Pár křivek → váza', 'sign' => 'Jméno → cedulka', 'nameplate' => 'Jméno → jmenovka na dveře', 'medallion' => 'Jméno → medaile s řetízkem',
         'phone_stand' => 'Tři čísla → stojánek na telefon', 'cap' => 'Rozbité víčko → nové', 'holder' => 'Rozměr → držák na míru', 'cable_holder' => 'Kabely → držák',
@@ -49,7 +49,7 @@ return [
     ],
     // what a Short is called, by the tool (the print time follows)
     'title' => [
-        'figure' => 'Busta z jedné fotky', 'pet' => 'Figurka mazlíčka z fotky', 'relief' => 'Reliéf z fotky', 'papel' => 'Portrét z fotky v papíru',
+        'figure' => 'Busta z jedné fotky', 'figurine' => 'Figurka z jedné fotky', 'pet' => 'Figurka mazlíčka z fotky', 'relief' => 'Reliéf z fotky', 'papel' => 'Portrét z fotky v papíru',
         'qr' => 'QR kód, který se dá vzít do ruky', 'box' => 'Krabička přesně podle rozměru', 'organizer' => 'Organizér přesně do šuplíku',
         'vase' => 'Váza bez jediného švu', 'sign' => 'Cedulka se jménem', 'nameplate' => 'Jmenovka na dveře', 'medallion' => 'Medaile se jménem a řetízkem',
         'phone_stand' => 'Stojánek na telefon na míru', 'cap' => 'Nové víčko místo rozbitého', 'holder' => 'Držák na míru', 'cable_holder' => 'Držák kabelů na míru',
@@ -58,7 +58,7 @@ return [
     ],
     // one hashtag to the subject, next to the three of the channel
     'hashtag' => [
-        'figure' => '#figurka', 'pet' => '#mazlíček', 'relief' => '#reliéf', 'papel' => '#portrét', 'qr' => '#qrkod', 'box' => '#krabička', 'organizer' => '#organizér',
+        'figure' => '#figurka', 'figurine' => '#figurka', 'pet' => '#mazlíček', 'relief' => '#reliéf', 'papel' => '#portrét', 'qr' => '#qrkod', 'box' => '#krabička', 'organizer' => '#organizér',
         'vase' => '#váza', 'sign' => '#cedulka', 'nameplate' => '#jmenovka', 'medallion' => '#medaile', 'phone_stand' => '#stojánek', 'cap' => '#oprava', 'holder' => '#držák',
         'cable_holder' => '#držák', 'ornament' => '#vánoce', 'gingerbread' => '#vánoce', 'cookie' => '#vykrajovátko', 'topper' => '#dort', 'stamp' => '#razítko', 'logo' => '#logo',
         'text' => '#nápis', 'map' => '#mapa', 'default' => '#3dprinting',
