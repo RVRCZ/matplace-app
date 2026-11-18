@@ -108,6 +108,41 @@ class ShortsTitlesFormatTest extends TestCase
         app(FarmVideos::class)->publish($video, 'cube.stl', 'Popis', 1);
     }
 
+    public function test_the_apps_own_file_name_in_the_tools_link_does_not_stop_publishing_but_a_customers_file_name_does(): void
+    {
+        $videos = app(FarmVideos::class);
+        $reason = function (FarmVideo $video, string $title, string $description) use ($videos): ?string {
+            try {
+                $videos->publish($video, $title, $description, 1);
+            } catch (YouTubeError $e) {
+                return $e->reason;
+            }
+
+            return null;
+        };
+        $this->answer();
+        $link = 'Udělejte si vlastní: https://matplace.com/tools/pet-figurine?utm_source=youtube';
+
+        // a pet figurine: the generator calls its file "pet-figurine.stl" and the same word stands in the tool's address
+        $pet = $this->order();
+        $pet->modelFile->update(['origin' => 'generated', 'origin_ref' => 'tok', 'original_name' => 'pet-figurine.stl']);
+        $video = $videos->queueFor($pet->refresh());
+        $this->assertNotSame('file_name', $reason($video->fresh(), 'Figurka mazlíčka z fotky – 6 hodin tisku', $link));
+        // a bust: "bust.stl" is inside the word "Busta"
+        $bust = $this->order();
+        $bust->modelFile->update(['origin' => 'generated', 'origin_ref' => 'tok2', 'original_name' => 'bust.stl']);
+        $video = $videos->queueFor($bust->refresh());
+        $this->assertNotSame('file_name', $reason($video->fresh(), 'Busta z jedné fotky – 2 hodiny tisku', 'Popis'));
+        // an extension is refused everywhere
+        $this->assertSame('file_name', $reason($video->fresh(), 'bust.stl', 'Popis'));
+
+        // a customer's own file keeps the rule
+        $own = $this->order();
+        $own->modelFile->update(['origin' => 'upload', 'origin_ref' => null, 'original_name' => 'kocicka-pro-babicku.stl']);
+        $video = $videos->queueFor($own->refresh());
+        $this->assertSame('file_name', $reason($video->fresh(), 'Kocicka-pro-babicku – 2 hodiny tisku', 'Popis'));
+    }
+
     public function test_tests_repeats_and_daily_short_slot_follow_the_new_queue_rules(): void
     {
         $this->answer();

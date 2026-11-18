@@ -264,8 +264,12 @@ class FarmVideos
         if (! empty($video->meta['title_needed']) && $title === $video->title) {
             throw new YouTubeError('title_needed', __('youtube.video.missing_title'));
         }
-        $fileName = (string) ($video->order?->modelFile?->original_name ?? '');
-        if ($fileName !== '' && app(VideoTitles::class)->containsFileName($title.' '.$description, $fileName)) {
+        // a customer's own file must not be named; a model made by a tool, a generator or the catalogue is called by the app
+        // itself ("pet-figurine.stl", "bust.stl") and that word stands in the tool's link and title – only the extension is watched there
+        $file = $video->order?->modelFile;
+        $fileName = (string) ($file?->original_name ?? '');
+        $own = $file && ! in_array($file->origin, ['generated', 'tool', 'catalog'], true) && ! $video->order?->catalog_model_id;
+        if ($fileName !== '' && app(VideoTitles::class)->containsFileName($title.' '.$description, $own ? $fileName : '')) {
             throw new YouTubeError('file_name', __('youtube.video.file_name_forbidden'));
         }
         $meta = ! empty($video->meta['title_needed']) && $title !== $video->title ? array_diff_key((array) $video->meta, ['title_needed' => true]) : $video->meta;
