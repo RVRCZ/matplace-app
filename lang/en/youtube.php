@@ -39,7 +39,7 @@ return [
     ],
 
     'hook' => [
-        'figure' => 'One photo → a bust', 'pet' => 'A pet photo → a figurine', 'relief' => 'A photo → a relief', 'papel' => 'A photo → a paper portrait',
+        'figure' => 'One photo → a bust', 'figurine' => 'One photo → a figurine', 'pet' => 'A pet photo → a figurine', 'relief' => 'A photo → a relief', 'papel' => 'A photo → a paper portrait',
         'qr' => 'A QR code you can hold', 'box' => 'The customer sent a size → a box', 'organizer' => 'A drawer size → an organizer',
         'vase' => 'A few curves → a vase', 'sign' => 'A name → a sign', 'nameplate' => 'A name → a door plate', 'medallion' => 'A name → a medal on a chain',
         'phone_stand' => 'Three numbers → a phone stand', 'cap' => 'A broken cap → a new one', 'holder' => 'A size → a holder', 'cable_holder' => 'Cables → a holder',
@@ -47,7 +47,7 @@ return [
         'stamp' => 'A logo → a stamp', 'logo' => 'A logo → 3D', 'text' => 'Lettering → 3D', 'map' => 'An address → a map', 'default' => 'A model → a print in :time',
     ],
     'title' => [
-        'figure' => 'A bust from one photo', 'pet' => 'A pet figurine from a photo', 'relief' => 'A relief from a photo', 'papel' => 'A paper portrait from a photo',
+        'figure' => 'A bust from one photo', 'figurine' => 'A figurine from one photo', 'pet' => 'A pet figurine from a photo', 'relief' => 'A relief from a photo', 'papel' => 'A paper portrait from a photo',
         'qr' => 'A QR code you can hold', 'box' => 'A box exactly to size', 'organizer' => 'An organizer exactly for the drawer',
         'vase' => 'A vase without a seam', 'sign' => 'A sign with a name', 'nameplate' => 'A door plate', 'medallion' => 'A medal with a name and a chain',
         'phone_stand' => 'A phone stand made to measure', 'cap' => 'A new cap for a broken one', 'holder' => 'A holder made to measure', 'cable_holder' => 'A cable holder made to measure',
@@ -55,7 +55,7 @@ return [
         'stamp' => 'A stamp from a logo', 'logo' => 'A logo in 3D', 'text' => 'Lettering in 3D', 'map' => 'A map of a place in 3D',
     ],
     'hashtag' => [
-        'figure' => '#figurka', 'pet' => '#mazlíček', 'relief' => '#reliéf', 'papel' => '#portrét', 'qr' => '#qrkod', 'box' => '#krabička', 'organizer' => '#organizér',
+        'figure' => '#figurka', 'figurine' => '#figurka', 'pet' => '#mazlíček', 'relief' => '#reliéf', 'papel' => '#portrét', 'qr' => '#qrkod', 'box' => '#krabička', 'organizer' => '#organizér',
         'vase' => '#váza', 'sign' => '#cedulka', 'nameplate' => '#jmenovka', 'medallion' => '#medaile', 'phone_stand' => '#stojánek', 'cap' => '#oprava', 'holder' => '#držák',
         'cable_holder' => '#držák', 'ornament' => '#vánoce', 'gingerbread' => '#vánoce', 'cookie' => '#vykrajovátko', 'topper' => '#dort', 'stamp' => '#razítko', 'logo' => '#logo',
         'text' => '#nápis', 'map' => '#mapa', 'default' => '#3dprinting',

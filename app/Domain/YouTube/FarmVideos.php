@@ -805,7 +805,12 @@ class FarmVideos
             return null;
         }
         if ($file->origin === 'generated') {
-            return $this->generatedKind($file) === 'pet' ? 'pet' : 'figure';
+            // a bust keeps `figure` (also a generation without a kind); a whole-person figure and a pet have their own
+            return match ($this->generatedKind($file)) {
+                'pet' => 'pet',
+                'figure' => 'figurine',
+                default => 'figure',
+            };
         }
 
         return $file->origin === 'tool' ? (in_array($file->origin_ref, ['lithophane', 'relief'], true) ? 'relief' : (string) $file->kind()) : null;
