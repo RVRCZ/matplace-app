@@ -2,7 +2,7 @@
  * Measurement in the browser. Our own statistics are written by the server; the only thing asked of the browser is
  * to say "a page was really shown" (seen(): one small request without any data about the visitor), which is how
  * people are told from robots that never run a script. Google Analytics 4,
- * the Meta pixel, the Google Ads tag and Sklik's retargeting code are third parties: they are loaded only after the
+ * the Meta pixel, the Google Ads tag and Seznam's event measurement (SEM, Sklik) are third parties: they are loaded only after the
  * visitor allowed them in the cookie bar (the last three under "marketing": they fill the remarketing audiences and
  * tell the ad accounts about paid orders), and they hear about the same events the server records:
  *
@@ -13,12 +13,12 @@
  * The choice lives in the cookie `consent` ("a1m0" = analytics yes, marketing no) for 180 days.
  */
 interface Fired { type: string; meta?: Record<string, unknown> }
-interface MeasureCfg { ga: string | null; pixel: string | null; ads?: string | null; adsPurchase?: string | null; sklik?: number | null; sklikConversion?: number | null; consent: { analytics: boolean; marketing: boolean } | null; days: number; events: Fired[] }
+interface MeasureCfg { ga: string | null; pixel: string | null; ads?: string | null; adsPurchase?: string | null; sklik?: string | null; consent: { analytics: boolean; marketing: boolean } | null; days: number; events: Fired[] }
 type Gtag = (...args: unknown[]) => void;
 type Fbq = ((...args: unknown[]) => void) & { callMethod?: (...a: unknown[]) => void; queue?: unknown[]; loaded?: boolean; version?: string; push?: unknown };
 
-type Rc = { retargetingHit?: (conf: Record<string, unknown>) => void; conversionHit?: (conf: Record<string, unknown>) => void };
-const w = window as unknown as { MP_MEASURE?: MeasureCfg; dataLayer?: unknown[]; gtag?: Gtag; fbq?: Fbq; _fbq?: Fbq; rc?: Rc };
+type Sem = (...args: unknown[]) => void;
+const w = window as unknown as { MP_MEASURE?: MeasureCfg; dataLayer?: unknown[]; gtag?: Gtag; fbq?: Fbq; _fbq?: Fbq; SEM?: Sem };
 const cfg = (): MeasureCfg => w.MP_MEASURE ?? { ga: null, pixel: null, consent: null, days: 180, events: [] };
 let choice = cfg().consent;
 let gaReady = false;
@@ -101,12 +101,40 @@ function startAds(): void {
     adsReady = true;
 }
 
-/** Sklik's retargeting code: visitors for Seznam's retargeting lists. */
+/** our event → Seznam's standard event (the retargeting lists and conversions of Sklik are built from these) */
+const SEM_NAMES: Record<string, string> = { generate: 'CustomizeProduct', order_created: 'InitiateCheckout', register: 'CompleteRegistration' };
+const semWaiting: Fired[] = [];
+let semLoaded = false;
+
+/** One event told to Seznam. A paid order goes in crowns without VAT, as Sklik asks; other currencies are not reported. */
+function sem(event: Fired): void {
+    if (!semLoaded) { semWaiting.push(event); return; }
+    if (typeof w.SEM !== 'function') return;
+    const meta = event.meta ?? {};
+    if (event.type === 'order_paid') {
+        const total = Number(meta.value);
+        if (meta.currency !== 'CZK' || !Number.isFinite(total)) return;
+        const net = Math.round((total / 1.21) * 100) / 100;
+        w.SEM('track', 'Purchase', { order_id: String(meta.order ?? meta.event_id ?? ''), currency: 'CZK', value: net, value_tax: Math.round((total - net) * 100) / 100 });
+        return;
+    }
+    const name = SEM_NAMES[event.type];
+    if (name) w.SEM('track', name);
+}
+
+/** Seznam's event measurement (SEM): the consent first, then the page; visitors for Sklik's retargeting lists. */
 function startSklik(): void {
     const id = cfg().sklik;
     if (sklikReady || !id || !choice?.marketing) return;
     sklikReady = true;
-    loadScript('https://c.seznam.cz/js/rc.js', () => w.rc?.retargetingHit?.({ rtgId: id, consent: 1 }));
+    loadScript(`https://l.seznam.cz/sul.js?id=${encodeURIComponent(id)}`, () => {
+        semLoaded = true;
+        if (typeof w.SEM !== 'function') return;
+        const ad = choice?.marketing ? 'granted' : 'denied';
+        w.SEM('updateConsent', { consent_mode: { ad_storage: ad, ad_user_data: ad, ad_personalization: ad, functionality_storage: 'denied', analytics_storage: choice?.analytics ? 'granted' : 'denied' } });
+        w.SEM('track', 'PageView');
+        semWaiting.splice(0).forEach(sem);
+    });
 }
 
 /** Pass one event on to whoever the visitor allowed. Before a choice exists the event waits; refused, it is dropped. */
@@ -128,9 +156,8 @@ export function send(event: Fired): void {
     if (event.type === 'order_paid') {
         const label = cfg().adsPurchase;
         if (adsReady && label && w.gtag) w.gtag('event', 'conversion', { send_to: label, value: meta.value, currency: meta.currency, transaction_id: String(meta.order ?? '') });
-        const conversion = cfg().sklikConversion;
-        if (sklikReady && conversion) w.rc?.conversionHit?.({ id: conversion, value: meta.value, consent: 1 });
     }
+    if (sklikReady) sem(event);
 }
 
 function apply(): void {

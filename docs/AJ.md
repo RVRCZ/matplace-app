@@ -186,7 +186,8 @@ a `generate` se nezapisovalo nic, takže nebylo vidět, kde lidé končí. Dopln
   se počítají jen z návštěv, které prohlížeč potvrdil.
 - Remarketing: na webu nebyla žádná značka Googlu (prázdné `GA_MEASUREMENT_ID`, žádná značka Google Ads) ani kód
   Skliku. `measure.ts` teď po souhlasu s reklamními cookies načte značku Google Ads (`GOOGLE_ADS_TAG_ID`, consent mode
-  s `ad_user_data` a `ad_personalization`) a retargetingový kód Skliku (`SKLIK_RETARGETING_ID`); zaplacenou
-  objednávku hlásí jako konverzi (`GOOGLE_ADS_PURCHASE_LABEL`, `SKLIK_CONVERSION_ID`). Bez hodnot v `.env` se
+  s `ad_user_data` a `ad_personalization`) a měření Seznamu SEM (`SKLIK_SEM_ID`, skript `l.seznam.cz/sul.js`: souhlas, PageView, CustomizeProduct při
+  výrobě modelu, InitiateCheckout při zakázce, Purchase v Kč bez DPH); zaplacenou objednávku hlásí Googlu jako
+  konverzi (`GOOGLE_ADS_PURCHASE_LABEL`). Bez hodnot v `.env` se
   nenačte nic. CSP rozšířeno o googleadservices, doubleclick, google.com/.cz a seznam.cz.
 - Testy: `CampaignFunnelTest` (3).
