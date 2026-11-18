@@ -446,6 +446,24 @@ def big_shells(mesh):
 
 def bust_cut(m):
     """
+    The sculptor's cut of bust_cut_along, with a second look for a whole figure. The shoulder line is taken from the
+    lowest 40 % of the model, which is the chest of a bust but the LEGS of a standing figure: a figure caught in a
+    step is deeper there than wide, the widths were then measured front to back, no neck was found and the figure
+    went out whole as a "bust" (two of three busts from a face-only photo, 18 Nov 2026). A model that stays uncut and
+    is clearly a standing figure (more than twice as tall as wide) is measured across the other axis too.
+    """
+    import numpy as np
+    cut = bust_cut_along(m)
+    h = float(m.extents[2])
+    if float(cut.extents[2]) < h - 0.01 or h < 2.0 * float(max(m.extents[0], m.extents[1])):
+        return cut
+    v = m.vertices
+    low = v[v[:, 2] < float(m.bounds[0][2]) + 0.4 * h]
+    return bust_cut_along(m, 1 - int(np.argmax(np.ptp(low[:, :2], axis=0))))
+
+
+def bust_cut_along(m, axis=None):
+    """
     A generated bust often runs down to the elbows. A sculptor cuts it flat across the chest, about one head below
     the chin. Going down from the top the outline widens to the head, narrows to the neck and widens to the shoulders;
     the neck is the narrowest slice BELOW the widest slice of the head (the crown is narrow too, and long hair can
@@ -460,7 +478,8 @@ def bust_cut(m):
     layer = np.clip(((v[:, 2] - levels[0]) / step).astype(int), -1, len(levels))
     # measured along the shoulder line only: front to back a head is deeper than its neck is wide
     low = v[v[:, 2] < z0 + 0.4 * h]
-    axis = int(np.argmax(np.ptp(low[:, :2], axis=0)))
+    if axis is None:
+        axis = int(np.argmax(np.ptp(low[:, :2], axis=0)))
     width = np.zeros(len(levels))
     for i in range(len(levels)):
         pts = v[layer == i]
@@ -518,6 +537,10 @@ def bust_cut(m):
         # the first measure alone is the sculptor's cut. A little lower than for a bust (1.3 heads below the neck, not
         # 0.92): the shoulder measure that pulls a bust's cut down onto the chest is the one that is missing here.
         cut = float(levels[neck]) - 1.3 * (z1 - float(levels[neck]))
+    elif (z1 - cut) < 0.45 * h and by_neck is None and h >= 2.0 * float(max(m.extents[0], m.extents[1])):
+        # the same whole figure with long hair over the neck (18 Nov 2026): no neck to measure from, only the shoulder
+        # line. The crown-to-shoulder height once more below the line is the same place on the chest.
+        cut = line - 0.95 * (z1 - line)
     elif (z1 - cut) < 0.45 * h:
         return m
     if cut < z0 + 0.04 * h:
