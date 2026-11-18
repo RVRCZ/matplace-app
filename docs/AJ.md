@@ -190,4 +190,6 @@ a `generate` se nezapisovalo nic, takže nebylo vidět, kde lidé končí. Dopln
   výrobě modelu, InitiateCheckout při zakázce, Purchase v Kč bez DPH); zaplacenou objednávku hlásí Googlu jako
   konverzi (`GOOGLE_ADS_PURCHASE_LABEL`). Bez hodnot v `.env` se
   nenačte nic. CSP rozšířeno o googleadservices, doubleclick, google.com/.cz a seznam.cz.
+- Stažení modelu: odkaz „celý model (STL)“ na stránce nástroje a v kalkulačce šel bez `?download=1`, takže ho
+  server nepočítal (počítal jen projekt 3MF). Odkazy teď značku nesou a záložka má sloupec „Stáhl model“.
 - Testy: `CampaignFunnelTest` (3).

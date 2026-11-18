@@ -49,7 +49,7 @@ class CampaignFunnelTest extends TestCase
         Humans::forget();
         // Facebook, the realistic video: one only looked, one stopped at the consent, one left after 40 s of waiting, one paid
         $this->visitor('facebook', 'video-real');
-        $this->visitor('facebook', 'video-real', ['scroll', 'pick', 'photo', 'no_consent']);
+        $this->visitor('facebook', 'video-real', ['scroll', 'pick', 'photo', 'no_consent'], ['download']);
         $this->visitor('facebook', 'video-real', ['pick', 'photo', 'create', 'wait_left' => 40000], ['generate']);
         $this->visitor('facebook', 'video-real', ['pick', 'photo', 'create', 'shown' => 120000], ['generate', 'model_ready', 'order_created', 'price_shown', 'checkout_started', 'order_paid']);
         // a visit the browser never confirmed counts as a visit and nothing more
@@ -63,7 +63,7 @@ class CampaignFunnelTest extends TestCase
         $this->assertSame(['facebook', 'seznam'], array_column($stats['rows'], 'source'));
         $fb = $stats['rows'][0];
         $this->assertSame('video-real', $fb['content']);
-        $this->assertSame(['visit' => 5, 'page' => 4, 'scroll' => 1, 'pick' => 3, 'photo' => 3, 'create' => 2, 'generate' => 2, 'model' => 1, 'to_print' => 1, 'price' => 1, 'checkout' => 1, 'paid' => 1], $fb['steps']);
+        $this->assertSame(['visit' => 5, 'page' => 4, 'scroll' => 1, 'pick' => 3, 'photo' => 3, 'create' => 2, 'generate' => 2, 'model' => 1, 'to_print' => 1, 'price' => 1, 'checkout' => 1, 'paid' => 1, 'download' => 1], $fb['steps']);
         $this->assertSame(['no_consent' => 1, 'no_photo' => 0, 'refused' => 0, 'wait_left' => 1], $fb['stops']);
         $this->assertSame(40, $fb['wait_s']);
         $this->assertSame(1, $stats['rows'][1]['steps']['photo']);

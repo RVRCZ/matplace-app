@@ -31,6 +31,8 @@ final class CampaignFunnel
         'price' => ['price_shown'],
         'checkout' => ['checkout_started'],
         'paid' => ['order_paid'],
+        // not a step towards an order: the model taken away for one's own printer
+        'download' => ['download'],
     ];
 
     /** What stops a visitor: shown beside the steps, not as steps. */

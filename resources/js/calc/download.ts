@@ -107,7 +107,7 @@ export function setDownload(file: FileInfo | null, params: () => DownloadParams,
     current = { file, params, dims };
     btn.setAttribute('aria-disabled', 'false');
     if (wanted) { wanted = false; if (el('download-panel')?.classList.contains('hidden')) btn.click(); }
-    if (stl) { stl.href = file.stl_url; stl.setAttribute('download', file.name.replace(/\.[^.]+$/, '') + '.stl'); }
+    if (stl) { stl.href = `${file.stl_url}?download=1`; stl.setAttribute('download', file.name.replace(/\.[^.]+$/, '') + '.stl'); }
     // a box with a lid: each part on its own
     const parts = el('dl-parts');
     if (parts) {
