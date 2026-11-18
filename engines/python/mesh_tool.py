@@ -1335,7 +1335,9 @@ def chest_yaw(body, z_from, z_to):
     degrees askew would lose one shoulder blade to a side face and keep the other arm. The outline of a chest with its
     arms is clearly longer along the shoulders than deep, so the long axis of its slices (second moments of area,
     five slices) is the shoulder line. 0 when the outline is too round to say (arms crossed in front), when the
-    answer is under 3 degrees (nothing to mend) or over 40 (that is no askew chest, the measure is lost).
+    answer is under 3 degrees (nothing to mend) or over 60 (that is no askew chest, the measure is lost). A portrait
+    taken half from the side comes with the chest some 45 degrees to the face: with the old limit of 40 the side faces
+    then cut straight through such a chest, one shoulder in front and the other behind (Einstein, 18 Nov 2026).
     """
     import numpy as np
     cov = np.zeros((2, 2))
@@ -1364,7 +1366,7 @@ def chest_yaw(body, z_from, z_to):
     vx, vy = vectors[:, 1]
     angle = float(np.degrees(np.arctan2(vy, vx)))
     angle = (angle + 90.0) % 180.0 - 90.0
-    return angle if 3.0 <= abs(angle) <= 40.0 else 0.0
+    return angle if 3.0 <= abs(angle) <= 60.0 else 0.0
 
 
 def classic_shape(style, body, m, z_cut):
