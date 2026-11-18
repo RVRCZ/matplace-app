@@ -165,6 +165,8 @@ final class OrderService
                     : ($big['big'] ? 'big model ('.($big['reason'] === 'slice_time' ? 'calculation sliced in '.round((float) $big['slice_s']).' s' : number_format($big['triangles'] / 1e6, 1, '.', '').' M triangles').'): the slice waits for the choices'
                         : ($wait ? 'the slice waits for the word of the customer' : null))]);
         }));
+        // a bust or a pet from a photo: the front photo is kept with the order for its videos (SourcePhotos)
+        app(\App\Domain\Generation\SourcePhotos::class)->keep($order, $file);
         // the partner whose link brought the customer (docs/AT.md); never lets an order down
         Affiliates::safely(fn () => app(Affiliates::class)->attributeNew($order), 'attribution');
         // after the commit: a worker that picks the job up before the row is there would find no order and give up

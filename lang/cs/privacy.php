@@ -16,7 +16,7 @@ return [
                 'Údaje o účtu – jméno, e-mail, telefon, adresa (pokud je vyplníte), propojení účtu Google nebo Facebook.',
                 'Nahrané soubory a zadání – 3D modely, fotky a textové popisy, ze kterých počítáme cenu nebo generujeme model.',
                 'Údaje o zakázkách – zvolený materiál, barva, cena, způsob převzetí, doručovací adresa, stav tisku.',
-                'Záznam tisku – snímky z kamery v tiskárně a z nich sestavené časosběrné video. Zachycují jen tiskovou podložku a vytištěný předmět.',
+                'Záznam tisku – snímky z kamery v tiskárně a z nich sestavené časosběrné video. Zachycují jen tiskovou podložku a vytištěný předmět; u modelu z fotky video zobrazuje i fotku, podle které model vznikl (viz bod 5).',
                 'Platební údaje – zpracovává výhradně platební brána Stripe; my ukládáme jen identifikátor a stav platby a zůstatek kreditu.',
                 'Údaje partnerského programu – jen pokud se do něj zapojíte: váš kód, údaje k výplatě provize, které sami uvedete (například číslo účtu), počty kliknutí na váš odkaz bez IP adres a přehled provizí.',
                 'Technické údaje – IP adresa, typ prohlížeče, čas přístupu, nezbytné cookies.',
@@ -48,7 +48,7 @@ return [
         [
             'h' => '5. Videa z tisku a YouTube API Services',
             'p' => [
-                'Každý tisk na naší farmě natáčí kamera v tiskárně a z jejích snímků sestavíme krátké časosběrné video. Video vidíte na stránce své zakázky.',
+                'Každý tisk na naší farmě natáčí kamera v tiskárně a z jejích snímků sestavíme krátké časosběrné video. Video vidíte na stránce své zakázky. U modelu vytvořeného z fotky (busta, figurka) uchováme přední fotku nejdéle 24 hodin u vytvořeného modelu a při objednání její kopii u zakázky, jen pro tato videa, po dobu 14 dní uchování snímků z tisku; pak ji smažeme. Ve vašem videu je fotka vždy, ve videu zveřejněném na YouTube jen s vaším souhlasem.',
                 'Pokud zveřejnění neodmítnete, nahraje náš server video na náš vlastní YouTube kanál „Matplace – 3D“ jako soukromé; veřejné bude až po kontrole naším týmem. Políčko se souhlasem se zveřejněním je při objednání předvyplněné – když ho odškrtnete, video na YouTube nepůjde. U výtisků podle fotografií (busty, figurky, litofanie, reliéfy), které mohou zachycovat podobu osoby nebo soukromou fotku, je políčko prázdné a video zveřejníme jen tehdy, když ho sami zaškrtnete. K nahrávání používáme YouTube API Services. Na YouTube posíláme jen samotné video a jeho název a popis (materiál, barva, typ tiskárny, doba tisku); vaše jméno, e-mail ani nahrané soubory ne. U zakázky si ukládáme jen identifikátor videa na YouTube a jeho stav.',
                 'Zveřejnění můžete kdykoli odmítnout nebo souhlas odvolat na stránce zakázky, i když už je video na YouTube. Video pak z YouTube automaticky smažeme. O smazání můžete požádat i e-mailem na info@matplace.com.',
                 'Naše aplikace nepřistupuje k vašemu účtu Google ani YouTube a nečte žádné vaše údaje z YouTube. Přístup k YouTube API používá jen náš tým pro náš vlastní kanál.',
@@ -65,7 +65,7 @@ return [
                 'Účet – po dobu jeho trvání; po zrušení do 30 dnů smažeme nebo anonymizujeme.',
                 'Zakázky a platby – 5 let od dokončení (účetní a daňové předpisy), doklady podle zákona až 10 let.',
                 'Fotky pro rozpoznání a generování – nejdéle 1 den; nahrané soubory bez objednávky 30 dní.',
-                'Časosběrná videa – u zakázky po dobu trvání účtu; na YouTube do odmítnutí zveřejnění, odvolání souhlasu nebo do našeho smazání.',
+                'Časosběrná videa – u zakázky po dobu trvání účtu (kopie přední fotky u modelu z fotky jen 14 dní, viz bod 5); na YouTube do odmítnutí zveřejnění, odvolání souhlasu nebo do našeho smazání.',
                 'Technické záznamy – nejvýše 12 měsíců.',
                 'Údaje partnerského programu – po dobu vaší účasti; záznamy o vyplacených provizích 5 let (účetní a daňové předpisy).',
             ],

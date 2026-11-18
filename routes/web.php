@@ -1,9 +1,8 @@
 <?php
 
 use App\Http\Controllers\AccountController;
-use App\Http\Controllers\Admin\AffiliateAdminController;
-use App\Http\Controllers\AffiliateController;
 use App\Http\Controllers\AccountSecurityController;
+use App\Http\Controllers\Admin\AffiliateAdminController;
 use App\Http\Controllers\Admin\CatalogController as AdminCatalogController;
 use App\Http\Controllers\Admin\CollectionController as AdminCollectionController;
 use App\Http\Controllers\Admin\ContentController as AdminContentController;
@@ -21,6 +20,7 @@ use App\Http\Controllers\Admin\StatsController as AdminStatsController;
 use App\Http\Controllers\Admin\ToolController as AdminToolController;
 use App\Http\Controllers\Admin\UserController as AdminUserController;
 use App\Http\Controllers\Admin\YouTubeController;
+use App\Http\Controllers\AffiliateController;
 use App\Http\Controllers\Api\AdviceController;
 use App\Http\Controllers\Api\ArtworkController;
 use App\Http\Controllers\Api\CalculationController;
@@ -38,6 +38,7 @@ use App\Http\Controllers\Api\RefusedController;
 use App\Http\Controllers\Api\SearchController;
 use App\Http\Controllers\Api\SeenController;
 use App\Http\Controllers\Api\ShareController;
+use App\Http\Controllers\Api\StepController;
 use App\Http\Controllers\Api\ThreadController;
 use App\Http\Controllers\Api\ToolsApiController;
 use App\Http\Controllers\Api\UploadController;
@@ -426,6 +427,8 @@ Route::prefix('api')->name('api.')->group(function () {
     Route::post('seen', SeenController::class)->middleware('throttle:120,1,seen')->name('seen');
     // the page's script says a file was refused before any upload (the format, the size): the funnel's "upload began" step (docs/AN.md §9)
     Route::post('refused', RefusedController::class)->middleware('throttle:30,1,refused')->name('refused');
+    // the page's script says how far a visitor got on a tool's page before the server hears of them (the photo picked, the consent missing, left while waiting)
+    Route::post('step', StepController::class)->middleware('throttle:60,1,step')->name('step');
     // the page's script says a result was shared (the share sheet or a copied link): a visit that costs nothing (docs/AN.md §12)
     Route::post('shared', ShareController::class)->middleware('throttle:30,1,shared')->name('shared');
     Route::post('search', [SearchController::class, 'text'])->middleware('throttle:60,1,search')->name('search');
@@ -661,6 +664,7 @@ Route::middleware(['auth', 'role:admin'])->prefix('admin')->name('admin.')->grou
     Route::get('/stats', [AdminStatsController::class, 'funnel'])->name('stats.funnel');
     Route::get('/stats/search', [AdminStatsController::class, 'search'])->name('stats.search');
     Route::get('/stats/speed', [AdminStatsController::class, 'speed'])->name('stats.speed');
+    Route::get('/stats/campaigns', [AdminStatsController::class, 'campaigns'])->name('stats.campaigns');   // a paid campaign's visitors step by step, per channel and ad (docs/AJ.md §7)
     Route::get('/stats/tools', [AdminStatsController::class, 'tools'])->name('stats.tools');   // unique visitors with a tool per week, Search Console (docs/AN.md §12.3)
     Route::get('/ai', [AdminStatsController::class, 'ai'])->name('ai.index');
     Route::post('/ai/limits', [AdminStatsController::class, 'aiLimits'])->name('ai.limits');

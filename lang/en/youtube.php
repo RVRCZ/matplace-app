@@ -2,13 +2,13 @@
 
 return [
     'consent' => [
-        'label' => 'I agree that Matplace may publish the time-lapse video of my print on its YouTube channel. (Optional; you can take it back at any time.)',
+        'label' => 'I agree that Matplace may publish the time-lapse video of my print, including the photo, on its YouTube channel. (Optional; you can take it back at any time.)',
     ],
 
     'order' => [
-        'short_download' => 'Download the square video (Instagram, TikTok, Shorts)',
+        'short_download' => 'Download the vertical video (Instagram, TikTok, Shorts)',
         'title' => 'Video on YouTube',
-        'on' => 'You agree that the time-lapse of this print may be published on the Matplace YouTube channel. We check every video before publishing it.',
+        'on' => 'You agree that the time-lapse of this print, including the photo, may be published on the Matplace YouTube channel. We check every video before publishing it.',
         'off' => 'We will not publish the video of this print. If you would like it to appear on the Matplace YouTube channel, you can allow it.',
         'agree' => 'Allow publishing',
         'withdraw' => 'Take the consent back',

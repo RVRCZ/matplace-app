@@ -622,7 +622,12 @@ class FarmVideos
     {
         $short = $order->timelapse_short_path;
 
-        return $short && Storage::disk(config('farm.disk'))->exists($short) ? $short : (string) $order->timelapse_path;
+        if ($short && Storage::disk(config('farm.disk'))->exists($short)) {
+            return $short;
+        }
+
+        // the customer's own video may carry the customer's source picture (TimelapseCutter::customer): never the published one
+        return app(TimelapseCutter::class)->sourcePicture($order) ? '' : (string) $order->timelapse_path;
     }
 
     /** The file that goes to YouTube for this video (relative to the farm disk): the Short, the 16:9 or the week's cut. */
@@ -790,7 +795,7 @@ class FarmVideos
     }
 
     /**
-     * The tool that made the model, as the texts know it (figure for a generated model, relief for a lithophane, the
+     * The tool that made the model, as the texts know it (figure for a generated bust or figure, pet for a generated pet figurine, relief for a lithophane, the
      * kind of a tool's design), null for a customer's own file.
      */
     public function toolKind(FarmOrder $order): ?string
@@ -800,7 +805,7 @@ class FarmVideos
             return null;
         }
         if ($file->origin === 'generated') {
-            return 'figure';
+            return $this->generatedKind($file) === 'pet' ? 'pet' : 'figure';
         }
 
         return $file->origin === 'tool' ? (in_array($file->origin_ref, ['lithophane', 'relief'], true) ? 'relief' : (string) $file->kind()) : null;
@@ -968,7 +973,7 @@ class FarmVideos
             return null;
         }
         $kind = $file->kind();
-        $tool = $kind === 'generated' ? 'figure' : ($file->origin === 'tool' ? $kind : null);
+        $tool = $kind === 'generated' ? ($this->generatedKind($file) === 'pet' ? 'pet' : 'figure') : ($file->origin === 'tool' ? $kind : null);
 
         return $tool && ($title = __('tools.'.$tool.'.title', [], $locale)) !== 'tools.'.$tool.'.title' ? $title : null;
     }

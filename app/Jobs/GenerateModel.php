@@ -255,6 +255,8 @@ class GenerateModel implements ShouldQueue
             ]);
             $req->update(['status' => 'done', 'progress' => 100, 'result_model_file_id' => $file->id] + ($measured ? ['description' => $measured + $req->description] : []));
             GenerationReady::sendFor($req);   // "send me the result": the one mail with the link, if the visitor asked for it
+            // the front photo of a bust or a pet waits a day beside the model for the order's videos (SourcePhotos), then goes
+            app(\App\Domain\Generation\SourcePhotos::class)->hold($req, $file);
             $this->forgetPhoto($req);
             ProcessModelFile::dispatch($file->id);
         } catch (\Throwable $e) {

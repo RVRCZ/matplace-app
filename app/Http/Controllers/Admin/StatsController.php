@@ -6,6 +6,7 @@ use App\Domain\Farm\FarmSettings;
 use App\Domain\Generation\BustStyles;
 use App\Domain\Generation\PedestalChanger;
 use App\Domain\Stats\AiActivity;
+use App\Domain\Stats\CampaignFunnel;
 use App\Domain\Stats\Funnel;
 use App\Domain\Stats\Overview;
 use App\Domain\Stats\SearchConsole;
@@ -88,6 +89,15 @@ class StatsController extends Controller
             // the weeks of Search Console beside the weeks of use, and the queries nobody clicked (docs/AN.md §15)
             'weeklyConsole' => $api ? SearchConsole::weeklyByTool($weeks, $country) : [], 'zeroClicks' => $api ? SearchConsole::zeroClickQueries(28, 20, $country) : [],
             'embeds' => ToolUse::embeds(30)]);
+    }
+
+    /** /admin/stats/campaigns: where the visitors of a paid campaign leave, per channel and ad (docs/AJ.md §7). */
+    public function campaigns(Request $request, CampaignFunnel $funnel): View
+    {
+        $days = in_array((int) $request->query('days'), Funnel::PERIODS, true) ? (int) $request->query('days') : 7;
+        $campaign = is_string($request->query('campaign')) ? mb_substr((string) $request->query('campaign'), 0, 80) : null;
+
+        return view('admin.stats.campaigns', ['stats' => $funnel->compute($days, $campaign)]);
     }
 
     public function speed(Request $request, Speed $speed): View

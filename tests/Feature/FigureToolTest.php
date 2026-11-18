@@ -126,6 +126,20 @@ class FigureToolTest extends TestCase
         $this->get('/?open='.$r->json('generation.file.uuid'))->assertOk();
     }
 
+    public function test_the_finished_generation_holds_the_front_photo_beside_the_model_and_forgets_the_side_views(): void
+    {
+        $this->moderation(true);
+        $r = $this->post('/api/generate', ['image' => UploadedFile::fake()->image('front.jpg', 600, 800), 'image_left' => UploadedFile::fake()->image('left.jpg', 600, 800),
+            'kind' => 'bust', 'consent' => 1], ['Accept' => 'application/json']);
+        $r->assertCreated()->assertJsonPath('generation.status', 'done');
+        $req = GenerationRequest::firstOrFail();
+        $this->assertNull($req->image_path);
+        $this->assertSame([], Storage::disk('local')->allFiles('photos/figures'), 'the generation forgot the front and the side view');
+        $file = ModelFile::findOrFail($req->result_model_file_id);
+        $held = array_values(array_filter(Storage::disk(ModelFile::DISK)->allFiles($file->dir()), fn ($f) => str_contains($f, 'source_hold.')));
+        $this->assertCount(1, $held, 'the front photo alone waits beside the model for a day');
+    }
+
     public function test_prune_removes_old_unclaimed_files_but_keeps_recent_ones(): void
     {
         $this->moderation(true);

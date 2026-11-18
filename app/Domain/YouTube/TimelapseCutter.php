@@ -3,11 +3,13 @@
 namespace App\Domain\YouTube;
 
 use App\Domain\Farm\PrintPhotos;
+use App\Domain\Generation\SourcePhotos;
 use App\Domain\Farm\TestPhotos;
 use App\Domain\Farm\TimelapseFrames;
 use App\Models\FarmOrder;
 use App\Models\FarmVideo;
 use App\Models\FarmVideoClip;
+use App\Models\ModelFile;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Log;
@@ -119,7 +121,10 @@ class TimelapseCutter
         $photoSeconds = (float) $c['photo'];
         $intro = 7.0;                                    // logo 0-3.5 s, countdown 3.5-6.5 s, a breath of black
         $outro = 5.0;
-        $seconds = $intro + $growth + $hold + ($photo ? $photoSeconds : 0) + $outro;
+        // the customer's own picture in the customer's own video: on by default (the Short, which may be published, has a tick)
+        $source = $this->sourcePicture($order);
+        $sourceSeconds = (float) ($c['source'] ?? 2.0);
+        $seconds = $intro + ($source ? $sourceSeconds : 0) + $growth + $hold + ($photo ? $photoSeconds : 0) + $outro;
         $thanks = $dir.'/thanks.txt';
         $count = collect([[3, 3.5], [2, 4.5], [1, 5.5]])->map(fn ($n) => sprintf(
             "drawtext=fontfile='%s':text='%d':fontsize=%d:fontcolor=white:x=(w-text_w)/2:y=(h-text_h)/2:enable='between(t,%s,%s)'",
@@ -128,6 +133,10 @@ class TimelapseCutter
         $inputs = ['-f', 'concat', '-safe', '0', '-i', $dir.'/frames.txt', '-loop', '1', '-t', '8', '-i', public_path('img/logo.png')];
         if ($photo) {
             array_push($inputs, '-loop', '1', '-t', VideoCut::number($photoSeconds + 1), '-i', $photo);
+        }
+        $sourceInput = 2 + ($photo ? 1 : 0);
+        if ($source) {
+            array_push($inputs, '-loop', '1', '-t', VideoCut::number($sourceSeconds + 1), '-i', $source);
         }
         $graph = [
             // the logo, once for the intro and once for the outro
@@ -144,18 +153,24 @@ class TimelapseCutter
             sprintf("[bg_out]drawtext=fontfile='%s':textfile='%s':expansion=none:fontsize=%d:fontcolor=white:x=(w-text_w)/2:y=h*0.28[thanks]", $font, $this->path($thanks), (int) round($h * 0.07)),
             '[thanks][logo_small]overlay=(W-w)/2:H*0.42:shortest=1,fade=in:st=0:d=0.8,format=yuv420p,setsar=1[outro]',
         ];
+        $parts = ['[intro]'];
+        if ($source) {
+            $graph[] = str_replace('[photo]', '[source]', $this->photoFilter($sourceInput, $w, $h, $fps, $sourceSeconds, 0.5));
+            $parts[] = '[source]';
+        }
+        $parts[] = '[print]';
         if ($photo) {
             $graph[] = $this->photoFilter(2, $w, $h, $fps, $photoSeconds, 0.5);
-            $graph[] = '[intro][print][photo][outro]concat=n=4:v=1:a=0[v]';
-        } else {
-            $graph[] = '[intro][print][outro]concat=n=3:v=1:a=0[v]';
+            $parts[] = '[photo]';
         }
+        $parts[] = '[outro]';
+        $graph[] = implode('', $parts).'concat=n='.count($parts).':v=1:a=0[v]';
 
         return $this->withMusic(new VideoCut('customer', $dir.'/timelapse.mp4', [$dir.'/frames.txt' => $this->timed($frames, $per)],
             [$thanks => __('farm.timelapse.thanks', [], $order->user?->locale ?? config('app.locale'))], $inputs, implode(';', $graph), $seconds, $growth, $fps, null, 26), $music);
     }
 
-    /** Finished piece first, 4–6 s of growth, available supplementary clips, then the same opening shot as a loop. */
+    /** The design (source photo when allowed, the model as it went to print), 4–6 s of growth, the supplementary clips, the finished piece (photo, else the held plate). */
     public function short(FarmOrder $order): VideoCut
     {
         $c = (array) config('youtube.cut.short');
@@ -166,13 +181,21 @@ class TimelapseCutter
         $video = $order->videos()->where('kind', FarmVideo::KIND_SHORT)->latest('id')->first();
         $clips = app(VideoClips::class);
         $paths = $video ? collect(FarmVideoClip::KINDS)->mapWithKeys(fn (string $kind) => [$kind => $clips->path($video, $kind)])->all() : array_fill_keys(FarmVideoClip::KINDS, null);
+        $stills = $this->shortStills($order, $video);
+        $still = (array) $c['stills'];
         $used = array_filter([
+            'model' => $stills['model'] ? (float) $still['model'] : null,
+            'source' => $stills['source'] ? (float) $still['source'] : null,
             'removal' => 2.5,
             'turn' => $paths['turn'] ? 2.0 : null,
             'detail' => $paths['detail'] ? 1.0 : null,
             'extra' => $paths['with_source'] || $paths['in_hand'] ? 1.0 : null,
         ], fn ($duration, $kind) => $kind === 'removal' ? (bool) $paths['removal'] : $duration !== null, ARRAY_FILTER_USE_BOTH);
-        $fixed = 2.0 + array_sum($used);
+        // the design first, then the process, then the result: the photographed piece closes when there is one, else the held plate
+        // without a picture of the design (no stored preview, no source) the finished plate opens for a second, as it used to:
+        // the Short must not start on the dark band of the first layers
+        $opening = ! $stills['model'] && ! $stills['source'];
+        $fixed = ($stills['photo'] ? (float) $still['photo'] : 1.0) + ($opening ? 1.0 : 0.0) + array_sum($used);
         $growth = min(6.0, max($frames->count() * $per, 8.0 - $fixed));
         $per = $growth / max(1, $frames->count());
         $seconds = $fixed + $growth;
@@ -190,20 +213,37 @@ class TimelapseCutter
         array_push($inputs, '-f', 'concat', '-safe', '0', '-i', $dir.'/short.txt');
         $fit = fn (int $input, float $duration, string $label) => sprintf('[%d:v]scale=%d:%d:force_original_aspect_ratio=increase:flags=lanczos,crop=%d:%d,fps=%d,trim=duration=%s,setpts=PTS-STARTPTS,format=yuv420p,setsar=1[%s]',
             $input, $w, $h, $w, $h, $fps, VideoCut::number($duration), $label);
-        $graph = ['[0:v]split='.($paths['turn'] ? 3 : 2).'[finish_open][finish_close]'.($paths['turn'] ? '[finish_turn]' : '')];
+        $split = array_filter([$opening ? '[finish_open]' : null, $stills['photo'] ? null : '[finish_close]', $paths['turn'] ? '[finish_turn]' : null]);
+        $graph = $split ? ['[0:v]split='.count($split).implode('', $split)] : [];
         $normal = fn (string $source, float $duration, string $label) => sprintf('[%s]scale=%d:%d:force_original_aspect_ratio=increase:flags=lanczos,crop=%d:%d,fps=%d,trim=duration=%s,setpts=PTS-STARTPTS,format=yuv420p,setsar=1[%s]',
             $source, $w, $h, $w, $h, $fps, VideoCut::number($duration), $label);
-        $graph[] = $normal('finish_open', 1.0, 'opening');
-        $graph[] = $normal('finish_close', 1.0, 'closing');
+        if ($opening) {
+            $graph[] = $normal('finish_open', 1.0, 'opening');
+        }
+        if (! $stills['photo']) {
+            $graph[] = $normal('finish_close', 1.0, 'closing');
+        }
         $graph[] = sprintf('[1:v]%s,fps=%d,trim=duration=%s,setpts=PTS-STARTPTS,format=yuv420p,setsar=1[growth]', $this->fit($w, $h), $fps, VideoCut::number($growth));
-        $sequence = ['[opening]', '[growth]'];
+        // the customer's source (when allowed) and the model as it went to print open the Short
+        $sequence = $opening ? ['[opening]'] : [];
         $input = 2;
+        $matte = fn (int $in, float $duration, string $label) => sprintf('[%d:v]scale=%d:%d:force_original_aspect_ratio=decrease:flags=lanczos,pad=%d:%d:(ow-iw)/2:(oh-ih)/2:black,setsar=1,fps=%d,trim=duration=%s,setpts=PTS-STARTPTS,fade=in:st=0:d=0.2,format=yuv420p,setsar=1[%s]',
+            $in, $w, $h, $w, $h, $fps, VideoCut::number($duration + 0.0), $label);
+        foreach (['source', 'model'] as $kind) {
+            if ($stills[$kind]) {
+                array_push($inputs, '-loop', '1', '-t', VideoCut::number((float) $still[$kind] + 1), '-i', $stills[$kind]);
+                $graph[] = $matte($input, (float) $still[$kind], 'still_'.$kind);
+                $sequence[] = '[still_'.$kind.']';
+                $input++;
+            }
+        }
+        $sequence[] = '[growth]';
         $removal = null;
         if ($paths['removal']) {
             array_push($inputs, '-i', $paths['removal']);
             $graph[] = $fit($input, 2.5, 'removal');
             $sequence[] = '[removal]';
-            $removal = ['input' => $input, 'start' => 1.0 + $growth, 'duration' => 2.5];
+            $removal = ['input' => $input, 'start' => ($opening ? 1.0 : 0.0) + array_sum(array_filter([$used['model'] ?? null, $used['source'] ?? null])) + $growth, 'duration' => 2.5];
             $input++;
         }
         if ($paths['turn']) {
@@ -219,7 +259,14 @@ class TimelapseCutter
             $sequence[] = '['.$kind.']';
             $input++;
         }
-        $sequence[] = '[closing]';
+        if ($stills['photo']) {
+            array_push($inputs, '-loop', '1', '-t', VideoCut::number((float) $still['photo'] + 1), '-i', $stills['photo']);
+            $graph[] = $matte($input, (float) $still['photo'], 'still_photo');
+            $sequence[] = '[still_photo]';
+            $input++;
+        } else {
+            $sequence[] = '[closing]';
+        }
         $graph[] = implode('', $sequence).'concat=n='.count($sequence).':v=1:a=0[body]';
         $line = fn (string $file, int $size, string $y, string $enable, string $color = 'white') => $this->caption($file, $size, 'x=(w-text_w)/2:y='.$y, $color).":enable='".$enable."'";
         $closing = 'gte(t,'.VideoCut::number($seconds - 1).')';
@@ -578,8 +625,58 @@ class TimelapseCutter
     }
 
     /**
-     * The cleaned piece: the photo made presentable (PrintPhotos, the 3:2 web render), else a photo of the photo box
-     * as it is (TestPhotos::finishIndex says which). Supplementary video clips, not this photo, finish the new Short.
+     * The stills of the Short: the model as it went to print (the preview picture the browser stored with the model
+     * file), the customer's source picture (only when the admin ticked "ukázat předlohu" on this video, and only
+     * where a tool kept one) and the photographed piece. Each is null when there is none.
+     *
+     * @return array{model: ?string, source: ?string, photo: ?string}
+     */
+    public function shortStills(FarmOrder $order, ?FarmVideo $video): array
+    {
+        $disk = Storage::disk(ModelFile::DISK);
+        $file = $order->modelFile;
+        $model = $file?->preview_path && $disk->exists($file->preview_path) ? $disk->path($file->preview_path) : null;
+        $source = $this->showsSource($order, $video) ? $this->sourcePicture($order) : null;
+
+        return ['model' => $model, 'source' => $source, 'photo' => $this->finishPhoto($order, 'short')];
+    }
+
+    /**
+     * Does the published Short show the customer's source picture? The admin's tick on the video decides when it was
+     * set (either way); else yes only for a consent given under the wording that names the photo (video_consent_at from
+     * youtube.photo_consent_since on; unset = nobody yet, the safe side). No consent: the Short is not published at all.
+     */
+    public function showsSource(FarmOrder $order, ?FarmVideo $video): bool
+    {
+        $set = $video?->meta['show_source'] ?? null;
+        if ($set !== null) {
+            return (bool) $set;
+        }
+        $since = config('youtube.photo_consent_since');
+
+        return $since && $order->video_consent && $order->video_consent_at && $order->video_consent_at->gte(Carbon::parse($since));
+    }
+
+    /** The customer's picture a tool kept with the design (artwork.*), when there is one; only shown when the admin ticks it. */
+    public function sourcePicture(FarmOrder $order): ?string
+    {
+        $disk = Storage::disk(ModelFile::DISK);
+        $file = $order->modelFile;
+        if (! $file) {
+            return null;
+        }
+
+        // a bust or a pet figurine from a photo: the front photo kept with the order (SourcePhotos), for these videos only
+        if ($kept = app(SourcePhotos::class)->path($order)) {
+            return $kept;
+        }
+
+        return collect(glob($disk->path($file->dir()).'/artwork.*') ?: [])->first(fn ($f) => is_file($f) && preg_match('/\.(jpe?g|png|webp)$/i', $f));
+    }
+
+    /**
+     * The cleaned piece: the photo made presentable (PrintPhotos, the render that fits the video – the 9:16 one for the
+     * Short, the 3:2 web one elsewhere), else a photo of the photo box as it is (TestPhotos::finishIndex says which).
      */
     private function finishPhoto(FarmOrder $order, string $variant = 'web'): ?string
     {

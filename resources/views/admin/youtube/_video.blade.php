@@ -99,7 +99,13 @@
     @endif
     <div class="mt-2 flex flex-wrap gap-2">
         @if($rebuild === 'ready')
-            <form method="post" action="{{ route('admin.youtube.rebuild', $v) }}">@csrf<button class="btn-quiet text-sm" title="Postaví Short znovu ze snímků tisku s dnešním nastavením, trvá pár minut">Postavit znovu</button></form>
+            <form method="post" action="{{ route('admin.youtube.rebuild', $v) }}" class="flex flex-wrap items-center gap-2">@csrf
+                @if($v->order && app(\App\Domain\YouTube\TimelapseCutter::class)->sourcePicture($v->order))
+                    <input type="hidden" name="source_form" value="1">
+                    <label class="text-xs" title="Fotka zákazníka je osobní údaj (často obličej). Souhlas zákazníka na stránce objednávky platí jen pro záznam tisku, ukažte ji jen s jeho svolením."><input type="checkbox" name="show_source" value="1" @checked(app(\App\Domain\YouTube\TimelapseCutter::class)->showsSource($v->order, $v))> ukázat předlohu</label>
+                @endif
+                <button class="btn-quiet text-sm" title="Postaví Short znovu ze snímků tisku s dnešním nastavením, trvá pár minut">Postavit znovu</button>
+            </form>
         @endif
         @if($v->status === 'uploaded')
             <form method="post" action="{{ route('admin.youtube.replace', $v) }}" onsubmit="return confirm('Smazat soukromou verzi z YouTube a nahrát aktuální video?')">@csrf<button class="btn-quiet text-sm" title="po přestavění videa (php artisan farm:timelapse)">Nahradit novou verzí</button></form>

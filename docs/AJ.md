@@ -161,3 +161,33 @@ jako člověk. 13. 10. tak bylo 98 „lidí“, většinou průchody session B.
   řídící session.
 - Vyhodnocení podle auditu: první čtení dva týdny po nasazení, s n u každého čísla. Závěry o konverzi až po
   týdnech až měsících (§3).
+
+## 7. Kroky na stránce nástroje před modelem (17. 11. 2026, placená kampaň na figurku mazlíčka)
+
+První dvě hodiny reklam: 52 návštěvníků, 42 se stránka zobrazila, nikdo neklikl na „Vytvořit figurku“. Mezi `page`
+a `generate` se nezapisovalo nic, takže nebylo vidět, kde lidé končí. Doplněno:
+
+- `POST /api/step` (`StepController`, 204, omezení 60/min) zapíše událost `tool_step` s `meta.tool`, `meta.step`
+  a u čekání `meta.ms`. Nic o fotce ani o člověku.
+- Kroky posílá `resources/js/calc/figure.ts` (figurka, busta i mazlíček; `tool` je `data-kind` formuláře), každý
+  nejvýš jednou za načtení stránky, v automatizovaném prohlížeči nic:
+  `scroll` (půlka stránky), `pick` (otevřený výběr fotky), `photo` (fotka vybraná), `no_photo` a `no_consent`
+  (pokus o vytvoření bez fotky nebo bez souhlasu), `create` (formulář odeslán), `limit`, `rejected`, `error`
+  (odmítnutí serverem), `wait_left` (odchod ze stránky během výroby modelu, `ms` = jak dlouho čekal), `shown`
+  (model na obrazovce, `ms` = čekání).
+- Přehled kampaně po kanálech a reklamách se čte dotazem nad `events` (na serveru
+  `/root/reklama-figurka/funnel.php`); do `Funnel::PATHS` a do administrace tyto kroky zatím nejdou.
+- Test: `SalesPathWebTest::test_the_steps_on_a_tools_page_before_the_model_are_recorded`.
+
+### 7.1 Stránka v administraci a značky reklamních sítí (týž den)
+
+- `/admin/stats/campaigns` (`CampaignFunnel`, záložka „Kampaně“): pro zvolenou `utm_campaign` řádek za kanál a reklamu,
+  kroky od návštěvy po zaplacení a tabulka „Co je zastavilo“. První sloupec jsou všechny návštěvy bez robotů, další
+  se počítají jen z návštěv, které prohlížeč potvrdil.
+- Remarketing: na webu nebyla žádná značka Googlu (prázdné `GA_MEASUREMENT_ID`, žádná značka Google Ads) ani kód
+  Skliku. `measure.ts` teď po souhlasu s reklamními cookies načte značku Google Ads (`GOOGLE_ADS_TAG_ID`, consent mode
+  s `ad_user_data` a `ad_personalization`) a měření Seznamu SEM (`SKLIK_SEM_ID`, skript `l.seznam.cz/sul.js`: souhlas, PageView, CustomizeProduct při
+  výrobě modelu, InitiateCheckout při zakázce, Purchase v Kč bez DPH); zaplacenou objednávku hlásí Googlu jako
+  konverzi (`GOOGLE_ADS_PURCHASE_LABEL`). Bez hodnot v `.env` se
+  nenačte nic. CSP rozšířeno o googleadservices, doubleclick, google.com/.cz a seznam.cz.
+- Testy: `CampaignFunnelTest` (3).

@@ -32,6 +32,27 @@ export function bootFigure(stage: Stage): void {
     const btn = $('figure-submit') as HTMLButtonElement;
     const viewsMsg = $('figure-views-msg');
     let made: FileInfo | null = null;                  // the figure on the stage, once there is one
+    // How far the visitor got before the server hears of them (POST /api/step, our own statistics: nothing about the
+    // photo or the person goes). Each step once a page; `waiting` holds when a model began to be made, so a visitor
+    // who leaves meanwhile is seen, with the time they stayed.
+    const told = new Set<string>();
+    let waiting = 0;
+    const step = (name: string, ms?: number): void => {
+        if (told.has(name) || (navigator as Navigator & { webdriver?: boolean }).webdriver) return;
+        told.add(name);
+        const body = new URLSearchParams({ tool: form.dataset.kind || 'figure', step: name });
+        if (ms !== undefined) body.set('ms', String(Math.max(0, Math.round(ms))));
+        try { if (navigator.sendBeacon?.('/api/step', body)) return; } catch { /* fall through to fetch */ }
+        void fetch('/api/step', { method: 'POST', body, keepalive: true, credentials: 'same-origin' }).catch(() => undefined);
+    };
+    const left = (): void => { if (waiting) step('wait_left', Date.now() - waiting); };
+    window.addEventListener('pagehide', left);
+    const scrolled = (): void => {
+        if (window.scrollY + window.innerHeight < document.documentElement.scrollHeight / 2) return;
+        step('scroll');
+        window.removeEventListener('scroll', scrolled);
+    };
+    window.addEventListener('scroll', scrolled, { passive: true });
     let madeWith: Record<string, string> | null = null; // the choices it was made with (and the photos): what "changed" is measured against
 
     // what the model on the stage was made with, to tell when the panel no longer says the same (Roman, 15 Nov 2026): every
@@ -174,7 +195,7 @@ export function bootFigure(stage: Stage): void {
         // "Create" there: the same submit as the button in the panel; a missing consent is said right there
         create?.addEventListener('click', () => {
             if (!photo.files?.length) { free().click(); return; }
-            if (!mine.checked) { sayInDrop(t('figure.need_consent')); focusCalm(theirs); return; }
+            if (!mine.checked) { step('no_consent'); sayInDrop(t('figure.need_consent')); focusCalm(theirs); return; }
             sayInDrop('');
             form.requestSubmit();
         });
@@ -193,7 +214,8 @@ export function bootFigure(stage: Stage): void {
     const calm = () => { viewsMsg.textContent = ''; viewsMsg.classList.add('hidden'); };
     inputs.forEach((input) => {
         const view = input.dataset.view ?? '';
-        input.onchange = () => { mark(view, false); calm(); msg.textContent = ''; show(input); };
+        input.onchange = () => { mark(view, false); calm(); msg.textContent = ''; show(input); if (input.files?.length) step('photo'); };
+        input.addEventListener('click', () => step('pick'));
         const remove = part<HTMLButtonElement>('data-view-remove', view);
         if (remove) remove.onclick = () => { clear(view); mark(view, false); calm(); msg.textContent = ''; };
     });
@@ -207,6 +229,7 @@ export function bootFigure(stage: Stage): void {
     // the logo of dots over the viewer while the model is on its way; it scatters on an error, fades when the model comes
     let dots: Particles | null = null;
     const idle = (text: string): void => {
+        waiting = 0;
         msg.textContent = text; btn.disabled = false; $('figure-progress').classList.add('hidden'); bar.style.width = '0';
         void dots?.fail(); dots = null;
         stale();
@@ -289,6 +312,7 @@ export function bootFigure(stage: Stage): void {
         // a bust or a figure can change its base without a new generation too (the pet's box is switched in measured())
         if (form.dataset.kind !== 'pet' && cfg.files) document.getElementById('figure-rebase-box')?.classList.remove('hidden');
         btn.disabled = false; $('figure-progress').classList.add('hidden');
+        if (waiting) { step('shown', Date.now() - waiting); waiting = 0; }
         stage.revealResult();
     };
 
@@ -358,8 +382,9 @@ export function bootFigure(stage: Stage): void {
         e.preventDefault();
         sync();
         const file = photo.files?.[0];
-        if (!file) { msg.textContent = t('figure.need_photo'); return; }
-        if (!($('figure-consent') as HTMLInputElement).checked) { msg.textContent = t('figure.need_consent'); return; }
+        if (!file) { step('no_photo'); msg.textContent = t('figure.need_photo'); return; }
+        if (!($('figure-consent') as HTMLInputElement).checked) { step('no_consent'); msg.textContent = t('figure.need_consent'); return; }
+        step('create');
         calm();
         inputs.forEach((i) => mark(i.dataset.view ?? '', false));
         // the photos go as 2 000 px at most (a phone's 8 to 12 MB would be slow and over the limit); what is still too big is said now
@@ -378,6 +403,7 @@ export function bootFigure(stage: Stage): void {
             const res = await fetch(cfg.generate, { method: 'POST', credentials: 'same-origin', headers: { Accept: 'application/json' }, body: data });
             const body = await res.json();
             if (res.status === 429) {
+                step('limit');
                 idle(t(body.error === 'global_limit' ? 'figure.global_limit' : 'figure.limit', { n: body.limit, m: body.login_limit }));
                 // a visitor without an account gets more models with one: the way there is in the message itself
                 if (body.error !== 'global_limit' && cfg.register) {
@@ -390,6 +416,7 @@ export function bootFigure(stage: Stage): void {
             // the server's own refusal of a field (a photo too big, not a picture) is a sentence in the page's language
             if (res.status === 422 && body.error !== 'photo_rejected' && typeof body.message === 'string') return idle(body.message);
             if (res.status === 422 && body.error === 'photo_rejected') {
+                step('rejected');
                 // only the front photo stops the work; it leaves the form, so the next try does not send it again
                 clear('front');
                 mark('front', true);
@@ -406,8 +433,10 @@ export function bootFigure(stage: Stage): void {
             if (note) { viewsMsg.textContent = note; viewsMsg.classList.remove('hidden'); msg.textContent = `${note} ${t('figure.generating')}`; }
             // from now on the model has an address: the visitor may leave and come back by it
             address(body.generation.token);
+            waiting = Date.now();
             await follow(body.generation as Generation, note);
         } catch {
+            step('error');
             idle(t('figure.failed'));
         }
     };

@@ -62,6 +62,10 @@ final class OrderFiles
         }));
         // a Short waiting for the admin can still be built again from its frames: they go by KEEP_FRAMES_DAYS (matplace:prune)
         $frames = $this->waitsForRebuild($order) ? [] : array_values(array_intersect($disk->directories($dir), array_map(fn ($name) => $dir.'/'.$name, self::FRAMES)));
+        // the customer's source photo (SourcePhotos) lives as long as the frames: it goes when they do
+        if (! $this->waitsForRebuild($order)) {
+            $files = array_values(array_unique(array_merge($files, \App\Domain\Generation\SourcePhotos::copies($order))));
+        }
         $paths = $this->withoutPaths($order);
         if (! $files && ! $frames && ! $paths) {
             return null;
