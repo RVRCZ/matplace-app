@@ -317,6 +317,9 @@ class FigureToolTest extends TestCase
                                 $letterX = max($letterX, abs($p[0] - $fx));
                                 $letters++;
                             }
+                        } elseif ($kind === 'classic_stem' && $p[2] > $zc - 0.05) {
+                            // the flat underside of the chest itself: wider than the stem since the rounding went (18 Nov 2026)
+                            continue;
                         } else {
                             // the round feet: a disc that covers the underside, or a foot under a stem; the letters stand out of the rim
                             $round = max($round, hypot($p[0] - $fx, $p[1] - $fy) - $r['foot_r']);
