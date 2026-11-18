@@ -14,6 +14,7 @@
         'price' => ['Viděl přesnou cenu', 'Vybral barvu a nechal si spočítat přesnou cenu.'],
         'checkout' => ['Šel platit', 'Otevřel platbu kartou.'],
         'paid' => ['Zaplatil', 'Banka platbu potvrdila.'],
+        'download' => ['Stáhl model', 'Stáhl si model pro vlastní tiskárnu (STL nebo projekt 3MF). Není to krok k objednávce.'],
     ];
     $stops = [
         'no_consent' => ['Bez souhlasu', 'Zkusil vytvořit figurku bez zaškrtnutého souhlasu.'],

@@ -404,7 +404,7 @@ export function bootEdit(stage: Stage): void {
         const items: MenuItem[] = [
             { label: stage.t('toolpage.download.project'), hint: stage.t('toolpage.download.project.hint'), icon: 'file-box', href: open },
         ];
-        if (file.stl_url) items.push({ label: stage.t('toolpage.download.whole'), href: file.stl_url, download: `${file.name.replace(/\.[^.]+$/, '')}.stl` });
+        if (file.stl_url) items.push({ label: stage.t('toolpage.download.whole'), href: `${file.stl_url}?download=1`, download: `${file.name.replace(/\.[^.]+$/, '')}.stl` });
         // a print of colours side by side, read out of G-code: a plain 3MF with an object per colour for the visitor's own slicer
         if (cfg.op === 'gcode' && r.colors_mode === 'parts') items.push({ label: t('download.colors'), icon: 'file-box', href: `${cfg.parts}/${file.uuid}/colors.3mf` });
         // a flexi prints in one go, assembled: its segments are not offered one by one

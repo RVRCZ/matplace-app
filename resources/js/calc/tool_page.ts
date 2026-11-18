@@ -375,7 +375,8 @@ export class Stage {
         const items: MenuItem[] = [
             { label: this.t('toolpage.download.project'), hint: this.t('toolpage.download.project.hint'), icon: 'file-box', href: open },
         ];
-        if (file.stl_url) items.push({ label: this.t('toolpage.download.whole'), href: file.stl_url, download: `${file.name.replace(/\.[^.]+$/, '')}.stl` });
+        // ?download=1: the server counts the STL as a download only when the link says so (the 3D preview fetches the same file)
+        if (file.stl_url) items.push({ label: this.t('toolpage.download.whole'), href: `${file.stl_url}?download=1`, download: `${file.name.replace(/\.[^.]+$/, '')}.stl` });
         if ((file.parts ?? []).length) {
             items.push({ heading: this.t('toolpage.download.parts') });
             (file.parts ?? []).forEach((p) => items.push({ label: this.t('toolpage.download.part', { name: partLabel(p) }), href: `${this.cfg.files.replace(/\/files$/, '')}/tools/param/${file.uuid}/${p}.stl` }));
