@@ -3,6 +3,8 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Domain\Farm\FarmSettings;
+use App\Domain\Generation\BustStyles;
+use App\Domain\Generation\PedestalChanger;
 use App\Domain\Stats\AiActivity;
 use App\Domain\Stats\CampaignFunnel;
 use App\Domain\Stats\Funnel;
@@ -17,6 +19,7 @@ use App\Support\ToolSeo;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Validation\Rule;
 use Illuminate\View\View;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 
@@ -37,11 +40,11 @@ class StatsController extends Controller
         return view('admin.stats.funnel', ['stats' => $funnel->compute($days, $source, $locale, $tool), 'o' => $overview->compute($days), 'source' => $source, 'locale' => $locale, 'tool' => $tool, 'tools' => ToolSeo::tools()]);
     }
 
-    public function ai(Request $request, AiActivity $activity, FarmSettings $settings): View
+    public function ai(Request $request, AiActivity $activity, FarmSettings $settings, BustStyles $bust): View
     {
         $days = in_array((int) $request->query('days'), [7, 30, 90], true) ? (int) $request->query('days') : 30;
 
-        return view('admin.ai.index', ['stats' => $activity->summary($days), 'limits' => $settings->aiLimits()]);
+        return view('admin.ai.index', ['stats' => $activity->summary($days), 'limits' => $settings->aiLimits(), 'bust' => ['shown' => $bust->shown(), 'default' => $bust->default()]]);
     }
 
     /** The daily AI limits (generations per guest, account, printer, the whole site…) set on the AI page, kept in farm_settings. */
@@ -55,6 +58,20 @@ class StatsController extends Controller
         $settings->applyAiLimits();
 
         return redirect()->route('admin.ai.index')->with('status', 'Denní limity jsou uložené; platí hned.');
+    }
+
+    /** "Typy busty" on the AI page: which finishes of a bust the bust page offers and which one it starts with (BustStyles). */
+    public function bustStyles(Request $request, BustStyles $bust): RedirectResponse
+    {
+        $data = $request->validate([
+            'shown' => ['nullable', 'array'],
+            'shown.*' => ['string', Rule::in(PedestalChanger::BUST_STYLES)],
+            // the default is one of the shown ones; with none shown there is none to choose
+            'default' => ['nullable', 'string', Rule::in($request->input('shown', []))],
+        ], ['default.in' => 'Výchozí typ musí být mezi zobrazenými.']);
+        $bust->save($data['shown'] ?? [], $data['default'] ?? null);
+
+        return redirect()->to(route('admin.ai.index').'#bust-styles')->with('status', 'Typy busty jsou uložené; stránka busty je nabízí hned.');
     }
 
     /** How long customers wait for the server: queue, repair, slicing… per step (matplace:perf-report on a page). */

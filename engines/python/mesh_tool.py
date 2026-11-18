@@ -8,7 +8,7 @@ Mesh utility for matplace engines (trimesh, optional pymeshfix, optional cadquer
   mesh_tool.py repair <in> <out.stl>                  -> repaired binary STL + report
   mesh_tool.py convert <in> <out.stl>                 -> any trimesh-readable mesh format to binary STL (scene merged)
   mesh_tool.py normalize <in> <out.stl> <max_mm> <yup 0|1> [clean,pedestal,solid] [extras-json]
-                                                          extras: {"pedestal": socle|antique|cut|round|square|hexagon|column|plaque|none, "name": "…", "dedication": "…", "font": path,
+                                                          extras: {"pedestal": classic|classic_round|classic_stem|socle|antique|cut|round|square|hexagon|column|plaque|none, "name": "…", "dedication": "…", "font": path,
                                                                    "front": auto|keep|left|right|back, "cut": "bust", "tidy": true (cut off loose strands), "sink": 0-0.4, "source_out": path of the figure without a base,
                                                                    "strip_pedestal": true}
                                                        -> millimetres (largest side = max_mm), Z-up, on the bed;
@@ -869,6 +869,10 @@ def pedestal_mesh(kind, cx, cy, r, ped_h, overlap, extras, z_top=None, sizes=Non
         return S.rounded_rect(M, w, d, rad).translate([-w / 2, -d / 2])
 
     note = {"pedestal": kind}
+    if "stand" in BUST_STYLES.get(kind, {}):
+        if not sizes:
+            raise ValueError("classic_needs_its_chest")
+        return classic_foot(M, S, extras, overlap if z_top is None else z_top - overlap, sizes, note)
     if kind in ("socle", "antique"):
         build = socle_mesh if kind == "socle" else antique_mesh
         return build(M, S, cx, cy, extras, overlap if z_top is None else z_top, overlap, sizes or socle_sizes(ped_h / 0.05, r, kind), note)
@@ -971,6 +975,19 @@ BUST_STYLES = {
     # the added chest is a plain wall: under a slanted cut only a low one looks like the work of a sculptor
     "cut": {"chest": 0.8, "more": 0.10, "lean": 24.0, "keep": 0.6},
 }
+# The classic bust (the owner's pictures of 17 Nov 2026): the arms are cut away by two flat faces just outside the
+# shoulders that lean in towards the bottom, the chest ends flat and stands on a low foot. The chest and the foot are
+# two things: the same chest stands on a rounded-square block ("classic") or on a low round disc ("classic_round").
+#   keep  - where a side face passes at the shoulder line, as a share of the half width of the chest with its arms
+#   lean  - degrees the faces lean in going down (an overhang far under what needs supports)
+#   block / disc - the height of the foot as a share of the bust's own height (the block is a tenth of the whole)
+#   grow  - how far the foot stands out of the chest's underside, as a share of the underside's width
+#   corner - the radius of the block's corners, as a share of its shorter side
+CLASSIC = {"chest": 0.8, "more": 0.10, "keep": 0.78, "lean": 13.0, "block": 0.11, "disc": 0.085, "grow": 0.035, "corner": 0.14}
+BUST_STYLES["classic"] = dict(CLASSIC, stand="block")
+BUST_STYLES["classic_round"] = dict(CLASSIC, stand="disc", lean=20.0)
+# the third: a chest rounded underneath that narrows to a short stem on a round foot (shares of the bust's height)
+BUST_STYLES["classic_stem"] = dict(CLASSIC, stand="stem", keep=0.80, lean=10.0, round=0.26, power=1.7, stem=0.16, r_stem=0.085, r_foot=0.2)
 
 
 def socle_sizes(bust_h, r, kind="socle"):
@@ -1170,6 +1187,8 @@ def bust_shape(kind, body, m, cx, cy, z_cut, r, overlap=2.8):
     """
     import numpy as np
     style = BUST_STYLES[kind]
+    if "stand" in style:
+        return classic_shape(style, body, m, z_cut)
     if kind == "socle":
         sizes = socle_sizes(float(m.bounds[1][2]) - float(z_cut), r, kind)
         sizes["added"], sizes["chest_enough"], sizes["cut_z"] = 0.0, True, float(z_cut)
@@ -1237,6 +1256,266 @@ def bust_shape(kind, body, m, cx, cy, z_cut, r, overlap=2.8):
         # the flat of the rounded underside is centred on the tablet and covers it
         body = round_under(body, sizes["cx"], sizes["cy"], bottom, high, max(sizes["flat"], half_diag * scale + 1.0), style["power"])
     return body, bottom, sizes
+
+
+def main_piece(section):
+    """The biggest outline of a cross-section: the chest, not an arm or a strand of hair cut through beside it."""
+    pieces = [p for p in section.decompose() if p.area() > 0]
+    return max(pieces, key=lambda p: p.area()) if pieces else None
+
+
+def classic_sides(body, m, z_bottom, keep, lean_deg):
+    """
+    The two side faces of the classic bust, measured on the body itself so that a broad and a narrow person both
+    keep the caps of the shoulders and lose the arms.
+
+    Between the flat cut and the neck the chest is sliced; of every slice only the biggest outline counts (an arm
+    that hangs free is its own outline). The middle is the neck's own, the half width of the chest with its arms is
+    the median of the slices of the lower half, each side for itself (a raised arm must not move the other face),
+    and the two are kept within a tenth of their mean so the bust stays even. The shoulder line is the highest slice
+    that is still 85 % as wide: above it the outline runs in to the neck. Each face passes `keep` of the half width
+    from the middle at the shoulder line, which is just outside the body there, so the cap stays whole and the flat
+    face begins right under it, and leans in by `lean_deg` going down.
+
+    Returns (middle x, the faces' distance from it at the flat cut [left, right], the shoulder line's height,
+    the level above which nothing is cut or None). The last is set when hair, a hood or the head itself reach past
+    a face above the neck: the faces then end at the neck instead of slicing the head.
+    """
+    import numpy as np
+    top = float(m.bounds[1][2])
+    tall = top - z_bottom
+    neck = neck_level(m, z_bottom)
+    upper = neck if neck is not None and neck - z_bottom > 0.08 * tall else z_bottom + 0.3 * tall
+    levels = np.linspace(z_bottom + 0.02 * tall, upper, 25)
+    rows = []
+    for z in levels:
+        piece = main_piece(body.slice(float(z)))
+        if piece is not None:
+            x0, _, x1, _ = piece.bounds()
+            rows.append((float(z), float(x0), float(x1)))
+    if len(rows) < 6:
+        raise ValueError("no_chest_to_measure")
+    rows = np.array(rows)
+    mid = None
+    if neck is not None:
+        piece = main_piece(body.slice(float(neck)))
+        if piece is not None:
+            mid = centroid_of(piece)[0]
+    if mid is None:
+        mid = float(np.median((rows[:, 1] + rows[:, 2]) / 2))
+    low = rows[rows[:, 0] <= z_bottom + 0.5 * (upper - z_bottom)]
+    half = np.array([float(np.median(mid - low[:, 1])), float(np.median(low[:, 2] - mid))])
+    if half.min() <= 0:
+        raise ValueError("no_chest_to_measure")
+    half = np.clip(half, 0.9 * half.mean(), 1.1 * half.mean())
+    wide = (mid - rows[:, 1] >= 0.85 * half[0]) & (rows[:, 2] - mid >= 0.85 * half[1])
+    line = float(rows[wide][:, 0].max()) if wide.any() else float(z_bottom + 0.5 * (upper - z_bottom))
+    lean = float(np.tan(np.radians(lean_deg)))
+    at_cut = keep * half - lean * (line - z_bottom)
+    # never into the neck: at the flat cut the faces stay outside 0.55 of the half width (a very long chest)
+    at_cut = np.maximum(at_cut, 0.55 * half)
+    limit = None
+    if neck is not None:
+        for z in np.linspace(neck, top - 0.02 * tall, 14):
+            section = body.slice(float(z))
+            if section.area() <= 0:
+                continue
+            x0, _, x1, _ = section.bounds()
+            reach = at_cut + lean * (float(z) - z_bottom)
+            if mid - x0 > reach[0] + 0.5 or x1 - mid > reach[1] + 0.5:
+                limit = float(neck)
+                break
+    return float(mid), at_cut, line, limit
+
+
+def chest_yaw(body, z_from, z_to):
+    """
+    How far the chest is turned about the upright axis, in degrees (counter-clockwise, 0 = the shoulders run along X).
+    The generator hands a bust over at any angle and face_front only knows quarter turns; a chest that stands 20
+    degrees askew would lose one shoulder blade to a side face and keep the other arm. The outline of a chest with its
+    arms is clearly longer along the shoulders than deep, so the long axis of its slices (second moments of area,
+    five slices) is the shoulder line. 0 when the outline is too round to say (arms crossed in front), when the
+    answer is under 3 degrees (nothing to mend) or over 40 (that is no askew chest, the measure is lost).
+    """
+    import numpy as np
+    cov = np.zeros((2, 2))
+    for z in np.linspace(z_from, z_to, 5):
+        piece = main_piece(body.slice(float(z)))
+        if piece is None:
+            continue
+        area = sx = sy = ixx = iyy = ixy = 0.0
+        for poly in piece.to_polygons():
+            p = np.asarray(poly, dtype=np.float64)
+            q = np.roll(p, -1, axis=0)
+            cross = p[:, 0] * q[:, 1] - q[:, 0] * p[:, 1]
+            area += cross.sum() / 2.0
+            sx += ((p[:, 0] + q[:, 0]) * cross).sum() / 6.0
+            sy += ((p[:, 1] + q[:, 1]) * cross).sum() / 6.0
+            ixx += ((p[:, 1] ** 2 + p[:, 1] * q[:, 1] + q[:, 1] ** 2) * cross).sum() / 12.0
+            iyy += ((p[:, 0] ** 2 + p[:, 0] * q[:, 0] + q[:, 0] ** 2) * cross).sum() / 12.0
+            ixy += ((p[:, 0] * q[:, 1] + 2 * p[:, 0] * p[:, 1] + 2 * q[:, 0] * q[:, 1] + q[:, 0] * p[:, 1]) * cross).sum() / 24.0
+        if area <= 1e-6:
+            continue
+        mx, my = sx / area, sy / area
+        cov += np.array([[iyy / area - mx * mx, ixy / area - mx * my], [ixy / area - mx * my, ixx / area - my * my]])
+    values, vectors = np.linalg.eigh(cov)
+    if values[0] <= 0 or np.sqrt(values[1] / values[0]) < 1.25:
+        return 0.0
+    vx, vy = vectors[:, 1]
+    angle = float(np.degrees(np.arctan2(vy, vx)))
+    angle = (angle + 90.0) % 180.0 - 90.0
+    return angle if 3.0 <= abs(angle) <= 40.0 else 0.0
+
+
+def classic_shape(style, body, m, z_cut):
+    """
+    The chest of the classic bust on a body already cut flat at `z_cut`: a short chest is drawn down like the other
+    styles do, the arms are cut away by the two leaning faces (classic_sides), and the foot is sized from what the
+    chest then stands on. A millimetre of the chest reaches down into the foot so the two become one body.
+    Returns (body, the level of the flat cut, sizes of the foot).
+    """
+    import numpy as np
+    import manifold3d as M
+    top = float(m.bounds[1][2])
+    before = top - float(z_cut)
+    body, bottom, chest = longer_chest(body, m, float(z_cut), style["chest"], style["more"])
+    # the chest is set square first: the side faces, the foot and the name then follow the shoulders
+    yaw = chest_yaw(body, bottom + 0.03 * (top - bottom), bottom + 0.16 * (top - bottom))
+    if yaw:
+        body = body.rotate([0.0, 0.0, -yaw])
+    mid, at_cut, line, limit = classic_sides(body, m, bottom, style["keep"], style["lean"])
+    a = np.radians(style["lean"])
+    whole = body
+    upper = None
+    if limit is not None:
+        upper = body.trim_by_plane([0.0, 0.0, 1.0], limit)
+        body = body.trim_by_plane([0.0, 0.0, -1.0], -limit)
+    for i, side in enumerate((-1, 1)):
+        normal = [-side * float(np.cos(a)), 0.0, float(np.sin(a))]
+        point = np.array([mid + side * float(at_cut[i]), 0.0, bottom])
+        body = body.trim_by_plane(normal, float(np.dot(normal, point)))
+    if upper is not None:
+        body = body + upper
+    if body.volume() < 0.4 * whole.volume():
+        raise ValueError("classic_cut_too_deep")
+    under = main_piece(body.slice(float(bottom) + 0.3))
+    if under is None:
+        raise ValueError("no_underside")
+    x0, y0, x1, y1 = under.bounds()
+    bust_h = top - bottom
+    sizes = {"kind": "classic", "foot_kind": style["stand"], "bust_h": float(bust_h), "added": round(bust_h - before, 1), "chest_enough": chest is not None,
+             "cut_z": float(bottom), "cx": float((x0 + x1) / 2), "cy": float((y0 + y1) / 2), "chest_w": float(x1 - x0), "chest_d": float(y1 - y0),
+             "side_left": float(mid - at_cut[0]), "side_right": float(mid + at_cut[1]), "lean": float(style["lean"]), "side_top": float(limit if limit is not None else top),
+             # as wide as the bust is at its shoulder line after the cut: the foot never stands out past the shoulders
+             "shoulders": float(at_cut.sum() + 2 * np.tan(a) * (line - bottom)),
+             "grow": float(style["grow"]), "corner": float(style["corner"]),
+             "height": max(3.0, style[style["stand"]] * bust_h)}
+    sizes["yaw"] = float(yaw)
+    sizes["under"] = under.translate([-sizes["cx"], -sizes["cy"]])
+    if style["stand"] == "stem":
+        # the third bust of the owner's picture: the chest is rounded underneath and narrows to a short stem. The
+        # sweep takes most of what is left of the side faces, so the shoulders run into the stem in one curve; it
+        # never climbs past three quarters of the way to the shoulder line (the caps of the shoulders stay).
+        stem = min(style["r_stem"] * bust_h, 0.3 * min(sizes["chest_w"], sizes["chest_d"]))
+        high = min(style["round"] * bust_h, 0.75 * (line - bottom))
+        if stem < 2.0:
+            raise ValueError("no_room_for_a_stem")
+        if high > 1.0:
+            body = round_under(body, sizes["cx"], sizes["cy"], bottom, high, stem + 1.5, style["power"])
+        sizes["r_stem"], sizes["r_foot"] = float(stem), float(max(style["r_foot"] * bust_h, 1.6 * stem))
+        return body, float(bottom), sizes
+    # the chest goes a millimetre into the foot (hidden there); the foot's top is the plane of the cut
+    plug = under.offset(-0.6, M.JoinType.Round).extrude(1.3).translate([0.0, 0.0, bottom - 1.0])
+    return body + plug, float(bottom), sizes
+
+
+def classic_foot(M, S, extras, z_top, sizes, note):
+    """
+    The foot of the classic bust, its top face in the plane of the chest's flat cut.
+
+    block: a low block, square with well rounded corners, a chamfer on its top edge and a small bevel at the bed. It
+           stands out of the chest's underside by `grow` of the underside's width on every side (never less than the
+           chamfer and a millimetre, so the underside lies wholly on the flat top; never wider than the shoulders
+           unless the underside itself is). The name is raised on the flat of the front face, one line, as big as
+           the face takes with a margin; a long name is set smaller, it never reaches the rounded corners.
+    disc:  a low round disc with a rounded top edge that covers the underside; the name is bent round its front.
+    """
+    import numpy as np
+    import trimesh
+    h = float(sizes["height"])
+    under = sizes["under"]
+    bevel = min(0.4, 0.1 * h)
+    if sizes["foot_kind"] in ("disc", "stem"):
+        if sizes["foot_kind"] == "disc":
+            rim = h
+            edge = 0.38 * rim                                        # the rounded top edge
+            pts = np.vstack([np.asarray(p, dtype=np.float64) for p in under.to_polygons()])
+            r = float(np.hypot(pts[:, 0], pts[:, 1]).max()) + edge * 0.3 + 1.0
+            prof = [(0.0, 0.0), (r - bevel, 0.0), (r, bevel), (r, rim - edge)]
+            prof += [(r - edge * (1 - np.cos(t)), rim - edge + edge * np.sin(t)) for t in np.linspace(0, np.pi / 2, 16)[1:]]
+            prof += [(0.0, h)]
+        else:
+            # a round foot with a rounded edge, a hollow up to the stem, the stem; 2.5 mm of the stem end in the chest
+            r, rs = float(sizes["r_foot"]), float(sizes["r_stem"])
+            rim = 0.5 * h
+            edge = 0.3 * rim
+            cove = min(0.3 * h, r - edge - rs)
+            prof = [(0.0, 0.0), (r - bevel, 0.0), (r, bevel), (r, rim - edge)]
+            prof += [(r - edge * (1 - np.cos(t)), rim - edge + edge * np.sin(t)) for t in np.linspace(0, np.pi / 2, 16)[1:]]
+            prof += [(rs + cove * (1 - np.sin(t)), rim + cove * (1 - np.cos(t))) for t in np.linspace(0, np.pi / 2, 16)]
+            prof += [(rs, h + 2.5), (0.0, h + 2.5)]
+        solid = M.CrossSection([np.array(prof, dtype=np.float64)]).revolve(160)
+        note["foot_r"] = r
+        try:
+            band = rim - edge - bevel
+            made = raised_name(M, S, extras, band * 0.66, r * np.radians(130), note)
+            if made:
+                cs, th = made
+                raised = min(1.2, max(0.7, 0.08 * h))
+                flat = cs.translate([0, bevel + (band - th) / 2]).extrude(raised + 0.4).refine_to_length(0.5)
+
+                def bend(v):
+                    # x runs round the disc, y is the height, the extrusion points out of it; 0.4 mm sits inside
+                    ang, rho = v[0] / r, r - 0.4 + v[2]
+                    return [rho * np.sin(ang), -rho * np.cos(ang), v[1]]
+
+                solid = solid + flat.warp(bend)
+                note["name_cap_mm"] = float(th)
+        except Exception as e:  # noqa: BLE001 - a name that cannot be set must never lose the customer their model
+            note["text_error"] = str(e)[:120]
+    else:
+        cham = min(3.0, 0.2 * h)
+        grow = max(cham + 1.0, sizes["grow"] * sizes["chest_w"])
+        grow = max(cham + 1.0, min(grow, 0.5 * (sizes["shoulders"] - sizes["chest_w"])))
+        for _ in range(6):
+            w, d = sizes["chest_w"] + 2 * grow, sizes["chest_d"] + 2 * grow
+            rad = sizes["corner"] * min(w, d)
+            outline = S.rounded_rect(M, w, d, rad).translate([-w / 2, -d / 2])
+            # the whole underside lies on the flat top, inside the chamfer
+            if (under - outline.offset(-cham - 0.3, M.JoinType.Round, 2.0, 48)).area() <= 0.01:
+                break
+            grow += 1.0
+        layers = [outline.offset(-bevel, M.JoinType.Round, 2.0, 48).extrude(0.01),
+                  outline.extrude(h - cham - bevel).translate([0, 0, bevel]),
+                  outline.offset(-cham, M.JoinType.Round, 2.0, 48).extrude(0.01).translate([0, 0, h - 0.01])]
+        solid = M.Manifold.batch_hull(layers)
+        note["block_w_mm"], note["block_d_mm"] = float(w), float(d)
+        try:
+            face_h = h - cham
+            made = raised_name(M, S, extras, face_h * 0.6, (w - 2 * rad) * 0.92, note)
+            if made:
+                cs, th = made
+                raised = min(1.2, max(0.7, 0.08 * h))
+                flat = cs.extrude(raised + 0.3)
+                # up stays up, the extrusion points at the viewer (-Y); 0.3 mm sits inside the block
+                solid = solid + flat.rotate([90, 0, 0]).translate([0, -d / 2 + 0.3, (face_h - th) / 2])
+                note["name_cap_mm"] = float(th)
+        except Exception as e:  # noqa: BLE001
+            note["text_error"] = str(e)[:120]
+    mesh = solid.translate([sizes["cx"], sizes["cy"], z_top - h]).to_mesh()
+    note["pedestal_height"] = round(h, 1)
+    note["block_h_mm"] = h
+    return trimesh.Trimesh(vertices=np.asarray(mesh.vert_properties)[:, :3], faces=np.asarray(mesh.tri_verts), process=True), note
 
 
 def raised_name(M, S, extras, cap, width, note):
@@ -1555,7 +1834,8 @@ def main(argv):
                 whole = m
                 shaped_kinds = tuple(BUST_STYLES)
                 geometry = {}
-                for kind in ([kind, "round"] if kind in ("socle", "antique") else [kind]):
+                classic = "stand" in BUST_STYLES.get(kind, {})
+                for kind in ([kind, "round"] if kind in ("socle", "antique") or classic else [kind]):
                     m, ped, joined, geometry = whole, None, None, {}
                     try:
                         sizes = None
@@ -1581,6 +1861,17 @@ def main(argv):
                         else:
                             at = sizes or {}
                             ped, note = pedestal_mesh(kind, float(at.get("cx", cx)), float(at.get("cy", cy)), r, ped_h, overlap, extras, z_base + overlap, sizes)
+                            if at.get("kind") == "classic":
+                                # for the record and the tests: where the side faces and the foot are in the file
+                                geometry = {"cut_z": float(at["cut_z"]), "side_left_x": float(at["side_left"]), "side_right_x": float(at["side_right"]),
+                                            "side_top_z": float(at["side_top"]), "foot_x": float(at["cx"]), "foot_y": float(at["cy"]),
+                                            "chest_w_mm": float(at["chest_w"]), "chest_d_mm": float(at["chest_d"])}
+                                for key in ("block_w_mm", "block_d_mm", "block_h_mm", "name_cap_mm", "foot_r"):
+                                    if key in note:
+                                        geometry[key] = note.pop(key)
+                                note["side_lean"] = float(at["lean"])
+                                if at["yaw"]:
+                                    note["chest_squared"] = round(float(at["yaw"]), 1)
                             if kind in ("socle", "antique"):
                                 # for the record and the tests: the foot outside the body must be the foot below the cut
                                 P, B = as_manifold(ped), as_manifold(m)
@@ -1632,7 +1923,7 @@ def main(argv):
                     axis = {"x": 0, "y": 1, "z": 2}.get(key.rsplit("_", 1)[-1])
                     if axis is not None:
                         value = (value - float(shift[axis])) * factor
-                    elif key.endswith("_r"):
+                    elif key.endswith("_r") or key.endswith("_mm"):
                         value = value * factor
                     elif key.endswith("_mm3"):
                         value = value * factor ** 3

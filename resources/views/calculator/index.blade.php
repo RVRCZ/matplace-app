@@ -163,12 +163,14 @@
                         <p id="refine-msg" class="mt-1 text-xs text-slate-500">{{ __('refine.hint') }}</p>
                     </form>
                     {{-- generated busts and figures: another base without a new generation --}}
-                    <form id="pedestal-box" class="mt-3 hidden rounded-xl bg-slate-50 p-3">
+                    {{-- data-named: the bases that carry a name; an option with data-hidden is a bust style the owner has hidden
+                         (BustStyles, /admin/ai): it is offered only to a model that already has it --}}
+                    <form id="pedestal-box" class="mt-3 hidden rounded-xl bg-slate-50 p-3" data-named="{{ implode(',', \App\Domain\Generation\PedestalChanger::NAMED) }}">
                         <div class="text-sm font-semibold text-slate-700">{{ __('pedestal.title') }}</div>
                         <div class="mt-2 grid gap-2 sm:grid-cols-2">
                             <label class="block text-xs font-semibold text-slate-600">{{ __('pedestal.type') }}
                                 <select id="pedestal-type" class="mt-1 min-h-11 w-full rounded-lg border border-slate-300 bg-white px-2 py-2 text-sm font-normal">
-                                    @foreach(\App\Domain\Generation\PedestalChanger::TYPES as $pk)<option value="{{ $pk }}">{{ __('figure.pedestal.'.$pk) }}</option>@endforeach
+                                    @foreach(\App\Domain\Generation\PedestalChanger::TYPES as $pk)<option value="{{ $pk }}" @if(in_array($pk, app(\App\Domain\Generation\BustStyles::class)->hidden(), true)) data-hidden @endif>{{ __('figure.pedestal.'.$pk) }}</option>@endforeach
                                 </select>
                             </label>
                             <label class="block text-xs font-semibold text-slate-600">{{ __('pedestal.front') }}

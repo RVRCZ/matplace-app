@@ -668,6 +668,7 @@ Route::middleware(['auth', 'role:admin'])->prefix('admin')->name('admin.')->grou
     Route::get('/stats/tools', [AdminStatsController::class, 'tools'])->name('stats.tools');   // unique visitors with a tool per week, Search Console (docs/AN.md §12.3)
     Route::get('/ai', [AdminStatsController::class, 'ai'])->name('ai.index');
     Route::post('/ai/limits', [AdminStatsController::class, 'aiLimits'])->name('ai.limits');
+    Route::post('/ai/bust-styles', [AdminStatsController::class, 'bustStyles'])->name('ai.bust-styles');   // which bust styles the bust page offers, and its default
 
     // which tools of config/tools.php the public sees (an admin opens the hidden ones to try them)
     Route::get('/tools', [AdminToolController::class, 'index'])->name('tools.index');

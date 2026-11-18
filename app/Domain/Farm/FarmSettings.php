@@ -2,6 +2,7 @@
 
 namespace App\Domain\Farm;
 
+use App\Domain\Generation\BustStyles;
 use App\Models\FarmSetting;
 
 /** Farm settings: the admin's value from the database, else the default from config/farm.php. */
@@ -25,7 +26,8 @@ final class FarmSettings
 
     public function set(string $key, mixed $value): void
     {
-        if (! array_key_exists($key, (array) config('farm.settings')) && ! $this->isAiLimit($key)) {
+        // besides the farm's own switches: the AI limits and the choice of bust styles of /admin/ai (BustStyles)
+        if (! array_key_exists($key, (array) config('farm.settings')) && ! $this->isAiLimit($key) && $key !== BustStyles::KEY) {
             throw new \InvalidArgumentException("Unknown farm setting '{$key}'.");
         }
         FarmSetting::updateOrCreate(['key' => $key], ['value' => $value]);

@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Api;
 
+use App\Domain\Generation\BustStyles;
 use App\Domain\Generation\PedestalChanger;
 use App\Domain\Tools\ModelRepair;
 use App\Domain\Tools\MoldGenerator;
@@ -72,8 +73,10 @@ class ModelFileController extends Controller
     {
         $pet = $changer->petState($modelFile) !== null;
         abort_unless($modelFile->isReady() && ($pet || $changer->state($modelFile) !== null), 404);
+        // a bust style the owner has hidden (BustStyles, /admin/ai) cannot be chosen anew; the one this model already
+        // has stays allowed, so its name or its front can still be changed
         $data = $request->validate([
-            'type' => ['required', 'in:'.implode(',', $pet ? PedestalChanger::PET_TYPES : PedestalChanger::TYPES)],
+            'type' => ['required', 'in:'.implode(',', $pet ? PedestalChanger::PET_TYPES : app(BustStyles::class)->allowed($changer->state($modelFile)['type'] ?? null))],
             'name' => ['nullable', 'string', 'max:24'],
             'dedication' => ['nullable', 'string', 'max:40'],
             'name_side' => ['nullable', 'in:'.implode(',', PedestalChanger::PET_NAME_SIDES)],

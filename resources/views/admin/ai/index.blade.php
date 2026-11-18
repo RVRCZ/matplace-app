@@ -42,6 +42,25 @@
     <button type="submit" class="btn-ink mt-3">Uložit limity</button>
 </form>
 
+{{-- which finishes of a bust the bust page offers and which one it starts with (BustStyles, farm_settings `ai.bust_styles`) --}}
+<form method="post" action="{{ route('admin.ai.bust-styles') }}" class="card mt-4 p-4" id="bust-styles">
+    @csrf
+    <h2 class="font-bold">Typy busty</h2>
+    <p class="mt-1 text-xs text-slate-500">Co nabízí stránka busty z fotky a čím začíná. Skrytý typ se nenabízí a nová busta s ním nevznikne; model, který s ním už vznikl, se dál otevře a jeho podstavec jde změnit na jiný. Obyčejné podstavce (kulatý, čtvercový…) se nabízejí vždy.</p>
+    <div class="mt-3 grid gap-2 sm:grid-cols-2">
+        @foreach(\App\Domain\Generation\PedestalChanger::BUST_STYLES as $style)
+            <div class="flex flex-wrap items-center gap-x-4 gap-y-1 rounded-lg border border-line px-3 py-2 text-sm">
+                <label class="flex min-w-0 flex-1 items-center gap-2 font-semibold"><input type="checkbox" name="shown[]" value="{{ $style }}" class="h-5 w-5 accent-ink" @checked(in_array($style, $bust['shown'], true))> {{ __('figure.pedestal.'.$style) }}</label>
+                <label class="flex items-center gap-1.5 text-xs text-slate-600"><input type="radio" name="default" value="{{ $style }}" class="accent-ink" @checked($bust['default'] === $style)> výchozí</label>
+            </div>
+        @endforeach
+    </div>
+    @error('shown')<p class="mt-1 text-xs text-red-700">{{ $message }}</p>@enderror
+    @error('default')<p class="mt-1 text-xs text-red-700">{{ $message }}</p>@enderror
+    <p class="mt-2 text-xs text-slate-500">Výchozí musí být mezi zobrazenými. Když není zobrazený žádný typ, busta dostane obyčejný kulatý podstavec.</p>
+    <button type="submit" class="btn-ink mt-3">Uložit typy busty</button>
+</form>
+
 <dl class="mt-3 grid gap-3 sm:grid-cols-4">
     <div class="card p-4"><dt class="text-xs font-semibold uppercase text-muted">Náklady za období</dt><dd class="mt-1 text-2xl font-extrabold">{{ $czk($stats['total']['cost']) }}</dd><dd class="text-xs text-muted">{{ $stats['total']['calls'] }} volání</dd></div>
     <div class="card p-4"><dt class="text-xs font-semibold uppercase text-muted">Na návštěvníka</dt><dd class="mt-1 text-2xl font-extrabold">{{ $stats['per_visitor'] !== null ? $czk($stats['per_visitor']) : '—' }}</dd><dd class="text-xs text-muted">{{ $stats['visitors'] }} návštěvníků</dd></div>

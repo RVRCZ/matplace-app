@@ -15,13 +15,18 @@ use Illuminate\Support\Str;
  */
 final class PedestalChanger
 {
-    public const TYPES = ['socle', 'antique', 'cut', 'round', 'square', 'hexagon', 'column', 'plaque', 'none'];
+    public const TYPES = ['classic', 'classic_round', 'classic_stem', 'socle', 'antique', 'cut', 'round', 'square', 'hexagon', 'column', 'plaque', 'none'];
 
-    /** Finishes of a sculptor's bust: they shape the chest too, so they are offered for busts first. */
-    public const BUST_STYLES = ['socle', 'antique', 'cut'];
+    /**
+     * Finishes of a sculptor's bust: they shape the chest too, so they are offered for busts first. The three classic
+     * ones (the owner's picture of three busts, 17 Nov 2026, in its order middle, right, left) cut the arms away by
+     * two flat faces and stand on a rounded-square block, on a round disc, or rounded on a stem with a round foot.
+     * Which of them the bust page offers and starts with is the owner's choice (BustStyles, /admin/ai).
+     */
+    public const BUST_STYLES = ['classic', 'classic_round', 'classic_stem', 'socle', 'antique', 'cut'];
 
-    /** Bases that carry a name; only the plinth has room for a dedication below it. */
-    public const NAMED = ['socle', 'antique', 'plaque'];
+    /** Bases that carry a name; only the plinth has room for a dedication below it (the block of a classic bust is too low for a second line). */
+    public const NAMED = ['classic', 'classic_round', 'classic_stem', 'socle', 'antique', 'plaque'];
 
     public const DEDICATED = ['plaque'];
 

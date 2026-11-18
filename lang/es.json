@@ -3080,5 +3080,14 @@
     "affiliate.account.payout_carried": "Faltan :missing para el mínimo de pago (:min); la suma a cobrar se traslada al siguiente pago (:date).",
     "affiliate.account.page_pick": "Una página de la lista",
     "router.gift.qr": "Código QR en un cartel",
-    "router.gift.headband": "Diadema para un disfraz"
+    "router.gift.headband": "Diadema para un disfraz",
+    "figure.pedestal.classic": "Busto sobre bloque",
+    "figure.pedestal.classic_round": "Busto sobre disco",
+    "figure.pedestal.classic_stem": "Busto sobre pie",
+    "figure.pedestal.about.classic": "Los brazos se cortan con dos caras planas justo por fuera de los hombros, el pecho termina plano y descansa sobre un bloque bajo y cuadrado de esquinas redondeadas. El nombre puede ir en su frente.",
+    "figure.pedestal.about.classic_round": "El mismo corte del pecho, algo más estrecho, sobre un disco bajo y redondo de canto redondeado. El nombre puede ir alrededor de su borde.",
+    "figure.pedestal.about.classic_stem": "El pecho sin brazos es redondeado por debajo y se estrecha hasta un pie corto sobre una base redonda. El nombre puede ir alrededor de la base.",
+    "figure.pedestal.about.socle": "El pecho con los brazos se corta en arco por debajo y descansa sobre un pie torneado con el nombre alrededor.",
+    "figure.pedestal.about.antique": "Un pecho muy redondeado descansa sobre una tablilla con el nombre y una peana de pie ancho.",
+    "figure.pedestal.about.cut": "Sin base, el busto se apoya en su propio corte plano con los hombros cortados en diagonal."
 }
