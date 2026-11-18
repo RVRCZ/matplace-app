@@ -26,6 +26,7 @@ class ModelPicture
     public const RETRY_AFTER_HOURS = 24;
 
     public const NEUTRAL = 'b9bec6';
+    private const DARK = '4a4d52';
 
     public function __construct(private readonly ScriptRunner $python) {}
 
@@ -81,7 +82,7 @@ class ModelPicture
     }
 
     /** The order's first colour when it is at hand and not so pale it vanishes on the light ground, else a neutral grey. */
-    private function colour(FarmOrder $order): string
+    public function colour(FarmOrder $order): string
     {
         $hex = ltrim((string) $order->color?->hex, '#');
         if (! preg_match('/^[0-9a-f]{6}$/i', $hex)) {
@@ -89,6 +90,11 @@ class ModelPicture
         }
         [$r, $g, $b] = [hexdec(substr($hex, 0, 2)), hexdec(substr($hex, 2, 2)), hexdec(substr($hex, 4, 2))];
 
-        return (0.2126 * $r + 0.7152 * $g + 0.0722 * $b) > 215 ? self::NEUTRAL : strtolower($hex);
+        $light = 0.2126 * $r + 0.7152 * $g + 0.0722 * $b;
+        if ($light < 60) {
+            return self::DARK;   // black and near-black filaments: a dark grey keeps the shading, a true black is a flat silhouette
+        }
+
+        return $light > 215 ? self::NEUTRAL : strtolower($hex);
     }
 }

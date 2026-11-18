@@ -587,6 +587,16 @@ class FarmVideosCutTest extends TestCase
         }
     }
 
+    public function test_the_model_picture_keeps_its_shading_for_black_and_white_filaments(): void
+    {
+        $picture = app(\App\Domain\YouTube\ModelPicture::class);
+        $order = $this->order();
+        foreach (['#0a0a0a' => '4a4d52', '#ffffff' => \App\Domain\YouTube\ModelPicture::NEUTRAL, '#C8873A' => 'c8873a', 'nonsense' => \App\Domain\YouTube\ModelPicture::NEUTRAL] as $hex => $drawn) {
+            $order->setRelation('color', (new \App\Models\FarmColor)->forceFill(['hex' => $hex]));
+            $this->assertSame($drawn, $picture->colour($order), 'a black filament is drawn dark grey, a white one neutral grey, any other in its own colour');
+        }
+    }
+
     public function test_a_pet_figurine_is_titled_as_a_pet_figurine_and_a_bust_as_a_bust(): void
     {
         $videos = app(\App\Domain\YouTube\FarmVideos::class);
