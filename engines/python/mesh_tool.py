@@ -534,13 +534,13 @@ def bust_cut_along(m, axis=None):
         # a whole standing figure where a bust was asked for (the generator drew a body down to the shoes under a
         # chest-up photo, 15 Nov 2026, and the figure went out uncut as a "bust"): most of the height lies below the
         # shoulders, the broadest slice is at the elbows and the mean lands low. The neck is still where it is, so
-        # the first measure alone is the sculptor's cut. A little lower than for a bust (1.3 heads below the neck, not
-        # 0.92): the shoulder measure that pulls a bust's cut down onto the chest is the one that is missing here.
-        cut = float(levels[neck]) - 1.3 * (z1 - float(levels[neck]))
+        # the first measure alone is the sculptor's cut: one head below the neck (it was 1.3 while a short chest was still
+        # drawn down; the owner wants the bust to end right under the shoulders, 18 Nov 2026).
+        cut = float(levels[neck]) - 1.0 * (z1 - float(levels[neck]))
     elif (z1 - cut) < 0.45 * h and by_neck is None and h >= 2.0 * float(max(m.extents[0], m.extents[1])):
         # the same whole figure with long hair over the neck (18 Nov 2026): no neck to measure from, only the shoulder
-        # line. The crown-to-shoulder height once more below the line is the same place on the chest.
-        cut = line - 0.95 * (z1 - line)
+        # line. 0.7 of the crown-to-shoulder height below the line is the same place on the chest.
+        cut = line - 0.7 * (z1 - line)
     elif (z1 - cut) < 0.45 * h:
         return m
     if cut < z0 + 0.04 * h:
@@ -995,8 +995,9 @@ BUST_STYLES = {
     "antique": {"chest": 0.95, "more": 0.26, "round": 0.24, "power": 1.7, "flat": 0.19,
                 "foot": 0.25, "r_foot": 0.20, "r_drum": 0.15, "r_waist": 0.115,
                 "tablet_h": 0.085, "tablet_w": 0.27, "tablet_d": 0.17},
-    # the added chest is a plain wall: under a slanted cut only a low one looks like the work of a sculptor
-    "cut": {"chest": 0.8, "more": 0.10, "lean": 24.0, "keep": 0.6},
+    # nothing is added under the cut any more ("more": 0): the plain wall drawn down from a short chest was an ugly
+    # band round the bust (the owner, 18 Nov 2026); the chest ends where it was cut and stands on its foot
+    "cut": {"chest": 0.8, "more": 0.0, "lean": 24.0, "keep": 0.6},
 }
 # The classic bust (the owner's pictures of 17 Nov 2026): the arms are cut away by two flat faces just outside the
 # shoulders that lean in towards the bottom, the chest ends flat and stands on a low foot. The chest and the foot are
@@ -1006,9 +1007,9 @@ BUST_STYLES = {
 #   block / disc - the height of the foot as a share of the bust's own height (the block is a tenth of the whole)
 #   grow  - how far the foot stands out of the chest's underside, as a share of the underside's width
 #   corner - the radius of the block's corners, as a share of its shorter side
-CLASSIC = {"chest": 0.8, "more": 0.10, "keep": 0.78, "lean": 13.0, "block": 0.11, "disc": 0.085, "grow": 0.035, "corner": 0.14}
-BUST_STYLES["classic"] = dict(CLASSIC, stand="block")
-BUST_STYLES["classic_round"] = dict(CLASSIC, stand="disc", lean=20.0)
+CLASSIC = {"chest": 0.8, "more": 0.0, "keep": 0.78, "lean": 13.0, "block": 0.11, "disc": 0.085, "grow": 0.035, "corner": 0.14}
+BUST_STYLES["classic"] = dict(CLASSIC, stand="block", lean=18.0)
+BUST_STYLES["classic_round"] = dict(CLASSIC, stand="disc", lean=28.0)
 # the third: a chest rounded underneath that narrows to a short stem on a round foot (shares of the bust's height)
 BUST_STYLES["classic_stem"] = dict(CLASSIC, stand="stem", keep=0.80, lean=10.0, round=0.26, power=1.7, stem=0.16, r_stem=0.085, r_foot=0.2)
 
