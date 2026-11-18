@@ -1009,9 +1009,9 @@ BUST_STYLES = {
 #   corner - the radius of the block's corners, as a share of its shorter side
 CLASSIC = {"chest": 0.8, "more": 0.0, "keep": 0.78, "lean": 13.0, "block": 0.11, "disc": 0.085, "grow": 0.035, "corner": 0.14}
 BUST_STYLES["classic"] = dict(CLASSIC, stand="block", lean=18.0)
-BUST_STYLES["classic_round"] = dict(CLASSIC, stand="disc", lean=28.0)
+BUST_STYLES["classic_round"] = dict(CLASSIC, stand="disc", lean=24.0)
 # the third: a chest rounded underneath that narrows to a short stem on a round foot (shares of the bust's height)
-BUST_STYLES["classic_stem"] = dict(CLASSIC, stand="stem", keep=0.80, lean=10.0, round=0.26, power=1.7, stem=0.16, r_stem=0.085, r_foot=0.2)
+BUST_STYLES["classic_stem"] = dict(CLASSIC, stand="stem", keep=0.80, lean=24.0, round=0.0, power=1.7, stem=0.16, r_stem=0.085, r_foot=0.2)
 
 
 def socle_sizes(bust_h, r, kind="socle"):
