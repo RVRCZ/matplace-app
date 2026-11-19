@@ -113,7 +113,9 @@ return [
         'credit_cents' => (float) env('MESHY_CREDIT_CENTS', 2),               // an assumption: see prices.models above
         'work_dir' => storage_path('app/generated'),
     ],
-    'default_target_mm' => (int) env('AI_DEFAULT_TARGET_MM', 150),   // the longest side of a generated model when nobody says otherwise
+    'default_target_mm' => (int) env('AI_DEFAULT_TARGET_MM', 150),
+    // the size the bust / figure page opens with (Roman, 19 Nov 2026: 110 mm; the pet page keeps the default above)
+    'bust_target_mm' => (int) env('AI_BUST_TARGET_MM', 110),   // the longest side of a generated model when nobody says otherwise
     // photo size guess → volume: box volume × typical fill of a printed part (hollow-ish objects)
     'photo_fill_factor' => 0.35,
 ];
