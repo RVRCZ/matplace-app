@@ -271,7 +271,7 @@ class TimelapseCutter
         $graph[] = implode('', $sequence).'concat=n='.count($sequence).':v=1:a=0[body]';
         $line = fn (string $file, int $size, string $y, string $enable, string $color = 'white') => $this->caption($file, $size, 'x=(w-text_w)/2:y='.$y, $color).":enable='".$enable."'";
         $closing = 'gte(t,'.VideoCut::number($seconds - 1).')';
-        $graph[] = '[body]'.$line($dir.'/short_title.txt', (int) round($h * 0.045), 'h*0.16', 'lt(t,1)').','
+        $graph[] = '[body]'.$line($dir.'/short_title.txt', (int) round($h * 0.045), $opening ? 'h*0.16' : 'h*0.84-text_h', 'lt(t,1)').','
             .($tool !== null ? $line($dir.'/short_tool.txt', (int) round($h * 0.036), 'h*0.78-text_h-h*0.02', $closing, self::TEAL).',' : '')
             .$line($dir.'/short_url.txt', (int) round($h * 0.04), 'h*0.78', $closing).',settb=AVTB[v]';
 

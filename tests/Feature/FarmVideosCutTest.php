@@ -597,6 +597,30 @@ class FarmVideosCutTest extends TestCase
         }
     }
 
+    public function test_an_order_of_a_model_with_a_changed_pedestal_still_gets_the_held_photo_and_the_title_stays_off_the_face(): void
+    {
+        $order = $this->order();
+        $first = $order->modelFile;
+        $first->forceFill(['origin' => 'generated', 'origin_ref' => 'gen123456789'])->save();
+        Storage::disk(\App\Models\ModelFile::DISK)->put($first->dir().'/source_hold.jpg', $this->picture(120, 'F'));
+        // the pedestal was changed: a new file of the same generation, nothing held beside it
+        $second = $first->replicate();
+        $second->uuid = (string) \Illuminate\Support\Str::uuid();
+        $second->save();
+        $order->forceFill(['model_file_id' => $second->id])->save();
+        $order = $order->fresh();
+
+        app(\App\Domain\Generation\SourcePhotos::class)->keep($order, $order->modelFile);
+        $this->assertNotNull(app(TimelapseCutter::class)->sourcePicture($order), 'the photo held beside the first file of the generation reaches the order');
+
+        // the Short opens with a picture: the title sits low, not over the face; without a picture it stays where it was
+        $this->frames($order, 300);
+        $video = FarmVideo::create(['farm_order_id' => $order->id, 'kind' => FarmVideo::KIND_SHORT, 'status' => FarmVideo::STATUS_PENDING, 'title' => 'T', 'meta' => ['show_source' => true]]);
+        $this->assertStringContainsString("y=h*0.84-text_h", app(TimelapseCutter::class)->short($order->fresh())->graph);
+        $video->forceFill(['meta' => ['show_source' => false]])->save();
+        $this->assertStringContainsString("y=h*0.16", app(TimelapseCutter::class)->short($order->fresh())->graph);
+    }
+
     public function test_a_pet_figurine_is_titled_as_a_pet_figurine_and_a_bust_as_a_bust(): void
     {
         $videos = app(\App\Domain\YouTube\FarmVideos::class);

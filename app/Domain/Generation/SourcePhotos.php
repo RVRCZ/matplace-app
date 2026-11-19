@@ -37,7 +37,18 @@ class SourcePhotos
     public function keep(FarmOrder $order, ModelFile $file): void
     {
         $models = Storage::disk(ModelFile::DISK);
-        $held = $file->origin === 'generated' ? ($models->files($file->dir()) ? collect($models->files($file->dir()))->first(fn ($f) => str_starts_with(basename($f), 'source_hold.')) : null) : null;
+        $held = null;
+        if ($file->origin === 'generated') {
+            // a model whose pedestal or name was changed after the generation is a new file of the same generation:
+            // the photo is held beside the first one, so every file of that generation is looked at
+            $siblings = $file->origin_ref ? ModelFile::where('origin', 'generated')->where('origin_ref', $file->origin_ref)->where('id', '!=', $file->id)->get()->all() : [];
+            foreach (array_merge([$file], $siblings) as $candidate) {
+                $held = collect($models->files($candidate->dir()))->first(fn ($f) => str_starts_with(basename($f), 'source_hold.'));
+                if ($held) {
+                    break;
+                }
+            }
+        }
         if (! $held) {
             return;
         }
