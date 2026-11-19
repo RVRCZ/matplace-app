@@ -74,9 +74,16 @@ export function startParticles(host: HTMLElement): Particles {
     canvas.className = 'block min-h-0 w-full flex-1';
     canvas.setAttribute('aria-hidden', 'true');
     const caption = document.createElement('p');
-    caption.className = 'px-4 pb-4 text-center text-sm text-muted';
+    caption.className = 'px-4 pb-2 text-center text-base font-semibold text-ink';
     caption.setAttribute('aria-hidden', 'true');      // the page says the same in its own line, which is read out
-    overlay.append(canvas, caption);
+    // the percent as a bar under the words (Roman, 19 Nov 2026: only a number growing said too little); shown once a percent comes
+    const track = document.createElement('div');
+    track.className = 'mx-auto mb-5 hidden h-2.5 w-2/3 max-w-xs overflow-hidden rounded-full bg-slate-200';
+    track.setAttribute('aria-hidden', 'true');
+    const fill = document.createElement('div');
+    fill.className = 'h-full w-0 rounded-full bg-ink transition-all duration-700';
+    track.appendChild(fill);
+    overlay.append(canvas, caption, track);
     host.appendChild(overlay);
     const empty = document.getElementById('tool-empty');
     const emptyWasHidden = empty?.classList.contains('hidden') ?? true;
@@ -228,7 +235,12 @@ export function startParticles(host: HTMLElement): Particles {
     });
 
     const show: Particles = {
-        say: (text, percent = null) => { caption.textContent = percent !== null && percent !== undefined && percent > 0 ? `${text} · ${Math.round(percent)} %` : text; },
+        say: (text, percent = null) => {
+            const known = percent !== null && percent !== undefined && percent > 0;
+            caption.textContent = known ? `${text} · ${Math.round(percent as number)} %` : text;
+            // a page that tells a percent at all (even 0 at the start) gets the bar from the first moment
+            if (percent !== null && percent !== undefined) { track.classList.remove('hidden'); fill.style.width = `${Math.min(100, Math.max(3, percent))}%`; }
+        },
         finish: () => leave(true),
         fail: () => leave(false),
     };

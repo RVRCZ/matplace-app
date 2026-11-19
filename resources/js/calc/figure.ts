@@ -228,17 +228,30 @@ export function bootFigure(stage: Stage): void {
 
     // the logo of dots over the viewer while the model is on its way; it scatters on an error, fades when the model comes
     let dots: Particles | null = null;
+    // a phone: the bar with the way on comes with the first model, not over an empty form (Roman, 19 Nov 2026)
+    const goBar = document.querySelector<HTMLElement>('[data-action-bar][data-for="tool-go"]');
+    if (goBar) goBar.hidden = true;
+    let moved = false;
     const idle = (text: string): void => {
         waiting = 0;
         msg.textContent = text; btn.disabled = false; $('figure-progress').classList.add('hidden'); bar.style.width = '0';
         void dots?.fail(); dots = null;
+        // the page went up to the viewer for the work; what went wrong is said in the form, so it comes back to that line
+        if (moved && text !== '') msg.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        moved = false;
         stale();
     };
     const working = (text: string): void => {
         stage.secondary(null);
         btn.disabled = true; $('figure-progress').classList.remove('hidden'); msg.textContent = text;
         const box = viewerBox();
-        if (box) { dots ??= startParticles(box); dots.say(text); }
+        if (box && !dots) {
+            dots = startParticles(box);
+            // the work shows in the viewer, which a phone has scrolled away above the form: the page goes to it once
+            const r = box.getBoundingClientRect();
+            if (r.top < 0 || r.bottom > window.innerHeight) { box.scrollIntoView({ behavior: 'smooth', block: 'center' }); moved = true; }
+        }
+        dots?.say(text, 0);
     };
     const fetchGeneration = async (token: string): Promise<Generation | null> => {
         const res = await fetch(`${cfg.show}/${token}`, { credentials: 'same-origin', headers: { Accept: 'application/json' } });
@@ -312,6 +325,8 @@ export function bootFigure(stage: Stage): void {
         // a bust or a figure can change its base without a new generation too (the pet's box is switched in measured())
         if (form.dataset.kind !== 'pet' && cfg.files) document.getElementById('figure-rebase-box')?.classList.remove('hidden');
         btn.disabled = false; $('figure-progress').classList.add('hidden');
+        if (goBar) goBar.hidden = false;
+        moved = false;
         if (waiting) { step('shown', Date.now() - waiting); waiting = 0; }
         stage.revealResult();
     };
