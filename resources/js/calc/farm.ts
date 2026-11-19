@@ -887,10 +887,14 @@ export function bootFarmOrder(): void {
         box.textContent = `${tr('farm.order.why.lead', { from: money(was.total), to: money(now) })} ${reasons.join(', ')}.`.replace(/:\s*\.$/, '.');
         show(box, true);
     };
+    let wasWorking: boolean | null = null;
     const render = (): void => {
         const s = state;
         const working = s.status === 'uploaded';
         viewer.setPrinting(working);      // while the order is being prepared and sliced the model is shown being printed
+        // a slice started from the choices further down: the page goes up to the model being "printed" (Roman, 19 Nov 2026)
+        if (working && wasWorking === false) revealIfHidden($('farm-viewer'), 'center');
+        wasWorking = working;
         // a big model (docs/AL.md §11): waiting for the choices and the colour before any slice; while its slice runs a
         // change of the choices starts it over
         const awaiting = s.status === 'awaiting_choices';

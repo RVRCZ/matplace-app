@@ -59,9 +59,9 @@ class BustStylesTest extends TestCase
         $this->assertSame(PedestalChanger::BUST_STYLES, $styles->shown());
         $this->assertSame(['classic', 'classic_round', 'classic_stem'], array_slice($styles->shown(), 0, 3));   // the picture's order: middle, right, left
         $this->assertSame([], $styles->hidden());
-        $this->assertSame('socle', $styles->default());
+        $this->assertSame('classic', $styles->default());
         $this->assertSame(PedestalChanger::TYPES, $styles->allowed());
-        $this->assertSame(['socle'], array_keys(array_filter($this->offered())));
+        $this->assertSame(['classic'], array_keys(array_filter($this->offered())));
 
         $this->actingAs($this->admin())->get('/admin/ai')->assertOk()->assertSee('Typy busty')->assertSee('Busta na bloku')->assertSee('name="shown[]" value="classic_stem"', false);
     }
