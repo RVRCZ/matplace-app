@@ -18,7 +18,7 @@ final class BustStyles
     public const KEY = 'ai.bust_styles';
 
     /** What the page starts with while the owner has not chosen. */
-    public const FALLBACK = 'socle';
+    public const FALLBACK = 'classic';      // the bust on a block (Roman, 19 Nov 2026); it was the modern 'socle'
 
     public function __construct(private readonly FarmSettings $settings) {}
 

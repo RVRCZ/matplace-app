@@ -388,8 +388,8 @@ class FigureToolTest extends TestCase
             foreach ($m as [, $bustOnly, $value, $rest]) {
                 // what the page hides for a whole figure carries the mark its script goes by
                 $this->assertSame(in_array($value, PedestalChanger::BUST_STYLES, true), $bustOnly !== '', $value);
-                // the page starts with the turned foot until the owner chooses otherwise (BustStylesTest)
-                $this->assertSame($value === 'socle', str_contains($rest, 'checked'), $value);
+                // the page starts with the bust on a block until the owner chooses otherwise (BustStylesTest)
+                $this->assertSame($value === 'classic', str_contains($rest, 'checked'), $value);
             }
             // a line about each style, the name field for the styles that carry a name
             $this->assertStringContainsString(__('figure.pedestal.about.classic', [], ltrim($prefix, '/') ?: 'cs'), $html);

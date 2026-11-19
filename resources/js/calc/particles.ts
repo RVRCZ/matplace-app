@@ -9,6 +9,7 @@
  * are sampled once from the alpha channel of public/img/logo.png (particles_points.ts).
  */
 import { partOf, samplePoints, seeded, type LogoPoint } from './particles_points';
+import { revealIfHidden } from '../site/sticky';
 
 export interface Particles {
     /** The line under the logo: what is happening, and how far along when the server says so. */
@@ -85,6 +86,8 @@ export function startParticles(host: HTMLElement): Particles {
     track.appendChild(fill);
     overlay.append(canvas, caption, track);
     host.appendChild(overlay);
+    // wherever something is being made the page goes to the place that shows it (Roman, 19 Nov 2026); nothing moves when it is in view
+    revealIfHidden(host, 'center');
     const empty = document.getElementById('tool-empty');
     const emptyWasHidden = empty?.classList.contains('hidden') ?? true;
     empty?.classList.add('hidden');
