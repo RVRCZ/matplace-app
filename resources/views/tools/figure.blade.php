@@ -43,6 +43,10 @@
             </ol>
             <p class="mt-2 text-xs text-muted">{{ __('figure.howto.note') }}</p>
         </details>
+        {{-- the how-to video of this page, once it is public on the channel (queued by farm:howto-video with link /tools/figure) --}}
+        @if($howtoVideo = app(\App\Domain\YouTube\FarmVideos::class)->howtoFor('/tools/figure'))
+            <a href="{{ $howtoVideo }}" target="_blank" rel="noopener" class="inline-flex items-center gap-1.5 text-sm font-medium text-ink underline decoration-line underline-offset-4 hover:decoration-ink"><span aria-hidden="true">▶</span>{{ __('figure.howto.video') }}</a>
+        @endif
 
         @include('tools._figure_photos')
         <span id="figure-tips-by-kind" hidden data-bust="{{ __('figure.photo_tips') }}" data-figure="{{ __('figure.photo_tips.figure') }}"></span>

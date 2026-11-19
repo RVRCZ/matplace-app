@@ -722,6 +722,20 @@ class FarmVideos
     }
 
     /** A video row's link on a channel: its print's tool page, the how-to spec's target (meta.link), the weekly cut the home page; marked with the video's id once it has one. */
+    /**
+     * The public how-to video of a tool page ("/tools/figure") as its YouTube address, the newest wide one whose spec
+     * linked to that page; null while none is public. The tool page shows it as a link.
+     */
+    public function howtoFor(string $path): ?string
+    {
+        $id = Cache::remember('youtube.howto.'.md5($path), 600, fn () => (string) (FarmVideo::where('kind', FarmVideo::KIND_HOWTO)
+            ->where('status', FarmVideo::STATUS_PUBLISHED)->whereNotNull('youtube_id')->orderByDesc('published_at')->get()
+            ->first(fn (FarmVideo $v) => ($v->meta['variant'] ?? null) === 'wide' && rtrim((string) parse_url((string) ($v->meta['link'] ?? ''), PHP_URL_PATH), '/') === rtrim($path, '/'))
+            ?->youtube_id ?? ''));
+
+        return $id !== '' ? 'https://www.youtube.com/watch?v='.$id : null;
+    }
+
     public function linkOf(FarmVideo $video, string $source = 'youtube'): string
     {
         $kind = $video->kind ?? FarmVideo::KIND_SHORT;

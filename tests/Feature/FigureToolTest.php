@@ -468,4 +468,20 @@ class FigureToolTest extends TestCase
         $plain = ModelFile::create(['uuid' => (string) Str::uuid(), 'original_name' => 'a.stl', 'ext' => 'stl', 'mime' => 'model/stl', 'size_bytes' => 1, 'sha256' => str_repeat('a', 64), 'storage_path' => 'files/x/original.stl', 'origin' => 'upload', 'status' => ModelFile::STATUS_UPLOADED]);
         $this->postJson('/api/files/'.$plain->uuid.'/pedestal', ['type' => 'round'])->assertNotFound();
     }
+
+    public function test_the_bust_page_links_to_its_public_how_to_video_and_shows_nothing_before_one_exists(): void
+    {
+        \Illuminate\Support\Facades\Cache::flush();
+        $this->get('/tools/figure')->assertOk()->assertDontSee(__('figure.howto.video'));
+
+        \App\Models\FarmVideo::create(['kind' => 'howto', 'status' => 'pending', 'path' => 'howto/a.mp4', 'title' => 'T', 'meta' => ['name' => 'a', 'variant' => 'wide', 'link' => 'https://matplace.com/tools/figure']]);
+        \App\Models\FarmVideo::create(['kind' => 'howto', 'status' => 'published', 'youtube_id' => 'SHORT123', 'published_at' => now(), 'path' => 'howto/b-short.mp4', 'title' => 'T', 'meta' => ['name' => 'b', 'variant' => 'short', 'link' => 'https://matplace.com/tools/figure']]);
+        \App\Models\FarmVideo::create(['kind' => 'howto', 'status' => 'published', 'youtube_id' => 'OTHER123', 'published_at' => now(), 'path' => 'howto/c.mp4', 'title' => 'T', 'meta' => ['name' => 'c', 'variant' => 'wide', 'link' => 'https://matplace.com/']]);
+        \Illuminate\Support\Facades\Cache::flush();
+        $this->get('/tools/figure')->assertOk()->assertDontSee('youtube.com/watch', false);
+
+        \App\Models\FarmVideo::create(['kind' => 'howto', 'status' => 'published', 'youtube_id' => 'WIDE1234', 'published_at' => now(), 'path' => 'howto/d.mp4', 'title' => 'T', 'meta' => ['name' => 'd', 'variant' => 'wide', 'link' => 'https://matplace.com/tools/figure']]);
+        \Illuminate\Support\Facades\Cache::flush();
+        $this->get('/tools/figure')->assertOk()->assertSee('https://www.youtube.com/watch?v=WIDE1234', false)->assertSee(__('figure.howto.video'));
+    }
 }
