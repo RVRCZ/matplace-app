@@ -88,7 +88,7 @@ return [
         'kind' => ['upload' => 'Uploaded file', 'generated' => 'Generated model', 'tool' => 'From a tool', 'repaired' => 'Repaired model', 'mold' => 'Casting mold'],
         'open_tool' => 'Open in the tool',
         'open' => 'Open',
-        'order' => 'Continue to printing',
+        'order' => 'Continue to colours and price',
         'download' => '3MF for my printer',
         'delete' => 'Delete',
         'delete_confirm' => 'Really delete the model “:name”? Its calculations are deleted too.',

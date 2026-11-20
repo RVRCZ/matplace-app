@@ -3,7 +3,7 @@
  * From a tool straight to the order, the price only on the customer's word (docs/AN.md §26), walked the way a visitor
  * walks it in a real headless Chrome against a local server (fake slicer, sync queue):
  *
- *   the tool's page → its main button ("Přejít k tisku") → the order page waiting for the choices (no price, no slice)
+ *   the tool's page → its main button ("Pokračovat k barvám a ceně") → the order page waiting for the choices (no price, no slice)
  *   → a colour, a number of pieces → "Spočítat cenu" → the price → another number of pieces (the price out of date, the
  *   payment held back) → "Přepočítat cenu" → the new price → "Upravit tvar a rozměry" back to the tool → the button
  *   again → the very same order.
@@ -144,7 +144,7 @@ try {
         const label = await evaluate("document.getElementById('tool-go-label').textContent.trim()");
         const hint = await evaluate("document.querySelector('#tool-go-card p.text-muted')?.textContent.trim() ?? ''");
         const direct = await evaluate('!!window.MP_TOOL?.order');
-        await step(title, EXPECT === 'calc' ? label !== 'Přejít k tisku' && !direct : label === 'Přejít k tisku' && direct, { label, hint, direct });
+        await step(title, EXPECT === 'calc' ? label !== 'Pokračovat k barvám a ceně' && !direct : label === 'Pokračovat k barvám a ceně' && direct, { label, hint, direct });
         await evaluate("document.getElementById('tool-go').click()");
         const left = await until("location.pathname.includes('/farm/orders/') || location.search.includes('open=')", 90000, 400);
         await until("document.readyState === 'complete'", 20000);
@@ -174,7 +174,7 @@ try {
             await sleep(9000);
             const s = await evaluate(ORDER);
             const now = await evaluate(`fetch(location.pathname + '/status', { headers: { Accept: 'application/json' }, credentials: 'same-origin' }).then((r) => r.json()).then((j) => ({ status: j.status, slice_run: j.slice_run, on_demand: j.on_demand }))`);
-            failed = !await step(`the calculation's button "${calc.cta}" opens the order page`, there && calc.cta === 'Přejít k tisku' && (now.on_demand ? now.status === 'awaiting_choices' : now.status === 'sliced'), { ...now, price: s.price, start: s.start?.label ?? null }) || failed;
+            failed = !await step(`the calculation's button "${calc.cta}" opens the order page`, there && calc.cta === 'Pokračovat k barvám a ceně' && (now.on_demand ? now.status === 'awaiting_choices' : now.status === 'sliced'), { ...now, price: s.price, start: s.start?.label ?? null }) || failed;
         }
     } else {
         if (where !== 'order') throw new Error(`the button ended ${where}, not on the order page`);

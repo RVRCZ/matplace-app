@@ -10,7 +10,7 @@
         'create' => ['Odeslal', 'Stiskl „Vytvořit figurku“ s fotkou a souhlasem.'],
         'generate' => ['Výroba začala', 'Server fotku přijal a model se začal vyrábět.'],
         'model' => ['Model hotový', 'Model se vyrobil nebo ukázal na obrazovce.'],
-        'to_print' => ['Přešel k tisku', 'Stiskl „Přejít k tisku“, vznikla zakázka.'],
+        'to_print' => ['Přešel k tisku', 'Stiskl „Pokračovat k barvám a ceně“, vznikla zakázka.'],
         'price' => ['Viděl přesnou cenu', 'Vybral barvu a nechal si spočítat přesnou cenu.'],
         'checkout' => ['Šel platit', 'Otevřel platbu kartou.'],
         'paid' => ['Zaplatil', 'Banka platbu potvrdila.'],
