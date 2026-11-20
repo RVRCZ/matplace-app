@@ -18,7 +18,9 @@ class StepController extends Controller
 {
     public const TYPE = 'tool_step';
 
-    public const STEPS = ['scroll', 'pick', 'photo', 'no_photo', 'no_consent', 'create', 'limit', 'rejected', 'error', 'wait_left', 'shown'];
+    public const STEPS = ['scroll', 'pick', 'photo', 'no_photo', 'no_consent', 'create', 'limit', 'rejected', 'error', 'wait_left', 'shown',
+        // between the photo and "Create", and after the model (figure.ts, 20 Nov 2026)
+        'thumb', 'create_seen', 'consent_seen', 'consent_on', 'photo_off', 'model_touch', 'cta_seen', 'price_seen', 'again', 'dl_click', 'model_left'];
 
     public function __invoke(Request $request): Response
     {
