@@ -3092,5 +3092,10 @@
     "figure.pedestal.about.cut": "No base, the bust stands on its own flat cut with the shoulders cut at a slant.",
     "figure.howto.video": "Video: from the photo to the finished bust (1 minute)",
     "figure.agree_create": "I agree, create",
-    "router.file.no_file": "No file? A photo or a few words will do: write at the top what you want made."
+    "router.file.no_file": "No file? A photo or a few words will do: write at the top what you want made.",
+    "farm.order.free.hint": "Pick the colour of every part. The whole piece is printed in one printer, so some colours cannot go together; such a colour says which one it clashes with.",
+    "farm.order.free.clash": "not with: :names",
+    "farm.order.free.repicked": "We do not have these colours together in one printer, so we picked the nearest colour: :parts.",
+    "farm.order.free.fell_back": "Now printed in the main colour: :parts.",
+    "farm.order.design_color": "in the design"
 }

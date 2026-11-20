@@ -14,7 +14,7 @@
         // the slice on the customer's word (docs/AN.md §26): the button of a small waiting order, the price out of date after a changed choice
         'farm.order.price_start', 'farm.order.price_start_hint', 'farm.order.price_stale_pay', 'farm.order.recalculate_price',
         // the chooser by machine (docs/AL.md §19): the card of the printer with its positions, the reasons a position cannot print a part
-        'farm.order.machine_title', 'farm.order.machine_hint', 'farm.order.colors_count', 'farm.order.positions_n', 'farm.order.machine_best', 'farm.order.machine_chosen', 'farm.order.preselected', 'farm.order.machine_repicked', 'farm.order.machine_fell_back',
+        'farm.order.machine_title', 'farm.order.machine_hint', 'farm.order.colors_count', 'farm.order.positions_n', 'farm.order.machine_best', 'farm.order.machine_chosen', 'farm.order.preselected', 'farm.order.machine_repicked', 'farm.order.free.hint', 'farm.order.free.clash', 'farm.order.free.repicked', 'farm.order.free.fell_back', 'farm.order.design_color', 'farm.order.machine_fell_back',
         // the discount code field (docs/AT.md; only on the page while the codes are switched on)
         'farm.promo.applied', 'farm.promo.line', 'farm.promo.empty',
         'farm.order.pos_reason.empty', 'farm.order.pos_reason.main', 'farm.order.pos_reason.off', 'farm.order.pos_reason.kind', 'farm.order.pos_reason.low', 'farm.order.pos_reason.manual_only', 'farm.order.pos_reason.limit'];
@@ -64,18 +64,22 @@
         {{-- the left column: the model and the price. While the customer chooses (data-choosing and .stick-stage, set by
              farm.ts) it stays in the window on a desktop and the model gives way to the price card, never the other way
              round; once paid (camera, time-lapse) it runs with the page (docs/AO.md §5) --}}
-        <div id="farm-side" class="flex min-w-0 flex-col gap-4 lg:group-data-[choosing]/order:overflow-y-auto">
+        <div id="farm-side" class="flex min-w-0 flex-col gap-4 max-lg:contents lg:group-data-[choosing]/order:overflow-y-auto">
             {{-- model as it will be printed --}}
-            <div class="overflow-hidden rounded-2xl border border-slate-200 bg-white lg:group-data-[choosing]/order:flex lg:group-data-[choosing]/order:min-h-[180px] lg:group-data-[choosing]/order:flex-1 lg:group-data-[choosing]/order:flex-col">
-                <div class="relative lg:group-data-[choosing]/order:min-h-0 lg:group-data-[choosing]/order:flex-1">
-                    <canvas id="farm-viewer" class="block h-[45vh] w-full touch-none lg:h-[70vh] lg:group-data-[choosing]/order:h-full {{ ($modelHidden ?? false) ? 'hidden' : '' }}"></canvas>
+            <div id="farm-viewer-card" class="overflow-hidden rounded-2xl border border-slate-200 bg-white max-lg:contents lg:group-data-[choosing]/order:flex lg:group-data-[choosing]/order:min-h-[180px] lg:group-data-[choosing]/order:flex-1 lg:group-data-[choosing]/order:flex-col">
+                {{-- a phone: the model alone is a card that stays at the top while colours are chosen (data-pin, farm.ts); what belongs under it is a card of its own --}}
+                <div class="relative max-lg:overflow-hidden max-lg:rounded-2xl max-lg:border max-lg:border-slate-200 max-lg:bg-white max-lg:group-data-[pin]/order:sticky max-lg:group-data-[pin]/order:top-1 max-lg:group-data-[pin]/order:z-20 max-lg:group-data-[pin]/order:shadow-lg lg:group-data-[choosing]/order:min-h-0 lg:group-data-[choosing]/order:flex-1">
+                    <canvas id="farm-viewer" class="block h-[45vh] w-full touch-none max-lg:group-data-[choosing]/order:h-[36vh] lg:h-[70vh] lg:group-data-[choosing]/order:h-full {{ ($modelHidden ?? false) ? 'hidden' : '' }}"></canvas>
                     @if($modelHidden ?? false)
                         {{-- a designer's model that is not offered for download: its picture instead of the 3D preview --}}
                         @if($card?->coverUrl(false))<img src="{{ $card->coverUrl(false) }}" alt="{{ $card->title }}" class="h-[45vh] w-full bg-slate-50 object-contain lg:h-[70vh] lg:group-data-[choosing]/order:h-full">@else<div class="h-[45vh] bg-slate-50 lg:h-[70vh] lg:group-data-[choosing]/order:h-full"></div>@endif
                     @endif
+                    {{-- colours that had to give way to one another: said on the model too, where the eyes are (farm.ts clashNote) --}}
+                    <p id="farm-clash-toast" class="absolute inset-x-2 bottom-11 hidden rounded-lg bg-amber-50/95 px-3 py-2 text-xs text-amber-900 shadow" role="status" aria-live="polite"></p>
                     <div id="farm-dims" class="absolute bottom-3 left-3 rounded-full bg-white/90 px-3 py-1 text-xs text-slate-600 shadow"></div>
                     <button type="button" id="farm-supports-toggle" class="absolute right-3 top-3 hidden rounded-full bg-white/90 px-3 py-1 text-xs font-semibold text-slate-700 shadow" aria-pressed="true">{{ __('farm.order.supports_hide') }}</button>
                 </div>
+                <div class="hidden overflow-hidden rounded-2xl border border-slate-200 bg-white max-lg:has-[>:not(.hidden)]:block lg:contents">
                 <p id="farm-oriented" class="hidden border-t border-slate-100 bg-action-soft px-4 py-2 text-sm text-action-dark">{{ __('farm.order.oriented') }}</p>
                 @if(($state['face_down'] ?? false) && ! ($modelHidden ?? false))
                     {{-- a design built face down: the preview shows it turned over, motif up (farm.ts); how it prints stays a line of text --}}
@@ -94,6 +98,7 @@
                     <img id="farm-photo" alt="{{ __('farm.order.photo_of_print') }}" class="w-full rounded-xl" loading="lazy">
                     <figcaption class="mt-1 text-xs text-slate-500">{{ __('farm.order.photo_of_print') }}</figcaption>
                 </figure>
+                </div>
             </div>
 
             {{-- status + numbers --}}
