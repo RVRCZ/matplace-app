@@ -61,7 +61,7 @@ interface FarmState {
     /** the copies of one plate of parts in a grid [columns, rows] (the parts of a design with flush colours, a painted 3MF); null otherwise */
     copies_grid?: [number, number] | null;
     scale: number; raw_bbox: { x: number; y: number; z: number } | null; slot: number | null; printer: { name: string; bed: string } | null;
-    unit: string; unit_guess: { unit: string; confident: boolean } | null; second_slot?: number | null; changes?: Change[]; max_colors?: number; colors_over?: { text: string; link: string; url: string | null } | null; by_parts?: boolean; parts?: Part[]; part_count?: number; one_plate?: boolean; filament_changes?: number; one_plate_required?: boolean; painted_colors?: boolean; offer_one_color?: boolean; repeatable?: boolean;
+    unit: string; unit_guess: { unit: string; confident: boolean } | null; second_slot?: number | null; changes?: Change[]; first_label?: string | null; max_colors?: number; colors_over?: { text: string; link: string; url: string | null } | null; by_parts?: boolean; parts?: Part[]; part_count?: number; one_plate?: boolean; filament_changes?: number; one_plate_required?: boolean; painted_colors?: boolean; offer_one_color?: boolean; repeatable?: boolean;
     settings?: Record<string, number> | null; admin_overrides?: Record<string, string> | null;
     dims: { x: number; y: number; z: number } | null; warnings: string[]; orientation_changed: boolean; supports: boolean; supports_mode: string; color_change_mm: number | null; second_color: { name: string; hex: string } | null;
     minutes: number | null; grams: number | null; meters: number | null; price: Price | null; total: number | null; currency: string;
@@ -367,6 +367,7 @@ export function bootFarmOrder(): void {
     // what the page said after colours had to give way to one another: stays until the next choice (a render alone must not wipe it)
     let clashNote = '';
     const repickedByClash = new Set<string>();
+    const sayClash = (text: string): void => { const el = $('farm-clash-toast'); if (el) { el.textContent = text; show(el, text !== ''); } };
     const partAuto = new Set<string>();
     let partAutoKnown = false;
     // what the server gets: the first colour's slot on that machine and, per part, its colour's slot there – never two machines'
@@ -626,7 +627,7 @@ export function bootFarmOrder(): void {
         $('farm-start-note')!.textContent = state.pause ?? (c ? tr(c.starts_now ? 'farm.order.starts_now' : 'farm.order.goes_to_queue') : '');
         viewer.setColor(c?.hex ?? null, c?.finish ?? null);   // the spool's finish: silk shines, matte does not
         const colorTitle = $('farm-color-title');
-        if (colorTitle) colorTitle.textContent = colorTitle.dataset.plain ?? '';
+        if (colorTitle) colorTitle.textContent = `${colorTitle.dataset.plain ?? ''}${state.first_label ? `: ${state.first_label}` : ''}`;
         renderSecond(c);
     };
 
@@ -784,6 +785,7 @@ export function bootFarmOrder(): void {
                 if (said) clashNote = [repicked.length ? tr(free ? 'farm.order.free.repicked' : 'farm.order.machine_repicked', { parts: repicked.join(', ') }) : '', fellBack.length ? tr(free ? 'farm.order.free.fell_back' : 'farm.order.machine_fell_back', { parts: fellBack.join(', ') }) : ''].filter(Boolean).join(' ');
                 note.textContent = clashNote;
                 show(note, clashNote !== '');
+                sayClash(free ? clashNote : '');
             }
             machineSwitched = false;
             if (heading0) heading0.textContent = tr('farm.order.parts_title');
@@ -801,7 +803,7 @@ export function bootFarmOrder(): void {
                 const partTile = (part: string, x: Position | null, on: boolean, disabled: string | null, auto: boolean): string => tile({
                     on, name: x ? (x.name ?? reasonText('empty')) : tr('farm.order.part_main'), kind: x ? (x.kind ?? '') : (c?.name ?? ''),
                     hex: x ? x.hex : (c?.hex ?? '#ffffff'), photo: x ? x.photo : (c?.photo ?? null),
-                    where: x ? x.label : (mainPos?.label ?? ''), code: [x ? x.code : (machine?.code ?? c?.code ?? null)],
+                    where: free ? '' : x ? x.label : (mainPos?.label ?? ''), code: [x ? x.code : (machine?.code ?? c?.code ?? null)],
                     reason: disabled, badge: auto && on ? tr('farm.order.preselected') : undefined,
                     attrs: `data-part="${esc(part)}" data-colour="${x?.color_id ?? ''}"`,
                 });
@@ -858,6 +860,7 @@ export function bootFarmOrder(): void {
             if (machineSwitched && lostChanges.length) clashNote = tr('farm.order.free.repicked', { parts: lostChanges.map((i) => { const label = wanted[i].label ?? tr('farm.order.change_title', { n: i + 2, z: wanted[i].z.toFixed(1) }); const sp = pool.find((o) => o.slot === changes[i]); return sp ? `${label} → ${sp.name}` : label; }).join(', ') });
             note1.textContent = free ? clashNote : '';
             show(note1, free && clashNote !== '');
+            sayClash(free ? clashNote : '');
         }
         machineSwitched = false;
         const changeHead = (w: Change, i: number): string => (wanted.length > 1 ? `<div class="col-span-full mt-1 flex flex-wrap items-center gap-x-1.5 text-xs font-semibold text-slate-700">${esc(w.label ?? tr('farm.order.change_title', { n: i + 2, z: w.z.toFixed(1) }))}${designTag(w.hex)}</div>` : '');
@@ -927,7 +930,7 @@ export function bootFarmOrder(): void {
         } else {
             (state.changes ?? []).forEach((w, i) => {
                 const s = spools.find((x) => x.slot === changes[i]);
-                if (s && (i > 0 || (s.slot !== c.slot && s.slot !== machine?.main))) tags.push(tag((state.changes ?? []).length === 1 ? `${tr('farm.order.second_color')}:` : `${tr('farm.order.change_title', { n: i + 2, z: w.z.toFixed(1) })}:`, s));
+                if (s && (i > 0 || (s.slot !== c.slot && s.slot !== machine?.main))) tags.push(tag((state.changes ?? []).length === 1 ? `${tr('farm.order.second_color')}:` : `${w.label ?? tr('farm.order.change_title', { n: i + 2, z: w.z.toFixed(1) })}:`, s));
             });
         }
         box.innerHTML = tags.join('');
