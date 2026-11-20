@@ -1155,6 +1155,17 @@ class OrderController extends Controller
 
             return $c + ['slot_id' => null, 'name' => null, 'spool_hex' => null, 'slot_code' => null];
         }, $order->wantedChanges());
+        // a map's colours by what they print (Stella, 20 Nov 2026: "Colour 2" says nothing): the plate first, then the
+        // roads and the buildings of a city (the buildings alone where the roads are not raised), the terrain of a landscape
+        $firstLabel = null;
+        if ($order->modelFile?->origin === 'tool' && $order->modelFile->origin_ref === 'map' && $changes) {
+            $type = (string) ($order->modelFile->tool_params['type'] ?? 'city');
+            $names = $type === 'landscape' ? ['terrain'] : (count($changes) >= 2 ? ['roads', 'buildings'] : ['buildings']);
+            if (count($names) === count($changes)) {
+                $firstLabel = __('map.part.base');
+                $changes = array_map(fn (array $c, string $name) => $c + ['label' => __('map.part.'.$name)], $changes, $names);
+            }
+        }
 
         // an order printed by parts: every part, the colour the design names for it, and the spool chosen so far
         $partPlates = $order->partPlates();
@@ -1176,7 +1187,7 @@ class OrderController extends Controller
             'admin' => $admin,
             // the kind the order was made with (the calculator's choice): the kind a tile of several kinds opens on
             'material_kind' => $order->material?->label(),
-            'changes' => $parts ? [] : $changes,
+            'changes' => $parts ? [] : $changes, 'first_label' => $parts ? null : $firstLabel,
             'by_parts' => $order->isByParts(),
             'parts' => $parts,
             // the parts print together on one plate, the machine changing spools (so many times) – or one plate each

@@ -1,0 +1,7 @@
+{
+    "farm.order.free.hint": ["Vyberte barvu každé části. Celý výrobek se tiskne v jedné tiskárně, proto některé barvy nejdou dohromady; u takové barvy píšeme, se kterou.", "Pick the colour of every part. The whole piece is printed in one printer, so some colours cannot go together; such a colour says which one it clashes with.", "Elija el color de cada parte. Toda la pieza se imprime en una sola impresora, por eso algunos colores no pueden ir juntos; ese color indica con cuál choca."],
+    "farm.order.free.clash": ["nejde s: :names", "not with: :names", "no va con: :names"],
+    "farm.order.free.repicked": ["Tyhle barvy spolu v jedné tiskárně nemáme. Vybrali jsme proto nejbližší barvu: :parts.", "We do not have these colours together in one printer, so we picked the nearest colour: :parts.", "No tenemos estos colores juntos en una impresora, así que elegimos el color más cercano: :parts."],
+    "farm.order.free.fell_back": ["Hlavní barvou se teď vytiskne: :parts.", "Now printed in the main colour: :parts.", "Ahora se imprime en el color principal: :parts."],
+    "farm.order.design_color": ["v návrhu", "in the design", "en el diseño"]
+}

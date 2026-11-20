@@ -3092,5 +3092,10 @@
     "figure.pedestal.about.cut": "Bez podstavce, busta stojí na vlastním rovném řezu se šikmo seříznutými rameny.",
     "figure.howto.video": "Video: od fotky po hotovou bustu (1 minuta)",
     "figure.agree_create": "Souhlasím a vytvořit",
-    "router.file.no_file": "Nemáte soubor? Stačí fotka nebo pár slov: napište nahoře, co chcete vyrobit."
+    "router.file.no_file": "Nemáte soubor? Stačí fotka nebo pár slov: napište nahoře, co chcete vyrobit.",
+    "farm.order.free.hint": "Vyberte barvu každé části. Celý výrobek se tiskne v jedné tiskárně, proto některé barvy nejdou dohromady; u takové barvy píšeme, se kterou.",
+    "farm.order.free.clash": "nejde s: :names",
+    "farm.order.free.repicked": "Tyhle barvy spolu v jedné tiskárně nemáme. Vybrali jsme proto nejbližší barvu: :parts.",
+    "farm.order.free.fell_back": "Hlavní barvou se teď vytiskne: :parts.",
+    "farm.order.design_color": "v návrhu"
 }
