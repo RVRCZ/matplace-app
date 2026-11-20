@@ -145,7 +145,7 @@ final class PaintToolTest extends TestCase
         $src = $this->cube();
         // the first bottom triangle is replaced by three triangles around a point close to its first edge: one of them
         // is a sliver of 0.2 mm² painted red (a speck); the second bottom triangle is blue, the top's first one green
-        [$a, $b, $c] = $this->triangle(Storage::disk('models')->path('files/'.$src['uuid'].'/model.stl'), 0);
+        [$a, $b, $c] = $this->triangle(ModelFile::where('uuid', $src['uuid'])->firstOrFail()->absoluteStlPath(), 0);
         $mid = [($a[0] + $b[0]) / 2, ($a[1] + $b[1]) / 2, ($a[2] + $b[2]) / 2];
         // a point 0.4 % of the way from the middle of the first edge to the third corner: the sliver is 0.4 % of 50 mm²
         $d = array_map(fn ($i) => $mid[$i] + ($c[$i] - $mid[$i]) * 0.004, [0, 1, 2]);
@@ -341,7 +341,7 @@ final class PaintToolTest extends TestCase
         $f = $this->getJson('/api/files/'.$r->json('file.uuid'))->assertOk()->json('file');
         $this->assertSame(['failed', 'one_color'], [$f['status'], $f['error']]);
         // triangles that are not the model's surface (a refined triangle moved 5 mm up): refused by the area and the box
-        [$a, $b, $c] = $this->triangle(Storage::disk('models')->path('files/'.$src['uuid'].'/model.stl'), 0);
+        [$a, $b, $c] = $this->triangle(ModelFile::where('uuid', $src['uuid'])->firstOrFail()->absoluteStlPath(), 0);
         $up = fn (array $p) => [$p[0], $p[1], $p[2] + 25];
         $r = $this->paint($src['uuid'], ['triangles' => 12, 'palette' => $pal], [255, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], [[...$up($a), ...$up($b), ...$up($c)]], [1])->assertCreated();
         $f = $this->getJson('/api/files/'.$r->json('file.uuid'))->assertOk()->json('file');
