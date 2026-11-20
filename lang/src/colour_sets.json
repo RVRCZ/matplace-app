@@ -1,0 +1,6 @@
+{
+    "farm.order.sets.title": ["Sada barev", "Set of colours", "Juego de colores"],
+    "farm.order.sets.hint": ["Výrobek se tiskne z barev jedné sady. Vyberte sadu, která se vám líbí; barvy v ní pak rozdělíte, jak chcete.", "The piece is printed from the colours of one set. Pick the set you like; you then share out its colours as you wish.", "La pieza se imprime con los colores de un juego. Elija el juego que le guste; después reparte sus colores como quiera."],
+    "farm.order.sets.rows": ["Která část bude kterou barvou", "Which part gets which colour", "Qué parte lleva qué color"],
+    "farm.order.sets.rows_hint": ["Ťukněte na kolečko a část dostane tu barvu. Model se přebarví hned.", "Tap a dot and the part gets that colour. The model changes at once.", "Toque un círculo y la parte toma ese color. El modelo cambia al instante."]
+}

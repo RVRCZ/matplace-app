@@ -3097,5 +3097,9 @@
     "farm.order.free.clash": "no va con: :names",
     "farm.order.free.repicked": "No tenemos estos colores juntos en una impresora, así que elegimos el color más cercano: :parts.",
     "farm.order.free.fell_back": "Ahora se imprime en el color principal: :parts.",
-    "farm.order.design_color": "en el diseño"
+    "farm.order.design_color": "en el diseño",
+    "farm.order.sets.title": "Juego de colores",
+    "farm.order.sets.hint": "La pieza se imprime con los colores de un juego. Elija el juego que le guste; después reparte sus colores como quiera.",
+    "farm.order.sets.rows": "Qué parte lleva qué color",
+    "farm.order.sets.rows_hint": "Toque un círculo y la parte toma ese color. El modelo cambia al instante."
 }

@@ -667,6 +667,9 @@ export function bootFarmOrder(): void {
         const colorTitle = $('farm-color-title');
         const byParts = !!state.by_parts && (state.parts ?? []).length > 0;
         const wanted = byParts ? [] : (state.changes ?? []);
+        // the customer's view of more colours: sets and dots (below); off until it is drawn
+        const setsOn = (on: boolean): void => { show($('farm-sets-box'), on); show($('farm-main-pick'), !on); };
+        setsOn(false);
         if (!byParts && !wanted.length) { machine = null; show(box, false); paintTones(); return; }
         // by parts the first part (the plate, the body) is the colour chosen above: it has no row of its own below, the list above is named after it
         const parts = byParts ? (state.parts ?? []).slice(1) : [];
@@ -775,6 +778,124 @@ export function bootFarmOrder(): void {
             };
             cards.innerHTML = withCards ? machines.map(card).join('') : '';
             cards.querySelectorAll<HTMLButtonElement>('button[data-machine]').forEach((b) => b.addEventListener('click', () => { machineByHand = Number(b.dataset.machine); machineSwitched = true; render(); }));
+        }
+        /*
+         * The customer's view (Roman, 20 Nov 2026: "free colours are chaos, you never know the combination; offer the
+         * combinations"): what one machine holds together is a SET, shown as a square of dots with no machine named. The
+         * customer picks a set, then gives every layer or part a colour of that set by a tap on a dot; inside a set nothing
+         * ever changes by itself, the order of the colours is theirs. Another set moves each row to its nearest colour
+         * there. What is sent stays one machine's slots (resolved()). The admin keeps the machines and their positions.
+         */
+        if (free && c && c.color_id !== undefined && machine && any) {
+            const mainId = c.color_id;
+            interface Member { id: number; name: string; kind: string; hex: string; photo: string | null }
+            interface ColourSet { key: string; printers: string[]; members: Member[] }
+            const keyOf = (m: Machine): string => m.key ?? String(m.main);
+            const sets: ColourSet[] = [];
+            state.colors.forEach((x) => (x.machines ?? []).forEach((m) => {
+                if (x.color_id === undefined || !m.colors.length) return;
+                const members: Member[] = [{ id: x.color_id, name: x.name, kind: x.kind ?? '', hex: x.hex, photo: x.photo }, ...m.colors.map((o) => ({ id: o.color_id, name: o.name, kind: o.kind ?? '', hex: o.hex, photo: o.photo }))]
+                    .filter((a, i, all) => all.findIndex((b) => b.id === a.id) === i).sort((a, b) => a.id - b.id);
+                const key = members.map((a) => a.id).join(',');
+                const known = sets.find((t) => t.key === key);
+                if (!known) sets.push({ key, printers: [keyOf(m)], members });
+                else if (!known.printers.includes(keyOf(m))) known.printers.push(keyOf(m));
+            }));
+            // the colour that can open the print on a machine: its entry of the list above, with enough filament there
+            const entryOn = (id: number, printer: string): { entry: Color; m: Machine } | null => {
+                const entry = state.colors.find((x) => x.color_id === id && x.enough && (x.machines ?? []).some((m) => keyOf(m) === printer));
+                const m = entry?.machines?.find((mm) => keyOf(mm) === printer);
+                return entry && m ? { entry, m } : null;
+            };
+            const here = keyOf(machine);
+            const hereKey = [mainId, ...machine.colors.map((o) => o.color_id)].filter((a, i, all) => all.indexOf(a) === i).sort((a, b) => a - b).join(',');
+            const current = sets.find((t) => t.key === hereKey) ?? sets.find((t) => t.printers.includes(here)) ?? null;
+            // the rows: the first colour, then the parts or the layers, each with the colour it has now
+            const rows: { label: string; hex: string | null; id: number }[] = [];
+            if (byParts) parts.forEach((p) => rows.push({ label: p.label, hex: p.hex, id: partColours[p.part] ?? mainId }));
+            else { let prev = mainId; wanted.forEach((w, i) => { const id = changes[i] === null || changes[i] === undefined ? prev : colourOfSlot(changes[i]) ?? prev; rows.push({ label: w.label ?? (wanted.length === 1 ? tr('farm.order.second_color') : tr('farm.order.change_title', { n: i + 2, z: w.z.toFixed(1) })), hex: w.hex, id }); prev = id; }); }
+            // a wish (the machine, the first colour, the rows' colours) written into what the page sends
+            const apply = (printer: string, main: number, ids: number[]): void => {
+                const on = entryOn(main, printer);
+                if (!on) return;
+                picked = on.entry.slot;
+                machineByHand = on.m.main;
+                clashNote = '';
+                const slotIn = (k: number): number | null => (k === main ? on.m.main : on.m.colors.find((o) => o.color_id === k)?.slot ?? null);
+                if (byParts) {
+                    parts.forEach((p, i) => { const k = ids[i] === main || slotIn(ids[i]) === null ? null : ids[i]; partColours[p.part] = k; partAuto.delete(p.part); if (k === null) partByHand.add(p.part); else partByHand.delete(p.part); });
+                } else {
+                    let prev = main;
+                    changes = ids.map((k) => { const slot = k === prev ? null : slotIn(k); if (slot !== null || k === prev) prev = k; return slot; });
+                    byHand.clear();
+                    changes.forEach((slot, i) => { if (slot === null) byHand.add(i); });
+                }
+                render();
+            };
+            const nearestIn = (members: Member[], hex: string | null | undefined, fallback: number): number => (hex ? [...members].sort((a, b) => far(a.hex, hex) - far(b.hex, hex))[0]?.id ?? fallback : fallback);
+            // the sets, the one nearest to the design's colours first; the chosen one is marked
+            const wantHexes = [byParts ? first?.hex ?? null : null, ...rows.map((r) => r.hex)].filter((h): h is string => !!h);
+            const gap = (t: ColourSet): number => wantHexes.reduce((sum, h) => sum + Math.min(...t.members.map((a) => far(a.hex, h))), 0);
+            const ordered = [...sets].sort((a, b) => gap(a) - gap(b) || b.members.length - a.members.length);
+            const dot = (a: Member, size: string): string => `<span class="${size} shrink-0 rounded-full border border-slate-300" style="background:${esc(a.hex)}"></span>`;
+            const setsBox = $('farm-sets');
+            if (setsBox) {
+                setsBox.innerHTML = ordered.map((t) => {
+                    const on = t === current;
+                    const kinds = [...new Set(t.members.map((a) => a.kind).filter(Boolean))].join(', ');
+                    return `<button type="button" role="radio" aria-checked="${on}" data-set="${esc(t.key)}" class="flex flex-col gap-2 rounded-xl border bg-white p-3 text-left ${on ? 'border-action ring-2 ring-action' : 'border-slate-300'}">
+                        <span class="flex flex-wrap gap-1.5">${t.members.map((a) => dot(a, 'h-7 w-7')).join('')}</span>
+                        <span class="text-xs text-slate-600">${esc(t.members.map((a) => a.name).join(', '))}${kinds ? ` · ${esc(kinds)}` : ''}</span></button>`;
+                }).join('');
+                setsBox.querySelectorAll<HTMLButtonElement>('button[data-set]').forEach((b) => b.addEventListener('click', () => {
+                    const t = sets.find((x) => x.key === b.dataset.set);
+                    if (!t || t === current) return;
+                    const printer = t.printers.includes(here) ? here : t.printers[0];
+                    // the first colour stays when this set can open the print with it, else the nearest one that can
+                    const openers = t.members.filter((a) => entryOn(a.id, printer));
+                    if (!openers.length) return;
+                    const main = openers.some((a) => a.id === mainId) ? mainId : nearestIn(openers, (byParts ? first?.hex : null) ?? c.hex, openers[0].id);
+                    // a row keeps its colour when the set has it; else the nearest one there to the colour it has now, another
+                    // one for each colour while the set has colours left (rows that shared a colour go on sharing)
+                    const hexNow = (id: number): string => (id === mainId ? c.hex : partners.find((o) => o.color_id === id)?.hex ?? c.hex);
+                    const moved = new Map<number, number>();
+                    const taken = new Set<number>([main, ...rows.map((r) => r.id).filter((id) => t.members.some((a) => a.id === id))]);
+                    rows.forEach((r) => {
+                        if (t.members.some((a) => a.id === r.id) || moved.has(r.id)) return;
+                        const left = t.members.filter((a) => !taken.has(a.id));
+                        const to = r.id === mainId ? main : nearestIn(left.length ? left : t.members, hexNow(r.id), main);
+                        moved.set(r.id, to); taken.add(to);
+                    });
+                    apply(printer, main, rows.map((r) => moved.get(r.id) ?? r.id));
+                }));
+            }
+            // the rows of dots: one tap gives the row a colour of the set; the machine's number of colours is the only limit
+            const members = current?.members ?? [];
+            const row = (label: string, hex: string | null, id: number, attr: string, off: (a: Member) => string | null): string => {
+                const name = members.find((a) => a.id === id)?.name ?? '';
+                return `<div class="col-span-full rounded-xl border border-slate-200 p-2">
+                    <div class="flex flex-wrap items-center gap-x-1.5 text-sm text-slate-700"><span class="font-semibold">${esc(label)}:</span> <span>${esc(name)}</span>${designTag(hex)}</div>
+                    <div class="mt-2 flex flex-wrap gap-2" role="radiogroup" aria-label="${esc(label)}">${members.map((a) => { const why = a.id === id ? null : off(a); return `<button type="button" role="radio" aria-checked="${a.id === id}" ${attr} data-colour="${a.id}" title="${esc(why ?? `${a.name}${a.kind ? ` · ${a.kind}` : ''}`)}" aria-label="${esc(a.name)}"${why ? ' disabled' : ''} class="flex h-11 w-11 items-center justify-center rounded-full ${a.id === id ? 'ring-2 ring-action ring-offset-2' : ''} disabled:opacity-30">${dot(a, 'h-9 w-9')}</button>`; }).join('')}</div>
+                </div>`;
+            };
+            const overLimit = (main: number, ids: number[]): string | null => (new Set<number>([main, ...ids]).size > limit ? tr('farm.order.pos_reason.limit') : null);
+            if (heading0) heading0.textContent = tr('farm.order.sets.rows');
+            if (hint0) hint0.textContent = tr('farm.order.sets.rows_hint') + (state.one_plate_required ? ` ${tr(state.painted_colors ? 'farm.order.painted_plate' : 'farm.order.one_plate_required')}` : '');
+            show($('farm-machine-note'), false);
+            const clashBox = $('farm-clash-toast'); if (clashBox) show(clashBox, false);
+            if (list0) {
+                list0.innerHTML = row(first?.label ?? state.first_label ?? tr('farm.order.part_main'), byParts ? first?.hex ?? null : null, mainId, 'data-row="main"', (a) => (entryOn(a.id, here) ? overLimit(a.id, rows.map((r) => r.id)) : tr('farm.order.low_filament')))
+                    + rows.map((r, i) => row(r.label, r.hex, r.id, `data-row="${i}"`, (a) => overLimit(mainId, rows.map((q, j) => (j === i ? a.id : q.id))))).join('');
+                list0.querySelectorAll<HTMLButtonElement>('button[data-row]').forEach((b) => b.addEventListener('click', () => {
+                    const k = Number(b.dataset.colour);
+                    if (b.dataset.row === 'main') apply(here, k, rows.map((r) => r.id));
+                    else apply(here, mainId, rows.map((r, i) => (String(i) === b.dataset.row ? k : r.id)));
+                }));
+            }
+            setsOn(true);
+            machineSwitched = false;
+            paintTones();
+            return;
         }
         if (byParts) {
             // a part keeps its colour when this machine holds it; else (nothing chosen yet, or the machine changed) the spool nearest

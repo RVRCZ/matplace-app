@@ -3097,5 +3097,9 @@
     "farm.order.free.clash": "not with: :names",
     "farm.order.free.repicked": "We do not have these colours together in one printer, so we picked the nearest colour: :parts.",
     "farm.order.free.fell_back": "Now printed in the main colour: :parts.",
-    "farm.order.design_color": "in the design"
+    "farm.order.design_color": "in the design",
+    "farm.order.sets.title": "Set of colours",
+    "farm.order.sets.hint": "The piece is printed from the colours of one set. Pick the set you like; you then share out its colours as you wish.",
+    "farm.order.sets.rows": "Which part gets which colour",
+    "farm.order.sets.rows_hint": "Tap a dot and the part gets that colour. The model changes at once."
 }

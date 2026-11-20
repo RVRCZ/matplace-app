@@ -14,7 +14,7 @@
         // the slice on the customer's word (docs/AN.md §26): the button of a small waiting order, the price out of date after a changed choice
         'farm.order.price_start', 'farm.order.price_start_hint', 'farm.order.price_stale_pay', 'farm.order.recalculate_price',
         // the chooser by machine (docs/AL.md §19): the card of the printer with its positions, the reasons a position cannot print a part
-        'farm.order.machine_title', 'farm.order.machine_hint', 'farm.order.colors_count', 'farm.order.positions_n', 'farm.order.machine_best', 'farm.order.machine_chosen', 'farm.order.preselected', 'farm.order.machine_repicked', 'farm.order.free.hint', 'farm.order.free.clash', 'farm.order.free.repicked', 'farm.order.free.fell_back', 'farm.order.design_color', 'farm.order.machine_fell_back',
+        'farm.order.machine_title', 'farm.order.machine_hint', 'farm.order.colors_count', 'farm.order.positions_n', 'farm.order.machine_best', 'farm.order.machine_chosen', 'farm.order.preselected', 'farm.order.machine_repicked', 'farm.order.free.hint', 'farm.order.sets.rows', 'farm.order.sets.rows_hint', 'farm.order.free.clash', 'farm.order.free.repicked', 'farm.order.free.fell_back', 'farm.order.design_color', 'farm.order.machine_fell_back',
         // the discount code field (docs/AT.md; only on the page while the codes are switched on)
         'farm.promo.applied', 'farm.promo.line', 'farm.promo.empty',
         'farm.order.pos_reason.empty', 'farm.order.pos_reason.main', 'farm.order.pos_reason.off', 'farm.order.pos_reason.kind', 'farm.order.pos_reason.low', 'farm.order.pos_reason.manual_only', 'farm.order.pos_reason.limit'];
@@ -193,11 +193,20 @@
                 <p id="farm-presets-wait" class="mt-1 hidden text-xs text-slate-600">{{ __('farm.order.while_slicing') }}</p>
                 <div id="farm-material" class="mt-3 hidden scroll-mt-4">
                     {{-- the kinds loaded right now (PLA, PLA+, PETG…): a filter over the colours below, the colour sets the kind --}}
+                    {{-- a design of more colours, the customer's view (farm.ts): the sets of colours that go together, one square
+                         each; the rows of dots under them are drawn into #farm-second-colors --}}
+                    <div id="farm-sets-box" class="hidden">
+                        <div class="text-sm font-semibold text-slate-700">{{ __('farm.order.sets.title') }}</div>
+                        <p class="text-xs text-slate-600">{{ __('farm.order.sets.hint') }}</p>
+                        <div id="farm-sets" class="mt-2 grid grid-cols-1 gap-2 sm:grid-cols-2" role="radiogroup" aria-label="{{ __('farm.order.sets.title') }}"></div>
+                    </div>
+                    <div id="farm-main-pick">
                     <div class="text-sm font-semibold text-slate-700">{{ __('farm.order.material') }}</div>
                     <div id="farm-kinds" class="mt-2 flex flex-wrap gap-2" role="radiogroup" aria-label="{{ __('farm.order.material') }}"></div>
                     <div id="farm-color-title" class="mt-4 text-sm font-semibold text-slate-700" data-plain="{{ __('farm.order.color') }}">{{ __('farm.order.color') }}</div>
                     <p class="text-xs text-slate-600">{{ __('farm.order.colors_now') }}</p>
                     <div id="farm-colors" class="mt-2 grid grid-cols-2 gap-2 sm:grid-cols-3" role="radiogroup" aria-label="{{ __('farm.order.color') }}"></div>
+                    </div>
                     {{-- a design of several separately printed parts (a box and its lid): together in one colour, or each part
                          its own print from its own spool of the machine, one plate after another (sliced again when changed) --}}
                     <label id="farm-by-parts-box" class="mt-3 hidden cursor-pointer items-start gap-2 rounded-xl border border-slate-200 p-3 text-sm">

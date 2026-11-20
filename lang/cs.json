@@ -3097,5 +3097,9 @@
     "farm.order.free.clash": "nejde s: :names",
     "farm.order.free.repicked": "Tyhle barvy spolu v jedné tiskárně nemáme. Vybrali jsme proto nejbližší barvu: :parts.",
     "farm.order.free.fell_back": "Hlavní barvou se teď vytiskne: :parts.",
-    "farm.order.design_color": "v návrhu"
+    "farm.order.design_color": "v návrhu",
+    "farm.order.sets.title": "Sada barev",
+    "farm.order.sets.hint": "Výrobek se tiskne z barev jedné sady. Vyberte sadu, která se vám líbí; barvy v ní pak rozdělíte, jak chcete.",
+    "farm.order.sets.rows": "Která část bude kterou barvou",
+    "farm.order.sets.rows_hint": "Ťukněte na kolečko a část dostane tu barvu. Model se přebarví hned."
 }
