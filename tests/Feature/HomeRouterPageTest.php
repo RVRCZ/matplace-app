@@ -105,4 +105,13 @@ class HomeRouterPageTest extends TestCase
         $this->assertStringNotContainsString('data-gift="pet"', $html);
         $this->assertStringContainsString('data-gift="figure"', $html);
     }
+
+    /** Seven cards left a hole in the rows of four (Stella, 20 Nov 2026): the way to all tools takes the eighth place. */
+    public function test_seven_tool_cards_get_the_way_to_all_tools_as_the_eighth(): void
+    {
+        config(['home.tools_shown' => 8]);
+        $this->get('/')->assertOk()->assertDontSee('data-all-tools-card', false);
+        config(['home.tools_shown' => 7]);
+        $this->get('/')->assertOk()->assertSee('data-all-tools-card', false);
+    }
 }

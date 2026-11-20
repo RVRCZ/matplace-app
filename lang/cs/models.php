@@ -35,7 +35,7 @@ return [
         'note' => 'Orientační cena s DPH, bez dopravy. Barvu a kvalitu vyberete v dalším kroku, tam uvidíte cenu přesně.',
         'unavailable' => 'Cenu teď neumíme spočítat předem. Uvidíte ji po zadání objednávky, ještě před zaplacením.',
     ],
-    'order' => 'Přejít k tisku',
+    'order' => 'Pokračovat k barvám a ceně',
     'download' => [
         'title' => 'Máte vlastní tiskárnu?',
         'license' => 'Autor dává soubor ke stažení zdarma. Licence: :license.',

@@ -264,7 +264,7 @@ final class FarmSliceOnDemandTest extends TestCase
     {
         config(['features.marketplace' => false, 'farm.enabled' => true, 'farm.open' => true, 'farm.public' => true]);
         $this->assertTrue(NextStep::direct('coaster'));
-        foreach (['' => 'Přejít k tisku', '/en' => 'Continue to printing', '/es' => 'Continuar a la impresión'] as $prefix => $label) {
+        foreach (['' => 'Pokračovat k barvám a ceně', '/en' => 'Continue to colours and price', '/es' => 'Continuar a colores y precio'] as $prefix => $label) {
             $html = (string) $this->get($prefix.'/tools/coaster')->assertOk()->getContent();
             $this->assertStringContainsString('<span id="tool-go-label">'.$label.'</span>', $html, $prefix);
             $this->assertSame(route('farm.orders.store'), $this->handed($html, 'MP_TOOL')['order']['store'], $prefix.': the page knows where the order is made');
@@ -274,7 +274,7 @@ final class FarmSliceOnDemandTest extends TestCase
         $this->assertSame(__('param.go.hint.order'), html_entity_decode(trim($m[1] ?? '')));
         $this->assertStringNotContainsString('kalkulac', __('param.go.hint.order'), 'the calculation is left out of this path');
         // the map names its own next step: the same word
-        $this->assertStringContainsString(trim(json_encode('Přejít k tisku'), '"'), stripslashes((string) $this->get('/tools/map')->assertOk()->getContent()));
+        $this->assertStringContainsString(trim(json_encode('Pokračovat k barvám a ceně'), '"'), stripslashes((string) $this->get('/tools/map')->assertOk()->getContent()));
 
         // the switch off, the farm closed or not public: the calculation as before
         foreach ([['farm.slice_on_demand' => false], ['farm.open' => false], ['farm.public' => false], ['features.marketplace' => true]] as $off) {
@@ -282,14 +282,14 @@ final class FarmSliceOnDemandTest extends TestCase
             config($off);
             $this->assertFalse(NextStep::direct('coaster'), json_encode($off));
             $html = (string) $this->get('/tools/coaster')->assertOk()->getContent();
-            $this->assertStringNotContainsString('Přejít k tisku</span>', $html, json_encode($off));
+            $this->assertStringNotContainsString('Pokračovat k barvám a ceně</span>', $html, json_encode($off));
             $this->assertNull($this->handed($html, 'MP_TOOL')['order'], json_encode($off));
         }
     }
 
     public function test_the_calculators_button_only_leads_to_the_order_and_says_so(): void
     {
-        foreach (['cs' => 'Přejít k tisku', 'en' => 'Continue to printing', 'es' => 'Continuar a la impresión'] as $lang => $label) {
+        foreach (['cs' => 'Pokračovat k barvám a ceně', 'en' => 'Continue to colours and price', 'es' => 'Continuar a colores y precio'] as $lang => $label) {
             $this->assertSame($label, __('farm.cta', [], $lang));
             $this->assertSame($label, __('models.order', [], $lang));
             $this->assertSame($label, __('user.models.order', [], $lang));

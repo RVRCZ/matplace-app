@@ -95,7 +95,7 @@
                 @endforeach
             </div>
 
-            <div class="flex flex-col items-center gap-1 text-center">
+            <div class="flex flex-col items-center gap-2 text-center">
                 {{-- the one orange action of the screen: at least 60 px tall, the whole width on a phone --}}
                 <button type="submit" id="intake-submit" class="btn-primary min-h-[60px] w-full rounded-2xl px-8 text-lg shadow-sm sm:w-auto sm:min-w-[320px]">{{ __('router.submit') }}</button>
                 <label for="intake-model" id="intake-file-link" class="inline-flex min-h-11 cursor-pointer items-center text-sm font-medium text-muted underline underline-offset-4 hover:text-ink">{{ __('router.file_link') }}</label>
@@ -105,8 +105,8 @@
             <div id="intake-assist" class="hidden border-t border-line pt-4" aria-live="polite"></div>
         </form>
 
-        <ul class="mt-4 flex flex-wrap justify-center gap-x-4 gap-y-1.5 text-sm text-muted" aria-label="{{ __('router.trust.preview') }}">
-            @foreach(array_filter(['preview' => $closed ? null : __('router.trust.preview'), 'no_signup' => __('router.trust.no_signup'), 'christmas' => $christmas ? __('router.trust.christmas', ['date' => $christmas]) : null]) as $k => $line)
+        <ul class="mt-6 flex flex-wrap justify-center gap-x-5 gap-y-2 text-sm text-muted" aria-label="{{ __('router.trust.preview') }}">
+            @foreach(array_filter(['preview' => $closed ? null : __('router.trust.preview'), 'no_signup' => __('router.trust.no_signup'), 'christmas' => $christmas ? __('router.trust.christmas', ['date' => $christmas]) : null, 'privacy' => __('router.privacy')]) as $k => $line)
                 <li class="flex items-center gap-1.5" data-trust="{{ $k }}"><svg class="h-3.5 w-3.5 shrink-0 text-ok" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2.4" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M4 10.5l4 4 8-9"/></svg>{{ $line }}</li>
             @endforeach
         </ul>
@@ -115,7 +115,6 @@
         @if($closed)
             <p data-farm-closed class="mt-3 rounded-lg bg-amber-50 px-3 py-2 text-center text-sm text-amber-900" role="note">{{ __('farm.state.closed.note') }}</p>
         @endif
-        <p class="mt-2 text-center text-xs text-muted">{{ __('router.privacy') }}</p>
     </div>
 
     {{-- ── what happens after sending: the three ways it can go (each ends with a price and an order: not while the farm is closed) ── --}}
@@ -186,9 +185,9 @@
 
     {{-- ── a model of one's own: the calculator's entrance (its scripts bind to the ids inside: file-input, dropzone, search-form) ── --}}
     <section class="card mt-14 p-4 sm:p-6" aria-labelledby="router-file-title" id="router-file">
-        <p class="{{ $eyebrow }}">{{ __('router.file.eyebrow') }}</p>
-        <h2 id="router-file-title" class="{{ $h2 }}">{{ $cx('router.file.title') }}</h2>
-        <p class="mt-1 max-w-3xl text-muted">{{ $cx('router.file.lead') }}</p>
+        <h2 id="router-file-title" class="{{ $h2 }}">{{ __('router.file.eyebrow') }}</h2>
+        <p class="mt-1 text-lg font-semibold text-ink">{{ $cx('router.file.title') }}</p>
+        <p class="mt-1 max-w-3xl text-muted">{{ $cx('router.file.lead') }} <a href="#hero" class="font-medium text-ink underline underline-offset-4">{{ __('router.file.no_file') }}</a></p>
         <div class="mt-4">
             @include('calculator.inputs', ['centered' => false, 'fileOnly' => true])
         </div>
@@ -246,8 +245,12 @@
             @foreach($homeTools as $key => $tool)
                 @include('tools.card', ['key' => $key, 'tool' => $tool, 'badge' => in_array($key, (array) config('home.popular'), true) ? __('home.tools.popular') : null])
             @endforeach
+            {{-- cards that do not fill the rows of four (Stella, 20 Nov 2026: seven left a hole): the way to all tools takes the last place --}}
+            @if($homeTools->count() % 4 === 3)
+                <a href="{{ route('tools') }}" data-all-tools-card class="flex min-h-40 flex-col items-center justify-center gap-2 rounded-2xl border-2 border-dashed border-line bg-card p-5 text-center font-semibold text-ink transition hover:border-ink"><x-icon name="arrow-right" class="h-6 w-6 text-action" />{{ __('home.tools.all_count', ['n' => count(\App\Domain\Tools\ToolVisibility::listed())]) }}</a>
+            @endif
         </div>
-        <p class="mt-6 text-center"><a href="{{ route('tools') }}" class="btn-secondary">{{ __('home.tools.all_count', ['n' => count(\App\Domain\Tools\ToolVisibility::listed())]) }} →</a></p>
+        @if($homeTools->count() % 4 !== 3)<p class="mt-6 text-center"><a href="{{ route('tools') }}" class="btn-secondary">{{ __('home.tools.all_count', ['n' => count(\App\Domain\Tools\ToolVisibility::listed())]) }} →</a></p>@endif
     </section>
 
     {{-- prints with their price: off until the photos of the prints come (config/site.php) --}}
@@ -256,7 +259,7 @@
     @endif
 
     {{-- how it goes --}}
-    <section class="-mx-4 mt-14 bg-white/60 px-4 py-12" aria-labelledby="home-steps">
+    <section class="mt-16 rounded-3xl bg-studio px-5 py-10 sm:px-10 sm:py-12" aria-labelledby="home-steps">
         <p class="text-xs font-bold uppercase tracking-[0.14em] text-action">{{ __('home.steps.kicker') }}</p>
         <div class="mt-2 flex flex-wrap items-end justify-between gap-3"><h2 id="home-steps" class="text-3xl font-extrabold tracking-tight text-ink">{{ __('home.steps.title') }}</h2><p class="max-w-xs text-sm text-muted">{{ $tx('home.steps.note') }}</p></div>
         <ol class="mt-8 grid gap-8 md:grid-cols-3">

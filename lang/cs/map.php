@@ -20,6 +20,7 @@ return [
     'place.none' => 'Nic takového jsme nenašli. Zkuste jiný zápis nebo přidejte zemi.',
     'place.pick' => 'Vyberte, které místo myslíte:',
     'place.chosen' => 'Střed mapy: :name',
+    'empty.chosen' => 'Oblast je vybraná, shora ji vidíte v panelu. Stiskněte „Vytvořit mapu“: 3D model se objeví tady a před tiskem si ho prohlédnete.',
     'place.preview' => 'Náhled oblasti',
     'place.preview.hint' => 'Co se vytiskne: budovy, silnice, voda a zeleň v mapě z OpenStreetMap, rám a měřítko. Mění se s rozsahem a nastavením.',
     'place.preview.loading' => 'Kreslím náhled oblasti…',

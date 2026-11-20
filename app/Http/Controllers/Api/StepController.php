@@ -22,6 +22,9 @@ class StepController extends Controller
     public const TYPE = 'tool_step';
 
     public const STEPS = ['scroll', 'pick', 'photo', 'no_photo', 'no_consent', 'create', 'limit', 'rejected', 'error', 'wait_left', 'shown',
+        // between the photo and "Create", and after the model (figure.ts, 20 Nov 2026)
+        'thumb', 'create_seen', 'consent_seen', 'consent_on', 'photo_off', 'model_touch', 'cta_seen', 'price_seen', 'again', 'dl_click', 'model_left',
+        // the order's page (farm.ts, 20 Nov 2026)
         'o_color', 'o_setting', 'o_slice', 'o_delivery', 'o_email', 'o_terms', 'o_blocked', 'o_pay', 'o_left'];
 
     public function __invoke(Request $request): Response

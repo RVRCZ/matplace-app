@@ -20,6 +20,7 @@ return [
     'place.none' => 'No hemos encontrado nada con ese nombre. Pruebe otra grafía o añada el país.',
     'place.pick' => 'Elija el lugar al que se refiere:',
     'place.chosen' => 'Centro del mapa: :name',
+    'empty.chosen' => 'La zona está elegida; el panel la muestra desde arriba. Pulse «Crear el mapa»: el modelo 3D aparece aquí y lo ve antes de imprimir.',
     'place.preview' => 'Vista previa de la zona',
     'place.preview.hint' => 'Lo que se imprimirá: los edificios, calles, agua y zonas verdes del mapa de OpenStreetMap, el marco y la escala. Sigue el alcance y los ajustes.',
     'place.preview.loading' => 'Dibujando la zona…',

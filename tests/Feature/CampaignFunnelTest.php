@@ -49,9 +49,9 @@ class CampaignFunnelTest extends TestCase
         Humans::forget();
         // Facebook, the realistic video: one only looked, one stopped at the consent, one left after 40 s of waiting, one paid
         $this->visitor('facebook', 'video-real');
-        $this->visitor('facebook', 'video-real', ['scroll', 'pick', 'photo', 'no_consent'], ['download']);
+        $this->visitor('facebook', 'video-real', ['scroll', 'pick', 'photo', 'thumb', 'create_seen', 'no_consent'], ['download']);
         $this->visitor('facebook', 'video-real', ['pick', 'photo', 'create', 'wait_left' => 40000], ['generate']);
-        $this->visitor('facebook', 'video-real', ['pick', 'photo', 'create', 'shown' => 120000, 'o_color', 'o_slice', 'o_delivery', 'o_blocked', 'o_terms', 'o_pay'], ['generate', 'model_ready', 'order_created', 'price_shown', 'checkout_started', 'order_paid']);
+        $this->visitor('facebook', 'video-real', ['pick', 'photo', 'create', 'shown' => 120000, 'model_touch', 'cta_seen', 'o_color', 'o_slice', 'o_delivery', 'o_blocked', 'o_terms', 'o_pay'], ['generate', 'model_ready', 'order_created', 'price_shown', 'checkout_started', 'order_paid']);
         // a visit the browser never confirmed counts as a visit and nothing more
         $this->visitor('facebook', 'video-real', [], [], false);
         // Seznam, search: one picked a photo
@@ -66,6 +66,9 @@ class CampaignFunnelTest extends TestCase
         $this->assertSame(['visit' => 5, 'page' => 4, 'scroll' => 1, 'pick' => 3, 'photo' => 3, 'create' => 2, 'generate' => 2, 'model' => 1, 'to_print' => 1, 'price' => 1, 'checkout' => 1, 'paid' => 1, 'download' => 1], $fb['steps']);
         $this->assertSame(['no_consent' => 1, 'no_photo' => 0, 'refused' => 0, 'wait_left' => 1], $fb['stops']);
         $this->assertSame(40, $fb['wait_s']);
+        // between the photo and the button, and after the model
+        $this->assertSame(['thumb' => 1, 'create_seen' => 1, 'consent_seen' => 0, 'consent_on' => 0, 'photo_off' => 0], $fb['before']);
+        $this->assertSame(['model_touch' => 1, 'cta_seen' => 1, 'price_seen' => 0, 'again' => 0, 'dl_click' => 0, 'model_left' => 0], $fb['after']);
         // the order's page: what the one who paid did there
         $this->assertSame(['o_color' => 1, 'o_setting' => 0, 'o_slice' => 1, 'o_delivery' => 1, 'o_email' => 0, 'o_terms' => 1, 'o_blocked' => 1, 'o_pay' => 1, 'o_left' => 0], $fb['order']);
         // the field that was missing and the last step before leaving travel with the step; anything else is refused

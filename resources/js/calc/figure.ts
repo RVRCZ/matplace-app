@@ -45,8 +45,22 @@ export function bootFigure(stage: Stage): void {
         try { if (navigator.sendBeacon?.('/api/step', body)) return; } catch { /* fall through to fetch */ }
         void fetch('/api/step', { method: 'POST', body, keepalive: true, credentials: 'same-origin' }).catch(() => undefined);
     };
-    const left = (): void => { if (waiting) step('wait_left', Date.now() - waiting); };
+    // after the model: when it was shown, and whether the visitor went on to the order (then leaving is no loss)
+    let shownAt = 0;
+    let ordered = false;
+    const left = (): void => {
+        if (waiting) step('wait_left', Date.now() - waiting);
+        else if (shownAt && !ordered) step('model_left', Date.now() - shownAt);
+    };
     window.addEventListener('pagehide', left);
+    // a phone seldom fires pagehide (the browser is put away, the tab dies later): the page going out of sight counts too
+    document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'hidden') left(); });
+    // "seen" steps: an element at least half in the window while its condition holds (the photo is chosen, the model is made)
+    const ratios = new Map<Element, number>();
+    const watches: { el: Element; name: string; when: () => boolean }[] = [];
+    const lookAgain = (): void => watches.forEach((w) => { if ((ratios.get(w.el) ?? 0) >= 0.5 && w.when()) step(w.name); });
+    const eyes = 'IntersectionObserver' in window ? new IntersectionObserver((entries) => { entries.forEach((e) => ratios.set(e.target, e.intersectionRatio)); lookAgain(); }, { threshold: [0, 0.5, 1] }) : null;
+    const watch = (el: Element | null | undefined, name: string, when: () => boolean): void => { if (!el || !eyes) return; watches.push({ el, name, when }); eyes.observe(el); };
     const scrolled = (): void => {
         if (window.scrollY + window.innerHeight < document.documentElement.scrollHeight / 2) return;
         step('scroll');
@@ -155,7 +169,8 @@ export function bootFigure(stage: Stage): void {
             x.className = 'absolute -right-2 -top-2 inline-flex h-7 w-7 items-center justify-center rounded-full border border-line bg-card text-ink shadow-sm hover:border-ink';
             x.setAttribute('aria-label', `${t('figure.remove')}: ${t(`figure.view.${view}`)}`); x.title = t('figure.remove');
             x.innerHTML = '<svg class="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><use href="#i-x"/></svg>';
-            x.addEventListener('click', (e) => { e.stopPropagation(); clear(view); mark(view, false); calm(); msg.textContent = ''; sayInDrop(''); });
+            img.addEventListener('load', () => step('thumb'));
+            x.addEventListener('click', (e) => { e.stopPropagation(); step('photo_off'); clear(view); mark(view, false); calm(); msg.textContent = ''; sayInDrop(''); });
             box.append(img, x, t(`figure.view.${view}`));
             thumbs.appendChild(box);
         });
@@ -175,6 +190,35 @@ export function bootFigure(stage: Stage): void {
         const dt = new DataTransfer(); dt.items.add(f); input.files = dt.files;
         input.dispatchEvent(new Event('change'));
     };
+    // "Create" pressed without the consent (15 visitors in three days of November 2026, 4 of them left the page): the
+    // box is asked for once, and both buttons turn into "I agree, create", so the next press ticks it and goes on.
+    // Ticking the box by hand gives the buttons their own words back. The second press counts only after a moment:
+    // a double tap is not a consent.
+    const mine = $('figure-consent') as HTMLInputElement;
+    const theirs = document.getElementById('figure-drop-consent') as HTMLInputElement | null;
+    let offered = 0;
+    const offer = (on: boolean): void => {
+        offered = on ? Date.now() : 0;
+        [create, btn].forEach((b) => {
+            const words = b?.lastChild;
+            if (!b || !words) return;
+            b.dataset.words ??= words.textContent ?? '';
+            words.textContent = on ? t('figure.agree_create') : b.dataset.words;
+        });
+    };
+    const agreed = (ask: (text: string) => void): boolean => {
+        if (mine.checked) return true;
+        if (offered && Date.now() - offered > 600) {
+            mine.checked = true;
+            if (theirs) theirs.checked = true;
+            offer(false);
+            return true;
+        }
+        if (!offered) { step('no_consent'); offer(true); }
+        ask(t('figure.need_consent'));
+        return false;
+    };
+    [mine, theirs].forEach((box) => box?.addEventListener('change', () => { if (offered) offer(false); }));
     if (drop) {
         document.getElementById('figure-drop-pick')?.addEventListener('click', () => free().click());
         const area = document.getElementById('tool-empty') ?? drop;
@@ -185,8 +229,6 @@ export function bootFigure(stage: Stage): void {
             [...(e.dataTransfer?.files ?? [])].filter((f) => f.type.startsWith('image/')).slice(0, inputs.length).forEach((f) => put(free(), f));
         });
         // the consent there is the panel's one, mirrored both ways (only the panel's travels with the form)
-        const mine = $('figure-consent') as HTMLInputElement;
-        const theirs = document.getElementById('figure-drop-consent') as HTMLInputElement | null;
         if (theirs) {
             theirs.checked = mine.checked;
             theirs.addEventListener('change', () => { mine.checked = theirs.checked; if (theirs.checked) sayInDrop(''); });
@@ -195,7 +237,7 @@ export function bootFigure(stage: Stage): void {
         // "Create" there: the same submit as the button in the panel; a missing consent is said right there
         create?.addEventListener('click', () => {
             if (!photo.files?.length) { free().click(); return; }
-            if (!mine.checked) { step('no_consent'); sayInDrop(t('figure.need_consent')); focusCalm(theirs); return; }
+            if (!agreed((text) => { sayInDrop(text); focusCalm(theirs); })) return;
             sayInDrop('');
             form.requestSubmit();
         });
@@ -214,10 +256,10 @@ export function bootFigure(stage: Stage): void {
     const calm = () => { viewsMsg.textContent = ''; viewsMsg.classList.add('hidden'); };
     inputs.forEach((input) => {
         const view = input.dataset.view ?? '';
-        input.onchange = () => { mark(view, false); calm(); msg.textContent = ''; show(input); if (input.files?.length) step('photo'); };
+        input.onchange = () => { mark(view, false); calm(); msg.textContent = ''; show(input); if (input.files?.length) step('photo'); lookAgain(); };
         input.addEventListener('click', () => step('pick'));
         const remove = part<HTMLButtonElement>('data-view-remove', view);
-        if (remove) remove.onclick = () => { clear(view); mark(view, false); calm(); msg.textContent = ''; };
+        if (remove) remove.onclick = () => { step('photo_off'); clear(view); mark(view, false); calm(); msg.textContent = ''; };
     });
     // The browser may keep the chosen files over a reload or a step back (photos taken straight by the camera
     // exist nowhere else). What the form would send must be on the screen, with its remove button.
@@ -328,7 +370,9 @@ export function bootFigure(stage: Stage): void {
         if (goBar) goBar.hidden = false;
         moved = false;
         if (waiting) { step('shown', Date.now() - waiting); waiting = 0; }
+        shownAt = Date.now();
         stage.revealResult();
+        lookAgain();
     };
 
     /** Waits for a generation to end and shows its model. */
@@ -393,12 +437,25 @@ export function bootFigure(stage: Stage): void {
         history.replaceState(null, '', url);
     };
 
+    // ── what a visitor saw and did between the photo and "Create", and after the model (our own statistics, 20 Nov 2026:
+    // of 43 visitors with a photo 12 never pressed "Create", and of 19 with a model 2 went on to the print) ──
+    const hasPhoto = (): boolean => !!photo.files?.length;
+    const isMade = (): boolean => made !== null;
+    watch(create, 'create_seen', hasPhoto); watch(btn, 'create_seen', hasPhoto);
+    watch(mine, 'consent_seen', hasPhoto); watch(theirs, 'consent_seen', hasPhoto);
+    [mine, theirs].forEach((box) => box?.addEventListener('change', () => { if (box.checked) step('consent_on'); }));
+    const goOn = [document.getElementById('tool-go'), goBar?.querySelector('[data-bar-button]') ?? null];
+    goOn.forEach((b) => { watch(b, 'cta_seen', isMade); b?.addEventListener('click', () => { ordered = true; }); });
+    ['pointerdown', 'wheel'].forEach((ev) => document.getElementById('tool-viewer')?.parentElement?.addEventListener(ev, () => { if (made) step('model_touch'); }, { passive: true, capture: true }));
+    document.querySelectorAll('[data-again]').forEach((b) => b.addEventListener('click', () => step('again')));
+    ['tool-download', 'tool-download-menu'].forEach((id) => document.getElementById(id)?.addEventListener('click', () => step('dl_click')));
+
     form.onsubmit = async (e) => {
         e.preventDefault();
         sync();
         const file = photo.files?.[0];
         if (!file) { step('no_photo'); msg.textContent = t('figure.need_photo'); return; }
-        if (!($('figure-consent') as HTMLInputElement).checked) { step('no_consent'); msg.textContent = t('figure.need_consent'); return; }
+        if (!agreed((text) => { msg.textContent = text; })) return;
         step('create');
         calm();
         inputs.forEach((i) => mark(i.dataset.view ?? '', false));

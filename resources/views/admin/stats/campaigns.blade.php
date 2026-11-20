@@ -10,7 +10,7 @@
         'create' => ['Odeslal', 'Stiskl „Vytvořit figurku“ s fotkou a souhlasem.'],
         'generate' => ['Výroba začala', 'Server fotku přijal a model se začal vyrábět.'],
         'model' => ['Model hotový', 'Model se vyrobil nebo ukázal na obrazovce.'],
-        'to_print' => ['Přešel k tisku', 'Stiskl „Přejít k tisku“, vznikla zakázka.'],
+        'to_print' => ['Přešel k tisku', 'Stiskl „Pokračovat k barvám a ceně“, vznikla zakázka.'],
         'price' => ['Viděl přesnou cenu', 'Vybral barvu a nechal si spočítat přesnou cenu.'],
         'checkout' => ['Šel platit', 'Otevřel platbu kartou.'],
         'paid' => ['Zaplatil', 'Banka platbu potvrdila.'],
@@ -21,6 +21,21 @@
         'no_photo' => ['Bez fotky', 'Zkusil vytvořit figurku bez fotky.'],
         'refused' => ['Odmítnuto', 'Denní limit, odmítnutá fotka nebo chyba.'],
         'wait_left' => ['Odešel při čekání', 'Opustil stránku, když se model vyráběl.'],
+    ];
+    $before = [
+        'thumb' => ['Náhled fotky', 'Náhled vybrané fotky se na stránce opravdu ukázal.'],
+        'create_seen' => ['Viděl tlačítko', 'Tlačítko „Vytvořit“ měl na obrazovce.'],
+        'consent_seen' => ['Viděl souhlas', 'Zaškrtávátko souhlasu měl na obrazovce.'],
+        'consent_on' => ['Zaškrtl souhlas', 'Souhlas se zpracováním fotky zaškrtl.'],
+        'photo_off' => ['Fotku odebral', 'Vybranou fotku zase odebral křížkem.'],
+    ];
+    $after = [
+        'model_touch' => ['Pohnul modelem', 'Model otočil nebo přiblížil.'],
+        'cta_seen' => ['Viděl „Přejít k tisku“', 'Tlačítko k tisku měl na obrazovce.'],
+        'price_seen' => ['Viděl cenu', 'Orientační cenu u modelu měl na obrazovce.'],
+        'again' => ['Zkusil znovu', 'Stiskl „Vytvořit znovu“ nebo úpravu podstavce.'],
+        'dl_click' => ['Klepl na stažení', 'Klepl na stažení modelu.'],
+        'model_left' => ['Odešel s modelem', 'Opustil stránku s hotovým modelem, aniž přešel k tisku.'],
     ];
     $order = [
         'o_color' => ['Vybral barvu', 'Klepl na dlaždici s barvou.'],
@@ -106,6 +121,58 @@
                         <td class="whitespace-nowrap px-3 py-2">{{ $sourceName[$row['source']] ?? $row['source'] }}@if($row['content'] !== '') <span class="text-slate-500">· {{ $row['content'] }}</span>@endif</td>
                         @foreach(array_keys($stops) as $key)<td class="px-2 py-2 text-right" data-stop="{{ $key }}">{{ $row['stops'][$key] }}</td>@endforeach
                         <td class="px-2 py-2 text-right">{{ $row['wait_s'] !== null ? $row['wait_s'].' s' : '–' }}</td>
+                    </tr>
+                @endforeach
+            </tbody>
+        </table>
+    </div>
+
+    <h2 class="mt-6 font-bold">Mezi fotkou a tlačítkem</h2>
+    <p class="mt-1 text-xs text-slate-500">Co viděli a udělali ti, kdo vybrali fotku, než stiskli „Vytvořit“. Zapisuje se od 20. 11. 2026.</p>
+    <div class="mt-2 overflow-x-auto rounded-2xl border border-slate-200 bg-white">
+        <table class="w-full text-left text-sm" data-campaign-before>
+            <thead class="bg-slate-50 text-xs text-slate-500">
+                <tr>
+                    <th class="px-3 py-2">Kanál a reklama</th>
+                    <th class="px-2 py-2 text-right">Vybral fotku</th>
+                    @foreach($before as [$label, $hint])<th class="px-2 py-2 text-right align-bottom" title="{{ $hint }}">{{ $label }}</th>@endforeach
+                    <th class="px-2 py-2 text-right">Odeslal</th>
+                </tr>
+            </thead>
+            <tbody class="divide-y divide-slate-100">
+                @foreach(array_merge($stats['rows'], [['source' => 'Celkem', 'content' => ''] + $stats['total']]) as $row)
+                    @continue(! $loop->last && $row['steps']['photo'] === 0)
+                    <tr class="{{ $loop->last ? 'bg-slate-50 font-semibold' : '' }}">
+                        <td class="whitespace-nowrap px-3 py-2">{{ $sourceName[$row['source']] ?? $row['source'] }}@if($row['content'] !== '') <span class="text-slate-500">· {{ $row['content'] }}</span>@endif</td>
+                        <td class="px-2 py-2 text-right">{{ $row['steps']['photo'] }}</td>
+                        @foreach(array_keys($before) as $key)<td class="px-2 py-2 text-right" data-before="{{ $key }}">{{ $row['before'][$key] }}</td>@endforeach
+                        <td class="px-2 py-2 text-right">{{ $row['steps']['create'] }}</td>
+                    </tr>
+                @endforeach
+            </tbody>
+        </table>
+    </div>
+
+    <h2 class="mt-6 font-bold">Po hotovém modelu</h2>
+    <p class="mt-1 text-xs text-slate-500">Co udělali ti, kdo model viděli. Zapisuje se od 20. 11. 2026.</p>
+    <div class="mt-2 overflow-x-auto rounded-2xl border border-slate-200 bg-white">
+        <table class="w-full text-left text-sm" data-campaign-after>
+            <thead class="bg-slate-50 text-xs text-slate-500">
+                <tr>
+                    <th class="px-3 py-2">Kanál a reklama</th>
+                    <th class="px-2 py-2 text-right">Model hotový</th>
+                    @foreach($after as [$label, $hint])<th class="px-2 py-2 text-right align-bottom" title="{{ $hint }}">{{ $label }}</th>@endforeach
+                    <th class="px-2 py-2 text-right">Přešel k tisku</th>
+                </tr>
+            </thead>
+            <tbody class="divide-y divide-slate-100">
+                @foreach(array_merge($stats['rows'], [['source' => 'Celkem', 'content' => ''] + $stats['total']]) as $row)
+                    @continue(! $loop->last && $row['steps']['model'] === 0)
+                    <tr class="{{ $loop->last ? 'bg-slate-50 font-semibold' : '' }}">
+                        <td class="whitespace-nowrap px-3 py-2">{{ $sourceName[$row['source']] ?? $row['source'] }}@if($row['content'] !== '') <span class="text-slate-500">· {{ $row['content'] }}</span>@endif</td>
+                        <td class="px-2 py-2 text-right">{{ $row['steps']['model'] }}</td>
+                        @foreach(array_keys($after) as $key)<td class="px-2 py-2 text-right" data-after="{{ $key }}">{{ $row['after'][$key] }}</td>@endforeach
+                        <td class="px-2 py-2 text-right">{{ $row['steps']['to_print'] }}</td>
                     </tr>
                 @endforeach
             </tbody>

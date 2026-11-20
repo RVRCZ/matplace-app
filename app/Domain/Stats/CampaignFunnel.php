@@ -43,6 +43,25 @@ final class CampaignFunnel
         'wait_left' => ['step:wait_left'],
     ];
 
+    /** Between the photo and "Create" (the page's script, figure.ts): what the visitor with a photo saw and did. */
+    public const BEFORE = [
+        'thumb' => ['step:thumb'],
+        'create_seen' => ['step:create_seen'],
+        'consent_seen' => ['step:consent_seen'],
+        'consent_on' => ['step:consent_on'],
+        'photo_off' => ['step:photo_off'],
+    ];
+
+    /** After the model was shown; `model_left` = left the page with the model and without an order. */
+    public const AFTER = [
+        'model_touch' => ['step:model_touch'],
+        'cta_seen' => ['step:cta_seen'],
+        'price_seen' => ['step:price_seen'],
+        'again' => ['step:again'],
+        'dl_click' => ['step:dl_click'],
+        'model_left' => ['step:model_left'],
+    ];
+
     /** What a visitor did on the order's page before paying (the page's script, farm.ts); `o_left` = left it unpaid. */
     public const ORDER = [
         'o_color' => ['step:o_color'],
@@ -70,7 +89,8 @@ final class CampaignFunnel
         arsort($campaigns);
         $campaign = $campaign !== null && isset($campaigns[$campaign]) ? $campaign : array_key_first($campaigns);
 
-        $empty = ['steps' => array_fill_keys(array_keys(self::STEPS), 0), 'stops' => array_fill_keys(array_keys(self::STOPS), 0), 'order' => array_fill_keys(array_keys(self::ORDER), 0), 'waits' => []];
+        $empty = ['steps' => array_fill_keys(array_keys(self::STEPS), 0), 'stops' => array_fill_keys(array_keys(self::STOPS), 0), 'order' => array_fill_keys(array_keys(self::ORDER), 0),
+            'before' => array_fill_keys(array_keys(self::BEFORE), 0), 'after' => array_fill_keys(array_keys(self::AFTER), 0), 'waits' => []];
         $rows = [];
         $total = $empty;
         foreach ($sessions as $s) {
@@ -139,9 +159,11 @@ final class CampaignFunnel
                 $row['stops'][$stop]++;
             }
         }
-        foreach (self::ORDER as $step => $passes) {
-            if (array_intersect_key(array_flip($passes), $marks)) {
-                $row['order'][$step]++;
+        foreach (['order' => self::ORDER, 'before' => self::BEFORE, 'after' => self::AFTER] as $group => $steps) {
+            foreach ($steps as $step => $passes) {
+                if (array_intersect_key(array_flip($passes), $marks)) {
+                    $row[$group][$step]++;
+                }
             }
         }
         if ($s['wait'] !== null) {

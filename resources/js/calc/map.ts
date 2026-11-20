@@ -124,6 +124,8 @@ export function bootMap(stage: Stage): void {
         if (name && !name.dataset.typed) name.value = p.kind === 'point' ? '' : p.name;
         // another place after a map was made: the main action makes the next map again (a link would lead to the old one)
         stage.go(made ? { run: create, href: null, disabled: false, label: t('map.go') } : { disabled: false });
+        // the empty stage says what comes next: the area is only chosen, the model shows up here once it is made (Stella, 20 Nov 2026)
+        const empty = document.getElementById('tool-empty'); if (empty && !made) empty.textContent = t('map.empty.chosen');
         previewSoon(0);
     };
     /**
@@ -136,6 +138,9 @@ export function bootMap(stage: Stage): void {
         if (q.length < 2) return;
         searched = q;
         say(t('map.place.searching'));
+        // the button itself shows that the search runs: the line under the field was easy to miss
+        const button = $('map-search') as HTMLButtonElement; button.disabled = true; button.setAttribute('aria-busy', 'true');
+        const words = button.lastChild; const was = words?.textContent ?? ''; if (words) words.textContent = t('map.place.searching');
         $('map-places').classList.add('hidden');
         try {
             const res = await post(cfg.places, { q });
@@ -153,7 +158,7 @@ export function bootMap(stage: Stage): void {
                 list.appendChild(b);
             });
             list.classList.remove('hidden');
-        } catch { say(t('param.preview_failed')); }
+        } catch { say(t('param.preview_failed')); } finally { button.disabled = false; button.removeAttribute('aria-busy'); if (words) words.textContent = was; }
     };
     $('map-search').onclick = () => { void search(); };
     ($('map-place') as HTMLInputElement).addEventListener('keydown', (e) => { if (e.key === 'Enter') { e.preventDefault(); void search(); } });

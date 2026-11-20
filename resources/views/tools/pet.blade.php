@@ -6,7 +6,7 @@
 @php
     $say = ['generating' => 'pet.generating', 'done' => 'pet.done', 'failed' => 'pet.failed', 'rejected' => 'pet.rejected', 'skipped_view' => 'figure.skipped_view',
         'view.left' => 'figure.view.left', 'view.back' => 'figure.view.back', 'view.right' => 'figure.view.right', 'limit' => 'figure.limit', 'global_limit' => 'figure.global_limit',
-        'need_photo' => 'figure.need_photo', 'need_consent' => 'figure.need_consent', 'limit.register' => 'figure.limit.register', 'remove' => 'figure.remove', 'back' => 'pet.back', 'gone' => 'pet.gone', 'thin' => 'pet.thin', 'thin.ok' => 'pet.thin.ok',
+        'need_photo' => 'figure.need_photo', 'need_consent' => 'figure.need_consent', 'agree_create' => 'figure.agree_create', 'limit.register' => 'figure.limit.register', 'remove' => 'figure.remove', 'back' => 'pet.back', 'gone' => 'pet.gone', 'thin' => 'pet.thin', 'thin.ok' => 'pet.thin.ok',
         'rebase.working' => 'pet.rebase.working', 'rebase.failed' => 'pet.rebase.failed', 'notify.sent' => 'figure.notify.sent', 'notify.failed' => 'figure.notify.failed',
         'rejected.no_animal' => 'pet.rejected.no_animal', 'rejected.person' => 'pet.rejected.person', 'rejected.several' => 'pet.rejected.several', 'rejected.cropped' => 'pet.rejected.cropped',
         'rejected.owner.no_person' => 'pet.rejected.owner.no_person', 'rejected.owner.several_people' => 'pet.rejected.owner.several_people', 'rejected.owner.cropped' => 'pet.rejected.owner.cropped', 'thin.owner' => 'pet.thin.owner',

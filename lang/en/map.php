@@ -20,6 +20,7 @@ return [
     'place.none' => 'Nothing of that name was found. Try another spelling or add the country.',
     'place.pick' => 'Pick the place you mean:',
     'place.chosen' => 'Middle of the map: :name',
+    'empty.chosen' => 'The area is chosen; the panel shows it from above. Press “Make the map”: the 3D model appears here and you see it before anything is printed.',
     'place.preview' => 'Preview of the area',
     'place.preview.hint' => 'What will be printed: the buildings, roads, water and green of the OpenStreetMap map, the frame and the scale. It follows the range and the settings.',
     'place.preview.loading' => 'Drawing the area…',
