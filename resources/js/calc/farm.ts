@@ -312,6 +312,24 @@ export function bootFarmOrder(): void {
     const tr = (k: string, p: Record<string, string | number> = {}) => Object.entries(p).reduce((s, [a, b]) => s.replace(`:${a}`, String(b)), cfg.i18n[k] ?? k);
     const viewer = new Viewer(canvas);
     let state = cfg.state;
+    // how far the customer got on this page before paying (StepController, /admin/stats/campaigns): each step once per
+    // page load, only while the order is unpaid and never in the admin's view; `what` = the field or the last step
+    const opened = Date.now();
+    const told = new Set<string>();
+    let lastStep = 'opened';
+    const unpaid = (): boolean => !state.admin && ['awaiting_choices', 'uploaded', 'sliced'].includes(state.status);
+    const step = (name: string, what?: string, ms?: number): void => {
+        if (told.has(name) || !unpaid() || (navigator as Navigator & { webdriver?: boolean }).webdriver) return;
+        told.add(name);
+        if (name !== 'o_left') lastStep = name;
+        const body = new URLSearchParams({ tool: 'order', step: name });
+        if (what && /^[a-z][a-z0-9_-]{0,31}$/.test(what)) body.set('what', what);
+        if (ms !== undefined) body.set('ms', String(Math.max(0, Math.min(3600000, Math.round(ms)))));
+        try { if (navigator.sendBeacon?.('/api/step', body)) return; } catch { /* fall through to fetch */ }
+        void fetch('/api/step', { method: 'POST', body, keepalive: true, credentials: 'same-origin' }).catch(() => undefined);
+    };
+    // left without paying (not on the way to the gateway): how long the page was open and what was done last
+    window.addEventListener('pagehide', () => { if (!told.has('o_pay')) step('o_left', lastStep, Date.now() - opened); });
     // a design built with its face on the bed (flush colours, a medal's flush motif) is shown turned over, motif up, the
     // way it is used; the print pose and the slice stay as they are, a line under the preview says so (docs/AN.md §26 C)
     if (state.face_down) viewer.setTurned(true);
@@ -421,6 +439,7 @@ export function bootFarmOrder(): void {
     settingInputs.forEach((i) => i.addEventListener(i instanceof HTMLSelectElement ? 'change' : 'input', () => {
         const v = i.value.trim();
         if (v === '') delete wanted.settings[i.dataset.setting!]; else wanted.settings[i.dataset.setting!] = i instanceof HTMLSelectElement ? v : Math.round(Number(v));
+        step('o_setting');
         render();
     }));
     // the model's own millimetres (in the chosen unit) so a typed dimension gives a factor
@@ -615,7 +634,7 @@ export function bootFarmOrder(): void {
                 attrs: `data-slot="${active.slot}"`, foot });
         }).join('');
         // the tile and the kinds inside it both name a slot: the colour in that kind is picked, nothing else changes
-        box.querySelectorAll<HTMLButtonElement>('button[data-slot]').forEach((b) => b.addEventListener('click', () => { picked = Number(b.dataset.slot); render(); }));
+        box.querySelectorAll<HTMLButtonElement>('button[data-slot]').forEach((b) => b.addEventListener('click', () => { picked = Number(b.dataset.slot); step('o_color'); render(); }));
         const c = state.colors.find((x) => x.slot === picked);
         // the farm is paused (FarmState): the server's sentence with the day instead of "starts now" / "goes to the queue"
         $('farm-start-note')!.textContent = state.pause ?? (c ? tr(c.starts_now ? 'farm.order.starts_now' : 'farm.order.goes_to_queue') : '');
@@ -1242,6 +1261,7 @@ export function bootFarmOrder(): void {
         // a slice of a small model is running: the choices made now are taken when it is done. A big model's slice is
         // started over with the new choices (the server drops the running one's result, docs/AL.md §11)
         if (state.status === 'uploaded' && !state.big) return;
+        step('o_slice');
         const btn = $<HTMLButtonElement>('farm-reslice');
         const recolor = $<HTMLButtonElement>('farm-recolor');
         const start = $<HTMLButtonElement>('farm-slice-start');
@@ -1255,7 +1275,7 @@ export function bootFarmOrder(): void {
         // a refusal is said in the card with the price; on a phone that card is above the choices, so it is brought into sight
         if (r.ok) { state = r.json as unknown as FarmState; picked = state.slot ?? null; wanted.by_parts = !!state.by_parts; render(); poll(); } else { before = null; const err = $('farm-error')!; err.textContent = String(r.json.message ?? ''); show(err, true); revealIfHidden(err); }
     });
-    document.querySelectorAll<HTMLElement>('#farm-delivery .seg').forEach((b) => b.addEventListener('click', () => { delivery = b.dataset.value!; render(); }));
+    document.querySelectorAll<HTMLElement>('#farm-delivery .seg').forEach((b) => b.addEventListener('click', () => { delivery = b.dataset.value!; step('o_delivery', delivery); render(); }));
     $('farm-country')?.addEventListener('change', (e) => { country = (e.target as HTMLSelectElement).value; render(); });
     pointBox?.addEventListener('pickup:change', () => render());
     $('farm-address')?.addEventListener('input', () => render());
@@ -1264,8 +1284,8 @@ export function bootFarmOrder(): void {
     $('farm-slice-start')?.addEventListener('click', () => ($('farm-presets') as HTMLFormElement | null)?.requestSubmit());
     // "Změnit" in the summary: back up to the colours, chosen only there
     $('farm-change-colors')?.addEventListener('click', (e) => { e.preventDefault(); revealIfHidden($('farm-material'), 'start'); });
-    $('farm-terms')?.addEventListener('change', render);
-    $('farm-email')?.addEventListener('input', render);
+    $('farm-terms')?.addEventListener('change', () => { step('o_terms'); render(); });
+    $('farm-email')?.addEventListener('input', () => { step('o_email'); render(); });
 
     // the pay button (and the bar's, which presses it) before the order is complete: what is missing is said under it and in
     // the bar, and its field comes into sight with the focus, without the page jumping (docs/AO.md §5)
@@ -1274,6 +1294,7 @@ export function bootFarmOrder(): void {
         if (payBtn?.dataset.busy) return true;
         const b = payBlocker();
         if (!b) return false;
+        step('o_blocked', b.el?.id || 'wait');
         say(b.text, true);
         const field = b.el && (b.el.matches('input, select, textarea, button') ? b.el : b.el.querySelector<HTMLElement>('button:not(.hidden), input:not([type=hidden]), select, textarea'));
         // the words make the bar taller: the field is brought into sight once the page knows the bar's new height
@@ -1292,6 +1313,7 @@ export function bootFarmOrder(): void {
         const btn = payBtn!;
         const form = e.target as HTMLFormElement;
         if (guide()) return;   // Enter in a field of an order not complete yet
+        step('o_pay');
         const address: Record<string, unknown> = { country };
         new FormData(form).forEach((v, k) => { const m = k.match(/^address\[(\w+)\]$/); if (m) address[m[1]] = String(v); });
         if (kind() === 'point') address.point = pointOf();

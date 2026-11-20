@@ -190,6 +190,9 @@ a `generate` se nezapisovalo nic, takže nebylo vidět, kde lidé končí. Dopln
   výrobě modelu, InitiateCheckout při zakázce, Purchase v Kč bez DPH); zaplacenou objednávku hlásí Googlu jako
   konverzi (`GOOGLE_ADS_PURCHASE_LABEL`). Bez hodnot v `.env` se
   nenačte nic. CSP rozšířeno o googleadservices, doubleclick, google.com/.cz a seznam.cz.
+- Stránka zakázky (20. 11. 2026): skript `farm.ts` hlásí kroky `o_color`, `o_setting`, `o_slice`, `o_delivery`,
+  `o_email`, `o_terms`, `o_blocked` (v `code` pole, které chybělo), `o_pay`, `o_left` (v `code` poslední krok, `ms`
+  doba na stránce); jen u nezaplacené zakázky a ne v pohledu admina. Záložka má tabulku „Na stránce zakázky“.
 - Stažení modelu: odkaz „celý model (STL)“ na stránce nástroje a v kalkulačce šel bez `?download=1`, takže ho
   server nepočítal (počítal jen projekt 3MF). Odkazy teď značku nesou a záložka má sloupec „Stáhl model“.
 - Testy: `CampaignFunnelTest` (3).

@@ -43,6 +43,19 @@ final class CampaignFunnel
         'wait_left' => ['step:wait_left'],
     ];
 
+    /** What a visitor did on the order's page before paying (the page's script, farm.ts); `o_left` = left it unpaid. */
+    public const ORDER = [
+        'o_color' => ['step:o_color'],
+        'o_setting' => ['step:o_setting'],
+        'o_slice' => ['step:o_slice'],
+        'o_delivery' => ['step:o_delivery'],
+        'o_email' => ['step:o_email'],
+        'o_terms' => ['step:o_terms'],
+        'o_blocked' => ['step:o_blocked'],
+        'o_pay' => ['step:o_pay', 'checkout_started'],
+        'o_left' => ['step:o_left'],
+    ];
+
     /**
      * @return array{days: int, campaign: ?string, campaigns: array<string, int>, rows: list<array{source: string, content: string, steps: array<string, int>, stops: array<string, int>, wait_s: ?int}>, total: array{steps: array<string, int>, stops: array<string, int>, wait_s: ?int}}
      */
@@ -57,7 +70,7 @@ final class CampaignFunnel
         arsort($campaigns);
         $campaign = $campaign !== null && isset($campaigns[$campaign]) ? $campaign : array_key_first($campaigns);
 
-        $empty = ['steps' => array_fill_keys(array_keys(self::STEPS), 0), 'stops' => array_fill_keys(array_keys(self::STOPS), 0), 'waits' => []];
+        $empty = ['steps' => array_fill_keys(array_keys(self::STEPS), 0), 'stops' => array_fill_keys(array_keys(self::STOPS), 0), 'order' => array_fill_keys(array_keys(self::ORDER), 0), 'waits' => []];
         $rows = [];
         $total = $empty;
         foreach ($sessions as $s) {
@@ -124,6 +137,11 @@ final class CampaignFunnel
         foreach (self::STOPS as $stop => $passes) {
             if (array_intersect_key(array_flip($passes), $marks)) {
                 $row['stops'][$stop]++;
+            }
+        }
+        foreach (self::ORDER as $step => $passes) {
+            if (array_intersect_key(array_flip($passes), $marks)) {
+                $row['order'][$step]++;
             }
         }
         if ($s['wait'] !== null) {

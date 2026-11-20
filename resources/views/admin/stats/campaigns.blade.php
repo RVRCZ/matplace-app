@@ -22,6 +22,17 @@
         'refused' => ['Odmítnuto', 'Denní limit, odmítnutá fotka nebo chyba.'],
         'wait_left' => ['Odešel při čekání', 'Opustil stránku, když se model vyráběl.'],
     ];
+    $order = [
+        'o_color' => ['Vybral barvu', 'Klepl na dlaždici s barvou.'],
+        'o_setting' => ['Měnil nastavení', 'Změnil něco v podrobném nastavení tisku.'],
+        'o_slice' => ['Chtěl přesnou cenu', 'Stiskl „Spočítat přesnou cenu“ nebo přepočet.'],
+        'o_delivery' => ['Vybral dopravu', 'Klepl na způsob doručení.'],
+        'o_email' => ['Psal e-mail', 'Začal vyplňovat e-mail (nepřihlášený zákazník).'],
+        'o_terms' => ['Zaškrtl podmínky', 'Zaškrtl souhlas s obchodními podmínkami.'],
+        'o_blocked' => ['Platba: něco chybělo', 'Stiskl „Zaplatit“, ale něco nebylo vyplněné; stránka ho navedla.'],
+        'o_pay' => ['Odeslal platbu', 'Stiskl „Zaplatit“ se vším vyplněným.'],
+        'o_left' => ['Odešel bez platby', 'Zavřel nebo opustil stránku nezaplacené zakázky.'],
+    ];
     $pct = fn (int $k, int $n) => $n > 0 ? str_replace('.', ',', (string) round(100 * $k / $n)).' %' : '–';
     $sourceName = ['facebook' => 'Facebook', 'google' => 'Google', 'seznam' => 'Seznam', 'tiktok' => 'TikTok', 'instagram' => 'Instagram'];
 @endphp
@@ -95,6 +106,32 @@
                         <td class="whitespace-nowrap px-3 py-2">{{ $sourceName[$row['source']] ?? $row['source'] }}@if($row['content'] !== '') <span class="text-slate-500">· {{ $row['content'] }}</span>@endif</td>
                         @foreach(array_keys($stops) as $key)<td class="px-2 py-2 text-right" data-stop="{{ $key }}">{{ $row['stops'][$key] }}</td>@endforeach
                         <td class="px-2 py-2 text-right">{{ $row['wait_s'] !== null ? $row['wait_s'].' s' : '–' }}</td>
+                    </tr>
+                @endforeach
+            </tbody>
+        </table>
+    </div>
+
+    <h2 class="mt-6 font-bold">Na stránce zakázky</h2>
+    <p class="mt-1 text-xs text-slate-500">Co udělali ti, kdo přešli k tisku, než zaplatili nebo odešli. Zapisuje se od 20. 11. 2026.</p>
+    <div class="mt-2 overflow-x-auto rounded-2xl border border-slate-200 bg-white">
+        <table class="w-full text-left text-sm" data-campaign-order>
+            <thead class="bg-slate-50 text-xs text-slate-500">
+                <tr>
+                    <th class="px-3 py-2">Kanál a reklama</th>
+                    <th class="px-2 py-2 text-right" title="Stiskl „Přejít k tisku“, vznikla zakázka.">Přešel k tisku</th>
+                    @foreach($order as [$label, $hint])<th class="px-2 py-2 text-right align-bottom" title="{{ $hint }}">{{ $label }}</th>@endforeach
+                    <th class="px-2 py-2 text-right" title="Banka platbu potvrdila.">Zaplatil</th>
+                </tr>
+            </thead>
+            <tbody class="divide-y divide-slate-100">
+                @foreach(array_merge($stats['rows'], [['source' => 'Celkem', 'content' => ''] + $stats['total']]) as $row)
+                    @continue(! $loop->last && $row['steps']['to_print'] === 0)
+                    <tr class="{{ $loop->last ? 'bg-slate-50 font-semibold' : '' }}">
+                        <td class="whitespace-nowrap px-3 py-2">{{ $sourceName[$row['source']] ?? $row['source'] }}@if($row['content'] !== '') <span class="text-slate-500">· {{ $row['content'] }}</span>@endif</td>
+                        <td class="px-2 py-2 text-right">{{ $row['steps']['to_print'] }}</td>
+                        @foreach(array_keys($order) as $key)<td class="px-2 py-2 text-right" data-order="{{ $key }}">{{ $row['order'][$key] }}</td>@endforeach
+                        <td class="px-2 py-2 text-right">{{ $row['steps']['paid'] }}</td>
                     </tr>
                 @endforeach
             </tbody>
