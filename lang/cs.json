@@ -365,7 +365,7 @@
     "figure.limit": "Dnešní limit (:n) je vyčerpaný. S účtem máte :m modely denně.",
     "figure.global_limit": "Dnes jsme už vygenerovali maximum modelů. Zkuste to zítra.",
     "figure.need_photo": "Nejdřív vyberte fotku.",
-    "figure.need_consent": "Zaškrtněte prosím souhlas.",
+    "figure.need_consent": "Ještě chybí souhlas nad tlačítkem. Zaškrtněte ho, nebo stiskněte „Souhlasím a vytvořit“.",
     "sign.lead": "Napiš text, vyber tvar a máš model přesně na milimetr. Přesnou cenu ukáže kalkulace a můžeš ho nechat vytisknout.",
     "sign.unavailable": "Generátor cedulek teď není dostupný.",
     "sign.line1": "Text",
@@ -3090,5 +3090,6 @@
     "figure.pedestal.about.socle": "Hruď s pažemi je zespodu seříznutá do oblouku a leží na soustruženém soklu se jménem po obvodu.",
     "figure.pedestal.about.antique": "Hluboce zaoblená hruď stojí na tabulce se jménem a soklu se širokou patou.",
     "figure.pedestal.about.cut": "Bez podstavce, busta stojí na vlastním rovném řezu se šikmo seříznutými rameny.",
-    "figure.howto.video": "Video: od fotky po hotovou bustu (1 minuta)"
+    "figure.howto.video": "Video: od fotky po hotovou bustu (1 minuta)",
+    "figure.agree_create": "Souhlasím a vytvořit"
 }

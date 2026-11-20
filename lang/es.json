@@ -365,7 +365,7 @@
     "figure.limit": "El límite de hoy (:n) está agotado. Con cuenta tiene :m modelos al día.",
     "figure.global_limit": "Hoy ya hemos generado el máximo de modelos. Pruebe mañana.",
     "figure.need_photo": "Primero elija una foto.",
-    "figure.need_consent": "Marque la casilla de consentimiento.",
+    "figure.need_consent": "Falta el consentimiento sobre el botón. Márquelo o pulse «Acepto, crear».",
     "sign.lead": "Escribe el texto, elige la forma y obtén un modelo exacto al milímetro. El cálculo muestra el precio exacto y puedes encargarlo.",
     "sign.unavailable": "El generador de carteles no está disponible ahora.",
     "sign.line1": "Texto",
@@ -3090,5 +3090,6 @@
     "figure.pedestal.about.socle": "El pecho con los brazos se corta en arco por debajo y descansa sobre un pie torneado con el nombre alrededor.",
     "figure.pedestal.about.antique": "Un pecho muy redondeado descansa sobre una tablilla con el nombre y una peana de pie ancho.",
     "figure.pedestal.about.cut": "Sin base, el busto se apoya en su propio corte plano con los hombros cortados en diagonal.",
-    "figure.howto.video": "Vídeo: de la foto al busto terminado (1 minuto)"
+    "figure.howto.video": "Vídeo: de la foto al busto terminado (1 minuto)",
+    "figure.agree_create": "Acepto, crear"
 }

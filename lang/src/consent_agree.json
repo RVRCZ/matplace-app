@@ -1,0 +1,4 @@
+{
+    "figure.need_consent": ["Ještě chybí souhlas nad tlačítkem. Zaškrtněte ho, nebo stiskněte „Souhlasím a vytvořit“.", "The consent above the button is still missing. Tick it, or press “I agree, create”.", "Falta el consentimiento sobre el botón. Márquelo o pulse «Acepto, crear»."],
+    "figure.agree_create": ["Souhlasím a vytvořit", "I agree, create", "Acepto, crear"]
+}

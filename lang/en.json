@@ -365,7 +365,7 @@
     "figure.limit": "Today’s limit (:n) is used up. With an account you get :m models a day.",
     "figure.global_limit": "We have generated the maximum number of models today. Try tomorrow.",
     "figure.need_photo": "Choose a photo first.",
-    "figure.need_consent": "Please tick the consent box.",
+    "figure.need_consent": "The consent above the button is still missing. Tick it, or press “I agree, create”.",
     "sign.lead": "Type the text, pick a shape and get a model exact to the millimetre. The calculation shows the precise price and you can have it printed.",
     "sign.unavailable": "The sign generator is not available right now.",
     "sign.line1": "Text",
@@ -3090,5 +3090,6 @@
     "figure.pedestal.about.socle": "The chest with its arms is cut in an arc underneath and lies on a turned foot with the name round its band.",
     "figure.pedestal.about.antique": "A deeply rounded chest stands on a tablet with the name and a socle with a wide foot.",
     "figure.pedestal.about.cut": "No base, the bust stands on its own flat cut with the shoulders cut at a slant.",
-    "figure.howto.video": "Video: from the photo to the finished bust (1 minute)"
+    "figure.howto.video": "Video: from the photo to the finished bust (1 minute)",
+    "figure.agree_create": "I agree, create"
 }

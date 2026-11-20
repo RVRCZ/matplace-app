@@ -175,6 +175,35 @@ export function bootFigure(stage: Stage): void {
         const dt = new DataTransfer(); dt.items.add(f); input.files = dt.files;
         input.dispatchEvent(new Event('change'));
     };
+    // "Create" pressed without the consent (15 visitors in three days of November 2026, 4 of them left the page): the
+    // box is asked for once, and both buttons turn into "I agree, create", so the next press ticks it and goes on.
+    // Ticking the box by hand gives the buttons their own words back. The second press counts only after a moment:
+    // a double tap is not a consent.
+    const mine = $('figure-consent') as HTMLInputElement;
+    const theirs = document.getElementById('figure-drop-consent') as HTMLInputElement | null;
+    let offered = 0;
+    const offer = (on: boolean): void => {
+        offered = on ? Date.now() : 0;
+        [create, btn].forEach((b) => {
+            const words = b?.lastChild;
+            if (!b || !words) return;
+            b.dataset.words ??= words.textContent ?? '';
+            words.textContent = on ? t('figure.agree_create') : b.dataset.words;
+        });
+    };
+    const agreed = (ask: (text: string) => void): boolean => {
+        if (mine.checked) return true;
+        if (offered && Date.now() - offered > 600) {
+            mine.checked = true;
+            if (theirs) theirs.checked = true;
+            offer(false);
+            return true;
+        }
+        if (!offered) { step('no_consent'); offer(true); }
+        ask(t('figure.need_consent'));
+        return false;
+    };
+    [mine, theirs].forEach((box) => box?.addEventListener('change', () => { if (offered) offer(false); }));
     if (drop) {
         document.getElementById('figure-drop-pick')?.addEventListener('click', () => free().click());
         const area = document.getElementById('tool-empty') ?? drop;
@@ -185,8 +214,6 @@ export function bootFigure(stage: Stage): void {
             [...(e.dataTransfer?.files ?? [])].filter((f) => f.type.startsWith('image/')).slice(0, inputs.length).forEach((f) => put(free(), f));
         });
         // the consent there is the panel's one, mirrored both ways (only the panel's travels with the form)
-        const mine = $('figure-consent') as HTMLInputElement;
-        const theirs = document.getElementById('figure-drop-consent') as HTMLInputElement | null;
         if (theirs) {
             theirs.checked = mine.checked;
             theirs.addEventListener('change', () => { mine.checked = theirs.checked; if (theirs.checked) sayInDrop(''); });
@@ -195,7 +222,7 @@ export function bootFigure(stage: Stage): void {
         // "Create" there: the same submit as the button in the panel; a missing consent is said right there
         create?.addEventListener('click', () => {
             if (!photo.files?.length) { free().click(); return; }
-            if (!mine.checked) { step('no_consent'); sayInDrop(t('figure.need_consent')); focusCalm(theirs); return; }
+            if (!agreed((text) => { sayInDrop(text); focusCalm(theirs); })) return;
             sayInDrop('');
             form.requestSubmit();
         });
@@ -398,7 +425,7 @@ export function bootFigure(stage: Stage): void {
         sync();
         const file = photo.files?.[0];
         if (!file) { step('no_photo'); msg.textContent = t('figure.need_photo'); return; }
-        if (!($('figure-consent') as HTMLInputElement).checked) { step('no_consent'); msg.textContent = t('figure.need_consent'); return; }
+        if (!agreed((text) => { msg.textContent = text; })) return;
         step('create');
         calm();
         inputs.forEach((i) => mark(i.dataset.view ?? '', false));
