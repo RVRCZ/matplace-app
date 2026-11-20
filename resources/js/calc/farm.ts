@@ -42,7 +42,7 @@ const czOf = (n: number): string => ([2, 3, 4, 6, 7, 12, 13, 14, 16, 17].include
 const clampScale = (v: number, max: number) => Math.max(0.25, Math.min(max || 4, v));
 
 /** One change of the design: where (mm, as printed), the colour it was made in, and the spool chosen for it so far. */
-interface Change { z: number; hex: string; code: string | null; slot_id: number | null; name?: string | null; spool_hex?: string | null }
+interface Change { z: number; hex: string; code: string | null; slot_id: number | null; name?: string | null; spool_hex?: string | null; label?: string | null }
 /** One part of a design printed by parts: its plate, the colour the design names for it, and the spool chosen so far. */
 interface Part { part: string; plate: number; label: string; hex: string | null; slot_id: number | null; color_id?: number | null; name?: string | null; copies: number; minutes?: number | null; grams?: number | null; spool_hex?: string | null; model_url?: string | null }
 interface FarmState {
@@ -364,6 +364,9 @@ export function bootFarmOrder(): void {
     // on the new machine are said once), and the parts whose colour the page picked for the customer (shown as preselected)
     let machineByHand: number | null = null;
     let machineSwitched = false;
+    // what the page said after colours had to give way to one another: stays until the next choice (a render alone must not wipe it)
+    let clashNote = '';
+    const repickedByClash = new Set<string>();
     const partAuto = new Set<string>();
     let partAutoKnown = false;
     // what the server gets: the first colour's slot on that machine and, per part, its colour's slot there – never two machines'
@@ -565,6 +568,8 @@ export function bootFarmOrder(): void {
                 </span>
             </button>${t.foot ?? ''}
         </div>`;
+    // next to a part's or a change's name: the colour the design was made in, so "Colour 2" is seen (Stella, 20 Nov 2026)
+    const designTag = (hex: string | null | undefined): string => (hex ? ` <span class="inline-flex items-center gap-1 font-normal text-slate-500"><span class="h-3.5 w-3.5 rounded-full border border-slate-300" style="background:${esc(hex)}"></span>${esc(tr('farm.order.design_color'))}</span>` : '');
     // the colours of one tile: the same name and finish in several kinds of plastic (the server's key, docs/AL.md §20)
     const groupOf = (c: Color): string => c.group ?? String(c.slot);
     const renderColors = (): void => {
@@ -615,7 +620,7 @@ export function bootFarmOrder(): void {
                 attrs: `data-slot="${active.slot}"`, foot });
         }).join('');
         // the tile and the kinds inside it both name a slot: the colour in that kind is picked, nothing else changes
-        box.querySelectorAll<HTMLButtonElement>('button[data-slot]').forEach((b) => b.addEventListener('click', () => { picked = Number(b.dataset.slot); render(); }));
+        box.querySelectorAll<HTMLButtonElement>('button[data-slot]').forEach((b) => b.addEventListener('click', () => { picked = Number(b.dataset.slot); clashNote = ''; machineSwitched = true; render(); }));
         const c = state.colors.find((x) => x.slot === picked);
         // the farm is paused (FarmState): the server's sentence with the day instead of "starts now" / "goes to the queue"
         $('farm-start-note')!.textContent = state.pause ?? (c ? tr(c.starts_now ? 'farm.order.starts_now' : 'farm.order.goes_to_queue') : '');
@@ -661,7 +666,50 @@ export function bootFarmOrder(): void {
             return [hits, -dist];
         };
         const best = [...machines].sort((a, b) => { const sa = score(a); const sb = score(b); return sb[0] - sa[0] || sb[1] - sa[1]; })[0] ?? null;
+        // The customer picks colours, the page the machine (Stella, 20 Nov 2026: "I pick the first colour and the other
+        // offers change"). Every colour that goes with the first one on SOME machine is offered; the machine is the one
+        // holding all the colours chosen so far, the present one while it does. A colour that cannot join the others says
+        // so on its tile; taking it moves the print to its machine and the colours missing there go to the nearest ones,
+        // which the note under the list names. The admin keeps the cards of the machines and their positions.
+        const free = !state.admin;
+        const has = (m: Machine, k: number): boolean => k === c?.color_id || m.colors.some((o) => o.color_id === k);
+        const slotOn = (m: Machine, k: number): number | null => (k === c?.color_id ? m.main : m.colors.find((o) => o.color_id === k)?.slot ?? null);
+        const colourOfSlot = (slot: number | null): number | null => {
+            if (slot === null) return null;
+            for (const x of [...(c ? [c] : []), ...state.colors]) {
+                if (x.slot === slot) return x.color_id ?? null;
+                for (const m of x.machines ?? []) {
+                    if (m.main === slot) return x.color_id ?? null;
+                    const o = m.colors.find((y) => y.slot === slot);
+                    if (o) return o.color_id;
+                }
+            }
+            return null;
+        };
+        // every colour that some machine holds together with the first one, once
+        const partners: Spool[] = [];
+        machines.forEach((m) => m.colors.forEach((o) => { if (!partners.some((x) => x.color_id === o.color_id)) partners.push(o); }));
+        const nameOf = (k: number): string => (k === c?.color_id ? c.name : partners.find((o) => o.color_id === k)?.name ?? '');
+        const changeIds = byParts ? [] : wanted.map((_, i) => colourOfSlot(changes[i] ?? null));
+        const pickedIds = (): number[] => (byParts ? parts.map((p) => partColours[p.part] ?? null) : changeIds).filter((k): k is number => k !== null && k !== c?.color_id);
+        const fitsOn = (m: Machine, ids: number[]): boolean => ids.every((k) => has(m, k)) && new Set(ids).size + 1 <= (m.limit ?? state.max_colors ?? 4);
+        const before = machine;
+        // the machine for colour k next to the others: the one that keeps most of them, the present machine among equals
+        const aim = (k: number, others: number[]): { m: Machine; lost: number[] } | null => {
+            const cands = machines.filter((m) => has(m, k));
+            if (!cands.length) return null;
+            const kept = (m: Machine): number => others.filter((o) => has(m, o)).length;
+            const m = [...cands].sort((a, b) => kept(b) - kept(a) || Number(b.main === before?.main) - Number(a.main === before?.main) || score(b)[0] - score(a)[0] || score(b)[1] - score(a)[1])[0];
+            let lost = others.filter((o) => !has(m, o));
+            // every colour is there but the machine takes fewer: the last ones give way
+            const room = (m.limit ?? state.max_colors ?? 4) - 1 - (k === c?.color_id ? 0 : 1);
+            const stay = [...new Set(others.filter((o) => has(m, o)))];
+            if (stay.length > room) lost = [...lost, ...stay.slice(Math.max(0, room))];
+            return { m, lost };
+        };
+        const holding = pickedIds().length ? machines.filter((m) => fitsOn(m, pickedIds())) : [];
         machine = machines.find((m) => m.main === machineByHand)
+            ?? holding.find((m) => m.main === before?.main) ?? [...holding].sort((a, b) => score(b)[0] - score(a)[0] || score(b)[1] - score(a)[1])[0]
             ?? machines.find((m) => stored.length > 0 && (m.positions ?? []).some((x) => stored.includes(x.slot)))
             ?? best;
         const limit = machine?.limit ?? state.max_colors ?? 4;
@@ -670,7 +718,10 @@ export function bootFarmOrder(): void {
         show(box, any);
         // the spools of the changes on this machine: the first colour's own slot here counts (a print may go back to it)
         const pool: Second[] = machine && c ? [{ slot: machine.main, name: c.name, kind: c.kind ?? '', hex: c.hex, finish: c.finish, photo: c.photo, code: machine.code ?? c.code ?? null }, ...machine.colors] : [];
+        const lostChanges: number[] = [];
         if (!byParts) {
+            // the same colours on the machine chosen now (its own slots); a colour it does not hold is picked again below
+            if (machine) changes = wanted.map((w, i) => { const k = changeIds[i]; const slot = k === null ? null : slotOn(machine as Machine, k); if (k !== null && slot === null) lostChanges.push(i); return i === 0 && slot === machine?.main ? null : slot; });
             changes = wanted.map((w, i) => (changes[i] !== null && changes[i] !== undefined && pool.some((o) => o.slot === changes[i]) ? changes[i] : null));
             // nothing chosen yet (a fresh order, another machine): the spool nearest to the colour the design was made in
             wanted.forEach((w, i) => {
@@ -686,7 +737,7 @@ export function bootFarmOrder(): void {
         // the machine cards: name, how many colours it takes, the colours chosen so far, its positions in the operator's
         // order (an empty one dashed, the first colour's ringed); stacked on a phone, two abreast from sm. By parts always
         // (the count lives there); for the changes only when more than one machine holds the first colour
-        const withCards = any && (byParts || machines.length > 1);
+        const withCards = any && !free && (byParts || machines.length > 1);
         if (cards) {
             show(cards, withCards);
             cards.classList.toggle('grid', withCards);
@@ -717,23 +768,28 @@ export function bootFarmOrder(): void {
             parts.forEach((p) => {
                 const cur = partColours[p.part] ?? null;
                 if (cur !== null && offer.some((o) => o.color_id === cur)) return;
+                const had = cur !== null || repickedByClash.has(p.part);
                 partColours[p.part] = null;
                 const near = !partByHand.has(p.part) && offer.length && p.hex && machine ? nearestOn(machine, p.hex) : null;
-                if (!near || (!chosen().has(near.color_id) && chosen().size >= limit)) { if (cur !== null) fellBack.push(p.label); return; }
+                if (!near || (!chosen().has(near.color_id) && chosen().size >= limit)) { if (had) fellBack.push(p.label); return; }
                 partColours[p.part] = near.color_id;
                 partAuto.add(p.part);
-                if (cur !== null) repicked.push(p.label);
+                if (had) repicked.push(`${p.label} → ${near.name}`);
             });
+            repickedByClash.clear();
             // the machine was just changed: which parts were picked again, which fell to the main colour (nothing fitting here)
             const note = $('farm-machine-note');
             if (note) {
                 const said = machineSwitched && (repicked.length > 0 || fellBack.length > 0);
-                note.textContent = said ? [repicked.length ? tr('farm.order.machine_repicked', { parts: repicked.join(', ') }) : '', fellBack.length ? tr('farm.order.machine_fell_back', { parts: fellBack.join(', ') }) : ''].filter(Boolean).join(' ') : '';
-                show(note, said);
+                if (said) clashNote = [repicked.length ? tr(free ? 'farm.order.free.repicked' : 'farm.order.machine_repicked', { parts: repicked.join(', ') }) : '', fellBack.length ? tr(free ? 'farm.order.free.fell_back' : 'farm.order.machine_fell_back', { parts: fellBack.join(', ') }) : ''].filter(Boolean).join(' ');
+                note.textContent = clashNote;
+                show(note, clashNote !== '');
             }
             machineSwitched = false;
             if (heading0) heading0.textContent = tr('farm.order.parts_title');
-            if (hint0) hint0.textContent = (noMachine() ? `${tr('farm.order.colors_no_machine')} ` : '')
+            if (hint0 && free) hint0.textContent = (noMachine() ? `${tr('farm.order.colors_no_machine')} ` : '') + tr('farm.order.free.hint')
+                + (state.one_plate_required ? ` ${tr(state.painted_colors ? 'farm.order.painted_plate' : 'farm.order.one_plate_required')}` : '');
+            else if (hint0) hint0.textContent = (noMachine() ? `${tr('farm.order.colors_no_machine')} ` : '')
                 + (state.one_plate ? tr('farm.order.parts_one_plate', { n: String(state.filament_changes ?? 0) }) : tr('farm.order.parts_hint', { max: String(limit) }))
                 + (state.one_plate_required ? ` ${tr(state.painted_colors ? 'farm.order.painted_plate' : 'farm.order.one_plate_required')}` : '') + (machines.length > 1 ? ` ${tr('farm.order.parts_one_machine')}` : '')
                 + ` ${tr('farm.order.machine_hint')}`;
@@ -753,7 +809,19 @@ export function bootFarmOrder(): void {
                 list0.innerHTML = parts.map((p) => {
                     const cur = partColours[p.part] ?? null;
                     const taken = chosen();
-                    return `<div class="col-span-full mt-1 text-xs font-semibold text-slate-700">${esc(p.label)}${p.minutes ? ` <span class="font-normal text-slate-500">· ${p.minutes} min, ${p.grams ?? ''} g</span>` : ''}</div>`
+                    const head = `<div class="col-span-full mt-1 flex flex-wrap items-center gap-x-1.5 text-xs font-semibold text-slate-700">${esc(p.label)}${designTag(p.hex)}${p.minutes ? ` <span class="font-normal text-slate-500">· ${p.minutes} min, ${p.grams ?? ''} g</span>` : ''}</div>`;
+                    if (free) {
+                        // every colour that goes with the first one somewhere; one that cannot join the other parts' colours says with which
+                        const others = parts.filter((q) => q.part !== p.part).map((q) => partColours[q.part] ?? null).filter((k): k is number => k !== null && k !== c?.color_id);
+                        return head + partTile(p.part, null, cur === null, null, false) + partners.map((o) => {
+                            const on = cur === o.color_id;
+                            const a = on ? null : aim(o.color_id, others.filter((k) => k !== o.color_id));
+                            const lost = [...new Set(a?.lost ?? [])].map(nameOf).filter(Boolean);
+                            return tile({ on, name: o.name, kind: o.kind ?? '', hex: o.hex, photo: o.photo, where: lost.length ? tr('farm.order.free.clash', { names: lost.join(', ') }) : '',
+                                badge: partAuto.has(p.part) && on ? tr('farm.order.preselected') : undefined, attrs: `data-part="${esc(p.part)}" data-colour="${o.color_id}"` });
+                        }).join('');
+                    }
+                    return head
                         + partTile(p.part, null, cur === null, null, false)
                         + positions.map((x) => {
                             const on = cur !== null && cur === x.color_id;
@@ -765,6 +833,15 @@ export function bootFarmOrder(): void {
                 list0.querySelectorAll<HTMLButtonElement>('button[data-part]').forEach((b) => b.addEventListener('click', () => {
                     const part = b.dataset.part ?? '';
                     partColours[part] = b.dataset.colour ? Number(b.dataset.colour) : null;
+                    clashNote = '';
+                    if (free) {
+                        // the machine follows the colour: the one that keeps most of the other parts' colours; what it lacks is picked again and named
+                        const k = partColours[part];
+                        const others = parts.filter((q) => q.part !== part).map((q) => partColours[q.part] ?? null).filter((x): x is number => x !== null && x !== c?.color_id && x !== k);
+                        const a = k === null ? null : aim(k, others);
+                        machineByHand = a ? a.m.main : null;
+                        if (a?.lost.length) { machineSwitched = true; parts.forEach((q) => { const id = partColours[q.part] ?? null; if (q.part !== part && id !== null && a.lost.includes(id)) { partColours[q.part] = null; partByHand.delete(q.part); repickedByClash.add(q.part); } }); }
+                    }
                     partAuto.delete(part);
                     if (partColours[part] === null) partByHand.add(part); else partByHand.delete(part);
                     render();
@@ -775,9 +852,49 @@ export function bootFarmOrder(): void {
         }
         // a plate with a raised text, a picture in colours one on another: every change picks a spool of the chosen machine
         if (heading0) heading0.textContent = tr(wanted.length === 1 ? 'farm.order.second_color' : 'farm.order.changes_title');
-        if (hint0) hint0.textContent = secondHintPlain + (machines.length > 1 ? ` ${tr('farm.order.changes_one_machine')} ${tr('farm.order.machine_hint')}` : '');
-        if (list0 && any) {
-            list0.innerHTML = wanted.map((w, i) => (wanted.length > 1 ? `<div class="col-span-full mt-1 text-xs font-semibold text-slate-700">${esc(tr('farm.order.change_title', { n: i + 2, z: w.z.toFixed(1) }))}</div>` : '')
+        if (hint0) hint0.textContent = secondHintPlain + (machines.length > 1 ? (free ? ` ${tr('farm.order.free.hint')}` : ` ${tr('farm.order.changes_one_machine')} ${tr('farm.order.machine_hint')}`) : '');
+        const note1 = $('farm-machine-note');
+        if (note1) {
+            if (machineSwitched && lostChanges.length) clashNote = tr('farm.order.free.repicked', { parts: lostChanges.map((i) => { const label = wanted[i].label ?? tr('farm.order.change_title', { n: i + 2, z: wanted[i].z.toFixed(1) }); const sp = pool.find((o) => o.slot === changes[i]); return sp ? `${label} → ${sp.name}` : label; }).join(', ') });
+            note1.textContent = free ? clashNote : '';
+            show(note1, free && clashNote !== '');
+        }
+        machineSwitched = false;
+        const changeHead = (w: Change, i: number): string => (wanted.length > 1 ? `<div class="col-span-full mt-1 flex flex-wrap items-center gap-x-1.5 text-xs font-semibold text-slate-700">${esc(w.label ?? tr('farm.order.change_title', { n: i + 2, z: w.z.toFixed(1) }))}${designTag(w.hex)}</div>` : '');
+        if (list0 && any && free) {
+            // every colour that goes with the first one on some machine (the first colour itself too: a print may go back to it)
+            const now = wanted.map((_, i) => colourOfSlot(changes[i] ?? null));
+            const all: { id: number; name: string; kind: string; hex: string; photo: string | null; first: boolean }[] = [
+                ...(c && c.color_id !== undefined ? [{ id: c.color_id, name: c.name, kind: c.kind ?? '', hex: c.hex, photo: c.photo, first: true }] : []),
+                ...partners.map((o) => ({ id: o.color_id, name: o.name, kind: o.kind ?? '', hex: o.hex, photo: o.photo, first: false }))];
+            const othersOf = (i: number, k: number | null): number[] => now.filter((x, j): x is number => j !== i && x !== null && x !== c?.color_id && x !== k);
+            list0.innerHTML = wanted.map((w, i) => changeHead(w, i)
+                + tile({ on: changes[i] === null, name: tr(i === 0 ? 'farm.order.second_same' : 'farm.order.change_same'), kind: tr(i === 0 ? 'farm.order.second_same_hint' : 'farm.order.change_same_hint'), hex: i === 0 ? c?.hex ?? '#ffffff' : '#ffffff', attrs: `data-change="${i}" data-colour=""` })
+                + all.filter((o) => i > 0 || !o.first).map((o) => {
+                    const on = changes[i] !== null && now[i] === o.id;
+                    const a = on ? null : aim(o.id, othersOf(i, o.id));
+                    const lost = [...new Set(a?.lost ?? [])].map(nameOf).filter(Boolean);
+                    return tile({ on, name: o.name, kind: o.first ? tr('farm.order.change_first') : o.kind, hex: o.hex, photo: o.photo, where: lost.length ? tr('farm.order.free.clash', { names: lost.join(', ') }) : '', attrs: `data-change="${i}" data-colour="${o.id}"` });
+                }).join('')).join('');
+            list0.querySelectorAll<HTMLButtonElement>('button[data-change]').forEach((b) => b.addEventListener('click', () => {
+                const i = Number(b.dataset.change);
+                const k = b.dataset.colour ? Number(b.dataset.colour) : null;
+                clashNote = '';
+                if (k === null) { changes[i] = null; byHand.add(i); render(); return; }
+                byHand.delete(i);
+                const a = aim(k, othersOf(i, k));
+                if (!a) return;
+                // the machine follows the colour; the other changes are carried over by their colours at the next render
+                if (machine && a.m.main !== machine.main) {
+                    const ids = now.slice();
+                    changes = ids.map((id, j) => (j === i ? slotOn(a.m, k) : id === null ? null : slotOn(a.m, id) ?? changes[j]));
+                } else changes[i] = slotOn(a.m, k);
+                machineByHand = a.m.main;
+                if (a.lost.length) machineSwitched = true;
+                render();
+            }));
+        } else if (list0 && any) {
+            list0.innerHTML = wanted.map((w, i) => changeHead(w, i)
                 + tile({ on: changes[i] === null, name: tr(i === 0 ? 'farm.order.second_same' : 'farm.order.change_same'), kind: tr(i === 0 ? 'farm.order.second_same_hint' : 'farm.order.change_same_hint'), hex: i === 0 ? c?.hex ?? '#ffffff' : '#ffffff', attrs: `data-change="${i}" data-second=""` })
                 + pool.filter((o) => i > 0 || o.slot !== machine?.main).map((o) => tile({ on: o.slot === changes[i], name: o.name, kind: o.slot === machine?.main ? tr('farm.order.change_first') : (o.kind ?? ''), hex: o.hex, photo: o.photo, code: [o.code ?? null], attrs: `data-change="${i}" data-second="${o.slot}"` })).join('')).join('');
             list0.querySelectorAll<HTMLButtonElement>('button[data-change]').forEach((b) => b.addEventListener('click', () => {
@@ -887,6 +1004,13 @@ export function bootFarmOrder(): void {
         box.textContent = `${tr('farm.order.why.lead', { from: money(was.total), to: money(now) })} ${reasons.join(', ')}.`.replace(/:\s*\.$/, '.');
         show(box, true);
     };
+    // A phone: while the colours are being chosen the model stays at the top of the window, so a tap on a colour is seen
+    // on it at once (Stella, 20 Nov 2026: "I scroll to the preview and back after every change"). Only while the block of
+    // the colours is in the window: further down (delivery, address, payment) the window belongs to the form.
+    let pinWanted = false; let pinSeen = false;
+    const pin = (): void => { $('farm-order')?.toggleAttribute('data-pin', pinWanted && pinSeen); };
+    const pinBlock = $('farm-material');
+    if (pinBlock && 'IntersectionObserver' in window) new IntersectionObserver((e) => { pinSeen = e[e.length - 1].isIntersecting; pin(); }).observe(pinBlock);
     let wasWorking: boolean | null = null;
     const render = (): void => {
         const s = state;
@@ -926,6 +1050,7 @@ export function bootFarmOrder(): void {
         const choosing = ['uploaded', 'awaiting_choices', 'sliced'].includes(s.status) || (s.status === 'failed' && !s.number);
         $('farm-order')?.toggleAttribute('data-choosing', choosing);
         $('farm-side')?.classList.toggle('stick-stage', choosing);
+        pinWanted = choosing; pin();
         const hasResult = s.minutes !== null && s.status !== 'uploaded' && !(s.status === 'failed' && !s.number);
         // a recalculation keeps the last numbers in place, greyed, until the new ones come (the page under the finger does
         // not shrink and nothing below moves up, docs/AO.md §5); the payment box and its bar stay the same way

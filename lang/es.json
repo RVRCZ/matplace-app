@@ -3092,5 +3092,10 @@
     "figure.pedestal.about.cut": "Sin base, el busto se apoya en su propio corte plano con los hombros cortados en diagonal.",
     "figure.howto.video": "Vídeo: de la foto al busto terminado (1 minuto)",
     "figure.agree_create": "Acepto, crear",
-    "router.file.no_file": "¿No tiene archivo? Basta una foto o unas palabras: escriba arriba qué quiere fabricar."
+    "router.file.no_file": "¿No tiene archivo? Basta una foto o unas palabras: escriba arriba qué quiere fabricar.",
+    "farm.order.free.hint": "Elija el color de cada parte. Toda la pieza se imprime en una sola impresora, por eso algunos colores no pueden ir juntos; ese color indica con cuál choca.",
+    "farm.order.free.clash": "no va con: :names",
+    "farm.order.free.repicked": "No tenemos estos colores juntos en una impresora, así que elegimos el color más cercano: :parts.",
+    "farm.order.free.fell_back": "Ahora se imprime en el color principal: :parts.",
+    "farm.order.design_color": "en el diseño"
 }
