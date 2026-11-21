@@ -1371,6 +1371,9 @@ export function bootParam(stage: Stage): void {
                 el.toggleAttribute('inert', off);
             });
         }
+        // a text that is optional while a choice says so (the sign that is a picture): the field is `required` only otherwise, in
+        // both directions, so a form that cannot be sent never silently stops the preview
+        form.querySelectorAll<HTMLInputElement>('[data-req]').forEach((el) => { const rule = el.dataset.optionalWhen; el.required = !(rule && holds(rule)); });
         setHandles();
     };
     applyWhen();

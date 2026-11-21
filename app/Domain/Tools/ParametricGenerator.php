@@ -412,6 +412,9 @@ final class ParametricGenerator
      */
     public const IMAGE_WINDOW = ['charm', 'keychain', 'earrings', 'ornament', 'magnet', 'coaster', 'badge', 'bag_charm', 'relief', 'filament_art', 'sign', 'medallion', 'cutter'];
 
+    /** A text that is required only while a choice does not say otherwise (the page's script keeps the field's `required` in step: applyWhen). */
+    public const TEXT_OPTIONAL_WHEN = ['sign' => 'style=picture'];
+
     public const ARTWORK = ['phone_stand', 'sign', 'logo', 'stamp', 'stencil', 'papel', 'notes', 'hair_tie', 'candle_stand', 'insert', 'lightbox', 'cutter', 'charm', 'keychain', 'earrings', 'ornament', 'magnet', 'coaster', 'cookie', 'tray', 'badge', 'medallion', 'photo_organizer', 'bag_charm', 'straw', 'opener'];
 
     /** the fields shown first; everything else sits under "more" */

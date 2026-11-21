@@ -180,6 +180,20 @@ class ImageUploadWindowTest extends TestCase
         $this->assertNotEquals($number['volume_mm3'], $relief['volume_mm3']);
     }
 
+    /** The sign's text is `required` in the page, but only until the style is a picture: the script flips it (applyWhen), so the preview is not silently held back. */
+    public function test_the_sign_text_is_optional_for_a_picture_in_the_page_itself(): void
+    {
+        $html = $this->get('/tools/sign')->assertOk()->getContent();
+        $this->assertMatchesRegularExpression('/<input data-text="line1"[^>]*required[^>]*data-req[^>]*data-optional-when="style=picture"/', $html);
+        // a field that is optional on the server too stays without the mark
+        $this->assertDoesNotMatchRegularExpression('/<input data-text="line2"[^>]*required/', $html);
+        // and the style is offered
+        $this->assertStringContainsString('value="picture"', $html);
+        $js = (string) file_get_contents(base_path('resources/js/calc/param.ts'));
+        $this->assertStringContainsString("[data-req]", $js);
+        $this->assertStringContainsString('optionalWhen', $js);
+    }
+
     public function test_the_window_texts_exist_in_three_languages(): void
     {
         $keys = array_keys(json_decode((string) file_get_contents(base_path('lang/src/image_upload_window.json')), true, 512, JSON_THROW_ON_ERROR));
