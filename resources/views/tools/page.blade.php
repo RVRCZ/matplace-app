@@ -42,7 +42,7 @@
         'order' => \App\Support\NextStep::direct($tool) ? ['store' => route('farm.orders.store'), 'busy' => __('farm.cta_busy'), 'max_copies' => \App\Domain\Farm\PlateLayout::MAX_COPIES] : null,
         // opened from the home page's router with ?intake=<token> (App\Http\Middleware\IntakeHandoff, docs/AN.md §22): the photo's address and the parameters
         'intake' => request()->attributes->get('intake'),
-        'i18n' => collect(\Illuminate\Support\Arr::dot(['toolpage' => trans('toolpage')]))->all() + collect(['imgwin.title', 'imgwin.lead', 'imgwin.drop', 'imgwin.formats', 'imgwin.choose', 'imgwin.camera', 'imgwin.paste', 'imgwin.tip', 'imgwin.qty', 'imgwin.clean', 'imgwin.clean_hint', 'imgwin.cleaning', 'imgwin.clean_failed', 'imgwin.use', 'imgwin.skip', 'imgwin.close', 'imgwin.sending', 'imgwin.failed', 'imgwin.not_image', 'imgwin.too_big'])->mapWithKeys(fn ($k) => [$k => __($k)])->all() + ['farm.finish' => collect((array) trans('farm.finish'))->all()],
+        'i18n' => collect(\Illuminate\Support\Arr::dot(['toolpage' => trans('toolpage')]))->all() + collect(['imgwin.title', 'imgwin.lead', 'imgwin.drop', 'imgwin.formats', 'imgwin.choose', 'imgwin.camera', 'imgwin.paste', 'imgwin.tip', 'imgwin.qty', 'imgwin.clean', 'imgwin.clean_hint', 'imgwin.cleaning', 'imgwin.clean_failed', 'imgwin.use', 'imgwin.skip', 'imgwin.close', 'imgwin.sending', 'imgwin.failed', 'imgwin.not_image', 'imgwin.too_big', 'imgwin.mode_layers', 'imgwin.mode_relief'])->mapWithKeys(fn ($k) => [$k => __($k)])->all() + ['farm.finish' => collect((array) trans('farm.finish'))->all()],
     ];
 @endphp
 

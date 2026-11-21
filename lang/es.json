@@ -3121,5 +3121,8 @@
     "imgwin.sending": "Subiendo…",
     "imgwin.failed": "No se pudo subir la imagen. Pruebe con otra.",
     "imgwin.not_image": "Eso no es una imagen.",
-    "imgwin.too_big": "La imagen pesa más de :mb MB."
+    "imgwin.too_big": "La imagen pesa más de :mb MB.",
+    "imgwin.mode_layers": "Capas de color",
+    "imgwin.mode_relief": "Relieve de la foto (litofanía)",
+    "param.o.sign.picture": "Cartel hecho de una imagen"
 }

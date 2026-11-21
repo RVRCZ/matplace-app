@@ -618,7 +618,7 @@ def build(M, Invalid, p, product):
                 if body_kind == "oval":
                     options["fit"] = ("cover", width - 2 * edge, 2 * inner_r) if kept else ("ellipse", width - 2 * edge - 2, 2 * (inner_r - 1.0))
             layers, info = S.colors(M, art_path, art_w, options)
-            if product == "badge" and lines:
+            if (product == "badge" or p.get("sign_caption")) and lines:
                 if geometric and info["background"] == "kept":
                     warn.append("caption_photo")              # a whole photo fills the circle: no room under it
                 else:

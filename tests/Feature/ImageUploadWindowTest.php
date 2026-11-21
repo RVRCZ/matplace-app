@@ -9,6 +9,7 @@ use App\Engines\Contracts\ModelGenerator;
 use App\Engines\Generator\FakeGenerator;
 use App\Http\Controllers\Api\StepController;
 use App\Models\User;
+use App\Support\PreviewMeta;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Cache;
@@ -80,7 +81,7 @@ class ImageUploadWindowTest extends TestCase
 
     public function test_the_window_is_configured_on_the_picture_tools_only(): void
     {
-        foreach (['charm', 'coaster', 'keychain', 'ornament', 'relief', 'filament-art'] as $tool) {
+        foreach (['charm', 'coaster', 'keychain', 'ornament', 'relief', 'filament-art', 'sign', 'medallion', 'cookie-cutter'] as $tool) {
             $html = $this->get('/tools/'.$tool)->assertOk()->getContent();
             $this->assertStringContainsString('imgwin\u0022:{\u0022clean\u0022:false', $html, $tool);
         }
@@ -88,6 +89,95 @@ class ImageUploadWindowTest extends TestCase
         foreach (['bust', 'figure', 'pet'] as $own) {
             $this->assertNotContains($own, ParametricGenerator::IMAGE_WINDOW);
         }
+    }
+
+    /** Three blocks of colour on a light ground: what a photographed logo is to the pipeline. */
+    private function colourful(): string
+    {
+        $img = imagecreatetruecolor(400, 240);
+        imagefill($img, 0, 0, imagecolorallocate($img, 245, 245, 245));
+        imagefilledrectangle($img, 20, 20, 190, 220, imagecolorallocate($img, 200, 30, 30));
+        imagefilledrectangle($img, 200, 20, 380, 120, imagecolorallocate($img, 30, 60, 190));
+        imagefilledrectangle($img, 200, 130, 380, 220, imagecolorallocate($img, 25, 25, 28));
+        $path = sys_get_temp_dir().'/mp_imgwin_c_'.uniqid().'.png';
+        imagepng($img, $path);
+        imagedestroy($img);
+
+        return (string) $this->post('/api/tools/artwork', ['file' => new UploadedFile($path, 'logo.png', 'image/png', null, true)], ['Accept' => 'application/json'])->assertCreated()->json('artwork');
+    }
+
+    /** A black disc: the outline a cutter takes. */
+    private function disc(): string
+    {
+        $img = imagecreatetruecolor(300, 300);
+        imagefill($img, 0, 0, imagecolorallocate($img, 255, 255, 255));
+        imagefilledellipse($img, 150, 150, 180, 180, imagecolorallocate($img, 0, 0, 0));
+        $path = sys_get_temp_dir().'/mp_imgwin_d_'.uniqid().'.png';
+        imagepng($img, $path);
+        imagedestroy($img);
+
+        return (string) $this->post('/api/tools/artwork', ['file' => new UploadedFile($path, 'disc.png', 'image/png', null, true)], ['Accept' => 'application/json'])->assertCreated()->json('artwork');
+    }
+
+    private function preview(string $kind, array $params)
+    {
+        $r = $this->postJson('/api/tools/param/preview', ['kind' => $kind, 'params' => $params, 'view' => 'print'])->assertOk();
+
+        return PreviewMeta::whole($r->headers->get('X-Model-Meta'));
+    }
+
+    private function needsEngine(): void
+    {
+        if (! app(ParametricGenerator::class)->available()) {
+            $this->markTestSkipped('The model generator needs Python with manifold3d.');
+        }
+    }
+
+    public function test_an_uploaded_picture_becomes_the_sign(): void
+    {
+        $this->needsEngine();
+        $this->visitor();
+        $art = $this->colourful();
+        $text = $this->preview('sign', ['line1' => 'Jana', 'style' => 'emboss']);
+        $picture = $this->preview('sign', ['style' => 'picture', 'artwork' => $art, 'width' => 90, 'colors_n' => 3, 'line1' => '']);
+        // the plate is the picture: 90 mm wide, in the proportions of the picture, in several colours
+        $this->assertEqualsWithDelta(90, $picture['bbox']['x'], 1.5);
+        $this->assertGreaterThan(1, (int) ($picture['notes']['found'] ?? 0));
+        $this->assertNotEquals($text['bbox'], $picture['bbox']);
+        // the width is the visitor's
+        $narrow = $this->preview('sign', ['style' => 'picture', 'artwork' => $art, 'width' => 60, 'colors_n' => 3, 'line1' => '']);
+        $this->assertLessThan($picture['bbox']['x'], $narrow['bbox']['x']);
+        // a text is optional and stands under the picture, which makes the sign taller
+        $captioned = $this->preview('sign', ['style' => 'picture', 'artwork' => $art, 'width' => 90, 'colors_n' => 3, 'line1' => 'Pizza']);
+        $this->assertGreaterThan($picture['bbox']['y'], $captioned['bbox']['y']);
+        // without a picture a picture sign has nothing to be
+        $this->postJson('/api/tools/param/preview', ['kind' => 'sign', 'params' => ['style' => 'picture', 'line1' => '']])->assertStatus(422);
+    }
+
+    public function test_an_uploaded_picture_gives_the_cutter_its_outline(): void
+    {
+        $this->needsEngine();
+        $this->visitor();
+        $text = $this->preview('cutter', ['line1' => 'Ela', 'width' => 70]);
+        $disc = $this->preview('cutter', ['artwork' => $this->disc(), 'width' => 70]);
+        $size = fn (array $m) => [$m['bbox']['x'], $m['bbox']['y']];
+        // a disc is as tall as it is wide; the word is a long strip
+        $this->assertEqualsWithDelta($size($disc)[0], $size($disc)[1], 1.5);
+        $this->assertNotEquals($size($text), $size($disc));
+    }
+
+    public function test_the_medal_takes_the_picture_in_layers_or_as_a_relief_of_the_photo(): void
+    {
+        $this->needsEngine();
+        $this->visitor();
+        $art = $this->colourful();
+        $number = $this->preview('medallion', ['line1' => '1']);
+        $layers = $this->preview('medallion', ['artwork' => $art, 'line1' => '', 'colors_n' => 3, 'motif' => 'flush']);
+        $this->assertGreaterThan(1, (int) ($layers['notes']['found'] ?? 0));
+        $this->assertLessThan((int) $layers['notes']['found'], (int) ($number['notes']['found'] ?? 0));
+        // the other way: the photo as a relief on the front (the decoration of the photo, docs/AR.md)
+        $relief = $this->preview('medallion', ['line1' => '', 'decor' => [['kind' => 'photo', 'face' => 'front', 'image' => $art, 'image_name' => 'logo.png']]]);
+        $this->assertNotEquals($number['volume_mm3'], $relief['volume_mm3']);
     }
 
     public function test_the_window_texts_exist_in_three_languages(): void

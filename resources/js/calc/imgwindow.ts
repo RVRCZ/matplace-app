@@ -23,7 +23,12 @@ export interface ImgWinOptions {
     /** The tool takes the file itself (the relief's photo field); rejects with the words to show when it cannot. */
     take?: (file: File) => Promise<void>;
     /** The picture goes through the artwork upload; `apply` puts a picked (or cleaned) one into the tool. */
-    artwork?: { upload: (file: File) => Promise<PickedArtwork>; apply: (picked: PickedArtwork) => Promise<void> | void };
+    artwork?: { upload: (file: File) => Promise<PickedArtwork>; apply: (picked: PickedArtwork, mode?: string) => Promise<void> | void };
+    /**
+     * Ways to use the picture (the medal: layered colours, or a relief like a lithophane). With them the picture is NOT put into
+     * the tool at once: the window shows one button per way, and `apply` gets the one the visitor took.
+     */
+    modes?: { id: string; label: string }[];
 }
 
 const esc = (s: string): string => s.replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c] as string));
@@ -74,7 +79,7 @@ export function openImageWindow(o: ImgWinOptions): void {
                 <span class="text-xs text-muted">${esc(t('imgwin.paste'))}</span>
             </div>
             <p class="mt-2 text-xs text-muted">${esc(t('imgwin.tip'))}</p>
-            <div data-done class="mt-4 hidden items-center gap-3 rounded-xl border border-line p-3"><img data-thumb alt="" class="h-20 w-20 rounded-lg bg-white object-contain"><div class="flex flex-wrap gap-2"><button type="button" data-clean class="btn-secondary gap-1.5">${esc(t('imgwin.clean'))}</button><button type="button" data-use class="btn-primary">${esc(t('imgwin.use'))}</button><p class="w-full text-xs text-muted">${esc(t('imgwin.clean_hint'))}</p></div></div>
+            <div data-done class="mt-4 hidden items-center gap-3 rounded-xl border border-line p-3"><img data-thumb alt="" class="h-20 w-20 rounded-lg bg-white object-contain"><div class="flex flex-wrap gap-2">${cfg.clean ? `<button type="button" data-clean class="btn-secondary gap-1.5">${esc(t('imgwin.clean'))}</button>` : ''}<span data-modes class="contents"></span><button type="button" data-use class="btn-primary">${esc(t('imgwin.use'))}</button>${cfg.clean ? `<p class="w-full text-xs text-muted">${esc(t('imgwin.clean_hint'))}</p>` : ''}</div></div>
             <div class="mt-4 flex flex-wrap items-center gap-3">
                 <label class="lbl !mb-0 flex items-center gap-2 text-sm font-medium">${esc(t('imgwin.qty'))}
                     <input data-qty type="number" inputmode="numeric" min="1" max="1000" value="${esc(qtyField?.value || '1')}" class="field !mt-0 block !w-24"></label>
@@ -112,21 +117,41 @@ export function openImageWindow(o: ImgWinOptions): void {
         return null;
     };
 
-    /** The picture is in the tool already; the window stays with a button to have it redrawn clean, and one to go on. */
-    const offerClean = (picked: PickedArtwork): void => {
+    /**
+     * After the upload: the picture is in the tool already (no `modes`), the window staying for a button to have it redrawn clean
+     * and one to go on; or (`modes`) one button per way to use it, the picture put into the tool only when one is taken.
+     */
+    const offerChoice = (first: PickedArtwork): void => {
+        let picked = first;
         hasPicked = true;
         const box = d.querySelector<HTMLElement>('[data-done]')!;
         box.classList.remove('hidden'); box.classList.add('flex');
-        d.querySelector<HTMLImageElement>('[data-thumb]')!.src = picked.url ?? `${o.stage.cfg.artwork.file}/${picked.ref}`;
+        const thumb = d.querySelector<HTMLImageElement>('[data-thumb]')!;
+        const show = (): void => { thumb.src = picked.url ?? `${o.stage.cfg.artwork.file}/${picked.ref}`; };
+        show();
         say('');
-        d.querySelector<HTMLElement>('[data-use]')!.onclick = () => finish();
-        d.querySelector<HTMLButtonElement>('[data-clean]')!.onclick = async (e) => {
-            const btn = e.currentTarget as HTMLButtonElement;
-            btn.disabled = true; say(t('imgwin.cleaning'));
+        const use = d.querySelector<HTMLElement>('[data-use]')!;
+        const modes = d.querySelector<HTMLElement>('[data-modes]')!;
+        if (o.modes) {
+            use.classList.add('hidden');
+            o.modes.forEach((m, i) => {
+                const b = document.createElement('button');
+                b.type = 'button'; b.className = i === 0 ? 'btn-primary' : 'btn-secondary'; b.textContent = m.label;
+                b.onclick = async () => { b.disabled = true; try { await o.artwork!.apply(picked, m.id); finish(); } catch (e) { say((e as Error).message || t('imgwin.failed'), true); b.disabled = false; } };
+                modes.appendChild(b);
+            });
+        } else {
+            use.onclick = () => finish();
+        }
+        const clean = d.querySelector<HTMLButtonElement>('[data-clean]');
+        if (clean) clean.onclick = async () => {
+            clean.disabled = true; say(t('imgwin.cleaning'));
             const better = await cleaned(picked.ref);
             if (finished) return;
-            if (!better) { say(t('imgwin.clean_failed'), true); btn.disabled = false; return; }
-            await o.artwork!.apply({ ref: better, name: picked.name, url: null });
+            if (!better) { say(t('imgwin.clean_failed'), true); clean.disabled = false; return; }
+            picked = { ref: better, name: picked.name, url: null };
+            if (o.modes) { show(); say(''); clean.disabled = false; return; }     // the way to use it is still to be taken
+            await o.artwork!.apply(picked);
             finish();
         };
     };
@@ -143,9 +168,9 @@ export function openImageWindow(o: ImgWinOptions): void {
             if (overLimit(sent, cfg.max_mb)) { say(t('imgwin.too_big', { mb: cfg.max_mb }), true); busy = false; return; }
             if (o.artwork) {
                 const picked = await o.artwork.upload(sent);
-                await o.artwork.apply(picked);
+                if (!o.modes) await o.artwork.apply(picked);
                 // the redrawing is asked for with a button only, never by itself (it costs a picture task each time)
-                if (cfg.clean && /^[0-9a-f-]{36}$/.test(picked.ref)) { offerClean(picked); busy = false; return; }
+                if (o.modes || (cfg.clean && /^[0-9a-f-]{36}$/.test(picked.ref))) { offerChoice(picked); busy = false; return; }
             } else if (o.take) {
                 await o.take(sent);
             }

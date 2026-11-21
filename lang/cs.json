@@ -3121,5 +3121,8 @@
     "imgwin.sending": "Nahrávám…",
     "imgwin.failed": "Obrázek se nepodařilo nahrát. Zkuste jiný.",
     "imgwin.not_image": "Tohle není obrázek.",
-    "imgwin.too_big": "Obrázek je větší než :mb MB."
+    "imgwin.too_big": "Obrázek je větší než :mb MB.",
+    "imgwin.mode_layers": "Vrstvené barvy",
+    "imgwin.mode_relief": "Reliéf z fotky (litofanie)",
+    "param.o.sign.picture": "Cedule z obrázku"
 }

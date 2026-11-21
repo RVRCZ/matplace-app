@@ -1604,7 +1604,30 @@ export function bootParam(stage: Stage): void {
         void refresh();
         // the picture window: a plain visit to a tool of pictures (no wish, no stored design, no texts in the address) asks for the picture first
         if (!plain && !qs.get('preset') && !Object.keys(typed).length && !Object.keys(wished).length && !stage.cfg.intake && !asking && !qs.get('decor')) {
-            openImageWindow({ stage, artwork: { upload: uploadArtwork, apply: async (picked) => { setArtwork(picked); strawPicked(); if (papel) papelPicked(picked); await refresh().then(commit); } } });
+            // what each tool does with the picture: the sign becomes the picture (style "picture"), the medal offers its two ways
+            // (layers of colour, or a relief of the photo on its face), the cutter takes its outline, the others lay it in colours
+            const medal = cfg.kind === 'medallion' && !!decor;
+            openImageWindow({
+                stage,
+                modes: medal ? [{ id: 'layers', label: t('imgwin.mode_layers') }, { id: 'relief', label: t('imgwin.mode_relief') }] : undefined,
+                artwork: {
+                    upload: uploadArtwork,
+                    apply: async (picked, mode) => {
+                        if (medal && mode === 'relief') {
+                            // a relief of the photo on the front of the medal (decor.ts: lighter = higher), the number and the motif out of the way
+                            setArtwork(null);
+                            applyValues({ line1: '', line2: '' });
+                            decor!.add({ kind: 'photo', face: 'front', image: picked.ref, image_name: picked.name });
+                            stage.reveal('decor');
+                        } else {
+                            setArtwork(picked);
+                            if (cfg.kind === 'sign') applyValues({ style: 'picture', line1: '', line2: '' });
+                            strawPicked(); if (papel) papelPicked(picked);
+                        }
+                        await refresh().then(commit);
+                    },
+                },
+            });
         }
     }
 }

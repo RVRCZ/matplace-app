@@ -51,7 +51,7 @@ final class ParametricGenerator
     public const CHOICE_ICONS = ['body' => self::SHAPE_ICONS, 'hang' => ['chain', 'ribbon']];
 
     /** family → field, flag or choice → the section of the tool page it belongs to (fields and flags: size, choices: input, when not named) */
-    public const PLACE = ['sign' => ['ring_at' => 'size'], 'headband' => ['head_size' => 'size', 'mount' => 'size'], 'qr' => ['hidden' => 'input'], 'papel' => self::PAPEL_PLACE, 'shape' => [
+    public const PLACE = ['sign' => ['ring_at' => 'size', 'colors_n' => 'colors', 'smooth' => 'input'], 'headband' => ['head_size' => 'size', 'mount' => 'size'], 'qr' => ['hidden' => 'input'], 'papel' => self::PAPEL_PLACE, 'shape' => [
         'bg_strength' => 'input', 'smooth' => 'input', 'contrast' => 'input', 'brightness' => 'input', 'saturation' => 'input', 'remove_bg' => 'input',
         'colors_n' => 'colors', 'relief' => 'colors', 'flush' => 'colors', 'rim' => 'colors', 'body' => 'size', 'mount' => 'size', 'disc' => 'size', 'floor' => 'size', 'inside' => 'size',
         'straw_d' => 'input',      // the straw is what the topper is for: its size right under the picture and the name, not among the sizes
@@ -297,7 +297,9 @@ final class ParametricGenerator
             // One waist at 93 % and 18 % is the vase as it always was, to the last triangle: a stored design has no other
             'waists' => [0, 3, 1, 1], 'waist_at' => [30, 95, 93, 1], 'waist' => [0, 45, 18, 1],
         ],
-        'sign' => ['text_height' => [4, 80, 12, 1], 'thickness' => [1.2, 30, 3, 0.2], 'relief' => [0.4, 5, 1.2, 0.2], 'margin' => [2, 30, 5, 1], 'radius' => [0, 30, 6, 0.5]],
+        'sign' => ['text_height' => [4, 80, 12, 1], 'thickness' => [1.2, 30, 3, 0.2], 'relief' => [0.4, 5, 1.2, 0.2], 'margin' => [2, 30, 5, 1], 'radius' => [0, 30, 6, 0.5],
+            // style `picture` (a sign that IS the picture, 21 Nov 2026): the size and the colours of the layers, built as a charm's rectangle (signAsPicture)
+            'width' => [40, 120, 90, 1], 'colors_n' => [1, 8, 4, 1], 'smooth' => [0, 1, 0.3, 0.05]],
         'logo' => ['width' => [20, 250, 80, 1], 'thickness' => [0.6, 50, 2, 0.2], 'plate' => [0.8, 6, 2, 0.2], 'margin' => [0, 20, 5, 1], 'base_h' => [8, 40, 11, 1]],
         'stamp' => ['width' => [15, 120, 50, 1], 'relief' => [0.8, 4, 1.6, 0.2], 'plate' => [2, 6, 3, 0.5]],
         'qr' => ['size' => [30, 150, 70, 1], 'plate' => [1.6, 4, 2.4, 0.2], 'relief' => [0.6, 2, 1, 0.2]],
@@ -359,7 +361,7 @@ final class ParametricGenerator
         'phone_stand' => ['style' => ['plate', 'wave', 'desk', 'wedge', 'wall', 'car', 'ribbed', 'flatpack', 'ribbon', 'silhouette'], 'cutout' => ['none', 'window', 'shape'], 'pattern' => ['circles', 'hearts', 'squares', 'honeycomb']],
         'vase' => ['purpose' => ['vase', 'pot'], 'profile' => ['neck', 'belly', 'cone', 'tulip'], 'style' => ['twist', 'ribs', 'smooth'], 'flute_shape' => ['sharp', 'round']],
         // `shape`: a box, an oval, or a plate drawn as an outline (engines/shapes/<name>.svg); `motif_at`: where the picture stands against the text
-        'sign' => ['style' => ['emboss', 'engrave', 'outline', 'name', 'stand'], 'shape' => ['rounded', 'rect', 'oval', 'heart', 'star', 'cloud', 'bone', 'hexagon', 'banner', 'arrow', 'house', 'car', 'cat', 'candy', 'flower', 'shield', 'tag', 'bubble', 'circle', 'fish'],
+        'sign' => ['style' => ['emboss', 'engrave', 'outline', 'name', 'stand', 'picture'], 'shape' => ['rounded', 'rect', 'oval', 'heart', 'star', 'cloud', 'bone', 'hexagon', 'banner', 'arrow', 'house', 'car', 'cat', 'candy', 'flower', 'shield', 'tag', 'bubble', 'circle', 'fish'],
             'typeface' => ['sans', 'serif', 'mono', 'script'], 'motif_at' => ['left', 'right', 'above'], 'ring_at' => ['left', 'right', 'top']],
         'logo' => ['mode' => ['relief', 'height', 'cutout', 'standing'], 'shape' => ['rounded', 'rect', 'circle']],
         'stamp' => ['mode' => ['raised', 'recessed'], 'handle' => ['knob', 'none']],
@@ -408,7 +410,7 @@ final class ParametricGenerator
      * is a picture, a logo or a photo of the visitor. Not the bust, the figure or the pet (their own photo flow), not the tools
      * that need a silhouette or a text first (stamp, stencil, cutter, sign…). `relief` and `filament_art` are pages of their own.
      */
-    public const IMAGE_WINDOW = ['charm', 'keychain', 'earrings', 'ornament', 'magnet', 'coaster', 'badge', 'bag_charm', 'relief', 'filament_art'];
+    public const IMAGE_WINDOW = ['charm', 'keychain', 'earrings', 'ornament', 'magnet', 'coaster', 'badge', 'bag_charm', 'relief', 'filament_art', 'sign', 'medallion', 'cutter'];
 
     public const ARTWORK = ['phone_stand', 'sign', 'logo', 'stamp', 'stencil', 'papel', 'notes', 'hair_tie', 'candle_stand', 'insert', 'lightbox', 'cutter', 'charm', 'keychain', 'earrings', 'ornament', 'magnet', 'coaster', 'cookie', 'tray', 'badge', 'medallion', 'photo_organizer', 'bag_charm', 'straw', 'opener'];
 
@@ -418,7 +420,7 @@ final class ParametricGenerator
         'charm' => ['width', 'thickness', 'frame', 'eye_pos', 'eye_hole'], 'keychain' => ['width', 'thickness', 'frame', 'eye_pos', 'eye_hole'], 'earrings' => ['width', 'thickness', 'frame', 'eye_pos', 'eye_hole'], 'ornament' => ['width', 'thickness', 'frame', 'eye_pos', 'eye_hole'],
         'magnet' => ['width', 'thickness', 'frame', 'mag_d', 'mag_h'], 'coaster' => ['width', 'thickness', 'frame'], 'gingerbread' => ['width', 'thickness', 'eye_pos', 'eye_hole'], 'name_letter' => ['height', 'thickness'], 'cookie' => ['width', 'thickness', 'frame'], 'topper' => ['width', 'text_size', 'text_y', 'spike', 'spikes'], 'tray' => ['width', 'height', 'frame'], 'badge' => ['width', 'thickness', 'frame', 'mag_d'], 'medallion' => ['width', 'motif_size', 'depth', 'thickness', 'frame', 'links', 'ribbon_w'], 'photo_organizer' => ['width', 'height', 'cell', 'hole_d'], 'bag_charm' => ['width', 'thickness', 'bag_hole', 'bag_wall'], 'straw' => ['width', 'thickness', 'eye_pos'], 'opener' => ['width', 'thickness', 'eye_pos'],
         'organizer' => ['width', 'depth', 'height', 'rows', 'cols', 'radius'], 'box' => ['inner_w', 'inner_d', 'inner_h', 'radius'], 'phone_stand' => ['width', 'device', 'angle', 'back', 'depth', 'vent', 'thickness', 'radius', 'cutout_size', 'rib_pitch', 'band', 'across'],
-        'cable_holder' => ['count', 'cable', 'depth'], 'modular' => ['inner_w', 'inner_d', 'height', 'cols', 'rows', 'radius'], 'vase' => ['height', 'top_d', 'bottom_d', 'waists', 'waist_at', 'ribs', 'flute', 'twist'], 'sign' => ['text_height', 'thickness', 'relief', 'radius'], 'logo' => ['width', 'thickness', 'base_h'], 'stamp' => ['width', 'relief'], 'qr' => ['size'], 'stencil' => ['width', 'margin'], 'papel' => ['width', 'height', 'base', 'relief', 'thickness'], 'notes' => ['width', 'pad', 'depth', 'thickness'], 'hair_tie' => ['width', 'post_h', 'post_d', 'thickness'], 'candle_stand' => ['width', 'jar_d', 'thickness'], 'insert' => ['depth', 'gap', 'margin'], 'compose' => ['thickness', 'step'], 'lightbox' => ['width', 'depth'], 'cutter' => ['width', 'height', 'wall', 'flange'], 'holder' => ['obj_w', 'obj_d', 'height', 'hook_h', 'bend', 'edge'], 'cap' => ['size_a', 'size_b', 'outer', 'height', 'pitch', 'mouth', 'edge'],
+        'cable_holder' => ['count', 'cable', 'depth'], 'modular' => ['inner_w', 'inner_d', 'height', 'cols', 'rows', 'radius'], 'vase' => ['height', 'top_d', 'bottom_d', 'waists', 'waist_at', 'ribs', 'flute', 'twist'], 'sign' => ['text_height', 'thickness', 'relief', 'radius', 'width'], 'logo' => ['width', 'thickness', 'base_h'], 'stamp' => ['width', 'relief'], 'qr' => ['size'], 'stencil' => ['width', 'margin'], 'papel' => ['width', 'height', 'base', 'relief', 'thickness'], 'notes' => ['width', 'pad', 'depth', 'thickness'], 'hair_tie' => ['width', 'post_h', 'post_d', 'thickness'], 'candle_stand' => ['width', 'jar_d', 'thickness'], 'insert' => ['depth', 'gap', 'margin'], 'compose' => ['thickness', 'step'], 'lightbox' => ['width', 'depth'], 'cutter' => ['width', 'height', 'wall', 'flange'], 'holder' => ['obj_w', 'obj_d', 'height', 'hook_h', 'bend', 'edge'], 'cap' => ['size_a', 'size_b', 'outer', 'height', 'pitch', 'mouth', 'edge'],
     ];
 
     /**
@@ -487,7 +489,9 @@ final class ParametricGenerator
         'sign' => ['shape' => ['style', ['emboss', 'engrave', 'outline']], 'radius' => ['shape', ['rounded']], 'border' => ['style', ['emboss', 'outline']], 'two_color' => ['style', ['emboss', 'outline', 'name']], 'ring_at' => ['keyring', ['on']],
             'bevel' => ['style', ['emboss', 'engrave', 'outline']], 'margin' => ['style', ['emboss', 'engrave', 'outline']],
             // a text that stands is letters and a foot: nothing is raised on it and nothing hangs
-            'relief' => ['style', ['emboss', 'engrave', 'outline', 'name']], 'keyring' => ['style', ['emboss', 'engrave', 'outline', 'name']]],
+            'relief' => ['style', ['emboss', 'engrave', 'outline', 'name']], 'keyring' => ['style', ['emboss', 'engrave', 'outline', 'name', 'picture']],
+            // only a sign that is a picture has a width of its own and layers of colours
+            'width' => ['style', ['picture']], 'colors_n' => ['style', ['picture']], 'smooth' => ['style', ['picture']]],
         'holder' => ['obj_d' => ['style', ['cradle', 'pocket', 'hook']], 'height' => ['style', ['cradle', 'pocket', 'clip']], 'hook_h' => ['style', ['hook']], 'bend' => ['style', ['hook']],
             'edge' => ['style', ['hook', 'clip']], 'holes' => ['mount', ['on']], 'radius' => ['style', ['cradle', 'pocket']], 'clearance' => ['style', ['cradle', 'pocket', 'hook']]],
         'cap' => ['size_b' => ['shape', ['rect']], 'pitch' => ['style', ['thread']], 'grip' => ['style', ['push', 'thread']], 'head' => ['style', ['push']], 'edge' => ['head', ['flat']], 'seal' => ['style', ['push', 'thread']], 'mouth' => ['seal', ['lip']],
@@ -727,7 +731,7 @@ final class ParametricGenerator
             },
             'papel' => ($p['treatment'] ?? 'cutout') === 'portrait' ? ['body', 'details'] : [],             // the backing and what lies on it: two colours, one print
             'compose' => array_values(array_filter((array) ($p['parts'] ?? []), fn ($part) => is_string($part) && preg_match('/^(layer_\d{1,2}|decor_[1-6])$/', $part))),
-            'sign' => ! empty($p['two_color']) && ! in_array($p['style'] ?? 'emboss', ['engrave', 'stand'], true) ? ['plate', 'text'] : [],
+            'sign' => ! empty($p['two_color']) && ! in_array($p['style'] ?? 'emboss', ['engrave', 'stand', 'picture'], true) ? ['plate', 'text'] : [],
             'qr' => ! empty($p['stand']) ? ['body', 'stand'] : [],
             'lightbox' => ['body', 'face', 'diffuser', 'back'],
             'beads' => ($p['style'] ?? 'raised') === 'raised' ? ['body', 'text'] : [],                  // the beads and the letters raised on them: two colours
@@ -845,7 +849,8 @@ final class ParametricGenerator
             $rules['params.'.$key] = ['nullable', self::isColor($key) ? $color : Rule::in($options)];
         }
         foreach (self::TEXTS[$kind] ?? [] as $key => [$max, $required]) {
-            $rules['params.'.$key] = [$required ? 'required' : 'nullable', 'string', 'max:'.$max];
+            // (a sign that is a picture needs no text: it is only its caption)
+            $rules['params.'.$key] = $required && $kind === 'sign' ? ['required_unless:params.style,picture', 'nullable', 'string', 'max:'.$max] : [$required ? 'required' : 'nullable', 'string', 'max:'.$max];
         }
         // the colour each separately printed part is meant to have (the colours section of the tool page)
         $rules['params.part_colors'] = ['nullable', 'array', 'max:16'];
@@ -954,6 +959,9 @@ final class ParametricGenerator
         if (in_array($kind, self::ARTWORK, true) && ! empty($p['artwork'])) {
             $out['artwork'] = (string) $p['artwork'];
         }
+        if ($kind === 'charm' && ! empty($p['sign_caption'])) {
+            $out['sign_caption'] = true;      // the text of a sign that is a picture stands under it, as on a badge (signAsPicture)
+        }
         if ($kind === 'qr' && ! array_key_exists('content', $p)) {
             // a design from before the kinds of content (17 Oct 2026): a link stays a link, anything else typed into the
             // one field there was (a Wi-Fi string written by hand) is a text and comes out of the code as it went in
@@ -1052,6 +1060,9 @@ final class ParametricGenerator
         if (! isset(self::FIELDS[$kind])) {
             throw new EngineException('Unknown product.');
         }
+        if ($kind === 'sign' && ($params['style'] ?? null) === 'picture') {
+            return $this->build('charm', self::signAsPicture($params), $part, $view, $pieces);
+        }
         $dir = storage_path('app/tmp/param');
         File::ensureDirectoryExists($dir);
         $path = $dir.'/'.Str::uuid().'.stl';
@@ -1072,6 +1083,27 @@ final class ParametricGenerator
         }
 
         return ['path' => $path, 'meta' => ['part' => $r['part'] ?? 'all', 'bbox' => $r['bbox'], 'volume_mm3' => $r['volume_mm3'], 'area_mm2' => $r['area_mm2'], 'triangles' => $r['triangles'], 'notes' => $r['notes'] ?? []] + ($pieces ? ['parts' => $r['parts'] ?? []] : [])];
+    }
+
+    /**
+     * A sign whose style is `picture` is the picture itself (Roman, 21 Nov 2026: "a sign made of the picture"): the layered
+     * colours of the picture over a rounded rectangle, built by the charm's own pipeline (art_tool / shape_kinds: background
+     * kept, colours quantised, smoothed), the sign's text under it as a caption, the key ring as the eyelet. Same bytes the
+     * charm would give for these numbers, so the colours, the order and the preview behave as on every picture tool.
+     *
+     * @return array<string, mixed> the parameters of a charm
+     */
+    public static function signAsPicture(array $params): array
+    {
+        $sign = self::clean('sign', $params);
+
+        return [
+            'artwork' => $sign['artwork'] ?? ($params['artwork'] ?? null), 'body' => 'rect', 'width' => $sign['width'],
+            'thickness' => min(6, max(2, $sign['thickness'])), 'frame' => 1.5, 'colors_n' => $sign['colors_n'], 'smooth' => $sign['smooth'],
+            'remove_bg' => false, 'flush' => false, 'rim' => false, 'bevel' => ! empty($sign['bevel']), 'eyelet' => ! empty($sign['keyring']),
+            'line1' => $sign['line1'], 'line2' => $sign['line2'], 'sign_caption' => true,
+            'part_colors' => (array) ($params['part_colors'] ?? []), 'merge' => $params['merge'] ?? [], 'order' => $params['order'] ?? [],
+        ];
     }
 
     /** Adds what only the server knows: the font file and where the uploaded artwork lives. */

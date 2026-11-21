@@ -3121,5 +3121,8 @@
     "imgwin.sending": "Uploading…",
     "imgwin.failed": "The picture could not be uploaded. Try another one.",
     "imgwin.not_image": "That is not a picture.",
-    "imgwin.too_big": "The picture is bigger than :mb MB."
+    "imgwin.too_big": "The picture is bigger than :mb MB.",
+    "imgwin.mode_layers": "Layers of colour",
+    "imgwin.mode_relief": "Relief from the photo (lithophane)",
+    "param.o.sign.picture": "Sign made of a picture"
 }
