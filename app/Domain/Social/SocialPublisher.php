@@ -9,6 +9,7 @@ use App\Models\Collection;
 use App\Models\DesignerModel;
 use App\Models\SocialPost;
 use App\Support\Consent;
+use App\Support\Track;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 
@@ -96,7 +97,9 @@ final class SocialPublisher
     public function conversion(string $event, string $eventId, Request $request, ?string $email, array $data = []): bool
     {
         $name = ['order_paid' => 'Purchase', 'register' => 'CompleteRegistration'][$event] ?? null;
-        if ($name === null || ! Consent::allows('marketing')) {
+        // the staff's own orders and accounts are not conversions (21 Nov 2026: 19 of Meta's 20 purchases were an admin's
+        // orders paid from credit; Track leaves them out, this report did not)
+        if ($name === null || ! Consent::allows('marketing') || Track::staff($request)) {
             return false;
         }
 
