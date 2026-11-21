@@ -71,6 +71,17 @@ final class PacketaClient implements ShippingCarrier
         return $this->pdf($this->call('packetLabelPdf', ['packetId' => $packetId, 'format' => 'A6 on A6', 'offset' => '0']));
     }
 
+    public function consignCode(string $packetId): ?string
+    {
+        try {
+            $code = trim((string) ($this->call('packetInfo', ['packetId' => ltrim(trim($packetId), 'Zz')])->consignPassword ?? ''));
+        } catch (ShippingFailed) {
+            return null;   // the client section shows the code too: the parcel is not held up
+        }
+
+        return $code === '' ? null : $code;
+    }
+
     public function trackingUrl(string $barcode, ?string $locale = null): string
     {
         $locale = in_array($locale, ['cs', 'en', 'es', 'sk', 'de', 'pl', 'hu', 'ro'], true) ? $locale : 'en';

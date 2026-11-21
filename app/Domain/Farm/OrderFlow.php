@@ -536,6 +536,7 @@ final class OrderFlow
             $packet = $this->carrier->createPacket($order);
             $order->forceFill([
                 'packeta_packet_id' => $packet->id, 'packeta_barcode' => $packet->barcode, 'tracking' => $packet->barcode,
+                'packeta_consign_code' => $this->carrier->consignCode($packet->id),
                 'tracking_url' => $this->carrier->trackingUrl($packet->barcode, $order->user?->locale), 'shipped_at' => now(),
             ])->save();
         }

@@ -459,6 +459,14 @@ class ShippingCurrencyTest extends TestCase
         $this->assertNotNull($order->shipped_at);
         $this->assertSame('Z'.$order->packeta_packet_id, $order->packeta_barcode);
         $this->assertSame('https://tracking.packeta.com/es/?id='.$order->packeta_barcode, $order->tracking_url);
+        // the nine digits for a Z-BOX drop-off travel with the order and the admin reads them next to the label
+        $this->assertSame(substr((string) $order->packeta_packet_id, -9), $order->packeta_consign_code);
+        $this->actingAs($admin)->get("/admin/farm/orders/{$order->token}")->assertOk()
+            ->assertSee(__('farm.admin.zbox_code'))->assertSee(trim(chunk_split($order->packeta_consign_code, 3, ' ')));
+        // a parcel from before the code was stored: opening the order fetches it from the carrier
+        $order->forceFill(['packeta_consign_code' => null])->save();
+        $this->actingAs($admin)->get("/admin/farm/orders/{$order->token}")->assertOk()->assertSee(__('farm.admin.zbox_code'));
+        $this->assertSame(substr((string) $order->packeta_packet_id, -9), $order->fresh()->packeta_consign_code);
 
         $parcel = FakeCarrier::$parcels[0];
         $this->assertSame([9003, 'MRW-0412', 'María', 'García', 'ES', true, 'EUR'], [$parcel->addressId, $parcel->carrierPickupPoint, $parcel->name, $parcel->surname, $parcel->country, $parcel->external, $parcel->currency]);
