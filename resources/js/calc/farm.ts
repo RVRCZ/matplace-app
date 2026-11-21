@@ -5,6 +5,7 @@
  *   bootFarmOrder  /farm/orders/{token}: preview of the print pose, presets, colours, pay, progress (polled)
  *   bootFarmDashboard  /admin/farm: buttons post over fetch, the answer is a short toast, cards redraw in place
  */
+import { presetColours } from './colour_preset';
 import { icon } from '../site/icon';
 import { flash, revealIfHidden } from '../site/sticky';
 import { BufferGeometry, Float32BufferAttribute } from 'three';
@@ -61,7 +62,7 @@ interface FarmState {
     /** the copies of one plate of parts in a grid [columns, rows] (the parts of a design with flush colours, a painted 3MF); null otherwise */
     copies_grid?: [number, number] | null;
     scale: number; raw_bbox: { x: number; y: number; z: number } | null; slot: number | null; printer: { name: string; bed: string } | null;
-    unit: string; unit_guess: { unit: string; confident: boolean } | null; second_slot?: number | null; changes?: Change[]; first_label?: string | null; max_colors?: number; colors_over?: { text: string; link: string; url: string | null } | null; by_parts?: boolean; parts?: Part[]; part_count?: number; one_plate?: boolean; filament_changes?: number; one_plate_required?: boolean; painted_colors?: boolean; offer_one_color?: boolean; repeatable?: boolean;
+    unit: string; unit_guess: { unit: string; confident: boolean } | null; second_slot?: number | null; changes?: Change[]; first_label?: string | null; first_hex?: string | null; max_colors?: number; colors_over?: { text: string; link: string; url: string | null } | null; by_parts?: boolean; parts?: Part[]; part_count?: number; one_plate?: boolean; filament_changes?: number; one_plate_required?: boolean; painted_colors?: boolean; offer_one_color?: boolean; repeatable?: boolean;
     settings?: Record<string, number> | null; admin_overrides?: Record<string, string> | null;
     dims: { x: number; y: number; z: number } | null; warnings: string[]; orientation_changed: boolean; supports: boolean; supports_mode: string; color_change_mm: number | null; second_color: { name: string; hex: string } | null;
     minutes: number | null; grams: number | null; meters: number | null; price: Price | null; total: number | null; currency: string;
@@ -381,6 +382,7 @@ export function bootFarmOrder(): void {
     // order's spools, else the one meeting most of the design's colours), whether it was just changed (the parts picked again
     // on the new machine are said once), and the parts whose colour the page picked for the customer (shown as preselected)
     let machineByHand: number | null = null;
+    let setPreset = false;                                             // the first look at a fresh order: the nearest set of colours is ticked once (renderSecond)
     let machineSwitched = false;
     // what the page said after colours had to give way to one another: stays until the next choice (a render alone must not wipe it)
     let clashNote = '';
@@ -837,6 +839,25 @@ export function bootFarmOrder(): void {
             const wantHexes = [byParts ? first?.hex ?? null : null, ...rows.map((r) => r.hex)].filter((h): h is string => !!h);
             const gap = (t: ColourSet): number => wantHexes.reduce((sum, h) => sum + Math.min(...t.members.map((a) => far(a.hex, h))), 0);
             const ordered = [...sets].sort((a, b) => gap(a) - gap(b) || b.members.length - a.members.length);
+            /*
+             * The first arrival (Roman, 21 Nov 2026): a fresh order opens on the set of colours NEAREST to the design's, and every
+             * layer or part gets the nearest colour of that set. Once: whatever the customer does later is theirs, nothing is
+             * moved by itself inside a set. An order that holds colours already (stored, or chosen by hand) is left as it is.
+             */
+            if (!setPreset && ordered.length) {
+                setPreset = true;
+                const target = ordered[0];
+                if (state.slot == null && stored.length === 0 && !byHand.size && !partByHand.size && machineByHand === null && target !== current) {
+                    const printer = target.printers.includes(here) ? here : target.printers[0];
+                    const openers = target.members.filter((a) => entryOn(a.id, printer));
+                    const plateHex = (byParts ? first?.hex : state.first_hex) ?? c.hex;
+                    if (openers.length) {
+                        const { main, ids } = presetColours(openers, target.members, plateHex, rows.map((r) => r.hex), byParts);
+                        apply(printer, main, ids);
+                        return;
+                    }
+                }
+            }
             const dot = (a: Member, size: string): string => `<span class="${size} shrink-0 rounded-full border border-slate-300" style="background:${esc(a.hex)}"></span>`;
             const setsBox = $('farm-sets');
             if (setsBox) {

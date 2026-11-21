@@ -1188,6 +1188,8 @@ class OrderController extends Controller
             // the kind the order was made with (the calculator's choice): the kind a tile of several kinds opens on
             'material_kind' => $order->material?->label(),
             'changes' => $parts ? [] : $changes, 'first_label' => $parts ? null : $firstLabel,
+            // the colour the design's first layer (the plate) was made in: the order page's first choice of a set of colours looks at it
+            'first_hex' => $parts ? null : (($order->modelFile?->tool_params['part_colors']['body']['hex'] ?? null) ?: ($order->modelFile?->codeColors()[0] ?? null)),
             'by_parts' => $order->isByParts(),
             'parts' => $parts,
             // the parts print together on one plate, the machine changing spools (so many times) – or one plate each
