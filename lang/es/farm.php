@@ -332,6 +332,7 @@ return [
         'ship_failed' => 'No se pudo crear el envío. Packeta respondió: :reason',
         'shipped' => 'El envío :barcode está creado, el cliente recibió el correo de seguimiento.',
         'label' => 'etiqueta PDF',
+        'zbox_code' => 'código para depositar en el Z-BOX',
         'currency_locked' => 'La moneda solo se puede cambiar en una cuenta sin crédito y sin pedidos en curso.',
         'refunded' => 'Devueltos :amount.',
         'started' => 'La base está libre, inicio el pedido :number.',

@@ -34,6 +34,12 @@ interface ShippingCarrier
     public function trackingUrl(string $barcode, ?string $locale = null): string;
 
     /**
+     * The nine digits the sender types on a Z-BOX keypad to consign the parcel there instead of at a branch.
+     * Null when the carrier does not give one (the code is a convenience, never a reason to fail).
+     */
+    public function consignCode(string $packetId): ?string;
+
+    /**
      * Every carrier of the feed.
      *
      * @return list<array{id: int, country: string, type: string, name: string}> type = point | home

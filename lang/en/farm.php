@@ -332,6 +332,7 @@ return [
         'ship_failed' => 'The parcel could not be created. Packeta answered: :reason',
         'shipped' => 'Parcel :barcode is created, the customer got the tracking e-mail.',
         'label' => 'label PDF',
+        'zbox_code' => 'Z-BOX drop-off code',
         'currency_locked' => 'The currency can only be changed on an account with no credit and no running orders.',
         'refunded' => ':amount returned.',
         'started' => 'The plate is clear, starting order :number.',

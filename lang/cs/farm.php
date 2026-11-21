@@ -332,6 +332,7 @@ return [
         'ship_failed' => 'Zásilku se nepodařilo vytvořit. Packeta odpověděla: :reason',
         'shipped' => 'Zásilka :barcode je vytvořená, zákazník dostal e-mail se sledováním.',
         'label' => 'štítek PDF',
+        'zbox_code' => 'kód pro podání do Z-BOXu',
         'currency_locked' => 'Měnu jde změnit jen u účtu s nulovým kreditem a bez běžících zakázek.',
         'refunded' => 'Vráceno :amount.',
         'started' => 'Podložka je volná, spouštím zakázku :number.',

@@ -81,7 +81,7 @@ class FarmOrder extends Model
         'terms_ip', 'paid_at', 'approved_at', 'approved_by', 'queued_at', 'started_at', 'finished_at', 'handed_at', 'tracking',
         'actual_minutes', 'actual_grams', 'actual_source', 'video_consent', 'video_consent_at', 'timelapse_short_path', 'timelapse_wide_path', 'photo_path', 'photo_meta',
         'designer_model_id', 'royalty_czk', 'catalog_model_id',
-        'shipping_price', 'packeta_packet_id', 'packeta_barcode', 'tracking_url', 'shipped_at', 'timings',
+        'shipping_price', 'packeta_packet_id', 'packeta_barcode', 'packeta_consign_code', 'tracking_url', 'shipped_at', 'timings',
     ];
 
     protected $casts = [
