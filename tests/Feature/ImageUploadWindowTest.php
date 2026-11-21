@@ -22,6 +22,13 @@ class ImageUploadWindowTest extends TestCase
 {
     use RefreshDatabase;
 
+    protected function tearDown(): void
+    {
+        // the uploads of these tests lie in storage/app/artwork under the owner's id: not left for the next test of the library
+        \Illuminate\Support\Facades\File::deleteDirectory(storage_path('app/artwork'));
+        parent::tearDown();
+    }
+
     private function upload(): string
     {
         $img = imagecreatetruecolor(60, 40);
