@@ -61,8 +61,9 @@ final class BigMeshTest extends TestCase
         $up = $this->postJson('/api/uploads', ['file' => $this->cube()])->assertCreated();
         $file = ModelFile::where('uuid', $up->json('file.uuid'))->firstOrFail();
         $this->assertSame(ModelFile::STATUS_READY, $file->status);
-        $this->assertSame('copy', $file->timings['convert']);
-        $this->assertSame(Storage::disk('models')->get($file->storage_path), Storage::disk('models')->get($file->stl_path), 'the same bytes');
+        // …and since 20 Nov 2026 it is not even copied: the model reads its original (StlStoredOnceTest)
+        $this->assertSame('same', $file->timings['convert']);
+        $this->assertSame($file->storage_path, $file->stl_path, 'the same file');
         $this->assertSame(12, $file->triangles);
         $this->assertEqualsWithDelta(8000.0, $file->volume_mm3, 0.1);
 

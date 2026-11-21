@@ -54,17 +54,19 @@ class ProcessModelFile implements ShouldQueue
             $stlAbs = $disk->path($stlRel);
             File::ensureDirectoryExists(dirname($stlAbs));
 
-            $clock->measure('convert', function () use ($file, $converters, $in, $stlAbs, $clock) {
+            $clock->measure('convert', function () use ($file, $converters, $in, &$stlRel, &$stlAbs, $clock) {
                 if ($file->ext === 'stl') {
                     // a sound binary STL is what everything downstream wants already: copied as it is. Rewriting it
                     // triangle by triangle in PHP took most of the 23 s a calculation of 2.7 M triangles waited for its
                     // file (24 Oct 2026, docs/AL.md §11); an ASCII file, or a binary one whose header says "solid"
                     // (slicers take that for ASCII), is still rewritten into a binary one with a plain header
                     if (StlFile::binaryCount($in) > 0 && ! str_starts_with((string) file_get_contents($in, false, null, 0, 5), 'solid')) {
-                        $clock->note('convert', 'copy');
-                        if (! @copy($in, $stlAbs)) {
-                            StlFile::scale($in, $stlAbs, 1.0);
-                        }
+                        // …and it is not stored a second time either: the file itself is the STL everything reads
+                        // (20 Nov 2026: 13 GB of a 75 GB disk were such second copies; nothing writes into either file
+                        // after this job, every change makes a new model)
+                        $clock->note('convert', 'same');
+                        $stlRel = $file->storage_path;
+                        $stlAbs = $in;
                     } else {
                         StlFile::scale($in, $stlAbs, 1.0);
                     }
