@@ -194,6 +194,58 @@ class ImageUploadWindowTest extends TestCase
         $this->assertStringContainsString('optionalWhen', $js);
     }
 
+    /** A picture of a red disc and a blue square on white, the logo Roman tried the sign with. */
+    private function redBlue(): string
+    {
+        $img = imagecreatetruecolor(400, 300);
+        imagefill($img, 0, 0, imagecolorallocate($img, 255, 255, 255));
+        imagefilledellipse($img, 110, 150, 150, 150, imagecolorallocate($img, 210, 30, 30));
+        imagefilledrectangle($img, 230, 70, 370, 230, imagecolorallocate($img, 30, 60, 200));
+        $path = sys_get_temp_dir().'/mp_imgwin_rb_'.uniqid().'.png';
+        imagepng($img, $path);
+        imagedestroy($img);
+
+        return (string) $this->post('/api/tools/artwork', ['file' => new UploadedFile($path, 'rb.png', 'image/png', null, true)], ['Accept' => 'application/json'])->assertCreated()->json('artwork');
+    }
+
+    /**
+     * The colours of a sign that is a picture are the picture's own, as on the charm (Roman, 21 Nov 2026: red disc and blue
+     * square came out white on a green plate): the model says which part is which colour of the picture and which filament
+     * it prints in, and the page treats the sign as a picture tool while its style is `picture`.
+     */
+    public function test_the_sign_that_is_a_picture_carries_the_colours_of_the_picture(): void
+    {
+        $this->needsEngine();
+        $this->visitor();
+        $art = $this->redBlue();
+        $sign = $this->preview('sign', ['style' => 'picture', 'artwork' => $art, 'width' => 90, 'colors_n' => 3, 'line1' => '']);
+        $charm = $this->preview('charm', ['body' => 'rect', 'artwork' => $art, 'width' => 90, 'colors_n' => 3, 'remove_bg' => false, 'flush' => false, 'rim' => false, 'eyelet' => false, 'line1' => '']);
+        // the same parts and the same colours as the charm made of this picture, not the sign's plate and lettering
+        $this->assertSame(array_column($charm['notes']['colors'], 'part'), array_column($sign['notes']['colors'], 'part'));
+        $this->assertSame($charm['notes']['paint'] ?? null, $sign['notes']['paint'] ?? null);
+        $near = function (array $colors, array $rgb): bool {
+            foreach ($colors as $c) {
+                $hex = ltrim((string) $c['rgb'], '#');
+                $v = [hexdec(substr($hex, 0, 2)), hexdec(substr($hex, 2, 2)), hexdec(substr($hex, 4, 2))];
+                if (sqrt(($v[0] - $rgb[0]) ** 2 + ($v[1] - $rgb[1]) ** 2 + ($v[2] - $rgb[2]) ** 2) < 90) {
+                    return true;
+                }
+            }
+
+            return false;
+        };
+        $this->assertTrue($near($sign['notes']['colors'], [210, 30, 30]), 'the red of the picture');
+        $this->assertTrue($near($sign['notes']['colors'], [30, 60, 200]), 'the blue of the picture');
+        $this->assertNotEmpty($sign['notes']['paint'] ?? [], 'pieces painted by the picture colours');
+        // the page: the sign is a picture tool (colours panel, painting by the model's notes) while its style is picture
+        $html = $this->get('/tools/sign')->assertOk()->getContent();
+        $this->assertStringContainsString('familyWhen', $html);
+        $this->assertStringContainsString('style=picture', $html);
+        $js = (string) file_get_contents(base_path('resources/js/calc/param.ts'));
+        $this->assertStringContainsString('cfg.familyWhen', $js);
+        $this->assertStringContainsString('let shape', $js);
+    }
+
     public function test_the_window_texts_exist_in_three_languages(): void
     {
         $keys = array_keys(json_decode((string) file_get_contents(base_path('lang/src/image_upload_window.json')), true, 512, JSON_THROW_ON_ERROR));

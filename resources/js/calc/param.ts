@@ -16,7 +16,7 @@ import { partLabel as sharedPartLabel } from './parts';
 import { bootDecor, DecorCfg, DecorFace, DecorPlaced } from './decor';
 
 interface Cfg {
-    kind: string; family: string | null; sample: string | null; preset: string | null; captioned: boolean; preview: string; create: string; home: string; locale: string; artworkUrl: string; files: string; from: string | null;
+    kind: string; family: string | null; familyWhen?: { rule: string; family: string } | null; sample: string | null; preset: string | null; captioned: boolean; preview: string; create: string; home: string; locale: string; artworkUrl: string; files: string; from: string | null;
     decor: Omit<DecorCfg, 'library' | 'file'> | null;  // the tool takes decorations: the limits of the panel "Decoration"
     design: { url: string; tool: string } | null;      // the page has the field "describe what it should look like"
     presets: Record<string, Record<string, number | string>>;
@@ -73,7 +73,8 @@ export function bootParam(stage: Stage): void {
     // typed instead) the page asks for it over the empty stage and shows no sample of ours
     let asking = stage.cfg.intake?.ask?.kind === 'picture';
     // a picture in colours (pendant, earrings, ornament, magnet, coaster): which of its colours were joined and their order, bottom to top
-    const shape = cfg.family === 'shape';
+    // the family of the tool; a sign whose style is `picture` is built and painted as a picture tool (cfg.familyWhen), so `shape` follows the form (applyWhen)
+    let shape = cfg.family === 'shape';
     let merge: number[][] = []; let order: number[] = [];
     const shapeNotes = (): ShapeNotes => (lastMeta?.notes ?? {}) as ShapeNotes;
     // a biscuit: the icing drawn on it by hand
@@ -1373,6 +1374,9 @@ export function bootParam(stage: Stage): void {
         }
         // a text that is optional while a choice says so (the sign that is a picture): the field is `required` only otherwise, in
         // both directions, so a form that cannot be sent never silently stops the preview
+        const wasShape = shape;
+        shape = cfg.family === 'shape' || (!!cfg.familyWhen && cfg.familyWhen.family === 'shape' && holds(cfg.familyWhen.rule));
+        if (shape !== wasShape && lastMeta) { lastMeta = null; lastRegions = null; }      // the notes of the other kind of model do not fit the new one: it is asked for again
         form.querySelectorAll<HTMLInputElement>('[data-req]').forEach((el) => { const rule = el.dataset.optionalWhen; el.required = !(rule && holds(rule)); });
         setHandles();
     };

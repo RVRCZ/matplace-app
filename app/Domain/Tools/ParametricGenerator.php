@@ -412,6 +412,9 @@ final class ParametricGenerator
      */
     public const IMAGE_WINDOW = ['charm', 'keychain', 'earrings', 'ornament', 'magnet', 'coaster', 'badge', 'bag_charm', 'relief', 'filament_art', 'sign', 'medallion', 'cutter'];
 
+    /** A tool that is a member of a family only while a choice says so: the sign whose style is `picture` is painted and coloured as a picture tool (param.ts, applyWhen). */
+    public const FAMILY_WHEN = ['sign' => ['style=picture', 'shape']];
+
     /** A text that is required only while a choice does not say otherwise (the page's script keeps the field's `required` in step: applyWhen). */
     public const TEXT_OPTIONAL_WHEN = ['sign' => 'style=picture'];
 
@@ -861,7 +864,7 @@ final class ParametricGenerator
         if (in_array($kind, self::ARTWORK, true)) {
             $rules['params.artwork'] = ['nullable', 'string', 'regex:'.Artwork::REF];
         }
-        if (isset(self::FAMILY[$kind])) {
+        if (isset(self::FAMILY[$kind]) || isset(self::FAMILY_WHEN[$kind])) {
             // colours of the picture the visitor joined into one, and their order from the bottom up (numbers of the list shown)
             $rules += [
                 'params.merge' => ['nullable', 'array', 'max:8'], 'params.merge.*' => ['array', 'size:2'], 'params.merge.*.*' => ['integer', 'min:1', 'max:8'],

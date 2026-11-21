@@ -114,6 +114,7 @@
     window.MP_PARAM = {
         kind: @json($kind),
         family: @json($family),
+        familyWhen: @json(isset(\App\Domain\Tools\ParametricGenerator::FAMILY_WHEN[$kind]) ? ['rule' => \App\Domain\Tools\ParametricGenerator::FAMILY_WHEN[$kind][0], 'family' => \App\Domain\Tools\ParametricGenerator::FAMILY_WHEN[$kind][1]] : null),
         sample: @json($sample ?? null),
         preset: @json($preset ?? null),
         captioned: @json($captioned ?? false),
