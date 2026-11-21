@@ -236,7 +236,7 @@ final class ParametricGenerator
             'tilt' => [-30, 30, 0, 1], 'deco_t' => [3, 8, 4, 0.2], 'fit' => [0.1, 0.4, 0.2, 0.05]],
         // a bead for every character of a text; `size` is the edge of a cube bead, the other shapes follow it
         'beads' => ['size' => [8, 14, 10, 1], 'hole' => [1.5, 4, 2.5, 0.5], 'relief' => [0.4, 1.2, 0.6, 0.2]],
-        'charm' => self::SHAPE_FIELDS + self::SHAPE_EYELET,
+        'charm' => ['width' => [20, 120, 60, 1]] + self::SHAPE_FIELDS + self::SHAPE_EYELET,
         // the eyelet starts on the left side (three quarters of the way round), where a key ring pulls along the name
         'keychain' => ['width' => [30, 100, 55, 1], 'thickness' => [2.4, 6, 3, 0.2], 'eye_pos' => [0, 100, 75, 0.5], 'eye_hole' => [3, 8, 5, 0.5]] + self::SHAPE_FIELDS + self::SHAPE_EYELET,
         'earrings' => ['width' => [10, 60, 32, 1], 'thickness' => [1.6, 3, 2.4, 0.2], 'frame' => [0, 2, 0.8, 0.1], 'relief' => [0.2, 0.8, 0.4, 0.2], 'eye_hole' => [1.5, 3, 2, 0.1], 'eye_wall' => [1.2, 3, 1.6, 0.1]] + self::SHAPE_FIELDS + self::SHAPE_EYELET,
@@ -563,7 +563,7 @@ final class ParametricGenerator
         // the charm opens with our own logo, as Roman set it up (31 Oct 2026): a grey plate following the picture. Its colours
         // are the automatic ones of the picture. The eyelet: 42 % of this outline is where his 38 % lay on his traced PNG
         'charm' => [
-            'matplace' => ['artwork' => 'lib:colour/matplace', 'line1' => '', 'line2' => '', 'body' => 'image', 'width' => 55, 'thickness' => 3, 'frame' => 1.7,
+            'matplace' => ['artwork' => 'lib:colour/matplace', 'line1' => '', 'line2' => '', 'body' => 'image', 'width' => 60, 'thickness' => 3, 'frame' => 1.7,
                 'eyelet' => true, 'eye_pos' => 42, 'eye_hole' => 4.5, 'remove_bg' => true, 'bg_strength' => 25, 'smooth' => 0.3, 'colors_n' => 4, 'relief' => 0.8,
                 'bevel' => false, 'flush' => false, 'rim' => false, 'part_colors' => ['body' => ['12_PLA+_sedy', 'name:šedá', 'grey']]],
         ],

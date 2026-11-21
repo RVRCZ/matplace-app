@@ -25,7 +25,9 @@ class StepController extends Controller
         // between the photo and "Create", and after the model (figure.ts, 20 Nov 2026)
         'thumb', 'create_seen', 'consent_seen', 'consent_on', 'photo_off', 'model_touch', 'cta_seen', 'price_seen', 'again', 'dl_click', 'model_left',
         // the order's page (farm.ts, 20 Nov 2026)
-        'o_color', 'o_setting', 'o_slice', 'o_delivery', 'o_email', 'o_terms', 'o_blocked', 'o_pay', 'o_left'];
+        'o_color', 'o_setting', 'o_slice', 'o_delivery', 'o_email', 'o_terms', 'o_blocked', 'o_pay', 'o_left',
+        // the image-upload window on the image tools (21 Nov 2026)
+        'img_seen', 'img_pick', 'img_camera', 'img_close', 'img_qty'];
 
     public function __invoke(Request $request): Response
     {
