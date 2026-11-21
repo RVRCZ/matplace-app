@@ -12,8 +12,10 @@
         'param.papel.ties', 'param.insert.things', 'param.cup.pocket', 'param.beads.count', 'param.part.body.beads', 'param.part.text.beads', 'param.need.liner', 'param.fits', 'param.need.glue', 'param.needs', 'param.qr.facts', 'param.saucer'])->mapWithKeys(fn ($k) => [$k => __($k)])->all();
     $i18n += \App\Support\CalculatorTexts::partNamesOf($kind);
     // the warnings are not listed by hand: every one that has a text is handed over (the vase once said "param.warn.thin_flutes")
-    $i18n += \App\Support\WarningTexts::forPage($kind, $family);
-    if ($family === 'shape') {
+    // a tool that is a picture tool only while a choice says so (the sign whose style is picture) gets the texts of the family too
+    $asShape = $family === 'shape' || (\App\Domain\Tools\ParametricGenerator::FAMILY_WHEN[$kind][1] ?? null) === 'shape';
+    $i18n += \App\Support\WarningTexts::forPage($kind, $asShape ? 'shape' : $family);
+    if ($asShape) {
         // the picture in colours: its list of colours, the notes on how it prints, the eyelet
         $i18n += collect(['part.body', 'part.rim', 'part.color', 'colors.share', 'colors.up', 'colors.down', 'colors.merge', 'colors.merge.into', 'colors.split', 'colors.found', 'colors.picture', 'print.one', 'print.swap1', 'print.swap', 'print.many', 'print.multi', 'print.plate', 'print.plate.many',
             'eyelet.drag', 'eyelet.top', 'each', 'pair', 'part.icing', 'thickened', 'magnet.fact', 'chain.fact', 'ribbon.fact', 'pockets.grid', 'pockets.holes', 'pin.fact', 'stand.fact',

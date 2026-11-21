@@ -240,6 +240,14 @@ class ImageUploadWindowTest extends TestCase
         // the page: the sign is a picture tool (colours panel, painting by the model's notes) while its style is picture
         $html = $this->get('/tools/sign')->assertOk()->getContent();
         $this->assertStringContainsString('familyWhen', $html);
+        // the colour rows of the panel come with their words, the same as on the charm's page (no raw keys on the screen)
+        $charm = $this->get('/tools/charm')->assertOk()->getContent();
+        foreach (['colors.share', 'part.color', 'part.body', 'colors.picture'] as $key) {
+            $this->assertStringContainsString('shape.'.$key.'\u0022:\u0022', $html, 'sign page: '.$key);
+            $this->assertStringContainsString('shape.'.$key.'\u0022:\u0022', $charm, 'charm page: '.$key);
+        }
+        $text = __('param.shape.colors.share', [], 'cs');
+        $this->assertNotSame('param.shape.colors.share', $text);
         $this->assertStringContainsString('style=picture', $html);
         $js = (string) file_get_contents(base_path('resources/js/calc/param.ts'));
         $this->assertStringContainsString('cfg.familyWhen', $js);
