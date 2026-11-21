@@ -442,7 +442,7 @@ Route::prefix('api')->name('api.')->group(function () {
     Route::post('tools/artwork', [ToolsApiController::class, 'artwork'])->middleware('throttle:30,1,artwork')->name('tools.artwork');
     // the picture-upload window: the optional redrawing of a photographed logo (AI_CLEAN_ARTWORK, off by default)
     Route::post('tools/artwork/clean', [ToolsApiController::class, 'artworkClean'])->middleware('throttle:20,1,artclean')->name('tools.artwork.clean');
-    Route::get('tools/artwork/clean/{task}', [ToolsApiController::class, 'artworkCleaned'])->where('task', '[0-9a-f-]{36}')->middleware('throttle:90,1,artclean')->name('tools.artwork.cleaned');
+    Route::get('tools/artwork/clean/{task}', [ToolsApiController::class, 'artworkCleaned'])->where('task', '[0-9a-f-]{36}')->middleware('throttle:90,1,artcleandone')->name('tools.artwork.cleaned');
     Route::post('tools/param/preview', [ToolsApiController::class, 'paramPreview'])->middleware('throttle:90,1,preview')->name('tools.param.preview');
     Route::post('tools/param', [ToolsApiController::class, 'paramCreate'])->middleware('throttle:20,1,create')->name('tools.param');
     Route::post('tools/param/zip', [ToolsApiController::class, 'paramZip'])->middleware('throttle:12,1,zip')->name('tools.param.zip');
