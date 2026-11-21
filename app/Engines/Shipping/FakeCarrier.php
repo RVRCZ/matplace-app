@@ -43,9 +43,9 @@ final class FakeCarrier implements ShippingCarrier
         return new Packet($id, 'Z'.$id);
     }
 
-    public function labelPdf(string $packetId, bool $carrierLabel = false): string
+    public function labelPdf(string $packetId, bool $carrierLabel = false, ?int $quarter = null): string
     {
-        return "%PDF-1.4\n% fake label for parcel ".ltrim($packetId, 'Zz').($carrierLabel ? ' (carrier)' : '')."\n%%EOF\n";
+        return "%PDF-1.4\n% fake label for parcel ".ltrim($packetId, 'Zz').($carrierLabel ? ' (carrier)' : '').($quarter !== null ? " (A4 q{$quarter})" : '')."\n%%EOF\n";
     }
 
     public function consignCode(string $packetId): ?string

@@ -333,6 +333,8 @@ return [
         'shipped' => 'Zásilka :barcode je vytvořená, zákazník dostal e-mail se sledováním.',
         'label' => 'štítek PDF',
         'zbox_code' => 'kód pro podání do Z-BOXu',
+        'label_a4' => 'na archu A4 do čtvrtiny',
+        'label_a4_hint' => 'Vysází štítek do zvolené čtvrtiny archu A4: 1 vlevo nahoře, 2 vpravo nahoře, 3 vlevo dole, 4 vpravo dole. Pro archy, kde už jsou některé štítky odlepené.',
         'currency_locked' => 'Měnu jde změnit jen u účtu s nulovým kreditem a bez běžících zakázek.',
         'refunded' => 'Vráceno :amount.',
         'started' => 'Podložka je volná, spouštím zakázku :number.',

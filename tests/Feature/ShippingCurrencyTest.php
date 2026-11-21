@@ -489,6 +489,10 @@ class ShippingCurrencyTest extends TestCase
         $label = $this->actingAs($admin)->get("/admin/farm/orders/{$order->token}/label.pdf")->assertOk()->assertHeader('Content-Type', 'application/pdf');
         $this->assertStringStartsWith('%PDF', $label->getContent());
         $this->assertStringContainsString('(carrier)', $label->getContent(), 'a partner carrier prints its own label');
+        // sheets of four peel-off labels: ?pos=1–4 lays the label into that quarter of an A4
+        $quarter = $this->actingAs($admin)->get("/admin/farm/orders/{$order->token}/label.pdf?pos=3")->assertOk();
+        $this->assertStringContainsString('(A4 q3)', $quarter->getContent());
+        $this->actingAs($admin)->get("/admin/farm/orders/{$order->token}/label.pdf?pos=5")->assertNotFound();
         $this->actingAs($user->fresh())->getJson("/es/farm/orders/{$order->token}/status")->assertOk()
             ->assertJsonPath('tracking_url', $order->tracking_url)->assertJsonPath('destination', 'MRW Valencia Centro, Calle Mayor 5, 46001 Valencia, España');
     }

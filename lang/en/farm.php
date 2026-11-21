@@ -333,6 +333,8 @@ return [
         'shipped' => 'Parcel :barcode is created, the customer got the tracking e-mail.',
         'label' => 'label PDF',
         'zbox_code' => 'Z-BOX drop-off code',
+        'label_a4' => 'on an A4 sheet, quarter',
+        'label_a4_hint' => 'Lays the label into the chosen quarter of an A4 sheet: 1 top left, 2 top right, 3 bottom left, 4 bottom right. For sheets where some labels are already peeled off.',
         'currency_locked' => 'The currency can only be changed on an account with no credit and no running orders.',
         'refunded' => ':amount returned.',
         'started' => 'The plate is clear, starting order :number.',
