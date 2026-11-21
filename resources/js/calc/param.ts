@@ -9,6 +9,7 @@ import { Region, FILAMENT, Piece } from './viewer';
 import type { Stage, MenuItem, PriceConfig } from './tool_page';
 import { colorOf, spoolCode, paintSwatch, pickColor, recentColors, rememberColor, materialLabel } from './colors';
 import { pickArtwork, uploadArtwork, PickedArtwork } from './artwork';
+import { openImageWindow } from './imgwindow';
 import { icon } from '../site/icon';
 import { modelMeta } from './api';
 import { partLabel as sharedPartLabel } from './parts';
@@ -1601,5 +1602,9 @@ export function bootParam(stage: Stage): void {
         if (!plain && (cfg.captioned || !Object.keys(typed).length) && cfg.sample && !artwork && (shape ? !preset : preset === cfg.preset)) setArtwork({ ref: cfg.sample, name: '', url: null });
         track(!preset && !Object.keys(typed).length && !Object.keys(wished).length);
         void refresh();
+        // the picture window: a plain visit to a tool of pictures (no wish, no stored design, no texts in the address) asks for the picture first
+        if (!plain && !qs.get('preset') && !Object.keys(typed).length && !Object.keys(wished).length && !stage.cfg.intake && !asking && !qs.get('decor')) {
+            openImageWindow({ stage, artwork: { upload: uploadArtwork, apply: async (picked) => { setArtwork(picked); strawPicked(); if (papel) papelPicked(picked); await refresh().then(commit); } } });
+        }
     }
 }

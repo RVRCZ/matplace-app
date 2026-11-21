@@ -238,7 +238,7 @@ final class ParametricGenerator
         'beads' => ['size' => [8, 14, 10, 1], 'hole' => [1.5, 4, 2.5, 0.5], 'relief' => [0.4, 1.2, 0.6, 0.2]],
         'charm' => ['width' => [20, 120, 60, 1]] + self::SHAPE_FIELDS + self::SHAPE_EYELET,
         // the eyelet starts on the left side (three quarters of the way round), where a key ring pulls along the name
-        'keychain' => ['width' => [30, 100, 55, 1], 'thickness' => [2.4, 6, 3, 0.2], 'eye_pos' => [0, 100, 75, 0.5], 'eye_hole' => [3, 8, 5, 0.5]] + self::SHAPE_FIELDS + self::SHAPE_EYELET,
+        'keychain' => ['width' => [30, 100, 60, 1], 'thickness' => [2.4, 6, 3, 0.2], 'eye_pos' => [0, 100, 75, 0.5], 'eye_hole' => [3, 8, 5, 0.5]] + self::SHAPE_FIELDS + self::SHAPE_EYELET,
         'earrings' => ['width' => [10, 60, 32, 1], 'thickness' => [1.6, 3, 2.4, 0.2], 'frame' => [0, 2, 0.8, 0.1], 'relief' => [0.2, 0.8, 0.4, 0.2], 'eye_hole' => [1.5, 3, 2, 0.1], 'eye_wall' => [1.2, 3, 1.6, 0.1]] + self::SHAPE_FIELDS + self::SHAPE_EYELET,
         'ornament' => ['width' => [40, 150, 80, 1], 'thickness' => [2, 5, 3, 0.2], 'eye_hole' => [3, 6, 4, 0.5]] + self::SHAPE_FIELDS + self::SHAPE_EYELET,
         'magnet' => ['width' => [40, 100, 60, 1], 'thickness' => [3, 6, 3, 0.2], 'frame' => [0, 3, 1.5, 0.1]] + self::SHAPE_FIELDS + ['mag_d' => [4, 30, 10, 0.5], 'mag_h' => [1, 6, 2, 0.5], 'mag_gap' => [0.1, 0.3, 0.2, 0.05]],
@@ -402,6 +402,13 @@ final class ParametricGenerator
     /** kinds that accept an uploaded SVG or picture instead of text */
     /** Of the tools that take a picture: those where it stands next to the text, never instead of it (the text stays required). */
     public const BESIDE = ['sign'];
+
+    /**
+     * The tools that open with the picture-upload window (resources/js/calc/imgwindow.ts, 21 Nov 2026): the ones whose product
+     * is a picture, a logo or a photo of the visitor. Not the bust, the figure or the pet (their own photo flow), not the tools
+     * that need a silhouette or a text first (stamp, stencil, cutter, sign…). `relief` and `filament_art` are pages of their own.
+     */
+    public const IMAGE_WINDOW = ['charm', 'keychain', 'earrings', 'ornament', 'magnet', 'coaster', 'badge', 'bag_charm', 'relief', 'filament_art'];
 
     public const ARTWORK = ['phone_stand', 'sign', 'logo', 'stamp', 'stencil', 'papel', 'notes', 'hair_tie', 'candle_stand', 'insert', 'lightbox', 'cutter', 'charm', 'keychain', 'earrings', 'ornament', 'magnet', 'coaster', 'cookie', 'tray', 'badge', 'medallion', 'photo_organizer', 'bag_charm', 'straw', 'opener'];
 

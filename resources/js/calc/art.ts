@@ -11,6 +11,7 @@ import type { Piece } from './viewer';
 import type { Stage, MenuItem, PriceConfig } from './tool_page';
 import { colorOf, spoolCode, paintSwatch, pickColor, rememberColor, materialLabel } from './colors';
 import { pickArtwork, uploadArtwork, PickedArtwork } from './artwork';
+import { openImageWindow } from './imgwindow';
 import { icon } from '../site/icon';
 import { FileInfo, modelMeta } from './api';
 
@@ -399,5 +400,8 @@ export function bootArt(stage: Stage): void {
             } catch { /* a design that is gone: start fresh */ }
         }
         if (cfg.sample) { setArtwork({ ref: cfg.sample, name: '', url: null }); void refresh(); }
+        if (!cfg.from && !stage.cfg.intake) {
+            openImageWindow({ stage, artwork: { upload: uploadArtwork, apply: async (picked) => { setArtwork(picked); lookChosen = false; await propose(); void refresh().then(commit); } } });
+        }
     })();
 }

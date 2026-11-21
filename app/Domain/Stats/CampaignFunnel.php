@@ -75,6 +75,15 @@ final class CampaignFunnel
         'o_left' => ['step:o_left'],
     ];
 
+    /** The picture-upload window of the image tools (imgwindow.ts, 21 Nov 2026): shown, a file chosen, photographed, closed, the number of pieces changed. */
+    public const WINDOW = [
+        'img_seen' => ['step:img_seen'],
+        'img_pick' => ['step:img_pick'],
+        'img_camera' => ['step:img_camera'],
+        'img_close' => ['step:img_close'],
+        'img_qty' => ['step:img_qty'],
+    ];
+
     /**
      * @return array{days: int, campaign: ?string, campaigns: array<string, int>, rows: list<array{source: string, content: string, steps: array<string, int>, stops: array<string, int>, wait_s: ?int}>, total: array{steps: array<string, int>, stops: array<string, int>, wait_s: ?int}}
      */
@@ -90,7 +99,7 @@ final class CampaignFunnel
         $campaign = $campaign !== null && isset($campaigns[$campaign]) ? $campaign : array_key_first($campaigns);
 
         $empty = ['steps' => array_fill_keys(array_keys(self::STEPS), 0), 'stops' => array_fill_keys(array_keys(self::STOPS), 0), 'order' => array_fill_keys(array_keys(self::ORDER), 0),
-            'before' => array_fill_keys(array_keys(self::BEFORE), 0), 'after' => array_fill_keys(array_keys(self::AFTER), 0), 'waits' => []];
+            'window' => array_fill_keys(array_keys(self::WINDOW), 0), 'before' => array_fill_keys(array_keys(self::BEFORE), 0), 'after' => array_fill_keys(array_keys(self::AFTER), 0), 'waits' => []];
         $rows = [];
         $total = $empty;
         foreach ($sessions as $s) {
@@ -159,7 +168,7 @@ final class CampaignFunnel
                 $row['stops'][$stop]++;
             }
         }
-        foreach (['order' => self::ORDER, 'before' => self::BEFORE, 'after' => self::AFTER] as $group => $steps) {
+        foreach (['order' => self::ORDER, 'window' => self::WINDOW, 'before' => self::BEFORE, 'after' => self::AFTER] as $group => $steps) {
             foreach ($steps as $step => $passes) {
                 if (array_intersect_key(array_flip($passes), $marks)) {
                     $row[$group][$step]++;

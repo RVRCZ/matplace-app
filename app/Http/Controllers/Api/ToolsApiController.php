@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api;
 
 use App\Domain\Tools\Artwork;
+use App\Domain\Tools\ArtworkCleaner;
 use App\Domain\Tools\ParametricGenerator;
 use App\Domain\Tools\ReliefGenerator;
 use App\Domain\Tools\SignGenerator;
@@ -92,6 +93,29 @@ class ToolsApiController extends Controller
         $owner = Artwork::owner($request->user(), $request->attributes->get('anon_session'));
 
         return response()->json(['artwork' => ParametricGenerator::storeArtwork($request->file('file'), $owner), 'name' => $request->file('file')->getClientOriginalName()], 201);
+    }
+
+    /** POST /api/tools/artwork/clean {artwork: id} → {task} (409 when the cleaning is off); the window then asks for the task until it is done. */
+    public function artworkClean(Request $request): JsonResponse
+    {
+        $data = $request->validate(['artwork' => ['required', 'string', 'regex:/^[0-9a-f-]{36}$/']]);
+        $owner = Artwork::owner($request->user(), $request->attributes->get('anon_session'));
+        try {
+            $started = ArtworkCleaner::start($data['artwork'], $owner, (bool) $request->user()?->isAdmin());
+        } catch (EngineException $e) {
+            return response()->json(['error' => 'failed'], 502);
+        }
+        if (isset($started['error'])) {
+            return response()->json(['error' => $started['error']], $started['error'] === 'limit' ? 429 : 409);
+        }
+
+        return response()->json(['task' => $started['id']], 202);
+    }
+
+    /** GET /api/tools/artwork/clean/{task} → {state: running|failed|done, artwork?} */
+    public function artworkCleaned(Request $request, string $task): JsonResponse
+    {
+        return response()->json(ArtworkCleaner::poll($task, Artwork::owner($request->user(), $request->attributes->get('anon_session'))));
     }
 
     /** POST /api/tools/param/preview {kind, params, part?, view?, download?, pieces?} → STL + X-Model-Meta (size, volume, notes; with pieces also parts: which triangles are which piece) */

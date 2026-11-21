@@ -57,6 +57,18 @@ final class Artwork
         return $id;
     }
 
+    /** A picture made by the server itself (the cleaned one of the upload window) kept like an upload: the reference of the new copy. */
+    public static function storeFile(string $path, string $name, ?string $owner = null): string
+    {
+        $id = (string) Str::uuid();
+        $dir = self::uploadsDir().'/'.($owner ?? 'x');
+        File::ensureDirectoryExists($dir);
+        File::copy($path, $dir.'/'.$id.'.png');
+        File::put($dir.'/'.$id.'.json', json_encode(['name' => mb_substr($name, 0, 120), 'at' => now()->toIso8601String()], JSON_UNESCAPED_UNICODE));
+
+        return $id;
+    }
+
     /** Where the picture of a reference lives; null when it is gone or the reference is not one. */
     public static function path(string $ref): ?string
     {

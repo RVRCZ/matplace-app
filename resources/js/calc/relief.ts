@@ -11,6 +11,7 @@ import { pickArtwork } from './artwork';
 import { loadGeometryFromUrl } from './loaders';
 import { startParticles, viewerBox } from './particles';
 import { shrinkPhoto, overLimit } from './photo';
+import { openImageWindow } from './imgwindow';
 
 interface ReliefCfg { url: string; home: string; files: string; maxMb: number; i18n: Record<string, string> }
 type Make = 'panel' | 'lamp' | 'wall';
@@ -142,6 +143,10 @@ export function bootRelief(stage: Stage): void {
     apply();
     // back from the calculator or a reload (the result is in the address): the same settings and the same model on the stage
     void restoreForm(form, cfg.files).then(async (file) => {
+        // nothing stored to come back to: the picture window asks for the photo first
+        if (!file && !new URLSearchParams(location.search).get('from')) {
+            openImageWindow({ stage, take: async (f) => { photo.files = (() => { const dt = new DataTransfer(); dt.items.add(f); return dt.files; })(); showPhoto(f); } });
+        }
         if (!file) return;
         msg.textContent = cfg.i18n.photo_again;
         if (file.status !== 'ready' || !file.stl_url) return;

@@ -1,0 +1,22 @@
+{
+    "imgwin.title": ["Nahrajte svůj obrázek", "Upload your picture", "Suba su imagen"],
+    "imgwin.lead": ["Logo restaurace, firmy nebo skupiny, kresba, fotka. Stačí ho vyfotit telefonem.", "The logo of a restaurant, a company or a band, a drawing, a photo. Just take a picture of it with your phone.", "El logotipo de un restaurante, una empresa o un grupo, un dibujo, una foto. Basta con fotografiarlo con el móvil."],
+    "imgwin.drop": ["Přetáhněte sem obrázek nebo klepněte a vyberte soubor", "Drop a picture here or tap to choose a file", "Arrastre aquí una imagen o toque para elegir un archivo"],
+    "imgwin.formats": ["JPG, PNG, WebP nebo SVG, do 5 MB", "JPG, PNG, WebP or SVG, up to 5 MB", "JPG, PNG, WebP o SVG, hasta 5 MB"],
+    "imgwin.choose": ["Vybrat soubor", "Choose a file", "Elegir archivo"],
+    "imgwin.camera": ["Vyfotit telefonem", "Take a photo", "Hacer una foto"],
+    "imgwin.paste": ["Nebo vložte obrázek ze schránky (Ctrl+V).", "Or paste a picture from the clipboard (Ctrl+V).", "O pegue una imagen del portapapeles (Ctrl+V)."],
+    "imgwin.tip": ["Fotografujte rovně, při dobrém světle a tak, aby bylo celé logo v záběru.", "Shoot straight on, in good light, with the whole logo in the frame.", "Fotografíe de frente, con buena luz y con todo el logotipo en el encuadre."],
+    "imgwin.qty": ["Počet kusů", "Number of pieces", "Número de piezas"],
+    "imgwin.clean": ["Vyčistit fotku", "Clean the photo", "Limpiar la foto"],
+    "imgwin.clean_hint": ["Vyfocené logo se překreslí na čistou rovnou grafiku bez stínů a pozadí. Trvá to asi půl minuty; obrázek už je v návrhu, můžete pokračovat i bez toho.", "A photographed logo is redrawn as a clean, flat graphic without shadows and background. It takes about half a minute; the picture is in your design already, you can go on without it.", "El logotipo fotografiado se redibuja como un gráfico limpio y plano, sin sombras ni fondo. Tarda unos treinta segundos; la imagen ya está en su diseño, puede continuar sin esto."],
+    "imgwin.cleaning": ["Čistím obrázek, chvilku strpení…", "Cleaning the picture, one moment…", "Limpiando la imagen, un momento…"],
+    "imgwin.clean_failed": ["Vyčištění se nepovedlo, zůstává obrázek tak, jak je.", "The cleaning did not work, the picture stays as it is.", "La limpieza no funcionó, la imagen queda como está."],
+    "imgwin.use": ["Pokračovat", "Continue", "Continuar"],
+    "imgwin.skip": ["Zavřít okno, navrhnu si vlastní", "Close, I will design my own", "Cerrar, diseñaré el mío"],
+    "imgwin.close": ["Zavřít", "Close", "Cerrar"],
+    "imgwin.sending": ["Nahrávám…", "Uploading…", "Subiendo…"],
+    "imgwin.failed": ["Obrázek se nepodařilo nahrát. Zkuste jiný.", "The picture could not be uploaded. Try another one.", "No se pudo subir la imagen. Pruebe con otra."],
+    "imgwin.not_image": ["Tohle není obrázek.", "That is not a picture.", "Eso no es una imagen."],
+    "imgwin.too_big": ["Obrázek je větší než :mb MB.", "The picture is bigger than :mb MB.", "La imagen pesa más de :mb MB."]
+}

@@ -33,6 +33,8 @@
         // what the rough price is counted from (resources/js/calc/rough.ts); a tool without it shows no estimate
         'price' => isset($config['rough']) ? \Illuminate\Support\Arr::only($config, ['rough', 'orientation_profiles', 'round_to', 'materials', 'default_material']) : null,
         'artwork' => ['upload' => route('api.tools.artwork'), 'library' => route('api.artwork.library'), 'mine' => route('api.artwork.mine'), 'file' => url('/api/artwork/file')],
+        // the picture-upload window (imgwindow.ts); clean = the "Clean the photo" button is offered (AI_CLEAN_ARTWORK)
+        'imgwin' => in_array($tool, \App\Domain\Tools\ParametricGenerator::IMAGE_WINDOW, true) ? ['clean' => \App\Domain\Tools\ArtworkCleaner::enabled(), 'clean_url' => route('api.tools.artwork.clean'), 'max_mb' => 5] : null,
         'zip' => route('api.tools.param.zip'),
         'shared' => route('api.shared'),   // the share event (ShareController)
         // the main button makes the order itself and opens its page, the calculation left out (NextStep::direct, docs/AN.md
@@ -40,7 +42,7 @@
         'order' => \App\Support\NextStep::direct($tool) ? ['store' => route('farm.orders.store'), 'busy' => __('farm.cta_busy'), 'max_copies' => \App\Domain\Farm\PlateLayout::MAX_COPIES] : null,
         // opened from the home page's router with ?intake=<token> (App\Http\Middleware\IntakeHandoff, docs/AN.md §22): the photo's address and the parameters
         'intake' => request()->attributes->get('intake'),
-        'i18n' => collect(\Illuminate\Support\Arr::dot(['toolpage' => trans('toolpage')]))->all() + ['farm.finish' => collect((array) trans('farm.finish'))->all()],
+        'i18n' => collect(\Illuminate\Support\Arr::dot(['toolpage' => trans('toolpage')]))->all() + collect(['imgwin.title', 'imgwin.lead', 'imgwin.drop', 'imgwin.formats', 'imgwin.choose', 'imgwin.camera', 'imgwin.paste', 'imgwin.tip', 'imgwin.qty', 'imgwin.clean', 'imgwin.clean_hint', 'imgwin.cleaning', 'imgwin.clean_failed', 'imgwin.use', 'imgwin.skip', 'imgwin.close', 'imgwin.sending', 'imgwin.failed', 'imgwin.not_image', 'imgwin.too_big'])->mapWithKeys(fn ($k) => [$k => __($k)])->all() + ['farm.finish' => collect((array) trans('farm.finish'))->all()],
     ];
 @endphp
 

@@ -32,6 +32,8 @@ export interface ToolCfg {
     price: PriceConfig | null;
     artwork: { upload: string; library: string; mine: string; file: string };
     i18n: Record<string, unknown>;
+    /** the picture-upload window opens on this tool (imgwindow.ts); clean = the server can redraw a photo (AI_CLEAN_ARTWORK) */
+    imgwin?: { clean: boolean; clean_url: string; max_mb: number } | null;
     intake?: IntakePayload | null;   // opened from the home page's router: the photo and the parameters to start with (docs/AN.md §22)
     /** the main button makes the farm order itself and opens its page, the calculation left out (Stage.leave, docs/AN.md §26); null = the calculation as before */
     order?: { store: string; busy: string; max_copies: number } | null;

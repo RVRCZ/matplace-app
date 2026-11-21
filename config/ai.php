@@ -99,6 +99,10 @@ return [
     // background) before the model is made, by Tripo's image model (5 credits): always | never | auto (= with Meshy only).
     // Always since 14 Nov 2026: photos are taken outdoors and in armchairs, and Tripo's own clean-up left a chair back in a bust.
     'clean_photo' => env('AI_CLEAN_PHOTO', 'always'),
+    // the picture-upload window of the image tools (charm, coaster, keychain…): a photographed logo redrawn as a flat, straight graphic
+    // by the same image model (5 credits a picture), asked by the visitor with a tick. Off until Roman decides (21 Nov 2026).
+    'clean_artwork' => (bool) env('AI_CLEAN_ARTWORK', false),
+    'artwork_clean' => ['per_visitor' => (int) env('AI_LIMIT_CLEAN_ARTWORK', 10), 'global' => (int) env('AI_LIMIT_CLEAN_ARTWORK_GLOBAL', 200)],
     // false = the miniature and the cartoon figure get the detailed geometry too (best result, 40 instead of 20 credits)
     'smooth_figures_standard' => (bool) env('AI_SMOOTH_FIGURES_STANDARD', false),
     // "describe what it should look like" on the tool pages: for everybody, or (false) for the admin alone, who tries the wishes first
