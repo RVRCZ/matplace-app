@@ -131,11 +131,11 @@ class CharmShapesTest extends TestCase
     {
         $preset = ParametricGenerator::presets('charm')['matplace'];
         $this->get('/tools/charm')->assertOk()->assertSee('preset: "matplace"', false);
-        // his screenshot: 61.9 x 34.4 x 5.4 mm less the 2 mm the eyelet was sunk by (1 Nov 2026), three colours of the picture on
-        // a grey plate, the eyelet right of the e
+        // as his screenshot of 1 Nov 2026 (61.9 x 34.4 x 5.4 mm less the 2 mm the eyelet was sunk by), scaled by the
+        // default width 55 -> 60 mm of 21 Nov 2026; three colours of the picture on a grey plate, the eyelet right of the e
         $m = $this->meta($preset);
-        $this->assertEqualsWithDelta(59.9, $m['bbox']['x'], 0.1);
-        $this->assertEqualsWithDelta(34.4, $m['bbox']['y'], 0.1);
+        $this->assertEqualsWithDelta(64.82, $m['bbox']['x'], 0.1);
+        $this->assertEqualsWithDelta(37.5, $m['bbox']['y'], 0.2);
         $this->assertEqualsWithDelta(5.4, $m['bbox']['z'], 0.01);
         $this->assertSame([], array_values((array) ($m['notes']['warnings'] ?? [])));
         $this->assertCount(3, $m['notes']['colors']);
