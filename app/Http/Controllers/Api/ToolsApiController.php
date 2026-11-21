@@ -62,6 +62,7 @@ class ToolsApiController extends Controller
         };
         foreach (array_keys(ParametricGenerator::TEXTS[$kind] ?? []) as $text) {
             $messages['params.'.$text.'.required'] = $required;
+            $messages['params.'.$text.'.required_unless'] = $required;
             $messages['params.'.$text.'.max'] = __('param.error.text_too_long', ['n' => ParametricGenerator::TEXTS[$kind][$text][0]]);
         }
         foreach (array_keys(ParametricGenerator::FIELDS[$kind]) as $field) {
