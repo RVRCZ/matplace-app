@@ -2436,7 +2436,7 @@
     "router.mic": "Diktovat",
     "router.mic.on": "Poslouchám, klepnutím ukončíte",
     "router.mic.denied": "Mikrofon se nepodařilo zapnout. Napište přání do pole.",
-    "router.file_link": "Mám hotový 3D soubor",
+    "router.file_link": "Nahrát 3D model",
     "router.example_nudge": "To je náš příklad. Upravte ho podle sebe (jméno, velikost, barvy), nebo ho odešlete znovu tak, jak je.",
     "router.held": "Děkujeme, zprávu jsme přijali. Pokud jde o přání k výrobě, popište prosím, co má vzniknout, jak velké a v jakých barvách, nebo přidejte fotku.",
     "router.price_only": "Cena záleží na tom, co má vzniknout: na velikosti, materiálu a počtu kusů. Napište, co chcete vyrobit, a cenu uvidíte předem, před zaplacením. Máte hotový 3D soubor? Nahrajte ho a cenu spočítáme hned.",

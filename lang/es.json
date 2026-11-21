@@ -2436,7 +2436,7 @@
     "router.mic": "Dictar",
     "router.mic.on": "Escuchando, toque para terminar",
     "router.mic.denied": "No se pudo activar el micrófono. Escriba su deseo en el campo.",
-    "router.file_link": "Tengo un archivo 3D listo",
+    "router.file_link": "Subir un modelo 3D",
     "router.example_nudge": "Ese es nuestro ejemplo. Cámbielo a su gusto (el nombre, el tamaño, los colores) o envíelo de nuevo tal cual.",
     "router.held": "Gracias, hemos recibido su mensaje. Si se trata de algo que quiere fabricar, describa qué debe ser, de qué tamaño y en qué colores, o añada una foto.",
     "router.price_only": "El precio depende de lo que haya que fabricar: el tamaño, el material y el número de piezas. Escriba qué quiere fabricar y verá el precio por adelantado, antes de pagar. ¿Tiene un archivo 3D listo? Súbalo y calculamos el precio enseguida.",

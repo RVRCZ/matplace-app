@@ -2436,7 +2436,7 @@
     "router.mic": "Dictate",
     "router.mic.on": "Listening, tap to stop",
     "router.mic.denied": "The microphone could not be turned on. Please type your wish into the field.",
-    "router.file_link": "I have a finished 3D file",
+    "router.file_link": "Upload a 3D model",
     "router.example_nudge": "That is our example. Change it to fit you (the name, the size, the colours), or send it again as it is.",
     "router.held": "Thank you, we have received your message. If it is something you would like made, please describe what it should be, how big and in which colours, or add a photo.",
     "router.price_only": "The price depends on what is to be made: its size, the material and the number of pieces. Tell us what you would like to make and you will see the price up front, before you pay. Have a finished 3D file? Upload it and we will work out the price right away.",
