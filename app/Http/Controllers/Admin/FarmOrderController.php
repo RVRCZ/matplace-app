@@ -166,9 +166,14 @@ class FarmOrderController extends Controller
         ]);
     }
 
-    public function show(FarmOrder $order): View
+    public function show(FarmOrder $order, ShippingCarrier $carrier): View
     {
         $order->load(['user', 'modelFile', 'color', 'printer', 'slot', 'material', 'events', 'printJobs', 'printerMaterial']);
+        // parcels made before the code was stored (or the carrier did not know it yet): fetched while a drop-off still makes sense
+        if ($order->packeta_packet_id && ! $order->packeta_consign_code && $order->shipped_at?->gt(now()->subDays(14))
+            && ($code = $carrier->consignCode((string) $order->packeta_packet_id)) !== null) {
+            $order->forceFill(['packeta_consign_code' => $code])->save();
+        }
 
         return view('admin.farm.order', [
             'order' => $order,

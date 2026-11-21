@@ -48,6 +48,11 @@ final class FakeCarrier implements ShippingCarrier
         return "%PDF-1.4\n% fake label for parcel ".ltrim($packetId, 'Zz').($carrierLabel ? ' (carrier)' : '')."\n%%EOF\n";
     }
 
+    public function consignCode(string $packetId): ?string
+    {
+        return str_pad(substr(ltrim($packetId, 'Zz'), -9), 9, '5', STR_PAD_LEFT);
+    }
+
     public function trackingUrl(string $barcode, ?string $locale = null): string
     {
         return 'https://tracking.packeta.com/'.(in_array($locale, ['cs', 'en', 'es'], true) ? $locale : 'en').'/?id='.rawurlencode($barcode);
