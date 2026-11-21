@@ -382,12 +382,14 @@ class FarmOrderController extends Controller
         return back()->with('status', __('farm.admin.shipped', ['barcode' => $order->packeta_barcode]));
     }
 
-    /** The label to stick on the box. */
-    public function label(FarmOrder $order, ShippingCarrier $carrier): Response|RedirectResponse
+    /** The label to stick on the box; ?pos=1–4 lays it into that quarter of an A4 sheet of peel-off labels. */
+    public function label(Request $request, FarmOrder $order, ShippingCarrier $carrier): Response|RedirectResponse
     {
         abort_unless($order->packeta_packet_id, 404);
+        $quarter = $request->query('pos') !== null ? (int) $request->query('pos') : null;
+        abort_unless($quarter === null || ($quarter >= 1 && $quarter <= 4), 404);
         try {
-            $pdf = $carrier->labelPdf((string) $order->packeta_packet_id, Parcel::forOrder($order)->external);
+            $pdf = $carrier->labelPdf((string) $order->packeta_packet_id, Parcel::forOrder($order)->external, $quarter);
         } catch (ShippingFailed $e) {
             return back()->with('error', __('farm.admin.ship_failed', ['reason' => $e->getMessage()]));
         }

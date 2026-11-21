@@ -25,10 +25,12 @@ interface ShippingCarrier
      * The label to stick on the box, as a PDF.
      *
      * @param  bool  $carrierLabel  the parcel travels with a partner carrier: ask for the partner's own label first
+     * @param  int|null  $quarter  1–4: one A6 label laid into that quarter of an A4 sheet (reading order), for
+     *                             sheets of four peel-off labels where some quarters are already used; null = plain A6
      *
      * @throws ShippingFailed
      */
-    public function labelPdf(string $packetId, bool $carrierLabel = false): string;
+    public function labelPdf(string $packetId, bool $carrierLabel = false, ?int $quarter = null): string;
 
     /** Where the customer follows the parcel. */
     public function trackingUrl(string $barcode, ?string $locale = null): string;

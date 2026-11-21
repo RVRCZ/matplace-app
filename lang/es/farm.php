@@ -333,6 +333,8 @@ return [
         'shipped' => 'El envío :barcode está creado, el cliente recibió el correo de seguimiento.',
         'label' => 'etiqueta PDF',
         'zbox_code' => 'código para depositar en el Z-BOX',
+        'label_a4' => 'en hoja A4, cuarto',
+        'label_a4_hint' => 'Coloca la etiqueta en el cuarto elegido de una hoja A4: 1 arriba izquierda, 2 arriba derecha, 3 abajo izquierda, 4 abajo derecha. Para hojas con etiquetas ya usadas.',
         'currency_locked' => 'La moneda solo se puede cambiar en una cuenta sin crédito y sin pedidos en curso.',
         'refunded' => 'Devueltos :amount.',
         'started' => 'La base está libre, inicio el pedido :number.',

@@ -53,12 +53,13 @@ final class PacketaClient implements ShippingCarrier
         return new Packet($id, (string) ($result->barcode ?? 'Z'.$id));
     }
 
-    public function labelPdf(string $packetId, bool $carrierLabel = false): string
+    public function labelPdf(string $packetId, bool $carrierLabel = false, ?int $quarter = null): string
     {
         $packetId = ltrim(trim($packetId), 'Zz');   // a barcode "Z1330908814" is the id with a letter in front
         if ($carrierLabel) {
             try {
                 // a partner carrier prints its own label: first its number of the parcel, then the label for it
+                // (the partner's format is fixed, a quarter of an A4 cannot be asked of it)
                 $number = (string) ($this->call('packetCourierNumberV2', ['packetId' => $packetId])->courierNumber ?? '');
                 if ($number !== '') {
                     return $this->pdf($this->call('packetCourierLabelPdf', ['packetId' => $packetId, 'courierNumber' => $number]));
@@ -67,8 +68,11 @@ final class PacketaClient implements ShippingCarrier
                 // the partner gives no label over the API (or not yet): Packeta's own label gets the parcel to the depot
             }
         }
+        $body = $quarter === null
+            ? ['packetId' => $packetId, 'format' => 'A6 on A6', 'offset' => '0']
+            : ['packetId' => $packetId, 'format' => 'A6 on A4', 'offset' => (string) (max(1, min(4, $quarter)) - 1)];
 
-        return $this->pdf($this->call('packetLabelPdf', ['packetId' => $packetId, 'format' => 'A6 on A6', 'offset' => '0']));
+        return $this->pdf($this->call('packetLabelPdf', $body));
     }
 
     public function consignCode(string $packetId): ?string
