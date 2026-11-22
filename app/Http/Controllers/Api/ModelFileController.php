@@ -186,4 +186,25 @@ class ModelFileController extends Controller
             'Cache-Control' => 'private, max-age=3600',
         ]);
     }
+
+    /** GET /api/files/{uuid}/model.glb — the coloured preview a generator stored (raw.glb); only to look at, never printed from. */
+    public function glb(ModelFile $modelFile): StreamedResponse
+    {
+        abort_unless($modelFile->isReady(), 404);
+        $path = $modelFile->glbPath();
+        abort_if($path === null, 404);
+
+        return response()->stream(function () use ($path) {
+            $fh = fopen($path, 'rb');
+            while (! feof($fh)) {
+                echo fread($fh, 1024 * 512);
+                flush();
+            }
+            fclose($fh);
+        }, 200, [
+            'Content-Type' => 'model/gltf-binary',
+            'Content-Length' => (string) filesize($path),
+            'Cache-Control' => 'private, max-age=3600',
+        ]);
+    }
 }

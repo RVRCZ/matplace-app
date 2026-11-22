@@ -197,6 +197,8 @@ class UploadController extends Controller
             // the design is drawn in free colours: which of our spools each one would be printed from (shown beside "print it with us")
             'nearest' => self::nearestOf($f),
             'stl_url' => $f->stl_path ? route('api.files.stl', $f->uuid) : null,
+            // the coloured look of a generated model (raw.glb with the texture), for the viewer only; null when there is none or it is too big
+            'glb_url' => $f->glbOffered() ? route('api.files.glb', $f->uuid) : null,
             'kind' => $f->kind(),
             'check' => ModelCheck::report($f),
             'hints' => $f->printHints(),
