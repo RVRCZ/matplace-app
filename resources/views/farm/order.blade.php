@@ -46,6 +46,10 @@
     <div class="flex flex-wrap items-center justify-between gap-2">
         <h1 class="text-xl font-extrabold sm:text-2xl">{{ __('farm.order.title', ['name' => $order->modelFile?->original_name]) }}</h1>
         <div class="flex items-center gap-3 text-sm">
+            @if(($customerView ?? null) !== null)
+                {{-- an admin: the colours as the customer gets them (sets, no machine named) or with the machines and positions --}}
+                <a id="farm-view-switch" href="{{ route('farm.orders.show', $order) }}?view={{ $customerView ? 'admin' : 'customer' }}" class="rounded-full border border-line bg-white px-3 py-1 font-semibold">{{ __($customerView ? 'farm.view_admin' : 'farm.view_customer') }}</a>
+            @endif
             @if($guest ?? false)
                 {{-- a guest: nothing of an account here; one who has an account signs in and comes back to this order --}}
                 <a href="{{ route('login') }}" class="text-action-dark underline">{{ __('farm.guest.sign_in') }}</a>

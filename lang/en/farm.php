@@ -12,6 +12,8 @@ return [
     'cta_wait' => 'Wait for the precise calculation to finish, then you can print on our printer.',
     'title' => 'Print on our printer',
     'lead' => 'Upload a model; we turn it, prepare it and work out the price. You pick a colour and the delivery, pay by card or from credit, and the printer starts.',
+    'view_customer' => 'View as a customer',
+    'view_admin' => 'Back to the admin view',
     'my_orders' => 'My prints',
     'no_orders' => 'Nothing here yet.',
     'credit_balance' => 'Credit',

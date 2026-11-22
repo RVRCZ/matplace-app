@@ -12,6 +12,8 @@ return [
     'cta_wait' => 'Počkejte na dokončení přesného výpočtu, pak půjde tisknout na naší tiskárně.',
     'title' => 'Tisknout na naší tiskárně',
     'lead' => 'Nahrajte model, my ho sami natočíme, připravíme a spočítáme cenu. Vyberete barvu a doručení, zaplatíte kartou nebo z kreditu a tiskárna začne tisknout.',
+    'view_customer' => 'Zobrazit jako zákazník',
+    'view_admin' => 'Zpět na pohled správce',
     'my_orders' => 'Moje tisky',
     'no_orders' => 'Zatím tu nic není.',
     'credit_balance' => 'Kredit',

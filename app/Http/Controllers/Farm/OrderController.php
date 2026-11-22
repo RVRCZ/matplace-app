@@ -68,6 +68,9 @@ class OrderController extends Controller
     public function __construct(private readonly OrderService $orders, private readonly FarmSettings $settings, private readonly Wallet $wallet, private readonly Shipping $shipping) {}
 
     /** What rides from the start page to the order (a repeated print, a refused order), under the names the store takes. */
+    /** session key: an admin looks at the order's page as a customer does */
+    private const CUSTOMER_VIEW = 'farm.customer_view';
+
     private const CARRIED = ['quality' => 'quality', 'strength' => 'strength', 'supports' => 'supports', 'copies' => 'copies', 'scale' => 'scale',
         'color' => 'color', 'second' => 'second_color', 'second_color' => 'second_color', 'change' => 'change_color', 'change_color' => 'change_color',
         'by_parts' => 'by_parts', 'part' => 'part_color', 'part_color' => 'part_color', 'colors' => 'colors'];
@@ -618,10 +621,17 @@ class OrderController extends Controller
         $order->load(['modelFile', 'color', 'printer', 'material']);
 
         $user = $request->user();
+        // an admin looks at the page the way a customer gets it (?view=customer) until switched back (?view=admin):
+        // kept in the session, the page's later answers (describe) follow it
+        if ($user?->isAdmin() && in_array($request->query('view'), ['customer', 'admin'], true)) {
+            $request->session()->put(self::CUSTOMER_VIEW, $request->query('view') === 'customer');
+        }
         $point = (array) $user?->pickup_point;
 
         return view('farm.order', [
             'order' => $order,
+            // null for a customer; for an admin whether the page is shown the customer's way
+            'customerView' => $user?->isAdmin() ? $this->customerView($request) : null,
             'packetaKey' => (string) config('services.packeta.api_key'),
             // what the delivery form starts with: the address and the favourite pickup point of the profile (a guest: empty)
             'prefill' => [
@@ -1063,6 +1073,12 @@ class OrderController extends Controller
     }
 
     /** Everything the order page needs, in one JSON object. */
+    /** The admin asked to see the order's page as a customer does (show(), ?view=customer). */
+    private function customerView(Request $request): bool
+    {
+        return $request->hasSession() && (bool) $request->session()->get(self::CUSTOMER_VIEW, false);
+    }
+
     private function describe(FarmOrder $order, Request $request): array
     {
         $order->loadMissing(['color', 'printer', 'material', 'modelFile', 'slot.printer']);
@@ -1084,7 +1100,7 @@ class OrderController extends Controller
         $choosing = $sliced || $order->awaitsChoices() || $order->sliceRestartable();
         // the customer picks a colour, the farm the machine: his page carries no spool codes at all; the admin sees where
         // every spool sits, in the operator's words ("Farm U #3 · ACE 3", FarmPrinterSlot::placeLabel, docs/AL.md §20)
-        $admin = (bool) $request->user()?->isAdmin();
+        $admin = (bool) $request->user()?->isAdmin() && ! $this->customerView($request);
         $place = fn (FarmPrinterSlot $s): string => $s->placeLabel();
         $where = fn (FarmPrinterSlot $s): array => $admin ? ['code' => $place($s)] : [];
         // the spool positions of a machine once per page, however many colours list it (OrderService::positionsOf)
