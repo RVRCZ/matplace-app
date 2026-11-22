@@ -231,6 +231,8 @@ class GenerateModel implements ShouldQueue
                 'tidy' => in_array($kind, ['bust', 'figure'], true) ? true : null,
                 // the closed figure without a base is kept: changing the base later needs no new generation
                 'source_out' => in_array($kind, ['bust', 'figure', 'pet'], true) ? dirname($abs).'/source.stl' : null,
+                // the whole bust before the chest cut: its cut can be moved and it can be tilted later without a new generation
+                'full_out' => $kind === 'bust' ? dirname($abs).'/source_full.stl' : null,
                 // a pet stands on four thin legs: its own bases, its thinnest place measured, the miniature grown (pet_kind.py)
                 'pet' => $kind === 'pet' ? true : null,
                 'style' => $style,

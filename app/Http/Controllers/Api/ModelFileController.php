@@ -83,9 +83,15 @@ class ModelFileController extends Controller
             'front' => ['nullable', 'in:'.implode(',', PedestalChanger::FRONTS)],
             'sink' => ['nullable', 'integer', 'in:'.implode(',', PedestalChanger::SINKS)],
             'tidy' => ['nullable', 'boolean'],
+            // a bust only: where the chest is cut and how far it leans, both from the whole figure kept beside the file
+            'cut_shift' => ['nullable', 'integer', 'in:'.implode(',', PedestalChanger::CUT_SHIFTS)],
+            'pitch' => ['nullable', 'integer', 'in:'.implode(',', PedestalChanger::PITCHES)],
         ]);
+        if (! $pet && (! empty($data['cut_shift']) || ! empty($data['pitch'])) && ! ($changer->state($modelFile)['cut_controls'] ?? false)) {
+            return response()->json(['error' => 'cut_unavailable'], 422);
+        }
         try {
-            $new = $pet ? $changer->changePet($modelFile, $data) : $changer->change($modelFile, $data, $data['front'] ?? 'keep', (int) ($data['sink'] ?? 0), (bool) ($data['tidy'] ?? true));
+            $new = $pet ? $changer->changePet($modelFile, $data) : $changer->change($modelFile, $data, $data['front'] ?? 'keep', (int) ($data['sink'] ?? 0), (bool) ($data['tidy'] ?? true), (int) ($data['cut_shift'] ?? 0), (int) ($data['pitch'] ?? 0));
         } catch (\RuntimeException) {
             return response()->json(['error' => 'pedestal_failed'], 422);
         }

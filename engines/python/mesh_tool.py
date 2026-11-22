@@ -10,7 +10,8 @@ Mesh utility for matplace engines (trimesh, optional pymeshfix, optional cadquer
   mesh_tool.py normalize <in> <out.stl> <max_mm> <yup 0|1> [clean,pedestal,solid] [extras-json]
                                                           extras: {"pedestal": classic|classic_round|classic_stem|socle|antique|cut|round|square|hexagon|column|plaque|none, "name": "…", "dedication": "…", "font": path,
                                                                    "front": auto|keep|left|right|back, "cut": "bust", "tidy": true (cut off loose strands), "sink": 0-0.4, "source_out": path of the figure without a base,
-                                                                   "strip_pedestal": true}
+                                                                   "strip_pedestal": true, "cut_shift": -0.2..0.2 (moves the bust cut, + keeps more), "pitch": -15..15 degrees (+ leans the head to the front, needs a fixed front),
+                                                                   "full_out": path of the whole figure before the cut (kept for cut_shift/pitch later)}
                                                        -> millimetres (largest side = max_mm), Z-up, on the bed;
                                                           clean = drop dust fragments, pedestal = flat round base,
                                                           solid = close holes and union all parts into one watertight body
@@ -447,7 +448,7 @@ def big_shells(mesh):
     return keep[0] if len(keep) == 1 else trimesh.util.concatenate(keep)
 
 
-def bust_cut(m):
+def bust_cut(m, shift=0.0):
     """
     The sculptor's cut of bust_cut_along, with a second look for a whole figure. The shoulder line is taken from the
     lowest 40 % of the model, which is the chest of a bust but the LEGS of a standing figure: a figure caught in a
@@ -456,21 +457,25 @@ def bust_cut(m):
     is clearly a standing figure (more than twice as tall as wide) is measured across the other axis too.
     """
     import numpy as np
-    cut = bust_cut_along(m)
+    cut = bust_cut_along(m, None, shift)
     h = float(m.extents[2])
     if float(cut.extents[2]) < h - 0.01 or h < 2.0 * float(max(m.extents[0], m.extents[1])):
         return cut
     v = m.vertices
     low = v[v[:, 2] < float(m.bounds[0][2]) + 0.4 * h]
-    return bust_cut_along(m, 1 - int(np.argmax(np.ptp(low[:, :2], axis=0))))
+    return bust_cut_along(m, 1 - int(np.argmax(np.ptp(low[:, :2], axis=0))), shift)
 
 
-def bust_cut_along(m, axis=None):
+def bust_cut_along(m, axis=None, shift=0.0):
     """
     A generated bust often runs down to the elbows. A sculptor cuts it flat across the chest, about one head below
     the chin. Going down from the top the outline widens to the head, narrows to the neck and widens to the shoulders;
     the neck is the narrowest slice BELOW the widest slice of the head (the crown is narrow too, and long hair can
     hide the neck altogether). Without a clear head-neck-shoulders shape the mesh is handed back untouched.
+
+    `shift` (the customer's "height of the cut", -0.2 .. 0.2 of the model's height) moves the finished line: positive
+    leaves more of the figure, negative cuts higher. It never goes above the chin (a quarter of a head under the neck
+    or the shoulder line) nor down to the very bottom of the model.
     """
     import numpy as np
     z0, z1 = float(m.bounds[0][2]), float(m.bounds[1][2])
@@ -548,6 +553,12 @@ def bust_cut_along(m, axis=None):
         return m
     if cut < z0 + 0.04 * h:
         return m
+    if shift:
+        # the reference is the neck when it was found, else the shoulder line; the chin is above both
+        ref = float(levels[neck]) if neck is not None else (line if "line" in locals() else None)
+        highest = max(ref - 0.25 * (z1 - ref), cut) if ref is not None else cut
+        # a higher z is a higher cut: more figure (+) means a lower z
+        cut = max(min(cut - float(shift) * h, highest), z0 + 0.04 * h)
     try:
         out_mesh = from_manifold(as_manifold(m).trim_by_plane([0, 0, 1], cut))
         return out_mesh if len(out_mesh.faces) and out_mesh.is_watertight else m
@@ -1775,17 +1786,47 @@ def main(argv):
                 if len(m.faces) > 400000 and m.is_watertight:
                     # a detailed generation arrives with millions of faces; 0.02 mm is far below what a nozzle shows
                     m = simplified(m, 0.012)
+            front = str(extras.get("front", "keep"))
+            pitch = max(-15.0, min(15.0, float(extras.get("pitch", 0) or 0)))
+            shift = max(-0.2, min(0.2, float(extras.get("cut_shift", 0) or 0)))
+            pre_turns = {"right": 3, "back": 2, "left": 1}.get(front, 0) if front != "auto" and (pitch or shift or extras.get("full_out")) else None
+            if pre_turns is not None:
+                # a fixed turn is made before the cut, so the tilt below is about the axis across the face
+                if pre_turns:
+                    m.apply_transform(trimesh.transformations.rotation_matrix(pre_turns * np.pi / 2, [0, 0, 1]))
+                    ped_note["turned"] = pre_turns * 90
+                m.apply_translation([-m.bounds[0][0], -m.bounds[0][1], -m.bounds[0][2]])
+            full = m.copy() if extras.get("full_out") and extras.get("cut") == "bust" and m.is_watertight else None
+            if pitch and pre_turns is not None and m.is_watertight:
+                # the front looks to -Y: a positive pitch leans the head towards it, about X through the centre of mass
+                try:
+                    m.apply_transform(trimesh.transformations.rotation_matrix(np.radians(pitch), [1, 0, 0], point=m.center_mass))
+                    m.apply_translation([0, 0, -float(m.bounds[0][2])])
+                    m.apply_scale(target / float(max(m.extents)))
+                    ped_note["pitch"] = pitch
+                except Exception as e:  # noqa: BLE001 - the model upright is better than none
+                    ped_note["pitch_error"] = str(e)[:120]
             if extras.get("cut") == "bust" and m.is_watertight:
                 before = float(m.extents[2])
-                m = bust_cut(m)
+                m = bust_cut(m, shift)
+                if shift and float(m.extents[2]) != before:
+                    ped_note["cut_shift"] = shift
                 if float(m.extents[2]) < before - 0.01:
                     ped_note["bust_cut"] = True
                     m.apply_scale(target / float(max(m.extents)))
-            front = str(extras.get("front", "keep"))
-            turns = face_front(m, int(extras.get("front_prior") or 0) % 4) if front == "auto" else {"right": 3, "back": 2, "left": 1}.get(front, 0)      # where the face looks now, seen from the front
+            if pre_turns is not None:
+                turns = 0
+            else:
+                turns = face_front(m, int(extras.get("front_prior") or 0) % 4) if front == "auto" else {"right": 3, "back": 2, "left": 1}.get(front, 0)      # where the face looks now, seen from the front
             if turns:
                 m.apply_transform(trimesh.transformations.rotation_matrix(turns * np.pi / 2, [0, 0, 1]))
                 ped_note["turned"] = turns * 90
+                if full is not None:
+                    full.apply_transform(trimesh.transformations.rotation_matrix(turns * np.pi / 2, [0, 0, 1]))
+            if full is not None:
+                # the whole figure before the cut and the tilt, facing the front: the cut can be moved down again later
+                full.apply_translation([-full.bounds[0][0], -full.bounds[0][1], -full.bounds[0][2]])
+                full.export(str(extras["full_out"]), file_type="stl")
             m.apply_translation([-m.bounds[0][0], -m.bounds[0][1], -m.bounds[0][2]])
             pet = bool(extras.get("pet"))
             if pet and m.is_watertight:

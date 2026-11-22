@@ -51,6 +51,12 @@ final class PedestalChanger
     /** How far the figure is lowered into the base, in percent of its height. */
     public const SINKS = [0, 10, 20, 30];
 
+    /** Where the chest is cut, as a shift of the automatic line in percent of the height (+ keeps more of the figure, - cuts higher). */
+    public const CUT_SHIFTS = [-20, -10, 0, 10, 20];
+
+    /** How far the bust leans before it is cut, in degrees (+ towards the front, - back). */
+    public const PITCHES = [-15, -10, -5, 0, 5, 10, 15];
+
     public function __construct(private readonly ModelNormalizer $normalizer) {}
 
     /** The base of a pet figurine and what was measured on it; null for every other file. */
@@ -145,6 +151,10 @@ final class PedestalChanger
             'dedication' => $own['dedication'] ?? $req->description['pedestal_dedication'] ?? '',
             'sink' => (int) ($own['sink'] ?? 0),
             'tidy' => (bool) ($own['tidy'] ?? true),
+            // only a bust made with the whole figure kept beside it (source_full.stl) can be cut again or tilted
+            'cut_controls' => ($req->description['kind'] ?? null) === 'bust' && is_file(dirname(Storage::disk(ModelFile::DISK)->path($f->storage_path)).'/source_full.stl'),
+            'cut_shift' => (int) ($own['cut_shift'] ?? 0),
+            'pitch' => (int) ($own['pitch'] ?? 0),
         ];
     }
 
@@ -153,7 +163,7 @@ final class PedestalChanger
      *
      * @throws \RuntimeException when the figure cannot be separated from its old base
      */
-    public function change(ModelFile $f, array $pedestal, string $front = 'keep', int $sink = 0, bool $tidy = true): ModelFile
+    public function change(ModelFile $f, array $pedestal, string $front = 'keep', int $sink = 0, bool $tidy = true, int $cutShift = 0, int $pitch = 0): ModelFile
     {
         $req = $this->request($f);
         if (! $req || $this->state($f) === null) {
@@ -168,6 +178,15 @@ final class PedestalChanger
 
         $oldSource = dirname($disk->path($f->storage_path)).'/source.stl';
         $hasSource = is_file($oldSource);
+        // another height of the cut or a tilt starts from the whole figure, not from the already cut one
+        $fullSource = dirname($disk->path($f->storage_path)).'/source_full.stl';
+        $recut = $cutShift !== 0 || $pitch !== 0;
+        if ($recut && ! ($this->state($f)['cut_controls'] ?? false)) {
+            throw new \InvalidArgumentException('cut_unavailable');
+        }
+        $newFull = dirname($abs).'/source_full.stl';
+        // the whole figure stays beside every new file of a bust that has it, so the next change can move the cut again
+        $keepFull = is_file($fullSource);
         $named = in_array($pedestal['type'], self::NAMED, true);
         $plaque = in_array($pedestal['type'], self::DEDICATED, true);
         $extras = array_filter([
@@ -178,12 +197,16 @@ final class PedestalChanger
             'sink' => $sink > 0 ? $sink / 100 : null,
             'tidy' => $tidy ?: null,
             'source_out' => $newSource,
+            'cut' => $keepFull ? 'bust' : null,
+            'cut_shift' => $cutShift !== 0 ? $cutShift / 100 : null,
+            'pitch' => $pitch !== 0 ? $pitch : null,
+            'full_out' => $keepFull ? $newFull : null,
             // files made before the source was kept: take the old base away first
             'strip_pedestal' => ! $hasSource,
         ]);
         $target = (float) ($req->target_mm ?: config('ai.default_target_mm', 80));
         try {
-            $this->normalizer->toPrintableStl($hasSource ? $oldSource : $disk->path($f->storage_path), $abs, $target, false, ['pedestal', 'solid'], $extras);
+            $this->normalizer->toPrintableStl($keepFull ? $fullSource : ($hasSource ? $oldSource : $disk->path($f->storage_path)), $abs, $target, false, ['pedestal', 'solid'], $extras);
         } catch (\Throwable $e) {
             File::deleteDirectory(dirname($abs));
             throw new \RuntimeException('pedestal_failed', 0, $e);
@@ -197,7 +220,7 @@ final class PedestalChanger
             'uuid' => $uuid, 'owner_user_id' => $f->owner_user_id, 'anonymous_session_id' => $f->anonymous_session_id,
             'original_name' => $f->original_name, 'ext' => 'stl', 'mime' => 'model/stl', 'size_bytes' => filesize($abs), 'sha256' => hash_file('sha256', $abs),
             'storage_path' => $rel, 'origin' => 'generated', 'origin_ref' => $f->origin_ref, 'status' => ModelFile::STATUS_UPLOADED,
-            'tool_params' => ['pedestal' => $pedestal['type'], 'name' => $named ? (string) ($pedestal['name'] ?? '') : '', 'dedication' => $plaque ? (string) ($pedestal['dedication'] ?? '') : '', 'sink' => $sink, 'tidy' => $tidy],
+            'tool_params' => ['pedestal' => $pedestal['type'], 'name' => $named ? (string) ($pedestal['name'] ?? '') : '', 'dedication' => $plaque ? (string) ($pedestal['dedication'] ?? '') : '', 'sink' => $sink, 'tidy' => $tidy, 'cut_shift' => $cutShift, 'pitch' => $pitch],
         ]);
         ProcessModelFile::dispatch($new->id);
 
