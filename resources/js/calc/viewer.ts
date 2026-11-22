@@ -1,10 +1,11 @@
 import {
     AmbientLight, BufferGeometry, Color, ConeGeometry, CylinderGeometry, DirectionalLight, GridHelper, Group, HemisphereLight, Line, LineBasicMaterial,
     LineSegments, Material, Mesh, MeshBasicMaterial, MeshStandardMaterial, PerspectiveCamera, Raycaster, Scene, SphereGeometry, Vector2, Vector3,
-    WebGLRenderer, Box3, Float32BufferAttribute, PlaneGeometry, EdgesGeometry, DoubleSide, Plane, RingGeometry,
+    WebGLRenderer, Box3, Object3D, Float32BufferAttribute, PlaneGeometry, EdgesGeometry, DoubleSide, Plane, RingGeometry,
 } from 'three';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
 import { mergeVertices } from 'three/examples/jsm/utils/BufferGeometryUtils.js';
+import { colorHolder } from './color_model';
 
 /** Default colour of a previewed model: a calm, slightly desaturated blue, like a light-blue PLA spool. */
 export const MODEL_COLOR = 0x83a6d4;
@@ -119,6 +120,7 @@ export class Viewer {
             this.scene.remove(this.mesh);
             this.mesh.geometry.dispose();
         }
+        this.colored = false;
         if (this.grid) this.scene.remove(this.grid);
         const painted = !!faces && paintByFaces(geom, faces);
         const sculpture = kind === 'generated' && !regions?.length && !painted;
@@ -150,6 +152,26 @@ export class Viewer {
         this.scene.add(this.mesh);
         this.fit();
         this.afterGeometry();
+    }
+
+    /** True while a generator's coloured model (GLB) is drawn instead of the STL's grey, see showColored(). */
+    private colored = false;
+    private static readonly HIDDEN = new MeshBasicMaterial({ colorWrite: false, depthWrite: false });
+
+    /**
+     * Draws the coloured model a generator made (its GLB) in place of the STL that was set last, fitted to that STL. The STL
+     * stays in the scene unseen (its size, the picking and the framing are the same), so a failure anywhere here leaves the
+     * grey model on show. Returns false when nothing was changed (another model has come meanwhile, or it did not fit).
+     */
+    showColored(color: Object3D, geom: BufferGeometry): boolean {
+        const mesh = this.mesh;
+        if (!mesh || mesh.geometry !== geom) return false;
+        const holder = colorHolder(color, geom);
+        if (!holder) return false;
+        mesh.add(holder);
+        mesh.material = Viewer.HIDDEN;
+        this.colored = true;
+        return true;
     }
 
     /**
@@ -303,6 +325,7 @@ export class Viewer {
 
     /** Paints the shown model triangle by triangle, or (null) gives it its plain colour back; the view stays as it is. */
     paint(faces: FacePaint | null): boolean {
+        if (this.colored) return false;
         if (!this.mesh) return false;
         const painted = !!faces && paintByFaces(this.mesh.geometry, faces);
         // a plate was drawn in facets until now; in a filament's colours it is shaded like everything else
@@ -541,6 +564,7 @@ export class Viewer {
 
     /** Colours of the pieces and the red of what hangs over the bed, laid over the colours setGeometry gave the model. */
     private repaint(): void {
+        if (this.colored) return;
         const mesh = this.mesh;
         const pos = mesh?.geometry.getAttribute('position');
         if (!mesh || !pos || mesh.geometry.index || !this.baseMaterial || this.baseMaterial === this.sculptureMaterial) return;

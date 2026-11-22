@@ -44,7 +44,10 @@ return [
             // a redrawn photo (5 credits) and a model in standard geometry (20) come before the plain name: the first match counts
             'tripo-image' => ['in' => 0, 'out' => 0, 'call' => 0.05],
             'tripo-standard' => ['in' => 0, 'out' => 0, 'call' => 0.20],
-            'tripo' => ['in' => 0, 'out' => 0, 'call' => 0.40],
+            // the coloured preview (raw.glb) is offered to the browser only up to this many bytes (the owner, 22 Nov 2026: ~15 MB)
+    'glb_preview_max_bytes' => (int) env('AI_GLB_PREVIEW_MAX_BYTES', 15 * 1024 * 1024),
+
+    'tripo' => ['in' => 0, 'out' => 0, 'call' => 0.40],
             'tripo-standard-tex' => ['in' => 0, 'out' => 0, 'call' => 0.30],  // + standard texture, 10 credits
             'tripo-tex' => ['in' => 0, 'out' => 0, 'call' => 0.50],
             // Meshy, geometry only: 20 credits a task, 25 with the finer geometry. What a credit costs is not in its API

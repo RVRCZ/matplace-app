@@ -74,6 +74,25 @@ class ModelFile extends Model
         return $this->stl_path ? Storage::disk(self::DISK)->path($this->stl_path) : null;
     }
 
+    /**
+     * The coloured model a generator stored next to the STL (raw.glb, Tripo with the texture), or null. Only for the
+     * preview: printing, slicing and price go on from the STL.
+     */
+    public function glbPath(): ?string
+    {
+        $path = Storage::disk(self::DISK)->path($this->dir().'/raw.glb');
+
+        return is_file($path) ? $path : null;
+    }
+
+    /** The coloured preview is offered only up to this size (a phone on mobile data would not load more). */
+    public function glbOffered(): bool
+    {
+        $path = $this->glbPath();
+
+        return $path !== null && filesize($path) <= (int) config('ai.glb_preview_max_bytes', 15 * 1024 * 1024);
+    }
+
     /** What the model is, for tool-specific defaults and texts: upload | generated | sign | lithophane | relief | … */
     public function kind(): string
     {
