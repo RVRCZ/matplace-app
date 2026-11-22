@@ -186,6 +186,26 @@ final class FarmColorTilesTest extends TestCase
         $this->assertTrue(collect($after['colors'])->firstWhere('slot', $petgEntry['slot'])['sliced']);
     }
 
+    public function test_an_admin_switches_the_page_to_the_customers_view_and_back(): void
+    {
+        $order = $this->order($this->cube());
+        $url = "/farm/orders/{$order->token}";
+
+        // the admin's own view offers the switch; the customer's page has none and cannot ask for it
+        $this->actingAs($this->admin)->get($url)->assertOk()->assertSee('?view=customer', false)->assertSee(__('farm.view_customer'));
+        $this->actingAs($this->user)->get($url.'?view=customer')->assertOk()->assertDontSee('farm-view-switch', false);
+
+        // switched: the page and its later answers come the customer's way, with no place of a spool
+        $this->actingAs($this->admin)->get($url.'?view=customer')->assertOk()->assertSee('?view=admin', false)->assertSee(__('farm.view_admin'));
+        $state = $this->actingAs($this->admin)->getJson($url.'/status')->assertOk()->json();
+        $this->assertFalse($state['admin']);
+        $this->assertSame([], self::codesIn($state));
+
+        // and back
+        $this->actingAs($this->admin)->get($url.'?view=admin')->assertOk()->assertSee('?view=customer', false);
+        $this->assertTrue($this->actingAs($this->admin)->getJson($url.'/status')->json('admin'));
+    }
+
     public function test_the_customer_gets_no_spool_codes_and_the_admin_reads_the_printer_and_the_position(): void
     {
         // the white in two machines: the S1 (ACE 3) and the Max, run by hand (its first position)

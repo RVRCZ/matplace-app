@@ -12,6 +12,8 @@ return [
     'cta_wait' => 'Espere a que termine el cálculo preciso; después podrá imprimir en nuestra impresora.',
     'title' => 'Imprimir en nuestra impresora',
     'lead' => 'Suba un modelo; nosotros lo orientamos, lo preparamos y calculamos el precio. Elija el color y la entrega, pague con tarjeta o con el crédito, y la impresora empieza.',
+    'view_customer' => 'Ver como cliente',
+    'view_admin' => 'Volver a la vista de administrador',
     'my_orders' => 'Mis impresiones',
     'no_orders' => 'Todavía no hay nada.',
     'credit_balance' => 'Crédito',
