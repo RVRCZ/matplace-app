@@ -94,7 +94,7 @@ class HomeWhatToMakeTest extends TestCase
             $this->assertMatchesRegularExpression('~id="intake-mic"[^>]*class="hidden ~', $html, $lang);
             // no `capture`: a phone offers the camera and the gallery; the file's own input is still there for the small link
             $this->assertMatchesRegularExpression('~<input id="intake-photo" name="photo" type="file" accept="image/\*,\.heic,\.heif" class="sr-only">~', $html);
-            $this->assertMatchesRegularExpression('~<label for="intake-model" id="intake-file-link"[^>]*>'.preg_quote(e(__('router.file_link', [], $lang)), '~').'</label>~u', $html, $lang);
+            $this->assertMatchesRegularExpression('~<label for="intake-model" id="intake-file-link"[^>]*>\s*(?:<svg.*?</svg>)?\s*'.preg_quote(e(__('router.file_link', [], $lang)), '~').'</label>~us', $html, $lang);
             $this->assertStringContainsString('>'.e(__('router.submit', [], $lang)).'</button>', $html, $lang);
             $this->assertStringContainsString('placeholder="'.e(__('router.text_placeholder', [], $lang)).'"', $html, $lang);
             // against robots: the stamp of the page and the unseen field; where the script reports what was done

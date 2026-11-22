@@ -40,9 +40,9 @@
     "No se pudo activar el micrófono. Escriba su deseo en el campo."
   ],
   "router.file_link": [
-    "Mám hotový 3D soubor",
-    "I have a finished 3D file",
-    "Tengo un archivo 3D listo"
+    "Nahrát 3D model",
+    "Upload a 3D model",
+    "Subir un modelo 3D"
   ],
   "router.examples": [
     "Příklady přání: klepnutím se vepíšou do pole",

@@ -98,7 +98,8 @@
             <div class="flex flex-col items-center gap-2 text-center">
                 {{-- the one orange action of the screen: at least 60 px tall, the whole width on a phone --}}
                 <button type="submit" id="intake-submit" class="btn-primary min-h-[60px] w-full rounded-2xl px-8 text-lg shadow-sm sm:w-auto sm:min-w-[320px]">{{ __('router.submit') }}</button>
-                <label for="intake-model" id="intake-file-link" class="inline-flex min-h-11 cursor-pointer items-center text-sm font-medium text-muted underline underline-offset-4 hover:text-ink">{{ __('router.file_link') }}</label>
+                {{-- the second way in, a real button under the orange one (Roman 21 Nov 2026: the underlined link was overlooked) --}}
+                <label for="intake-model" id="intake-file-link" class="btn-secondary w-full cursor-pointer gap-2 rounded-2xl px-8 sm:w-auto sm:min-w-[320px]"><x-icon name="upload" class="h-5 w-5" />{{ __('router.file_link') }}</label>
                 <p id="intake-hint" class="max-w-md text-sm text-muted" aria-live="polite">{{ $cx('router.submit.hint') }}</p>
             </div>
             <p id="intake-error" class="note-error hidden text-sm" role="alert"></p>
