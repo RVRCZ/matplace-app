@@ -45,6 +45,8 @@ return [
             'tripo-image' => ['in' => 0, 'out' => 0, 'call' => 0.05],
             'tripo-standard' => ['in' => 0, 'out' => 0, 'call' => 0.20],
             'tripo' => ['in' => 0, 'out' => 0, 'call' => 0.40],
+            'tripo-standard-tex' => ['in' => 0, 'out' => 0, 'call' => 0.30],  // + standard texture, 10 credits
+            'tripo-tex' => ['in' => 0, 'out' => 0, 'call' => 0.50],
             // Meshy, geometry only: 20 credits a task, 25 with the finer geometry. What a credit costs is not in its API
             // documentation: 0.02 USD is an ASSUMPTION until Roman's plan says otherwise (also ai.meshy.credit_cents)
             'meshy-fine' => ['in' => 0, 'out' => 0, 'call' => 0.50],
@@ -92,6 +94,7 @@ return [
         'model' => env('TRIPO_MODEL', 'v3.1-20260211'),
         'face_limit' => (int) env('TRIPO_FACE_LIMIT', 0),
         'geometry_quality' => env('TRIPO_GEOMETRY_QUALITY', 'detailed'),      // detailed = +20 credits, much finer faces and hair
+        'texture' => (bool) env('TRIPO_TEXTURE', false),                      // +10 credits; kept in raw.glb only, STL for print has no colours
         'image_autofix' => (bool) env('TRIPO_IMAGE_AUTOFIX', true),
         'work_dir' => storage_path('app/generated'),
     ],

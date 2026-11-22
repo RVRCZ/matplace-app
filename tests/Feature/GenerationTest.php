@@ -242,4 +242,21 @@ class GenerationTest extends TestCase
         $this->assertStringEndsWith('.glb', $s2->meshPath);
         @unlink($s2->meshPath);
     }
+
+    public function test_tripo_texture_is_a_switch_and_costs_ten_credits_more(): void
+    {
+        Http::fake([
+            'openapi.tripo3d.ai/v3/files' => Http::response(['code' => 0, 'data' => ['file_token' => 'file_abc']]),
+            'openapi.tripo3d.ai/v3/generation/image-to-model' => Http::response(['code' => 0, 'data' => ['task_id' => 'task-2', 'status' => 'queued']]),
+        ]);
+        $img = sys_get_temp_dir().'/mp_tripo_'.uniqid().'.jpg';
+        imagejpeg(imagecreatetruecolor(8, 8), $img);
+
+        $g = new TripoGenerator(['api_key' => 'tsk_test', 'base_url' => 'https://openapi.tripo3d.ai', 'model' => 'v3.1-20260211', 'face_limit' => 0, 'geometry_quality' => 'detailed', 'texture' => true, 'work_dir' => sys_get_temp_dir().'/mp_tripo_out']);
+        $h = $g->fromImage($img, null, new GenerationOptions);
+        Http::assertSent(fn ($req) => str_ends_with($req->url(), '/v3/generation/image-to-model')
+            && $req['texture'] === true && $req['pbr'] === false && $req['export_uv'] === false);
+        $this->assertSame(50, $h->meta['credits']); // 20 image + 20 detailed + 10 texture
+        @unlink($img);
+    }
 }

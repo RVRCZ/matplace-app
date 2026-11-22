@@ -47,7 +47,7 @@ final class TripoGenerator implements ImageRestyler, ModelGenerator
     {
         return $this->create('/v3/generation/image-to-model', [
             'file' => $this->upload($imagePath),
-        ] + $this->common($options), 20 + $this->detailCredits($options));
+        ] + $this->common($options), 20 + $this->detailCredits($options) + $this->textureCredits());
     }
 
     /** Front + up to three more sides of the same subject: the "files" array is always [front, left, back, right]. */
@@ -66,7 +66,7 @@ final class TripoGenerator implements ImageRestyler, ModelGenerator
             $files[] = isset($views[$view]) ? $this->upload($views[$view]) : (object) [];
         }
 
-        return $this->create('/v3/generation/multiview-to-model', ['files' => $files] + $this->common($options), 20 + $this->detailCredits($options));
+        return $this->create('/v3/generation/multiview-to-model', ['files' => $files] + $this->common($options), 20 + $this->detailCredits($options) + $this->textureCredits());
     }
 
     private const VIEWS = ['front', 'left', 'back', 'right'];
@@ -99,7 +99,7 @@ final class TripoGenerator implements ImageRestyler, ModelGenerator
             throw new GenerationException('Prompt is too short.');
         }
 
-        return $this->create('/v3/generation/text-to-model', ['prompt' => mb_substr($prompt, 0, 1000)] + $this->common($options), 10 + $this->detailCredits($options));
+        return $this->create('/v3/generation/text-to-model', ['prompt' => mb_substr($prompt, 0, 1000)] + $this->common($options), 10 + $this->detailCredits($options) + $this->textureCredits());
     }
 
     /** The photo redrawn by the image model of Tripo itself (the photo goes to no other provider). */
@@ -183,7 +183,7 @@ final class TripoGenerator implements ImageRestyler, ModelGenerator
             throw new GenerationException('Tripo task failed: '.$this->err($res->json(), $res->status()));
         }
         // one task = one flat price (config/ai.php prices.models): a picture, a model in standard geometry, or the detailed one
-        AiUsage::record('generate', $priced ?? (($body['geometry_quality'] ?? null) === 'standard' ? 'tripo-standard' : 'tripo'), []);
+        AiUsage::record('generate', $priced ?? ((($body['geometry_quality'] ?? null) === 'standard' ? 'tripo-standard' : 'tripo').(empty($body['texture']) ? '' : '-tex')), []);
 
         return new GenerationHandle($this->name(), (string) $id, ['credits' => $credits, 'model' => $body['model'] ?? null]);
     }
@@ -193,7 +193,8 @@ final class TripoGenerator implements ImageRestyler, ModelGenerator
     {
         return array_filter([
             'model' => $this->config['model'],
-            'texture' => false,
+            // the texture colours only the stored raw.glb (the owner, 22 Nov 2026); the printed STL stays geometry
+            'texture' => (bool) ($this->config['texture'] ?? false),
             'pbr' => false,
             // UV unwrapping cuts the surface into islands; for printing that means hundreds of open patches
             'export_uv' => false,
@@ -208,6 +209,12 @@ final class TripoGenerator implements ImageRestyler, ModelGenerator
     private function detailCredits(?GenerationOptions $options = null): int
     {
         return $this->quality($options) === 'detailed' ? 20 : 0;
+    }
+
+    /** The standard texture costs 10 credits on top. */
+    private function textureCredits(): int
+    {
+        return empty($this->config['texture']) ? 0 : 10;
     }
 
     /** What the request asks for (a figure that is smoothed anyway needs no fine fur), else what is configured. */
