@@ -33,7 +33,9 @@ class GenerateModel implements ShouldQueue
 
     public int $tries = 120;     // × 5 s ≈ 10 minutes
 
-    public int $timeout = 300;
+    // the last attempt normalises the mesh: a detailed textured figure takes several minutes of pure geometry
+    // (56 MB parrot, 22 Nov 2026), so the attempt must outlive PYTHON_TIMEOUT and stay under DB_QUEUE_RETRY_AFTER
+    public int $timeout = 780;
 
     /**
      * What the photo of a pet becomes before the cartoon model is made of it. The thick legs and tail are the point:
