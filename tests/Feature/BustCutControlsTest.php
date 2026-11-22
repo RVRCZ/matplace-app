@@ -121,4 +121,17 @@ class BustCutControlsTest extends TestCase
         $this->assertLessThan($straight - 4, $lean(15));      // the head lies further to the front (-Y) than the chest
         $this->assertGreaterThan($straight + 4, $lean(-15));
     }
+
+    public function test_the_calculator_page_has_the_step_buttons_in_three_languages(): void
+    {
+        foreach (['/' => ['Výška řezu', 'Náklon'], '/en' => ['Height of the cut', 'Tilt'], '/es' => ['Altura del corte', 'Inclinación']] as $url => $labels) {
+            $html = $this->get($url)->assertOk()->getContent();
+            foreach ($labels as $label) {
+                $this->assertStringContainsString($label, $html);
+            }
+            $this->assertSame(5, substr_count($html, 'data-step="') - 7);                  // five cuts, seven tilts
+            $this->assertStringContainsString('data-step="-20"', $html);
+            $this->assertStringContainsString('data-step="15"', $html);
+        }
+    }
 }
