@@ -417,7 +417,8 @@ export class Stage {
         // a generated model that came with its colours (the page asked for them): the grey STL is on show already; the colours replace
         // it when they are loaded and fit, and any failure leaves the STL as it is
         if (o.colored && geom && file.glb_url) {
-            const shown = geom;
+            // the viewer may have welded the STL into its own copy (generated models): the swap must name THAT geometry
+            const shown = this.viewer.shownGeometry() ?? geom;
             void loadColoredModel(file.glb_url)
                 .then((color) => { if (!this.viewer.showColored(color, shown)) console.debug('colored preview not applied (another model shown, or it did not fit)'); })
                 .catch((e) => { console.debug('colored preview failed, the STL stays', e); });

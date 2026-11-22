@@ -163,6 +163,11 @@ export class Viewer {
      * stays in the scene unseen (its size, the picking and the framing are the same), so a failure anywhere here leaves the
      * grey model on show. Returns false when nothing was changed (another model has come meanwhile, or it did not fit).
      */
+    /** The geometry of the model on show, as the viewer holds it (setGeometry may have welded a copy). */
+    shownGeometry(): BufferGeometry | null {
+        return this.mesh?.geometry ?? null;
+    }
+
     showColored(color: Object3D, geom: BufferGeometry): boolean {
         const mesh = this.mesh;
         if (!mesh || mesh.geometry !== geom) return false;
