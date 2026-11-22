@@ -44,10 +44,7 @@ return [
             // a redrawn photo (5 credits) and a model in standard geometry (20) come before the plain name: the first match counts
             'tripo-image' => ['in' => 0, 'out' => 0, 'call' => 0.05],
             'tripo-standard' => ['in' => 0, 'out' => 0, 'call' => 0.20],
-            // the coloured preview (raw.glb) is offered to the browser only up to this many bytes (the owner, 22 Nov 2026: ~15 MB)
-    'glb_preview_max_bytes' => (int) env('AI_GLB_PREVIEW_MAX_BYTES', 15 * 1024 * 1024),
-
-    'tripo' => ['in' => 0, 'out' => 0, 'call' => 0.40],
+            'tripo' => ['in' => 0, 'out' => 0, 'call' => 0.40],
             'tripo-standard-tex' => ['in' => 0, 'out' => 0, 'call' => 0.30],  // + standard texture, 10 credits
             'tripo-tex' => ['in' => 0, 'out' => 0, 'call' => 0.50],
             // Meshy, geometry only: 20 credits a task, 25 with the finer geometry. What a credit costs is not in its API
@@ -104,6 +101,10 @@ return [
     // the photo of a pet or of a person for a bust redrawn as the subject alone (no hand, leash, other people, furniture,
     // background) before the model is made, by Tripo's image model (5 credits): always | never | auto (= with Meshy only).
     // Always since 14 Nov 2026: photos are taken outdoors and in armchairs, and Tripo's own clean-up left a chair back in a bust.
+    // the coloured preview (raw.glb) is offered to the browser only up to this many bytes; a detailed textured
+    // figure is ~55 MB (22 Nov 2026), so the cap sits at 64 MB until the previews are slimmed server-side
+    'glb_preview_max_bytes' => (int) env('AI_GLB_PREVIEW_MAX_BYTES', 15 * 1024 * 1024),
+
     'clean_photo' => env('AI_CLEAN_PHOTO', 'always'),
     // the picture-upload window of the image tools (charm, coaster, keychain…): a photographed logo redrawn as a flat, straight graphic
     // by the same image model (5 credits a picture), asked by the visitor with a tick. Off until Roman decides (21 Nov 2026).
