@@ -3126,5 +3126,9 @@
     "imgwin.mode_relief": "Reliéf z fotky (litofanie)",
     "param.o.sign.picture": "Cedule z obrázku",
     "farm.order.bar.pay_free": "Spustit tisk",
-    "farm.order.bar.pay_delivery": "Zaplatit dopravu"
+    "farm.order.bar.pay_delivery": "Zaplatit dopravu",
+    "pedestal.cut": "Výška řezu",
+    "pedestal.cut.hint": "Plus nechá víc postavy pod bradou, minus seřízne busty výš. Nikdy ne nad bradu.",
+    "pedestal.pitch": "Náklon",
+    "pedestal.pitch.hint": "Mínus narovná předkloněnou bustu, plus ji nakloní dopředu. Náhled vpravo je jen orientační, po „Použít“ se busta přepočítá."
 }

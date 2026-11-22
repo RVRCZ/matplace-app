@@ -1,0 +1,22 @@
+{
+    "pedestal.cut": [
+        "Výška řezu",
+        "Height of the cut",
+        "Altura del corte"
+    ],
+    "pedestal.cut.hint": [
+        "Plus nechá víc postavy pod bradou, minus seřízne busty výš. Nikdy ne nad bradu.",
+        "Plus keeps more of the figure below the chin, minus cuts the bust higher. Never above the chin.",
+        "Más deja más figura bajo la barbilla, menos corta el busto más arriba. Nunca por encima de la barbilla."
+    ],
+    "pedestal.pitch": [
+        "Náklon",
+        "Tilt",
+        "Inclinación"
+    ],
+    "pedestal.pitch.hint": [
+        "Mínus narovná předkloněnou bustu, plus ji nakloní dopředu. Náhled vpravo je jen orientační, po „Použít“ se busta přepočítá.",
+        "Minus straightens a bust that leans forward, plus leans it forward. The preview is only a guide, the bust is recalculated when you press Apply.",
+        "Menos endereza un busto inclinado hacia delante, más lo inclina hacia delante. La vista previa es solo orientativa, el busto se recalcula al pulsar Aplicar."
+    ]
+}

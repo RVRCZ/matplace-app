@@ -183,6 +183,23 @@
                                     @foreach(\App\Domain\Generation\PedestalChanger::SINKS as $sk)<option value="{{ $sk }}">{{ $sk === 0 ? __('pedestal.sink.none') : __('pedestal.sink.by', ['n' => $sk]) }}</option>@endforeach
                                 </select>
                             </label>
+                            {{-- a bust made with its whole figure kept: where the chest is cut and how far it leans. Big step buttons, no sliders: a thumb on a phone hits them --}}
+                            <div data-cut-controls class="hidden sm:col-span-2">
+                                <div id="pedestal-cut" role="group" aria-labelledby="pedestal-cut-label">
+                                    <div id="pedestal-cut-label" class="text-xs font-semibold text-slate-600">{{ __('pedestal.cut') }}</div>
+                                    <div class="mt-1 grid grid-cols-5 gap-1.5">
+                                        @foreach(\App\Domain\Generation\PedestalChanger::CUT_SHIFTS as $cs)<button type="button" data-step="{{ $cs }}" aria-pressed="false" class="min-h-12 rounded-lg border border-slate-300 bg-white px-1 text-sm font-semibold text-slate-700">{{ $cs > 0 ? '+' : ($cs < 0 ? '−' : '') }}{{ abs($cs) }}&nbsp;%</button>@endforeach
+                                    </div>
+                                    <p class="mt-1 text-xs text-slate-500">{{ __('pedestal.cut.hint') }}</p>
+                                </div>
+                                <div id="pedestal-pitch" role="group" aria-labelledby="pedestal-pitch-label" class="mt-3">
+                                    <div id="pedestal-pitch-label" class="text-xs font-semibold text-slate-600">{{ __('pedestal.pitch') }}</div>
+                                    <div class="mt-1 grid grid-cols-4 gap-1.5 sm:grid-cols-7">
+                                        @foreach(\App\Domain\Generation\PedestalChanger::PITCHES as $pt)<button type="button" data-step="{{ $pt }}" aria-pressed="false" class="min-h-12 rounded-lg border border-slate-300 bg-white px-1 text-sm font-semibold text-slate-700">{{ $pt > 0 ? '+' : ($pt < 0 ? '−' : '') }}{{ abs($pt) }}°</button>@endforeach
+                                    </div>
+                                    <p class="mt-1 text-xs text-slate-500">{{ __('pedestal.pitch.hint') }}</p>
+                                </div>
+                            </div>
                             <label class="flex items-center gap-2 text-xs text-slate-700 sm:col-span-2"><input id="pedestal-tidy" type="checkbox" class="accent-action"> {{ __('pedestal.tidy') }}</label>
                             <label data-pedestal-name class="hidden text-xs font-semibold text-slate-600">{{ __('figure.pedestal.name') }}
                                 <input id="pedestal-name" maxlength="24" placeholder="{{ __('figure.pedestal.name_ph') }}" class="mt-1 min-h-11 w-full rounded-lg border border-slate-300 px-2 py-2 text-sm font-normal">
@@ -192,7 +209,7 @@
                             </label>
                         </div>
                         <div class="mt-2 flex items-center gap-3">
-                            <button class="btn-ink px-3 py-2 text-sm">{{ __('pedestal.apply') }}</button>
+                            <button id="pedestal-apply" class="btn-ink min-h-11 px-4 py-2 text-sm">{{ __('pedestal.apply') }}</button>
                             <p id="pedestal-msg" class="text-xs text-slate-500" role="status">{{ __('pedestal.hint') }}</p>
                         </div>
                     </form>

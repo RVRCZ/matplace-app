@@ -962,7 +962,25 @@ function showPedestal(file: FileInfo | null): void {
     if (!ped || !file) return;
     const type = $('pedestal-type') as HTMLSelectElement; const front = $('pedestal-front') as HTMLSelectElement; const sink = $('pedestal-sink') as HTMLSelectElement; const tidy = $('pedestal-tidy') as HTMLInputElement;
     const name = $('pedestal-name') as HTMLInputElement; const dedication = $('pedestal-dedication') as HTMLInputElement;
-    const msg = $('pedestal-msg'); const btn = box.querySelector('button') as HTMLButtonElement;
+    const msg = $('pedestal-msg'); const btn = $('pedestal-apply') as HTMLButtonElement;
+    // height of the cut and lean (a bust with its whole figure kept): rows of big step buttons, the chosen one marked
+    const picked = { cut: 0, pitch: 0 };
+    const rows = box.querySelector<HTMLElement>('[data-cut-controls]');
+    const stepRow = (id: string, key: 'cut' | 'pitch') => {
+        const buttons = [...box.querySelectorAll<HTMLButtonElement>(`#${id} button[data-step]`)];
+        const mark = () => buttons.forEach((b) => {
+            const on = Number(b.dataset.step) === picked[key];
+            b.setAttribute('aria-pressed', String(on));
+            b.classList.toggle('bg-action', on); b.classList.toggle('text-white', on); b.classList.toggle('border-action', on);
+            b.classList.toggle('bg-white', !on); b.classList.toggle('text-slate-700', !on); b.classList.toggle('border-slate-300', !on);
+        });
+        buttons.forEach((b) => { b.onclick = () => { picked[key] = Number(b.dataset.step); mark(); if (key === 'pitch') viewer?.setTilt(picked.pitch - (ped.pitch ?? 0)); }; });  // the shown file already leans by ped.pitch
+        mark();
+    };
+    const hasCut = Boolean(ped.cut_controls);
+    rows?.classList.toggle('hidden', !hasCut); rows?.classList.toggle('block', hasCut);
+    picked.cut = ped.cut_shift ?? 0; picked.pitch = ped.pitch ?? 0;
+    stepRow('pedestal-cut', 'cut'); stepRow('pedestal-pitch', 'pitch');
     const hint = msg.dataset.hint ?? (msg.dataset.hint = msg.textContent ?? '');
     // the turned foot and the plinth carry a name, only the plinth has room for a dedication
     const field = (sel: string, on: boolean) => box.querySelectorAll<HTMLElement>(sel).forEach((e) => { e.classList.toggle('hidden', !on); e.classList.toggle('block', on); });
@@ -978,7 +996,7 @@ function showPedestal(file: FileInfo | null): void {
         e.preventDefault();
         btn.disabled = true; msg.textContent = t('pedestal.working');
         try {
-            const res = await fetch(`${routes().files}/${file.uuid}/pedestal`, { method: 'POST', credentials: 'same-origin', headers: { 'Content-Type': 'application/json', Accept: 'application/json' }, body: JSON.stringify({ type: type.value, front: front.value, sink: Number(sink.value), tidy: tidy.checked, name: name.value.trim(), dedication: dedication.value.trim() }) });
+            const res = await fetch(`${routes().files}/${file.uuid}/pedestal`, { method: 'POST', credentials: 'same-origin', headers: { 'Content-Type': 'application/json', Accept: 'application/json' }, body: JSON.stringify({ type: type.value, front: front.value, sink: Number(sink.value), tidy: tidy.checked, ...(hasCut ? { cut_shift: picked.cut, pitch: picked.pitch } : {}), name: name.value.trim(), dedication: dedication.value.trim() }) });
             const body = await res.json();
             if (!res.ok || !body.file) throw new Error(body.error ?? 'pedestal');
             await openFile(body.file.uuid);

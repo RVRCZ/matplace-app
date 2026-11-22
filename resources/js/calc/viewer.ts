@@ -76,6 +76,7 @@ export class Viewer {
     private onHandle: ((id: string, mm: number, phase: 'move' | 'end') => string | void) | null = null;
     private handleLabel: HTMLElement | null = null;
     private onPick: ((index: number, piece: Piece | null, at: [number, number, number] | null) => void) | null = null;
+    private tilt = 0;                                // preview of the bust's lean in degrees (setTilt), before the server cuts it
     private turned = false;                             // the model is shown turned over, its back up (setTurned)
     private sunk: Uint8Array | null = null;             // one flag per triangle that is the floor of something sunk into the model (setSunk)
     private marker: { group: Group; path: [number, number][]; z: number } | null = null;
@@ -143,6 +144,7 @@ export class Viewer {
         this.mesh = new Mesh(geom, filament ? this.paintOf(this.look) : plate ? this.plateMaterial : sculpture ? this.sculptureMaterial : this.material);
         this.frontal = sculpture;
         this.mesh.rotation.x = -Math.PI / 2;
+        this.tilt = 0;
         if (this.turned) this.mesh.rotation.y = Math.PI;        // a model that comes while the back is on show is shown from the back too
         this.mesh.scale.setScalar(scale);
         this.scene.add(this.mesh);
@@ -161,6 +163,24 @@ export class Viewer {
         const mesh = this.mesh;
         if (!mesh) return;
         mesh.rotation.set(-Math.PI / 2, on ? Math.PI : 0, 0);
+        mesh.position.set(0, 0, 0);
+        mesh.updateMatrixWorld(true);
+        if (this.grid) this.scene.remove(this.grid);
+        const was = this.hold; this.hold = true;
+        this.fit();
+        this.hold = was;
+        if (this.bed) this.drawBed();
+        this.placeHandles();
+    }
+
+    /** Preview of the lean of a bust (degrees, + towards the front) before the server cuts it again; the file itself is not changed. */
+    setTilt(deg: number): void {
+        if (this.tilt === deg) return;
+        this.tilt = deg;
+        const mesh = this.mesh;
+        if (!mesh) return;
+        // a lean of the head to the front (-Y of the file) is a turn about the file's X axis, which stays X after the model is stood up
+        mesh.rotation.set(-Math.PI / 2 + (deg * Math.PI) / 180, this.turned ? Math.PI : 0, 0);
         mesh.position.set(0, 0, 0);
         mesh.updateMatrixWorld(true);
         if (this.grid) this.scene.remove(this.grid);

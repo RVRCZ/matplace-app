@@ -3126,5 +3126,9 @@
     "imgwin.mode_relief": "Relieve de la foto (litofanía)",
     "param.o.sign.picture": "Cartel hecho de una imagen",
     "farm.order.bar.pay_free": "Iniciar impresión",
-    "farm.order.bar.pay_delivery": "Pagar el envío"
+    "farm.order.bar.pay_delivery": "Pagar el envío",
+    "pedestal.cut": "Altura del corte",
+    "pedestal.cut.hint": "Más deja más figura bajo la barbilla, menos corta el busto más arriba. Nunca por encima de la barbilla.",
+    "pedestal.pitch": "Inclinación",
+    "pedestal.pitch.hint": "Menos endereza un busto inclinado hacia delante, más lo inclina hacia delante. La vista previa es solo orientativa, el busto se recalcula al pulsar Aplicar."
 }

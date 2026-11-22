@@ -3126,5 +3126,9 @@
     "imgwin.mode_relief": "Relief from the photo (lithophane)",
     "param.o.sign.picture": "Sign made of a picture",
     "farm.order.bar.pay_free": "Start the print",
-    "farm.order.bar.pay_delivery": "Pay the delivery"
+    "farm.order.bar.pay_delivery": "Pay the delivery",
+    "pedestal.cut": "Height of the cut",
+    "pedestal.cut.hint": "Plus keeps more of the figure below the chin, minus cuts the bust higher. Never above the chin.",
+    "pedestal.pitch": "Tilt",
+    "pedestal.pitch.hint": "Minus straightens a bust that leans forward, plus leans it forward. The preview is only a guide, the bust is recalculated when you press Apply."
 }
