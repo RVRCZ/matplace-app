@@ -1025,6 +1025,26 @@ T2 ; slot chosen by matplace farm
         $this->actingAs($this->user)->postJson('/farm/orders', ['file' => $this->upload()])->assertStatus(422)->assertJsonPath('error', 'daily_limit');
     }
 
+    public function test_a_shared_calculation_link_lets_a_stranger_order_the_print_but_the_bare_file_does_not(): void
+    {
+        config(['farm.public' => true]);
+        $file = $this->upload(20.0);
+        $calc = $this->actingAs($this->user)->postJson('/api/calculations', ['file' => $file, 'material' => 'PLA'])->assertCreated()->json('calculation.token');
+
+        // a guest who got the /c/ link: the token authorizes the order, the file keeps its owner
+        $this->app['auth']->forgetGuards();
+        $this->flushSession();
+        $r = $this->postJson('/farm/orders', ['calc' => $calc])->assertCreated();
+        $order = FarmOrder::where('token', basename($r->json('url')))->firstOrFail();
+        $this->assertNull($order->user_id);
+        $this->assertSame($this->user->id, $order->modelFile->owner_user_id);
+
+        // the bare file uuid without the shared token stays somebody else's
+        $this->app['auth']->forgetGuards();
+        $this->flushSession();
+        $this->postJson('/farm/orders', ['file' => $file])->assertForbidden();
+    }
+
     public function test_somebody_elses_order_does_not_exist_for_me(): void
     {
         $order = $this->order();

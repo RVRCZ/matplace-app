@@ -551,7 +551,11 @@ class OrderController extends Controller
             // the calculation's own model, whatever uuid the form carries
             abort_if(isset($data['calc']) && ! $calc?->modelFile, 404);
             $file = $calc?->modelFile ?? ModelFile::where('uuid', (string) $data['file'])->firstOrFail();
-            $this->claim($request, $file);
+            // a shared calculation link is an invitation to print: the token authorizes the order and the
+            // file stays with its owner (a guest got a silent 403 from a shared /c/ link, 22 Nov 2026)
+            if (! $calc || $this->ownsFile($request, $file)) {
+                $this->claim($request, $file);
+            }
         }
         // a design changed in its tool and sent again: the visitor's waiting order of that tool takes the new file
         // instead of another order being made (no pile of orders nobody asked a price for, no count against the limits)
@@ -1498,6 +1502,19 @@ class OrderController extends Controller
      * A file uploaded before logging in belongs to the anonymous session: an account takes it over, a guest orders it
      * from that session (the payment's account takes it over later, GuestCheckout); somebody else's file is refused.
      */
+    /** Whether the visitor already holds this file: their account's, or their anonymous session's. */
+    private function ownsFile(Request $request, ModelFile $file): bool
+    {
+        if ($file->owner_user_id !== null) {
+            $user = $request->user();
+
+            return $user !== null && ($file->owner_user_id === $user->id || $user->isAdmin());
+        }
+        $session = $this->session($request);
+
+        return $session !== null && $file->anonymous_session_id === $session->id;
+    }
+
     private function claim(Request $request, ModelFile $file): void
     {
         $user = $request->user();
