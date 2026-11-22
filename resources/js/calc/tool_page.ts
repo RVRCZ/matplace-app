@@ -23,6 +23,7 @@ import { bootMap } from './map';
 import { bootPaint } from './paint';
 import { FileInfo } from './api';
 import { loadGeometryFromUrl } from './loaders';
+import { loadColoredModel } from './color_model';
 import { preloadIntake, showUnderstood, IntakePayload } from './intake_preload';
 
 export interface ToolCfg {
@@ -406,12 +407,19 @@ export class Stage {
      * main action leading to the exact price (the calculator opens the very same file, with the
      * material and the number of pieces picked here: `ordered` adds them when the button or a project is clicked).
      */
-    async fileResult(file: FileInfo, o: Shown & { goLabel?: string; partLabel?: (part: string) => string } = {}): Promise<void> {
-        if (file.stl_url) this.show(await loadGeometryFromUrl(file.stl_url), { kind: o.kind ?? file.kind ?? null, faces: o.faces ?? null, regions: o.regions ?? null });
+    async fileResult(file: FileInfo, o: Shown & { goLabel?: string; partLabel?: (part: string) => string; colored?: boolean } = {}): Promise<void> {
+        let geom: BufferGeometry | null = null;
+        if (file.stl_url) { geom = await loadGeometryFromUrl(file.stl_url); this.show(geom, { kind: o.kind ?? file.kind ?? null, faces: o.faces ?? null, regions: o.regions ?? null }); }
         this.status({ bbox: file.bbox, pieces: (file.parts ?? []).length || 1 });
         this.fileDownloads(file, o.partLabel);
         this.go({ href: `${this.cfg.home}?open=${file.uuid}`, disabled: false, ...(o.goLabel ? { label: o.goLabel } : {}) });
         this.shareable(`${this.cfg.home}?open=${file.uuid}`);
+        // a generated model that came with its colours (the page asked for them): the grey STL is on show already; the colours replace
+        // it when they are loaded and fit, and any failure leaves the STL as it is
+        if (o.colored && geom && file.glb_url) {
+            const shown = geom;
+            void loadColoredModel(file.glb_url).then((color) => { this.viewer.showColored(color, shown); }).catch(() => { /* the STL stays */ });
+        }
     }
 
     /**

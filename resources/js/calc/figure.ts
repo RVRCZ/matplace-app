@@ -355,7 +355,7 @@ export function bootFigure(stage: Stage): void {
         if (ready.status !== 'ready') return idle(say('figure.failed', 'figure.failed'));
         // the model is downloaded and drawn under the dots (seconds for a big mesh); they fade only when it is there
         dots?.say(done, 100);
-        try { await stage.fileResult(ready); } catch { return idle(t('figure.failed')); }
+        try { await stage.fileResult(ready, { colored: true }); } catch { return idle(t('figure.failed')); }
         await dots?.finish(); dots = null;
         made = ready;
         madeWith = snapshot();
