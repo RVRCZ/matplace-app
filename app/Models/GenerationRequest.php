@@ -47,8 +47,9 @@ class GenerationRequest extends Model
     public static function usedToday(?string $ip, ?int $sessionId, ?int $userId): int
     {
         $since = now()->startOfDay();
-        // cached answers cost nothing and do not count
-        $q = static::where('created_at', '>=', $since)->whereIn('type', ['image', 'text'])->where('engine', 'not like', '%+cache');
+        // cached answers cost nothing and do not count; a failed run gave the visitor nothing (an engine
+        // out of credit locked guests out for the whole day, 22 Nov 2026), so the retry is free
+        $q = static::where('created_at', '>=', $since)->whereIn('type', ['image', 'text'])->where('engine', 'not like', '%+cache')->where('status', '!=', 'failed');
         if ($userId) {
             return (clone $q)->where('owner_user_id', $userId)->count(); // accounts are counted on their own (shared IPs!)
         }

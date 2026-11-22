@@ -67,6 +67,11 @@ class GenerationTest extends TestCase
         $this->postJson('/api/generate', ['describe' => $token])->assertCreated();
         $this->postJson('/api/generate', ['prompt' => 'small vase'])->assertStatus(429)->assertJsonPath('error', 'daily_limit');
 
+        // a failed run gave the visitor nothing (an engine out of credit must not lock guests out for the day)
+        GenerationRequest::latest('id')->first()->update(['status' => 'failed', 'error' => 'engine out of credit']);
+        $this->postJson('/api/generate', ['prompt' => 'small vase'])->assertCreated();
+        $this->postJson('/api/generate', ['prompt' => 'another vase'])->assertStatus(429)->assertJsonPath('error', 'daily_limit');
+
         $user = User::factory()->create();
         $a = $this->actingAs($user)->postJson('/api/generate', ['prompt' => 'small vase', 'target_mm' => 100]);
         $a->assertCreated();
