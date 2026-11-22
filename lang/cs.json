@@ -3124,5 +3124,7 @@
     "imgwin.too_big": "Obrázek je větší než :mb MB.",
     "imgwin.mode_layers": "Vrstvené barvy",
     "imgwin.mode_relief": "Reliéf z fotky (litofanie)",
-    "param.o.sign.picture": "Cedule z obrázku"
+    "param.o.sign.picture": "Cedule z obrázku",
+    "farm.order.bar.pay_free": "Spustit tisk",
+    "farm.order.bar.pay_delivery": "Zaplatit dopravu"
 }

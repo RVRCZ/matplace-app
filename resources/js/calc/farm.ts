@@ -1360,8 +1360,20 @@ export function bootFarmOrder(): void {
             payBtn.dataset.need = need > 0 ? String(need) : '';
             // the whole sentence on the button, the short one for the bar on a phone (data-bar-label, site/sticky.ts)
             if (!payBtn.dataset.busy) {
-                payBtn.textContent = need > 0 ? (s.balance > 0.005 ? tr('farm.order.pay_card_rest', { amount: money(need), balance: money(s.balance) }) : tr('farm.order.pay_card', { amount: money(need) })) : tr('farm.order.pay');
-                payBtn.dataset.barLabel = need > 0 ? (s.balance > 0.005 ? tr('farm.order.bar.pay_card_rest', { amount: money(need) }) : tr('farm.order.bar.pay_card')) : tr('farm.order.bar.pay');
+                // a coupon that covered the whole print: say so, the customer pays the delivery alone (or nothing)
+                const freePrint = (printPrice() ?? 1) <= 0.005;
+                const t = total();
+                payBtn.textContent = need > 0
+                    ? (s.balance > 0.005 ? tr('farm.order.pay_card_rest', { amount: money(need), balance: money(s.balance) })
+                        : tr(freePrint ? 'farm.order.pay_card_delivery' : 'farm.order.pay_card', { amount: money(need) }))
+                    : freePrint && t !== null && t <= 0.005 ? tr('farm.order.pay_free')
+                        : freePrint && t !== null ? tr('farm.order.pay_delivery', { amount: money(t) })
+                            : tr('farm.order.pay');
+                payBtn.dataset.barLabel = need > 0
+                    ? (s.balance > 0.005 ? tr('farm.order.bar.pay_card_rest', { amount: money(need) }) : tr('farm.order.bar.pay_card'))
+                    : freePrint && t !== null && t <= 0.005 ? tr('farm.order.bar.pay_free')
+                        : freePrint && t !== null ? tr('farm.order.bar.pay_delivery')
+                            : tr('farm.order.bar.pay');
             }
             // not ready yet: the button looks off but still answers, by showing what is missing (payBlocker)
             payBtn.setAttribute('aria-disabled', String(!!payBtn.dataset.busy || payBlocker() !== null));

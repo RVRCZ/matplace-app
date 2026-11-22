@@ -1,0 +1,12 @@
+{
+    "farm.order.bar.pay_free": [
+        "Spustit tisk",
+        "Start the print",
+        "Iniciar impresión"
+    ],
+    "farm.order.bar.pay_delivery": [
+        "Zaplatit dopravu",
+        "Pay the delivery",
+        "Pagar el envío"
+    ]
+}

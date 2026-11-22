@@ -3124,5 +3124,7 @@
     "imgwin.too_big": "The picture is bigger than :mb MB.",
     "imgwin.mode_layers": "Layers of colour",
     "imgwin.mode_relief": "Relief from the photo (lithophane)",
-    "param.o.sign.picture": "Sign made of a picture"
+    "param.o.sign.picture": "Sign made of a picture",
+    "farm.order.bar.pay_free": "Start the print",
+    "farm.order.bar.pay_delivery": "Pay the delivery"
 }
