@@ -123,6 +123,10 @@ def load(path):
         if not geoms:
             raise ValueError("empty scene")
         m = trimesh.util.concatenate(geoms)
+    if kw:
+        # a textured mesh splits its vertices along every UV seam: 365 open shards where the untextured
+        # model was one body (parrot, 22 Nov 2026) - welded back, the repair gets a whole to close
+        m.merge_vertices(merge_tex=True, merge_norm=True)
     if m.is_empty or len(m.faces) == 0:
         raise ValueError("mesh has no faces")
     # Unit guess: printing meshes are in mm; values above 2000 are likely inches.
@@ -1736,6 +1740,9 @@ def main(argv):
             m = trimesh.load(argv[2], force="mesh", **({"skip_materials": True} if str(argv[2]).lower().endswith((".glb", ".gltf")) else {}))
             if isinstance(m, trimesh.Scene):
                 m = trimesh.util.concatenate(list(m.geometry.values()))
+            if str(argv[2]).lower().endswith((".glb", ".gltf")):
+                # UV seams split a textured mesh into hundreds of open shards; welded back before any repair (22 Nov 2026)
+                m.merge_vertices(merge_tex=True, merge_norm=True)
             if m.is_empty or len(m.faces) == 0:
                 raise ValueError("mesh has no faces")
             target = float(argv[4])
