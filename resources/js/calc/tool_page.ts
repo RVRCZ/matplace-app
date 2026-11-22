@@ -418,7 +418,9 @@ export class Stage {
         // it when they are loaded and fit, and any failure leaves the STL as it is
         if (o.colored && geom && file.glb_url) {
             const shown = geom;
-            void loadColoredModel(file.glb_url).then((color) => { this.viewer.showColored(color, shown); }).catch(() => { /* the STL stays */ });
+            void loadColoredModel(file.glb_url)
+                .then((color) => { if (!this.viewer.showColored(color, shown)) console.debug('colored preview not applied (another model shown, or it did not fit)'); })
+                .catch((e) => { console.debug('colored preview failed, the STL stays', e); });
         }
     }
 
