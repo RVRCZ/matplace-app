@@ -113,7 +113,10 @@ def fast_report(path, above=FAST_CHECK_ABOVE):
 
 def load(path):
     import trimesh
-    m = trimesh.load(path, force="mesh")
+    # textures stay in the GLB for the colour preview; decoding them here ate the whole
+    # memory (a textured parrot killed the worker with 6.8 GB, 22 Nov 2026) - geometry is all we cut
+    kw = {"skip_materials": True} if str(path).lower().endswith((".glb", ".gltf")) else {}
+    m = trimesh.load(path, force="mesh", **kw)
     if isinstance(m, trimesh.Scene):
         geoms = list(m.geometry.values())
         if not geoms:
@@ -1718,7 +1721,8 @@ def main(argv):
         if cmd == "normalize":
             import numpy as np
             import trimesh
-            m = trimesh.load(argv[2], force="mesh")
+            # like load(): never decode textures, the GLB keeps them for the colour preview (OOM 22 Nov 2026)
+            m = trimesh.load(argv[2], force="mesh", **({"skip_materials": True} if str(argv[2]).lower().endswith((".glb", ".gltf")) else {}))
             if isinstance(m, trimesh.Scene):
                 m = trimesh.util.concatenate(list(m.geometry.values()))
             if m.is_empty or len(m.faces) == 0:
