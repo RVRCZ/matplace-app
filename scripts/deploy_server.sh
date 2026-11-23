@@ -9,8 +9,9 @@ git merge-tree --write-tree HEAD origin/main >/dev/null || { echo "MERGE CONFLIC
 echo "server before: $(git log --oneline -1)"; echo "origin/main:   $(git log --oneline -1 origin/main)"
 # the dump is kept compressed (17 Nov 2026: 36 plain dumps of 350 MB took 12 GB of a 75 GB disk; gzip makes a sixth of them)
 TS=$(date +%Y%m%d-%H%M%S); cp .env /root/env-$TS.bak; ( set -o pipefail; mysqldump matplace_app | gzip -6 > /root/matplace_app-$TS.sql.gz ) || { echo "DUMP FAILED, stop"; rm -f /root/matplace_app-$TS.sql.gz; exit 1; }
-# retention (Roman 1 Nov 2026: old deploy dumps may go): dumps older than 14 days, keep the disk from filling up again
-find /root -maxdepth 1 \( -name 'matplace_app-*.sql' -o -name 'matplace_app-*.sql.gz' \) -mtime +14 -delete; find /root -maxdepth 1 -name 'env-*.bak' -mtime +60 -delete
+# retention (Roman 1 Nov 2026: old deploy dumps may go): the 5 newest dumps stay, whatever their age - ten deploys
+# in one night left 71 dumps (4.6 GB) and the disk ran full on 23 Nov 2026
+ls -1t /root/matplace_app-*.sql.gz /root/matplace_app-*.sql 2>/dev/null | tail -n +6 | xargs -r rm -f; find /root -maxdepth 1 -name 'env-*.bak' -mtime +60 -delete
 echo "dumps kept: $(ls /root/matplace_app-*.sql* | wc -l), disk: $(df -h / | awk 'NR==2 {print $4" free, "$5}')"
 git -c user.name="matplace deploy" -c user.email="deploy@matplace.com" merge -q --no-edit origin/main || { echo "MERGE FAILED"; git merge --abort; exit 1; }
 composer install --no-dev -q -n || { echo "COMPOSER FAILED"; exit 1; }
