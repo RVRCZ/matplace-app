@@ -18,6 +18,7 @@ use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
+use Symfony\Component\HttpFoundation\StreamedResponse;
 
 /** Rough 3D model from a photo (after /api/describe) or from text. Free, limited per day by count. */
 class GenerationController extends Controller
@@ -197,6 +198,40 @@ class GenerationController extends Controller
         return response()->json(['generation' => self::describe($generation)]);
     }
 
+    /** The generator's coloured GLB while the printable file is made from it (GenerateModel sets description.preview_glb); null otherwise. */
+    private static function previewGlb(GenerationRequest $g): ?string
+    {
+        if (in_array($g->status, ['done', 'failed'], true)) {
+            return null;
+        }
+        $path = ((array) $g->description)['preview_glb'] ?? null;
+
+        return is_string($path) && $path !== '' && is_file($path) ? $path : null;
+    }
+
+    /** GET /api/generate/{token}/preview.glb — the token is the secret, as for the state of the generation */
+    public function preview(GenerationRequest $generation): StreamedResponse
+    {
+        $path = self::previewGlb($generation);
+        abort_if($path === null, 404);
+
+        return response()->stream(function () use ($path) {
+            $fh = @fopen($path, 'rb');
+            if ($fh === false) {
+                return;
+            }
+            while (! feof($fh)) {
+                echo fread($fh, 1024 * 512);
+                flush();
+            }
+            fclose($fh);
+        }, 200, [
+            'Content-Type' => 'model/gltf-binary',
+            'Content-Length' => (string) filesize($path),
+            'Cache-Control' => 'private, no-store',
+        ]);
+    }
+
     public static function describe(GenerationRequest $g): array
     {
         $file = $g->result_model_file_id ? $g->resultFile : null;
@@ -210,6 +245,8 @@ class GenerationController extends Controller
             'error' => $g->status === 'failed' ? ($g->error ?: 'failed') : null,
             'target_mm' => $g->target_mm,
             'file' => $file ? UploadController::describe($file) : null,
+            // the coloured model is there before the printable file is: the page shows it while that is being made
+            'preview_glb_url' => self::previewGlb($g) !== null ? route('api.generate.preview', $g->token) : null,
             // what was asked for, so the tool page can show the same choices when it is opened again by its link
             'options' => isset($d['kind']) ? array_filter([
                 'kind' => $d['kind'], 'style' => $d['style'] ?? null, 'roughness' => $d['roughness'] ?? null, 'pedestal' => $d['pedestal'] ?? null,

@@ -219,6 +219,10 @@ class GenerateModel implements ShouldQueue
             $abs = Storage::disk(ModelFile::DISK)->path($rel);
             File::ensureDirectoryExists(dirname($abs));
             $options = in_array($kind, ['bust', 'figure', 'pet'], true) ? ['clean', 'pedestal', 'solid'] : ['clean', 'solid'];
+            // the coloured model is on disk before the slow repair starts: the page shows it while the printable file is made
+            if (is_file((string) $status->meshPath) && str_ends_with(strtolower((string) $status->meshPath), '.glb')) {
+                $req->update(['description' => ['preview_glb' => (string) $status->meshPath] + (array) $req->description]);
+            }
             $normalizer->toPrintableStl((string) $status->meshPath, $abs, (float) ($req->target_mm ?: config('ai.default_target_mm', 80)), str_ends_with(strtolower((string) $status->meshPath), '.glb'), $options, array_filter([
                 'pedestal' => $req->description['pedestal'] ?? null,
                 'name' => $req->description['pedestal_name'] ?? null,

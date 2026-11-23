@@ -3130,5 +3130,6 @@
     "pedestal.cut": "Výška řezu",
     "pedestal.cut.hint": "Plus nechá víc postavy pod bradou, minus seřízne busty výš. Nikdy ne nad bradu.",
     "pedestal.pitch": "Náklon",
-    "pedestal.pitch.hint": "Mínus narovná předkloněnou bustu, plus ji nakloní dopředu. Náhled vpravo je jen orientační, po „Použít“ se busta přepočítá."
+    "pedestal.pitch.hint": "Mínus narovná předkloněnou bustu, plus ji nakloní dopředu. Náhled vpravo je jen orientační, po „Použít“ se busta přepočítá.",
+    "figure.preparing": "Takhle model vypadá. Teď ho připravujeme k tisku, za chvíli bude hotový."
 }

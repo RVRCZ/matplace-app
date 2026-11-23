@@ -6,6 +6,7 @@ import {
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
 import { mergeVertices } from 'three/examples/jsm/utils/BufferGeometryUtils.js';
 import { colorHolder, underSlice } from './color_model';
+import type { Matrix4 as Mat4 } from 'three';
 
 /** Default colour of a previewed model: a calm, slightly desaturated blue, like a light-blue PLA spool. */
 export const MODEL_COLOR = 0x83a6d4;
@@ -121,6 +122,7 @@ export class Viewer {
             this.mesh.geometry.dispose();
         }
         this.colored = false;
+        this.dropPreview();
         if (this.grid) this.scene.remove(this.grid);
         const painted = !!faces && paintByFaces(geom, faces);
         const sculpture = kind === 'generated' && !regions?.length && !painted;
@@ -166,6 +168,37 @@ export class Viewer {
     /** The geometry of the model on show, as the viewer holds it (setGeometry may have welded a copy). */
     shownGeometry(): BufferGeometry | null {
         return this.mesh?.geometry ?? null;
+    }
+
+    /**
+     * The generator's coloured model alone, in place of a model that does not exist yet: `geom` is a box of its size that was
+     * just set (kept unseen, the framing and the bed use it), `fit` the matrix of previewFit(). The next setGeometry removes it.
+     */
+    showPreview(color: Object3D, geom: BufferGeometry, fit: Mat4): boolean {
+        const mesh = this.mesh;
+        if (!mesh || mesh.geometry !== geom) return false;
+        const holder = new Group();
+        holder.matrixAutoUpdate = false;
+        holder.matrix.copy(fit);
+        holder.add(color);
+        mesh.add(holder);
+        mesh.material = Viewer.HIDDEN;
+        this.colored = true;
+        this.previewHolder = holder;
+        return true;
+    }
+    private previewHolder: Group | null = null;
+
+    /** Frees what the coloured preview held (its textures are tens of megabytes). */
+    private dropPreview(): void {
+        const h = this.previewHolder;
+        this.previewHolder = null;
+        h?.traverse((o) => {
+            const m = o as Mesh;
+            if (!m.isMesh) return;
+            m.geometry?.dispose();
+            (Array.isArray(m.material) ? m.material : [m.material]).forEach((x) => { (x as MeshBasicMaterial).map?.dispose(); x.dispose(); });
+        });
     }
 
     showColored(color: Object3D, geom: BufferGeometry): boolean {

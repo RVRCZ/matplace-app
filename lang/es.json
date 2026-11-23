@@ -3130,5 +3130,6 @@
     "pedestal.cut": "Altura del corte",
     "pedestal.cut.hint": "Más deja más figura bajo la barbilla, menos corta el busto más arriba. Nunca por encima de la barbilla.",
     "pedestal.pitch": "Inclinación",
-    "pedestal.pitch.hint": "Menos endereza un busto inclinado hacia delante, más lo inclina hacia delante. La vista previa es solo orientativa, el busto se recalcula al pulsar Aplicar."
+    "pedestal.pitch.hint": "Menos endereza un busto inclinado hacia delante, más lo inclina hacia delante. La vista previa es solo orientativa, el busto se recalcula al pulsar Aplicar.",
+    "figure.preparing": "Así se ve el modelo. Ahora lo preparamos para imprimir; estará listo en un momento."
 }

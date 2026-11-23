@@ -154,6 +154,23 @@ function baseTop(target: Vector3[], want: Box): number {
     return want.min.z;
 }
 
+/**
+ * The coloured model on its own, before any STL exists (the generator's GLB is on the page while the printable file is made):
+ * the matrix that stands it up (glTF Y-up to Z-up), scales it so its longest side is `targetMm` and puts its footprint corner
+ * at the origin like an STL, with the size of the box it fills. Null when the model is empty or the size is not known.
+ */
+export function previewFit(color: Object3D, targetMm: number): { matrix: Matrix4; size: [number, number, number] } | null {
+    if (!(targetMm > 0)) return null;
+    const up = new Matrix4().makeRotationX(Math.PI / 2);
+    const have = boundsOf(points(color).map((v) => v.applyMatrix4(up)));
+    const w = have.max.x - have.min.x; const d = have.max.y - have.min.y; const h = have.max.z - have.min.z;
+    const longest = Math.max(w, d, h);
+    if (!Number.isFinite(longest) || !(longest > 0)) return null;
+    const s = targetMm / longest;
+    const matrix = new Matrix4().makeScale(s, s, s).multiply(new Matrix4().makeTranslation(-have.min.x, -have.min.y, -have.min.z)).multiply(up);
+    return { matrix, size: [w * s, d * s, h * s] };
+}
+
 /** The coloured model wrapped so it can be hung on the STL mesh (same coordinates); null when it cannot be fitted. */
 export function colorHolder(color: Object3D, stl: BufferGeometry): Group | null {
     const m = fitToStl(color, stl);

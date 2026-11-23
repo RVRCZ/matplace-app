@@ -197,23 +197,29 @@ def fix_winding_fast(m):
     # neighbours agree when the shared edge runs in opposite directions in the two faces
     clash = runs_forward(pairs[:, 0]) == runs_forward(pairs[:, 1])
     n = len(f)
-    graph = coo_matrix((np.ones(len(pairs), dtype=np.int8), (pairs[:, 0], pairs[:, 1])), shape=(n, n)).tocsr()
-    graph = graph + graph.T
-    lookup = {}
-    for (i, j), c in zip(pairs[clash].tolist(), [True] * int(clash.sum())):
-        lookup[(i, j)] = lookup[(j, i)] = c
+    # faces that agree with their neighbour form patches of one orientation; only the few patches need a parity walk
+    # (a python loop over two million faces took six seconds, 23 Nov 2026)
+    from scipy.sparse.csgraph import connected_components
+    ok = ~clash
+    agree = coo_matrix((np.ones(int(ok.sum()), dtype=np.int8), (pairs[ok, 0], pairs[ok, 1])), shape=(n, n)).tocsr()
+    count, label = connected_components(agree, directed=False)
     flip = np.zeros(n, dtype=bool)
-    seen = np.zeros(n, dtype=bool)
-    for start in range(n):
-        if seen[start]:
-            continue
-        order, pred = breadth_first_order(graph, start, directed=False, return_predecessors=True)
-        seen[order] = True
-        for node in order[1:].tolist():
-            parent = int(pred[node])
-            flip[node] = flip[parent] ^ ((parent, node) in lookup)
-        if len(order) == n:
-            break
+    if count > 1:
+        la, lb = label[pairs[clash, 0]], label[pairs[clash, 1]]
+        diff = la != lb
+        la, lb = la[diff], lb[diff]
+        quotient = coo_matrix((np.ones(len(la), dtype=np.int8), (la, lb)), shape=(count, count)).tocsr()
+        quotient = quotient + quotient.T
+        turn = np.zeros(count, dtype=bool)
+        seen = np.zeros(count, dtype=bool)
+        for start in range(count):
+            if seen[start]:
+                continue
+            order, pred = breadth_first_order(quotient, start, directed=False, return_predecessors=True)
+            seen[order] = True
+            for node in order[1:].tolist():
+                turn[node] = not turn[int(pred[node])]
+        flip = turn[label]
     if flip.any():
         faces = f.copy()
         faces[flip] = faces[flip][:, ::-1]
@@ -437,6 +443,45 @@ def simplified(mesh, tolerance):
         return slim if len(slim.faces) and slim.is_watertight else mesh
     except Exception:
         return mesh
+
+
+def thin_early(m, note=None, keep=450_000):
+    """
+    A generated model arrives with about two million triangles and ends as ~400 000 anyway (simplified() below). Thinning it
+    right after the vertices are welded lets split, pymeshfix and the unions work on a fifth of the mesh: a texture-less
+    57 MB model needed 73 s, mostly pymeshfix, before this (23 Nov 2026).
+    A closed mesh is merged exactly (manifold3d, 0.012 mm like the final pass); one with open edges (a 0.1 mm gap) cannot
+    be handed to manifold3d, so it is decimated by quadric error, which keeps the surface within a few hundredths of a mm
+    and leaves the holes for pymeshfix. Any failure hands back the mesh as it came.
+    """
+    import numpy as np
+    import trimesh
+    if len(m.faces) <= keep * 1.3:
+        return m
+    came = len(m.faces)
+    try:
+        if m.is_watertight:
+            w = m if m.is_winding_consistent else fix_winding_fast(m)
+            man = as_manifold(w)
+            if not man.is_empty():
+                slim = from_manifold(man.simplify(0.012))
+                if len(slim.faces) and slim.is_watertight:
+                    if note is not None:
+                        note["thinned_early"] = came
+                    return slim
+    except Exception:  # noqa: BLE001 - fall through to the decimation
+        pass
+    try:
+        import fast_simplification
+        v, f = fast_simplification.simplify(np.asarray(m.vertices, dtype=np.float32), np.asarray(m.faces, dtype=np.int32), target_reduction=1.0 - keep / float(came), agg=5)
+        d = trimesh.Trimesh(np.asarray(v, dtype=np.float64), np.asarray(f), process=False)
+        if len(d.faces) and abs(float(max(d.extents)) - float(max(m.extents))) <= 0.01 * float(max(m.extents)):
+            if note is not None:
+                note["decimated_early"] = came
+            return d
+    except Exception:  # noqa: BLE001 - the full mesh is slower but right
+        pass
+    return m
 
 
 def big_shells(mesh):
@@ -1775,6 +1820,7 @@ def main(argv):
                             ped_note["thinned_from"] = came
                 except Exception as e:  # noqa: BLE001 - the model as it came is better than none
                     ped_note["thin_error"] = str(e)[:120]
+            m = thin_early(m, ped_note)
             removed = 0
             if "clean" in opts:
                 # generated meshes carry tiny floating fragments; keep everything that is a real part (glasses, hair)

@@ -437,6 +437,8 @@ Route::prefix('api')->name('api.')->group(function () {
     Route::post('describe', [SearchController::class, 'describe'])->middleware('throttle:10,1,describe')->name('describe');
     Route::post('generate', [GenerationController::class, 'store'])->middleware('throttle:10,1,generate')->name('generate.store');
     Route::get('generate/{generation}', [GenerationController::class, 'show'])->name('generate.show');
+    // the coloured model of a generation whose printable file is still being made
+    Route::get('generate/{generation}/preview.glb', [GenerationController::class, 'preview'])->name('generate.preview');
     Route::post('generate/{generation}/refine', [GenerationController::class, 'refine'])->middleware('throttle:10,1,refine')->name('generate.refine');
     // "send me the result": one e-mail with the link once the model is done (docs/AN.md §12.5)
     Route::post('generate/{generation}/notify', [GenerationController::class, 'notify'])->middleware('throttle:10,1,notify')->name('generate.notify');

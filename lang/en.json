@@ -3130,5 +3130,6 @@
     "pedestal.cut": "Height of the cut",
     "pedestal.cut.hint": "Plus keeps more of the figure below the chin, minus cuts the bust higher. Never above the chin.",
     "pedestal.pitch": "Tilt",
-    "pedestal.pitch.hint": "Minus straightens a bust that leans forward, plus leans it forward. The preview is only a guide, the bust is recalculated when you press Apply."
+    "pedestal.pitch.hint": "Minus straightens a bust that leans forward, plus leans it forward. The preview is only a guide, the bust is recalculated when you press Apply.",
+    "figure.preparing": "This is how the model looks. We are now preparing it for printing; it will be ready in a moment."
 }

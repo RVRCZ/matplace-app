@@ -10,7 +10,7 @@
         'rebase.working' => 'pet.rebase.working', 'rebase.failed' => 'pet.rebase.failed', 'notify.sent' => 'figure.notify.sent', 'notify.failed' => 'figure.notify.failed',
         'rejected.no_animal' => 'pet.rejected.no_animal', 'rejected.person' => 'pet.rejected.person', 'rejected.several' => 'pet.rejected.several', 'rejected.cropped' => 'pet.rejected.cropped',
         'rejected.owner.no_person' => 'pet.rejected.owner.no_person', 'rejected.owner.several_people' => 'pet.rejected.owner.several_people', 'rejected.owner.cropped' => 'pet.rejected.owner.cropped', 'thin.owner' => 'pet.thin.owner',
-        'again' => 'figure.again', 'again.why' => 'figure.again.why', 'again.rebase' => 'figure.again.rebase', 'again.rebase.why' => 'figure.again.rebase.why'];
+        'preparing' => 'figure.preparing', 'again' => 'figure.again', 'again.why' => 'figure.again.why', 'again.rebase' => 'figure.again.rebase', 'again.rebase.why' => 'figure.again.rebase.why'];
     $i18n = collect($say)->mapWithKeys(fn ($key, $as) => ['figure.'.$as => __($key, ['n' => ':n', 'm' => ':m', 'mm' => ':mm', 'view' => ':view'])])->all()
         + ['photo.too_big' => __('photo.too_big', ['mb' => \App\Http\Controllers\Api\GenerationController::PHOTO_MB]), 'photo.add' => __('photo.add'), 'photo.add.more' => __('photo.add.more'), 'figure.view.front' => __('figure.view.front')];
     $choice = 'cursor-pointer rounded-lg border border-slate-300 bg-white text-ink has-[:checked]:border-ink has-[:checked]:ring-1 has-[:checked]:ring-ink has-[:focus-visible]:outline has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-action has-[:disabled]:cursor-not-allowed has-[:disabled]:opacity-50';

@@ -6,7 +6,7 @@
  * a photo. That part is a module (param.ts, relief.ts, mold.ts, repair.ts, check.ts, figure.ts) handed this Stage.
  */
 import { fitWindow, flash, revealIfHidden } from '../site/sticky';
-import { BufferGeometry } from 'three';
+import { BoxGeometry, BufferGeometry } from 'three';
 import { Viewer, Region, FacePaint, Piece, ViewName } from './viewer';
 import type { RoughConfig, Profile } from './rough';
 import { initPalette, PalettePayload } from './colors';
@@ -23,7 +23,7 @@ import { bootMap } from './map';
 import { bootPaint } from './paint';
 import { FileInfo } from './api';
 import { loadGeometryFromUrl } from './loaders';
-import { loadColoredModel } from './color_model';
+import { loadColoredModel, previewFit } from './color_model';
 import { preloadIntake, showUnderstood, IntakePayload } from './intake_preload';
 
 export interface ToolCfg {
@@ -423,6 +423,21 @@ export class Stage {
                 .then((color) => { if (!this.viewer.showColored(color, shown)) console.debug('colored preview not applied (another model shown, or it did not fit)'); })
                 .catch((e) => { console.debug('colored preview failed, the STL stays', e); });
         }
+    }
+
+    /**
+     * The generator's coloured model alone, while the printable file is still being made (a box of its size stands in for the
+     * STL: the viewer frames and seats it). `stillWanted` is asked after the download, a finished model may have come meanwhile.
+     * Returns false when nothing was shown; the caller keeps whatever it showed before.
+     */
+    async previewColored(url: string, targetMm: number, stillWanted: () => boolean): Promise<boolean> {
+        const color = await loadColoredModel(url);
+        const fit = previewFit(color, targetMm);
+        if (!fit || !stillWanted()) return false;
+        const box = new BoxGeometry(fit.size[0], fit.size[1], fit.size[2]);
+        box.translate(fit.size[0] / 2, fit.size[1] / 2, fit.size[2] / 2);
+        this.show(box, {});
+        return this.viewer.showPreview(color, this.viewer.shownGeometry() ?? box, fit.matrix);
     }
 
     /**
