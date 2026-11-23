@@ -5,7 +5,11 @@ or textured background, standing on a soft shadow, at the size the place wants (
 for the end of the square Short). Without a cut-out (rembg not installed) the photo itself is fitted and cropped.
 
   photo_compose.py <cutout.png|photo.jpg> <out.jpg> --bg studio --size 1200x800 [--cut 1|0] [--webp out.webp]
-                   [--backgrounds <dir with wood.jpg, paper.jpg …>]
+                   [--backgrounds <dir with wood.jpg, paper.jpg …>] [--scenes <dir with shelf-1.jpg + shelf-1.json …>]
+
+A --bg that names a scene (<scenes>/<name>.jpg + <name>.json) puts the cut-out on the surface of an interior photo
+(a shelf, a coffee table): the scene's JSON says where the surface is, where the piece stands, how big it is and
+where the light comes from (see place_in_scene). Without a cut-out a scene falls back to the photo as it is.
 
 Backdrops: studio (a light grey vignette), white, gradient (a cool light gradient), or a texture by name from the
 backgrounds folder (wood, paper, marble, concrete, linen; photo_backgrounds.py draws them). One JSON object on stdout.
@@ -104,18 +108,41 @@ def place(cut, size, portrait):
     return piece, x, max(0, y), sy1
 
 
-def shadow(canvas, piece, x, y, sy1):
+def cast_shadow(canvas, piece, x, y, sy1, light, strength=0.30):
+    """The piece's own alpha laid flat on the surface and sheared away from the light (a soft long shadow on a shelf
+    or a table); light is left / right / top (top = straight down, only a soft pool under the piece)."""
+    alpha = piece.getchannel("A").point(lambda v: v if v > 128 else 0)
+    flat = 0.30
+    lean = {"left": 0.55, "right": -0.55}.get(light, 0.0)
+    py = y + sy1   # the standing line (canvas row)
+    mask = Image.new("L", canvas.size, 0)
+    mask.paste(alpha, (x, y))
+    if lean:
+        mask = mask.transform(canvas.size, Image.AFFINE, (1, lean / flat, -lean / flat * py, 0, 1 / flat, py - py / flat), Image.BILINEAR)
+    else:
+        mask = mask.transform(canvas.size, Image.AFFINE, (1, 0, 0, 0, 1 / (flat * 0.7), py - py / (flat * 0.7)), Image.BILINEAR)
+    blur = max(3, round(piece.width * 0.05))
+    mask = mask.filter(ImageFilter.GaussianBlur(blur)).point(lambda a: int(a * strength))
+    shadow_layer = Image.new("RGBA", canvas.size, (0, 0, 0, 0))
+    shadow_layer.paste((18, 16, 14, 255), (0, 0), mask)
+    canvas.alpha_composite(shadow_layer)
+
+
+def shadow(canvas, piece, x, y, sy1, light=None):
     """A soft drop shadow from the piece's own alpha and a darker contact shadow: an ellipse over the ground band
     (its top overlaps the far feet, its bottom lies under the near ones), as wide as the feet and a little more,
     never a fixed offset from the frame."""
-    alpha = piece.getchannel("A")
-    blur = max(3, round(piece.width * 0.035))
-    drop = Image.new("RGBA", canvas.size, (0, 0, 0, 0))
-    mask = Image.new("L", canvas.size, 0)
-    mask.paste(alpha, (x, y + round(piece.height * 0.02)))
-    mask = mask.filter(ImageFilter.GaussianBlur(blur)).point(lambda a: int(a * 0.32))
-    drop.paste((20, 24, 30, 255), (0, 0), mask)
-    canvas.alpha_composite(drop)
+    if light:
+        cast_shadow(canvas, piece, x, y, sy1, light)
+    else:
+        alpha = piece.getchannel("A")
+        blur = max(3, round(piece.width * 0.035))
+        drop = Image.new("RGBA", canvas.size, (0, 0, 0, 0))
+        mask = Image.new("L", canvas.size, 0)
+        mask.paste(alpha, (x, y + round(piece.height * 0.02)))
+        mask = mask.filter(ImageFilter.GaussianBlur(blur)).point(lambda a: int(a * 0.32))
+        drop.paste((20, 24, 30, 255), (0, 0), mask)
+        canvas.alpha_composite(drop)
     contact = Image.new("L", canvas.size, 0)
     d = ImageDraw.Draw(contact)
     top, left, right = ground_band(piece, sy1)
@@ -131,6 +158,86 @@ def shadow(canvas, piece, x, y, sy1):
     canvas.alpha_composite(dark)
 
 
+def load_scene(name, folder):
+    """(image, meta) of a scene or None: <folder>/<name>.jpg with <name>.json beside it (surface_y, x, piece_h, light)."""
+    if not folder or not name or "/" in name or "\\" in name or name.startswith("."):
+        return None
+    jpg, js = os.path.join(folder, name + ".jpg"), os.path.join(folder, name + ".json")
+    if not (os.path.isfile(jpg) and os.path.isfile(js)):
+        return None
+    try:
+        with open(js, encoding="utf-8") as f:
+            meta = json.load(f)
+        return Image.open(jpg).convert("RGB"), meta
+    except Exception:  # noqa: BLE001
+        return None
+
+
+def scene_window(img, meta, size):
+    """The part of the (square) scene this format shows, as a box in scene pixels: the whole picture for 1:1, the
+    full width and the band around the surface for 3:2, the full height and the strip around the piece for 9:16."""
+    sw, sh = img.size
+    w, h = size
+    ratio = w / h
+    surface = float(meta.get("surface_y", 0.8)) * sh
+    cx = float(meta.get("x", 0.5)) * sw
+    if ratio >= sw / sh:
+        ww = sw
+        wh = min(sh, sw / ratio)
+        top = min(max(surface - 0.80 * wh, 0), sh - wh)   # the surface at four fifths of the band
+        return (0, round(top), ww, round(top + wh))
+    wh = sh
+    ww = min(sw, sh * ratio)
+    left = min(max(cx - ww / 2, 0), sw - ww)
+    return (round(left), 0, round(left + ww), wh)
+
+
+def match_to_scene(piece, backdrop_img, box):
+    """Pull the piece's brightness and colour a little (at most 10 %, by a fifth of the difference) toward the scene
+    around where it stands: it must sit in the light of the room, never be repainted."""
+    rgb = piece.convert("RGB")
+    solid = piece.getchannel("A").point(lambda a: 255 if a > 200 else 0)
+    if not solid.getbbox():
+        return piece
+    import numpy as np
+    arr = np.asarray(rgb, dtype="float32")
+    msk = np.asarray(solid) > 0
+    mine = arr[msk].mean(axis=0)
+    around = np.asarray(backdrop_img.crop(box).convert("RGB"), dtype="float32").reshape(-1, 3).mean(axis=0)
+    gain = np.clip(1 + 0.2 * (around / np.maximum(mine, 1) - 1), 0.9, 1.1)
+    out_arr = np.clip(arr * gain, 0, 255).astype("uint8")
+    out_img = Image.fromarray(out_arr, "RGB").convert("RGBA")
+    out_img.putalpha(piece.getchannel("A"))
+    return out_img
+
+
+def place_in_scene(piece, scene, size):
+    """The cut-out standing on the scene's surface, bottom on the line the JSON gives, at the height it gives (a share
+    of the scene's height), with a contact shadow and a cast one by the light; cropped to the format's window."""
+    img, meta = scene
+    sw, sh = img.size
+    box = scene_window(img, meta, size)
+    win = img.crop(box).resize(size, Image.LANCZOS)
+    k_win = size[0] / (box[2] - box[0])   # scene pixels -> output pixels
+    w, h = size
+    want_h = float(meta.get("piece_h", 0.4)) * sh * k_win
+    k = min(want_h / piece.height, (w * 0.72) / piece.width)
+    piece = piece.resize((max(1, round(piece.width * k)), max(1, round(piece.height * k))), Image.LANCZOS)
+    sy1 = solid_box(piece)[3]
+    piece = piece.crop((0, 0, piece.width, min(piece.height, sy1 + 1)))
+    cx = (float(meta.get("x", 0.5)) * sw - box[0]) * k_win
+    base = (float(meta.get("surface_y", 0.8)) * sh - box[1]) * k_win
+    x = round(cx - piece.width / 2)
+    x = min(max(x, 0), w - piece.width)
+    y = round(base - sy1)
+    spot = (max(0, x), max(0, y), min(w, x + piece.width), min(h, y + piece.height))
+    piece = match_to_scene(piece, win, spot)
+    canvas = win.convert("RGBA")
+    shadow(canvas, piece, x, y, sy1, light=str(meta.get("light", "top")))
+    canvas.alpha_composite(piece, (x, y))
+    return canvas.convert("RGB")
+
+
 def main(argv):
     if len(argv) < 2:
         out({"ok": False, "error": "usage"})
@@ -142,6 +249,7 @@ def main(argv):
         out({"ok": False, "error": "bad_size"})
     cut = arg(argv, "--cut", "1") != "0"
     webp = arg(argv, "--webp")
+    scenes = arg(argv, "--scenes", os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "..", "public", "img", "scenes"))
     folder = arg(argv, "--backgrounds", os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "..", "public", "img", "backgrounds"))
     try:
         im = ImageOps.exif_transpose(Image.open(src))
@@ -154,11 +262,15 @@ def main(argv):
         if not bbox:
             out({"ok": False, "error": "nothing_found"})
         piece = piece.crop(bbox)
-        canvas = backdrop(bg, size, folder).convert("RGBA")
-        piece, x, y, sy1 = place(piece, size, portrait=h > w)
-        shadow(canvas, piece, x, y, sy1)
-        canvas.alpha_composite(piece, (x, y))
-        result = canvas.convert("RGB")
+        scene = load_scene(bg, scenes)
+        if scene:
+            result = place_in_scene(piece, scene, size)
+        else:
+            canvas = backdrop(bg, size, folder).convert("RGBA")
+            piece, x, y, sy1 = place(piece, size, portrait=h > w)
+            shadow(canvas, piece, x, y, sy1)
+            canvas.alpha_composite(piece, (x, y))
+            result = canvas.convert("RGB")
     else:
         # no cut-out: the photo as it is, filled and cropped to the size (the middle kept)
         result = ImageOps.fit(im.convert("RGB"), size, Image.LANCZOS, centering=(0.5, 0.5))

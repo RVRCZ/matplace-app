@@ -119,6 +119,8 @@
                 <a href="{{ route('admin.farm.orders.show', $o) }}" class="underline">{{ $o->number }}</a>
                 · {{ $o->color?->material?->label() }} {{ $o->color?->displayName() }} · {{ $o->user?->email }}
                 · souhlas {{ $o->video_consent_at?->format('j. n. Y H:i') }}
+                {{-- the phone's camera upload sits under the video on the order page --}}
+                · <a href="{{ route('admin.farm.orders.show', $o) }}#foto" class="font-semibold text-action-dark underline" data-add-photo>Přidat fotku</a>
             </p>
             @if(array_key_exists($o->id, $finish))
                 @php($fi = $finish[$o->id])

@@ -5,6 +5,7 @@ namespace App\Domain\Farm;
 use App\Engines\Exceptions\EngineException;
 use App\Engines\Photo\BackgroundRemover;
 use App\Models\FarmOrder;
+use App\Models\GenerationRequest;
 use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Process;
@@ -24,6 +25,21 @@ final class PrintPhotos
     public const BACKGROUNDS = ['studio', 'wood', 'white', 'gradient', 'paper', 'marble', 'concrete', 'linen'];
 
     public const DEFAULT = 'studio';
+
+    /**
+     * SCENE FORMAT. A scene is a photo of an empty interior (a shelf, a coffee table) the piece is put on:
+     * public/img/scenes/<name>.jpg (square, about 2048x2048, the surface in the lower third) and <name>.json beside it:
+     *   { "kind": "shelf"|"table", "surface_y": 0.80, "x": 0.45, "piece_h": 0.40, "light": "left"|"right"|"top",
+     *     "placeholder": true }
+     * surface_y = the row the piece's bottom stands on (share of the image height), x = the centre of the piece (share
+     * of the width), piece_h = the piece's height (share of the image height), light = where the light comes from
+     * (the cast shadow falls away from it; top = only a pool under the piece), placeholder = a drawn stand-in (never
+     * chosen by default, only by hand). The figure is always the real photo's cut-out; the scene is never drawn by AI.
+     */
+    public const SCENE_KINDS = ['shelf', 'table'];
+
+    /** What a generation request's description kind must be for the default to choose a scene (a bust, a figure, a pet). */
+    public const SCENE_MODEL_KINDS = ['bust', 'figure', 'pet'];
 
     /** The renders of one photo: name => [width, height]. */
     public const SIZES = ['web' => [1200, 800], 'short' => [1080, 1920], 'square' => [1080, 1080]];
@@ -46,6 +62,64 @@ final class PrintPhotos
 
     /** @param  array{bin?: string, timeout?: int}  $python  config engines.python */
     public function __construct(private readonly BackgroundRemover $remover, private readonly array $python) {}
+
+    /** The folder of the scenes (config farm.scenes_dir overrides it, for tests). */
+    public static function sceneDir(): string
+    {
+        return (string) (config('farm.scenes_dir') ?: public_path('img/scenes'));
+    }
+
+    /**
+     * The scenes there are: name => its JSON (kind, surface_y, x, piece_h, light, placeholder); only those with both
+     * the picture and a readable JSON.
+     *
+     * @return array<string, array<string, mixed>>
+     */
+    public static function scenes(): array
+    {
+        $out = [];
+        foreach (glob(self::sceneDir().'/*.json') ?: [] as $js) {
+            $name = basename($js, '.json');
+            $meta = json_decode((string) @file_get_contents($js), true);
+            if (is_array($meta) && is_file(self::sceneDir().'/'.$name.'.jpg') && preg_match('/^[a-z0-9_-]+$/i', $name)) {
+                $out[$name] = $meta;
+            }
+        }
+        ksort($out);
+
+        return $out;
+    }
+
+    /** Every backdrop the admin may choose: the plain ones and the textures, then the scenes. @return list<string> */
+    public static function backgrounds(): array
+    {
+        return [...self::BACKGROUNDS, ...array_keys(self::scenes())];
+    }
+
+    /**
+     * The backdrop of an order when nobody chose one: a bust, a figure or a pet from the generator stands on a shelf or
+     * a coffee table (the scene alternates by the order's id; the drawn stand-ins are skipped), everything else on the
+     * studio backdrop as before.
+     */
+    public static function defaultFor(FarmOrder $order): string
+    {
+        $file = $order->modelFile;
+        if (! $file || $file->origin !== 'generated' || ! $file->origin_ref) {
+            return self::DEFAULT;
+        }
+        $kind = GenerationRequest::where('token', $file->origin_ref)->first()?->description['kind'] ?? null;
+        if (! in_array($kind, self::SCENE_MODEL_KINDS, true)) {
+            return self::DEFAULT;
+        }
+        $real = array_filter(self::scenes(), fn (array $m) => empty($m['placeholder']));
+        $want = self::SCENE_KINDS[$order->id % 2];   // odd ids a table, even ids a shelf
+        $pool = array_keys(array_filter($real, fn (array $m) => ($m['kind'] ?? null) === $want)) ?: array_keys($real);
+        if (! $pool) {
+            return self::DEFAULT;
+        }
+
+        return $pool[intdiv($order->id, 2) % count($pool)];
+    }
 
     /** Whether the background can be taken off here (rembg with its model; the answer is remembered for an hour). */
     public function available(): bool
@@ -74,7 +148,7 @@ final class PrintPhotos
      */
     public function render(string $source, string $outDir, string $stem, ?string $bg = null): array
     {
-        $bg = in_array($bg, self::BACKGROUNDS, true) ? $bg : self::DEFAULT;
+        $bg = in_array($bg, self::backgrounds(), true) ? $bg : self::DEFAULT;
         $this->refuseDark($source);
         File::ensureDirectoryExists($outDir);
         $cutout = $outDir.'/'.$stem.'-cutout.png';
@@ -99,7 +173,7 @@ final class PrintPhotos
         $files = $cut ? ['cutout' => $cutout] : [];
         foreach (self::SIZES as $name => [$w, $h]) {
             $jpg = $outDir.'/'.$stem.'-'.$name.'.jpg';
-            $args = [$cut ? $cutout : $source, $jpg, '--bg', $bg, '--size', $w.'x'.$h, '--cut', $cut ? '1' : '0', '--backgrounds', public_path('img/backgrounds')];
+            $args = [$cut ? $cutout : $source, $jpg, '--bg', $bg, '--size', $w.'x'.$h, '--cut', $cut ? '1' : '0', '--backgrounds', public_path('img/backgrounds'), '--scenes', self::sceneDir()];
             if ($name === 'web') {
                 $args[] = '--webp';
                 $args[] = $outDir.'/'.$stem.'-web.webp';
@@ -182,6 +256,7 @@ final class PrintPhotos
     {
         $disk = Storage::disk(self::DISK);
         $dir = 'prints/'.$order->token;
+        $bg = in_array($bg, self::backgrounds(), true) ? $bg : self::defaultFor($order);
         $this->refuseDark($source);   // before the photo the order has goes: a black frame must not take a good one away
         $disk->deleteDirectory($dir);
         $r = $this->render($source, $disk->path($dir), 'photo', $bg);

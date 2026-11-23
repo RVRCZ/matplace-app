@@ -10,7 +10,10 @@ use App\Engines\Exceptions\EngineException;
 use App\Engines\Photo\BackgroundRemover;
 use App\Engines\Photo\FakeBackgroundRemover;
 use App\Jobs\AddFinishPhotoToVideo;
+use App\Jobs\ComposePrintPhoto;
 use App\Models\FarmOrder;
+use App\Models\GenerationRequest;
+use App\Models\ModelFile;
 use App\Models\User;
 use Database\Seeders\FarmSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -110,6 +113,113 @@ final class PrintPhotosTest extends TestCase
         $this->assertSame([], Storage::disk('public')->files('prints/'.$order->token));
     }
 
+    /** A folder of real-looking (not placeholder) scenes made from the shipped stand-ins, for the default choice. */
+    private function realScenes(): void
+    {
+        $dir = $this->tmp.'/scenes';
+        mkdir($dir);
+        foreach (['shelf-1' => 'shelf-demo', 'table-1' => 'table-demo', 'table-2' => 'table-demo'] as $name => $from) {
+            copy(public_path('img/scenes/'.$from.'.jpg'), $dir.'/'.$name.'.jpg');
+            $meta = json_decode(file_get_contents(public_path('img/scenes/'.$from.'.json')), true);
+            unset($meta['placeholder']);
+            file_put_contents($dir.'/'.$name.'.json', json_encode($meta));
+        }
+        config(['farm.scenes_dir' => $dir]);
+    }
+
+    private function generatedOrder(string $kind, ?int $id = null): FarmOrder
+    {
+        $token = 'gen'.uniqid();
+        GenerationRequest::create(['token' => $token, 'type' => 'image', 'status' => 'done', 'description' => ['kind' => $kind]]);
+        $file = ModelFile::factory()->create(['origin' => 'generated', 'origin_ref' => $token]);
+
+        return FarmOrder::factory()->paid()->done()->create(['model_file_id' => $file->id] + ($id ? ['id' => $id] : []));
+    }
+
+    public function test_the_shipped_placeholder_scenes_are_listed_for_choosing_but_never_chosen_by_default(): void
+    {
+        $this->assertContains('shelf-demo', PrintPhotos::backgrounds());
+        $this->assertContains('table-demo', PrintPhotos::backgrounds());
+        $this->assertTrue(PrintPhotos::scenes()['shelf-demo']['placeholder']);
+        $this->assertSame('studio', PrintPhotos::defaultFor($this->generatedOrder('bust')), 'only stand-ins there: the studio as before');
+    }
+
+    public function test_a_bust_or_a_pet_gets_a_scene_alternating_by_order_and_other_orders_the_studio(): void
+    {
+        $this->realScenes();
+        $even = PrintPhotos::defaultFor($this->generatedOrder('bust', 200));
+        $odd = PrintPhotos::defaultFor($this->generatedOrder('pet', 201));
+        $this->assertSame('shelf-1', $even);
+        $this->assertStringStartsWith('table-', $odd);
+        $this->assertSame($even, PrintPhotos::defaultFor(FarmOrder::find(200)), 'deterministic');
+        $this->assertSame('studio', PrintPhotos::defaultFor($this->generatedOrder('other', 202)));
+        $this->assertSame('studio', PrintPhotos::defaultFor(FarmOrder::factory()->paid()->done()->create()), 'a plain upload stays on the studio');
+    }
+
+    public function test_a_scene_is_composed_in_every_size_with_the_piece_on_its_surface(): void
+    {
+        $order = $this->generatedOrder('bust');
+        $meta = app(PrintPhotos::class)->attach($order, $this->photo(), 'shelf-demo');
+        $this->assertTrue($meta['cut']);
+        $this->assertSame('shelf-demo', $meta['bg']);
+        foreach (['web' => [1200, 800], 'short' => [1080, 1920], 'square' => [1080, 1080]] as $variant => [$w, $h]) {
+            $this->assertSame([$w, $h], array_slice(getimagesize(PrintPhotos::file($order->fresh(), $variant)), 0, 2), $variant);
+        }
+        // the square shows the scene whole: the wall at the top is the scene's, the piece (blue) stands low in it
+        $sq = imagecreatefromjpeg(PrintPhotos::file($order->fresh(), 'square'));
+        $wall = imagecolorsforindex($sq, imagecolorat($sq, 40, 40));
+        $this->assertGreaterThan(180, $wall['red'], 'a light wall');
+        $blue = 0;
+        for ($y = 400; $y < 900; $y += 20) {
+            for ($x = 300; $x < 700; $x += 20) {
+                $c = imagecolorsforindex($sq, imagecolorat($sq, $x, $y));
+                $blue += $c['blue'] > $c['red'] + 30 ? 1 : 0;
+            }
+        }
+        $this->assertGreaterThan(20, $blue, 'the cut-out piece is on the scene');
+        imagedestroy($sq);
+    }
+
+    public function test_an_unknown_scene_falls_back_and_without_a_cut_a_scene_leaves_the_photo_as_it_is(): void
+    {
+        $order = FarmOrder::factory()->paid()->done()->create();
+        $this->assertSame('studio', app(PrintPhotos::class)->attach($order, $this->photo(), 'no-such-scene')['bg']);
+        config(['engines.photo' => 'none']);
+        $this->app->forgetInstance(PrintPhotos::class);
+        $this->app->forgetInstance(BackgroundRemover::class);
+        $meta = app(PrintPhotos::class)->attach($order, $this->photo(), 'table-demo');
+        $this->assertFalse($meta['cut']);
+        $this->assertSame([1200, 800], array_slice(getimagesize(PrintPhotos::file($order->fresh(), 'web')), 0, 2));
+    }
+
+    public function test_the_order_page_has_camera_and_gallery_buttons_under_the_video_and_an_upload_without_a_backdrop_picks_one_itself(): void
+    {
+        $admin = $this->admin();
+        $order = $this->generatedOrder('bust');
+        $order->forceFill(['timelapse_path' => 'orders/x/timelapse.mp4'])->save();
+        $html = $this->actingAs($admin)->get(route('admin.farm.orders.show', $order))->assertOk()
+            ->assertSee('capture="environment"', false)->assertSee('Z galerie')->assertSee('Vyfotit')->assertSee('automaticky (podle druhu modelu)')->assertSee('shelf-demo')
+            ->assertDontSee('Nahrát fotku výtisku')->getContent();
+        $this->assertLessThan(strpos($html, 'data-print-photo'), strpos($html, '<video'), 'the buttons come right after the video');
+        $this->assertSame(1, substr_count($html, 'data-print-photo'), 'one photo form, not two');
+
+        Queue::fake([ComposePrintPhoto::class]);
+        $upload = new UploadedFile($this->photo('cam.jpg'), 'IMG_1.jpg', 'image/jpeg', null, true);
+        $this->actingAs($admin)->post(route('admin.farm.orders.print_photo', $order), ['photo' => $upload])->assertRedirectContains('photo_wait=1');
+        Queue::assertPushed(ComposePrintPhoto::class, fn ($j) => $j->orderId === $order->id && $j->bg === null);
+        $this->actingAs($admin)->get(route('admin.farm.orders.show', ['order' => $order, 'photo_wait' => 1]))->assertSee('Fotka se zpracovává');
+        // a scene may be chosen by hand
+        $this->actingAs($admin)->post(route('admin.farm.orders.print_photo', $order), ['photo' => new UploadedFile($this->photo('c2.jpg'), 'c2.jpg', 'image/jpeg', null, true), 'bg' => 'table-demo'])->assertRedirect();
+        Queue::assertPushed(ComposePrintPhoto::class, fn ($j) => $j->bg === 'table-demo');
+    }
+
+    public function test_the_video_queue_links_each_order_to_the_photo_upload(): void
+    {
+        $src = file_get_contents(resource_path('views/admin/youtube/index.blade.php'));
+        $this->assertStringContainsString('#foto', $src);
+        $this->assertStringContainsString('Přidat fotku', $src);
+    }
+
     public function test_without_a_background_remover_the_photo_is_fitted_as_it_is(): void
     {
         config(['engines.photo' => 'none']);
@@ -153,7 +263,7 @@ final class PrintPhotosTest extends TestCase
         $customer = User::factory()->create();
         $order = FarmOrder::factory()->paid()->done()->create(['user_id' => $customer->id]);
         $this->actingAs($customer)->getJson("/farm/orders/{$order->token}/status")->assertOk()->assertJsonPath('photo_url', null);
-        $this->actingAs($this->admin())->get(route('admin.farm.orders.show', $order))->assertOk()->assertSee('Nahrát fotku výtisku')->assertSee('Zatím žádná');
+        $this->actingAs($this->admin())->get(route('admin.farm.orders.show', $order))->assertOk()->assertSee('Vyfotit')->assertSee('Zatím žádná');
 
         $upload = new UploadedFile($this->photo('phone.jpg'), 'IMG_0001.jpg', 'image/jpeg', null, true);
         $this->actingAs($this->admin())->post(route('admin.farm.orders.print_photo', $order), ['photo' => $upload, 'bg' => 'studio'])->assertRedirect();
