@@ -65,9 +65,12 @@ class PruneData extends Command
             : sprintf('model files nothing holds removed: with an account %d, without %d', $found['account'], $found['anonymous']));
 
         // raw generator output (tens of MB each) is only a short safety net
+        // Od 22. 11. 2026 nese raw.glb texturu (~60 MB/kus) a disk má jen 75 GB, proto je lhůta 3 dny
+        // (env AI_RAW_KEEP_DAYS, config engines.raw_keep_days), dřív bylo napevno 7.
+        $rawKeepDays = max(1, (int) config('engines.raw_keep_days', 3));
         $raws = 0;
         foreach (glob(Storage::disk(ModelFile::DISK)->path('files').'/*/raw.*') ?: [] as $raw) {
-            if (filemtime($raw) < now()->subDays(7)->getTimestamp()) {
+            if (filemtime($raw) < now()->subDays($rawKeepDays)->getTimestamp()) {
                 $raws++;
                 if (! $dry) {
                     @unlink($raw);

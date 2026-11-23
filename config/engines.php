@@ -159,6 +159,10 @@ return [
         'fast_check_above' => (int) env('MESH_FAST_CHECK_ABOVE', 400000),
     ],
 
+    // Jak dlouho zůstává syrový výstup generátoru (raw.glb a spol. vedle STL; od 22. 11. 2026 s texturou ~60 MB/kus).
+    // Disk serveru má jen 75 GB, proto výchozí 3 dny (dřív 7). Po smazání zmizí jen barevný náhled, STL zůstává.
+    'raw_keep_days' => max(1, (int) env('AI_RAW_KEEP_DAYS', 3)),
+
     'python' => [
         'bin' => env('PYTHON_BIN', PHP_OS_FAMILY === 'Windows' ? 'python' : 'python3'),
         'timeout' => (int) env('PYTHON_TIMEOUT', 240),
