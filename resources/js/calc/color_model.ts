@@ -117,7 +117,10 @@ export function fitToStl(color: Object3D, stl: BufferGeometry): Matrix4 | null {
             best = { score, m: new Matrix4().makeTranslation(shift.x, shift.y, shift.z).multiply(new Matrix4().makeScale(scale, scale, scale)).multiply(turn).multiply(up) };
         }
     }
-    return best ? best.m : null;
+    // the colours belong only on the same shape: a bust is cut from the whole figure the generator sent,
+    // and dressing the cut STL in the uncut body misled more than grey (Vémola bust, 23 Nov 2026)
+    if (best) console.debug('colored preview silhouette match', Math.round(best.score * 100) / 100);
+    return best && best.score >= 0.45 ? best.m : null;
 }
 
 /** The coloured model wrapped so it can be hung on the STL mesh (same coordinates); null when it cannot be fitted. */
