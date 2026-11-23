@@ -5,7 +5,7 @@
  * (the front of a bust was turned to face front after the generator), scaled uniformly to the STL's longest side and put
  * on its footprint and top (a pedestal or a cut chest changes the bottom, never the head).
  */
-import { BufferGeometry, Group, Matrix4, Mesh, MeshBasicMaterial, Object3D, Vector3, Material, Texture } from 'three';
+import { BufferGeometry, Float32BufferAttribute, Group, Matrix4, Mesh, MeshBasicMaterial, Object3D, Vector3, Material, Texture } from 'three';
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
 
 /** Vertices looked at when two shapes are compared: enough for a silhouette, cheap for a mesh of millions. */
@@ -128,5 +128,28 @@ export function colorHolder(color: Object3D, stl: BufferGeometry): Group | null 
     holder.matrixAutoUpdate = false;
     holder.matrix.copy(m);
     holder.add(color);
+    // where the coloured figure ends at the bottom, in the STL's millimetres: whatever of the STL lies deeper
+    // is ours, not the generator's (the pedestal), and the viewer sketches it in wires under the colours
+    let bottom = Infinity;
+    for (const v of points(color)) { const z = v.applyMatrix4(m).z; if (z < bottom) bottom = z; }
+    holder.userData.bottomZ = bottom;
     return holder;
+}
+
+/** The triangles of the STL that lie wholly under `zMax` (the printed pedestal the coloured model does not have). */
+export function underSlice(geom: BufferGeometry, zMax: number): BufferGeometry | null {
+    const pos = geom.getAttribute('position');
+    const idx = geom.getIndex();
+    const n = idx ? idx.count : pos.count;
+    const out: number[] = [];
+    for (let i = 0; i < n; i += 3) {
+        const a = idx ? idx.getX(i) : i, b = idx ? idx.getX(i + 1) : i + 1, c = idx ? idx.getX(i + 2) : i + 2;
+        if (pos.getZ(a) <= zMax && pos.getZ(b) <= zMax && pos.getZ(c) <= zMax) {
+            out.push(pos.getX(a), pos.getY(a), pos.getZ(a), pos.getX(b), pos.getY(b), pos.getZ(b), pos.getX(c), pos.getY(c), pos.getZ(c));
+        }
+    }
+    if (!out.length) return null;
+    const g = new BufferGeometry();
+    g.setAttribute('position', new Float32BufferAttribute(out, 3));
+    return g;
 }

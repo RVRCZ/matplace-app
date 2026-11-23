@@ -5,7 +5,7 @@ import {
 } from 'three';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
 import { mergeVertices } from 'three/examples/jsm/utils/BufferGeometryUtils.js';
-import { colorHolder } from './color_model';
+import { colorHolder, underSlice } from './color_model';
 
 /** Default colour of a previewed model: a calm, slightly desaturated blue, like a light-blue PLA spool. */
 export const MODEL_COLOR = 0x83a6d4;
@@ -174,6 +174,17 @@ export class Viewer {
         const holder = colorHolder(color, geom);
         if (!holder) return false;
         mesh.add(holder);
+        // the printed pedestal is ours, not the generator's: without it the coloured figure would float
+        // over the grid, so the hidden STL's base is sketched in wires (Roman's dog, 23 Nov 2026)
+        const bottom = Number(holder.userData.bottomZ);
+        if (!mesh.geometry.boundingBox) mesh.geometry.computeBoundingBox();
+        if (Number.isFinite(bottom) && bottom - mesh.geometry.boundingBox!.min.z > 1) {
+            const base = underSlice(geom, bottom + 0.2);
+            if (base) {
+                const wire = new Mesh(base, new MeshBasicMaterial({ wireframe: true, color: 0x94a3b8, transparent: true, opacity: 0.45, depthWrite: false }));
+                mesh.add(wire);
+            }
+        }
         mesh.material = Viewer.HIDDEN;
         this.colored = true;
         return true;
