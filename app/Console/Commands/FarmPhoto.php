@@ -50,8 +50,8 @@ class FarmPhoto extends Command
             return $photos->available() ? self::SUCCESS : self::FAILURE;
         }
         $bg = $this->option('bg') ?: null;
-        if ($bg !== null && ! in_array($bg, PrintPhotos::BACKGROUNDS, true)) {
-            $this->error('Unknown backdrop; one of '.implode(', ', PrintPhotos::BACKGROUNDS).'.');
+        if ($bg !== null && ! in_array($bg, PrintPhotos::backgrounds(), true)) {
+            $this->error('Unknown backdrop; one of '.implode(', ', PrintPhotos::backgrounds()).'.');
 
             return self::FAILURE;
         }

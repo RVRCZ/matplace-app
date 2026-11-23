@@ -48,6 +48,58 @@
                 <figcaption class="mt-1 text-xs text-slate-500">{{ __('farm.order.timelapse') }}</figcaption>
             </figure>
         @endif
+        {{-- the photo of the finished print right under its video: the phone's camera or gallery, sent at once (PrintPhotos made presentable in the worker: the end of the videos, the order page, the trust block) --}}
+        <section id="foto" class="rounded-2xl border border-slate-200 bg-white p-4 text-sm" data-print-photo>
+            <h2 class="font-bold">Fotka výtisku</h2>
+            @if($order->photoUrl())
+                <a href="{{ $order->photoUrl() }}" target="_blank" rel="noopener"><img src="{{ $order->photoUrl() }}" alt="fotka výtisku" class="mt-2 w-full rounded-xl border border-slate-200"></a>
+                <p class="mt-1 text-xs text-slate-500">podklad {{ $order->photo_meta['bg'] ?? '—' }} · {{ match (\App\Domain\Farm\PrintPhotos::cutState((array) $order->photo_meta)) { 'cut' => 'pozadí odstraněno', 'uncut' => 'pozadí ponecháno (výřez nic nenašel: '.($order->photo_meta['cut_error'] ?? '').')', 'empty' => 'výřez prázdný – přepočítat (farm:photo --redo-videos --apply --ids='.$order->number.')', default => 'pozadí ponecháno (rembg nebyl k dispozici)' } }}
+                    @if($order->photoUrl('short')) · <a class="underline" href="{{ $order->photoUrl('short') }}" target="_blank" rel="noopener">9:16</a>@endif
+                    @if($order->photoUrl('cutout')) · <a class="underline" href="{{ $order->photoUrl('cutout') }}" target="_blank" rel="noopener">výřez PNG</a>@endif</p>
+            @else
+                @if($order->photo_meta['error'] ?? null)<p class="mt-1 text-xs text-red-700">Poslední fotka se nepoužila: {{ $order->photo_meta['error'] }}</p>@endif
+                <p class="mt-1 text-xs text-slate-600">Zatím žádná. Vyfoťte výtisk telefonem; pozadí se odstraní a kus se položí na podklad ve velikostech pro web, Short a konec videa.</p>
+            @endif
+            @php
+                // ?photo_wait=1 comes back from an upload: look again every 5 s (at most 12 times) until this upload's photo is there
+                $photoFresh = ! empty($order->photo_meta['at']) && \Illuminate\Support\Carbon::parse($order->photo_meta['at'])->gt(now()->subMinutes(2));
+                $photoWait = request()->boolean('photo_wait') && ! $photoFresh && empty($order->photo_meta['error']);
+            @endphp
+            @if($photoWait)
+                <p class="mt-2 rounded-lg bg-action-soft/40 px-3 py-2 text-xs font-semibold" data-photo-wait>Fotka se zpracovává; stránka se sama obnoví, až bude hotová.</p>
+                <script>
+                    (() => { const key = 'photo-wait-{{ $order->id }}'; let n = 0; try { n = +sessionStorage.getItem(key) || 0; } catch (e) {}
+                        if (n < 12) { try { sessionStorage.setItem(key, n + 1); } catch (e) {} setTimeout(() => location.reload(), 5000); }
+                        else { try { sessionStorage.removeItem(key); } catch (e) {} } })();
+                </script>
+            @endif
+            <form method="post" action="{{ route('admin.farm.orders.print_photo', $order) }}" enctype="multipart/form-data" class="mt-3" data-photo-form>@csrf
+                <div class="grid gap-2">
+                    {{-- a label styled as a button: the file input inside opens the camera (capture) or the gallery, and the form goes at once --}}
+                    <label class="btn-primary flex min-h-16 w-full cursor-pointer items-center justify-center text-lg">Vyfotit
+                        <input type="file" name="photo" accept="image/*" capture="environment" class="sr-only" data-photo-input></label>
+                    <label class="btn-quiet flex min-h-16 w-full cursor-pointer items-center justify-center text-lg">Z galerie
+                        <input type="file" name="photo" accept="image/*,.heic" class="sr-only" data-photo-input></label>
+                </div>
+                <p class="mt-2 hidden text-center font-semibold" data-photo-busy>Nahrávám a zpracovávám…</p>
+                <label class="mt-2 flex items-center gap-2 text-xs text-slate-600">Podklad
+                    <select name="bg" class="rounded-lg border border-slate-300 px-2 py-1 text-xs">
+                        <option value="">automaticky (podle druhu modelu)</option>
+                        @foreach(\App\Domain\Farm\PrintPhotos::backgrounds() as $bg)<option value="{{ $bg }}">{{ $bg }}@if(! empty(\App\Domain\Farm\PrintPhotos::scenes()[$bg]['placeholder'])) (zástupná scéna)@endif</option>@endforeach
+                    </select></label>
+                <script>
+                    (() => { const form = document.currentScript.closest('form'); const busy = form.querySelector('[data-photo-busy]');
+                        form.querySelectorAll('[data-photo-input]').forEach((input) => input.addEventListener('change', () => {
+                            if (! input.files.length) return;
+                            // only the chosen input is sent: the other one would send an empty file under the same name
+                            form.querySelectorAll('[data-photo-input]').forEach((o) => { if (o !== input) o.disabled = true; });
+                            form.querySelectorAll('label').forEach((l) => l.classList.add('opacity-60', 'pointer-events-none'));
+                            busy.classList.remove('hidden');
+                            form.submit();
+                        })); })();
+                </script>
+            </form>
+        </section>
         @if($job && $job->snapshot_path)
             <figure class="rounded-2xl border border-slate-200 bg-white p-3">
                 <img src="{{ route('admin.farm.orders.snapshot', $order) }}?t={{ $job->snapshot_at?->timestamp }}" alt="{{ __('farm.order.camera') }}" class="w-full rounded-xl" id="admin-snapshot">
@@ -120,26 +172,6 @@
                 @endif
             </section>
         @endif
-        {{-- the photo of the finished print, made presentable in the worker (PrintPhotos): the end of the videos, the order page, the trust block --}}
-        <section class="rounded-2xl border border-slate-200 bg-white p-4 text-sm">
-            <h2 class="font-bold">Fotka výtisku</h2>
-            @if($order->photoUrl())
-                <a href="{{ $order->photoUrl() }}" target="_blank" rel="noopener"><img src="{{ $order->photoUrl() }}" alt="fotka výtisku" class="mt-2 w-full rounded-xl border border-slate-200"></a>
-                <p class="mt-1 text-xs text-slate-500">podklad {{ $order->photo_meta['bg'] ?? '—' }} · {{ match (\App\Domain\Farm\PrintPhotos::cutState((array) $order->photo_meta)) { 'cut' => 'pozadí odstraněno', 'uncut' => 'pozadí ponecháno (výřez nic nenašel: '.($order->photo_meta['cut_error'] ?? '').')', 'empty' => 'výřez prázdný – přepočítat (farm:photo --redo-videos --apply --ids='.$order->number.')', default => 'pozadí ponecháno (rembg nebyl k dispozici)' } }}
-                    @if($order->photoUrl('short')) · <a class="underline" href="{{ $order->photoUrl('short') }}" target="_blank" rel="noopener">9:16</a>@endif
-                    @if($order->photoUrl('cutout')) · <a class="underline" href="{{ $order->photoUrl('cutout') }}" target="_blank" rel="noopener">výřez PNG</a>@endif</p>
-            @else
-                @if($order->photo_meta['error'] ?? null)<p class="mt-1 text-xs text-red-700">Poslední fotka se nepoužila: {{ $order->photo_meta['error'] }}</p>@endif
-                <p class="mt-1 text-xs text-slate-600">Zatím žádná. Fotka z fotoboxu nebo z telefonu; pozadí se odstraní a kus se položí na podklad ve velikostech pro web, Short a konec videa.</p>
-            @endif
-            <form method="post" action="{{ route('admin.farm.orders.print_photo', $order) }}" enctype="multipart/form-data" class="mt-2 flex flex-wrap items-center gap-2">@csrf
-                <input type="file" name="photo" accept="image/*,.heic" required class="text-xs">
-                <select name="bg" class="rounded-lg border border-slate-300 px-2 py-1 text-xs">
-                    @foreach(\App\Domain\Farm\PrintPhotos::BACKGROUNDS as $bg)<option value="{{ $bg }}" @selected($bg === ($order->photo_meta['bg'] ?? \App\Domain\Farm\PrintPhotos::DEFAULT))>{{ $bg }}</option>@endforeach
-                </select>
-                <button class="btn-quiet min-h-0 px-3 py-1.5 text-sm">Nahrát fotku výtisku</button>
-            </form>
-        </section>
         <section class="rounded-2xl border border-slate-200 bg-white p-4 text-sm">
             <dl class="grid grid-cols-2 gap-x-3 gap-y-1">
                 <dt class="text-slate-500">E-mail</dt><dd>@if($order->user){{ $order->user->email }} <span class="text-xs text-slate-500">(@money($balance))</span>@else{{ __('farm.guest.admin_guest') }}@endif</dd>

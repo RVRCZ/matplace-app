@@ -227,14 +227,14 @@ class FarmOrderController extends Controller
      */
     public function printPhoto(Request $request, FarmOrder $order): RedirectResponse
     {
-        $data = $request->validate(['photo' => ['required', 'file', 'max:30720', 'mimes:jpg,jpeg,png,webp,heic'], 'bg' => ['nullable', 'in:'.implode(',', PrintPhotos::BACKGROUNDS)]]);
+        $data = $request->validate(['photo' => ['required', 'file', 'max:30720', 'mimes:jpg,jpeg,png,webp,heic'], 'bg' => ['nullable', 'in:'.implode(',', PrintPhotos::backgrounds())]]);
         $rel = $order->dir().'/photos/print-source.'.strtolower((string) $data['photo']->getClientOriginalExtension());
         $disk = Storage::disk(config('farm.disk'));
         $disk->makeDirectory(dirname($rel));
         $disk->putFileAs(dirname($rel), $data['photo'], basename($rel));
         ComposePrintPhoto::dispatch($order->id, $rel, $data['bg'] ?? null);
 
-        return back()->with('status', 'Fotka se zpracovává (pozadí, podklad, velikosti); obnovte stránku za chvíli.');
+        return redirect()->to(route('admin.farm.orders.show', ['order' => $order, 'photo_wait' => 1]).'#foto')->with('status', 'Fotka se zpracovává (pozadí, podklad, velikosti); obnovte stránku za chvíli.');
     }
 
     /** The admin's process overrides for one order (JSON object of slicer settings), then a new slice. */
