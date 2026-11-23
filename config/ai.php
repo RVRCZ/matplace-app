@@ -95,6 +95,7 @@ return [
         'face_limit' => (int) env('TRIPO_FACE_LIMIT', 0),
         'geometry_quality' => env('TRIPO_GEOMETRY_QUALITY', 'detailed'),      // detailed = +20 credits, much finer faces and hair
         'texture' => (bool) env('TRIPO_TEXTURE', false),                      // +10 credits; kept in raw.glb only, STL for print has no colours
+        'texture_quality' => env('TRIPO_TEXTURE_QUALITY'),                    // null = Tripo's standard; detailed = finer map (same price); extreme = 8K (dearer)
         'image_autofix' => (bool) env('TRIPO_IMAGE_AUTOFIX', true),
         'work_dir' => storage_path('app/generated'),
     ],

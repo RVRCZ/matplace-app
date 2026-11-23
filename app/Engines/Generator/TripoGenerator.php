@@ -195,6 +195,8 @@ final class TripoGenerator implements ImageRestyler, ModelGenerator
             'model' => $this->config['model'],
             // the texture colours only the stored raw.glb (the owner, 22 Nov 2026); the printed STL stays geometry
             'texture' => (bool) ($this->config['texture'] ?? false),
+            // standard | detailed (finer map, same price, slower) | extreme (8K, dearer): tattoos need detailed (23 Nov 2026)
+            'texture_quality' => ! empty($this->config['texture']) ? ($this->config['texture_quality'] ?? null) : null,
             'pbr' => false,
             // UV unwrapping cuts the surface into islands; for printing that means hundreds of open patches
             'export_uv' => false,
