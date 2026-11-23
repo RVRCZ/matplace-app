@@ -420,7 +420,7 @@ export class Stage {
             // the viewer may have welded the STL into its own copy (generated models): the swap must name THAT geometry
             const shown = this.viewer.shownGeometry() ?? geom;
             void loadColoredModel(file.glb_url)
-                .then((color) => { if (!this.viewer.showColored(color, shown)) console.debug('colored preview not applied (another model shown, or it did not fit)'); })
+                .then((color) => { if (!this.viewer.showColored(color, shown, file.glb_matrix && file.glb_matrix.length === 16 ? { matrix: file.glb_matrix, baseTopZ: Number(file.glb_base_top_z) || 0 } : null)) console.debug('colored preview not applied (another model shown, or it did not fit)'); })
                 .catch((e) => { console.debug('colored preview failed, the STL stays', e); });
         }
     }
@@ -430,9 +430,9 @@ export class Stage {
      * STL: the viewer frames and seats it). `stillWanted` is asked after the download, a finished model may have come meanwhile.
      * Returns false when nothing was shown; the caller keeps whatever it showed before.
      */
-    async previewColored(url: string, targetMm: number, stillWanted: () => boolean): Promise<boolean> {
+    async previewColored(url: string, targetMm: number, stillWanted: () => boolean, turns = 0): Promise<boolean> {
         const color = await loadColoredModel(url);
-        const fit = previewFit(color, targetMm);
+        const fit = previewFit(color, targetMm, turns);
         if (!fit || !stillWanted()) return false;
         const box = new BoxGeometry(fit.size[0], fit.size[1], fit.size[2]);
         box.translate(fit.size[0] / 2, fit.size[1] / 2, fit.size[2] / 2);

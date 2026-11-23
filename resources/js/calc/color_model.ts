@@ -4,8 +4,10 @@
  * fitted to the STL: turned from glTF's Y-up to Z-up, a quarter turn about the vertical picked by the shadow it casts
  * (the front of a bust was turned to face front after the generator), scaled uniformly to the STL's longest side and put
  * on its footprint and top (a pedestal or a cut chest changes the bottom, never the head).
+ * Since 24 Nov 2026 the server measures where the GLB lies over the STL (mesh_tool normalize: a 4x4 matrix and the height of the
+ * base) and the browser uses that exactly; the estimate below is only for files made before.
  */
-import { BufferGeometry, Float32BufferAttribute, Group, Matrix4, Mesh, MeshBasicMaterial, Object3D, Vector3, Material, Texture } from 'three';
+import { BufferGeometry, Group, Matrix4, Mesh, MeshBasicMaterial, Object3D, Vector3, Material, Texture } from 'three';
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
 
 /** Vertices looked at when two shapes are compared: enough for a silhouette, cheap for a mesh of millions. */
@@ -159,9 +161,10 @@ function baseTop(target: Vector3[], want: Box): number {
  * the matrix that stands it up (glTF Y-up to Z-up), scales it so its longest side is `targetMm` and puts its footprint corner
  * at the origin like an STL, with the size of the box it fills. Null when the model is empty or the size is not known.
  */
-export function previewFit(color: Object3D, targetMm: number): { matrix: Matrix4; size: [number, number, number] } | null {
+export function previewFit(color: Object3D, targetMm: number, turns = 0): { matrix: Matrix4; size: [number, number, number] } | null {
     if (!(targetMm > 0)) return null;
-    const up = new Matrix4().makeRotationX(Math.PI / 2);
+    // `turns` quarter turns about the upright axis (counter-clockwise): Tripo hands a bust over with its face at +X, which is 3 (GenerateModel front_prior)
+    const up = new Matrix4().makeRotationZ(((((turns | 0) % 4) + 4) % 4 * Math.PI) / 2).multiply(new Matrix4().makeRotationX(Math.PI / 2));
     const have = boundsOf(points(color).map((v) => v.applyMatrix4(up)));
     const w = have.max.x - have.min.x; const d = have.max.y - have.min.y; const h = have.max.z - have.min.z;
     const longest = Math.max(w, d, h);
@@ -171,36 +174,32 @@ export function previewFit(color: Object3D, targetMm: number): { matrix: Matrix4
     return { matrix, size: [w * s, d * s, h * s] };
 }
 
-/** The coloured model wrapped so it can be hung on the STL mesh (same coordinates); null when it cannot be fitted. */
-export function colorHolder(color: Object3D, stl: BufferGeometry): Group | null {
-    const m = fitToStl(color, stl);
+/** What the server measured: the GLB's coordinates to the STL's (4x4, row-major) and the height (mm) the figure stands on its base. */
+export type ExactFit = { matrix: number[]; baseTopZ: number };
+
+/**
+ * The coloured model wrapped so it can be hung on the STL mesh (same coordinates); null when it cannot be fitted.
+ * `exact` (measured by the server) is used as it is; without it the fit is estimated. holder.userData.baseTopZ is the height
+ * under which the STL is the printed base (the viewer clips the colours there and draws the base in graphite); 0 = no base.
+ */
+export function colorHolder(color: Object3D, stl: BufferGeometry, exact?: ExactFit | null): Group | null {
+    const m = exact && exact.matrix.length === 16 ? new Matrix4().set(...(exact.matrix as [number, number, number, number, number, number, number, number, number, number, number, number, number, number, number, number])) : fitToStl(color, stl);
     if (!m) return null;
     const holder = new Group();
     holder.matrixAutoUpdate = false;
     holder.matrix.copy(m);
     holder.add(color);
-    // where the coloured figure ends at the bottom, in the STL's millimetres: whatever of the STL lies deeper
-    // is ours, not the generator's (the pedestal), and the viewer sketches it in wires under the colours
+    if (exact && exact.matrix.length === 16) {
+        holder.userData.baseTopZ = Math.max(0, Number(exact.baseTopZ) || 0);
+        return holder;
+    }
+    // estimate: where the coloured figure ends at the bottom, in the STL's millimetres: whatever of the STL lies deeper
+    // is ours, not the generator's (the pedestal)
     let bottom = Infinity;
     for (const v of points(color)) { const z = v.applyMatrix4(m).z; if (z < bottom) bottom = z; }
-    holder.userData.bottomZ = bottom;
+    if (!stl.boundingBox) stl.computeBoundingBox();
+    holder.userData.baseTopZ = Number.isFinite(bottom) && bottom - stl.boundingBox!.min.z > 1 ? bottom + 0.2 : 0;
     return holder;
 }
 
-/** The triangles of the STL that lie wholly under `zMax` (the printed pedestal the coloured model does not have). */
-export function underSlice(geom: BufferGeometry, zMax: number): BufferGeometry | null {
-    const pos = geom.getAttribute('position');
-    const idx = geom.getIndex();
-    const n = idx ? idx.count : pos.count;
-    const out: number[] = [];
-    for (let i = 0; i < n; i += 3) {
-        const a = idx ? idx.getX(i) : i, b = idx ? idx.getX(i + 1) : i + 1, c = idx ? idx.getX(i + 2) : i + 2;
-        if (pos.getZ(a) <= zMax && pos.getZ(b) <= zMax && pos.getZ(c) <= zMax) {
-            out.push(pos.getX(a), pos.getY(a), pos.getZ(a), pos.getX(b), pos.getY(b), pos.getZ(b), pos.getX(c), pos.getY(c), pos.getZ(c));
-        }
-    }
-    if (!out.length) return null;
-    const g = new BufferGeometry();
-    g.setAttribute('position', new Float32BufferAttribute(out, 3));
-    return g;
-}
+

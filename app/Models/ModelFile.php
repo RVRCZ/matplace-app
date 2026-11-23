@@ -77,12 +77,44 @@ class ModelFile extends Model
     /**
      * The coloured model a generator stored next to the STL (raw.glb, Tripo with the texture), or null. Only for the
      * preview: printing, slicing and price go on from the STL.
+     * A file made by changing the base (PedestalChanger) lies in a folder of its own without the 60 MB GLB: it takes the
+     * GLB of the first file of the same generation (same origin_ref), which the stored matrix in tool_params.glb points into.
      */
     public function glbPath(): ?string
     {
         $path = Storage::disk(self::DISK)->path($this->dir().'/raw.glb');
+        if (is_file($path)) {
+            return $path;
+        }
+        if ($this->origin !== 'generated' || ! $this->origin_ref) {
+            return null;
+        }
+        $first = static::query()->where('origin', 'generated')->where('origin_ref', $this->origin_ref)->where('id', '<', $this->id ?: PHP_INT_MAX)->orderBy('id')->get(['id', 'uuid', 'storage_path']);
+        foreach ($first as $other) {
+            $theirs = Storage::disk(self::DISK)->path($other->dir().'/raw.glb');
+            if (is_file($theirs)) {
+                return $theirs;
+            }
+        }
 
-        return is_file($path) ? $path : null;
+        return null;
+    }
+
+    /**
+     * Where the coloured model lies over this file's STL, exactly: {matrix: 16 numbers row-major (GLB coordinates to the
+     * STL's), base_top_z: height in mm where the figure stands on its base}. Null for files made before this was measured:
+     * the browser then fits the colours by estimate.
+     *
+     * @return array{matrix: list<float>, base_top_z: float}|null
+     */
+    public function glbFit(): ?array
+    {
+        $g = is_array($this->tool_params) ? ($this->tool_params['glb'] ?? null) : null;
+        if (! is_array($g) || ! is_array($g['matrix'] ?? null) || count($g['matrix']) !== 16 || $this->glbPath() === null) {
+            return null;
+        }
+
+        return ['matrix' => array_map('floatval', array_values($g['matrix'])), 'base_top_z' => (float) ($g['base_top_z'] ?? 0)];
     }
 
     /** The coloured preview is offered only up to this size (a phone on mobile data would not load more). */

@@ -250,6 +250,8 @@ class GenerateModel implements ShouldQueue
             // what was measured on a pet figurine stays with the request: the page warns about a thin leg or tail
             $measured = $kind === 'pet' ? array_intersect_key($normalizer->report, array_flip(['thinnest_mm', 'thinnest_before_mm', 'grown_mm', 'base_mm', 'pedestal', 'engraved_lines', 'stand_error', 'pet_error'])) : [];
             // the paid result stays for a week next to the file: a better normalisation can be run again without new credits
+            // where the coloured GLB lies over the STL, exactly (the browser draws it with this and clips it at the base)
+            $glbFit = str_ends_with(strtolower((string) $status->meshPath), '.glb') ? $normalizer->glbFit() : null;
             $raw = dirname($abs).'/raw.'.(strtolower(pathinfo((string) $status->meshPath, PATHINFO_EXTENSION)) ?: 'glb');
             if (! @rename((string) $status->meshPath, $raw)) {
                 @unlink((string) $status->meshPath);
@@ -260,6 +262,8 @@ class GenerateModel implements ShouldQueue
                 'uuid' => $uuid, 'owner_user_id' => $req->owner_user_id, 'anonymous_session_id' => $req->anonymous_session_id,
                 'original_name' => $name.'.stl', 'ext' => 'stl', 'mime' => 'model/stl', 'size_bytes' => filesize($abs), 'sha256' => hash_file('sha256', $abs),
                 'storage_path' => $rel, 'origin' => 'generated', 'origin_ref' => $req->token, 'status' => ModelFile::STATUS_UPLOADED,
+                // tool_params: the file's own record, no new column; the changed-base files of this generation carry the same key (PedestalChanger)
+                'tool_params' => $glbFit ? ['glb' => $glbFit] : null,
             ]);
             $req->update(['status' => 'done', 'progress' => 100, 'result_model_file_id' => $file->id] + ($measured ? ['description' => $measured + $req->description] : []));
             GenerationReady::sendFor($req);   // "send me the result": the one mail with the link, if the visitor asked for it

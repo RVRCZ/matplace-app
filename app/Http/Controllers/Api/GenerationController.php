@@ -247,6 +247,9 @@ class GenerationController extends Controller
             'file' => $file ? UploadController::describe($file) : null,
             // the coloured model is there before the printable file is: the page shows it while that is being made
             'preview_glb_url' => self::previewGlb($g) !== null ? route('api.generate.preview', $g->token) : null,
+            // quarter turns about the upright axis that bring the face of the temporary colour preview to the front: Tripo hands a bust
+            // over facing +X (the same 3 as front_prior in GenerateModel); the finished model is turned by the server
+            'preview_turns' => ($d['kind'] ?? null) === 'bust' && str_starts_with((string) $g->engine, 'tripo') ? 3 : 0,
             // what was asked for, so the tool page can show the same choices when it is opened again by its link
             'options' => isset($d['kind']) ? array_filter([
                 'kind' => $d['kind'], 'style' => $d['style'] ?? null, 'roughness' => $d['roughness'] ?? null, 'pedestal' => $d['pedestal'] ?? null,

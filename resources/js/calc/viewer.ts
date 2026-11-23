@@ -5,7 +5,7 @@ import {
 } from 'three';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
 import { mergeVertices } from 'three/examples/jsm/utils/BufferGeometryUtils.js';
-import { colorHolder, underSlice } from './color_model';
+import { colorHolder, type ExactFit } from './color_model';
 import type { Matrix4 as Mat4 } from 'three';
 
 /** Default colour of a previewed model: a calm, slightly desaturated blue, like a light-blue PLA spool. */
@@ -122,6 +122,8 @@ export class Viewer {
             this.mesh.geometry.dispose();
         }
         this.colored = false;
+        this.clipSync = null;
+        if (this.baseMesh) { (this.baseMesh.material as Material).dispose(); this.baseMesh = null; }
         this.dropPreview();
         if (this.grid) this.scene.remove(this.grid);
         const painted = !!faces && paintByFaces(geom, faces);
@@ -201,27 +203,45 @@ export class Viewer {
         });
     }
 
-    showColored(color: Object3D, geom: BufferGeometry): boolean {
+    showColored(color: Object3D, geom: BufferGeometry, exact?: ExactFit | null): boolean {
         const mesh = this.mesh;
         if (!mesh || mesh.geometry !== geom) return false;
-        const holder = colorHolder(color, geom);
+        const holder = colorHolder(color, geom, exact);
         if (!holder) return false;
         mesh.add(holder);
-        // the printed pedestal is ours, not the generator's: without it the coloured figure would float
-        // over the grid, so the hidden STL's base is sketched in wires (Roman's dog, 23 Nov 2026)
-        const bottom = Number(holder.userData.bottomZ);
-        if (!mesh.geometry.boundingBox) mesh.geometry.computeBoundingBox();
-        if (Number.isFinite(bottom) && bottom - mesh.geometry.boundingBox!.min.z > 1) {
-            const base = underSlice(geom, bottom + 0.2);
-            if (base) {
-                const wire = new Mesh(base, new MeshBasicMaterial({ wireframe: true, color: 0x94a3b8, transparent: true, opacity: 0.45, depthWrite: false }));
-                mesh.add(wire);
-            }
+        // the printed base is ours, not the generator's: under `top` the STL itself is drawn, solid in dark graphite, and the
+        // colours are cut off there (a clipping plane per frame, the mesh may be turned or leaned). Without a base nothing is cut.
+        const top = Number(holder.userData.baseTopZ);
+        if (Number.isFinite(top) && top > 0.05) {
+            const keepAbove = new Plane(new Vector3(0, 0, 1), -top);
+            const keepBelow = new Plane(new Vector3(0, 0, -1), top);
+            const world = { above: keepAbove.clone(), below: keepBelow.clone() };
+            holder.traverse((o) => {
+                const m = o as Mesh;
+                if (!m.isMesh) return;
+                (Array.isArray(m.material) ? m.material : [m.material]).forEach((x) => { x.clippingPlanes = [world.above]; x.needsUpdate = true; });
+            });
+            // the planes in `world` follow the mesh in clipSync(); keepAbove / keepBelow are the truth in the file's own millimetres
+            const graphite = new MeshStandardMaterial({ color: 0x3a3d42, roughness: 0.85, metalness: 0, side: DoubleSide, clippingPlanes: [world.below] });
+            const base = new Mesh(geom, graphite);
+            mesh.add(base);
+            this.baseMesh = base;
+            this.clipSync = () => {
+                mesh.updateMatrixWorld(true);
+                world.above.copy(keepAbove).applyMatrix4(mesh.matrixWorld);
+                world.below.copy(keepBelow).applyMatrix4(mesh.matrixWorld);
+            };
+            this.clipSync();
+            this.renderer.localClippingEnabled = true;
         }
         mesh.material = Viewer.HIDDEN;
         this.colored = true;
+        this.previewHolder = holder;
         return true;
     }
+    /** Keeps the world-space clipping planes of the coloured model on the model's own base height while the mesh is turned or leaned. */
+    private clipSync: (() => void) | null = null;
+    private baseMesh: Mesh | null = null;
 
     /**
      * The model turned over, like a medal in the hand: about the axis that runs up its face, so what was on its right is
@@ -517,6 +537,7 @@ export class Viewer {
     private loop = (): void => {
         this.tick();
         this.printTick();
+        this.clipSync?.();
         this.controls.update();
         this.renderer.render(this.scene, this.camera);
         requestAnimationFrame(this.loop);

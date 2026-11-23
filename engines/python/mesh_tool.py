@@ -2074,7 +2074,7 @@ def main(argv):
                     ped_note["socle_fallback"] = "not_joined"
                 m = joined if joined is not None else trimesh.util.concatenate([m, ped])
                 shift = m.bounds[0].copy()
-                seat = float(z_base) if (ped is not None and kind != "cut") else 0.0
+                seat = float(ped.bounds[1][2]) if (ped is not None and kind != "cut") else 0.0     # the highest point of the base: above it only the figure is coloured
                 if squared:
                     T = RT(np.radians(-squared), [0, 0, 1]) @ T
                 T_seat = T.copy()

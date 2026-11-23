@@ -15,7 +15,7 @@ import { startParticles, viewerBox, type Particles } from './particles';
 import { shrinkPhoto, overLimit } from './photo';
 
 interface FigureCfg { generate: string; show: string; home: string; files?: string; maxMb: number; register: string | null; i18n: Record<string, string> }
-interface Generation { token: string; status: string; progress: number; file: FileInfo | null; target_mm?: number | null; preview_glb_url?: string | null; options?: Record<string, string | number> | null }
+interface Generation { token: string; status: string; progress: number; file: FileInfo | null; target_mm?: number | null; preview_glb_url?: string | null; preview_turns?: number; options?: Record<string, string | number> | null }
 
 export function bootFigure(stage: Stage): void {
     const form = document.getElementById('figure-form') as HTMLFormElement | null;
@@ -382,9 +382,9 @@ export function bootFigure(stage: Stage): void {
         // the generator's coloured model is there before the printable file is: shown alone, the dots go (Roman, 23 Nov 2026)
         let early = false;
         let over = false;
-        const showEarly = async (url: string, mm: number): Promise<void> => {
+        const showEarly = async (url: string, mm: number, turns: number): Promise<void> => {
             try {
-                if (!(await stage.previewColored(url, mm, () => !over))) return;
+                if (!(await stage.previewColored(url, mm, () => !over, turns))) return;
                 msg.textContent = say('figure.preparing', 'figure.generating');
                 await dots?.finish(); dots = null;
             } catch (e) { console.debug('early colour preview failed, the dots stay', e); }
@@ -392,7 +392,7 @@ export function bootFigure(stage: Stage): void {
         while (g && g.status !== 'done' && g.status !== 'failed') {
             bar.style.width = `${Math.max(5, g.progress)}%`;
             dots?.say(msg.textContent ?? '', g.progress);
-            if (g.preview_glb_url && !early) { early = true; void showEarly(g.preview_glb_url, Number(g.target_mm) || 0); }
+            if (g.preview_glb_url && !early) { early = true; void showEarly(g.preview_glb_url, Number(g.target_mm) || 0, Number(g.preview_turns) || 0); }
             await new Promise((r) => setTimeout(r, 3000));
             g = await fetchGeneration(g.token);
         }

@@ -199,6 +199,9 @@ class UploadController extends Controller
             'stl_url' => $f->stl_path ? route('api.files.stl', $f->uuid) : null,
             // the coloured look of a generated model (raw.glb with the texture), for the viewer only; null when there is none or it is too big
             'glb_url' => $f->glbOffered() ? route('api.files.glb', $f->uuid) : null,
+            // where that GLB lies over the STL, exactly (4x4 row-major) and the height the figure stands on its base; null for older files: the browser estimates
+            'glb_matrix' => ($glbFit = $f->glbOffered() ? $f->glbFit() : null)['matrix'] ?? null,
+            'glb_base_top_z' => $glbFit['base_top_z'] ?? null,
             'kind' => $f->kind(),
             'check' => ModelCheck::report($f),
             'hints' => $f->printHints(),

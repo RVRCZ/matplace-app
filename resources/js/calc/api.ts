@@ -13,6 +13,9 @@ export interface FileInfo {
     stl_url: string | null;
     /** the coloured look of a generated model (the generator's GLB), for the viewer only; null when there is none or it is too big */
     glb_url?: string | null;
+    /** where that GLB lies over the STL, measured by the server (4x4 row-major) and the height (mm) the figure stands on its base; absent for older files */
+    glb_matrix?: number[] | null;
+    glb_base_top_z?: number | null;
     kind?: string;
     hints?: { supports?: boolean; infill?: number; quality?: string; vase?: boolean };
     generation?: { token: string; refinable: boolean; design?: boolean; pedestal?: { type: string; name: string; dedication: string; sink?: number; tidy?: boolean; cut_controls?: boolean; cut_shift?: number; pitch?: number } | null; pet?: { style: string; type: string; name: string; dedication: string; thinnest_mm: number | null; safe_mm: number; with_person?: boolean } | null } | null;

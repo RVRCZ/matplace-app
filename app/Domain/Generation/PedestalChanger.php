@@ -121,6 +121,7 @@ final class PedestalChanger
             throw new \RuntimeException('pedestal_failed', 0, $e);
         }
         $report = $this->normalizer->report;
+        $glbFit = $this->normalizer->glbFit($this->glbOf($f), 'to_source');
         if (! is_file($abs) || ! is_file($newSource) || ($report['pedestal'] ?? null) !== $type) {
             File::deleteDirectory(dirname($abs));
             throw new \RuntimeException('pedestal_failed');
@@ -129,7 +130,7 @@ final class PedestalChanger
             'uuid' => $uuid, 'owner_user_id' => $f->owner_user_id, 'anonymous_session_id' => $f->anonymous_session_id,
             'original_name' => $f->original_name, 'ext' => 'stl', 'mime' => 'model/stl', 'size_bytes' => filesize($abs), 'sha256' => hash_file('sha256', $abs),
             'storage_path' => $rel, 'origin' => 'generated', 'origin_ref' => $f->origin_ref, 'status' => ModelFile::STATUS_UPLOADED,
-            'tool_params' => ['pedestal' => $type, 'name' => $name, 'dedication' => $dedication, 'name_side' => $side] + (isset($report['thinnest_mm']) ? ['thinnest_mm' => (float) $report['thinnest_mm']] : []),
+            'tool_params' => ['pedestal' => $type, 'name' => $name, 'dedication' => $dedication, 'name_side' => $side] + (isset($report['thinnest_mm']) ? ['thinnest_mm' => (float) $report['thinnest_mm']] : []) + ($glbFit ? ['glb' => $glbFit] : []),
         ]);
         ProcessModelFile::dispatch($new->id);
 
@@ -205,6 +206,8 @@ final class PedestalChanger
             'strip_pedestal' => ! $hasSource,
         ]);
         $target = (float) ($req->target_mm ?: config('ai.default_target_mm', 80));
+        // which matrix of the parent leads from the GLB to the file this change starts from
+        $inputKey = $keepFull ? 'to_full' : ($hasSource ? 'to_source' : 'matrix');
         try {
             $this->normalizer->toPrintableStl($keepFull ? $fullSource : ($hasSource ? $oldSource : $disk->path($f->storage_path)), $abs, $target, false, ['pedestal', 'solid'], $extras);
         } catch (\Throwable $e) {
@@ -215,16 +218,25 @@ final class PedestalChanger
             File::deleteDirectory(dirname($abs));
             throw new \RuntimeException('pedestal_failed');
         }
+        $glbFit = $this->normalizer->glbFit($this->glbOf($f), $inputKey);
 
         $new = ModelFile::create([
             'uuid' => $uuid, 'owner_user_id' => $f->owner_user_id, 'anonymous_session_id' => $f->anonymous_session_id,
             'original_name' => $f->original_name, 'ext' => 'stl', 'mime' => 'model/stl', 'size_bytes' => filesize($abs), 'sha256' => hash_file('sha256', $abs),
             'storage_path' => $rel, 'origin' => 'generated', 'origin_ref' => $f->origin_ref, 'status' => ModelFile::STATUS_UPLOADED,
-            'tool_params' => ['pedestal' => $pedestal['type'], 'name' => $named ? (string) ($pedestal['name'] ?? '') : '', 'dedication' => $plaque ? (string) ($pedestal['dedication'] ?? '') : '', 'sink' => $sink, 'tidy' => $tidy, 'cut_shift' => $cutShift, 'pitch' => $pitch],
+            'tool_params' => ['pedestal' => $pedestal['type'], 'name' => $named ? (string) ($pedestal['name'] ?? '') : '', 'dedication' => $plaque ? (string) ($pedestal['dedication'] ?? '') : '', 'sink' => $sink, 'tidy' => $tidy, 'cut_shift' => $cutShift, 'pitch' => $pitch] + ($glbFit ? ['glb' => $glbFit] : []),
         ]);
         ProcessModelFile::dispatch($new->id);
 
         return $new;
+    }
+
+    /** The record of where the coloured GLB lies over this file (tool_params.glb), if it was measured. */
+    private function glbOf(ModelFile $f): ?array
+    {
+        $g = is_array($f->tool_params) ? ($f->tool_params['glb'] ?? null) : null;
+
+        return is_array($g) ? $g : null;
     }
 
     private function request(ModelFile $f): ?GenerationRequest
