@@ -74,15 +74,23 @@ const boundsOf = (p: Vector3[]): Box => {
 };
 
 /** The cells of a GRID x GRID shadow (seen from above) that the points fall in, over the footprint of `b`. */
-function shadow(p: Vector3[], b: Box): Set<number> {
-    const w = (b.max.x - b.min.x) || 1; const d = (b.max.y - b.min.y) || 1;
+function shadow(p: Vector3[], b: Box, side = false): Set<number> {
+    // from above (x, y), or from the side (x, z): the side view decides how high the figure sits
+    const w = (b.max.x - b.min.x) || 1; const d = (side ? b.max.z - b.min.z : b.max.y - b.min.y) || 1;
+    const lo = side ? b.min.z : b.min.y;
     const cells = new Set<number>();
     for (const v of p) {
         const x = Math.min(GRID - 1, Math.max(0, Math.floor(((v.x - b.min.x) / w) * GRID)));
-        const y = Math.min(GRID - 1, Math.max(0, Math.floor(((v.y - b.min.y) / d) * GRID)));
+        const y = Math.min(GRID - 1, Math.max(0, Math.floor((((side ? v.z : v.y) - lo) / d) * GRID)));
         cells.add(y * GRID + x);
     }
     return cells;
+}
+
+function overlap(a: Set<number>, b: Set<number>): number {
+    let both = 0;
+    a.forEach((c) => { if (b.has(c)) both++; });
+    return both / (a.size + b.size - both || 1);
 }
 
 /**
@@ -102,25 +110,36 @@ export function fitToStl(color: Object3D, stl: BufferGeometry): Matrix4 | null {
     if (!(longest > 0) || !(wanted > 0)) return null;
     const scale = wanted / longest;
     const aim = shadow(target, want);
-    let best: { score: number; m: Matrix4 } | null = null;
+    let best: { score: number; shift: Vector3; turn: Matrix4; turned: Vector3[]; b: Box } | null = null;
     for (let k = 0; k < 4; k++) {
         const turn = new Matrix4().makeRotationZ((k * Math.PI) / 2);
         const turned = upright.map((v) => v.clone().applyMatrix4(turn).multiplyScalar(scale));
         const b = boundsOf(turned);
         // footprints centred on each other, the tops level
         const shift = new Vector3((want.min.x + want.max.x) / 2 - (b.min.x + b.max.x) / 2, (want.min.y + want.max.y) / 2 - (b.min.y + b.max.y) / 2, want.max.z - b.max.z);
-        const cells = shadow(turned.map((v) => v.add(shift)), want);
-        let both = 0;
-        cells.forEach((c) => { if (aim.has(c)) both++; });
-        const score = both / (cells.size + aim.size - both || 1);
+        const score = overlap(shadow(turned.map((v) => v.clone().add(shift)), want), aim);
         if (!best || score > best.score) {
-            best = { score, m: new Matrix4().makeTranslation(shift.x, shift.y, shift.z).multiply(new Matrix4().makeScale(scale, scale, scale)).multiply(turn).multiply(up) };
+            best = { score, shift, turn, turned, b };
         }
     }
     // the colours belong only on the same shape: a bust is cut from the whole figure the generator sent,
     // and dressing the cut STL in the uncut body misled more than grey (Vémola bust, 23 Nov 2026)
     if (best) console.debug('colored preview silhouette match', Math.round(best.score * 100) / 100);
-    return best && best.score >= 0.45 ? best.m : null;
+    if (!best || best.score < 0.45) return null;
+    // how high the figure sits: tops level put a dog 10 mm over its base (its print is a touch taller than
+    // the generator's body, 23 Nov 2026), so the seat between bottoms-level and tops-level with the best
+    // SIDE silhouette wins - a figure on a base lands with its feet on the base, not in the air
+    const aimSide = shadow(target, want, true);
+    const zTop = best.shift.z;
+    const zBottom = want.min.z - best.b.min.z;
+    let seat = zTop; let bestSide = -1;
+    for (let t = 0; t <= 8; t++) {
+        const z = zBottom + ((zTop - zBottom) * t) / 8;
+        const probe = new Vector3(best.shift.x, best.shift.y, z);
+        const side = overlap(shadow(best.turned.map((v) => v.clone().add(probe)), want, true), aimSide);
+        if (side > bestSide) { bestSide = side; seat = z; }
+    }
+    return new Matrix4().makeTranslation(best.shift.x, best.shift.y, seat).multiply(new Matrix4().makeScale(scale, scale, scale)).multiply(best.turn).multiply(up);
 }
 
 /** The coloured model wrapped so it can be hung on the STL mesh (same coordinates); null when it cannot be fitted. */
