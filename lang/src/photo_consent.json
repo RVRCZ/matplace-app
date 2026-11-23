@@ -1,0 +1,27 @@
+{
+    "figure.consent": [
+        "Fotka je moje nebo ji smím použít a souhlasím, že ji zpracujeme k vytvoření modelu.",
+        "The photo is mine or I may use it, and I agree that we process it to create the model.",
+        "La foto es mía o puedo usarla, y acepto que la procesemos para crear el modelo."
+    ],
+    "pet.consent": [
+        "Fotka je moje nebo ji smím použít a souhlasím, že ji zpracujeme k vytvoření modelu.",
+        "The photo is mine or I may use it, and I agree that we process it to create the model.",
+        "La foto es mía o puedo usarla, y acepto que la procesemos para crear el modelo."
+    ],
+    "pet.consent.owner": [
+        "Na fotce jsem já, nebo mám souhlas fotografované osoby, a souhlasím, že fotku zpracujeme k vytvoření modelu.",
+        "The photo shows me, or I have the consent of the person photographed, and I agree that we process it to create the model.",
+        "En la foto salgo yo, o tengo el consentimiento de la persona fotografiada, y acepto que la procesemos para crear el modelo."
+    ],
+    "figure.consent.given": [
+        "Souhlas s fotkou udělen :date",
+        "Photo consent given on :date",
+        "Consentimiento para la foto dado el :date"
+    ],
+    "figure.consent.change": [
+        "změnit",
+        "change",
+        "cambiar"
+    ]
+}

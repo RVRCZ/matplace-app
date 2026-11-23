@@ -36,7 +36,8 @@
                 </div>
             </fieldset>
         @endisset
-        <label class="flex items-start gap-2 text-left text-xs text-ink"><input id="figure-drop-consent" type="checkbox" required class="mt-0.5 h-5 w-5 shrink-0 accent-ink"><span data-drop-consent="0">{{ $consent }}</span>@isset($owner)<span data-drop-consent="1" class="hidden">{{ $owner['consentOwner'] }}</span>@endisset</label>
+        @include('tools._consent_row', ['class' => 'text-left text-xs'] + (isset($owner) ? ['owner' => true] : []))
+        <label data-consent-label class="flex items-start gap-2 text-left text-xs text-ink {{ auth()->user()?->photo_consent_at ? 'hidden' : '' }}"><input id="figure-drop-consent" type="checkbox" required @checked((bool) auth()->user()?->photo_consent_at) class="mt-0.5 h-5 w-5 shrink-0 accent-ink"><span data-drop-consent="0">{{ $consent }}</span>@isset($owner)<span data-drop-consent="1" class="hidden">{{ $owner['consentOwner'] }}</span>@endisset</label>
         <p class="text-xs text-muted">{{ $limits }}</p>
         <button type="button" id="figure-create" class="btn-primary w-full gap-1.5" disabled><x-icon name="sparkles" class="h-4 w-4" />{{ $submit }}</button>
     </div>

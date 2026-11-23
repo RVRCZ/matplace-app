@@ -354,7 +354,7 @@
     "figure.pick_photo": "Choose or take a photo from the front",
     "figure.photo_tips": "One person, from the crown to the waist, a light background, a sharp photo.",
     "figure.size": "Print height",
-    "figure.consent": "The photo shows me, or I have the person’s consent. I agree that our model-generation providers (Tripo, Meshy) process the photo.",
+    "figure.consent": "The photo is mine or I may use it, and I agree that we process it to create the model.",
     "figure.privacy": "We delete the side photos, and the picture made of the photo before the model is built (the person without the background), as soon as the model is created. We delete the front photo within 24 hours of the model being made; if you order a print of the model, a copy stays with the order for 14 days for the video of your print and is then deleted. Only people with the link see the model; for guests it is deleted after 30 days.",
     "figure.submit": "Create model",
     "figure.limits": "{1} Free: :n model a day without an account, :m with one. The model takes 2 to 4 minutes.|[2,*] Free: :n models a day without an account, :m with one. The model takes 2 to 4 minutes.",
@@ -1531,7 +1531,7 @@
     "pet.name.hint": "The name stands out of the base as part of the model. You fill it in above, next to the photo.",
     "pet.dedication": "Second line (in smaller letters)",
     "pet.dedication_ph": "e.g. 2014–2026",
-    "pet.consent": "The photo is mine, or I may use it. I agree that our supplier of model generation processes it.",
+    "pet.consent": "The photo is mine or I may use it, and I agree that we process it to create the model.",
     "pet.privacy": "The photo goes only to the suppliers Tripo and Meshy, which build the model of it. We delete the side photos as soon as the figurine is made. We also delete the picture made of the photo before the model is built (the animal without its background, or the cartoon figure). We delete the front photo within 24 hours of the model being made; if you order a print of the model, a copy stays with the order for 14 days for the video of your print and is then deleted. Only those with the link see the figurine; for visitors without an account we delete it after 30 days.",
     "pet.submit": "Make the figurine",
     "pet.wait": "It usually takes 2 to 4 minutes. You can leave and come back by the link that is in the address bar now.",
@@ -2937,7 +2937,7 @@
     "pet.owner.with.hint": "A figurine of the animal and the person on one base. The photo shows one animal and one person, both whole from the head to the feet, standing or sitting side by side; an animal held in the arms does not work. The leash, the background, furniture and other people are removed from the picture; the face and the clothes are meant to stay as they are.",
     "pet.owner.style": "With the owner there is only the realistic style. The miniature would thicken the face too, and the cartoon would redraw the person, which does the likeness no good.",
     "pet.owner.size": "With a person the figurine is taller and the face is small: for a recognisable likeness choose 150 mm or more.",
-    "pet.consent.owner": "The photo shows me, or I have the consent of the person photographed. I agree that our model-generation providers process the photo.",
+    "pet.consent.owner": "The photo shows me, or I have the consent of the person photographed, and I agree that we process it to create the model.",
     "pet.privacy.owner": "The photo goes only to the suppliers Tripo and Meshy, which build the model of it. We delete the side photos as soon as the figurine is made. We also delete the picture made of the photo before the model is built (the animal and the person without the background). We delete the front photo within 24 hours of the model being made; if you order a print of the model, a copy stays with the order for 14 days for the video of your print and is then deleted. Only those with the link see the figurine; for visitors without an account we delete it after 30 days. We never change how the person looks.",
     "pet.rejected.owner.no_person": "There is nobody in the photo, and you chose the pet with its owner. We have removed it: choose a photo with a person too, or choose \"Just the pet\".",
     "pet.rejected.owner.several_people": "There is more than one person in the photo. The figurine has one person only. We have removed it, please choose a photo of one animal and one person.",
@@ -3131,5 +3131,7 @@
     "pedestal.cut.hint": "Plus keeps more of the figure below the chin, minus cuts the bust higher. Never above the chin.",
     "pedestal.pitch": "Tilt",
     "pedestal.pitch.hint": "Minus straightens a bust that leans forward, plus leans it forward. The preview is only a guide, the bust is recalculated when you press Apply.",
-    "figure.preparing": "This is how the model looks. We are now preparing it for printing; it will be ready in a moment."
+    "figure.preparing": "This is how the model looks. We are now preparing it for printing; it will be ready in a moment.",
+    "figure.consent.given": "Photo consent given on :date",
+    "figure.consent.change": "change"
 }

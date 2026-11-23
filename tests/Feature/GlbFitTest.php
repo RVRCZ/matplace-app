@@ -157,6 +157,15 @@ class GlbFitTest extends TestCase
         $this->assertNotNull($second->glbPath());           // the colours are still offered, fitted by estimate in the browser
     }
 
+    public function test_the_step_buttons_are_on_the_bust_page_and_the_calculator_panel_comes_before_the_material(): void
+    {
+        $this->get('/tools/figure')->assertOk()->assertSee('id="pedestal-cut"', false)->assertSee('id="pedestal-pitch"', false)->assertSee('data-step="-20"', false);
+        $calc = $this->get('/')->assertOk()->getContent();
+        $this->assertLessThan(strpos($calc, 'id="materials"'), strpos($calc, 'id="pedestal-box"'));
+        $this->assertLessThan(strpos($calc, 'id="mold-box"'), strpos($calc, 'id="pedestal-box"'));
+        $this->assertSame(1, substr_count($calc, 'id="pedestal-cut"'));
+    }
+
     public function test_the_matrices_compose_as_the_second_applied_after_the_first(): void
     {
         $a = [1, 0, 0, 5, 0, 1, 0, 0, 0, 0, 2, 0, 0, 0, 0, 1];     // move x by 5, scale z by 2

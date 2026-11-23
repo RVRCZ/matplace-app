@@ -44,6 +44,7 @@ class User extends Authenticatable implements HasLocalePreference, MustVerifyEma
             'phone_verified_at' => 'datetime',
             'blocked_at' => 'datetime',
             'pending_email_at' => 'datetime',
+            'photo_consent_at' => 'datetime',
             'deleted_at' => 'datetime',
             'anonymized_at' => 'datetime',
             'pickup_point' => 'array',

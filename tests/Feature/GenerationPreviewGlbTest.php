@@ -43,6 +43,18 @@ class GenerationPreviewGlbTest extends TestCase
         $this->get('/api/generate/prevtoken01/preview.glb')->assertNotFound();
     }
 
+    public function test_a_tripo_bust_preview_is_turned_three_quarters_and_nothing_else_is(): void
+    {
+        $this->req('running', $this->glb);
+        $this->getJson('/api/generate/prevtoken01')->assertJsonPath('generation.preview_turns', 3);
+
+        GenerationRequest::where('token', 'prevtoken01')->update(['engine' => 'meshy']);
+        $this->getJson('/api/generate/prevtoken01')->assertJsonPath('generation.preview_turns', 0);
+
+        GenerationRequest::where('token', 'prevtoken01')->update(['engine' => 'tripo', 'description' => json_encode(['kind' => 'pet', 'preview_glb' => $this->glb])]);
+        $this->getJson('/api/generate/prevtoken01')->assertJsonPath('generation.preview_turns', 0);
+    }
+
     public function test_no_preview_without_a_path_after_done_and_for_a_wrong_token(): void
     {
         $this->req('running', null);

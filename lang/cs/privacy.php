@@ -15,6 +15,7 @@ return [
             'li' => [
                 'Údaje o účtu – jméno, e-mail, telefon, adresa (pokud je vyplníte), propojení účtu Google nebo Facebook.',
                 'Nahrané soubory a zadání – 3D modely, fotky a textové popisy, ze kterých počítáme cenu nebo generujeme model.',
+                'Souhlas s použitím fotky – u přihlášeného zákazníka si pamatujeme datum, kdy jste ho udělili, abychom se neptali u každého modelu znovu. Odvoláte ho tlačítkem „změnit“ u souhlasu na stránce busty nebo mazlíčka.',
                 'Údaje o zakázkách – zvolený materiál, barva, cena, způsob převzetí, doručovací adresa, stav tisku.',
                 'Záznam tisku – snímky z kamery v tiskárně a z nich sestavené časosběrné video. Zachycují jen tiskovou podložku a vytištěný předmět; u modelu z fotky video zobrazuje i fotku, podle které model vznikl (viz bod 5).',
                 'Platební údaje – zpracovává výhradně platební brána Stripe; my ukládáme jen identifikátor a stav platby a zůstatek kreditu.',
@@ -37,7 +38,7 @@ return [
             'li' => [
                 'Stripe, Inc. – platby kartou při dobití kreditu (stripe.com/privacy).',
                 'Anthropic, PBC – rozpoznání předmětu na fotce a kontrola nahraných fotek (anthropic.com/privacy).',
-                'Tripo (VAST) – generování 3D modelu z fotky nebo textu, jen když tuto funkci použijete.',
+                'Tripo (VAST, tripo3d.ai) a Meshy (meshy.ai) – generování 3D modelu z fotky nebo textu, jen když tuto funkci použijete. Fotku jim posíláme jen k vytvoření modelu a zpracovávají ji mimo EU.',
                 'Google LLC (YouTube) – časosběrná videa, jejichž zveřejnění jste neodmítli.',
                 'Google Ireland Ltd. (Google Analytics) a Meta Platforms Ireland Ltd. (Meta pixel) – měření návštěvnosti a reklamy, jen pokud jste to povolili v cookie liště.',
                 'Packeta s.r.o. (Zásilkovna) – jméno, adresa nebo výdejní místo, e-mail a telefon pro doručení zásilky.',
@@ -57,7 +58,7 @@ return [
         ],
         [
             'h' => '6. Předávání mimo EU',
-            'p' => ['Stripe, Anthropic a Google sídlí v USA, Tripo mimo EU. Předávání probíhá na základě standardních smluvních doložek Evropské komise nebo jiného mechanismu podle kapitoly V GDPR.'],
+            'p' => ['Stripe, Anthropic a Google sídlí v USA, Tripo a Meshy mimo EU. Předávání probíhá na základě standardních smluvních doložek Evropské komise nebo jiného mechanismu podle kapitoly V GDPR.'],
         ],
         [
             'h' => '7. Jak dlouho údaje uchováváme',
@@ -65,6 +66,7 @@ return [
                 'Účet – po dobu jeho trvání; po zrušení do 30 dnů smažeme nebo anonymizujeme.',
                 'Zakázky a platby – 5 let od dokončení (účetní a daňové předpisy), doklady podle zákona až 10 let.',
                 'Fotky pro rozpoznání a generování – nejdéle 1 den; nahrané soubory bez objednávky 30 dní.',
+                'Fotky pro 3D modely (busta, figurka, mazlíček) – boční fotky a obrázek, který z fotky vznikne před stavbou modelu, mažeme hned po vytvoření modelu; přední fotku do 24 hodin po vytvoření modelu, a když model objednáte k tisku, zůstane její kopie 14 dní u zakázky pro video z vašeho tisku a pak ji smažeme. Hotový model vidí jen ten, kdo má odkaz; návštěvníkům bez účtu ho po 30 dnech mažeme.',
                 'Časosběrná videa – u zakázky po dobu trvání účtu (kopie přední fotky u modelu z fotky jen 14 dní, viz bod 5); na YouTube do odmítnutí zveřejnění, odvolání souhlasu nebo do našeho smazání.',
                 'Technické záznamy – nejvýše 12 měsíců.',
                 'Údaje partnerského programu – po dobu vaší účasti; záznamy o vyplacených provizích 5 let (účetní a daňové předpisy).',

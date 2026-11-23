@@ -15,6 +15,7 @@ return [
             'li' => [
                 'Datos de la cuenta – nombre, correo, teléfono, dirección (si los rellena), cuenta de Google o Facebook vinculada.',
                 'Archivos y solicitudes – modelos 3D, fotos y descripciones de texto con los que calculamos el precio o generamos un modelo.',
+                'Consentimiento para la foto – de un cliente con sesión iniciada guardamos la fecha en que lo dio, para no preguntarle en cada modelo. Lo retira con el botón «cambiar» junto al consentimiento en la página del busto o de la mascota.',
                 'Datos del pedido – material, color, precio, forma de entrega, dirección de envío, estado de la impresión.',
                 'Grabación de la impresión – imágenes de la cámara de la impresora y el vídeo time-lapse hecho con ellas. Solo muestran la base de impresión y el objeto impreso; en un modelo hecho a partir de una foto, el vídeo muestra también la foto con la que se hizo (véase el punto 5).',
                 'Datos de pago – los trata únicamente la pasarela de pago Stripe; nosotros guardamos solo el identificador y el estado del pago y su saldo de crédito.',
@@ -37,7 +38,7 @@ return [
             'li' => [
                 'Stripe, Inc. – pagos con tarjeta al recargar crédito (stripe.com/privacy).',
                 'Anthropic, PBC – reconocer el objeto de una foto y revisar las fotos subidas (anthropic.com/privacy).',
-                'Tripo (VAST) – generar un modelo 3D a partir de una foto o un texto, solo si usa esta función.',
+                'Tripo (VAST, tripo3d.ai) y Meshy (meshy.ai) – generar un modelo 3D a partir de una foto o un texto, solo si usa esta función. Les enviamos la foto solo para crear el modelo y la procesan fuera de la UE.',
                 'Google Ireland Ltd. (Google Analytics) y Meta Platforms Ireland Ltd. (píxel de Meta): medición de visitas y de publicidad, solo si usted lo permitió en la barra de cookies.',
                 'Packeta s.r.o.: nombre, dirección o punto de recogida, correo y teléfono para entregar un paquete.',
                 'Google LLC (YouTube) – vídeos time-lapse cuya publicación no ha rechazado.',
@@ -57,7 +58,7 @@ return [
         ],
         [
             'h' => '6. Transferencias fuera de la UE',
-            'p' => ['Stripe, Anthropic y Google tienen su sede en EE. UU., Tripo fuera de la UE. Las transferencias se basan en las cláusulas contractuales tipo de la Comisión Europea u otro mecanismo del capítulo V del RGPD.'],
+            'p' => ['Stripe, Anthropic y Google tienen su sede en EE. UU., Tripo y Meshy fuera de la UE. Las transferencias se basan en las cláusulas contractuales tipo de la Comisión Europea u otro mecanismo del capítulo V del RGPD.'],
         ],
         [
             'h' => '7. Cuánto tiempo guardamos los datos',
@@ -65,6 +66,7 @@ return [
                 'Cuenta – mientras exista; se borra o anonimiza en 30 días tras cerrarla.',
                 'Pedidos y pagos – 5 años desde su finalización (normas contables y fiscales), facturas hasta 10 años según la ley.',
                 'Fotos para reconocimiento y generación – como máximo 1 día; archivos subidos sin pedido 30 días.',
+                'Fotos para modelos 3D (busto, figura, mascota) – las fotos laterales, y la imagen que se crea de la foto antes de construir el modelo, se borran en cuanto se crea el modelo; la foto frontal en un plazo de 24 horas desde que se crea el modelo, y si encarga la impresión, una copia queda 14 días con el pedido para el vídeo de su impresión y después se borra. Solo quien tenga el enlace ve el modelo terminado; a los visitantes sin cuenta se les borra a los 30 días.',
                 'Vídeos time-lapse – con el pedido mientras exista su cuenta (la copia de la foto frontal de un modelo hecho a partir de una foto solo 14 días, véase el punto 5); en YouTube hasta que rechace la publicación, retire el consentimiento o los borremos.',
                 'Registros técnicos – como máximo 12 meses.',
                 'Datos del programa de socios – mientras participe; los registros de comisiones pagadas, 5 años (normas contables y fiscales).',

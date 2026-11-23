@@ -354,7 +354,7 @@
     "figure.pick_photo": "Vyberte nebo vyfoťte fotku zepředu",
     "figure.photo_tips": "Jedna osoba, od temene po pas, světlé pozadí, ostrá fotka.",
     "figure.size": "Výška výtisku",
-    "figure.consent": "Na fotce jsem já, nebo mám souhlas vyfoceného. Souhlasím, že fotku zpracují naši dodavatelé generování modelů (Tripo, Meshy).",
+    "figure.consent": "Fotka je moje nebo ji smím použít a souhlasím, že ji zpracujeme k vytvoření modelu.",
     "figure.privacy": "Boční fotky i obrázek, který z fotky vznikne před stavbou modelu (osoba bez pozadí), smažeme hned po vytvoření modelu. Přední fotku mažeme do 24 hodin po vytvoření modelu; když si model objednáte k tisku, zůstane její kopie 14 dní u zakázky pro video z vašeho tisku a pak ji smažeme. Model vidí jen ten, kdo má odkaz; nepřihlášeným ho po 30 dnech mažeme.",
     "figure.submit": "Vytvořit model",
     "figure.limits": "{1} Zdarma :n model denně bez účtu, :m s účtem. Model vzniká 2 až 4 minuty.|[2,4] Zdarma :n modely denně bez účtu, :m s účtem. Model vzniká 2 až 4 minuty.|[5,*] Zdarma :n modelů denně bez účtu, :m s účtem. Model vzniká 2 až 4 minuty.",
@@ -1531,7 +1531,7 @@
     "pet.name.hint": "Jméno vystoupí z podstavce jako součást modelu. Vyplníte ho nahoře u fotky.",
     "pet.dedication": "Druhý řádek (menším písmem)",
     "pet.dedication_ph": "např. 2014–2026",
-    "pet.consent": "Fotka je moje, nebo ji smím použít. Souhlasím, že ji zpracuje náš dodavatel generování modelů.",
+    "pet.consent": "Fotka je moje nebo ji smím použít a souhlasím, že ji zpracujeme k vytvoření modelu.",
     "pet.privacy": "Fotka jde jen k dodavatelům Tripo a Meshy, kteří z ní postaví model. Boční fotky mažeme hned po vytvoření figurky. Mažeme i obrázek, který z fotky vznikne před stavbou modelu (zvíře bez pozadí, nebo kreslená figurka). Přední fotku mažeme do 24 hodin po vytvoření modelu; když si model objednáte k tisku, zůstane její kopie 14 dní u zakázky pro video z vašeho tisku a pak ji smažeme. Figurku vidí jen ten, kdo má odkaz; nepřihlášeným ji po 30 dnech mažeme.",
     "pet.submit": "Vytvořit figurku",
     "pet.wait": "Obvykle to trvá 2 až 4 minuty. Můžete odejít a vrátit se odkazem, který je teď v adresním řádku.",
@@ -2937,7 +2937,7 @@
     "pet.owner.with.hint": "Figurka zvířete i člověka na jednom podstavci. Na fotce má být jedno zvíře a jeden člověk, oba celí od hlavy k nohám, stojící nebo sedící vedle sebe; zvíře v náručí nejde. Vodítko, pozadí, nábytek a další lidé se z obrázku odstraní, obličej a oblečení se mají zachovat.",
     "pet.owner.style": "S páníčkem je jen realistická podoba. Miniatura by ztluštila i obličej a kreslená by postavu překreslila, a to by se podobě nevyplatilo.",
     "pet.owner.size": "S člověkem je figurka vyšší a obličej drobný: pro rozpoznatelnou podobu volte 150 mm a víc.",
-    "pet.consent.owner": "Na fotce jsem já, nebo mám souhlas vyfotografované osoby. Souhlasím, že fotku zpracují naši dodavatelé generování modelů.",
+    "pet.consent.owner": "Na fotce jsem já, nebo mám souhlas fotografované osoby, a souhlasím, že fotku zpracujeme k vytvoření modelu.",
     "pet.privacy.owner": "Fotka jde jen k dodavatelům Tripo a Meshy, kteří z ní model staví. Boční fotky smažeme, jakmile je figurka hotová. Smažeme i obrázek, který z fotky vznikne před stavbou modelu (zvíře a člověk bez pozadí). Přední fotku mažeme do 24 hodin po vytvoření modelu; když si model objednáte k tisku, zůstane její kopie 14 dní u zakázky pro video z vašeho tisku a pak ji smažeme. Figurku uvidí jen ten, kdo má odkaz; u návštěvníků bez účtu ji po 30 dnech smažeme. Podobu člověka nikdy neupravujeme.",
     "pet.rejected.owner.no_person": "Na fotce nikdo není, a vybrali jste mazlíčka s páníčkem. Fotku jsme smazali: vyberte fotku, na které je i člověk, nebo zvolte „Jen mazlíček“.",
     "pet.rejected.owner.several_people": "Na fotce je víc lidí. Figurka má jen jednoho člověka. Fotku jsme smazali, vyberte fotku s jedním zvířetem a jedním člověkem.",
@@ -3131,5 +3131,7 @@
     "pedestal.cut.hint": "Plus nechá víc postavy pod bradou, minus seřízne busty výš. Nikdy ne nad bradu.",
     "pedestal.pitch": "Náklon",
     "pedestal.pitch.hint": "Mínus narovná předkloněnou bustu, plus ji nakloní dopředu. Náhled vpravo je jen orientační, po „Použít“ se busta přepočítá.",
-    "figure.preparing": "Takhle model vypadá. Teď ho připravujeme k tisku, za chvíli bude hotový."
+    "figure.preparing": "Takhle model vypadá. Teď ho připravujeme k tisku, za chvíli bude hotový.",
+    "figure.consent.given": "Souhlas s fotkou udělen :date",
+    "figure.consent.change": "změnit"
 }

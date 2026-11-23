@@ -15,6 +15,7 @@ return [
             'li' => [
                 'Account data – name, email, phone, address (if you fill them in), linked Google or Facebook account.',
                 'Uploaded files and requests – 3D models, photos and text descriptions we price or generate a model from.',
+                'Photo consent – for a signed-in customer we remember the date it was given, so that we do not ask again for every model. You withdraw it with the "change" button beside the consent on the bust or pet page.',
                 'Order data – material, colour, price, delivery method, shipping address, print status.',
                 'Print recording – pictures from the camera inside the printer and the time-lapse video made from them. They show only the print bed and the printed object; for a model made from a photo the video also shows the photo the model was made from (see section 5).',
                 'Payment data – processed solely by the payment gateway Stripe; we store only the payment identifier and status and your credit balance.',
@@ -37,7 +38,7 @@ return [
             'li' => [
                 'Stripe, Inc. – card payments when you top up credit (stripe.com/privacy).',
                 'Anthropic, PBC – recognising the object in a photo and checking uploaded photos (anthropic.com/privacy).',
-                'Tripo (VAST) – generating a 3D model from a photo or text, only when you use this feature.',
+                'Tripo (VAST, tripo3d.ai) and Meshy (meshy.ai) – generating a 3D model from a photo or text, only when you use this feature. We send them the photo only to make the model, and they process it outside the EU.',
                 'Google LLC (YouTube) – time-lapse videos whose publishing you did not refuse.',
                 'Google Ireland Ltd. (Google Analytics) and Meta Platforms Ireland Ltd. (Meta pixel) – measuring visits and advertising, only if you allowed it in the cookie bar.',
                 'Packeta s.r.o. – name, address or pickup point, email and phone to deliver a parcel.',
@@ -57,7 +58,7 @@ return [
         ],
         [
             'h' => '6. Transfers outside the EU',
-            'p' => ['Stripe, Anthropic and Google are based in the USA, Tripo outside the EU. Transfers rely on the European Commission\'s standard contractual clauses or another mechanism under Chapter V GDPR.'],
+            'p' => ['Stripe, Anthropic and Google are based in the USA, Tripo and Meshy outside the EU. Transfers rely on the European Commission\'s standard contractual clauses or another mechanism under Chapter V GDPR.'],
         ],
         [
             'h' => '7. How long we keep data',
@@ -65,6 +66,7 @@ return [
                 'Account – while it exists; deleted or anonymised within 30 days after closing it.',
                 'Orders and payments – 5 years after completion (accounting and tax rules), invoices up to 10 years as the law requires.',
                 'Photos for recognition and generation – at most 1 day; uploaded files without an order 30 days.',
+                'Photos for 3D models (bust, figure, pet) – the side photos, and the picture made of the photo before the model is built, are deleted as soon as the model is created; the front photo within 24 hours of the model being made, and if you order a print of the model, a copy stays with the order for 14 days for the video of your print and is then deleted. Only people with the link see the finished model; for visitors without an account it is deleted after 30 days.',
                 'Time-lapse videos – with the order while your account exists (the copy of the front photo of a model made from a photo only 14 days, see section 5); on YouTube until you refuse publishing, take the consent back or we delete them.',
                 'Technical logs – at most 12 months.',
                 'Partner programme data – for as long as you take part; records of commissions paid out for 5 years (accounting and tax rules).',

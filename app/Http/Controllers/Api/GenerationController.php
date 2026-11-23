@@ -70,10 +70,16 @@ class GenerationController extends Controller
             'pedestal_name' => ['nullable', 'string', 'max:24'],
             'pedestal_dedication' => ['nullable', 'string', 'max:40'],
             'target_mm' => ['nullable', 'integer', 'min:5', 'max:1000'],
-            'consent' => $request->hasFile('image') ? ['accepted'] : ['nullable'],
+            // the box must be ticked; a signed-in customer who ticked it before (users.photo_consent_at) needs no tick again, except for a
+            // photo with a person in it (the pet with its owner), whose consent is a different one and is given every time
+            'consent' => $request->hasFile('image') && ! ($request->user()?->photo_consent_at && ! ($request->input('kind') === 'pet' && $request->input('with_person') === '1')) ? ['accepted'] : ['nullable'],
         ], self::photoMessages());
         $session = $request->attributes->get('anon_session');
         $user = $request->user();
+        // a ticked box of a signed-in customer is remembered with the account (not for a person's photo: that consent is not a general one)
+        if ($user && $request->hasFile('image') && $request->boolean('consent') && ! (($data['kind'] ?? null) === 'pet' && ($data['with_person'] ?? '0') === '1')) {
+            $user->forceFill(['photo_consent_at' => now()])->save();
+        }
 
         try {
             if ($request->hasFile('image')) {
@@ -185,6 +191,14 @@ class GenerationController extends Controller
     }
 
     /** GET /api/generate/{token} */
+    /** POST /api/photo-consent/withdraw — "change" beside the consent given: the box is asked for again the next time */
+    public function withdrawConsent(Request $request): JsonResponse
+    {
+        $request->user()?->forceFill(['photo_consent_at' => null])->save();
+
+        return response()->json(['ok' => true]);
+    }
+
     public function show(GenerationRequest $generation): JsonResponse
     {
         abort_unless(in_array($generation->type, ['image', 'text'], true), 404);

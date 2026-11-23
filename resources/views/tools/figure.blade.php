@@ -115,7 +115,8 @@
         </script>
 
         {{-- the step ends with the model being made; the material and the number of pieces follow as the page's last step --}}
-        <label class="flex items-start gap-3 text-sm text-ink"><input id="figure-consent" type="checkbox" name="consent" value="1" required class="mt-0.5 h-5 w-5 accent-ink"> <span>{{ __('figure.consent') }}</span></label>
+        @include('tools._consent_row')
+        <label data-consent-label class="flex items-start gap-3 text-sm text-ink {{ auth()->user()?->photo_consent_at ? 'hidden' : '' }}"><input id="figure-consent" type="checkbox" name="consent" value="1" required @checked((bool) auth()->user()?->photo_consent_at) class="mt-0.5 h-5 w-5 accent-ink"> <span>{{ __('figure.consent') }}</span></label>
         <p class="text-xs text-muted">{{ __('figure.privacy') }}</p>
 
         {{-- before the click: the free models a day and how long one takes (docs/AF.md §3) --}}
@@ -125,6 +126,8 @@
         <p id="figure-msg" class="hint" aria-live="polite"></p>
         {{-- another base or another name under the model that is on the stage: seconds of geometry, no new generation --}}
         <div id="figure-rebase-box" class="hidden">
+            {{-- the height of the chest cut and the lean of a bust (shown only for a bust that keeps its whole figure; cut_controls.ts) --}}
+            @include('partials.cut-controls', ['class' => 'mb-3'])
             <button id="figure-rebase" type="button" class="btn-quiet w-full">{{ __('figure.rebase') }}</button>
             <p class="mt-1 text-xs text-muted">{{ __('figure.rebase.hint') }}</p>
         </div>

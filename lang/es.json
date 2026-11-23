@@ -354,7 +354,7 @@
     "figure.pick_photo": "Elija o haga una foto de frente",
     "figure.photo_tips": "Una persona, de la coronilla a la cintura, fondo claro, foto nítida.",
     "figure.size": "Altura de la pieza",
-    "figure.consent": "En la foto salgo yo o tengo el consentimiento de la persona. Acepto que nuestros proveedores de generación de modelos (Tripo, Meshy) procesen la foto.",
+    "figure.consent": "La foto es mía o puedo usarla, y acepto que la procesemos para crear el modelo.",
     "figure.privacy": "Borramos las fotos laterales, y la imagen que se crea de la foto antes de construir el modelo (la persona sin fondo), en cuanto se crea el modelo. Borramos la foto frontal en un plazo de 24 horas desde que se crea el modelo; si encarga la impresión del modelo, una copia queda 14 días con el pedido para el vídeo de su impresión y después la borramos. Solo quien tenga el enlace ve el modelo; a los invitados se les borra a los 30 días.",
     "figure.submit": "Crear modelo",
     "figure.limits": "{1} Gratis: :n modelo al día sin cuenta, :m con cuenta. El modelo tarda de 2 a 4 minutos.|[2,*] Gratis: :n modelos al día sin cuenta, :m con cuenta. El modelo tarda de 2 a 4 minutos.",
@@ -1531,7 +1531,7 @@
     "pet.name.hint": "El nombre sobresale de la base como parte del modelo. Se rellena arriba, junto a la foto.",
     "pet.dedication": "Segunda línea (en letra más pequeña)",
     "pet.dedication_ph": "p. ej. 2014–2026",
-    "pet.consent": "La foto es mía, o puedo usarla. Acepto que la procese nuestro proveedor de generación de modelos.",
+    "pet.consent": "La foto es mía o puedo usarla, y acepto que la procesemos para crear el modelo.",
     "pet.privacy": "La foto solo va a los proveedores Tripo y Meshy, que construyen el modelo a partir de ella. Borramos las fotos laterales en cuanto la figura está hecha. Borramos también la imagen que se crea de la foto antes de construir el modelo (el animal sin fondo, o la figura de dibujo animado). Borramos la foto frontal en un plazo de 24 horas desde que se crea el modelo; si encarga la impresión del modelo, una copia queda 14 días con el pedido para el vídeo de su impresión y después la borramos. Solo quien tiene el enlace ve la figura; a los visitantes sin cuenta se la borramos a los 30 días.",
     "pet.submit": "Crear la figura",
     "pet.wait": "Suele tardar de 2 a 4 minutos. Puede salir y volver con el enlace que ahora está en la barra de direcciones.",
@@ -2937,7 +2937,7 @@
     "pet.owner.with.hint": "Una figura del animal y de la persona sobre una misma base. En la foto debe haber un animal y una persona, ambos enteros de la cabeza a los pies, de pie o sentados uno al lado del otro; un animal en brazos no sirve. La correa, el fondo, los muebles y otras personas se quitan de la imagen; la cara y la ropa deben quedar como están.",
     "pet.owner.style": "Con el dueño solo hay el estilo realista. La miniatura engrosaría también la cara y la de dibujos animados redibujaría a la persona, lo que no favorece al parecido.",
     "pet.owner.size": "Con una persona la figura es más alta y la cara pequeña: para un parecido reconocible elija 150 mm o más.",
-    "pet.consent.owner": "En la foto salgo yo, o tengo el consentimiento de la persona fotografiada. Acepto que nuestros proveedores de generación de modelos procesen la foto.",
+    "pet.consent.owner": "En la foto salgo yo, o tengo el consentimiento de la persona fotografiada, y acepto que la procesemos para crear el modelo.",
     "pet.privacy.owner": "La foto va solo a los proveedores Tripo y Meshy, que construyen el modelo. Borramos las fotos laterales en cuanto la figura está hecha. También borramos la imagen creada a partir de la foto antes de construir el modelo (el animal y la persona sin el fondo). Borramos la foto frontal en un plazo de 24 horas desde que se crea el modelo; si encarga la impresión del modelo, una copia queda 14 días con el pedido para el vídeo de su impresión y después la borramos. Solo la ve quien tenga el enlace; a los visitantes sin cuenta se la borramos a los 30 días. Nunca cambiamos el aspecto de la persona.",
     "pet.rejected.owner.no_person": "No hay nadie en la foto y eligió la mascota con su dueño. La hemos borrado: elija una foto en la que también salga una persona, o elija «Solo la mascota».",
     "pet.rejected.owner.several_people": "Hay más de una persona en la foto. La figura lleva solo una persona. La hemos borrado, elija una foto de un animal y una persona.",
@@ -3131,5 +3131,7 @@
     "pedestal.cut.hint": "Más deja más figura bajo la barbilla, menos corta el busto más arriba. Nunca por encima de la barbilla.",
     "pedestal.pitch": "Inclinación",
     "pedestal.pitch.hint": "Menos endereza un busto inclinado hacia delante, más lo inclina hacia delante. La vista previa es solo orientativa, el busto se recalcula al pulsar Aplicar.",
-    "figure.preparing": "Así se ve el modelo. Ahora lo preparamos para imprimir; estará listo en un momento."
+    "figure.preparing": "Así se ve el modelo. Ahora lo preparamos para imprimir; estará listo en un momento.",
+    "figure.consent.given": "Consentimiento para la foto dado el :date",
+    "figure.consent.change": "cambiar"
 }

@@ -201,7 +201,8 @@
             })();
         </script>
 
-        <label class="flex items-start gap-3 text-sm text-ink"><input id="figure-consent" type="checkbox" name="consent" value="1" required class="mt-0.5 h-5 w-5 accent-ink"> <span data-consent="0">{{ __('pet.consent') }}</span><span data-consent="1" class="hidden">{{ __('pet.consent.owner') }}</span></label>
+        @include('tools._consent_row', ['owner' => true])
+        <label data-consent-label class="flex items-start gap-3 text-sm text-ink {{ auth()->user()?->photo_consent_at ? 'hidden' : '' }}"><input id="figure-consent" type="checkbox" name="consent" value="1" required @checked((bool) auth()->user()?->photo_consent_at) class="mt-0.5 h-5 w-5 accent-ink"> <span data-consent="0">{{ __('pet.consent') }}</span><span data-consent="1" class="hidden">{{ __('pet.consent.owner') }}</span></label>
         <p class="text-xs text-muted" data-privacy="0">{{ __('pet.privacy') }}</p>
         <p class="hidden text-xs text-muted" data-privacy="1">{{ __('pet.privacy.owner') }}</p>
 

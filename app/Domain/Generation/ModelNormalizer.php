@@ -99,6 +99,7 @@ final class ModelNormalizer
 
                 return $outPath;
             }
+            \Illuminate\Support\Facades\Log::warning('Normalisation by python failed', ['error' => $r['error'] ?? 'unknown', 'in' => $inPath, 'out' => $outPath, 'extras' => json_encode($extras)]);
             if ($ext !== 'stl') {
                 throw new EngineException('Normalisation failed: '.($r['error'] ?? 'unknown'));
             }

@@ -121,6 +121,44 @@
                     @endif
                 </div>
 
+                {{-- generated busts and figures: another base, the height of the cut and the lean, without a new generation.
+                 Its own card right under the price, ABOVE the size, material and colours: the owner did not find it at the bottom (24 Nov 2026) --}}
+                {{-- data-named: the bases that carry a name; an option with data-hidden is a bust style the owner has hidden
+                     (BustStyles, /admin/ai): it is offered only to a model that already has it --}}
+                <form id="pedestal-box" class="hidden min-w-0 rounded-2xl border border-slate-200 bg-white p-4" data-named="{{ implode(',', \App\Domain\Generation\PedestalChanger::NAMED) }}">
+                    <div class="text-sm font-semibold text-slate-700">{{ __('pedestal.title') }}</div>
+                    <div class="mt-2 grid gap-2 sm:grid-cols-2">
+                        <label class="block text-xs font-semibold text-slate-600">{{ __('pedestal.type') }}
+                            <select id="pedestal-type" class="mt-1 min-h-11 w-full rounded-lg border border-slate-300 bg-white px-2 py-2 text-sm font-normal">
+                                @foreach(\App\Domain\Generation\PedestalChanger::TYPES as $pk)<option value="{{ $pk }}" @if(in_array($pk, app(\App\Domain\Generation\BustStyles::class)->hidden(), true)) data-hidden @endif>{{ __('figure.pedestal.'.$pk) }}</option>@endforeach
+                            </select>
+                        </label>
+                        <label class="block text-xs font-semibold text-slate-600">{{ __('pedestal.front') }}
+                            <select id="pedestal-front" class="mt-1 min-h-11 w-full rounded-lg border border-slate-300 bg-white px-2 py-2 text-sm font-normal">
+                                @foreach(\App\Domain\Generation\PedestalChanger::FRONTS as $fk)<option value="{{ $fk }}">{{ __('pedestal.front.'.$fk) }}</option>@endforeach
+                            </select>
+                        </label>
+                        <label class="block text-xs font-semibold text-slate-600 sm:col-span-2">{{ __('pedestal.sink') }}
+                            <select id="pedestal-sink" class="mt-1 min-h-11 w-full rounded-lg border border-slate-300 bg-white px-2 py-2 text-sm font-normal">
+                                @foreach(\App\Domain\Generation\PedestalChanger::SINKS as $sk)<option value="{{ $sk }}">{{ $sk === 0 ? __('pedestal.sink.none') : __('pedestal.sink.by', ['n' => $sk]) }}</option>@endforeach
+                            </select>
+                        </label>
+                        {{-- a bust made with its whole figure kept: where the chest is cut and how far it leans. Big step buttons, no sliders: a thumb on a phone hits them --}}
+                        @include('partials.cut-controls', ['class' => 'sm:col-span-2'])
+                        <label class="flex items-center gap-2 text-xs text-slate-700 sm:col-span-2"><input id="pedestal-tidy" type="checkbox" class="accent-action"> {{ __('pedestal.tidy') }}</label>
+                        <label data-pedestal-name class="hidden text-xs font-semibold text-slate-600">{{ __('figure.pedestal.name') }}
+                            <input id="pedestal-name" maxlength="24" placeholder="{{ __('figure.pedestal.name_ph') }}" class="mt-1 min-h-11 w-full rounded-lg border border-slate-300 px-2 py-2 text-sm font-normal">
+                        </label>
+                        <label data-pedestal-dedication class="hidden text-xs font-semibold text-slate-600">{{ __('figure.pedestal.dedication') }}
+                            <input id="pedestal-dedication" maxlength="40" placeholder="{{ __('figure.pedestal.dedication_ph') }}" class="mt-1 min-h-11 w-full rounded-lg border border-slate-300 px-2 py-2 text-sm font-normal">
+                        </label>
+                    </div>
+                    <div class="mt-2 flex items-center gap-3">
+                        <button id="pedestal-apply" class="btn-ink min-h-11 px-4 py-2 text-sm">{{ __('pedestal.apply') }}</button>
+                        <p id="pedestal-msg" class="text-xs text-slate-500" role="status">{{ __('pedestal.hint') }}</p>
+                    </div>
+                </form>
+
                 <div class="min-w-0 rounded-2xl border border-slate-200 bg-white p-4">
                     {{-- size and quantity first: what the customer decides, right under the price they decide it by --}}
                     <div class="mt-3 rounded-xl bg-slate-50 p-3">
@@ -161,57 +199,6 @@
                             <button class="btn-ink px-3 py-2 text-sm">{{ __('refine.submit') }}</button>
                         </div>
                         <p id="refine-msg" class="mt-1 text-xs text-slate-500">{{ __('refine.hint') }}</p>
-                    </form>
-                    {{-- generated busts and figures: another base without a new generation --}}
-                    {{-- data-named: the bases that carry a name; an option with data-hidden is a bust style the owner has hidden
-                         (BustStyles, /admin/ai): it is offered only to a model that already has it --}}
-                    <form id="pedestal-box" class="mt-3 hidden rounded-xl bg-slate-50 p-3" data-named="{{ implode(',', \App\Domain\Generation\PedestalChanger::NAMED) }}">
-                        <div class="text-sm font-semibold text-slate-700">{{ __('pedestal.title') }}</div>
-                        <div class="mt-2 grid gap-2 sm:grid-cols-2">
-                            <label class="block text-xs font-semibold text-slate-600">{{ __('pedestal.type') }}
-                                <select id="pedestal-type" class="mt-1 min-h-11 w-full rounded-lg border border-slate-300 bg-white px-2 py-2 text-sm font-normal">
-                                    @foreach(\App\Domain\Generation\PedestalChanger::TYPES as $pk)<option value="{{ $pk }}" @if(in_array($pk, app(\App\Domain\Generation\BustStyles::class)->hidden(), true)) data-hidden @endif>{{ __('figure.pedestal.'.$pk) }}</option>@endforeach
-                                </select>
-                            </label>
-                            <label class="block text-xs font-semibold text-slate-600">{{ __('pedestal.front') }}
-                                <select id="pedestal-front" class="mt-1 min-h-11 w-full rounded-lg border border-slate-300 bg-white px-2 py-2 text-sm font-normal">
-                                    @foreach(\App\Domain\Generation\PedestalChanger::FRONTS as $fk)<option value="{{ $fk }}">{{ __('pedestal.front.'.$fk) }}</option>@endforeach
-                                </select>
-                            </label>
-                            <label class="block text-xs font-semibold text-slate-600 sm:col-span-2">{{ __('pedestal.sink') }}
-                                <select id="pedestal-sink" class="mt-1 min-h-11 w-full rounded-lg border border-slate-300 bg-white px-2 py-2 text-sm font-normal">
-                                    @foreach(\App\Domain\Generation\PedestalChanger::SINKS as $sk)<option value="{{ $sk }}">{{ $sk === 0 ? __('pedestal.sink.none') : __('pedestal.sink.by', ['n' => $sk]) }}</option>@endforeach
-                                </select>
-                            </label>
-                            {{-- a bust made with its whole figure kept: where the chest is cut and how far it leans. Big step buttons, no sliders: a thumb on a phone hits them --}}
-                            <div data-cut-controls class="hidden sm:col-span-2">
-                                <div id="pedestal-cut" role="group" aria-labelledby="pedestal-cut-label">
-                                    <div id="pedestal-cut-label" class="text-xs font-semibold text-slate-600">{{ __('pedestal.cut') }}</div>
-                                    <div class="mt-1 grid grid-cols-5 gap-1.5">
-                                        @foreach(\App\Domain\Generation\PedestalChanger::CUT_SHIFTS as $cs)<button type="button" data-step="{{ $cs }}" aria-pressed="false" class="min-h-12 rounded-lg border border-slate-300 bg-white px-1 text-sm font-semibold text-slate-700">{{ $cs > 0 ? '+' : ($cs < 0 ? '−' : '') }}{{ abs($cs) }}&nbsp;%</button>@endforeach
-                                    </div>
-                                    <p class="mt-1 text-xs text-slate-500">{{ __('pedestal.cut.hint') }}</p>
-                                </div>
-                                <div id="pedestal-pitch" role="group" aria-labelledby="pedestal-pitch-label" class="mt-3">
-                                    <div id="pedestal-pitch-label" class="text-xs font-semibold text-slate-600">{{ __('pedestal.pitch') }}</div>
-                                    <div class="mt-1 grid grid-cols-4 gap-1.5 sm:grid-cols-7">
-                                        @foreach(\App\Domain\Generation\PedestalChanger::PITCHES as $pt)<button type="button" data-step="{{ $pt }}" aria-pressed="false" class="min-h-12 rounded-lg border border-slate-300 bg-white px-1 text-sm font-semibold text-slate-700">{{ $pt > 0 ? '+' : ($pt < 0 ? '−' : '') }}{{ abs($pt) }}°</button>@endforeach
-                                    </div>
-                                    <p class="mt-1 text-xs text-slate-500">{{ __('pedestal.pitch.hint') }}</p>
-                                </div>
-                            </div>
-                            <label class="flex items-center gap-2 text-xs text-slate-700 sm:col-span-2"><input id="pedestal-tidy" type="checkbox" class="accent-action"> {{ __('pedestal.tidy') }}</label>
-                            <label data-pedestal-name class="hidden text-xs font-semibold text-slate-600">{{ __('figure.pedestal.name') }}
-                                <input id="pedestal-name" maxlength="24" placeholder="{{ __('figure.pedestal.name_ph') }}" class="mt-1 min-h-11 w-full rounded-lg border border-slate-300 px-2 py-2 text-sm font-normal">
-                            </label>
-                            <label data-pedestal-dedication class="hidden text-xs font-semibold text-slate-600">{{ __('figure.pedestal.dedication') }}
-                                <input id="pedestal-dedication" maxlength="40" placeholder="{{ __('figure.pedestal.dedication_ph') }}" class="mt-1 min-h-11 w-full rounded-lg border border-slate-300 px-2 py-2 text-sm font-normal">
-                            </label>
-                        </div>
-                        <div class="mt-2 flex items-center gap-3">
-                            <button id="pedestal-apply" class="btn-ink min-h-11 px-4 py-2 text-sm">{{ __('pedestal.apply') }}</button>
-                            <p id="pedestal-msg" class="text-xs text-slate-500" role="status">{{ __('pedestal.hint') }}</p>
-                        </div>
                     </form>
                     {{-- any ready model: a two-part casting mold around it --}}
                     <form id="mold-box" class="mt-3 hidden rounded-xl bg-slate-50 p-3">

@@ -13,6 +13,7 @@ import type { Stage } from './tool_page';
 import { FileInfo } from './api';
 import { startParticles, viewerBox, type Particles } from './particles';
 import { shrinkPhoto, overLimit } from './photo';
+import { bindCutControls, type CutControls } from './cut_controls';
 
 interface FigureCfg { generate: string; show: string; home: string; files?: string; maxMb: number; register: string | null; i18n: Record<string, string> }
 interface Generation { token: string; status: string; progress: number; file: FileInfo | null; target_mm?: number | null; preview_glb_url?: string | null; preview_turns?: number; options?: Record<string, string | number> | null }
@@ -219,6 +220,42 @@ export function bootFigure(stage: Stage): void {
         return false;
     };
     [mine, theirs].forEach((box) => box?.addEventListener('change', () => { if (offered) offer(false); }));
+
+    // The consent stays where it was given (Roman, 24 Nov 2026: it was asked again after every model and every new base).
+    //  - a signed-in customer who gave it before sees "given on … · change" instead of the box (server-rendered rows, users.photo_consent_at);
+    //    "change" withdraws it on the account and shows the box, empty
+    //  - anybody else: the box is never ticked for him, but once he ticks it, it stays ticked for the rest of the visit in this tab
+    //    (sessionStorage; a person's photo is a consent of its own, kept apart)
+    const consentRows = [...document.querySelectorAll<HTMLElement>('[data-consent-row]')];
+    const consentLabels = [...document.querySelectorAll<HTMLElement>('[data-consent-label]')];
+    const withPerson = (): boolean => form.querySelector<HTMLInputElement>('input[name="with_person"]:checked')?.value === '1';
+    const consentKey = (): string => `mp_photo_consent_${form.dataset.kind ?? 'figure'}${withPerson() ? '_person' : ''}`;
+    let revealed = false;
+    const tick = (on: boolean): void => { mine.checked = on; if (theirs) theirs.checked = on; };
+    const syncConsent = (): void => {
+        if (consentRows.length) {
+            const given = !revealed && !withPerson();
+            consentRows.forEach((r) => r.classList.toggle('hidden', !given));
+            consentLabels.forEach((l) => l.classList.toggle('hidden', given));
+            if (given) tick(true);
+            return;
+        }
+        try { if (sessionStorage.getItem(consentKey()) === '1') tick(true); } catch { /* private mode: the box simply starts empty */ }
+    };
+    [mine, theirs].forEach((box) => box?.addEventListener('change', () => {
+        try { sessionStorage.setItem(consentKey(), box.checked ? '1' : '0'); } catch { /* nothing to keep it in */ }
+    }));
+    form.querySelectorAll('input[name="with_person"]').forEach((r) => r.addEventListener('change', () => setTimeout(syncConsent, 0)));
+    form.addEventListener('figure:filled', () => setTimeout(syncConsent, 0));
+    document.querySelectorAll<HTMLElement>('[data-consent-change]').forEach((b) => b.addEventListener('click', () => {
+        revealed = true;
+        tick(false);
+        syncConsent();
+        focusCalm(consentLabels.find((l) => !l.classList.contains('hidden'))?.querySelector('input') ?? null);
+        const url = consentRows[0]?.dataset.url;
+        if (url) void fetch(url, { method: 'POST', credentials: 'same-origin', headers: { Accept: 'application/json' } }).catch(() => undefined);
+    }));
+    syncConsent();
     if (drop) {
         document.getElementById('figure-drop-pick')?.addEventListener('click', () => free().click());
         const area = document.getElementById('tool-empty') ?? drop;
@@ -347,6 +384,9 @@ export function bootFigure(stage: Stage): void {
         note.textContent = t('figure.made.note', { mm: mm(b.z) });
     };
 
+    // the step buttons of the shown bust (none until a model is on the stage)
+    let cuts: CutControls = { shown: false, values: () => ({}) };
+
     /** The finished model on the stage: turn it, see its size and a first price; the calculator is one click on. */
     const present = async (file: FileInfo, done: string): Promise<void> => {
         bar.style.width = '100%';
@@ -365,7 +405,12 @@ export function bootFigure(stage: Stage): void {
         // a model opened by its address or made in another size than the slider says now: shown in the slider's size
         resized();
         // a bust or a figure can change its base without a new generation too (the pet's box is switched in measured())
-        if (form.dataset.kind !== 'pet' && cfg.files) document.getElementById('figure-rebase-box')?.classList.remove('hidden');
+        if (form.dataset.kind !== 'pet' && cfg.files) {
+            const rebaseBox = document.getElementById('figure-rebase-box');
+            rebaseBox?.classList.remove('hidden');
+            // the height of the cut and the lean, for a bust whose whole figure is kept: the same rows as the calculator's
+            if (rebaseBox) cuts = bindCutControls(rebaseBox, ready.generation?.pedestal ?? null, (deg) => stage.viewer.setTilt(deg));
+        }
         btn.disabled = false; $('figure-progress').classList.add('hidden');
         if (goBar) goBar.hidden = false;
         moved = false;
@@ -537,7 +582,7 @@ export function bootFigure(stage: Stage): void {
             try {
                 const res = await fetch(`${cfg.files}/${made.uuid}/pedestal`, {
                     method: 'POST', credentials: 'same-origin', headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
-                    body: JSON.stringify({ type: data.get('pedestal'), name: data.get('pedestal_name'), dedication: data.get('pedestal_dedication'), name_side: data.get('name_side') }),
+                    body: JSON.stringify({ type: data.get('pedestal'), name: data.get('pedestal_name'), dedication: data.get('pedestal_dedication'), name_side: data.get('name_side'), ...cuts.values() }),
                 });
                 if (!res.ok) throw new Error('pedestal');
                 await present((await res.json()).file as FileInfo, t('figure.done'));
