@@ -326,5 +326,5 @@ def stand(m, kind, extras, target):
     joined = from_manifold(figure + base)
     if not len(joined.faces) or not joined.is_watertight:
         raise ValueError("stand_not_joined")
-    note.update({"pedestal_height": round(float(ped_h), 1), "base_mm": [round(float(w), 1), round(float(d), 1)], "name_side": side})
+    note.update({"pedestal_height": round(float(ped_h), 1), "base_mm": [round(float(w), 1), round(float(d), 1)], "name_side": side, "seat_z": float(z_top)})
     return joined, note

@@ -1753,6 +1753,33 @@ def cad_to_stl(src, dst, lin=0.05, ang=0.3):
     exporters.export(shape, dst, exportType="STL", tolerance=lin, angularTolerance=ang)
 
 
+def moved(m, T, M):
+    """Applies the 4x4 matrix M to the mesh and returns the transform from the input file to the mesh now (T, then M)."""
+    import numpy as np
+    m.apply_transform(M)
+    return np.asarray(M) @ T
+
+
+def pack_matrices(T, TF, TS, seat, T_seat):
+    """
+    What the browser needs to lay the coloured GLB exactly over the printed STL: 4x4 matrices (row-major, 16 numbers) from
+    the coordinates of the input file into the output, the whole figure (full_out) and the source (source_out); and the
+    height in the output where the figure stands on its base (0: no base, or a cut). `seat` is that height in the
+    coordinates the mesh had when T_seat was valid.
+    """
+    import numpy as np
+    pack = {"to_out": [round(float(x), 7) for x in np.asarray(T).reshape(-1)]}
+    if TF is not None:
+        pack["to_full"] = [round(float(x), 7) for x in np.asarray(TF).reshape(-1)]
+    if TS is not None:
+        pack["to_source"] = [round(float(x), 7) for x in np.asarray(TS).reshape(-1)]
+    z = 0.0
+    if seat:
+        z = float((np.asarray(T) @ np.linalg.inv(T_seat) @ np.array([0.0, 0.0, float(seat), 1.0]))[2])
+    pack["base_top_z"] = round(max(0.0, z), 3)
+    return pack
+
+
 def main(argv):
     if len(argv) < 2:
         fail("usage")
@@ -1791,9 +1818,11 @@ def main(argv):
             if m.is_empty or len(m.faces) == 0:
                 raise ValueError("mesh has no faces")
             target = float(argv[4])
+            RT, TM = trimesh.transformations.rotation_matrix, trimesh.transformations.translation_matrix
+            T, TF, TS, seat, T_seat = np.eye(4), None, None, 0.0, np.eye(4)
             if len(argv) > 5 and argv[5] == "1":
                 # glTF is Y-up; printers are Z-up: rotate +90 degrees about X
-                m.apply_transform(trimesh.transformations.rotation_matrix(np.pi / 2, [1, 0, 0]))
+                T = moved(m, T, RT(np.pi / 2, [1, 0, 0]))
             ext = float(max(m.extents))
             if ext <= 0:
                 raise ValueError("degenerate mesh")
@@ -1803,7 +1832,7 @@ def main(argv):
             except ValueError:
                 extras = {}
             ped_note = {}
-            m.apply_scale(target / ext)
+            T = moved(m, T, np.diag([target / ext] * 3 + [1.0]))
             if len(m.faces) > 2_500_000:
                 # Meshy's 4k geometry of a head is eight million triangles (14 Nov 2026): the steps below ran over ten
                 # minutes on it. Merged exactly, within a tolerance far under a layer, until the rest can work.
@@ -1833,7 +1862,7 @@ def main(argv):
                         m = trimesh.util.concatenate(keep)
             if extras.get("strip_pedestal"):
                 m = without_pedestal(m)
-            m.apply_translation([-m.bounds[0][0], -m.bounds[0][1], -m.bounds[0][2]])
+            T = moved(m, T, TM(-m.bounds[0]))
             if "solid" in opts:
                 m = solidify(m, target, None)
                 if len(m.faces) > 400000 and m.is_watertight:
@@ -1846,16 +1875,17 @@ def main(argv):
             if pre_turns is not None:
                 # a fixed turn is made before the cut, so the tilt below is about the axis across the face
                 if pre_turns:
-                    m.apply_transform(trimesh.transformations.rotation_matrix(pre_turns * np.pi / 2, [0, 0, 1]))
+                    T = moved(m, T, RT(pre_turns * np.pi / 2, [0, 0, 1]))
                     ped_note["turned"] = pre_turns * 90
-                m.apply_translation([-m.bounds[0][0], -m.bounds[0][1], -m.bounds[0][2]])
+                T = moved(m, T, TM(-m.bounds[0]))
             full = m.copy() if extras.get("full_out") and extras.get("cut") == "bust" and m.is_watertight else None
+            TF = T.copy() if full is not None else None
             if pitch and pre_turns is not None and m.is_watertight:
                 # the front looks to -Y: a positive pitch leans the head towards it, about X through the centre of mass
                 try:
-                    m.apply_transform(trimesh.transformations.rotation_matrix(np.radians(pitch), [1, 0, 0], point=m.center_mass))
-                    m.apply_translation([0, 0, -float(m.bounds[0][2])])
-                    m.apply_scale(target / float(max(m.extents)))
+                    T = moved(m, T, RT(np.radians(pitch), [1, 0, 0], point=m.center_mass))
+                    T = moved(m, T, TM([0, 0, -float(m.bounds[0][2])]))
+                    T = moved(m, T, np.diag([target / float(max(m.extents))] * 3 + [1.0]))
                     ped_note["pitch"] = pitch
                 except Exception as e:  # noqa: BLE001 - the model upright is better than none
                     ped_note["pitch_error"] = str(e)[:120]
@@ -1866,21 +1896,21 @@ def main(argv):
                     ped_note["cut_shift"] = shift
                 if float(m.extents[2]) < before - 0.01:
                     ped_note["bust_cut"] = True
-                    m.apply_scale(target / float(max(m.extents)))
+                    T = moved(m, T, np.diag([target / float(max(m.extents))] * 3 + [1.0]))
             if pre_turns is not None:
                 turns = 0
             else:
                 turns = face_front(m, int(extras.get("front_prior") or 0) % 4) if front == "auto" else {"right": 3, "back": 2, "left": 1}.get(front, 0)      # where the face looks now, seen from the front
             if turns:
-                m.apply_transform(trimesh.transformations.rotation_matrix(turns * np.pi / 2, [0, 0, 1]))
+                T = moved(m, T, RT(turns * np.pi / 2, [0, 0, 1]))
                 ped_note["turned"] = turns * 90
                 if full is not None:
-                    full.apply_transform(trimesh.transformations.rotation_matrix(turns * np.pi / 2, [0, 0, 1]))
+                    TF = moved(full, TF, RT(turns * np.pi / 2, [0, 0, 1]))
             if full is not None:
                 # the whole figure before the cut and the tilt, facing the front: the cut can be moved down again later
-                full.apply_translation([-full.bounds[0][0], -full.bounds[0][1], -full.bounds[0][2]])
+                TF = moved(full, TF, TM(-full.bounds[0]))
                 full.export(str(extras["full_out"]), file_type="stl")
-            m.apply_translation([-m.bounds[0][0], -m.bounds[0][1], -m.bounds[0][2]])
+            T = moved(m, T, TM(-m.bounds[0]))
             pet = bool(extras.get("pet"))
             if pet and m.is_watertight:
                 # a pet figurine (pet_kind.py): the tabletop miniature is grown and smoothed here, once; the stored
@@ -1892,7 +1922,7 @@ def main(argv):
                     if extras.get("style") == "miniature":
                         m, grown = pet_kind.thicken(m, target, int(extras.get("roughness", 2) or 2))
                         ped_note.update(grown)
-                        m.apply_translation([-m.bounds[0][0], -m.bounds[0][1], -m.bounds[0][2]])
+                        T = moved(m, T, TM(-m.bounds[0]))
                     else:
                         ped_note["thinnest_mm"] = pet_kind.thinnest(m)
                 except Exception as e:  # noqa: BLE001 - the figure as it came is better than none
@@ -1900,6 +1930,7 @@ def main(argv):
             if extras.get("source_out"):
                 # the figure alone, closed and facing the front: a different base later costs no new generation
                 m.export(str(extras["source_out"]), file_type="stl")
+                TS = T.copy()
             if extras.get("tidy") and m.is_watertight:
                 # loose strands and flaps need supports and snap off; the stored source above keeps them
                 try:
@@ -1915,7 +1946,7 @@ def main(argv):
                     lowered = from_manifold(as_manifold(m).trim_by_plane([0, 0, 1], float(m.bounds[0][2]) + sink * float(m.extents[2])))
                     if len(lowered.faces) and lowered.is_watertight:
                         m = lowered
-                        m.apply_translation([0, 0, -float(m.bounds[0][2])])
+                        T = moved(m, T, TM([0, 0, -float(m.bounds[0][2])]))
                         ped_note["sink"] = sink
                 except Exception:
                     pass
@@ -1924,14 +1955,16 @@ def main(argv):
                 try:
                     m, stood = pet_kind.stand(m, kind, extras, target)
                     ped_note.update(stood)
-                    m.apply_translation([-m.bounds[0][0], -m.bounds[0][1], -m.bounds[0][2]])
+                    seat, T_seat = float(ped_note.pop("seat_z", 0.0)), T.copy()
+                    T = moved(m, T, TM(-m.bounds[0]))
                     factor = target / float(max(m.extents))
-                    m.apply_scale(factor)
+                    T = moved(m, T, np.diag([factor] * 3 + [1.0]))
                     # the figure got a little smaller to make room for its base: its thinnest place with it
                     if "thinnest_mm" in ped_note:
                         ped_note["thinnest_mm"] = round(float(ped_note["thinnest_mm"]) * factor, 1)
                     ped_note["figure_scale"] = round(factor, 4)
                     m.export(argv[3], file_type="stl")
+                    ped_note.update(pack_matrices(T, TF, TS, seat, T_seat))
                     out(report(m, dict({"out": argv[3], "removed_fragments": removed}, **ped_note)))
                 except SystemExit:
                     raise
@@ -1959,8 +1992,9 @@ def main(argv):
                 shaped_kinds = tuple(BUST_STYLES)
                 geometry = {}
                 classic = "stand" in BUST_STYLES.get(kind, {})
+                squared = 0.0
                 for kind in ([kind, "round"] if kind in ("socle", "antique") or classic else [kind]):
-                    m, ped, joined, geometry = whole, None, None, {}
+                    m, ped, joined, geometry, squared = whole, None, None, {}, 0.0
                     try:
                         sizes = None
                         z_base = float(z_seat)
@@ -1973,6 +2007,7 @@ def main(argv):
                             if not (len(shaped.faces) and shaped.is_watertight):
                                 raise ValueError("shape_failed")
                             m = shaped
+                            squared = float(sizes.get("yaw", 0.0))      # the chest was set square: the whole body turned about Z by -yaw
                             ped_note["chest_added"] = sizes["added"]
                             ped_note["chest_enough"] = bool(sizes.get("chest_enough", False))
                         elif "cut_raised" in ped_note and m.is_watertight:
@@ -2039,9 +2074,13 @@ def main(argv):
                     ped_note["socle_fallback"] = "not_joined"
                 m = joined if joined is not None else trimesh.util.concatenate([m, ped])
                 shift = m.bounds[0].copy()
-                m.apply_translation([-m.bounds[0][0], -m.bounds[0][1], -m.bounds[0][2]])
+                seat = float(z_base) if (ped is not None and kind != "cut") else 0.0
+                if squared:
+                    T = RT(np.radians(-squared), [0, 0, 1]) @ T
+                T_seat = T.copy()
+                T = moved(m, T, TM(-m.bounds[0]))
                 factor = target / float(max(m.extents))
-                m.apply_scale(factor)
+                T = moved(m, T, np.diag([factor] * 3 + [1.0]))
                 for key, value in geometry.items():
                     # into the coordinates of the file that is written
                     axis = {"x": 0, "y": 1, "z": 2}.get(key.rsplit("_", 1)[-1])
@@ -2053,6 +2092,7 @@ def main(argv):
                         value = value * factor ** 3
                     ped_note[key] = round(float(value), 3)
             m.export(argv[3], file_type="stl")
+            ped_note.update(pack_matrices(T, TF, TS, seat, T_seat))
             out(report(m, dict({"out": argv[3], "removed_fragments": removed}, **ped_note)))
         if cmd == "cad":
             lin = float(argv[4]) if len(argv) > 4 else 0.05
