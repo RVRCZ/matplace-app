@@ -16,6 +16,9 @@ final class FakeGenerator implements ImageRestyler, ModelGenerator
     /** The prompts the photos were redrawn with, in order: a test can tell which wording a request was cleaned by. */
     public static array $restyled = [];
 
+    /** A test of the coloured result: a GLB file the generator hands over instead of the cube (copied to a temp file, the job moves it). */
+    public static ?string $glb = null;
+
     /** A test of a cleaning that fails: the picture task then ends as the real one does when the image model refuses. */
     public static bool $imageFails = false;
 
@@ -70,6 +73,12 @@ final class FakeGenerator implements ImageRestyler, ModelGenerator
 
     public function poll(GenerationHandle $handle): GenerationStatus
     {
+        if (self::$glb !== null && is_file(self::$glb)) {
+            $glb = sys_get_temp_dir().'/mp_fakegen_'.Str::random(8).'.glb';
+            copy(self::$glb, $glb);
+
+            return new GenerationStatus(GenerationStatus::DONE, meshPath: $glb, progress: 100);
+        }
         $path = sys_get_temp_dir().'/mp_fakegen_'.Str::random(8).'.stl';
         $fh = StlFile::beginBinary($path);
         $v = [[0, 0, 0], [1, 0, 0], [1, 1, 0], [0, 1, 0], [0, 0, 1], [1, 0, 1], [1, 1, 1], [0, 1, 1]];

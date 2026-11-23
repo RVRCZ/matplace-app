@@ -121,7 +121,7 @@ final class PedestalChanger
             throw new \RuntimeException('pedestal_failed', 0, $e);
         }
         $report = $this->normalizer->report;
-        $glbFit = $this->normalizer->glbFit($this->glbOf($f), 'to_source');
+        $glbFit = $this->normalizer->glbFitFrom($this->glbOf($f), 'to_source');
         if (! is_file($abs) || ! is_file($newSource) || ($report['pedestal'] ?? null) !== $type) {
             File::deleteDirectory(dirname($abs));
             throw new \RuntimeException('pedestal_failed');
@@ -218,7 +218,7 @@ final class PedestalChanger
             File::deleteDirectory(dirname($abs));
             throw new \RuntimeException('pedestal_failed');
         }
-        $glbFit = $this->normalizer->glbFit($this->glbOf($f), $inputKey);
+        $glbFit = $this->normalizer->glbFitFrom($this->glbOf($f), $inputKey);
 
         $new = ModelFile::create([
             'uuid' => $uuid, 'owner_user_id' => $f->owner_user_id, 'anonymous_session_id' => $f->anonymous_session_id,

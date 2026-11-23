@@ -19,21 +19,32 @@ final class ModelNormalizer
 
     /**
      * Where the coloured GLB lies over the file the last normalisation wrote (what ModelFile.tool_params.glb keeps), from the
-     * 4x4 matrices of the tool's report. $parent: the same record of the file the input came from, and $key which of its
+     * 4x4 matrices of the tool's report. glbFitFrom(): $parent is the same record of the file the input came from, and $key which of its
      * matrices belongs to that input (matrix = the printed STL itself, to_full, to_source); the new matrices are then
      * composed with it, so they always lead from the coordinates of the original GLB. Null when nothing was measured
      * or the parent has no matrix (old files: the browser fits the colours by estimate).
      *
      * @return array{matrix: list<float>, base_top_z: float, to_full?: list<float>, to_source?: list<float>}|null
      */
-    public function glbFit(?array $parent = null, string $key = 'matrix'): ?array
+    public function glbFit(): ?array
+    {
+        return $this->fitOver(false, null, 'matrix');
+    }
+
+    /** The same for a file made from another printed file: without the parent's own record (an old file) there is nothing to compose with. */
+    public function glbFitFrom(?array $parent, string $key): ?array
+    {
+        return $parent === null ? null : $this->fitOver(true, $parent, $key);
+    }
+
+    private function fitOver(bool $composed, ?array $parent, string $key): ?array
     {
         $r = $this->report;
         if (! is_array($r['to_out'] ?? null) || count($r['to_out']) !== 16) {
             return null;
         }
         $base = null;
-        if ($parent !== null) {
+        if ($composed) {
             $base = $parent[$key] ?? null;
             if (! is_array($base) || count($base) !== 16) {
                 return null;
