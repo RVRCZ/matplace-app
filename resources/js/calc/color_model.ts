@@ -126,20 +126,32 @@ export function fitToStl(color: Object3D, stl: BufferGeometry): Matrix4 | null {
     // and dressing the cut STL in the uncut body misled more than grey (Vémola bust, 23 Nov 2026)
     if (best) console.debug('colored preview silhouette match', Math.round(best.score * 100) / 100);
     if (!best || best.score < 0.45) return null;
-    // how high the figure sits: tops level put a dog 10 mm over its base (its print is a touch taller than
-    // the generator's body, 23 Nov 2026), so the seat between bottoms-level and tops-level with the best
-    // SIDE silhouette wins - a figure on a base lands with its feet on the base, not in the air
-    const aimSide = shadow(target, want, true);
-    const zTop = best.shift.z;
-    const zBottom = want.min.z - best.b.min.z;
-    let seat = zTop; let bestSide = -1;
-    for (let t = 0; t <= 8; t++) {
-        const z = zBottom + ((zTop - zBottom) * t) / 8;
-        const probe = new Vector3(best.shift.x, best.shift.y, z);
-        const side = overlap(shadow(best.turned.map((v) => v.clone().add(probe)), want, true), aimSide);
-        if (side > bestSide) { bestSide = side; seat = z; }
-    }
+    // how high the figure sits: tops level put a dog 10 mm over its base (its print is a touch taller
+    // than the generator's body, 23 Nov 2026). The printed model has our base at the bottom and the
+    // generator's does not, so the coloured figure lands with its bottom on the top of that base.
+    const seat = baseTop(target, want) - best.b.min.z;
     return new Matrix4().makeTranslation(best.shift.x, best.shift.y, seat).multiply(new Matrix4().makeScale(scale, scale, scale)).multiply(best.turn).multiply(up);
+}
+
+/**
+ * Where the printed base ends (its top, in STL z): a slab at the very bottom whose width collapses once the
+ * figure above it begins. Without such a slab the STL's own bottom is returned (figure and colours share it).
+ */
+function baseTop(target: Vector3[], want: Box): number {
+    const h = want.max.z - want.min.z;
+    if (!(h > 0)) return want.min.z;
+    const band = h / 48;
+    let baseWidth = 0;
+    for (let i = 0; i < 10; i++) {
+        const z0 = want.min.z + i * band;
+        const slice = target.filter((v) => v.z >= z0 && v.z < z0 + band);
+        if (slice.length < 8) continue;
+        const b = boundsOf(slice);
+        const width = Math.max(b.max.x - b.min.x, b.max.y - b.min.y);
+        if (i === 0) { baseWidth = width; continue; }
+        if (baseWidth > 0 && width < 0.55 * baseWidth) return z0;
+    }
+    return want.min.z;
 }
 
 /** The coloured model wrapped so it can be hung on the STL mesh (same coordinates); null when it cannot be fitted. */
