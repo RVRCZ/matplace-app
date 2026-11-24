@@ -237,8 +237,14 @@ final class AgentService
         $command->update(['status' => $ok ? 'done' : 'failed', 'result' => $message ? mb_substr($message, 0, 300) : null, 'finished_at' => now()]);
         $job = $command->printJob;
         if (! $ok && $command->type === FarmCommand::TYPE_START && $job && $job->isActive()) {
-            // nothing was started: the order goes back to the queue and waits for a person, the plate state is unknown
-            $job->update(['status' => FarmPrintJob::STATUS_FAILED, 'message' => $command->result, 'finished_at' => now()]);
+            // nothing was started: the order goes back to the queue and waits for a person, the plate state is unknown.
+            // Moonraker's "Timeout while trying to print" is not that: the printer started all the same (F26-000207, 24 Nov
+            // 2026, three colours on an ACE: the web said failed while the plate printed). Such a job waits as unknown, so
+            // the agent's next "printing" takes it up again; the admin hears it either way
+            $maybe = str_contains(strtolower((string) $command->result), 'timeout while trying to print');
+            $job->update($maybe
+                ? ['status' => FarmPrintJob::STATUS_UNKNOWN, 'message' => $command->result]
+                : ['status' => FarmPrintJob::STATUS_FAILED, 'message' => $command->result, 'finished_at' => now()]);
             $this->flow->alertAdmin(__('farm.admin.mail.start_failed', ['number' => $job->order->number, 'printer' => $command->printer->name], 'cs'), $job->order,
                 [...$this->flow->orderLines($job->order), __('farm.admin.mail.line_what', ['what' => (string) $command->result], 'cs'), __('farm.admin.mail.line_next_start_failed', [], 'cs')]);
             Log::warning('Farm start command failed', ['command' => $command->id, 'message' => $message]);

@@ -30,6 +30,7 @@ class FakeMoonraker:
         self.deleted = []
         self.start_delay = 0.0          # seconds print/start sleeps before it answers
         self.start_answers = True       # False: print/start never answers (the test moves the state itself)
+        self.start_klipper_timeout = False   # True: Klipper answers 400 "Timeout while trying to print" and prints anyway
         self.knows_reset = True         # False: GoKlipper, SDCARD_RESET_FILE is an unknown command
         self.cancel_clears = True       # a cancel after a failed print goes to "cancelled" (False: stays in error)
         self.cancel_ends = True         # a cancel of a running or paused print goes to "cancelled" and cools down
@@ -124,6 +125,10 @@ class FakeMoonraker:
 
     async def start(self, request):
         self.started.append(request.query.get("filename"))
+        if self.start_klipper_timeout:
+            self.print_stats.update(state="printing", filename=request.query.get("filename"))
+            return web.json_response({"error": {"code": 400, "message": "Error while trying to print: Timeout while trying to print "
+                                                + str(request.query.get("filename"))}}, status=400)
         if not self.start_answers:
             await asyncio.sleep(3600)
         await asyncio.sleep(self.start_delay)
@@ -270,6 +275,18 @@ class MoonrakerDriverTest(unittest.IsolatedAsyncioTestCase):
             finally:
                 await d.close()
             self.assertEqual(fake.started, ["mp2-print.gcode"])
+
+    async def test_klippers_own_start_timeout_is_fine_when_the_printer_prints(self):
+        # B3 #1, F26-000207, 24 Nov 2026: HTTP 400 "Timeout while trying to print", the plate printed all the same
+        async with FakeMoonraker() as fake:
+            fake.start_klipper_timeout = True
+            d = self.driver(fake)
+            await d.connect()
+            try:
+                await d.start(self.gcode, "mp5-print.gcode", 2)      # no exception: the printer took the file
+                self.assertEqual((await d.status()).state, PRINTING)
+            finally:
+                await d.close()
 
     async def test_a_silent_start_call_reports_the_printers_error_in_its_words(self):
         async with FakeMoonraker() as fake:

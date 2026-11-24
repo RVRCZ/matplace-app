@@ -370,7 +370,9 @@ class MoonrakerDriver(PrinterDriver):
         try:
             await self._post("/printer/print/start", params={"filename": filename}, timeout=aiohttp.ClientTimeout(total=self.start_timeout))
         except DriverError as e:
-            if "TimeoutError" not in str(e):
+            # Klipper may also answer the call itself with "Timeout while trying to print" (HTTP 400) and print all the
+            # same: three colours on an ACE, B3 #1, F26-000207, 24 Nov 2026 - the same case, watched the same way
+            if "TimeoutError" not in str(e) and "Timeout while trying to print" not in str(e):
                 raise
             # Seen on a Kobra S1 (U #2, 11-12 Oct 2026, four times): the call runs past the limit, yet the printer has
             # taken the file - it is heating, or it has already failed on the start. Giving up here left the server with
