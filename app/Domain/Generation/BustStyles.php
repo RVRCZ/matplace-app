@@ -22,6 +22,17 @@ final class BustStyles
 
     public function __construct(private readonly FarmSettings $settings) {}
 
+    /**
+     * The plain bases, always on offer: one of them may be the default too (Roman, 24 Nov 2026: the bust starts on the
+     * plate with the name, "Se jmenovkou", which stands under the whole figure).
+     *
+     * @return string[]
+     */
+    public static function plain(): array
+    {
+        return array_values(array_diff(PedestalChanger::TYPES, PedestalChanger::BUST_STYLES, ['none']));
+    }
+
     /** @return string[] the styles on offer, in the order of the page */
     public function shown(): array
     {
@@ -39,13 +50,13 @@ final class BustStyles
         return array_values(array_diff(PedestalChanger::BUST_STYLES, $this->shown()));
     }
 
-    /** The style a bust starts with: the owner's choice while it is shown, else the first shown one, else the plain round base. */
+    /** The base a bust starts with: the owner's choice while it is shown (or a plain base), else the first shown one, else the plain round base. */
     public function default(): string
     {
         $shown = $this->shown();
         $wish = (string) ($this->stored()['default'] ?? self::FALLBACK);
 
-        return in_array($wish, $shown, true) ? $wish : ($shown[0] ?? 'round');
+        return in_array($wish, $shown, true) || in_array($wish, self::plain(), true) ? $wish : ($shown[0] ?? 'round');
     }
 
     /**
@@ -65,7 +76,7 @@ final class BustStyles
     public function save(array $shown, ?string $default): void
     {
         $shown = array_values(array_intersect(PedestalChanger::BUST_STYLES, $shown));
-        $this->settings->set(self::KEY, ['shown' => $shown, 'default' => in_array($default, $shown, true) ? $default : ($shown[0] ?? null)]);
+        $this->settings->set(self::KEY, ['shown' => $shown, 'default' => in_array($default, $shown, true) || in_array($default, self::plain(), true) ? $default : ($shown[0] ?? null)]);
     }
 
     private function stored(): array

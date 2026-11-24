@@ -118,6 +118,18 @@ class BustStylesTest extends TestCase
         $this->postJson('/api/files/'.$away->json('file.uuid').'/pedestal', ['type' => 'round'])->assertCreated();
     }
 
+    public function test_a_plain_base_may_be_the_default_the_plate_with_the_name(): void
+    {
+        // Roman, 24 Nov 2026: a bust starts on the plate with the name, which stands under the whole figure
+        $this->actingAs($this->admin())->post('/admin/ai/bust-styles', ['shown' => ['classic', 'classic_round'], 'default' => 'plaque'])->assertSessionHasNoErrors();
+        $this->assertSame('plaque', app(BustStyles::class)->default());
+        $this->actingAs($this->admin())->post('/admin/ai/bust-styles', ['shown' => ['classic'], 'default' => 'none'])->assertSessionHasErrors('default');
+        auth()->logout();
+        $this->assertTrue($this->offered()['plaque']);
+        $this->bust()->assertCreated();
+        $this->assertSame('plaque', GenerationRequest::latest('id')->firstOrFail()->description['pedestal']);
+    }
+
     public function test_the_default_must_be_a_shown_style_and_nothing_shown_means_the_round_base(): void
     {
         $admin = $this->admin();

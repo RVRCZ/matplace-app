@@ -66,9 +66,9 @@ class StatsController extends Controller
         $data = $request->validate([
             'shown' => ['nullable', 'array'],
             'shown.*' => ['string', Rule::in(PedestalChanger::BUST_STYLES)],
-            // the default is one of the shown ones; with none shown there is none to choose
-            'default' => ['nullable', 'string', Rule::in($request->input('shown', []))],
-        ], ['default.in' => 'Výchozí typ musí být mezi zobrazenými.']);
+            // the default is one of the shown ones or a plain base (always on offer)
+            'default' => ['nullable', 'string', Rule::in([...(array) $request->input('shown', []), ...BustStyles::plain()])],
+        ], ['default.in' => 'Výchozí typ musí být mezi zobrazenými nebo obyčejný podstavec.']);
         $bust->save($data['shown'] ?? [], $data['default'] ?? null);
 
         return redirect()->to(route('admin.ai.index').'#bust-styles')->with('status', 'Typy busty jsou uložené; stránka busty je nabízí hned.');

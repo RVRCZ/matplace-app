@@ -55,9 +55,16 @@
             </div>
         @endforeach
     </div>
+    {{-- a plain base may be the default too (always offered, nothing to hide) --}}
+    <p class="mt-3 text-xs font-semibold text-slate-600">Obyčejné podstavce (nabízejí se vždy)</p>
+    <div class="mt-1 flex flex-wrap gap-2">
+        @foreach(\App\Domain\Generation\BustStyles::plain() as $base)
+            <label class="flex items-center gap-1.5 rounded-lg border border-line px-3 py-2 text-sm"><input type="radio" name="default" value="{{ $base }}" class="accent-ink" @checked($bust['default'] === $base)> {{ __('figure.pedestal.'.$base) }} <span class="text-xs text-slate-500">výchozí</span></label>
+        @endforeach
+    </div>
     @error('shown')<p class="mt-1 text-xs text-red-700">{{ $message }}</p>@enderror
     @error('default')<p class="mt-1 text-xs text-red-700">{{ $message }}</p>@enderror
-    <p class="mt-2 text-xs text-slate-500">Výchozí musí být mezi zobrazenými. Když není zobrazený žádný typ, busta dostane obyčejný kulatý podstavec.</p>
+    <p class="mt-2 text-xs text-slate-500">Výchozí musí být mezi zobrazenými, nebo to je obyčejný podstavec. Když není zobrazený žádný typ, busta dostane obyčejný kulatý podstavec.</p>
     <button type="submit" class="btn-ink mt-3">Uložit typy busty</button>
 </form>
 
