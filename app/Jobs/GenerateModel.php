@@ -235,6 +235,8 @@ class GenerateModel implements ShouldQueue
                 'front_prior' => $kind === 'bust' && str_starts_with((string) $req->engine, 'tripo') ? 3 : null,
                 // cut flat across the chest like a sculpted bust, instead of arms that end at the elbows
                 'cut' => $kind === 'bust' ? 'bust' : null,
+                // the size asked for is the bust's height, base and all, not its longest side (a wide plate made it small)
+                'height' => $kind === 'bust' ? true : null,
                 'tidy' => in_array($kind, ['bust', 'figure'], true) ? true : null,
                 // the closed figure without a base is kept: changing the base later needs no new generation
                 'source_out' => in_array($kind, ['bust', 'figure', 'pet'], true) ? dirname($abs).'/source.stl' : null,

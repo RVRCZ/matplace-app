@@ -117,7 +117,7 @@ class FigureToolTest extends TestCase
         $this->assertNotEmpty($req->description['consent_at']);
         $file = ModelFile::findOrFail($req->result_model_file_id);
         $this->assertSame('bust.stl', $file->original_name);
-        $this->assertEqualsWithDelta(120.0, max($file->bbox['x'], $file->bbox['y'], $file->bbox['z']), 0.5);
+        $this->assertEqualsWithDelta(120.0, $file->bbox['z'], 0.5);                                // a bust's size is its height (Roman, 24 Nov 2026)
 
         // same picture again → a new generation, never somebody else's cached result
         $r2 = $this->post('/api/generate', ['image' => UploadedFile::fake()->image('me.jpg', 600, 800), 'kind' => 'bust', 'consent' => 1, 'target_mm' => 120], ['Accept' => 'application/json']);

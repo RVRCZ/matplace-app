@@ -1969,6 +1969,15 @@ def main(argv):
             except ValueError:
                 extras = {}
             ped_note = {}
+
+            def fit(mm):
+                # a bust's size is its height (Roman, 24 Nov 2026: "110 = the height of the bust"; on a wide plate the
+                # longest side was the plate and the bust came out 93 mm tall); never wider than 1.8 times the size asked for
+                e = mm.extents
+                if extras.get("height") and float(e[2]) > 0:
+                    return min(target / float(e[2]), 1.8 * target / float(max(e)), max(target, 250.0) / float(max(e)))
+                return target / float(max(e))
+
             T = moved(m, T, np.diag([target / ext] * 3 + [1.0]))
             if len(m.faces) > 2_500_000:
                 # Meshy's 4k geometry of a head is eight million triangles (14 Nov 2026): the steps below ran over ten
@@ -2022,7 +2031,7 @@ def main(argv):
                 try:
                     T = moved(m, T, RT(np.radians(pitch), [1, 0, 0], point=m.center_mass))
                     T = moved(m, T, TM([0, 0, -float(m.bounds[0][2])]))
-                    T = moved(m, T, np.diag([target / float(max(m.extents))] * 3 + [1.0]))
+                    T = moved(m, T, np.diag([fit(m)] * 3 + [1.0]))
                     ped_note["pitch"] = pitch
                 except Exception as e:  # noqa: BLE001 - the model upright is better than none
                     ped_note["pitch_error"] = str(e)[:120]
@@ -2033,7 +2042,7 @@ def main(argv):
                     ped_note["cut_shift"] = shift
                 if float(m.extents[2]) < before - 0.01:
                     ped_note["bust_cut"] = True
-                    T = moved(m, T, np.diag([target / float(max(m.extents))] * 3 + [1.0]))
+                    T = moved(m, T, np.diag([fit(m)] * 3 + [1.0]))
             if pre_turns is not None:
                 turns = 0
             else:
@@ -2226,7 +2235,7 @@ def main(argv):
                     T = RT(np.radians(-squared), [0, 0, 1]) @ T
                 T_seat = T.copy()
                 T = moved(m, T, TM(-m.bounds[0]))
-                factor = target / float(max(m.extents))
+                factor = fit(m)
                 T = moved(m, T, np.diag([factor] * 3 + [1.0]))
                 for key, value in geometry.items():
                     # into the coordinates of the file that is written

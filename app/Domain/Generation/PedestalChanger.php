@@ -200,6 +200,8 @@ final class PedestalChanger
             'tidy' => $tidy ?: null,
             'source_out' => $newSource,
             'cut' => $keepFull ? 'bust' : null,
+            // the size is the bust's height, whatever base it stands on (GenerateModel)
+            'height' => true,
             'cut_shift' => $cutShift !== 0 ? $cutShift / 100 : null,
             'pitch' => $pitch !== 0 ? $pitch : null,
             'full_out' => $keepFull ? $newFull : null,
