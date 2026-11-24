@@ -2,7 +2,7 @@ import {
     AmbientLight, BufferGeometry, Color, ConeGeometry, CylinderGeometry, DirectionalLight, GridHelper, Group, HemisphereLight, Line, LineBasicMaterial,
     LineSegments, Material, Mesh, MeshBasicMaterial, MeshStandardMaterial, PerspectiveCamera, Raycaster, Scene, SphereGeometry, Vector2, Vector3,
     WebGLRenderer, Box3, Object3D, Float32BufferAttribute, PlaneGeometry, EdgesGeometry, DoubleSide, Plane, RingGeometry, Matrix4,
-    BackSide, FrontSide,
+    BackSide, FrontSide, SRGBColorSpace,
 } from 'three';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
 import { mergeVertices } from 'three/examples/jsm/utils/BufferGeometryUtils.js';
@@ -242,8 +242,11 @@ export class Viewer {
             const flats = sides.length ? Viewer.facesOn(geom, sides) : null;
             if (flats) {
                 const firstMat = shells[0] ? (Array.isArray(shells[0].material) ? shells[0].material[0] : shells[0].material) : null;
-                const face = new MeshStandardMaterial({ color: firstMat ? Viewer.capColor(firstMat) : 0x8a8f96, roughness: 0.9, metalness: 0, side: DoubleSide,
-                    clippingPlanes: hasBase ? [world.colour[own.length - 1]] : [] });
+                // every point of a cut face takes the colour of the model's surface next to it (the shirt black, the skin
+                // skin): one colour for all of it drew a light band under a black shirt that looked like a gap (Roman, 24 Nov 2026)
+                const painted = Viewer.paintCut(flats, shells, mesh, sides);
+                const face = new MeshStandardMaterial({ color: painted ? 0xffffff : (firstMat ? Viewer.capColor(firstMat) : 0x8a8f96), vertexColors: painted,
+                    roughness: 0.9, metalness: 0, side: DoubleSide, clippingPlanes: hasBase ? [world.colour[own.length - 1]] : [] });
                 mesh.add(new Mesh(flats, face));
             }
             // the planes in `world` follow the mesh in clipSync(); `own` / keepBelow are the truth in the file's own millimetres
@@ -293,6 +296,78 @@ export class Viewer {
         g.setAttribute('position', new Float32BufferAttribute(out, 3));
         g.computeVertexNormals();
         return g;
+    }
+
+    /**
+     * Colours the cut faces `flats` (the STL's millimetres) point by point after the coloured model's surface beside them:
+     * the shells' vertices within a few millimetres of a plane, their texture read at their UV, the nearest one wins.
+     * False when nothing could be read (no texture, a texture of another origin): the caller then uses one colour.
+     */
+    private static paintCut(flats: BufferGeometry, shells: Mesh[], root: Object3D, planes: Plane[]): boolean {
+        try {
+            const CELL = 3;
+            const key = (x: number, y: number, z: number): string => `${Math.floor(x / CELL)},${Math.floor(y / CELL)},${Math.floor(z / CELL)}`;
+            const grid = new Map<string, number[]>();
+            const pts: number[] = [];   // x, y, z, r, g, b
+            root.updateMatrixWorld(true);
+            const toRoot = new Matrix4().copy(root.matrixWorld).invert();
+            const v = new Vector3();
+            for (const m of shells) {
+                const mat = (Array.isArray(m.material) ? m.material[0] : m.material) as MeshStandardMaterial;
+                const img = mat.map?.image as (CanvasImageSource & { width: number; height: number }) | undefined;
+                const pos = m.geometry.getAttribute('position');
+                const uv = m.geometry.getAttribute('uv');
+                if (!img || !pos || !uv || !(img.width > 0)) continue;
+                const W = Math.min(1024, img.width); const H = Math.min(1024, img.height);
+                const c = document.createElement('canvas');
+                c.width = W; c.height = H;
+                const g = c.getContext('2d', { willReadFrequently: true });
+                if (!g) continue;
+                g.drawImage(img, 0, 0, W, H);
+                const data = g.getImageData(0, 0, W, H).data;   // throws on a texture of another origin
+                const to = new Matrix4().multiplyMatrices(toRoot, m.matrixWorld);
+                const flipY = !!mat.map?.flipY;
+                for (let i = 0; i < pos.count; i++) {
+                    v.fromBufferAttribute(pos, i).applyMatrix4(to);
+                    let near = false;
+                    for (const p of planes) { const d = p.distanceToPoint(v); if (d >= -0.5 && d < 2.5) { near = true; break; } }
+                    if (!near) continue;
+                    const u = uv.getX(i) - Math.floor(uv.getX(i)); let t = uv.getY(i) - Math.floor(uv.getY(i));
+                    if (flipY) t = 1 - t;
+                    const px = Math.min(W - 1, Math.floor(u * W)); const py = Math.min(H - 1, Math.floor(t * H));
+                    const o = (py * W + px) * 4;
+                    const at = pts.length / 6;
+                    pts.push(v.x, v.y, v.z, data[o] / 255, data[o + 1] / 255, data[o + 2] / 255);
+                    const k = key(v.x, v.y, v.z);
+                    const cell = grid.get(k);
+                    if (cell) cell.push(at); else grid.set(k, [at]);
+                }
+            }
+            if (!pts.length) return false;
+            const fpos = flats.getAttribute('position');
+            const colors = new Float32Array(fpos.count * 3);
+            const col = new Color();
+            for (let i = 0; i < fpos.count; i++) {
+                v.fromBufferAttribute(fpos, i);
+                const cx = Math.floor(v.x / CELL); const cy = Math.floor(v.y / CELL); const cz = Math.floor(v.z / CELL);
+                let best = -1; let bestD = Infinity;
+                for (let r = 1; r <= 4 && best < 0; r++) {
+                    for (let dx = -r; dx <= r; dx++) for (let dy = -r; dy <= r; dy++) for (let dz = -r; dz <= r; dz++) {
+                        for (const j of grid.get(`${cx + dx},${cy + dy},${cz + dz}`) ?? []) {
+                            const d = (pts[j * 6] - v.x) ** 2 + (pts[j * 6 + 1] - v.y) ** 2 + (pts[j * 6 + 2] - v.z) ** 2;
+                            if (d < bestD) { bestD = d; best = j; }
+                        }
+                    }
+                }
+                if (best < 0) { colors.set([0.3, 0.3, 0.3], i * 3); continue; }
+                col.setRGB(pts[best * 6 + 3], pts[best * 6 + 4], pts[best * 6 + 5], SRGBColorSpace).multiplyScalar(0.85);
+                colors.set([col.r, col.g, col.b], i * 3);
+            }
+            flats.setAttribute('color', new Float32BufferAttribute(colors, 3));
+            return true;
+        } catch {
+            return false;
+        }
     }
 
     /** The colour a cut face of the coloured model is drawn in: the average of its texture a shade darker, else its own colour. */
