@@ -236,6 +236,16 @@ export class Viewer {
                 cap.position.copy(m.position); cap.quaternion.copy(m.quaternion); cap.scale.copy(m.scale);
                 (m.parent ?? holder).add(cap);
             }
+            // … but a chest cut on both sides is a tunnel with nothing behind its openings (one saw through the shoulders, Roman
+            // 24 Nov 2026): the printable file is closed, its own flat faces on the planes are drawn there in that colour
+            const sides = own.slice(0, own.length - (hasBase ? 1 : 0));
+            const flats = sides.length ? Viewer.facesOn(geom, sides) : null;
+            if (flats) {
+                const firstMat = shells[0] ? (Array.isArray(shells[0].material) ? shells[0].material[0] : shells[0].material) : null;
+                const face = new MeshStandardMaterial({ color: firstMat ? Viewer.capColor(firstMat) : 0x8a8f96, roughness: 0.9, metalness: 0, side: DoubleSide,
+                    clippingPlanes: hasBase ? [world.colour[own.length - 1]] : [] });
+                mesh.add(new Mesh(flats, face));
+            }
             // the planes in `world` follow the mesh in clipSync(); `own` / keepBelow are the truth in the file's own millimetres
             if (hasBase) {
                 const graphite = new MeshStandardMaterial({ color: 0x3a3d42, roughness: 0.85, metalness: 0, side: DoubleSide, clippingPlanes: [world.below] });
@@ -258,6 +268,33 @@ export class Viewer {
         this.previewHolder = holder;
         return true;
     }
+    /** The triangles of `geom` that lie flat in one of `planes` (a face the server cut there), as a geometry of their own; null when none. */
+    private static facesOn(geom: BufferGeometry, planes: Plane[]): BufferGeometry | null {
+        const pos = geom.getAttribute('position');
+        if (!pos) return null;
+        const index = geom.getIndex();
+        const n = index ? index.count : pos.count;
+        const out: number[] = [];
+        const a = new Vector3(); const b = new Vector3(); const c = new Vector3(); const nrm = new Vector3(); const e = new Vector3();
+        for (let i = 0; i + 2 < n; i += 3) {
+            const ia = index ? index.getX(i) : i; const ib = index ? index.getX(i + 1) : i + 1; const ic = index ? index.getX(i + 2) : i + 2;
+            a.fromBufferAttribute(pos, ia); b.fromBufferAttribute(pos, ib); c.fromBufferAttribute(pos, ic);
+            for (const p of planes) {
+                if (Math.abs(p.distanceToPoint(a)) > 0.08 || Math.abs(p.distanceToPoint(b)) > 0.08 || Math.abs(p.distanceToPoint(c)) > 0.08) continue;
+                // the cut face looks out of the part that is kept, away from the plane's normal
+                nrm.subVectors(c, b).cross(e.subVectors(a, b)).normalize();
+                if (nrm.dot(p.normal) > -0.98) continue;
+                out.push(a.x, a.y, a.z, b.x, b.y, b.z, c.x, c.y, c.z);
+                break;
+            }
+        }
+        if (!out.length) return null;
+        const g = new BufferGeometry();
+        g.setAttribute('position', new Float32BufferAttribute(out, 3));
+        g.computeVertexNormals();
+        return g;
+    }
+
     /** The colour a cut face of the coloured model is drawn in: the average of its texture a shade darker, else its own colour. */
     private static capColor(material: Material): Color {
         const fallback = new Color(0x8a8f96);
