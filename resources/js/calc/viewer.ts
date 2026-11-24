@@ -215,7 +215,7 @@ export class Viewer {
         mesh.add(holder);
         // what the generator left loose (a paw in the air under a dog, Roman 24 Nov 2026) was cleaned out of the printable
         // file: the colours show only what is printed
-        if (exact) Viewer.hideStrays(holder, geom, mesh);
+        const covered = exact ? Viewer.hideStrays(holder, geom, mesh) : null;
         // the printed base is ours, not the generator's: under `top` the STL itself is drawn, solid in dark graphite, and the
         // colours are cut off there; the planes a classic bust's arms were cut by cut the colours too (clipping planes per
         // frame, the mesh may be turned or leaned). Without a base and planes nothing is cut.
@@ -251,6 +251,13 @@ export class Viewer {
                 const face = new MeshStandardMaterial({ color: painted ? 0xffffff : (firstMat ? Viewer.capColor(firstMat) : 0x8a8f96), vertexColors: painted,
                     roughness: 0.9, metalness: 0, side: DoubleSide, clippingPlanes: hasBase ? [world.colour[own.length - 1]] : [] });
                 mesh.add(new Mesh(flats, face));
+            }
+            // … and what the printable file has where the colours have nothing (a paw the server moved onto the body, Roman
+            // 24 Nov 2026: the leg ended in the air) is drawn in the model's colour; the cut faces of a bust are drawn above
+            if (covered && !sides.length) {
+                const bare = Viewer.uncovered(geom, covered, lid);
+                const firstMat = shells[0] ? (Array.isArray(shells[0].material) ? shells[0].material[0] : shells[0].material) : null;
+                if (bare) mesh.add(new Mesh(bare, new MeshStandardMaterial({ color: firstMat ? Viewer.capColor(firstMat) : 0x8a8f96, roughness: 0.9, metalness: 0, side: DoubleSide })));
             }
             // the planes in `world` follow the mesh in clipSync(); `own` / keepBelow are the truth in the file's own millimetres
             if (hasBase) {
@@ -378,11 +385,12 @@ export class Viewer {
      * the generator left loose that the server cleaned away. A thickened leg or a cut keeps its colours (a few millimetres
      * are allowed); when much would go the fit is not trusted and nothing is hidden.
      */
-    private static hideStrays(holder: Object3D, geom: BufferGeometry, root: Object3D): void {
+    private static hideStrays(holder: Object3D, geom: BufferGeometry, root: Object3D): Set<string> | null {
+        const shown = new Set<string>();   // the cells the colours still cover, for uncovered()
         try {
             const CELL = 4;
             const pos = geom.getAttribute('position');
-            if (!pos) return;
+            if (!pos) return null;
             const cells = new Set<string>();
             for (let i = 0; i < pos.count; i++) cells.add(`${Math.floor(pos.getX(i) / CELL)},${Math.floor(pos.getY(i) / CELL)},${Math.floor(pos.getZ(i) / CELL)}`);
             const near = (x: number, y: number, z: number): boolean => {
@@ -408,7 +416,13 @@ export class Viewer {
                     if (!ok[i]) far++;
                 }
                 // more than a tenth away: the fit is off, better all of it than a model with holes
-                if (far === 0 || far > 0.1 * p.count) continue;
+                const hide = far > 0 && far <= 0.1 * p.count;
+                for (let i = 0; i < p.count; i++) {
+                    if (hide && !ok[i]) continue;
+                    v.fromBufferAttribute(p, i).applyMatrix4(to);
+                    shown.add(`${Math.floor(v.x / CELL)},${Math.floor(v.y / CELL)},${Math.floor(v.z / CELL)}`);
+                }
+                if (!hide) continue;
                 const index = g.getIndex();
                 const n = index ? index.count : p.count;
                 const kept: number[] = [];
@@ -418,9 +432,36 @@ export class Viewer {
                 }
                 g.setIndex(kept);
             }
+            return shown.size ? shown : null;
         } catch {
-            // the colours as they came
+            return null;   // the colours as they came
         }
+    }
+
+    /** The triangles of the printable file above `lid` that no colour covers (all three corners away from `covered`), or null. */
+    private static uncovered(geom: BufferGeometry, covered: Set<string>, lid: number): BufferGeometry | null {
+        const CELL = 4;
+        const pos = geom.getAttribute('position');
+        if (!pos) return null;
+        const index = geom.getIndex();
+        const n = index ? index.count : pos.count;
+        const near = (i: number): boolean => {
+            const cx = Math.floor(pos.getX(i) / CELL); const cy = Math.floor(pos.getY(i) / CELL); const cz = Math.floor(pos.getZ(i) / CELL);
+            for (let dx = -1; dx <= 1; dx++) for (let dy = -1; dy <= 1; dy++) for (let dz = -1; dz <= 1; dz++) if (covered.has(`${cx + dx},${cy + dy},${cz + dz}`)) return true;
+            return false;
+        };
+        const out: number[] = [];
+        for (let i = 0; i + 2 < n; i += 3) {
+            const t = [index ? index.getX(i) : i, index ? index.getX(i + 1) : i + 1, index ? index.getX(i + 2) : i + 2];
+            if (t.some((k) => pos.getZ(k) <= lid) || t.some((k) => near(k))) continue;
+            for (const k of t) out.push(pos.getX(k), pos.getY(k), pos.getZ(k));
+        }
+        // a few stray triangles are noise; a whole part is what is missing
+        if (out.length < 9 * 30 || out.length > 9 * 0.2 * (n / 3)) return null;
+        const g = new BufferGeometry();
+        g.setAttribute('position', new Float32BufferAttribute(out, 3));
+        g.computeVertexNormals();
+        return g;
     }
 
     /** The colour a cut face of the coloured model is drawn in: the average of its texture a shade darker, else its own colour. */
