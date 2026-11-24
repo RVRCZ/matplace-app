@@ -40,6 +40,8 @@ export interface FileInfo {
     paint_url?: string | null;
     /** a generated model goes to print as this file: painted in the colours of its figure, base and name (ModelPainter::auto) */
     print_uuid?: string | null;
+    /** "send me my bust": where a visitor without an account leaves his e-mail at a model from a photo (ModelLeadController); null = not offered */
+    keep_url?: string | null;
 }
 
 export interface CalcInfo {

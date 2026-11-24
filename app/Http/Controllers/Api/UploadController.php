@@ -192,6 +192,9 @@ class UploadController extends Controller
             'paint_url' => ModelPainter::urlFor($f, auth()->user()),
             // a generated bust or pet goes to print painted in its parts' colours (figure, base, name): that file (ModelPainter::auto)
             'print_uuid' => ModelPainter::twinOf($f)?->uuid,
+            // "send me my bust": a visitor without an account keeps a model from a photo by e-mail (ModelLeadController)
+            'keep_url' => $f->origin === 'generated' && ! auth()->check() && $f->owner_user_id === null
+                && $f->anonymous_session_id !== null && $f->anonymous_session_id === request()->attributes->get('anon_session')?->id ? route('api.files.keep', $f->uuid) : null,
             // lets the tool page reopen this design ("edit" from the calculator)
             'tool' => self::toolOf($f),
             // built face down (flush colours, a medal's flush motif): the preview shows it turned over, motif up (docs/AN.md §26 C)

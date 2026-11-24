@@ -425,6 +425,7 @@ export class Stage {
         if (file.stl_url) { geom = await loadGeometryFromUrl(file.stl_url); this.show(geom, { kind: o.kind ?? file.kind ?? null, faces: o.faces ?? null, regions: o.regions ?? null }); }
         this.status({ bbox: file.bbox, pieces: (file.parts ?? []).length || 1 });
         this.fileDownloads(file, o.partLabel);
+        this.keepBox(file.keep_url ?? null);
         // a generated bust or pet goes to print painted: figure light, base dark, name gold (ModelPainter::auto); the
         // order's tick prints it in one colour. The link to share stays the model itself
         if (file.print_uuid) this.plainOf.set(file.print_uuid, file.uuid);
@@ -441,6 +442,37 @@ export class Stage {
                 .then((color) => { if (!this.viewer.showColored(color, shown, file.glb_matrix && file.glb_matrix.length === 16 ? { matrix: file.glb_matrix, baseTopZ: Number(file.glb_base_top_z) || 0, clip: file.glb_clip ?? [] } : null)) console.debug('colored preview not applied (another model shown, or it did not fit)'); })
                 .catch((e) => { console.debug('colored preview failed, the STL stays', e); });
         }
+    }
+
+    /** "Send me my bust" (tools/page.blade.php #tool-keep): the e-mail goes to `url`, the box says it went or failed. */
+    private keepBox(url: string | null): void {
+        const form = document.getElementById('tool-keep') as HTMLFormElement | null;
+        if (!form) return;
+        form.hidden = !url;
+        const msg = form.querySelector<HTMLElement>('[data-keep-msg]');
+        if (msg) msg.textContent = '';
+        form.onsubmit = async (e) => {
+            e.preventDefault();
+            if (!url) return;
+            const email = form.querySelector<HTMLInputElement>('input[name=email]');
+            if (!email?.reportValidity()) return;
+            const remind = form.querySelector<HTMLInputElement>('input[name=remind]')?.checked ?? false;
+            const button = form.querySelector<HTMLButtonElement>('button[type=submit]');
+            if (button) button.disabled = true;
+            try {
+                const res = await fetch(url, {
+                    method: 'POST', credentials: 'same-origin',
+                    headers: { Accept: 'application/json', 'Content-Type': 'application/json', 'X-CSRF-TOKEN': document.querySelector<HTMLMetaElement>('meta[name=csrf-token]')?.content ?? '' },
+                    body: JSON.stringify({ email: email.value, remind }),
+                });
+                if (!res.ok) throw new Error(String(res.status));
+                if (msg) { msg.textContent = form.dataset.sent ?? ''; msg.className = 'mt-1 text-xs text-ok'; }
+            } catch {
+                if (msg) { msg.textContent = form.dataset.failed ?? ''; msg.className = 'mt-1 text-xs text-danger'; }
+            } finally {
+                if (button) button.disabled = false;
+            }
+        };
     }
 
     /**

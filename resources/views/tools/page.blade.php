@@ -192,6 +192,15 @@
             </div>
             <p data-again-why class="w-full text-xs text-ink max-lg:hidden" hidden></p>
             <p class="w-full text-xs text-muted">@hasSection('price-note')@yield('price-note')@else{{ \App\Support\NextStep::text('param.go.hint', [], $tool) }}@endif</p>
+            {{-- "send me my bust": a visitor without an account keeps his model from a photo by e-mail, the link only, never the
+                 file (App\Models\ModelLead; shown by Stage.fileResult when the file says keep_url) --}}
+            <form id="tool-keep" class="w-full rounded-lg bg-slate-50 p-3 text-sm" hidden novalidate data-sent="{{ __('keep.sent') }}" data-failed="{{ __('keep.failed') }}">
+                <label for="tool-keep-email" class="block text-ink">{{ __('keep.lead') }}</label>
+                <div class="mt-1 flex gap-2"><input id="tool-keep-email" name="email" type="email" required maxlength="190" autocomplete="email" placeholder="{{ __('keep.email') }}" class="field !mt-0 min-w-0 flex-1 text-sm"><button type="submit" class="btn-secondary !min-h-11 px-3 text-sm">{{ __('keep.send') }}</button></div>
+                <label class="mt-2 flex items-start gap-2 text-xs text-ink"><input type="checkbox" name="remind" value="1" class="mt-0.5 h-4 w-4 shrink-0 accent-action">{{ __('keep.remind') }}</label>
+                <p class="mt-1 text-xs text-muted">{{ __('keep.consent') }}</p>
+                <p class="mt-1 text-xs" data-keep-msg aria-live="polite"></p>
+            </form>
             {{-- the farm is paused: said where the page promises a print with us (only to visitors the farm is offered to) --}}
             @if($next === \App\Support\NextStep::FARM)@include('farm._pause', ['class' => 'w-full'])@endif
         </div>

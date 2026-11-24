@@ -4,6 +4,7 @@ namespace App\Domain\Account;
 
 use App\Models\FarmOrder;
 use App\Models\ModelFile;
+use App\Models\ModelLead;
 use App\Models\Post;
 use App\Models\User;
 use Illuminate\Database\Eloquent\Builder;
@@ -96,6 +97,10 @@ final class ModelLibrary
             ->whereNotIn('id', $linked('catalog_models'))
             ->whereNotIn('id', $linked('designer_models'))
             ->whereNotIn('id', DB::table('calculations')->whereIn('token', $tokens)->select('model_file_id'))
+            // a model a visitor keeps by e-mail ("send me my bust", ModelLead), and its painted twin, stay while the lead does
+            ->whereNotIn('id', DB::table('model_leads')->whereNotNull('model_file_id')->whereNull('unsubscribed_at')->where('created_at', '>', now()->subDays(ModelLead::HOLD_DAYS))->select('model_file_id'))
+            ->where(fn ($q) => $q->whereNull('origin_ref')->orWhereNotIn('origin_ref', DB::table('model_files')->whereIn('id',
+                DB::table('model_leads')->whereNotNull('model_file_id')->whereNull('unsubscribed_at')->where('created_at', '>', now()->subDays(ModelLead::HOLD_DAYS))->select('model_file_id'))->select('uuid')))
             ->where(fn ($q) => $q
                 ->where(fn ($own) => $own->whereNotNull('owner_user_id')
                     ->whereNotIn('id', $linked('farm_orders'))

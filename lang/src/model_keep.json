@@ -1,0 +1,97 @@
+{
+    "keep.lead": [
+        "Uložte si model: pošleme vám odkaz e-mailem a k objednávce se vrátíte, kdy budete chtít.",
+        "Keep your model: we e-mail you the link and you come back to the order whenever you like.",
+        "Guarde su modelo: le enviamos el enlace por correo y vuelve al pedido cuando quiera."
+    ],
+    "keep.email": [
+        "váš e-mail",
+        "your e-mail",
+        "su correo"
+    ],
+    "keep.send": [
+        "Poslat odkaz",
+        "Send the link",
+        "Enviar el enlace"
+    ],
+    "keep.remind": [
+        "Za pár dní mi model připomeňte (jeden e-mail)",
+        "Remind me of the model in a few days (one e-mail)",
+        "Recuérdenme el modelo en unos días (un correo)"
+    ],
+    "keep.consent": [
+        "Posíláme odkaz na model na našem webu, ne soubor. Adresu si uložíme; připomínku pošleme jen se zaškrtnutím a odhlásíte ji odkazem v e-mailu.",
+        "We send a link to the model on our site, not the file. We keep the address; the reminder goes out only when ticked, and the link in the e-mail cancels it.",
+        "Enviamos un enlace al modelo en nuestra web, no el archivo. Guardamos la dirección; el recordatorio solo se envía si lo marca y el enlace del correo lo cancela."
+    ],
+    "keep.sent": [
+        "Odesláno, odkaz najdete v e-mailu.",
+        "Sent, the link is in your e-mail.",
+        "Enviado, el enlace está en su correo."
+    ],
+    "keep.failed": [
+        "E-mail se nepodařilo odeslat, zkontrolujte adresu a zkuste to znovu.",
+        "The e-mail could not be sent, check the address and try again.",
+        "No se pudo enviar el correo, revise la dirección e inténtelo de nuevo."
+    ],
+    "keep.mail.subject": [
+        "Váš model z fotky na matplace",
+        "Your model from a photo on matplace",
+        "Su modelo a partir de una foto en matplace"
+    ],
+    "keep.mail.intro": [
+        "Dobrý den, tady je odkaz na model, který jste si u nás vytvořili z fotky.",
+        "Hello, here is the link to the model you made from a photo with us.",
+        "Hola: aquí tiene el enlace al modelo que creó con nosotros a partir de una foto."
+    ],
+    "keep.mail.button": [
+        "Otevřít model",
+        "Open the model",
+        "Abrir el modelo"
+    ],
+    "keep.mail.after": [
+        "Na stránce ho otočíte ze všech stran, zvolíte barvy a velikost a uvidíte cenu tisku. Vytiskneme ho na naší farmě a pošleme vám ho.",
+        "On the page you turn it all round, choose the colours and the size and see the price of the print. We print it on our farm and send it to you.",
+        "En la página puede girarlo, elegir los colores y el tamaño y ver el precio de la impresión. Lo imprimimos en nuestra granja y se lo enviamos."
+    ],
+    "keep.mail.remind.subject": [
+        "Váš model z fotky na vás čeká",
+        "Your model from a photo is waiting for you",
+        "Su modelo a partir de una foto le espera"
+    ],
+    "keep.mail.remind.intro": [
+        "Dobrý den, před pár dny jste si u nás vytvořili model z fotky a přáli jste si připomenutí. Pořád je připravený.",
+        "Hello, a few days ago you made a model from a photo with us and asked to be reminded. It is still ready.",
+        "Hola: hace unos días creó con nosotros un modelo a partir de una foto y pidió que se lo recordáramos. Sigue listo."
+    ],
+    "keep.mail.footer": [
+        "Tento e-mail jste si vyžádali u svého modelu na matplace.com. Další vám bez vašeho souhlasu neposíláme.",
+        "You asked for this e-mail at your model on matplace.com. We send you nothing else without your consent.",
+        "Pidió este correo en su modelo en matplace.com. No le enviamos nada más sin su consentimiento."
+    ],
+    "keep.mail.footer.remind": [
+        "Tento e-mail jste si vyžádali u svého modelu na matplace.com; připomínku pošleme jednou.",
+        "You asked for this e-mail at your model on matplace.com; the reminder goes out once.",
+        "Pidió este correo en su modelo en matplace.com; el recordatorio se envía una sola vez."
+    ],
+    "keep.mail.unsubscribe": [
+        "Nepřeji si další e-maily.",
+        "No more e-mails, please.",
+        "No deseo más correos."
+    ],
+    "keep.off.title": [
+        "Hotovo, další e-maily nepošleme",
+        "Done, no more e-mails",
+        "Listo, no le enviaremos más correos"
+    ],
+    "keep.off.body": [
+        "O tomto modelu vám už nic posílat nebudeme. Model sám zůstává, odkaz z e-mailu dál funguje.",
+        "We will send you nothing more about this model. The model itself stays, the link in the e-mail still works.",
+        "No le enviaremos nada más sobre este modelo. El modelo sigue ahí y el enlace del correo sigue funcionando."
+    ],
+    "keep.off.home": [
+        "Na matplace.com",
+        "To matplace.com",
+        "A matplace.com"
+    ]
+}

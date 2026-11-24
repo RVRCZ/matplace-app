@@ -67,6 +67,7 @@ use App\Http\Controllers\IntakeController;
 use App\Http\Controllers\LocaleRedirectController;
 use App\Http\Controllers\MapToolController;
 use App\Http\Controllers\ModelCatalogController;
+use App\Http\Controllers\ModelLeadController;
 use App\Http\Controllers\OgController;
 use App\Http\Controllers\PageController;
 use App\Http\Controllers\PaintToolController;
@@ -88,6 +89,8 @@ $pages = function () {
     // ── Public: the one screen ───────────────────────────────────────────────────
     Route::get('/', [CalculatorController::class, 'index'])->name('home');
     // a calculation goes with its file (matplace:prune): the address says why instead of a bare 404
+    // "send me my bust": no more mails about the model (App\Models\ModelLead)
+    Route::get('/keep/off/{token}', [ModelLeadController::class, 'unsubscribe'])->where('token', '[A-Za-z0-9]{40}')->name('keep.unsubscribe');
     Route::get('/c/{calculation}', [CalculatorController::class, 'share'])->name('calc.share')->missing(fn () => response()->view('calculator.gone', [], 410));
     // the home page's router (TODO #78, docs/AN.md §22): a photo, a 3D file or words → a tool, a person or the calculator;
     // the tool's page fetches the photo by the token; "a person takes it over" leaves an e-mail
@@ -414,6 +417,8 @@ Route::prefix('api')->name('api.')->group(function () {
     Route::get('files/{modelFile}/preview.webp', [ModelPreviewController::class, 'show'])->name('files.preview');
     Route::post('files/{modelFile}/preview', [ModelPreviewController::class, 'store'])->middleware('throttle:60,1,preview-store')->name('files.preview.store');
     Route::get('files/{modelFile}/project.3mf', [ModelFileController::class, 'project'])->middleware(['file:project', 'throttle:20,1,project'])->name('files.project');
+    // "send me my bust": the link by e-mail, the address kept, one reminder only when ticked (App\Models\ModelLead)
+    Route::post('files/{modelFile}/keep', [ModelLeadController::class, 'store'])->middleware('throttle:10,1,keep')->name('files.keep');
     Route::post('files/{modelFile}/pedestal', [ModelFileController::class, 'pedestal'])->middleware(['file', 'throttle:20,1,pedestal'])->name('files.pedestal');
     Route::post('files/{modelFile}/mold', [ModelFileController::class, 'mold'])->middleware(['file', 'throttle:20,1,mold'])->name('files.mold');
     Route::post('files/{modelFile}/mold/analysis', [ModelFileController::class, 'moldAnalysis'])->middleware(['file', 'throttle:30,1,moldanalysis'])->name('files.mold.analysis');
