@@ -22,6 +22,9 @@ final class FakeGenerator implements ImageRestyler, ModelGenerator
     /** A test of a cleaning that fails: the picture task then ends as the real one does when the image model refuses. */
     public static bool $imageFails = false;
 
+    /** How many next tasks are refused as "too many at once" (Tripo's limit of tasks running together). */
+    public static int $busy = 0;
+
     public function name(): string
     {
         return 'fake';
@@ -39,6 +42,10 @@ final class FakeGenerator implements ImageRestyler, ModelGenerator
 
     public function fromImage(string $imagePath, ?string $hint, GenerationOptions $options): GenerationHandle
     {
+        if (self::$busy > 0) {
+            self::$busy--;
+            throw new \App\Engines\Exceptions\GenerationException('Tripo task failed: You have exceeded the limit of generation');
+        }
         // "credits" as the real engine counts them, so a test can tell which quality was asked for
         return new GenerationHandle('fake', 'fake-'.Str::random(8), $options->geometryQuality ? ['credits' => $options->geometryQuality === 'detailed' ? 40 : 20] : []);
     }

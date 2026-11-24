@@ -279,10 +279,28 @@ class GenerateModel implements ShouldQueue
             // processed, then painted in its parts' colours when the engine named them
             ModelPainter::process($file, $normalized);
         } catch (\Throwable $e) {
+            // the generator takes only so many tasks at once (Tripo "You have exceeded the limit of generation", 24 Nov 2026:
+            // two visitors from the ads within half a minute, the second one failed): the task waits its turn and is asked
+            // for again, the photo stays, the page keeps showing it is being made
+            if (self::busyGenerator($e) && $this->attempts() < $this->tries - 6) {
+                $req->update(['status' => 'running']);
+                $this->release(15);
+
+                return;
+            }
             Log::warning('GenerateModel failed', ['id' => $req->id, 'error' => $e->getMessage()]);
             $req->update(['status' => 'failed', 'error' => mb_substr($e->getMessage(), 0, 500)]);
             $this->forgetPhoto($req);
         }
+    }
+
+    /** The generator refused a new task only because it is busy (too many at once): worth asking again in a moment. */
+    public static function busyGenerator(\Throwable $e): bool
+    {
+        $m = strtolower($e->getMessage());
+
+        return str_contains($m, 'exceeded the limit of generation') || str_contains($m, 'too many requests') || str_contains($m, 'rate limit')
+            || (str_contains($m, 'task failed') && str_contains($m, '429'));
     }
 
     /** Not ready yet: look again in five seconds, for ten minutes at most. */

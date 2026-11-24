@@ -61,6 +61,27 @@ class GenerationTest extends TestCase
         $this->postJson('/api/calculations', ['file' => $file->uuid, 'material' => 'PLA'])->assertCreated()->assertJsonPath('calculation.status', 'done');
     }
 
+    public function test_a_busy_generator_makes_the_task_wait_its_turn_instead_of_failing(): void
+    {
+        // Tripo takes only so many tasks at once (24 Nov 2026: the second of two visitors within half a minute failed)
+        \App\Engines\Generator\FakeGenerator::$busy = 1;
+        try {
+            $token = $this->describeToken();
+            $r = $this->postJson('/api/generate', ['describe' => $token, 'target_mm' => 60])->assertCreated();
+            $req = GenerationRequest::where('token', $r->json('generation.token'))->firstOrFail();
+            $this->assertSame('running', $req->status, 'it waits, it is not failed: '.$req->error);
+            $this->assertNull($req->error);
+            // its turn: asked again, made
+            dispatch_sync(new \App\Jobs\GenerateModel($req->id));
+            $this->assertSame('done', $req->refresh()->status);
+            $this->assertNotNull($req->result_model_file_id);
+        } finally {
+            \App\Engines\Generator\FakeGenerator::$busy = 0;
+        }
+        $this->assertTrue(\App\Jobs\GenerateModel::busyGenerator(new \RuntimeException('Tripo task failed: You have exceeded the limit of generation')));
+        $this->assertFalse(\App\Jobs\GenerateModel::busyGenerator(new \RuntimeException('Tripo task failed: invalid image')));
+    }
+
     public function test_guest_limit_then_account_limit_and_cache(): void
     {
         $token = $this->describeToken();
