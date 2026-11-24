@@ -97,6 +97,26 @@ class GlbFitTest extends TestCase
         return (float) trim((string) $out);
     }
 
+    /** How far (mm) the STL above the base reaches past the cut planes at worst ([nx, ny, nz, d], kept where n.x >= d). */
+    private function outsidePlanes(ModelFile $f, array $planes, float $above): float
+    {
+        $code = implode("
+", [
+            'import sys, json, numpy as np, trimesh',
+            'm = trimesh.load(sys.argv[1], force="mesh")',
+            'P = np.array(json.loads(sys.argv[2]))',
+            'v = m.vertices[m.vertices[:, 2] > float(sys.argv[3]) + 0.5]',
+            'print(float(max(0.0, (P[:, 3][None, :] - v @ P[:, :3].T).max())))',
+        ]);
+        $file = sys_get_temp_dir().'/mp_planes_'.uniqid().'.py';
+        file_put_contents($file, $code);
+        $out = shell_exec(escapeshellcmd($this->python()).' '.escapeshellarg($file).' '.escapeshellarg($f->absolutePath()).' '.escapeshellarg((string) json_encode($planes)).' '.escapeshellarg((string) $above));
+        @unlink($file);
+        $this->assertIsNumeric(trim((string) $out), 'the check itself ran');
+
+        return (float) trim((string) $out);
+    }
+
     public function test_a_generated_file_keeps_the_matrix_and_the_page_gets_it(): void
     {
         $f = $this->generate('round');
@@ -136,7 +156,10 @@ class GlbFitTest extends TestCase
         $this->assertNotEquals($first->tool_params['glb']['matrix'], $glb['matrix']);
         $this->assertLessThan(0.5, $this->median($second, $glb['matrix']));                            // composed with the first file's to_full: exact
         $this->getJson(route('api.files.show', $second->uuid))->assertOk()->assertJsonPath('file.glb_url', route('api.files.glb', $second->uuid))
-            ->assertJsonPath('file.glb_matrix', $glb['matrix']);
+            ->assertJsonPath('file.glb_matrix', $glb['matrix'])->assertJsonPath('file.glb_clip', $glb['clip']);
+        // the classic bust's arms are cut by two planes: the page gets them in the STL's millimetres, and the printed chest lies inside them
+        $this->assertCount(2, $glb['clip']);
+        $this->assertLessThan(0.05, $this->outsidePlanes($second, $glb['clip'], (float) $glb['base_top_z']));
         $this->get(route('api.files.glb', $second->uuid))->assertOk()->assertHeader('Content-Type', 'model/gltf-binary');
 
         // and once more, from the second file

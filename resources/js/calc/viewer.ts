@@ -1,12 +1,12 @@
 import {
     AmbientLight, BufferGeometry, Color, ConeGeometry, CylinderGeometry, DirectionalLight, GridHelper, Group, HemisphereLight, Line, LineBasicMaterial,
     LineSegments, Material, Mesh, MeshBasicMaterial, MeshStandardMaterial, PerspectiveCamera, Raycaster, Scene, SphereGeometry, Vector2, Vector3,
-    WebGLRenderer, Box3, Object3D, Float32BufferAttribute, PlaneGeometry, EdgesGeometry, DoubleSide, Plane, RingGeometry,
+    WebGLRenderer, Box3, Object3D, Float32BufferAttribute, PlaneGeometry, EdgesGeometry, DoubleSide, Plane, RingGeometry, Matrix4,
 } from 'three';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
 import { mergeVertices } from 'three/examples/jsm/utils/BufferGeometryUtils.js';
 import { colorHolder, type ExactFit } from './color_model';
-import type { Matrix4 as Mat4 } from 'three';
+type Mat4 = Matrix4;
 
 /** Default colour of a previewed model: a calm, slightly desaturated blue, like a light-blue PLA spool. */
 export const MODEL_COLOR = 0x83a6d4;
@@ -210,25 +210,34 @@ export class Viewer {
         if (!holder) return false;
         mesh.add(holder);
         // the printed base is ours, not the generator's: under `top` the STL itself is drawn, solid in dark graphite, and the
-        // colours are cut off there (a clipping plane per frame, the mesh may be turned or leaned). Without a base nothing is cut.
+        // colours are cut off there; the planes a classic bust's arms were cut by cut the colours too (clipping planes per
+        // frame, the mesh may be turned or leaned). Without a base and planes nothing is cut.
         const top = Number(holder.userData.baseTopZ);
-        if (Number.isFinite(top) && top > 0.05) {
-            const keepAbove = new Plane(new Vector3(0, 0, 1), -top);
-            const keepBelow = new Plane(new Vector3(0, 0, -1), top);
-            const world = { above: keepAbove.clone(), below: keepBelow.clone() };
+        const hasBase = Number.isFinite(top) && top > 0.05;
+        // the base's flat top lies exactly at `top`: cut there it vanished and the base looked like an open tray (24 Nov 2026)
+        const lid = hasBase ? top + 0.4 : 0;
+        const own: Plane[] = ((holder.userData.clip ?? []) as number[][]).map((p) => new Plane(new Vector3(p[0], p[1], p[2]).normalize(), -Number(p[3])));
+        if (hasBase) own.push(new Plane(new Vector3(0, 0, 1), -lid));
+        if (own.length) {
+            const keepBelow = new Plane(new Vector3(0, 0, -1), lid);
+            const world = { colour: own.map((p) => p.clone()), below: keepBelow.clone() };
             holder.traverse((o) => {
                 const m = o as Mesh;
                 if (!m.isMesh) return;
-                (Array.isArray(m.material) ? m.material : [m.material]).forEach((x) => { x.clippingPlanes = [world.above]; x.needsUpdate = true; });
+                (Array.isArray(m.material) ? m.material : [m.material]).forEach((x) => { x.clippingPlanes = world.colour; x.side = DoubleSide; x.needsUpdate = true; });
             });
-            // the planes in `world` follow the mesh in clipSync(); keepAbove / keepBelow are the truth in the file's own millimetres
-            const graphite = new MeshStandardMaterial({ color: 0x3a3d42, roughness: 0.85, metalness: 0, side: DoubleSide, clippingPlanes: [world.below] });
-            const base = new Mesh(geom, graphite);
-            mesh.add(base);
-            this.baseMesh = base;
+            // the planes in `world` follow the mesh in clipSync(); `own` / keepBelow are the truth in the file's own millimetres
+            if (hasBase) {
+                const graphite = new MeshStandardMaterial({ color: 0x3a3d42, roughness: 0.85, metalness: 0, side: DoubleSide, clippingPlanes: [world.below] });
+                const base = new Mesh(geom, graphite);
+                mesh.add(base);
+                this.baseMesh = base;
+            }
+            holder.userData.fit = holder.matrix.clone();
+            holder.userData.lid = lid;
             this.clipSync = () => {
                 mesh.updateMatrixWorld(true);
-                world.above.copy(keepAbove).applyMatrix4(mesh.matrixWorld);
+                own.forEach((p, i) => world.colour[i].copy(p).applyMatrix4(mesh.matrixWorld));
                 world.below.copy(keepBelow).applyMatrix4(mesh.matrixWorld);
             };
             this.clipSync();
@@ -270,6 +279,21 @@ export class Viewer {
         this.tilt = deg;
         const mesh = this.mesh;
         if (!mesh) return;
+        // the coloured bust on its graphite base: only the figure leans, about the top of the base, and is cut flat there as
+        // the server will cut it; the base stays level (the whole model leaning, base and all, misled: Roman, 24 Nov 2026)
+        const holder = this.previewHolder;
+        if (this.colored && this.baseMesh && holder?.userData.fit) {
+            const geom = mesh.geometry;
+            if (!geom.boundingBox) geom.computeBoundingBox();
+            const c = geom.boundingBox!.getCenter(new Vector3());
+            const pivot = new Vector3(c.x, c.y, Number(holder.userData.lid) || 0);
+            const lean = new Matrix4().makeTranslation(pivot.x, pivot.y, pivot.z)
+                .multiply(new Matrix4().makeRotationX((deg * Math.PI) / 180))
+                .multiply(new Matrix4().makeTranslation(-pivot.x, -pivot.y, -pivot.z));
+            holder.matrix.copy(lean.multiply(holder.userData.fit as Matrix4));
+            holder.matrixWorldNeedsUpdate = true;
+            return;
+        }
         // a lean of the head to the front (-Y of the file) is a turn about the file's X axis, which stays X after the model is stood up
         mesh.rotation.set(-Math.PI / 2 + (deg * Math.PI) / 180, this.turned ? Math.PI : 0, 0);
         mesh.position.set(0, 0, 0);

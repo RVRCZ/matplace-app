@@ -1219,6 +1219,8 @@ class OrderController extends Controller
             'one_plate_required' => $required,
             // a painted 3MF in its colours: one plate too, but its copies share it (the tool's designs go one piece at a time)
             'painted_colors' => $painted,
+            // a painted 3MF whether or not it is ordered in its colours: the box then says "print in the painted colours", not "parts"
+            'painted_file' => PaintedColors::painted($order->modelFile),
             // a painted 3MF that could not print in colour: the page offers it in one colour (by parts off, recalculated)
             // "print again" makes a new order from this one (again): from the payment on
             'repeatable' => $order->repeatable(),

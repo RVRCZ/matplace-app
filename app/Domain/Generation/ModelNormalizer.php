@@ -24,7 +24,7 @@ final class ModelNormalizer
      * composed with it, so they always lead from the coordinates of the original GLB. Null when nothing was measured
      * or the parent has no matrix (old files: the browser fits the colours by estimate).
      *
-     * @return array{matrix: list<float>, base_top_z: float, to_full?: list<float>, to_source?: list<float>}|null
+     * @return array{matrix: list<float>, base_top_z: float, to_full?: list<float>, to_source?: list<float>, clip?: list<list<float>>}|null
      */
     public function glbFit(): ?array
     {
@@ -56,6 +56,11 @@ final class ModelNormalizer
             if (is_array($r[$k] ?? null) && count($r[$k]) === 16) {
                 $fit[$k] = $lead($r[$k]);
             }
+        }
+        // the planes that cut the body (a classic bust's arms): already in the coordinates of the written STL, nothing to compose
+        $clip = array_values(array_filter((array) ($r['clip'] ?? []), fn ($p) => is_array($p) && count($p) === 4));
+        if ($clip) {
+            $fit['clip'] = array_map(fn (array $p) => array_map('floatval', array_values($p)), $clip);
         }
 
         return $fit;

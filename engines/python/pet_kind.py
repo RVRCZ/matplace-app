@@ -281,6 +281,7 @@ def stand(m, kind, extras, target):
             outline = S.rounded_rect(M, w, d, min(w, d) / 2 - 0.02).translate([-w / 2, -d / 2])
 
     body, _, foot = _profiled(M, outline, ped_h, tall)
+    names = []          # the raised names with their placement on the base, for mesh_tool.face_parts
     w, d = w + 2 * foot, d + 2 * foot
     face_w, face_d = w - 2 * foot, d - 2 * foot                          # the waist of the plinth, where the name stands
     if label is not None:
@@ -289,6 +290,7 @@ def stand(m, kind, extras, target):
         reach = (w if along else d) / 2 - margin
         raised = label.extrude(0.6 + 0.2).translate([-tw / 2, -reach, ped_h - 0.2]).rotate([0, 0, SIDES[side]])
         body = body + raised
+        names.append((label, [("z", SIDES[side]), ("t", [-tw / 2, -reach, ped_h - 0.2])], 0.0, 0.8))
         note["engraved_lines"] = 1
         if th < 3.0:
             note["small_text_mm"] = round(float(th), 1)
@@ -313,6 +315,7 @@ def stand(m, kind, extras, target):
                     flat = cs.translate([-bx - tw / 2, -by]).extrude(1.2).rotate([90, 0, 0]).translate([0, 0.2, y_top + (band - th) / 2])
                     # built on the front (-Y) face, then turned to its side
                     body = body + flat.translate([0, -(face_w if along else face_d) / 2, 0]).rotate([0, 0, SIDES[side]])
+                    names.append((cs.translate([-bx - tw / 2, -by]), [("z", SIDES[side]), ("t", [0, -(face_w if along else face_d) / 2 + 0.2, y_top + (band - th) / 2]), ("x", 90)], 0.0, 1.2))
                     if info.get("missing_chars"):
                         note["missing_chars"] = info["missing_chars"]
                 note["engraved_lines"] = len(lines)
@@ -322,6 +325,12 @@ def stand(m, kind, extras, target):
     # the top of the base lies `sink` above the lowest point of the paws
     z_top = z0 + sink
     base = body.translate([cx, cy, z_top - ped_h])
+    try:
+        from mesh_tool import name_outline, _mx
+        for cs_, steps, z_a, z_b in names:
+            name_outline(cs_, _mx(("t", [cx, cy, z_top - ped_h]), *steps), z_a, z_b)
+    except Exception:  # noqa: BLE001 - the colours of the name are an extra, never a reason to lose the base
+        pass
     figure = as_manifold(m).trim_by_plane([0, 0, 1], z_top - ped_h + 0.05)   # nothing may hang below the base
     joined = from_manifold(figure + base)
     if not len(joined.faces) or not joined.is_watertight:

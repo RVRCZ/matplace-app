@@ -118,6 +118,8 @@ return [
         'color' => 'Barva',
         'step_material' => 'Materiál a způsob tisku',
         'by_parts' => 'Tisknout díly zvlášť, každý svou barvou (:n dílů)',
+        'by_parts_painted' => 'Tisknout v barvách z vybarvení (:n barvy)',
+        'by_parts_painted_hint' => 'Celý model na jedné podložce, tiskárna sama mění cívky; každá barva z vybarvení má svou barvu níže. Bez zaškrtnutí se vytiskne celý v jedné barvě. Po změně cenu přepočítejte.',
         'by_parts_hint' => 'Každý díl se vytiskne zvlášť ze své cívky na téže tiskárně. Barev může být tolik, kolik má tiskárna pozic (dnes nejvýš :max). Bez zaškrtnutí se díly tisknou spolu na jedné podložce v jedné barvě. Po změně cenu přepočítejte.',
         'step_order' => 'Objednávka',
         'material' => 'Materiál',

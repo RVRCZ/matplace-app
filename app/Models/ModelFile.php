@@ -102,10 +102,10 @@ class ModelFile extends Model
 
     /**
      * Where the coloured model lies over this file's STL, exactly: {matrix: 16 numbers row-major (GLB coordinates to the
-     * STL's), base_top_z: height in mm where the figure stands on its base}. Null for files made before this was measured:
-     * the browser then fits the colours by estimate.
+     * STL's), base_top_z: height in mm where the figure stands on its base, clip: the planes that cut the body, [nx, ny, nz, d]
+     * kept where n.x >= d, in the STL's mm}. Null for files made before this was measured: the browser then fits the colours by estimate.
      *
-     * @return array{matrix: list<float>, base_top_z: float}|null
+     * @return array{matrix: list<float>, base_top_z: float, clip: list<list<float>>}|null
      */
     public function glbFit(): ?array
     {
@@ -114,7 +114,10 @@ class ModelFile extends Model
             return null;
         }
 
-        return ['matrix' => array_map('floatval', array_values($g['matrix'])), 'base_top_z' => (float) ($g['base_top_z'] ?? 0)];
+        $clip = array_values(array_filter((array) ($g['clip'] ?? []), fn ($p) => is_array($p) && count($p) === 4));
+
+        return ['matrix' => array_map('floatval', array_values($g['matrix'])), 'base_top_z' => (float) ($g['base_top_z'] ?? 0),
+            'clip' => array_map(fn (array $p) => array_map('floatval', array_values($p)), $clip)];
     }
 
     /** The coloured preview is offered only up to this size (a phone on mobile data would not load more). */

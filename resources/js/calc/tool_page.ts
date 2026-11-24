@@ -414,13 +414,15 @@ export class Stage {
         this.fileDownloads(file, o.partLabel);
         this.go({ href: `${this.cfg.home}?open=${file.uuid}`, disabled: false, ...(o.goLabel ? { label: o.goLabel } : {}) });
         this.shareable(`${this.cfg.home}?open=${file.uuid}`);
+        const paint = document.getElementById('tool-paint') as HTMLAnchorElement | null;
+        if (paint) { paint.hidden = !file.paint_url; if (file.paint_url) paint.href = file.paint_url; }
         // a generated model that came with its colours (the page asked for them): the grey STL is on show already; the colours replace
         // it when they are loaded and fit, and any failure leaves the STL as it is
         if (o.colored && geom && file.glb_url) {
             // the viewer may have welded the STL into its own copy (generated models): the swap must name THAT geometry
             const shown = this.viewer.shownGeometry() ?? geom;
             void loadColoredModel(file.glb_url)
-                .then((color) => { if (!this.viewer.showColored(color, shown, file.glb_matrix && file.glb_matrix.length === 16 ? { matrix: file.glb_matrix, baseTopZ: Number(file.glb_base_top_z) || 0 } : null)) console.debug('colored preview not applied (another model shown, or it did not fit)'); })
+                .then((color) => { if (!this.viewer.showColored(color, shown, file.glb_matrix && file.glb_matrix.length === 16 ? { matrix: file.glb_matrix, baseTopZ: Number(file.glb_base_top_z) || 0, clip: file.glb_clip ?? [] } : null)) console.debug('colored preview not applied (another model shown, or it did not fit)'); })
                 .catch((e) => { console.debug('colored preview failed, the STL stays', e); });
         }
     }

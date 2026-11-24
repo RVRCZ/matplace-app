@@ -937,6 +937,97 @@ def without_pedestal(m):
     return trimesh.util.concatenate(rest)
 
 
+# The raised names of the last base made (pedestal_mesh, classic_foot, pet_kind.stand): what face_parts() needs to find
+# their triangles in the finished model. Each is the outline of the letters (polygons grown by 0.1 mm) in the text's
+# own plane, the 4x4 matrix from the text's coordinates (x, y in the plane, z along the extrusion) into the model's,
+# and the extrusion's range in z.
+NAME_OUTLINES = []
+
+
+def _name_lists():
+    """NAME_OUTLINES of this script and of its copy imported as `mesh_tool` (pet_kind imports it: another module object)."""
+    lists = [NAME_OUTLINES]
+    other = sys.modules.get("mesh_tool")
+    if other is not None and getattr(other, "NAME_OUTLINES", None) is not None and other.NAME_OUTLINES is not NAME_OUTLINES:
+        lists.append(other.NAME_OUTLINES)
+    return lists
+
+
+def clear_names():
+    for names in _name_lists():
+        names.clear()
+
+
+def _mx(*steps):
+    """A 4x4 matrix of steps applied right to left: ("t", [x, y, z]) a move, ("x" | "z", degrees) a turn about that axis."""
+    import numpy as np
+    out = np.eye(4)
+    for kind, v in steps:
+        m = np.eye(4)
+        if kind == "t":
+            m[:3, 3] = v
+        else:
+            a = np.radians(float(v))
+            c, s_ = np.cos(a), np.sin(a)
+            if kind == "x":
+                m[1:3, 1:3] = [[c, -s_], [s_, c]]
+            else:
+                m[0:2, 0:2] = [[c, -s_], [s_, c]]
+        out = out @ m
+    return out
+
+
+def name_outline(cs, A, z0, z1):
+    """Notes a raised name for face_parts(): `cs` its outline as it was extruded from z0 to z1, A its placement (see _mx)."""
+    import numpy as np
+    import manifold3d as M
+    rings = [np.asarray(p, dtype=np.float64) for p in cs.offset(0.1, M.JoinType.Round).to_polygons() if len(p) >= 3]
+    if rings:
+        NAME_OUTLINES.append({"rings": rings, "inv": np.linalg.inv(np.asarray(A, dtype=np.float64)), "z0": float(z0), "z1": float(z1)})
+
+
+def inside_rings(pts, rings):
+    """Even-odd test of 2D points against all the rings at once (holes of letters included)."""
+    import numpy as np
+    inside = np.zeros(len(pts), dtype=bool)
+    x, y = pts[:, 0][:, None], pts[:, 1][:, None]
+    for ring in rings:
+        a, b = ring, np.roll(ring, -1, axis=0)
+        ay, by, ax, bx = a[:, 1][None, :], b[:, 1][None, :], a[:, 0][None, :], b[:, 0][None, :]
+        crosses = (ay > y) != (by > y)
+        with np.errstate(divide="ignore", invalid="ignore"):
+            xi = ax + (y - ay) * (bx - ax) / (by - ay)
+        inside ^= (np.count_nonzero(crosses & (x < xi), axis=1) % 2).astype(bool)
+    return inside
+
+
+def face_parts(m, top):
+    """
+    What every triangle of the finished model is, for printing it in colours without the colouring tool (Roman, 24 Nov
+    2026: a dark base, a light figure, the name in a third colour): 0 the figure, 1 the base (at or under its top `top`),
+    2 the raised name on it (NAME_OUTLINES). One byte per triangle, in the order of the faces.
+    """
+    import numpy as np
+    c = m.triangles_center
+    st = np.zeros(len(m.faces), dtype=np.uint8)
+    st[c[:, 2] <= float(top) + 0.05] = 1
+    for n in [n for names in _name_lists() for n in names]:
+        local = c @ n["inv"][:3, :3].T + n["inv"][:3, 3]
+        cand = np.where((local[:, 2] >= n["z0"] - 0.05) & (local[:, 2] <= n["z1"] + 0.15))[0]
+        if len(cand):
+            hit = inside_rings(local[cand, :2], n["rings"])
+            st[cand[hit]] = 2
+    return st
+
+
+def safe_parts(m, top):
+    """face_parts(), or None when it fails: the parts are an extra, the model itself must never be lost to them."""
+    try:
+        return face_parts(m, top)
+    except Exception:  # noqa: BLE001
+        return None
+
+
 def pedestal_mesh(kind, cx, cy, r, ped_h, overlap, extras, z_top=None, sizes=None):
     """
     Base under a figure or bust, built as one exact solid (manifold3d) and handed back as a trimesh.
@@ -955,6 +1046,7 @@ def pedestal_mesh(kind, cx, cy, r, ped_h, overlap, extras, z_top=None, sizes=Non
         return S.rounded_rect(M, w, d, rad).translate([-w / 2, -d / 2])
 
     note = {"pedestal": kind}
+    clear_names()
     if "stand" in BUST_STYLES.get(kind, {}):
         if not sizes:
             raise ValueError("classic_needs_its_chest")
@@ -1030,6 +1122,8 @@ def pedestal_mesh(kind, cx, cy, r, ped_h, overlap, extras, z_top=None, sizes=Non
                     y_top -= band
                     # up stays up, the extrusion points at the viewer (-Y); 0.2 mm sits inside the plinth so the union is clean
                     solid = solid + flat.rotate([90, 0, 0]).translate([0, -d / 2 + 0.2, y_top + (band - th) / 2])
+                    zt = (overlap if z_top is None else z_top) - (ped_h + overlap)
+                    name_outline(cs.translate([-x0 - tw / 2, -y0]), _mx(("t", [cx, cy - d / 2 + 0.2, zt + y_top + (band - th) / 2]), ("x", 90)), 0.0, 1.2)
                     if info.get("missing_chars"):
                         note["missing_chars"] = info["missing_chars"]
                 note["engraved_lines"] = len(lines)
@@ -1209,8 +1303,9 @@ def round_under(body, cx, cy, z_bottom, high, flat, power):
     return shaped if shaped.volume() > 0.5 * body.volume() else body
 
 
-def slant_cut(body, z_bottom, lean_deg, keep):
-    """Sculptor's cut: both shoulders are cut off by planes that lean outwards, the bust stands on its own flat cut."""
+def slant_cut(body, z_bottom, lean_deg, keep, planes=None):
+    """Sculptor's cut: both shoulders are cut off by planes that lean outwards, the bust stands on its own flat cut.
+    `planes` (a list) gets each plane as (normal, offset): what is kept has dot(normal, x) >= offset."""
     import numpy as np
     x0, _, _, x1, _, z1 = body.bounding_box()
     mid, half = (x0 + x1) / 2, (x1 - x0) / 2
@@ -1221,6 +1316,8 @@ def slant_cut(body, z_bottom, lean_deg, keep):
         normal = [-side * np.cos(a), 0.0, np.sin(a)]
         point = np.array([mid + side * foot, 0.0, z_bottom])
         body = body.trim_by_plane(normal, float(np.dot(normal, point)))
+        if planes is not None:
+            planes.append(([float(c) for c in normal], float(np.dot(normal, point))))
     return body
 
 
@@ -1319,7 +1416,9 @@ def bust_shape(kind, body, m, cx, cy, z_cut, r, overlap=2.8):
     sizes["chest_enough"] = chest is not None
     sizes["cut_z"], sizes["cx"], sizes["cy"] = float(bottom), float(cx), float(cy)
     if kind == "cut":
-        return slant_cut(body, bottom, style["lean"], style["keep"]), bottom, sizes
+        # the planes go to the browser: the coloured model is cut by them too (pack_matrices)
+        sizes["planes"] = []
+        return slant_cut(body, bottom, style["lean"], style["keep"], sizes["planes"]), bottom, sizes
     # the tablet goes `overlap` into the chest and must lie inside it with 1.5 mm to spare at every height it
     # reaches; else it moves under the middle of the chest, else it shrinks, else the plain round base stays
     half_diag = 0.5 * float(np.hypot(sizes["tablet_w"], sizes["tablet_d"]))
@@ -1479,10 +1578,12 @@ def classic_shape(style, body, m, z_cut):
     if limit is not None:
         upper = body.trim_by_plane([0.0, 0.0, 1.0], limit)
         body = body.trim_by_plane([0.0, 0.0, -1.0], -limit)
+    planes = []
     for i, side in enumerate((-1, 1)):
         normal = [-side * float(np.cos(a)), 0.0, float(np.sin(a))]
         point = np.array([mid + side * float(at_cut[i]), 0.0, bottom])
         body = body.trim_by_plane(normal, float(np.dot(normal, point)))
+        planes.append((normal, float(np.dot(normal, point))))
     if upper is not None:
         body = body + upper
     if body.volume() < 0.4 * whole.volume():
@@ -1500,6 +1601,9 @@ def classic_shape(style, body, m, z_cut):
              "grow": float(style["grow"]), "corner": float(style["corner"]),
              "height": max(3.0, style[style["stand"]] * bust_h)}
     sizes["yaw"] = float(yaw)
+    # the planes go to the browser so the coloured model loses the arms too; not when they stop at the neck (a plane
+    # in the browser cuts all the way up and would take the hair with it)
+    sizes["planes"] = planes if limit is None else []
     sizes["under"] = under.translate([-sizes["cx"], -sizes["cy"]])
     if style["stand"] == "stem":
         # the third bust of the owner's picture: the chest is rounded underneath and narrows to a short stem. The
@@ -1598,6 +1702,7 @@ def classic_foot(M, S, extras, z_top, sizes, note):
                 flat = cs.extrude(raised + 0.3)
                 # up stays up, the extrusion points at the viewer (-Y); 0.3 mm sits inside the block
                 solid = solid + flat.rotate([90, 0, 0]).translate([0, -d / 2 + 0.3, (face_h - th) / 2])
+                name_outline(cs, _mx(("t", [sizes["cx"], sizes["cy"] - d / 2 + 0.3, z_top - h + (face_h - th) / 2]), ("x", 90)), 0.0, raised + 0.3)
                 note["name_cap_mm"] = float(th)
         except Exception as e:  # noqa: BLE001
             note["text_error"] = str(e)[:120]
@@ -1760,7 +1865,7 @@ def moved(m, T, M):
     return np.asarray(M) @ T
 
 
-def pack_matrices(T, TF, TS, seat, T_seat):
+def pack_matrices(T, TF, TS, seat, T_seat, planes=None):
     """
     What the browser needs to lay the coloured GLB exactly over the printed STL: 4x4 matrices (row-major, 16 numbers) from
     the coordinates of the input file into the output, the whole figure (full_out) and the source (source_out); and the
@@ -1777,6 +1882,19 @@ def pack_matrices(T, TF, TS, seat, T_seat):
     if seat:
         z = float((np.asarray(T) @ np.linalg.inv(T_seat) @ np.array([0.0, 0.0, float(seat), 1.0]))[2])
     pack["base_top_z"] = round(max(0.0, z), 3)
+    if planes:
+        # the planes that cut the body (in the coordinates of T_seat) in the output: [nx, ny, nz, d], kept where n.x >= d
+        Mx = np.asarray(T) @ np.linalg.inv(T_seat)
+        A = Mx[:3, :3]
+        clip = []
+        for normal, offset in planes:
+            n = np.asarray(normal, dtype=float)
+            n = n / np.linalg.norm(n)
+            p = Mx @ np.append(n * float(offset), 1.0)
+            n2 = np.linalg.inv(A).T @ n
+            n2 = n2 / np.linalg.norm(n2)
+            clip.append([round(float(c), 6) for c in n2] + [round(float(np.dot(n2, p[:3])), 4)])
+        pack["clip"] = clip
     return pack
 
 
@@ -1820,6 +1938,8 @@ def main(argv):
             target = float(argv[4])
             RT, TM = trimesh.transformations.rotation_matrix, trimesh.transformations.translation_matrix
             T, TF, TS, seat, T_seat = np.eye(4), None, None, 0.0, np.eye(4)
+            clip_planes = []
+            parts = None
             if len(argv) > 5 and argv[5] == "1":
                 # glTF is Y-up; printers are Z-up: rotate +90 degrees about X
                 T = moved(m, T, RT(np.pi / 2, [1, 0, 0]))
@@ -1953,8 +2073,10 @@ def main(argv):
             kind = str(extras.get("pedestal", "round"))
             if pet and "pedestal" in opts and m.is_watertight:
                 try:
+                    clear_names()
                     m, stood = pet_kind.stand(m, kind, extras, target)
                     ped_note.update(stood)
+                    parts = safe_parts(m, float(stood.get("seat_z", 0.0))) if "solid" in opts and extras.get("parts") else None
                     seat, T_seat = float(ped_note.pop("seat_z", 0.0)), T.copy()
                     T = moved(m, T, TM(-m.bounds[0]))
                     factor = target / float(max(m.extents))
@@ -1964,6 +2086,9 @@ def main(argv):
                         ped_note["thinnest_mm"] = round(float(ped_note["thinnest_mm"]) * factor, 1)
                     ped_note["figure_scale"] = round(factor, 4)
                     m.export(argv[3], file_type="stl")
+                    if parts is not None and len(parts) == len(m.faces) and (parts == 1).any() and (parts == 0).any():
+                        parts.tofile(argv[3] + ".parts")
+                        ped_note["parts"] = {"file": argv[3] + ".parts", "counts": [int((parts == k).sum()) for k in range(3)]}
                     ped_note.update(pack_matrices(T, TF, TS, seat, T_seat))
                     out(report(m, dict({"out": argv[3], "removed_fragments": removed}, **ped_note)))
                 except SystemExit:
@@ -2039,6 +2164,7 @@ def main(argv):
                                             "collar_top_z": float(z_base + overlap),
                                             "foot_outside_mm3": (P - B).volume(), "foot_below_cut_mm3": P.trim_by_plane([0, 0, -1], -float(at["cut_z"])).volume()}
                     except Exception as e:  # noqa: BLE001 - fall back to the plain round base
+                        sizes = None                     # its cut planes belong to a body that is not used
                         if kind == "cut":
                             m, ped, note = whole, None, {"pedestal": "none", "pedestal_error": str(e)[:120]}
                         elif kind in shaped_kinds:
@@ -2073,6 +2199,10 @@ def main(argv):
                     ped_note = {k: v for k, v in ped_note.items() if k not in ("engraved_lines", "small_text_mm", "chest_added", "chest_enough")}
                     ped_note["socle_fallback"] = "not_joined"
                 m = joined if joined is not None else trimesh.util.concatenate([m, ped])
+                clip_planes = list((sizes or {}).get("planes") or [])
+                if ped is not None and kind != "cut" and "solid" in opts and extras.get("parts"):
+                    # the figure, its base and the name, triangle by triangle: the order prints them in colours (face_parts)
+                    parts = safe_parts(m, float(ped.bounds[1][2]))
                 shift = m.bounds[0].copy()
                 seat = float(ped.bounds[1][2]) if (ped is not None and kind != "cut") else 0.0     # the highest point of the base: above it only the figure is coloured
                 if squared:
@@ -2092,7 +2222,10 @@ def main(argv):
                         value = value * factor ** 3
                     ped_note[key] = round(float(value), 3)
             m.export(argv[3], file_type="stl")
-            ped_note.update(pack_matrices(T, TF, TS, seat, T_seat))
+            if parts is not None and len(parts) == len(m.faces) and (parts == 1).any() and (parts == 0).any():
+                parts.tofile(argv[3] + ".parts")
+                ped_note["parts"] = {"file": argv[3] + ".parts", "counts": [int((parts == k).sum()) for k in range(3)]}
+            ped_note.update(pack_matrices(T, TF, TS, seat, T_seat, clip_planes))
             out(report(m, dict({"out": argv[3], "removed_fragments": removed}, **ped_note)))
         if cmd == "cad":
             lin = float(argv[4]) if len(argv) > 4 else 0.05

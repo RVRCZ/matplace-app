@@ -259,6 +259,9 @@ final class ThreeMfColorsTest extends TestCase
         // the page says the copies share the plate (not "one piece at a time", which is the tool's designs)
         $this->assertTrue($state['one_plate_required']);
         $this->assertTrue($state['painted_colors']);
+        // the box over the colours says "in the painted colours" for such a file (unticking it once printed Baku in one colour, 24 Nov 2026)
+        $this->assertTrue($state['painted_file']);
+        $this->actingAs($this->user)->get(route('farm.orders.show', $order))->assertOk()->assertSee('by_parts_painted', false);
         $this->assertGreaterThan(1, (int) $state['max_copies'], 'one piece ordered: how many would fit, not 1');
         // only the machines that change spools are on offer, the manual ones of the seed hold colours too
         $manual = FarmPrinter::where('mode', FarmPrinter::MODE_MANUAL)->whereHas('slots', fn ($q) => $q->whereNotNull('farm_color_id'))->get();

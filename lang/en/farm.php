@@ -118,6 +118,8 @@ return [
         'color' => 'Colour',
         'step_material' => 'Material and print settings',
         'by_parts' => 'Print the parts separately, each in its own colour (:n parts)',
+        'by_parts_painted' => 'Print in the painted colours (:n colours)',
+        'by_parts_painted_hint' => 'The whole model on one plate, the printer changes the spools itself; each painted colour gets its own colour below. Unticked, it prints all in one colour. Recalculate the price after a change.',
         'by_parts_hint' => 'Every part prints on its own from its own spool on the same printer. There can be as many colours as the printer has positions (today at most :max). Unticked, the parts print together on one plate in one colour. Recalculate the price after a change.',
         'step_order' => 'Order',
         'material' => 'Material',

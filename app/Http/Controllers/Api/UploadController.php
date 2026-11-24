@@ -202,6 +202,8 @@ class UploadController extends Controller
             // where that GLB lies over the STL, exactly (4x4 row-major) and the height the figure stands on its base; null for older files: the browser estimates
             'glb_matrix' => ($glbFit = $f->glbOffered() ? $f->glbFit() : null)['matrix'] ?? null,
             'glb_base_top_z' => $glbFit['base_top_z'] ?? null,
+            // the planes the body was cut by (a classic bust's arms), the coloured model is cut by them too
+            'glb_clip' => $glbFit['clip'] ?? [],
             'kind' => $f->kind(),
             'check' => ModelCheck::report($f),
             'hints' => $f->printHints(),

@@ -181,6 +181,8 @@
                     <div id="tool-download-menu" role="menu" class="absolute bottom-full right-0 z-20 mb-2 hidden w-72 rounded-xl border border-line bg-card p-1 text-sm shadow-sm"></div>
                 </div>
                 {{-- share the result: the phone's share sheet, else the link copied (Stage.shareable; docs/AN.md §12) --}}
+                {{-- the model coloured in the paint tool (file.paint_url): a figure, its pedestal and the name each in its own colour (Roman, 24 Nov 2026) --}}
+                <a id="tool-paint" href="{{ route('tools') }}" class="btn-secondary w-full gap-1.5 sm:w-auto" hidden><x-icon name="palette" class="h-4 w-4" />{{ __('paint.calc.link') }}</a>
                 <button type="button" id="tool-share" class="btn-secondary w-full gap-1.5 sm:w-auto" hidden data-copied="{{ __('toolpage.share.copied') }}"><x-icon name="share" class="h-4 w-4" />{{ __('toolpage.share') }}</button>
                 {{-- a second action beside the main one, for a page that needs to say "this is stale, do that" (Stage.secondary: the
                      figure pages after a change that needs a new model, 15 Nov 2026); the phone has its copy in the bar below --}}
