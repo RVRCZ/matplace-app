@@ -429,7 +429,10 @@ export function bootFigure(stage: Stage): void {
         let over = false;
         const showEarly = async (url: string, mm: number, turns: number): Promise<void> => {
             try {
-                if (!(await stage.previewColored(url, mm, () => !over, turns))) return;
+                // a bust or figure ordered with a base shows one under it at once (a pet's own bases differ too much to guess)
+                const ped = form ? String(new FormData(form).get('pedestal') ?? '') : '';
+                const withBase = form?.dataset.kind !== 'pet' && ped !== '' && ped !== 'none' && ped !== 'cut';
+                if (!(await stage.previewColored(url, mm, () => !over, turns, withBase))) return;
                 msg.textContent = say('figure.preparing', 'figure.generating');
                 await dots?.finish(); dots = null;
             } catch (e) { console.debug('early colour preview failed, the dots stay', e); }

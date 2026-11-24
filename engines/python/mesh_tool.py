@@ -1605,6 +1605,13 @@ def classic_shape(style, body, m, z_cut):
     # in the browser cuts all the way up and would take the hair with it)
     sizes["planes"] = planes if limit is None else []
     sizes["under"] = under.translate([-sizes["cx"], -sizes["cy"]])
+    # the shadow of the whole figure on the bed: the foot is a plate under all of it, so nothing hangs out past it (Dan,
+    # 24 Nov 2026: arms held in front left the shirt standing out over the front of the block like a spike)
+    try:
+        shadow = body.project()
+        sizes["shadow"] = shadow.translate([-sizes["cx"], -sizes["cy"]]) if shadow.area() > 0 else None
+    except Exception:  # noqa: BLE001 - the foot then covers the underside as before
+        sizes["shadow"] = None
     if style["stand"] == "stem":
         # the third bust of the owner's picture: the chest is rounded underneath and narrows to a short stem. The
         # sweep takes most of what is left of the side faces, so the shoulders run into the stem in one curve; it
@@ -1642,7 +1649,8 @@ def classic_foot(M, S, extras, z_top, sizes, note):
         if sizes["foot_kind"] == "disc":
             rim = h
             edge = 0.38 * rim                                        # the rounded top edge
-            pts = np.vstack([np.asarray(p, dtype=np.float64) for p in under.to_polygons()])
+            cover = sizes.get("shadow") or under
+            pts = np.vstack([np.asarray(p, dtype=np.float64) for p in (under + cover).to_polygons()])
             r = float(np.hypot(pts[:, 0], pts[:, 1]).max()) + edge * 0.3 + 1.0
             prof = [(0.0, 0.0), (r - bevel, 0.0), (r, bevel), (r, rim - edge)]
             prof += [(r - edge * (1 - np.cos(t)), rim - edge + edge * np.sin(t)) for t in np.linspace(0, np.pi / 2, 16)[1:]]
@@ -1680,14 +1688,23 @@ def classic_foot(M, S, extras, z_top, sizes, note):
         cham = min(3.0, 0.2 * h)
         grow = max(cham + 1.0, sizes["grow"] * sizes["chest_w"])
         grow = max(cham + 1.0, min(grow, 0.5 * (sizes["shoulders"] - sizes["chest_w"])))
-        for _ in range(6):
-            w, d = sizes["chest_w"] + 2 * grow, sizes["chest_d"] + 2 * grow
+        # the whole figure stands over the flat top: its shadow (classic_shape) as well as the underside; the block keeps
+        # its old size round the chest where nothing hangs out, and reaches out (off centre if need be) where something does
+        cover = under + sizes["shadow"] if sizes.get("shadow") is not None else under
+        sx0, sy0, sx1, sy1 = cover.bounds()
+        reach = cham + 1.0
+        for _ in range(10):
+            xl, xh = min(-sizes["chest_w"] / 2 - grow, sx0 - reach), max(sizes["chest_w"] / 2 + grow, sx1 + reach)
+            yl, yh = min(-sizes["chest_d"] / 2 - grow, sy0 - reach), max(sizes["chest_d"] / 2 + grow, sy1 + reach)
+            w, d, ox, oy = xh - xl, yh - yl, (xl + xh) / 2, (yl + yh) / 2
             rad = sizes["corner"] * min(w, d)
             outline = S.rounded_rect(M, w, d, rad).translate([-w / 2, -d / 2])
-            # the whole underside lies on the flat top, inside the chamfer
-            if (under - outline.offset(-cham - 0.3, M.JoinType.Round, 2.0, 48)).area() <= 0.01:
+            # the whole underside and the figure's shadow lie on the flat top, inside the chamfer
+            if (cover.translate([-ox, -oy]) - outline.offset(-cham - 0.3, M.JoinType.Round, 2.0, 48)).area() <= 0.01:
                 break
             grow += 1.0
+            reach += 1.0
+        sizes = dict(sizes, cx=sizes["cx"] + ox, cy=sizes["cy"] + oy)
         layers = [outline.offset(-bevel, M.JoinType.Round, 2.0, 48).extrude(0.01),
                   outline.extrude(h - cham - bevel).translate([0, 0, bevel]),
                   outline.offset(-cham, M.JoinType.Round, 2.0, 48).extrude(0.01).translate([0, 0, h - 0.01])]

@@ -6,7 +6,7 @@
  * a photo. That part is a module (param.ts, relief.ts, mold.ts, repair.ts, check.ts, figure.ts) handed this Stage.
  */
 import { fitWindow, flash, revealIfHidden } from '../site/sticky';
-import { BoxGeometry, BufferGeometry } from 'three';
+import { BoxGeometry, BufferGeometry, Matrix4 } from 'three';
 import { Viewer, Region, FacePaint, Piece, ViewName } from './viewer';
 import type { RoughConfig, Profile } from './rough';
 import { initPalette, PalettePayload } from './colors';
@@ -448,14 +448,20 @@ export class Stage {
      * STL: the viewer frames and seats it). `stillWanted` is asked after the download, a finished model may have come meanwhile.
      * Returns false when nothing was shown; the caller keeps whatever it showed before.
      */
-    async previewColored(url: string, targetMm: number, stillWanted: () => boolean, turns = 0): Promise<boolean> {
+    async previewColored(url: string, targetMm: number, stillWanted: () => boolean, turns = 0, withBase = false): Promise<boolean> {
         const color = await loadColoredModel(url);
         const fit = previewFit(color, targetMm, turns);
         if (!fit || !stillWanted()) return false;
-        const box = new BoxGeometry(fit.size[0], fit.size[1], fit.size[2]);
-        box.translate(fit.size[0] / 2, fit.size[1] / 2, fit.size[2] / 2);
+        const [w, d, h] = fit.size;
+        // a base was asked for: a low dark plate under the whole figure stands in for it, the figure on top of it
+        const bh = withBase ? Math.max(3, 0.1 * h) : 0;
+        const margin = withBase ? Math.max(2, 0.04 * Math.max(w, d)) : 0;
+        const box = new BoxGeometry(w + 2 * margin, d + 2 * margin, h + bh);
+        box.translate(w / 2, d / 2, (h + bh) / 2);
         this.show(box, {});
-        return this.viewer.showPreview(color, this.viewer.shownGeometry() ?? box, fit.matrix);
+        const base = withBase ? new BoxGeometry(w + 2 * margin, d + 2 * margin, bh).translate(w / 2, d / 2, bh / 2) : null;
+        const lifted = new Matrix4().makeTranslation(0, 0, bh).multiply(fit.matrix);
+        return this.viewer.showPreview(color, this.viewer.shownGeometry() ?? box, lifted, base);
     }
 
     /**

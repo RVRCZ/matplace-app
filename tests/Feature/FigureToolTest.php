@@ -364,8 +364,10 @@ class FigureToolTest extends TestCase
                     // a little wider and deeper than the chest above it, never a tray; a tenth of the whole height
                     $this->assertGreaterThan($r['chest_w_mm'] + 2.0, $r['block_w_mm'], $tag);
                     $this->assertGreaterThan($r['chest_d_mm'] + 2.0, $r['block_d_mm'], $tag);
-                    $this->assertLessThan(1.3 * $r['chest_w_mm'], $r['block_w_mm'], $tag);
-                    $this->assertLessThan(1.3 * $r['chest_d_mm'], $r['block_d_mm'], $tag);
+                    // a plate under the whole figure: nothing of it stands out past the block (Roman, 24 Nov 2026: the shirt
+                    // of arms held in front hung over the front like a spike); only the raised name stands out of the front
+                    $this->assertEqualsWithDelta($r['bbox']['x'], $r['block_w_mm'], 0.05, $tag.': the figure is wider than its block');
+                    $this->assertLessThanOrEqual($letter + 0.05, $r['bbox']['y'] - $r['block_d_mm'], $tag.': the figure is deeper than its block');
                     $this->assertEqualsWithDelta(0.1 * $r['bbox']['z'], $r['block_h_mm'], 0.02 * $r['bbox']['z'], $tag);
                     $this->assertEqualsWithDelta($zc, $r['block_h_mm'], 0.01, $tag);          // the block's top is the plane of the chest's flat cut
                     $this->assertSame($variant === 'named', $letters > 0, $tag);

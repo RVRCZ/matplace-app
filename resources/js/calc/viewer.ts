@@ -2,6 +2,7 @@ import {
     AmbientLight, BufferGeometry, Color, ConeGeometry, CylinderGeometry, DirectionalLight, GridHelper, Group, HemisphereLight, Line, LineBasicMaterial,
     LineSegments, Material, Mesh, MeshBasicMaterial, MeshStandardMaterial, PerspectiveCamera, Raycaster, Scene, SphereGeometry, Vector2, Vector3,
     WebGLRenderer, Box3, Object3D, Float32BufferAttribute, PlaneGeometry, EdgesGeometry, DoubleSide, Plane, RingGeometry, Matrix4,
+    BackSide, FrontSide,
 } from 'three';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
 import { mergeVertices } from 'three/examples/jsm/utils/BufferGeometryUtils.js';
@@ -176,7 +177,7 @@ export class Viewer {
      * The generator's coloured model alone, in place of a model that does not exist yet: `geom` is a box of its size that was
      * just set (kept unseen, the framing and the bed use it), `fit` the matrix of previewFit(). The next setGeometry removes it.
      */
-    showPreview(color: Object3D, geom: BufferGeometry, fit: Mat4): boolean {
+    showPreview(color: Object3D, geom: BufferGeometry, fit: Mat4, base: BufferGeometry | null = null): boolean {
         const mesh = this.mesh;
         if (!mesh || mesh.geometry !== geom) return false;
         const holder = new Group();
@@ -184,6 +185,9 @@ export class Viewer {
         holder.matrix.copy(fit);
         holder.add(color);
         mesh.add(holder);
+        // the base the printable file will stand on, in its graphite, until the file itself comes (the bust stood bare for
+        // half a minute and its base popped up later: Roman, 24 Nov 2026)
+        if (base) mesh.add(new Mesh(base, new MeshStandardMaterial({ color: 0x3a3d42, roughness: 0.85, metalness: 0 })));
         mesh.material = Viewer.HIDDEN;
         this.colored = true;
         this.previewHolder = holder;
@@ -221,11 +225,17 @@ export class Viewer {
         if (own.length) {
             const keepBelow = new Plane(new Vector3(0, 0, -1), lid);
             const world = { colour: own.map((p) => p.clone()), below: keepBelow.clone() };
-            holder.traverse((o) => {
-                const m = o as Mesh;
-                if (!m.isMesh) return;
-                (Array.isArray(m.material) ? m.material : [m.material]).forEach((x) => { x.clippingPlanes = world.colour; x.side = DoubleSide; x.needsUpdate = true; });
-            });
+            // a cut leaves the generator's shell open: looking into it one saw the inside of the shirt (Dan, 24 Nov 2026). The
+            // outside keeps its colours, the inside is drawn flat in one colour of the model, so a cut reads as a closed face
+            const shells: Mesh[] = [];
+            holder.traverse((o) => { if ((o as Mesh).isMesh) shells.push(o as Mesh); });
+            for (const m of shells) {
+                const mats = Array.isArray(m.material) ? m.material : [m.material];
+                mats.forEach((x) => { x.clippingPlanes = world.colour; x.side = FrontSide; x.needsUpdate = true; });
+                const cap = new Mesh(m.geometry, new MeshBasicMaterial({ color: Viewer.capColor(mats[0]), side: BackSide, clippingPlanes: world.colour }));
+                cap.position.copy(m.position); cap.quaternion.copy(m.quaternion); cap.scale.copy(m.scale);
+                (m.parent ?? holder).add(cap);
+            }
             // the planes in `world` follow the mesh in clipSync(); `own` / keepBelow are the truth in the file's own millimetres
             if (hasBase) {
                 const graphite = new MeshStandardMaterial({ color: 0x3a3d42, roughness: 0.85, metalness: 0, side: DoubleSide, clippingPlanes: [world.below] });
@@ -248,6 +258,28 @@ export class Viewer {
         this.previewHolder = holder;
         return true;
     }
+    /** The colour a cut face of the coloured model is drawn in: the average of its texture a shade darker, else its own colour. */
+    private static capColor(material: Material): Color {
+        const fallback = new Color(0x8a8f96);
+        try {
+            const m = material as MeshStandardMaterial;
+            const img = m.map?.image as CanvasImageSource | undefined;
+            if (img) {
+                const c = document.createElement('canvas');
+                c.width = c.height = 1;
+                const g = c.getContext('2d');
+                if (g) {
+                    g.drawImage(img, 0, 0, 1, 1);
+                    const [r, gr, b] = g.getImageData(0, 0, 1, 1).data;
+                    return new Color().setRGB(r / 255, gr / 255, b / 255).convertSRGBToLinear().multiplyScalar(0.8);
+                }
+            }
+            return m.color ? m.color.clone().multiplyScalar(0.8) : fallback;
+        } catch {
+            return fallback;   // a texture another origin lent (tainted canvas): the cut is grey
+        }
+    }
+
     /** Keeps the world-space clipping planes of the coloured model on the model's own base height while the mesh is turned or leaned. */
     private clipSync: (() => void) | null = null;
     private baseMesh: Mesh | null = null;
