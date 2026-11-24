@@ -213,6 +213,9 @@ export class Viewer {
         const holder = colorHolder(color, geom, exact);
         if (!holder) return false;
         mesh.add(holder);
+        // what the generator left loose (a paw in the air under a dog, Roman 24 Nov 2026) was cleaned out of the printable
+        // file: the colours show only what is printed
+        if (exact) Viewer.hideStrays(holder, geom, mesh);
         // the printed base is ours, not the generator's: under `top` the STL itself is drawn, solid in dark graphite, and the
         // colours are cut off there; the planes a classic bust's arms were cut by cut the colours too (clipping planes per
         // frame, the mesh may be turned or leaned). Without a base and planes nothing is cut.
@@ -367,6 +370,56 @@ export class Viewer {
             return true;
         } catch {
             return false;
+        }
+    }
+
+    /**
+     * Hides the triangles of the coloured model that lie far from the printable file (`geom`, in `root`'s millimetres): bits
+     * the generator left loose that the server cleaned away. A thickened leg or a cut keeps its colours (a few millimetres
+     * are allowed); when much would go the fit is not trusted and nothing is hidden.
+     */
+    private static hideStrays(holder: Object3D, geom: BufferGeometry, root: Object3D): void {
+        try {
+            const CELL = 4;
+            const pos = geom.getAttribute('position');
+            if (!pos) return;
+            const cells = new Set<string>();
+            for (let i = 0; i < pos.count; i++) cells.add(`${Math.floor(pos.getX(i) / CELL)},${Math.floor(pos.getY(i) / CELL)},${Math.floor(pos.getZ(i) / CELL)}`);
+            const near = (x: number, y: number, z: number): boolean => {
+                const cx = Math.floor(x / CELL); const cy = Math.floor(y / CELL); const cz = Math.floor(z / CELL);
+                for (let dx = -1; dx <= 1; dx++) for (let dy = -1; dy <= 1; dy++) for (let dz = -1; dz <= 1; dz++) if (cells.has(`${cx + dx},${cy + dy},${cz + dz}`)) return true;
+                return false;
+            };
+            root.updateMatrixWorld(true);
+            const toRoot = new Matrix4().copy(root.matrixWorld).invert();
+            const v = new Vector3();
+            const shells: Mesh[] = [];
+            holder.traverse((o) => { if ((o as Mesh).isMesh) shells.push(o as Mesh); });
+            for (const m of shells) {
+                const g = m.geometry;
+                const p = g.getAttribute('position');
+                if (!p || g.groups.length > 1) continue;   // ranges of materials would not survive a new index
+                const to = new Matrix4().multiplyMatrices(toRoot, m.matrixWorld);
+                const ok = new Uint8Array(p.count);
+                let far = 0;
+                for (let i = 0; i < p.count; i++) {
+                    v.fromBufferAttribute(p, i).applyMatrix4(to);
+                    ok[i] = near(v.x, v.y, v.z) ? 1 : 0;
+                    if (!ok[i]) far++;
+                }
+                // more than a tenth away: the fit is off, better all of it than a model with holes
+                if (far === 0 || far > 0.1 * p.count) continue;
+                const index = g.getIndex();
+                const n = index ? index.count : p.count;
+                const kept: number[] = [];
+                for (let i = 0; i + 2 < n; i += 3) {
+                    const a = index ? index.getX(i) : i; const b = index ? index.getX(i + 1) : i + 1; const c = index ? index.getX(i + 2) : i + 2;
+                    if (ok[a] || ok[b] || ok[c]) kept.push(a, b, c);
+                }
+                g.setIndex(kept);
+            }
+        } catch {
+            // the colours as they came
         }
     }
 
