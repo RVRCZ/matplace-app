@@ -2,7 +2,7 @@
 
 namespace App\Domain\Generation;
 
-use App\Jobs\ProcessModelFile;
+use App\Domain\Tools\ModelPainter;
 use App\Models\GenerationRequest;
 use App\Models\ModelFile;
 use Illuminate\Support\Facades\File;
@@ -115,6 +115,7 @@ final class PedestalChanger
             $this->normalizer->toPrintableStl($source, $abs, (float) ($req->target_mm ?: config('ai.default_target_mm', 80)), false, ['pedestal', 'solid'], array_filter([
                 'pet' => true, 'pedestal' => $type, 'name' => $name ?: null, 'dedication' => $dedication ?: null, 'name_side' => $side !== 'auto' ? $side : null, 'source_out' => $newSource,
                 'person' => $now['with_person'] ? true : null,
+                'parts' => config('engines.paint.auto', true) ? true : null,
             ]));
         } catch (\Throwable $e) {
             File::deleteDirectory(dirname($abs));
@@ -132,7 +133,7 @@ final class PedestalChanger
             'storage_path' => $rel, 'origin' => 'generated', 'origin_ref' => $f->origin_ref, 'status' => ModelFile::STATUS_UPLOADED,
             'tool_params' => ['pedestal' => $type, 'name' => $name, 'dedication' => $dedication, 'name_side' => $side] + (isset($report['thinnest_mm']) ? ['thinnest_mm' => (float) $report['thinnest_mm']] : []) + ($glbFit ? ['glb' => $glbFit] : []),
         ]);
-        ProcessModelFile::dispatch($new->id);
+        ModelPainter::process($new, $report);
 
         return $new;
     }
@@ -204,6 +205,8 @@ final class PedestalChanger
             'full_out' => $keepFull ? $newFull : null,
             // files made before the source was kept: take the old base away first
             'strip_pedestal' => ! $hasSource,
+            // every triangle's part: printed in colours without painting (ModelPainter::auto)
+            'parts' => config('engines.paint.auto', true) ? true : null,
         ]);
         $target = (float) ($req->target_mm ?: config('ai.default_target_mm', 80));
         // which matrix of the parent leads from the GLB to the file this change starts from
@@ -219,6 +222,7 @@ final class PedestalChanger
             throw new \RuntimeException('pedestal_failed');
         }
         $glbFit = $this->normalizer->glbFitFrom($this->glbOf($f), $inputKey);
+        $report = $this->normalizer->report;
 
         $new = ModelFile::create([
             'uuid' => $uuid, 'owner_user_id' => $f->owner_user_id, 'anonymous_session_id' => $f->anonymous_session_id,
@@ -226,7 +230,7 @@ final class PedestalChanger
             'storage_path' => $rel, 'origin' => 'generated', 'origin_ref' => $f->origin_ref, 'status' => ModelFile::STATUS_UPLOADED,
             'tool_params' => ['pedestal' => $pedestal['type'], 'name' => $named ? (string) ($pedestal['name'] ?? '') : '', 'dedication' => $plaque ? (string) ($pedestal['dedication'] ?? '') : '', 'sink' => $sink, 'tidy' => $tidy, 'cut_shift' => $cutShift, 'pitch' => $pitch] + ($glbFit ? ['glb' => $glbFit] : []),
         ]);
-        ProcessModelFile::dispatch($new->id);
+        ModelPainter::process($new, $report);
 
         return $new;
     }

@@ -9,10 +9,12 @@ use App\Engines\Exceptions\EngineException;
 use App\Engines\Mesh\StlFile;
 use App\Engines\Repair\PythonTool;
 use App\Jobs\PaintModel;
+use App\Jobs\ProcessModelFile;
 use App\Models\AnonymousSession;
 use App\Models\ModelFile;
 use App\Models\User;
 use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\Bus;
 use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
@@ -229,6 +231,83 @@ final class ModelPainter
         }
 
         return $r;
+    }
+
+    /**
+     * The colours a generated bust, figure or pet prints in when nobody paints it (Roman, 24 Nov 2026: "the base dark, the
+     * figure light, the name a third colour; one tick for all in one colour"). The engine told every triangle of the new
+     * STL its part (mesh_tool.face_parts: 0 figure, 1 base, 2 raised name; `<stl>.parts`, a byte each); here that becomes a
+     * painted file like one coloured by hand – origin `paint`, its own record with `auto` – made in the queue right after
+     * its source is ready (process()). The page goes to print with it; the order prints it by its colours, unticked in one.
+     * Null when the engine had no parts (no base, an old engine, the switch off) or they do not match the file.
+     *
+     * @param  array<string, mixed>  $report  the normaliser's answer (ModelNormalizer::$report)
+     */
+    public function auto(ModelFile $src, array $report): ?ModelFile
+    {
+        $parts = (string) ($report['parts']['file'] ?? '');
+        $counts = array_map('intval', (array) ($report['parts']['counts'] ?? []));
+        $triangles = array_sum($counts);
+        $ok = config('engines.paint.auto', true) && $parts !== '' && is_file($parts) && ($counts[0] ?? 0) > 0 && ($counts[1] ?? 0) > 0
+            && filesize($parts) === $triangles && $triangles <= (int) config('engines.paint.max_triangles');
+        $states = $ok ? (string) file_get_contents($parts) : '';
+        if ($parts !== '' && is_file($parts)) {
+            @unlink($parts);
+        }
+        if (! $ok) {
+            return null;
+        }
+        $palette = array_values(array_map('strtolower', (array) config('engines.paint.auto_palette')));
+        // a name only where there is one, and only when the farm has a machine with three spools: else it goes with the figure
+        $named = ($counts[2] ?? 0) > 0 && self::maxColors() >= 3 && count($palette) >= 3;
+        if (! $named) {
+            $states = str_replace("\x02", "\x00", $states);
+            $palette = array_slice($palette, 0, 2);
+        }
+        $uuid = (string) Str::uuid();
+        $dir = 'files/'.$uuid;
+        Storage::disk(ModelFile::DISK)->put($dir.'/paint/states.bin', $states);
+        $name = Str::slug(pathinfo($src->original_name, PATHINFO_FILENAME)) ?: 'model';
+        $file = ModelFile::create([
+            'uuid' => $uuid, 'owner_user_id' => $src->owner_user_id, 'anonymous_session_id' => $src->anonymous_session_id,
+            'original_name' => $name.'-barvy.3mf', 'ext' => '3mf', 'mime' => 'model/3mf', 'size_bytes' => 0, 'sha256' => '',
+            'storage_path' => $dir.'/original.3mf', 'origin' => self::KIND, 'origin_ref' => $src->uuid, 'status' => ModelFile::STATUS_UPLOADED,
+            'tool_params' => ['paint' => ['v' => self::VERSION, 'triangles' => $triangles, 'palette' => $palette, 'heights' => [], 'source' => $src->uuid, 'added' => 0, 'auto' => true]],
+        ]);
+        $src->forceFill(['tool_params' => ['auto_paint' => $uuid] + (array) $src->tool_params])->save();
+
+        return $file;
+    }
+
+    /**
+     * A generated file handed to the queue: processed, then (when the engine gave its parts) its painted twin written
+     * from it (auto()). The twin needs its source ready, so the two jobs go one after the other.
+     *
+     * @param  array<string, mixed>  $report
+     */
+    public static function process(ModelFile $file, array $report): void
+    {
+        $twin = null;
+        try {
+            $twin = app(self::class)->auto($file, $report);
+        } catch (\Throwable $e) {
+            Log::warning('The automatic colours could not be prepared', ['file' => $file->id, 'error' => $e->getMessage()]);
+        }
+        if ($twin) {
+            Bus::chain([new ProcessModelFile($file->id), new PaintModel($twin->id)])->dispatch();
+
+            return;
+        }
+        ProcessModelFile::dispatch($file->id);
+    }
+
+    /** The painted twin a generated model goes to print with (auto()), unless it failed. Null when it has none. */
+    public static function twinOf(ModelFile $f): ?ModelFile
+    {
+        $uuid = is_array($f->tool_params) ? ($f->tool_params['auto_paint'] ?? null) : null;
+        $twin = is_string($uuid) ? ModelFile::where('uuid', $uuid)->first() : null;
+
+        return $twin && $twin->status !== ModelFile::STATUS_FAILED ? $twin : null;
     }
 
     /** A model coloured here: the record it was painted by and what came of it, for the pages. Null for any other file. */

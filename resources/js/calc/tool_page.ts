@@ -279,11 +279,14 @@ export class Stage {
 
     private scaleForOrder = 1;
 
+    /** a generated model's painted twin (FileInfo.print_uuid) → the model itself, to go on with when the twin failed */
+    private plainOf = new Map<string, string>();
+
     async leave(url: string, idle?: string): Promise<void> {
         const u = new URL(url, location.href);
-        const uuid = u.searchParams.get('open');
+        const uuid0 = u.searchParams.get('open');
         const o = this.cfg.order;
-        if (!o || !uuid || u.searchParams.has('download')) { location.href = url; return; }
+        if (!o || !uuid0 || u.searchParams.has('download')) { location.href = url; return; }
         const b = this.el<HTMLButtonElement>('tool-go');
         const label = this.el('tool-go-label');
         const was = idle ?? label.textContent ?? '';
@@ -291,9 +294,19 @@ export class Stage {
         // back from the next page out of the browser's cache: the button works again
         window.addEventListener('pageshow', (e) => { if (e.persisted) { b.disabled = false; b.removeAttribute('aria-busy'); label.textContent = was; } }, { once: true });
         let why = '';
+        let uuid = uuid0;
         try {
-            // the file is processed after it is saved (seconds): the order takes a ready one
-            const info = await this.untilReady(await this.fetchFile(uuid), 40);
+            // the file is processed after it is saved (seconds): the order takes a ready one. A generated model's painted
+            // twin (its figure, base and name in colours) is written after it: waited for longer, and when it could not
+            // be made the model goes on as it is, in one colour
+            const plain = this.plainOf.get(uuid0);
+            let info = await this.untilReady(await this.fetchFile(uuid0), plain ? 120 : 40);
+            if (plain && info.status !== 'ready') {
+                uuid = plain;
+                u.searchParams.set('open', plain);
+                url = u.toString();
+                info = await this.untilReady(await this.fetchFile(plain), 40);
+            }
             if (info.status === 'ready') {
                 const csrf = document.querySelector<HTMLMetaElement>('meta[name="csrf-token"]')?.content ?? '';
                 const res = await fetch(o.store, { method: 'POST', credentials: 'same-origin', headers: { 'Content-Type': 'application/json', Accept: 'application/json', 'X-CSRF-TOKEN': csrf },
@@ -412,7 +425,10 @@ export class Stage {
         if (file.stl_url) { geom = await loadGeometryFromUrl(file.stl_url); this.show(geom, { kind: o.kind ?? file.kind ?? null, faces: o.faces ?? null, regions: o.regions ?? null }); }
         this.status({ bbox: file.bbox, pieces: (file.parts ?? []).length || 1 });
         this.fileDownloads(file, o.partLabel);
-        this.go({ href: `${this.cfg.home}?open=${file.uuid}`, disabled: false, ...(o.goLabel ? { label: o.goLabel } : {}) });
+        // a generated bust or pet goes to print painted: figure light, base dark, name gold (ModelPainter::auto); the
+        // order's tick prints it in one colour. The link to share stays the model itself
+        if (file.print_uuid) this.plainOf.set(file.print_uuid, file.uuid);
+        this.go({ href: `${this.cfg.home}?open=${file.print_uuid ?? file.uuid}`, disabled: false, ...(o.goLabel ? { label: o.goLabel } : {}) });
         this.shareable(`${this.cfg.home}?open=${file.uuid}`);
         const paint = document.getElementById('tool-paint') as HTMLAnchorElement | null;
         if (paint) { paint.hidden = !file.paint_url; if (file.paint_url) paint.href = file.paint_url; }

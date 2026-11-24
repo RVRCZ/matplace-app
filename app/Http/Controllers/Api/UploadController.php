@@ -190,6 +190,8 @@ class UploadController extends Controller
             // a model coloured here (docs/AS.md): what it was painted by; and for any model, where it can be coloured (null: not offered)
             'paint' => ModelPainter::report($f),
             'paint_url' => ModelPainter::urlFor($f, auth()->user()),
+            // a generated bust or pet goes to print painted in its parts' colours (figure, base, name): that file (ModelPainter::auto)
+            'print_uuid' => ModelPainter::twinOf($f)?->uuid,
             // lets the tool page reopen this design ("edit" from the calculator)
             'tool' => self::toolOf($f),
             // built face down (flush colours, a medal's flush motif): the preview shows it turned over, motif up (docs/AN.md §26 C)

@@ -146,11 +146,14 @@ class FigureToolTest extends TestCase
         $this->post('/api/generate', ['image' => UploadedFile::fake()->image('a.jpg'), 'kind' => 'figure', 'consent' => 1], ['Accept' => 'application/json'])->assertCreated();
         $old = ModelFile::firstOrFail();
         $old->forceFill(['created_at' => now()->subDays(45)])->save();
+        // its painted twin (ModelPainter::auto) was made with it and ages with it
+        ModelFile::where('origin_ref', $old->uuid)->update(['created_at' => now()->subDays(45)]);
         $this->post('/api/generate', ['image' => UploadedFile::fake()->image('b.jpg'), 'kind' => 'figure', 'consent' => 1], ['Accept' => 'application/json'])->assertCreated();
 
         $this->artisan('matplace:prune')->assertSuccessful();
-        $this->assertSame(1, ModelFile::count());
+        $this->assertSame(1, ModelFile::where('origin', '!=', 'paint')->count());
         $this->assertNull(ModelFile::find($old->id));
+        $this->assertSame(0, ModelFile::where('origin_ref', $old->uuid)->count(), 'the old twin went with it');
     }
 
     public function test_pedestal_choice_and_name_travel_to_the_model(): void

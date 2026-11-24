@@ -245,8 +245,12 @@ class OrderController extends Controller
                 ?? collect($offeredNow)->sortBy(fn ($c) => self::hexDistance((string) $c['hex'], (string) config('farm.figure_color.hex', '#a9713f')))->first()['id'] ?? null;
             $machine = collect(collect($colors)->firstWhere('id', $preselect)['seconds'] ?? [])->pluck('id')->push($preselect);
         }
-        if ($byParts && ! $wantedColor && ! $partWanted && count(array_filter($partHex)) >= 1 && ($near = self::nearestSet($colors, $partHex[$parts[0]] ?? null, array_values(array_map(fn ($h) => (string) ($h ?: ''), array_slice($partHex, 1)))))) {
-            // nothing chosen yet: the first colour follows the first part (the box), the other parts take the spool of that
+        // the first colour already chosen (by parts just switched on, Baku F26 order 509, 24 Nov 2026: both parts stayed gold
+        // and the preview showed one colour) keeps its spool; only the machines holding it are searched for the other parts
+        $pool = $wantedColor && $preselect !== null ? array_values(array_filter($colors, fn ($c) => $c['id'] === $preselect)) : $colors;
+        // parts named by the caller, even none of them ("every part the main colour"), are not picked again
+        if ($byParts && ! $partWanted && ($wish['parts'] ?? null) === null && count(array_filter($partHex)) >= 1 && ($near = self::nearestSet($pool, $partHex[$parts[0]] ?? null, array_values(array_map(fn ($h) => (string) ($h ?: ''), array_slice($partHex, 1)))))) {
+            // no part chosen yet: the first colour follows the first part (the box), the other parts take the spool of that
             // machine nearest to their own colour (the first colour itself counts: "the main colour")
             [$preselect, $picks, $capTo] = $near;
             $machine = collect(collect($colors)->firstWhere('id', $preselect)['seconds'] ?? [])->pluck('id')->push($preselect);
@@ -1192,7 +1196,8 @@ class OrderController extends Controller
         $partSpools = $partPlates ? FarmPrinterSlot::with(['color', 'printer'])->whereIn('id', array_filter(array_column($partPlates, 'slot_id')))->get()->keyBy('id') : collect();
         $parts = array_map(fn ($p, $i) => [
             'part' => $p['part'], 'plate' => $order->onePlate() ? 1 : $i + 1, 'label' => OrderService::partLabel($order->modelFile, (string) $p['part']),
-            'hex' => ($order->modelFile?->tool_params['part_colors'][$p['part']]['hex'] ?? null) ?: null,
+            // the colour the design names for it: a tool's part, or a painted file's colour (color_1…)
+            'hex' => ($order->modelFile?->tool_params['part_colors'][$p['part']]['hex'] ?? null) ?: ($order->modelFile ? PaintedColors::partHex($order->modelFile, (string) $p['part']) : null),
             'slot_id' => ($p['slot_id'] ?? null) ?: null, 'color_id' => ($p['color_id'] ?? null) ?: null, 'name' => $partSpools->get($p['slot_id'] ?? 0)?->color?->displayName(), 'slot_code' => $admin ? $partSpools->get($p['slot_id'] ?? 0)?->placeLabel() : null,
             'copies' => (int) ($p['copies'] ?? $order->copies), 'minutes' => $p['minutes'] ?? null, 'grams' => $p['grams'] ?? null,
             // the part's own plate for the preview, in the colour of its spool (the design's colour until one is chosen)
@@ -1221,6 +1226,8 @@ class OrderController extends Controller
             'painted_colors' => $painted,
             // a painted 3MF whether or not it is ordered in its colours: the box then says "print in the painted colours", not "parts"
             'painted_file' => PaintedColors::painted($order->modelFile),
+            // … painted by the parts of a generated bust or pet without the tool (ModelPainter::auto): "print in colours"
+            'painted_auto' => ! empty($order->modelFile?->tool_params['paint']['auto']),
             // a painted 3MF that could not print in colour: the page offers it in one colour (by parts off, recalculated)
             // "print again" makes a new order from this one (again): from the payment on
             'repeatable' => $order->repeatable(),
@@ -1241,7 +1248,9 @@ class OrderController extends Controller
             'tool_url' => $order->paid_at === null && ! $order->designer_model_id && $order->modelFile ? (UploadController::toolOf($order->modelFile)['url'] ?? null) : null,
             // … and its model grouped by piece (ToolsApiController::paramPieces, what the calculation paints by): until the
             // parts are prepared by the first slice, the preview of an order by parts shows the motif in colours with it
-            'pieces_url' => $order->paid_at === null && $order->modelFile && ! $order->hidesModelFrom($request->user()) ? (UploadController::toolOf($order->modelFile)['pieces_url'] ?? null) : null,
+            // … a painted file's too: its STL ordered by colour, the ranges named after the parts (PaintedColors::pieces)
+            'pieces_url' => $order->paid_at === null && $order->modelFile && ! $order->hidesModelFrom($request->user())
+                ? ((UploadController::toolOf($order->modelFile)['pieces_url'] ?? null) ?: (PaintedColors::pieces($order->modelFile) ? route('api.files.pieces', $order->modelFile->uuid) : null)) : null,
             // built face down: the preview shows it turned over, motif up; the print pose itself does not change (§26 C)
             'face_down' => (bool) $order->modelFile?->printsFaceDown(),
             'choosing' => $choosing,

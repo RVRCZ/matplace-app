@@ -29,6 +29,8 @@ final class ModelLibrary
     public function query(User $user, ?string $origin = null): Builder
     {
         return ModelFile::query()->where('owner_user_id', $user->id)->whereNull('deleted_at')
+            // the painted twin of a generated model (ModelPainter::auto) is how it prints, not a model of its own
+            ->where(fn (Builder $q) => $q->where('origin', '!=', 'paint')->orWhereNull('tool_params->paint->auto'))
             ->when(in_array($origin, self::ORIGINS, true), fn (Builder $q) => $q->where('origin', $origin))
             ->latest('id');
     }

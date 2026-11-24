@@ -232,7 +232,8 @@ final class OrderService
         // colours): a plate per part, every part on the first colour until the customer picks its spool
         $parts = $byParts !== null && $byParts !== $order->isByParts() ? self::designParts($order->modelFile) : [];
         if (count($parts) >= 2) {
-            $order->fill(['by_parts' => $byParts, 'part_plates' => $byParts ? $this->spoolsForParts($order->slot()->first(), $parts, []) : null, 'color_changes' => $byParts ? null : $order->color_changes]);
+            $main = $byParts ? $order->slot()->first() : null;
+            $order->fill(['by_parts' => $byParts, 'part_plates' => $byParts ? $this->spoolsForParts($main, $parts, $main ? $this->nearestForParts($main, $order->modelFile, $parts) : []) : null, 'color_changes' => $byParts ? null : $order->color_changes]);
         }
         // the parts' spools follow the first colour to its machine (the same colour there, else the first colour), and
         // the spools the page names come along – one machine's only (order 198, 20 Oct 2026: the first colour moved to
@@ -496,7 +497,12 @@ final class OrderService
         $kind = (string) $file?->origin_ref;
         $n = preg_match('/_([0-9]{1,2})$/', $part, $m) ? $m[1] : null;
         if ($file && $file->origin !== 'tool' && in_array($part, PaintedColors::partNames($file), true)) {
-            return __('edit.colors.part.color', ['n' => $n]);   // a painted upload's parts: "Barva 2" as on /tools/colors
+            // a generated bust or pet painted by its parts (ModelPainter::auto): its colour says which part it is
+            $palette = ! empty($file->tool_params['paint']['auto']) ? array_map('strtolower', (array) ($file->tool_params['paint']['palette'] ?? [])) : [];
+            $at = $palette ? array_search(strtolower((string) PaintedColors::partHex($file, $part)), $palette, true) : false;
+            $word = $at !== false ? (trans('farm.order.auto_part')[$at] ?? null) : null;
+
+            return is_string($word) ? $word : __('edit.colors.part.color', ['n' => $n]);   // a painted upload's parts: "Barva 2" as on /tools/colors
         }
         $stem = $n !== null ? substr($part, 0, -strlen($n) - 1) : $part;
         if (str_starts_with($part, 'bin_')) {
@@ -556,6 +562,42 @@ final class OrderService
         }
 
         return ['path' => $path, 'temp' => false];
+    }
+
+    /**
+     * The spools of the first colour's machine nearest to the colours the design names for its parts (a tool's part
+     * colours, a painted file's colours), within the machine's number of colours: what the parts start with when by parts
+     * is switched on. Before 24 Nov 2026 every part took the first colour (Baku, order 509: the dog and its base both gold,
+     * the preview in one colour). A part nearest to the first colour, or with no colour of its own, is left out of the map.
+     *
+     * @param  list<string>  $parts
+     * @return array<string, int> part → colour id
+     */
+    public function nearestForParts(FarmPrinterSlot $main, ?ModelFile $file, array $parts): array
+    {
+        if (! $file || count($parts) < 2) {
+            return [];
+        }
+        $main->loadMissing(['color', 'printer']);
+        $spools = collect([$main])->concat($this->secondSpools($main));
+        $limit = $main->printer->colorLimit();
+        $used = [(int) $main->farm_color_id];
+        $out = [];
+        foreach (array_slice($parts, 1) as $part) {
+            $hex = (($file->tool_params['part_colors'][$part]['hex'] ?? null) ?: PaintedColors::partHex($file, $part));
+            if (! is_string($hex) || $hex === '') {
+                continue;
+            }
+            $near = $spools->sortBy(fn (FarmPrinterSlot $s) => Palette::distance((string) $s->color?->hex, $hex))->first();
+            $id = (int) ($near?->farm_color_id ?? 0);
+            if (! $id || $id === (int) $main->farm_color_id || (! in_array($id, $used, true) && count($used) >= $limit)) {
+                continue;
+            }
+            $used[] = $id;
+            $out[$part] = $id;
+        }
+
+        return $out;
     }
 
     /**

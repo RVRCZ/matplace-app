@@ -234,6 +234,31 @@ final class PaintedColors
     }
 
     /**
+     * The painted file's STL as the parts of its order, for the order's preview before the parts are made: its STL is
+     * ordered by colour (`groups`), every range named after its part (color_1…). Null when the ranges are not exactly
+     * the printed colours (a colour merged into another, an STL that is not the painted mesh).
+     *
+     * @return list<array{name: string, tris: array{0: int, 1: int}}>|null
+     */
+    public static function pieces(ModelFile $file): ?array
+    {
+        $groups = array_values((array) (($file->colors['groups'] ?? null) ?: []));
+        $printed = array_map('strtolower', self::printed($file));
+        if (count($groups) < 2 || count($groups) !== count($printed)) {
+            return null;
+        }
+        $out = [];
+        foreach ($groups as $i => $g) {
+            if (! is_array($g) || strtolower((string) ($g['hex'] ?? '')) !== $printed[$i] || ! isset($g['from'], $g['to'])) {
+                return null;
+            }
+            $out[] = ['name' => 'color_'.($i + 1), 'tris' => [(int) $g['from'], (int) $g['to']]];
+        }
+
+        return $out;
+    }
+
+    /**
      * What the pages show of the colours: the list by area (share 0..1, merged ones with the colour they joined), the
      * preview's triangle ranges and the counts. Null for a file without colours or whose colours could not be read.
      *

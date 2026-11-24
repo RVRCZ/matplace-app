@@ -407,6 +407,8 @@ Route::prefix('api')->name('api.')->group(function () {
     Route::post('uploads', [UploadController::class, 'store'])->middleware('throttle:uploads')->name('uploads.store');
     Route::get('files/{modelFile}', [UploadController::class, 'show'])->name('files.show');
     Route::get('files/{modelFile}/model.stl', [ModelFileController::class, 'stl'])->middleware('file:stl')->name('files.stl');
+    // a painted file's model by its colours, for the order's preview before its parts are made
+    Route::get('files/{modelFile}/pieces.stl', [ModelFileController::class, 'pieces'])->middleware('file:stl')->name('files.pieces');
     // the coloured preview of a generated model (Tripo's raw.glb); 404 when there is none
     Route::get('files/{modelFile}/model.glb', [ModelFileController::class, 'glb'])->middleware('file')->name('files.glb');
     Route::get('files/{modelFile}/preview.webp', [ModelPreviewController::class, 'show'])->name('files.preview');

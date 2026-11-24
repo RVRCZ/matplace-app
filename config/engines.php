@@ -131,6 +131,10 @@ return [
         'speck_mm2' => (float) env('PAINT_SPECK_MM2', 0.5),
         'edge_mm' => 0.4,
         'timeout' => 600,
+        // a generated bust, figure or pet goes to print painted without the tool (ModelPainter::auto, Roman 24 Nov 2026):
+        // the figure light, the base dark, the raised name gold (the farm's white, black and gold)
+        'auto' => (bool) env('PAINT_AUTO', true),
+        'auto_palette' => ['#f4f4f2', '#1b1b1d', '#d4a531'],
     ],
 
     'mesh' => [

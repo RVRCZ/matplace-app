@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Api;
 
+use App\Domain\Files\PaintedColors;
 use App\Domain\Generation\BustStyles;
 use App\Domain\Generation\PedestalChanger;
 use App\Domain\Tools\ModelRepair;
@@ -169,6 +170,18 @@ class ModelFileController extends Controller
         }
 
         return response()->json(['file' => UploadController::describe($new)], 201);
+    }
+
+    /**
+     * GET /api/files/{uuid}/pieces.stl → a painted file's model with X-Pieces: [{name: color_n, tris: [from, to)}], so the
+     * order page shows it in the colours chosen before its parts are made (PaintedColors::pieces). 404 for any other file.
+     */
+    public function pieces(ModelFile $modelFile): BinaryFileResponse
+    {
+        $pieces = $modelFile->isReady() ? PaintedColors::pieces($modelFile) : null;
+        abort_unless($pieces && is_file((string) $modelFile->absoluteStlPath()), 404);
+
+        return response()->file((string) $modelFile->absoluteStlPath(), ['Content-Type' => 'model/stl', 'X-Pieces' => (string) json_encode($pieces), 'Cache-Control' => 'private, max-age=3600']);
     }
 
     /** GET /api/files/{uuid}/model.stl — normalised STL for the viewer and for "I have a printer, download". */

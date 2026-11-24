@@ -62,7 +62,7 @@ interface FarmState {
     /** the copies of one plate of parts in a grid [columns, rows] (the parts of a design with flush colours, a painted 3MF); null otherwise */
     copies_grid?: [number, number] | null;
     scale: number; raw_bbox: { x: number; y: number; z: number } | null; slot: number | null; printer: { name: string; bed: string } | null;
-    unit: string; unit_guess: { unit: string; confident: boolean } | null; second_slot?: number | null; changes?: Change[]; first_label?: string | null; first_hex?: string | null; max_colors?: number; colors_over?: { text: string; link: string; url: string | null } | null; by_parts?: boolean; parts?: Part[]; part_count?: number; one_plate?: boolean; filament_changes?: number; one_plate_required?: boolean; painted_colors?: boolean; painted_file?: boolean; offer_one_color?: boolean; repeatable?: boolean;
+    unit: string; unit_guess: { unit: string; confident: boolean } | null; second_slot?: number | null; changes?: Change[]; first_label?: string | null; first_hex?: string | null; max_colors?: number; colors_over?: { text: string; link: string; url: string | null } | null; by_parts?: boolean; parts?: Part[]; part_count?: number; one_plate?: boolean; filament_changes?: number; one_plate_required?: boolean; painted_colors?: boolean; painted_file?: boolean; painted_auto?: boolean; offer_one_color?: boolean; repeatable?: boolean;
     settings?: Record<string, number> | null; admin_overrides?: Record<string, string> | null;
     dims: { x: number; y: number; z: number } | null; warnings: string[]; orientation_changed: boolean; supports: boolean; supports_mode: string; color_change_mm: number | null; second_color: { name: string; hex: string } | null;
     minutes: number | null; grams: number | null; meters: number | null; price: Price | null; total: number | null; currency: string;
@@ -1302,9 +1302,9 @@ export function bootFarmOrder(): void {
                 show(over, !!s.colors_over);
             }
             // a painted model: ticked = in its painted colours on one plate, unticked = all one colour (the "parts" are its colours)
-            $('farm-by-parts-title')!.textContent = tr(s.painted_file ? 'farm.order.by_parts_painted' : 'farm.order.by_parts', { n: s.part_count ?? 0 });
+            $('farm-by-parts-title')!.textContent = tr(s.painted_auto ? 'farm.order.by_parts_auto' : s.painted_file ? 'farm.order.by_parts_painted' : 'farm.order.by_parts', { n: s.part_count ?? 0 });
             const hint = $('farm-by-parts-hint');
-            if (hint) hint.textContent = s.painted_file ? tr('farm.order.by_parts_painted_hint') : (hint.dataset.plain ?? '');
+            if (hint) hint.textContent = s.painted_auto ? tr('farm.order.by_parts_auto_hint') : s.painted_file ? tr('farm.order.by_parts_painted_hint') : (hint.dataset.plain ?? '');
         }
         const changed = choicesChanged();
         const reslice = $<HTMLButtonElement>('farm-reslice');

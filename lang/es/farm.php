@@ -120,6 +120,10 @@ return [
         'by_parts' => 'Imprimir las piezas por separado, cada una en su color (:n piezas)',
         'by_parts_painted' => 'Imprimir en los colores pintados (:n colores)',
         'by_parts_painted_hint' => 'El modelo entero en una placa, la impresora cambia las bobinas sola; cada color pintado recibe su color abajo. Sin marcar, se imprime todo en un color. Tras un cambio, recalcule el precio.',
+        // a generated bust or pet painted by its parts without the paint tool (ModelPainter::auto)
+        'by_parts_auto' => 'Imprimir en colores (:n colores)',
+        'by_parts_auto_hint' => 'La figura, la base y el nombre, cada uno en su color, todo en una placa: la impresora cambia las bobinas sola. Puede cambiar los colores abajo. Sin marcar, se imprime todo en un color. Tras un cambio, recalcule el precio.',
+        'auto_part' => ['Figura', 'Base', 'Nombre'],
         'by_parts_hint' => 'Cada pieza se imprime aparte desde su bobina en la misma impresora. Puede haber tantos colores como posiciones tiene la impresora (hoy como máximo :max). Sin marcar, las piezas se imprimen juntas en una placa y en un color. Tras un cambio, recalcule el precio.',
         'step_order' => 'Pedido',
         'material' => 'Material',

@@ -38,6 +38,8 @@ export interface FileInfo {
     check?: { status: string; items: { level: 'error' | 'advice' | 'ok'; code: string; params: Record<string, string> }[] };
     /** where the model can be coloured (/tools/paint?from=<uuid>, docs/AS.md); null when the tool is not offered */
     paint_url?: string | null;
+    /** a generated model goes to print as this file: painted in the colours of its figure, base and name (ModelPainter::auto) */
+    print_uuid?: string | null;
 }
 
 export interface CalcInfo {

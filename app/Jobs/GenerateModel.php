@@ -3,6 +3,7 @@
 namespace App\Jobs;
 
 use App\Domain\Generation\ModelNormalizer;
+use App\Domain\Tools\ModelPainter;
 use App\Engines\Contracts\ImageRestyler;
 use App\Engines\Contracts\ModelGenerator;
 use App\Engines\DTO\GenerationHandle;
@@ -246,7 +247,10 @@ class GenerateModel implements ShouldQueue
                 'person' => $kind === 'pet' && ! empty($req->description['with_person']) ? true : null,
                 'roughness' => $style === 'miniature' ? (int) ($req->description['roughness'] ?? 2) : null,
                 'name_side' => $kind === 'pet' ? ($req->description['name_side'] ?? null) : null,
+                // every triangle's part (figure, base, name): the model goes to print in colours without painting (ModelPainter::auto)
+                'parts' => in_array($kind, ['bust', 'figure', 'pet'], true) && config('engines.paint.auto', true) ? true : null,
             ]));
+            $normalized = $normalizer->report;
             // what was measured on a pet figurine stays with the request: the page warns about a thin leg or tail
             $measured = $kind === 'pet' ? array_intersect_key($normalizer->report, array_flip(['thinnest_mm', 'thinnest_before_mm', 'grown_mm', 'base_mm', 'pedestal', 'engraved_lines', 'stand_error', 'pet_error'])) : [];
             // the paid result stays for a week next to the file: a better normalisation can be run again without new credits
@@ -270,7 +274,8 @@ class GenerateModel implements ShouldQueue
             // the front photo of a bust or a pet waits a day beside the model for the order's videos (SourcePhotos), then goes
             app(\App\Domain\Generation\SourcePhotos::class)->hold($req, $file);
             $this->forgetPhoto($req);
-            ProcessModelFile::dispatch($file->id);
+            // processed, then painted in its parts' colours when the engine named them
+            ModelPainter::process($file, $normalized);
         } catch (\Throwable $e) {
             Log::warning('GenerateModel failed', ['id' => $req->id, 'error' => $e->getMessage()]);
             $req->update(['status' => 'failed', 'error' => mb_substr($e->getMessage(), 0, 500)]);

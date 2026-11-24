@@ -120,6 +120,10 @@ return [
         'by_parts' => 'Tisknout díly zvlášť, každý svou barvou (:n dílů)',
         'by_parts_painted' => 'Tisknout v barvách z vybarvení (:n barvy)',
         'by_parts_painted_hint' => 'Celý model na jedné podložce, tiskárna sama mění cívky; každá barva z vybarvení má svou barvu níže. Bez zaškrtnutí se vytiskne celý v jedné barvě. Po změně cenu přepočítejte.',
+        // a generated bust or pet painted by its parts without the paint tool (ModelPainter::auto)
+        'by_parts_auto' => 'Tisknout barevně (:n barvy)',
+        'by_parts_auto_hint' => 'Figura, podstavec a jméno každé ve své barvě, vše na jedné podložce – tiskárna sama mění cívky. Barvy můžete změnit níže. Bez zaškrtnutí se vytiskne celé v jedné barvě. Po změně cenu přepočítejte.',
+        'auto_part' => ['Figura', 'Podstavec', 'Jméno'],
         'by_parts_hint' => 'Každý díl se vytiskne zvlášť ze své cívky na téže tiskárně. Barev může být tolik, kolik má tiskárna pozic (dnes nejvýš :max). Bez zaškrtnutí se díly tisknou spolu na jedné podložce v jedné barvě. Po změně cenu přepočítejte.',
         'step_order' => 'Objednávka',
         'material' => 'Materiál',
