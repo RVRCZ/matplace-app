@@ -1,0 +1,17 @@
+{
+    "figure.limit": [
+        "Dnešní limit modelů zdarma (:n) je vyčerpaný.",
+        "Today's limit of free models (:n) is used up.",
+        "El límite de modelos gratuitos de hoy (:n) está agotado."
+    ],
+    "figure.limit.account": [
+        "S účtem zdarma jich máte :m denně.",
+        "With a free account you get :m a day.",
+        "Con una cuenta gratuita tiene :m al día."
+    ],
+    "figure.limit.tomorrow": [
+        "Další modely můžete vytvořit zítra.",
+        "You can make more models tomorrow.",
+        "Podrá crear más modelos mañana."
+    ]
+}

@@ -362,7 +362,7 @@
     "figure.done": "Done. The model is in the preview; the price is calculated in the next step.",
     "figure.failed": "That did not work. Your choices are still here: try again, or another photo (one subject, plain background).",
     "figure.rejected": "We cannot use this photo. We removed it, please choose another one.",
-    "figure.limit": "Today’s limit (:n) is used up. With an account you get :m models a day.",
+    "figure.limit": "Today's limit of free models (:n) is used up.",
     "figure.global_limit": "We have generated the maximum number of models today. Try tomorrow.",
     "figure.need_photo": "Choose a photo first.",
     "figure.need_consent": "The consent above the button is still missing. Tick it, or press “I agree, create”.",
@@ -3152,5 +3152,7 @@
     "keep.mail.unsubscribe": "No more e-mails, please.",
     "keep.off.title": "Done, no more e-mails",
     "keep.off.body": "We will send you nothing more about this model. The model itself stays, the link in the e-mail still works.",
-    "keep.off.home": "To matplace.com"
+    "keep.off.home": "To matplace.com",
+    "figure.limit.account": "With a free account you get :m a day.",
+    "figure.limit.tomorrow": "You can make more models tomorrow."
 }

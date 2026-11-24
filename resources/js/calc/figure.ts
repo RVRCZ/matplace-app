@@ -528,6 +528,7 @@ export function bootFigure(stage: Stage): void {
             if (overLimit(sent, cfg.maxMb)) { mark(input.dataset.view ?? '', true); msg.textContent = t('photo.too_big'); return; }
             data.set(input.name, sent);
         }
+        stage.error(null);
         working(t('figure.generating'));
         // on a phone the panel is under the viewer: the page goes up to where the model is being made
         stage.revealStage();
@@ -536,11 +537,17 @@ export function bootFigure(stage: Stage): void {
             const body = await res.json();
             if (res.status === 429) {
                 step('limit');
-                idle(t(body.error === 'global_limit' ? 'figure.global_limit' : 'figure.limit', { n: body.limit, m: body.login_limit }));
+                // said where it is seen, under the model too (Roman, 24 Nov 2026: in the panel under the button it was missed and
+                // the page looked broken); an account is offered only when it really gives more models than today's limit
+                const more = body.error !== 'global_limit' && !!cfg.register && Number(body.login_limit) > Number(body.limit);
+                const text = body.error === 'global_limit' ? t('figure.global_limit')
+                    : `${t('figure.limit', { n: body.limit })} ${say(more ? 'figure.limit.account' : 'figure.limit.tomorrow', 'figure.limit.tomorrow', { m: body.login_limit })}`;
+                idle(text);
+                stage.error(text);
                 // a visitor without an account gets more models with one: the way there is in the message itself
-                if (body.error !== 'global_limit' && cfg.register) {
+                if (more) {
                     const a = document.createElement('a');
-                    a.href = cfg.register; a.className = 'font-medium text-ink underline'; a.textContent = t('figure.limit.register');
+                    a.href = cfg.register ?? ''; a.className = 'font-medium text-ink underline'; a.textContent = t('figure.limit.register');
                     msg.append(' ', a);
                 }
                 return;

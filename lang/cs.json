@@ -362,7 +362,7 @@
     "figure.done": "Hotovo. Model je v náhledu, cenu si necháte spočítat v dalším kroku.",
     "figure.failed": "Nepovedlo se. Vaše volby zůstaly: zkuste to znovu, nebo jinou fotku (jeden objekt, světlé pozadí).",
     "figure.rejected": "Tuto fotku použít nemůžeme. Odebrali jsme ji, vyberte prosím jinou.",
-    "figure.limit": "Dnešní limit (:n) je vyčerpaný. S účtem máte :m modely denně.",
+    "figure.limit": "Dnešní limit modelů zdarma (:n) je vyčerpaný.",
     "figure.global_limit": "Dnes jsme už vygenerovali maximum modelů. Zkuste to zítra.",
     "figure.need_photo": "Nejdřív vyberte fotku.",
     "figure.need_consent": "Ještě chybí souhlas nad tlačítkem. Zaškrtněte ho, nebo stiskněte „Souhlasím a vytvořit“.",
@@ -3152,5 +3152,7 @@
     "keep.mail.unsubscribe": "Nepřeji si další e-maily.",
     "keep.off.title": "Hotovo, další e-maily nepošleme",
     "keep.off.body": "O tomto modelu vám už nic posílat nebudeme. Model sám zůstává, odkaz z e-mailu dál funguje.",
-    "keep.off.home": "Na matplace.com"
+    "keep.off.home": "Na matplace.com",
+    "figure.limit.account": "S účtem zdarma jich máte :m denně.",
+    "figure.limit.tomorrow": "Další modely můžete vytvořit zítra."
 }
