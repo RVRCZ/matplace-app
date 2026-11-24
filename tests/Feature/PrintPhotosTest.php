@@ -138,6 +138,14 @@ final class PrintPhotosTest extends TestCase
 
     public function test_the_shipped_placeholder_scenes_are_listed_for_choosing_but_never_chosen_by_default(): void
     {
+        // a folder with only the drawn stand-ins (the shipped one has the real scenes too)
+        $dir = $this->tmp.'/stand-ins';
+        mkdir($dir);
+        foreach (['shelf-demo', 'table-demo'] as $name) {
+            copy(public_path('img/scenes/'.$name.'.jpg'), $dir.'/'.$name.'.jpg');
+            copy(public_path('img/scenes/'.$name.'.json'), $dir.'/'.$name.'.json');
+        }
+        config(['farm.scenes_dir' => $dir]);
         $this->assertContains('shelf-demo', PrintPhotos::backgrounds());
         $this->assertContains('table-demo', PrintPhotos::backgrounds());
         $this->assertTrue(PrintPhotos::scenes()['shelf-demo']['placeholder']);
