@@ -3154,5 +3154,6 @@
     "keep.off.body": "No le enviaremos nada más sobre este modelo. El modelo sigue ahí y el enlace del correo sigue funcionando.",
     "keep.off.home": "A matplace.com",
     "figure.limit.account": "Con una cuenta gratuita tiene :m al día.",
-    "figure.limit.tomorrow": "Podrá crear más modelos mañana."
+    "figure.limit.tomorrow": "Podrá crear más modelos mañana.",
+    "figure.preparing.badge": "Preparamos el modelo para imprimir y su base…"
 }

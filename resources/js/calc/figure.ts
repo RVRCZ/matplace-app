@@ -434,6 +434,8 @@ export function bootFigure(stage: Stage): void {
                 const withBase = form?.dataset.kind !== 'pet' && ped !== '' && ped !== 'none' && ped !== 'cut';
                 if (!(await stage.previewColored(url, mm, () => !over, turns, withBase))) return;
                 msg.textContent = say('figure.preparing', 'figure.generating');
+                // seen on the model itself: the colours are there, the printable model and its base still to come (Roman, 24 Nov 2026)
+                if (!over) stage.busy(true, say('figure.preparing.badge', 'figure.generating'));
                 await dots?.finish(); dots = null;
             } catch (e) { console.debug('early colour preview failed, the dots stay', e); }
         };
@@ -445,6 +447,7 @@ export function bootFigure(stage: Stage): void {
             g = await fetchGeneration(g.token);
         }
         over = true;
+        stage.busy(false);
         notifyBox(null);
         // a failed model leaves the address: a reload starts from the form (kept), not from the failure
         if (!g || g.status === 'failed' || !g.file) { address(null); return idle(say('figure.failed', 'figure.failed')); }

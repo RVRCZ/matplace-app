@@ -163,7 +163,7 @@
                         </div>
                     </div>
                 </div>
-                <div id="tool-busy" class="absolute bottom-3 right-3 hidden items-center gap-1.5 rounded-full bg-card/95 px-3 py-1 text-xs text-muted shadow-sm"><x-icon name="refresh-cw" class="h-3.5 w-3.5 animate-spin" />{{ __('param.working') }}</div>
+                <div id="tool-busy" class="absolute bottom-3 right-3 hidden items-center gap-1.5 rounded-full bg-card/95 px-3 py-1 text-xs text-muted shadow-sm"><x-icon name="refresh-cw" class="h-3.5 w-3.5 animate-spin" /><span data-busy-text data-default="{{ __('param.working') }}">{{ __('param.working') }}</span></div>
             </div>
             <div id="tool-status" class="num flex min-h-10 flex-wrap items-center gap-x-2 gap-y-0.5 border-t border-line px-4 py-2 text-sm text-ink" role="status" aria-live="polite"><span class="text-muted">{{ __('toolpage.status.empty') }}</span></div>
             <dl id="param-dims" class="hidden grid-cols-1 gap-x-6 gap-y-1 border-t border-line px-4 py-2 text-sm sm:grid-cols-2" aria-live="polite"></dl>

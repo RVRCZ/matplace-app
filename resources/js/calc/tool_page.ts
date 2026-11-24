@@ -186,7 +186,16 @@ export class Stage {
         });
     }
 
-    busy(on: boolean): void { const b = this.el('tool-busy'); b.classList.toggle('hidden', !on); b.classList.toggle('flex', on); }
+    /** The spinner over the model; `text` says what is going on, larger (the bust's printable model being made under its colours). */
+    busy(on: boolean, text?: string): void {
+        const b = this.el('tool-busy');
+        b.classList.toggle('hidden', !on); b.classList.toggle('flex', on);
+        const label = b.querySelector<HTMLElement>('[data-busy-text]');
+        if (label) label.textContent = on && text ? text : (label.dataset.default ?? '');
+        const loud = on && !!text;
+        b.classList.toggle('text-sm', loud); b.classList.toggle('font-medium', loud); b.classList.toggle('text-ink', loud);
+        b.classList.toggle('px-4', loud); b.classList.toggle('py-2', loud); b.classList.toggle('text-xs', !loud);
+    }
 
     error(message: string | null): void {
         const el = this.el('tool-error');
