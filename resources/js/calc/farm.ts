@@ -863,10 +863,14 @@ export function bootFarmOrder(): void {
             if (setsBox) {
                 setsBox.innerHTML = ordered.map((t) => {
                     const on = t === current;
-                    const kinds = [...new Set(t.members.map((a) => a.kind).filter(Boolean))].join(', ');
+                    // one kind for the whole set: said once after the colours; kinds that differ go with their colour ("černá – PLA+,
+                    // bílá – PLA"): a list of kinds after the colours did not say which colour was which (Roman, 24 Nov 2026)
+                    const kindsOf = [...new Set(t.members.map((a) => a.kind).filter(Boolean))];
+                    const names = kindsOf.length > 1 ? t.members.map((a) => (a.kind ? `${a.name} – ${a.kind}` : a.name)).join(', ') : t.members.map((a) => a.name).join(', ');
+                    const kinds = kindsOf.length === 1 ? kindsOf[0] : '';
                     return `<button type="button" role="radio" aria-checked="${on}" data-set="${esc(t.key)}" class="flex flex-col gap-2 rounded-xl border bg-white p-3 text-left ${on ? 'border-action ring-2 ring-action' : 'border-slate-300'}">
                         <span class="flex flex-wrap gap-1.5">${t.members.map((a) => dot(a, 'h-7 w-7')).join('')}</span>
-                        <span class="text-xs text-slate-600">${esc(t.members.map((a) => a.name).join(', '))}${kinds ? ` · ${esc(kinds)}` : ''}</span></button>`;
+                        <span class="text-xs text-slate-600">${esc(names)}${kinds ? ` · ${esc(kinds)}` : ''}</span></button>`;
                 }).join('');
                 setsBox.querySelectorAll<HTMLButtonElement>('button[data-set]').forEach((b) => b.addEventListener('click', () => {
                     const t = sets.find((x) => x.key === b.dataset.set);
