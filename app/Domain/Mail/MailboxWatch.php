@@ -7,6 +7,7 @@ use App\Engines\Mail\Mailbox;
 use App\Engines\Mail\MailboxFailed;
 use App\Mail\NewMailAlert;
 use App\Models\MailboxAlert;
+use App\Models\OutgoingEmail;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Mail;
@@ -105,6 +106,18 @@ final class MailboxWatch
                 'received_at' => self::when($m['date'] ?? null),
             ]);
         }
+        // a draft reply for each, written before the owner is told, so the mail can link straight to it (Roman, 26 Nov 2026)
+        $out['drafted'] = 0;
+        foreach ($new as $i => $m) {
+            if ($i >= (int) config('watch.auto_draft_max', 5) || ! config('watch.auto_draft', true)) {
+                break;
+            }
+            $draft = $this->draft($m['id']);
+            if ($draft !== null) {
+                $new[$i]['draft_url'] = route('admin.emails.show', $draft->id);
+                $out['drafted']++;
+            }
+        }
         $to = (string) $this->settings->get('alert_email');
         if ($new !== [] && $to !== '') {
             Mail::to($to)->queue(new NewMailAlert($new, $this->mailbox->address()));
@@ -112,12 +125,12 @@ final class MailboxWatch
             $out['alerted'] = true;
         }
 
-        // still unread a day later: once a day, all of them in one mail
+        // still unread a day after the owner heard about it: once a day, all of them in one mail
         $limit = now()->subHours(max(1, (int) config('watch.remind_after_hours', 24)));
         $newIds = array_column($new, 'id');
-        $stale = array_values(array_filter($human, fn (array $m) => ! in_array($m['id'], $newIds, true) && ($when = self::when($m['date'] ?? null)) !== null && $when->lt($limit)));
+        $stale = array_values(array_filter($human, fn (array $m) => ! in_array($m['id'], $newIds, true)));
         if ($stale !== [] && $to !== '') {
-            $due = MailboxAlert::whereIn('message_id', array_column($stale, 'id'))
+            $due = MailboxAlert::whereIn('message_id', array_column($stale, 'id'))->whereNotNull('alerted_at')->where('alerted_at', '<', $limit)
                 ->where(fn ($q) => $q->whereNull('reminded_at')->orWhere('reminded_at', '<', $limit))->pluck('message_id')->all();
             if ($due !== []) {
                 Mail::to($to)->queue(new NewMailAlert(array_values(array_filter($stale, fn (array $m) => in_array($m['id'], $due, true))), $this->mailbox->address(), reminder: true));
@@ -131,6 +144,30 @@ final class MailboxWatch
         Cache::put(self::CACHE, ['unread_human' => count($human), 'checked_at' => now()->toIso8601String()], now()->addDay());
 
         return $out;
+    }
+
+    /**
+     * The assistant's draft reply to one message, in the language it was written in. Null when it could not be written
+     * (no AI, the message is gone, it already has a reply): the owner is told about the mail all the same.
+     */
+    private function draft(string $id): ?OutgoingEmail
+    {
+        if (OutgoingEmail::where('inbox_message_id', $id)->exists()) {
+            return null;
+        }
+        try {
+            $message = $this->mailbox->message($id);
+            if ($message === null) {
+                return null;
+            }
+            $locale = MailText::locale((string) (($message['fresh'] ?? '') ?: $message['text']));
+
+            return app(Outbox::class)->reply($message, $locale);
+        } catch (\Throwable $e) {
+            report($e);
+
+            return null;
+        }
     }
 
     public static function when(?string $date): ?Carbon

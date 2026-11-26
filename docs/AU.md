@@ -87,3 +87,30 @@ stojící frontu a zastaralý hlídač schránky, `--print` nic nepamatuje, admi
 - Kopie záloh mimo server (Hetzner Storage Box) a vypnutí hesla pro SSH, až mají ostatní zařízení klíč.
 - Druhé ověření do administrace (přihlášení správců jen přes Google), vnější hlídač dostupnosti (UptimeRobot).
 - Přístupový klíč přidaný k info@ 17. 11. – ověřit, že je Romanův.
+
+## 7. Lepší práce se schránkou (26. 11. 2026 večer)
+
+Roman: „potřebuju hlídat došlou poštu, když je tam něco důležitého od člověka, poslat hlášku na Gmail a v adminu
+navrhnout odpověď; když otevřu e-mail, nefunguje to dobře“. Ráno přišla stížnost zákaznice (F26-000194, „objednala
+jsem fenu a přišel pes, posílám fotky“): admin fotky neukázal, text byl zahlcený citovaným e-mailem a AI napsala,
+že se „fotografie k nám nedostaly“.
+
+- **Přílohy:** `GmailMailbox::parse` vrací `attachments` (i fotky vložené do textu, jak je posílají telefony),
+  `Mailbox::attachment(id, file)` jejich obsah; admin `GET /admin/emails/inbox/{id}/file/{file}`
+  (`admin.emails.inbox.file`): obrázky a PDF se otevřou v prohlížeči, ostatní se stáhne.
+- **Citace:** `App\Domain\Mail\MailText::split` odřízne citovaný e-mail (Seznam „Původní e-mail“, Gmail „Dne …
+  napsal(a):“, Outlook, řádky „>“). Admin ukazuje velkým písmem jen to, co člověk napsal; citace je sbalená.
+  `MailText::locale` odhadne jazyk (cs / es / en) pro koncept.
+- **Souvislosti:** `ReplyContext` najde objednávky jmenované ve zprávě (F26-…) a poslední zaplacené objednávky účtu
+  s adresou odesílatele; admin je ukazuje s odkazem, AI je dostává jako fakta.
+- **AI:** `Outbox::reply` posílá AI zvlášť zprávu, seznam příloh, až 4 přiložené fotky (≤ 4,5 MB, dočasné soubory
+  se hned mažou), objednávky a zkrácenou citaci; pravidla: přílohy dorazily, faktům z objednávek neodporovat, při
+  chybě na naší straně se jednou omluvit a řešení nechat potvrdit adminovi.
+- **Koncept hned:** hlídač ke každé nové lidské zprávě (nejvýš 5 za průchod, `WATCH_AUTO_DRAFT`) nechá napsat koncept
+  a v e-mailu majiteli je u zprávy odkaz „Koncept odpovědi ke schválení“; zpráva v adminu má nahoře „Přečíst a
+  odeslat“. Odchází pořád jen po schválení, jako odpověď ve vlákně.
+- **Rychlost:** `recent()` načítá hlavičky po deseti najednou (`Http::pool`), dřív stránka čekala ~10 s.
+- **Opravy hlídače:** připomenutí se počítá od chvíle, kdy majitel dostal zprávu (ne od data e-mailu – staré zprávy
+  se připomínaly hned po prvním upozornění); `matplace:health` končí kódem 0 (jinak plánovač psal ERROR do logu a
+  kontrola „Chyby v logu“ hlásila sama sebe), log kontrola ignoruje vlastní řádky hlídačů; značka zálohy je
+  `/var/lib/matplace/backup-latest` (složka záloh je jen pro roota, web ji nepřečetl).

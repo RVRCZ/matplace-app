@@ -20,7 +20,18 @@
         @if($original)
             <p class="mt-1"><strong>{{ $original['from_name'] ?: $original['from'] }}</strong> &lt;{{ $original['from'] }}&gt; · {{ $original['date'] }}</p>
             <p class="font-semibold">{{ $original['subject'] }}</p>
-            <pre class="mt-2 max-h-80 overflow-auto whitespace-pre-wrap font-sans text-xs text-slate-700">{{ $original['text'] }}</pre>
+            <div class="mt-2 max-h-80 overflow-auto whitespace-pre-wrap text-sm text-slate-800">{{ trim((string) ($original['fresh'] ?? '')) !== '' ? $original['fresh'] : $original['text'] }}</div>
+            @php $pics = array_values(array_filter($original['attachments'] ?? [], fn ($f) => str_starts_with($f['mime'], 'image/'))); @endphp
+            @if($pics)
+                <div class="mt-2 flex flex-wrap gap-2">
+                    @foreach($pics as $f)
+                        <a href="{{ route('admin.emails.inbox.file', [$original['id'], $f['id']]) }}" target="_blank" rel="noopener"><img src="{{ route('admin.emails.inbox.file', [$original['id'], $f['id']]) }}" alt="{{ $f['filename'] }}" loading="lazy" class="h-28 w-28 rounded-lg border border-slate-200 bg-white object-cover"></a>
+                    @endforeach
+                </div>
+            @endif
+            @if(trim((string) ($original['quoted'] ?? '')) !== '')
+                <details class="mt-2 text-xs text-slate-600"><summary class="cursor-pointer">Citovaný e-mail pod zprávou</summary><pre class="mt-1 max-h-60 overflow-auto whitespace-pre-wrap font-sans">{{ $original['quoted'] }}</pre></details>
+            @endif
             <a href="{{ route('admin.emails.inbox.show', $original['id']) }}" class="mt-1 inline-block text-xs underline">zpráva ve schránce</a>
         @else
             <p class="mt-1 text-xs text-slate-500">Původní zprávu se teď nepodařilo načíst; odpověď odejde ve vlákně i tak.</p>

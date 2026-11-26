@@ -73,17 +73,69 @@ final class Outbox
                 $system .= "\n---\nSubject: ".$e->subject."\n".mb_substr($e->body, 0, 1200)."\n";
             }
         }
+        $system .= "\n\nWhat the customer wrote now is under \"Message\"; an e-mail they quote under it (often one of ours) is under \"Quoted\" and is only background. "
+            .'Files they attached are listed under "Attachments": they did reach us, never say they did not. The pictures among them are shown to you; describe what you see only as far as it helps the answer. '
+            .'"Orders" are facts from our system about this customer: use them, do not contradict them. When something went wrong on our side (a different print than ordered, damage), '
+            .'apologise once, say plainly what happens next as far as the instruction allows, and otherwise that the admin will confirm the solution.';
+        $fresh = trim((string) ($message['fresh'] ?? '')) !== '' ? (string) $message['fresh'] : (string) $message['text'];
+        $quoted = trim((string) ($message['quoted'] ?? ''));
+        $files = (array) ($message['attachments'] ?? []);
+        $orders = ReplyContext::text($message['from'], $message['subject'], $message['text']);
         $user = ($instruction !== null && trim($instruction) !== '' ? 'Instruction from the admin: '.trim($instruction)."\n\n" : '')
-            .'Message from '.($message['from_name'] !== '' ? $message['from_name'].' <'.$message['from'].'>' : $message['from'])."\nSubject: ".$message['subject']."\n\nMessage:\n".mb_substr(trim($message['text']), 0, 6000);
-        $answer = $this->assistant->ask('email', $system, $user,
-            ['type' => 'object', 'properties' => ['subject' => ['type' => 'string'], 'body' => ['type' => 'string']], 'required' => ['subject', 'body'], 'additionalProperties' => false],
-            [], ['subject_type' => 'inbox_message']);
+            .'Message from '.($message['from_name'] !== '' ? $message['from_name'].' <'.$message['from'].'>' : $message['from'])."\nSubject: ".$message['subject']."\n\nMessage:\n".mb_substr(trim($fresh), 0, 6000)
+            .($files !== [] ? "\n\nAttachments:\n".implode("\n", array_map(fn (array $f) => '- '.$f['filename'].' ('.$f['mime'].')', $files)) : '')
+            .($orders !== '' ? "\n\nOrders:\n".$orders : '')
+            .($quoted !== '' ? "\n\nQuoted:\n".mb_substr($quoted, 0, 2000) : '');
+        $images = $this->pictures($message);
+        try {
+            $answer = $this->assistant->ask('email', $system, $user,
+                ['type' => 'object', 'properties' => ['subject' => ['type' => 'string'], 'body' => ['type' => 'string']], 'required' => ['subject', 'body'], 'additionalProperties' => false],
+                $images, ['subject_type' => 'inbox_message']);
+        } finally {
+            foreach ($images as $path) {
+                @unlink($path);
+            }
+        }
         $subject = (string) ($answer['subject'] ?? '');
         $subject = preg_match('/^re:/i', $subject) ? $subject : 'Re: '.($subject !== '' ? $subject : $message['subject']);
         $draft = $this->draft($message['from'], $subject, (string) ($answer['body'] ?? ''), $locale, true, $instruction);
         $draft->forceFill(['inbox_message_id' => $message['id'], 'inbox_thread_id' => $message['thread_id'], 'in_reply_to' => $message['message_id']])->save();
 
         return $draft;
+    }
+
+    /** How many attached pictures the assistant looks at, and how big each may be. */
+    public const PICTURES = 4;
+
+    public const PICTURE_BYTES = 4_500_000;
+
+    /**
+     * The attached pictures as temporary files for the assistant (the caller deletes them). A picture that cannot be
+     * fetched is left out; the reply is still written from the text.
+     *
+     * @return list<string>
+     */
+    private function pictures(array $message): array
+    {
+        $out = [];
+        foreach ((array) ($message['attachments'] ?? []) as $f) {
+            if (count($out) >= self::PICTURES || ! in_array($f['mime'] ?? '', ['image/jpeg', 'image/png', 'image/webp', 'image/gif'], true) || (int) ($f['size'] ?? 0) > self::PICTURE_BYTES) {
+                continue;
+            }
+            try {
+                $bytes = $this->mailbox->attachment((string) $message['id'], (string) $f['id']);
+            } catch (\Throwable) {
+                $bytes = null;
+            }
+            if ($bytes === null || $bytes === '' || strlen($bytes) > self::PICTURE_BYTES) {
+                continue;
+            }
+            $path = tempnam(sys_get_temp_dir(), 'mailpic');
+            file_put_contents($path, $bytes);
+            $out[] = $path;
+        }
+
+        return $out;
     }
 
     /**

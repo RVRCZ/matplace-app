@@ -2,6 +2,8 @@
 
 namespace App\Engines\Mail;
 
+use App\Domain\Mail\MailText;
+use Illuminate\Http\Client\Response;
 use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Http;
 
@@ -32,9 +34,21 @@ final class GmailMailbox implements Mailbox
     public function recent(int $max = 30, bool $unreadOnly = false): array
     {
         $list = $this->get('messages', ['q' => $unreadOnly ? 'is:unread in:inbox' : 'in:inbox', 'maxResults' => max(1, min(100, $max))]);
+        $ids = array_column((array) ($list['messages'] ?? []), 'id');
+        // the headers of all of them at once, ten requests at a time (one by one the inbox page took ten seconds)
+        $token = $this->token();
+        $bodies = [];
+        foreach (array_chunk($ids, 10) as $chunk) {
+            $responses = Http::pool(fn ($pool) => array_map(fn ($id) => $pool->as((string) $id)->timeout(20)->withToken($token)
+                ->get(self::API.'messages/'.$id.'?format=metadata&metadataHeaders=From&metadataHeaders=Subject&metadataHeaders=Date'), $chunk));
+            foreach ($chunk as $id) {
+                $r = $responses[$id] ?? null;
+                $bodies[$id] = $r instanceof Response && $r->ok() ? (array) $r->json() : $this->get('messages/'.$id, ['format' => 'metadata', 'metadataHeaders' => ['From', 'Subject', 'Date']], true);
+            }
+        }
         $out = [];
-        foreach ((array) ($list['messages'] ?? []) as $m) {
-            $msg = $this->get('messages/'.$m['id'], ['format' => 'metadata', 'metadataHeaders' => ['From', 'Subject', 'Date']]);
+        foreach ($ids as $id) {
+            $msg = $bodies[$id] ?? null;
             if (empty($msg['id'])) {
                 continue;
             }
@@ -69,11 +83,42 @@ final class GmailMailbox implements Mailbox
         if (trim($text) === '' && $html !== '') {
             $text = html_entity_decode(strip_tags((string) preg_replace(['~<br\s*/?>~i', '~</(p|div|tr|li|h[1-6])>~i', '~<style\b.*?</style>~is', '~<script\b.*?</script>~is'], ["\n", "\n", '', ''], $html)), ENT_QUOTES | ENT_HTML5, 'UTF-8');
         }
-        $text = trim((string) preg_replace("/\n{3,}/", "\n\n", str_replace("\r\n", "\n", $text)));
+        $text = MailText::tidy(str_replace("\r\n", "\n", $text));
+        $split = MailText::split($text);
 
         return ['id' => (string) $msg['id'], 'thread_id' => (string) ($msg['threadId'] ?? $msg['id']), 'from' => $from, 'from_name' => $name, 'to' => (string) ($h['to'] ?? ''),
             'subject' => (string) ($h['subject'] ?? ''), 'date' => $h['date'] ?? null, 'message_id' => (string) ($h['message-id'] ?? ''), 'text' => $text,
+            'fresh' => $split['fresh'], 'quoted' => $split['quoted'], 'attachments' => self::attachments((array) ($msg['payload'] ?? [])),
             'unread' => in_array('UNREAD', (array) ($msg['labelIds'] ?? []), true)];
+    }
+
+    public function attachment(string $messageId, string $attachmentId): ?string
+    {
+        $res = $this->get('messages/'.$messageId.'/attachments/'.$attachmentId, [], true);
+        $data = (string) ($res['data'] ?? '');
+
+        return $data === '' ? null : (string) base64_decode(strtr($data, '-_', '+/'));
+    }
+
+    /**
+     * The files of a message: photos a customer sent, PDFs, inline pictures (those count too: phones put photos inline).
+     *
+     * @return list<array{id: string, filename: string, mime: string, size: int}>
+     */
+    private static function attachments(array $payload): array
+    {
+        $out = [];
+        $id = (string) ($payload['body']['attachmentId'] ?? '');
+        $mime = strtolower((string) ($payload['mimeType'] ?? ''));
+        if ($id !== '' && ! str_starts_with($mime, 'multipart/')) {
+            $name = (string) ($payload['filename'] ?? '');
+            $out[] = ['id' => $id, 'filename' => $name !== '' ? $name : 'priloha.'.(explode('/', $mime)[1] ?? 'bin'), 'mime' => $mime, 'size' => (int) ($payload['body']['size'] ?? 0)];
+        }
+        foreach ((array) ($payload['parts'] ?? []) as $part) {
+            $out = array_merge($out, self::attachments((array) $part));
+        }
+
+        return $out;
     }
 
     public function reply(string $threadId, string $inReplyTo, string $to, string $subject, string $body): string

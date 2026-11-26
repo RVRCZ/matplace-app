@@ -33,6 +33,8 @@ class HealthWatch extends Command
             $this->line(($c['ok'] ? 'OK   ' : 'FAIL ').str_pad(HealthChecks::label($c['key']), 24).$c['message']);
         }
 
-        return in_array(false, array_column($rows, 'ok'), true) ? self::FAILURE : self::SUCCESS;
+        // a failing check is the mail's business, not the scheduler's: an exit code 1 would land in the log as an ERROR,
+        // and the "errors in the log" check would then report the check itself (26 Nov 2026, every ten minutes)
+        return $this->option('print') && in_array(false, array_column($rows, 'ok'), true) ? self::FAILURE : self::SUCCESS;
     }
 }

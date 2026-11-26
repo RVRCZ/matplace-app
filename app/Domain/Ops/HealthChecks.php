@@ -147,6 +147,9 @@ final class HealthChecks
         $hits = [];
         if (preg_match_all('/^\[(\d{4}-\d\d-\d\d \d\d:\d\d:\d\d)\] \w+\.(ERROR|CRITICAL|ALERT|EMERGENCY): (.*)$/m', $tail, $mm, PREG_SET_ORDER)) {
             foreach ($mm as $m) {
+                if (preg_match('/Scheduled command .*matplace:(health|watch-inbox)/', $m[3])) {
+                    continue;   // the watch's own exit codes: reported by their own checks, not twice
+                }
                 if (Carbon::parse($m[1], config('app.timezone'))->gte($since)) {   // the log is stamped in the app's timezone
                     $hits[] = $m[2].' '.mb_substr(trim($m[3]), 0, 140);
                 }

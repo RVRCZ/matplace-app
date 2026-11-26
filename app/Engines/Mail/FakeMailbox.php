@@ -2,6 +2,8 @@
 
 namespace App\Engines\Mail;
 
+use App\Domain\Mail\MailText;
+
 /** Tests and local work: a handful of messages in memory, replies are remembered instead of sent. */
 final class FakeMailbox implements Mailbox
 {
@@ -20,11 +22,26 @@ final class FakeMailbox implements Mailbox
         self::$available = true;
     }
 
-    /** @param  array<string, mixed>  $fields */
+    /**
+     * A message; `files` = attachment id → [filename, mime, bytes].
+     *
+     * @param  array<string, mixed>  $fields
+     */
     public static function put(string $id, array $fields): void
     {
-        self::$messages[$id] = $fields + ['id' => $id, 'thread_id' => 't-'.$id, 'from' => 'nekdo@example.com', 'from_name' => '', 'to' => 'info@matplace.com',
-            'subject' => '(bez předmětu)', 'date' => now()->toRfc2822String(), 'message_id' => '<'.$id.'@example.com>', 'text' => '', 'unread' => true];
+        $m = $fields + ['id' => $id, 'thread_id' => 't-'.$id, 'from' => 'nekdo@example.com', 'from_name' => '', 'to' => 'info@matplace.com',
+            'subject' => '(bez předmětu)', 'date' => now()->toRfc2822String(), 'message_id' => '<'.$id.'@example.com>', 'text' => '', 'unread' => true, 'files' => []];
+        $split = MailText::split((string) $m['text']);
+        $m += ['fresh' => $split['fresh'], 'quoted' => $split['quoted']];
+        $m['attachments'] = array_values(array_map(fn ($aid, $f) => ['id' => (string) $aid, 'filename' => $f[0], 'mime' => $f[1], 'size' => strlen($f[2])], array_keys($m['files']), $m['files']));
+        self::$messages[$id] = $m;
+    }
+
+    public function attachment(string $messageId, string $attachmentId): ?string
+    {
+        $this->up();
+
+        return self::$messages[$messageId]['files'][$attachmentId][2] ?? null;
     }
 
     public function available(): bool

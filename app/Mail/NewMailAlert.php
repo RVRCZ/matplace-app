@@ -46,7 +46,7 @@ class NewMailAlert extends Mailable implements ShouldQueue
                 'who' => (string) ($m['from_name'] ?? '') ?: (string) $m['from'], 'from' => (string) $m['from'],
                 'when' => $when ? $when->timezone(config('app.timezone'))->format('j. n. Y H:i') : '',
                 'subject' => (string) ($m['subject'] ?? '') ?: '(bez předmětu)', 'snippet' => Str::limit((string) ($m['snippet'] ?? ''), 300),
-                'url' => route('admin.emails.inbox.show', $m['id']),
+                'url' => route('admin.emails.inbox.show', $m['id']), 'draft_url' => $m['draft_url'] ?? null,
             ];
         }, $this->messages);
 

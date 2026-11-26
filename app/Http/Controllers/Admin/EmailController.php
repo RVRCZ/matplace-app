@@ -3,7 +3,9 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Domain\Mail\MailboxWatch;
+use App\Domain\Mail\MailText;
 use App\Domain\Mail\Outbox;
+use App\Domain\Mail\ReplyContext;
 use App\Engines\Exceptions\EngineException;
 use App\Engines\Mail\Mailbox;
 use App\Engines\Mail\MailboxFailed;
@@ -12,6 +14,7 @@ use App\Models\OutgoingEmail;
 use App\Support\Locales;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Http\Response;
 use Illuminate\Validation\Rule;
 use Illuminate\View\View;
 
@@ -68,7 +71,30 @@ class EmailController extends Controller
         }
         abort_unless($message, 404);
 
-        return view('admin.emails.inbox_show', ['message' => $message, 'drafts' => OutgoingEmail::where('inbox_message_id', $id)->latest('id')->get()]);
+        return view('admin.emails.inbox_show', ['message' => $message, 'drafts' => OutgoingEmail::where('inbox_message_id', $id)->latest('id')->get(),
+            'orders' => ReplyContext::orders($message['from'], $message['subject'], $message['text']), 'locale' => MailText::locale((string) (($message['fresh'] ?? '') ?: $message['text']))]);
+    }
+
+    /** One attached file of a message: pictures and PDFs open in the browser, anything else downloads. */
+    public function attachment(string $id, string $file, Mailbox $mailbox): Response
+    {
+        try {
+            $message = $mailbox->message($id);
+        } catch (MailboxFailed) {
+            abort(502);
+        }
+        $meta = collect($message['attachments'] ?? [])->firstWhere('id', $file);
+        abort_unless($message && $meta, 404);
+        $bytes = $mailbox->attachment($id, $file);
+        abort_if($bytes === null, 404);
+        $inline = in_array($meta['mime'], ['image/jpeg', 'image/png', 'image/webp', 'image/gif', 'application/pdf'], true);
+        $name = str_replace(['"', "\r", "\n"], '', (string) $meta['filename']);
+
+        return response($bytes, 200, [
+            'Content-Type' => $inline ? $meta['mime'] : 'application/octet-stream',
+            'Content-Disposition' => ($inline ? 'inline' : 'attachment').'; filename="'.$name.'"',
+            'X-Content-Type-Options' => 'nosniff', 'Cache-Control' => 'private, max-age=3600',
+        ]);
     }
 
     /** "Suggest a reply": the assistant drafts it, the admin reads, changes and approves (then it goes in the thread). */

@@ -23,13 +23,21 @@ interface Mailbox
     public function recent(int $max = 30, bool $unreadOnly = false): array;
 
     /**
-     * One message with its text. Null when it does not exist (any more).
+     * One message with its text. Null when it does not exist (any more). `fresh` is what the person wrote, `quoted`
+     * the e-mail they quote under it (App\Domain\Mail\MailText), `attachments` their files.
      *
-     * @return array{id: string, thread_id: string, from: string, from_name: string, to: string, subject: string, date: ?string, message_id: string, text: string, unread: bool}|null
+     * @return array{id: string, thread_id: string, from: string, from_name: string, to: string, subject: string, date: ?string, message_id: string, text: string, fresh: string, quoted: string, attachments: list<array{id: string, filename: string, mime: string, size: int}>, unread: bool}|null
      *
      * @throws MailboxFailed
      */
     public function message(string $id): ?array;
+
+    /**
+     * The bytes of one attachment of a message; null when it is gone.
+     *
+     * @throws MailboxFailed
+     */
+    public function attachment(string $messageId, string $attachmentId): ?string;
 
     /**
      * A reply in the thread of a message, as plain text, from the mailbox's own address. Returns the id of the sent message.

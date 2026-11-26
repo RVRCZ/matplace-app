@@ -14,8 +14,11 @@ return [
     'report_subjects' => ['report domain:', 'report-id:', '[preview] report', 'delivery status notification', 'undeliverable', 'mail delivery failed',
         'nedoručitelné', 'zpráva nebyla doručena'],
     'own_subjects' => ['[farm]'],
-    // a person's mail still unread after this long is mentioned once a day
+    // a person's mail still unread this long after the owner heard about it is mentioned again, once a day
     'remind_after_hours' => 24,
+    // a draft reply by the assistant for each new person's mail (at most this many per pass; the rest by hand)
+    'auto_draft' => (bool) env('WATCH_AUTO_DRAFT', true),
+    'auto_draft_max' => 5,
 
     // ── the server ───────────────────────────────────────────────────────────
     'disk_warn_percent' => 85,

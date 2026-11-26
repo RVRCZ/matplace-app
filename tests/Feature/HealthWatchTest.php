@@ -40,20 +40,22 @@ class HealthWatchTest extends TestCase
     {
         app(FarmSettings::class)->set('alert_email', 'owner@example.com');
         HealthChecks::$fake = [['key' => 'disk', 'ok' => true, 'message' => 'systém 48 %'], ['key' => 'failed_jobs', 'ok' => false, 'message' => '1 za posledních 60 min – GenerateModel: boom']];
-        $this->artisan('matplace:health')->assertExitCode(1);
+        $this->artisan('matplace:health')->assertExitCode(0);
         Mail::assertQueued(HealthAlert::class, fn (HealthAlert $m) => $m->hasTo('owner@example.com') && $m->envelope()->subject === '[hlídač] Problém: Spadlé úlohy' && $m->changes[0]['what'] === 'problem');
         Mail::assertQueuedCount(1);
         $this->assertSame(['disk' => true, 'failed_jobs' => false], HealthCheck::orderBy('key')->pluck('ok', 'key')->all());
         $this->assertNotNull(HealthCheck::where('key', 'failed_jobs')->first()->alerted_at);
         $this->assertNull(HealthCheck::where('key', 'disk')->first()->alerted_at, 'an ok check on the first run says nothing');
 
+        $this->artisan('matplace:health', ['--print' => true])->assertExitCode(1);   // only --print says it with the exit code
+
         // the same again: silence
-        $this->artisan('matplace:health')->assertExitCode(1);
+        $this->artisan('matplace:health')->assertExitCode(0);
         Mail::assertQueuedCount(1);
 
         // a day later still bad: a reminder
         HealthCheck::where('key', 'failed_jobs')->update(['alerted_at' => now()->subHours(25)]);
-        $this->artisan('matplace:health')->assertExitCode(1);
+        $this->artisan('matplace:health')->assertExitCode(0);
         Mail::assertQueuedCount(2);
         Mail::assertQueued(HealthAlert::class, fn (HealthAlert $m) => $m->changes[0]['what'] === 'still');
 
@@ -75,10 +77,10 @@ class HealthWatchTest extends TestCase
     public function test_without_an_address_the_problem_waits_for_one(): void
     {
         HealthChecks::$fake = [['key' => 'queue', 'ok' => false, 'message' => 'úloha čeká 20 min']];
-        $this->artisan('matplace:health')->assertExitCode(1);
+        $this->artisan('matplace:health')->assertExitCode(0);
         Mail::assertNothingQueued();
         app(FarmSettings::class)->set('alert_email', 'owner@example.com');
-        $this->artisan('matplace:health')->assertExitCode(1);
+        $this->artisan('matplace:health')->assertExitCode(0);
         Mail::assertQueued(HealthAlert::class, fn (HealthAlert $m) => $m->changes[0]['what'] === 'problem');
     }
 
