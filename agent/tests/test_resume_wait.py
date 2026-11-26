@@ -70,7 +70,7 @@ class ResumeWaitTest(unittest.IsolatedAsyncioTestCase):
         return agent, driver
 
     def test_the_version_and_the_limits(self):
-        self.assertEqual(__version__, "0.2.15")
+        self.assertEqual(__version__, "0.2.16")
         # the limits as shipped (setUp shortens them for the tests): a resume waits five minutes, a pause one
         self.assertEqual((REAL["RESUME_WAIT_SECONDS"], REAL["CONFIRM_WAIT_SECONDS"]), (300.0, 60.0))
 
