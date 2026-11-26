@@ -121,9 +121,9 @@ final class GmailMailbox implements Mailbox
         return $out;
     }
 
-    public function reply(string $threadId, string $inReplyTo, string $to, string $subject, string $body): string
+    public function reply(string $threadId, string $inReplyTo, string $to, string $subject, string $body, array $files = []): string
     {
-        $raw = self::raw($this->address(), $to, $subject, $body, $inReplyTo);
+        $raw = self::raw($this->address(), $to, $subject, $body, $inReplyTo, $files);
         $res = $this->post('messages/send', ['raw' => rtrim(strtr(base64_encode($raw), '+/', '-_'), '='), 'threadId' => $threadId]);
         if (empty($res['id'])) {
             throw new MailboxFailed('Gmail did not accept the reply: '.json_encode($res['error']['message'] ?? $res));
@@ -132,8 +132,13 @@ final class GmailMailbox implements Mailbox
         return (string) $res['id'];
     }
 
-    /** The reply as an RFC 822 message: plain text, in the thread of the original. */
-    public static function raw(string $from, string $to, string $subject, string $body, string $inReplyTo): string
+    /**
+     * The reply as an RFC 822 message: plain text, in the thread of the original; with files a multipart/mixed message
+     * whose first part is that text (docs/AU.md §8).
+     *
+     * @param  list<array{name: string, mime: string, path: string}>  $files
+     */
+    public static function raw(string $from, string $to, string $subject, string $body, string $inReplyTo, array $files = []): string
     {
         if (! preg_match('/^re:/i', $subject)) {
             $subject = 'Re: '.$subject;
@@ -143,15 +148,26 @@ final class GmailMailbox implements Mailbox
             'To: '.$to,
             'Subject: =?UTF-8?B?'.base64_encode($subject).'?=',
             'MIME-Version: 1.0',
-            'Content-Type: text/plain; charset=UTF-8',
-            'Content-Transfer-Encoding: quoted-printable',
         ];
         if ($inReplyTo !== '') {
             $lines[] = 'In-Reply-To: '.$inReplyTo;
             $lines[] = 'References: '.$inReplyTo;
         }
+        $text = "Content-Type: text/plain; charset=UTF-8\r\nContent-Transfer-Encoding: quoted-printable\r\n\r\n".quoted_printable_encode(str_replace("\r\n", "\n", $body));
+        $files = array_values(array_filter($files, fn (array $f) => is_file((string) ($f['path'] ?? ''))));
+        if ($files === []) {
+            return implode("\r\n", $lines)."\r\n".$text;
+        }
+        $boundary = 'mp-'.bin2hex(random_bytes(12));
+        $lines[] = 'Content-Type: multipart/mixed; boundary="'.$boundary.'"';
+        $out = implode("\r\n", $lines)."\r\n\r\n--".$boundary."\r\n".$text;
+        foreach ($files as $f) {
+            $name = '=?UTF-8?B?'.base64_encode((string) $f['name']).'?=';
+            $out .= "\r\n--".$boundary."\r\nContent-Type: ".($f['mime'] ?: 'application/octet-stream').'; name="'.$name."\"\r\nContent-Disposition: attachment; filename=\"".$name."\"\r\n"
+                ."Content-Transfer-Encoding: base64\r\n\r\n".chunk_split(base64_encode((string) file_get_contents($f['path'])), 76, "\r\n");
+        }
 
-        return implode("\r\n", $lines)."\r\n\r\n".quoted_printable_encode(str_replace("\r\n", "\n", $body));
+        return $out."\r\n--".$boundary."--\r\n";
     }
 
     public function markRead(string $id): void

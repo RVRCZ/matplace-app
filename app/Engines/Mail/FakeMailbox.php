@@ -76,10 +76,11 @@ final class FakeMailbox implements Mailbox
         return self::$messages[$id] ?? null;
     }
 
-    public function reply(string $threadId, string $inReplyTo, string $to, string $subject, string $body): string
+    public function reply(string $threadId, string $inReplyTo, string $to, string $subject, string $body, array $files = []): string
     {
         $this->up();
-        self::$replies[] = compact('threadId', 'inReplyTo', 'to', 'subject', 'body');
+        $files = array_map(fn (array $f) => $f['name'], $files);
+        self::$replies[] = compact('threadId', 'inReplyTo', 'to', 'subject', 'body', 'files');
 
         return 'sent-'.count(self::$replies);
     }

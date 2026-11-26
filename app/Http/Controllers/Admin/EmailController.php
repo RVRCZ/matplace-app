@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Admin;
 
+use App\Domain\Farm\OrderPictures;
 use App\Domain\Mail\MailboxWatch;
 use App\Domain\Mail\MailText;
 use App\Domain\Mail\Outbox;
@@ -10,13 +11,17 @@ use App\Engines\Exceptions\EngineException;
 use App\Engines\Mail\Mailbox;
 use App\Engines\Mail\MailboxFailed;
 use App\Http\Controllers\Controller;
+use App\Models\FarmOrder;
 use App\Models\OutgoingEmail;
 use App\Support\Locales;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
+use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
 use Illuminate\View\View;
+use Symfony\Component\HttpFoundation\BinaryFileResponse;
 
 /**
  * /admin/emails: e-mails the AI wrote wait here as drafts until an admin approves them (then they are sent) or
@@ -151,7 +156,71 @@ class EmailController extends Controller
             }
         }
 
-        return view('admin.emails.show', ['email' => $email, 'original' => $original]);
+        // the orders this e-mail is about: named in the message it answers, else the recipient's own (docs/AU.md §8)
+        $orders = ReplyContext::orders($email->to, (string) ($original['subject'] ?? $email->subject), (string) ($original['text'] ?? $email->body));
+        $pictures = $email->status === OutgoingEmail::STATUS_DRAFT || $email->status === OutgoingEmail::STATUS_APPROVED
+            ? $orders->mapWithKeys(fn ($o) => [$o->id => app(OrderPictures::class)->all($o, render: false)])->all() : [];
+
+        return view('admin.emails.show', ['email' => $email, 'original' => $original, 'orders' => $orders, 'pictures' => $pictures, 'kinds' => OrderPictures::KINDS]);
+    }
+
+    /** A file attached to a draft or a sent e-mail, for the admin's eyes. */
+    public function file(int $email, string $name): BinaryFileResponse
+    {
+        $email = OutgoingEmail::findOrFail($email);
+        $file = collect($email->files())->firstWhere('name', $name);
+        abort_unless($file, 404);
+
+        return response()->file($file['path'], ['Content-Type' => $file['mime'], 'Content-Disposition' => 'inline', 'X-Content-Type-Options' => 'nosniff', 'Cache-Control' => 'private, no-store']);
+    }
+
+    /** A kept picture of an order (OrderPictures), to look at before attaching it. */
+    public function orderPicture(FarmOrder $order, string $kind): BinaryFileResponse
+    {
+        abort_unless(isset(OrderPictures::KINDS[$kind]), 404);
+        $path = app(OrderPictures::class)->all($order, render: false)[$kind] ?? null;
+        abort_unless($path, 404);
+
+        return response()->file($path, ['Content-Type' => 'image/jpeg', 'Cache-Control' => 'private, max-age=600']);
+    }
+
+    /**
+     * What the admin attached, took off or asked for: order pictures (`pictures[]` = "order:kind"), files from the
+     * computer (`files[]`), names to remove (`remove[]`). Kept in the draft's own folder; the e-mail lists them.
+     */
+    private function saveFiles(Request $request, OutgoingEmail $email): ?string
+    {
+        $request->validate(['files' => ['nullable', 'array', 'max:'.OutgoingEmail::MAX_FILES], 'files.*' => ['file', 'max:'.OutgoingEmail::MAX_FILE_KB, 'mimetypes:image/jpeg,image/png,image/webp,image/gif,application/pdf'],
+            'pictures' => ['nullable', 'array'], 'pictures.*' => ['string', 'regex:/^\d+:[a-z]+$/'], 'remove' => ['nullable', 'array'], 'remove.*' => ['string', 'max:200']]);
+        $disk = Storage::disk(OutgoingEmail::FILES_DISK);
+        $list = collect((array) $email->attachments)->keyBy('name');
+        foreach ((array) $request->input('remove', []) as $name) {
+            $disk->delete($email->filesDir().'/'.basename((string) $name));
+            $list->forget(basename((string) $name));
+        }
+        $add = function (string $name, string $mime, string $from) use ($disk, $email, $list): void {
+            $name = Str::limit(trim((string) preg_replace('/[^A-Za-z0-9._-]+/', '-', Str::ascii($name)), '-') ?: 'priloha', 120, '');
+            $disk->makeDirectory($email->filesDir());
+            copy($from, $disk->path($email->filesDir().'/'.$name));
+            $list->put($name, ['name' => $name, 'mime' => $mime]);
+        };
+        foreach ((array) $request->input('pictures', []) as $pick) {
+            [$orderId, $kind] = explode(':', (string) $pick);
+            $order = FarmOrder::find((int) $orderId);
+            $path = $order && isset(OrderPictures::KINDS[$kind]) ? (app(OrderPictures::class)->all($order, render: false)[$kind] ?? null) : null;
+            if ($path) {
+                $add(($order->number ?: 'zakazka').'-'.['model' => 'model', 'source' => 'predloha', 'snapshot' => 'tiskarna', 'photo' => 'vytisk'][$kind].'.jpg', 'image/jpeg', $path);
+            }
+        }
+        foreach ((array) $request->file('files', []) as $upload) {
+            $add((string) $upload->getClientOriginalName(), (string) $upload->getMimeType(), $upload->getRealPath());
+        }
+        if ($list->count() > OutgoingEmail::MAX_FILES) {
+            return 'Nejvýš '.OutgoingEmail::MAX_FILES.' příloh.';
+        }
+        $email->forceFill(['attachments' => $list->values()->all() ?: null])->save();
+
+        return null;
     }
 
     /** Save the admin's changes; with "approve" the saved text is sent. */
@@ -163,6 +232,9 @@ class EmailController extends Controller
         }
         $data = $request->validate(['to' => ['required', 'email', 'max:190'], 'subject' => ['required', 'string', 'max:250'], 'body' => ['required', 'string', 'max:20000']]);
         $email->fill($data)->save();
+        if ($problem = $this->saveFiles($request, $email)) {
+            return back()->with('error', $problem);
+        }
         if ($request->input('action') === 'reject') {
             $outbox->reject($email, $request->user()->id);
 

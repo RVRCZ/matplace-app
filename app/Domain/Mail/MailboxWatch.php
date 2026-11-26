@@ -162,7 +162,7 @@ final class MailboxWatch
             }
             $locale = MailText::locale((string) (($message['fresh'] ?? '') ?: $message['text']));
 
-            return app(Outbox::class)->reply($message, $locale);
+            return app(Outbox::class)->reply($message, $locale, draw: true);
         } catch (\Throwable $e) {
             report($e);
 

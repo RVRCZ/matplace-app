@@ -114,3 +114,23 @@ jsem fenu a přišel pes, posílám fotky“): admin fotky neukázal, text byl z
   se připomínaly hned po prvním upozornění); `matplace:health` končí kódem 0 (jinak plánovač psal ERROR do logu a
   kontrola „Chyby v logu“ hlásila sama sebe), log kontrola ignoruje vlastní řádky hlídačů; značka zálohy je
   `/var/lib/matplace/backup-latest` (složka záloh je jen pro roota, web ji nepřečetl).
+
+## 8. Obrázky zakázky v odpovědi, odkaz na zakázku, náhled modelu pro AI (26. 11. 2026)
+
+Roman: „jde do odpovědi vkládat snímek modelu nebo fotky, nebo odkaz na model, podle kterého jsme tiskli?“ – ano,
+všechny čtyři body (přiložit, odkaz, nechat náhledy natrvalo, AI vidí náš model).
+
+- **`App\Domain\Farm\OrderPictures`**: ke každé objednávce malé JPEGy (≤ 900 px, desítky kB) ve složce zakázky
+  `keep/`: `model` (náhled modelu, jak šel do tisku – `ModelPicture` přes `advise_tool.py preview`), `source` (fotka,
+  ze které model vznikl), `snapshot` (poslední snímek kamery), `photo` (foto-box). `OrderFiles::prune` maže soubory
+  podle jmen a `keep/` nechává; `matplace:prune` před úklidem zakázky náhledy uloží (nejvýš 40 kreslení za noc).
+  Novější zdroj (např. snímek kamery během tisku) kopii obnoví.
+- **Koncept odpovědi** (`/admin/emails/{id}`): tlačítka „Vložit odkaz na zakázku“ (odkaz na stránku zakázky s tokenem,
+  otevře se bez přihlášení), sekce „Přiložit“ s náhledy obrázků zakázek (zaškrtnout) a nahráním vlastních souborů
+  (obrázky, PDF, nejvýš 6 příloh po 8 MB); „Přílohy, které odejdou“ s odebráním. Soubory konceptu jsou na disku
+  `local` v `mail-attachments/{id}/`, seznam ve sloupci `outgoing_emails.attachments`.
+- **Odeslání:** odpověď ve vlákně jde přes Gmail jako `multipart/mixed` (`GmailMailbox::raw` s `files`), vlastní
+  e-mail přes `PlainMessage` s přílohami.
+- **AI:** `Outbox::reply` k fotkám zákazníka přidá u nejvýš dvou objednávek náš náhled modelu a fotku-předlohu
+  a v textu řekne, který obrázek je který („porovnej, když zákazník píše, že výtisk neodpovídá“). Hlídač kreslí chybějící
+  náhled modelu (`draw: true`), tlačítko v adminu bere jen to, co už je uložené (web nečeká 90 s).

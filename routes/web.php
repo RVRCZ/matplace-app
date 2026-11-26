@@ -709,6 +709,8 @@ Route::middleware(['auth', 'role:admin'])->prefix('admin')->name('admin.')->grou
     Route::get('/health', [AdminHealthController::class, 'index'])->name('health');
     Route::post('/health/run', [AdminHealthController::class, 'run'])->middleware('throttle:10,1,admin-health')->name('health.run');
     Route::get('/emails/{email}', [AdminEmailController::class, 'show'])->whereNumber('email')->name('emails.show');
+    Route::get('/emails/{email}/file/{name}', [AdminEmailController::class, 'file'])->whereNumber('email')->where('name', '[A-Za-z0-9._-]+')->name('emails.file');
+    Route::get('/emails/order/{order}/picture/{kind}', [AdminEmailController::class, 'orderPicture'])->where('kind', '[a-z]+')->name('emails.order_picture');
     Route::post('/emails/{email}', [AdminEmailController::class, 'update'])->whereNumber('email')->name('emails.update');
 });
 

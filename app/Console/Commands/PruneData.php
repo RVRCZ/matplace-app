@@ -5,6 +5,8 @@ namespace App\Console\Commands;
 use App\Domain\Account\ModelLibrary;
 use App\Domain\Farm\OrderFiles;
 use App\Domain\Farm\OrderFlow;
+use App\Domain\Farm\OrderPictures;
+use App\Domain\Generation\SourcePhotos;
 use App\Domain\Intake\IntakeService;
 use App\Domain\Tools\Artwork;
 use App\Jobs\BuildFarmTimelapse;
@@ -111,7 +113,7 @@ class PruneData extends Command
         // as long as the frames: it goes with them, or (an order that never had frames) after the same number of days
         $sources = 0;
         foreach (glob(Storage::disk(ModelFile::DISK)->path('files').'/*/source_hold.*') ?: [] as $held) {
-            if (filemtime($held) < time() - \App\Domain\Generation\SourcePhotos::HOLD_HOURS * 3600) {
+            if (filemtime($held) < time() - SourcePhotos::HOLD_HOURS * 3600) {
                 $sources++;
                 $dry || @unlink($held);
             }
@@ -176,7 +178,13 @@ class PruneData extends Command
         $orderFiles = app(OrderFiles::class);
         $pruned = 0;
         $bytes = 0;
+        $pictures = app(OrderPictures::class);
+        $drawn = 0;
         foreach ($orderFiles->closed() as $order) {
+            // the small pictures first (docs/AU.md §8): the model is drawn from the print STL that is about to go
+            if (! $dry && ! $order->filesPruned()) {
+                $pictures->all($order, render: $drawn++ < 40);
+            }
             $size = $orderFiles->prune($order, $dry);
             if ($size === null) {
                 continue;

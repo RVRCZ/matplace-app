@@ -2,6 +2,7 @@
 
 namespace App\Domain\Mail;
 
+use App\Domain\Farm\OrderPictures;
 use App\Engines\Ai\Assistant;
 use App\Engines\Mail\Mailbox;
 use App\Mail\PlainMessage;
@@ -59,7 +60,7 @@ final class Outbox
      *
      * @param  array{id: string, thread_id: string, from: string, from_name: string, subject: string, text: string, message_id: string}  $message
      */
-    public function reply(array $message, string $locale = Locales::DEFAULT, ?string $instruction = null): OutgoingEmail
+    public function reply(array $message, string $locale = Locales::DEFAULT, ?string $instruction = null, bool $draw = false): OutgoingEmail
     {
         $language = ['cs' => 'Czech', 'en' => 'English', 'es' => 'Spanish'][$locale] ?? 'Czech';
         $examples = OutgoingEmail::whereNotNull('inbox_thread_id')->where('status', OutgoingEmail::STATUS_SENT)->latest('sent_at')->limit(self::EXAMPLES)->get();
@@ -86,13 +87,29 @@ final class Outbox
             .($files !== [] ? "\n\nAttachments:\n".implode("\n", array_map(fn (array $f) => '- '.$f['filename'].' ('.$f['mime'].')', $files)) : '')
             .($orders !== '' ? "\n\nOrders:\n".$orders : '')
             .($quoted !== '' ? "\n\nQuoted:\n".mb_substr($quoted, 0, 2000) : '');
-        $images = $this->pictures($message);
+        $temporary = $this->pictures($message);
+        // then our own pictures of the orders (docs/AU.md §8): the model as we printed it, the photo it was made from
+        $ours = [];
+        $labels = [];
+        foreach (ReplyContext::orders($message['from'], $message['subject'], $message['text'])->take(2) as $order) {
+            $kept = app(OrderPictures::class)->all($order, render: $draw);
+            foreach (['model' => 'our picture of the model we printed', 'source' => 'the photo the customer gave us to make the model from'] as $kind => $label) {
+                if (isset($kept[$kind]) && count($temporary) + count($ours) < self::PICTURES + 2) {
+                    $ours[] = $kept[$kind];
+                    $labels[] = $order->number.': '.$label;
+                }
+            }
+        }
+        if ($temporary !== [] || $ours !== []) {
+            $user .= "\n\nPictures shown to you, in this order: ".($temporary !== [] ? count($temporary).' attached by the customer' : 'none attached by the customer')
+                .($labels !== [] ? '; then '.implode('; ', $labels) : '').'. Compare them when the customer says the print differs from what they ordered.';
+        }
         try {
             $answer = $this->assistant->ask('email', $system, $user,
                 ['type' => 'object', 'properties' => ['subject' => ['type' => 'string'], 'body' => ['type' => 'string']], 'required' => ['subject', 'body'], 'additionalProperties' => false],
-                $images, ['subject_type' => 'inbox_message']);
+                array_merge($temporary, $ours), ['subject_type' => 'inbox_message']);
         } finally {
-            foreach ($images as $path) {
+            foreach ($temporary as $path) {
                 @unlink($path);
             }
         }
@@ -152,10 +169,10 @@ final class Outbox
         $email->forceFill(['status' => OutgoingEmail::STATUS_APPROVED, 'approved_by' => $adminId, 'error' => null])->save();
         try {
             if ($email->isReply()) {
-                $this->mailbox->reply((string) $email->inbox_thread_id, (string) $email->in_reply_to, $email->to, $email->subject, $email->body);
+                $this->mailbox->reply((string) $email->inbox_thread_id, (string) $email->in_reply_to, $email->to, $email->subject, $email->body, $email->files());
                 $this->mailbox->markRead((string) $email->inbox_message_id);
             } else {
-                Mail::to($email->to)->locale($email->locale)->send(new PlainMessage($email->subject, $email->body, $email->id));
+                Mail::to($email->to)->locale($email->locale)->send(new PlainMessage($email->subject, $email->body, $email->id, $email->files()));
             }
             $email->forceFill(['status' => OutgoingEmail::STATUS_SENT, 'sent_at' => now()])->save();
         } catch (\Throwable $e) {

@@ -40,11 +40,14 @@ interface Mailbox
     public function attachment(string $messageId, string $attachmentId): ?string;
 
     /**
-     * A reply in the thread of a message, as plain text, from the mailbox's own address. Returns the id of the sent message.
+     * A reply in the thread of a message, as plain text, from the mailbox's own address, with `files` attached
+     * (list of [name, mime, path]). Returns the id of the sent message.
+     *
+     * @param  list<array{name: string, mime: string, path: string}>  $files
      *
      * @throws MailboxFailed
      */
-    public function reply(string $threadId, string $inReplyTo, string $to, string $subject, string $body): string;
+    public function reply(string $threadId, string $inReplyTo, string $to, string $subject, string $body, array $files = []): string;
 
     /** @throws MailboxFailed */
     public function markRead(string $id): void;

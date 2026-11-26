@@ -4,6 +4,7 @@ namespace App\Mail;
 
 use Illuminate\Bus\Queueable;
 use Illuminate\Mail\Mailable;
+use Illuminate\Mail\Mailables\Attachment;
 use Illuminate\Mail\Mailables\Content;
 use Illuminate\Mail\Mailables\Envelope;
 use Illuminate\Mail\Mailables\Headers;
@@ -17,7 +18,15 @@ class PlainMessage extends Mailable
 {
     use Queueable, SerializesModels;
 
-    public function __construct(public string $title, public string $text, public ?int $outgoingId = null) {}
+    /** @param  list<array{name: string, mime: string, path: string}>  $files  attached as they are (docs/AU.md §8) */
+    public function __construct(public string $title, public string $text, public ?int $outgoingId = null, public array $files = []) {}
+
+    /** @return list<Attachment> */
+    public function attachments(): array
+    {
+        return array_values(array_map(fn (array $f) => Attachment::fromPath($f['path'])->as($f['name'])->withMime($f['mime']),
+            array_filter($this->files, fn (array $f) => is_file($f['path']))));
+    }
 
     public function envelope(): Envelope
     {
