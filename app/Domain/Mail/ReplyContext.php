@@ -3,6 +3,7 @@
 namespace App\Domain\Mail;
 
 use App\Models\FarmOrder;
+use App\Models\GenerationRequest;
 use App\Models\User;
 use Illuminate\Support\Collection;
 
@@ -37,9 +38,22 @@ final class ReplyContext
             $o->paid_at ? 'zaplaceno '.$o->paid_at->timezone(config('app.timezone'))->format('j. n. Y') : null,
             $o->shipped_at ? 'odesláno '.$o->shipped_at->timezone(config('app.timezone'))->format('j. n. Y') : null,
             $o->packeta_barcode ? 'zásilka '.$o->packeta_barcode : null,
+            ($wish = self::wish($o)) !== null ? 'přání k modelu: „'.$wish.'“' : null,
         ]);
 
         return implode(' · ', $parts);
+    }
+
+    /** What the customer asked to change on the photo when the model was made (docs/AU.md §9), null when nothing. */
+    public static function wish(FarmOrder $o): ?string
+    {
+        $file = $o->modelFile;
+        if (! $file || $file->origin !== 'generated' || ! $file->origin_ref) {
+            return null;
+        }
+        $wish = trim((string) (GenerationRequest::where('token', $file->origin_ref)->first()?->description['wish'] ?? ''));
+
+        return $wish !== '' ? $wish : null;
     }
 
     /** The orders as text for the assistant; '' when none. */

@@ -3,6 +3,7 @@
 namespace App\Jobs;
 
 use App\Domain\Generation\ModelNormalizer;
+use App\Domain\Generation\SourcePhotos;
 use App\Domain\Tools\ModelPainter;
 use App\Engines\Contracts\ImageRestyler;
 use App\Engines\Contracts\ModelGenerator;
@@ -43,7 +44,14 @@ class GenerateModel implements ShouldQueue
      * they are what breaks off a print.
      */
     public const CARTOON_PROMPT = 'Turn this pet into a cute stylized cartoon character figurine: big head, large friendly eyes, simplified rounded shapes, '
-        .'thick sturdy legs and tail, smooth surface, full body, same pose and breed, plain white background, 3D toy look';
+        .'thick sturdy legs and tail, smooth surface, full body, same pose and breed, plain white background, 3D toy look. '.self::KEEP_SEX;
+
+    /**
+     * Said to every redraw of an animal (docs/AU.md §9): the image model drew male genitals on a female dog that had none on
+     * the photo (order F26-000194 "Sára", 26 Nov 2026), and the print came out as a male.
+     */
+    public const KEEP_SEX = 'Keep the sex of the animal exactly as on the photo: never add, enlarge or invent genitals; where the belly between the hind legs is not clearly visible, '
+        .'show it plain and neutral.';
 
     /**
      * What the photo of a pet becomes before a generator without its own clean-up (Meshy) makes the model: the animal
@@ -51,7 +59,7 @@ class GenerateModel implements ShouldQueue
      */
     public const CLEAN_PROMPT = 'Photorealistic photo of exactly this same animal, unchanged: same breed, same coat pattern and colours, same pose, same proportions. '
         .'Show the whole animal alone, complete from head to paws and tail. Remove every person, hand, leg, shoe, leash, furniture, cushion, blanket and other object; '
-        .'where something covered a part of the animal, restore that part naturally. Plain white studio background, soft even light, no shadow on the ground, no text.';
+        .'where something covered a part of the animal, restore that part naturally. Plain white studio background, soft even light, no shadow on the ground, no text. '.self::KEEP_SEX;
 
     /**
      * The same for a portrait (Roman, 14 Nov 2026: "budeme muset čistit i bustu"): the person alone, the face untouched.
@@ -84,7 +92,7 @@ class GenerateModel implements ShouldQueue
         .'Remove the leash (Roman, 15 Nov 2026: the photo is cleaned anyway, and a leash is the thinnest thing of the print), the background, every other person, '
         .'all furniture (a bench, a chair, a sofa), objects on the ground and in the hands, text and logos; the hand that held the leash rests naturally; '
         .'where something covered a part of the person or of the animal, restore that part naturally with the same clothing and the same coat. '
-        .'Plain white studio background, soft even light, no shadow on the ground.';
+        .'Plain white studio background, soft even light, no shadow on the ground. '.self::KEEP_SEX;
 
     public function __construct(public readonly int $requestId) {}
 
@@ -135,17 +143,43 @@ class GenerateModel implements ShouldQueue
             $restyler = $this->restyler($generator);
             // the cartoon is drawn of whatever was sent; a realistic pet or a bust is cleaned only when one photo is all there is
             // (the redrawn picture replaces the photos, and the other sides say more than a clean front)
+            // the customer's wish (docs/AU.md §9), read by WishReader into one English instruction: it is why every photo is
+            // redrawn, the several sides too (each with the same words; the sides keep the shape the generator needs)
+            $wish = trim((string) ($req->description['wish_en'] ?? ''));
+            $photos = $req->type === 'image' ? count($req->photoPaths()) : 0;
+            $clean = fn () => match (true) {
+                $kind === 'bust' => self::CLEAN_BUST_PROMPT,
+                $kind === 'figure' => self::CLEAN_FIGURE_PROMPT,
+                ! empty($req->description['with_person']) => self::CLEAN_PET_OWNER_PROMPT,
+                default => self::CLEAN_PROMPT,
+            };
             $redraw = match (true) {
                 $style === 'cartoon' => self::CARTOON_PROMPT,
-                in_array($kind, ['pet', 'bust', 'figure'], true) && $req->type === 'image' && count($req->photoPaths()) <= 1 && $this->cleansPhoto($generator) => match (true) {
-                    $kind === 'bust' => self::CLEAN_BUST_PROMPT,
-                    $kind === 'figure' => self::CLEAN_FIGURE_PROMPT,
-                    ! empty($req->description['with_person']) => self::CLEAN_PET_OWNER_PROMPT,
-                    default => self::CLEAN_PROMPT,
-                },
+                in_array($kind, ['pet', 'bust', 'figure'], true) && $photos >= 1 && ($photos === 1 || $wish !== '') && $this->cleansPhoto($generator) => $clean(),
                 default => null,
             };
-            if (! $req->external_id && $redraw && $restyler && empty($req->description['stage'])) {
+            if ($redraw !== null && $wish !== '') {
+                $redraw .= ' The customer also asks for this change: '.$wish.' Make exactly that change and keep everything else as described above.';
+            }
+            $sides = $redraw !== null && $wish !== '' && $photos > 1 && $style !== 'cartoon';
+            if ($sides && ! $req->external_id && $restyler && empty($req->description['stage'])) {
+                // every side redrawn with the same words, all at once; the model waits for all of them
+                $tasks = [];
+                foreach ($req->photoPaths() as $view => $rel) {
+                    $tasks[$view] = $restyler->restyle(Storage::disk('local')->path((string) $rel), $redraw)->externalId;
+                }
+                $req->update(['external_id' => 'sides', 'engine' => 'tripo-image', 'status' => 'running', 'cost_cents' => 5 * count($tasks),
+                    'description' => ['stage' => 'images', 'image_tasks' => $tasks] + $req->description]);
+            }
+            if (($req->description['stage'] ?? null) === 'images' && $restyler) {
+                if (! $this->sidesDrawn($req, $restyler)) {
+                    $this->waitOrGiveUp($req);
+
+                    return;
+                }
+                $req->refresh();
+            }
+            if (! $sides && ! $req->external_id && $redraw && $restyler && empty($req->description['stage'])) {
                 // first task: the photo redrawn (as a cartoon figure, or as the animal alone)
                 $handle = $restyler->restyle(Storage::disk('local')->path((string) $req->image_path), $redraw);
                 $req->update(['external_id' => $handle->externalId, 'engine' => $handle->engine, 'status' => 'running',
@@ -274,7 +308,7 @@ class GenerateModel implements ShouldQueue
             $req->update(['status' => 'done', 'progress' => 100, 'result_model_file_id' => $file->id] + ($measured ? ['description' => $measured + $req->description] : []));
             GenerationReady::sendFor($req);   // "send me the result": the one mail with the link, if the visitor asked for it
             // the front photo of a bust or a pet waits a day beside the model for the order's videos (SourcePhotos), then goes
-            app(\App\Domain\Generation\SourcePhotos::class)->hold($req, $file);
+            app(SourcePhotos::class)->hold($req, $file);
             $this->forgetPhoto($req);
             // processed, then painted in its parts' colours when the engine named them
             ModelPainter::process($file, $normalized);
@@ -313,6 +347,58 @@ class GenerateModel implements ShouldQueue
             return;
         }
         $this->release(5);
+    }
+
+    /**
+     * The sides redrawn one by one with the customer's wish (docs/AU.md §9). True when every side has its answer: the drawn
+     * ones then take the place of the photos (the front, or the first drawn side when the front failed, is the main
+     * picture); when none could be drawn, the model is made of the photos as they were. False while some are still drawn.
+     */
+    private function sidesDrawn(GenerationRequest $req, ImageRestyler $restyler): bool
+    {
+        $d = (array) $req->description;
+        $done = (array) ($d['image_done'] ?? []);
+        $failed = (array) ($d['image_failed'] ?? []);
+        $progress = [];
+        foreach ((array) ($d['image_tasks'] ?? []) as $view => $id) {
+            if (isset($done[$view]) || isset($failed[$view])) {
+                continue;
+            }
+            $drawn = $restyler->pollImage(new GenerationHandle('tripo-image', (string) $id));
+            if ($drawn->state === GenerationStatus::DONE && is_file((string) $drawn->previewPath)) {
+                $rel = 'photos/figures/'.Str::uuid().'.png';
+                Storage::disk('local')->put($rel, (string) file_get_contents((string) $drawn->previewPath));
+                @unlink((string) $drawn->previewPath);
+                $done[$view] = $rel;
+            } elseif ($drawn->state === GenerationStatus::FAILED) {
+                $failed[$view] = (string) $drawn->error;
+            } else {
+                $progress[] = (int) $drawn->progress;
+            }
+        }
+        $req->update(['description' => ['image_done' => $done, 'image_failed' => $failed] + $d]);
+        if ($progress !== []) {
+            $req->update(['progress' => max((int) $req->progress, min(30, (int) round(min($progress) * 0.3)))]);
+
+            return false;
+        }
+        $rest = array_diff_key((array) $req->description, array_flip(['stage', 'image_tasks', 'image_done', 'image_failed']));
+        if ($done === []) {
+            Log::warning('No side could be redrawn with the wish, the model is made of the photos as they are', ['id' => $req->id, 'failed' => $failed]);
+            $req->update(['external_id' => null, 'progress' => 30, 'description' => ['stage' => 'model', 'clean_failed' => implode('; ', $failed)] + $rest]);
+
+            return true;
+        }
+        $front = $done['front'] ?? reset($done);
+        $views = array_intersect_key($done, array_flip(['left', 'back', 'right']));
+        if (! isset($done['front'])) {
+            $views = [];   // without its front the sides are not a set the generator can place: the one drawn picture alone
+        }
+        Storage::disk('local')->delete(array_values(array_diff($req->photoPaths(), array_values($done))));
+        $req->update(['image_path' => $front, 'views' => $views ?: null, 'external_id' => null, 'progress' => 30,
+            'description' => ['stage' => 'model'] + ($failed !== [] ? ['clean_failed' => implode('; ', $failed)] : []) + $rest]);
+
+        return true;
     }
 
     /** Personal photos (figures, busts) are not kept: delete the files and the paths once the run is over. */

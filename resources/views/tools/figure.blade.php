@@ -49,6 +49,7 @@
         @endif
 
         @include('tools._figure_photos')
+        @include('tools._figure_wish', ['placeholder' => __('figure.wish.ph')])
         <span id="figure-tips-by-kind" hidden data-bust="{{ __('figure.photo_tips') }}" data-figure="{{ __('figure.photo_tips.figure') }}"></span>
     </x-tool-section>
 

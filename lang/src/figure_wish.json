@@ -1,0 +1,24 @@
+{
+    "figure.wish": ["Chcete něco upravit?", "Anything to change?", "¿Quiere cambiar algo?"],
+    "figure.wish.optional": ["nepovinné", "optional", "opcional"],
+    "figure.wish.hint": [
+        "Napište, co má být jinak než na fotce – upravíme podle toho fotku a z ní uděláme model. Jméno patří do pole pro podstavec.",
+        "Say what should differ from the photo – we adjust the photo and make the model from it. The name goes in the base field.",
+        "Escriba qué debe ser distinto de la foto: ajustamos la foto y hacemos el modelo con ella. El nombre va en el campo de la base."
+    ],
+    "figure.wish.ph": [
+        "Např.: bez brýlí, s úsměvem, zavřená pusa, bez čepice",
+        "E.g.: no glasses, smiling, mouth closed, no cap",
+        "P. ej.: sin gafas, sonriendo, boca cerrada, sin gorra"
+    ],
+    "pet.wish.ph": [
+        "Např.: je to fena, uši nahoru, bez obojku, ocas dolů",
+        "E.g.: she is a female, ears up, no collar, tail down",
+        "P. ej.: es hembra, orejas arriba, sin collar, cola abajo"
+    ],
+    "figure.wish.rejected": [
+        "Tohle přání neumíme splnit. Napište, co má na zvířeti nebo osobě vypadat jinak (např. uši, výraz, obojek, brýle).",
+        "We cannot do this wish. Say what should look different on the animal or person (ears, expression, collar, glasses).",
+        "No podemos cumplir este deseo. Indique qué debe verse distinto en el animal o la persona (orejas, expresión, collar, gafas)."
+    ]
+}

@@ -68,6 +68,7 @@
         <label class="lbl">{{ __('pet.name') }}<input name="pedestal_name" maxlength="24" class="field" placeholder="{{ __('pet.name_ph') }}" autocomplete="off">
             <span class="mt-1 block text-xs font-normal text-muted">{{ __('pet.name.first') }}</span>
         </label>
+        @include('tools._figure_wish', ['placeholder' => __('pet.wish.ph')])
     </x-tool-section>
 
     <x-tool-section id="style" :title="__('toolpage.section.style')">

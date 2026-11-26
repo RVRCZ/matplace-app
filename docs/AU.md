@@ -134,3 +134,25 @@ všechny čtyři body (přiložit, odkaz, nechat náhledy natrvalo, AI vidí ná
 - **AI:** `Outbox::reply` k fotkám zákazníka přidá u nejvýš dvou objednávek náš náhled modelu a fotku-předlohu
   a v textu řekne, který obrázek je který („porovnej, když zákazník píše, že výtisk neodpovídá“). Hlídač kreslí chybějící
   náhled modelu (`draw: true`), tlačítko v adminu bere jen to, co už je uložené (web nečeká 90 s).
+
+## 9. Přání k fotce u busty a mazlíčka (26. 11. 2026)
+
+Roman: „lidi nahrávají špatné fotky, přidat textové pole, aby doplnili, co chtějí, třeba pohlaví zvířete, a model se
+přizpůsobí“. Zjištění na zakázce F26-000194 „Sára“: na původní fotce je fena, ale čištění fotky (Seedream přes Tripo)
+**přimalovalo samčí znak** a model vyšel jako pes.
+
+- **Pole „Chcete něco upravit?“** (`tools/_figure_wish`) na `/tools/figure` a `/tools/pet-figurine`, nepovinné, ≤ 300 znaků.
+- **`App\Domain\Generation\WishReader`** (AI, druh `wish`): slova zákazníka → jeden krátký anglický pokyn pro obrázkový
+  model, nebo odmítnutí s větou v jazyce stránky (cizí obličej / slavná osoba, jiné zvíře nebo plemeno, nahota, násilí,
+  značky a postavy, text na figurce – jméno je na podstavci –, cokoli, co se netýká vzhledu). Čte se **před** uložením
+  fotek: odmítnutí = 422 `wish_rejected` s `message`, nic se neuloží ani nezaplatí. Bez AI se model udělá jako dřív
+  a slova zůstanou v `description.wish` s `wish_unread`.
+- **`GenerateModel`**: s přáním se fotka čistí vždy a k pokynu se přidá „The customer also asks for this change: …“.
+  Víc fotek s přáním (Roman: varianta A) = každá strana se překreslí zvlášť stejnými slovy (`stage=images`,
+  `image_tasks`, `sidesDrawn()`), 5 kreditů za stranu; povedené strany nahradí fotky, bez povedené přední strany se
+  použije jen první povedený obrázek, bez žádné povedené se model dělá z fotek, jak byly. Bez přání se víc fotek dál
+  nečistí (boční pohledy jsou pro tvar cennější než čisté pozadí).
+- **`GenerateModel::KEEP_SEX`** ve všech pokynech pro zvíře (čištění, s majitelem, kreslený): pohlaví podle fotky,
+  nikdy nepřidávat genitálie. Ověřeno naostro na fotce Sáry od jezera: nové čištění dává fenu (obrázky na Romanově
+  ploše `sara-porovnani/`).
+- Přání je vidět u objednávky v e-mailové schránce (`ReplyContext`: „přání k modelu: …“) a dostává ho i AI při odpovědi.

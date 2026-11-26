@@ -3155,5 +3155,11 @@
     "keep.off.home": "Na matplace.com",
     "figure.limit.account": "S účtem zdarma jich máte :m denně.",
     "figure.limit.tomorrow": "Další modely můžete vytvořit zítra.",
-    "figure.preparing.badge": "Připravujeme model k tisku a podstavec…"
+    "figure.preparing.badge": "Připravujeme model k tisku a podstavec…",
+    "figure.wish": "Chcete něco upravit?",
+    "figure.wish.optional": "nepovinné",
+    "figure.wish.hint": "Napište, co má být jinak než na fotce – upravíme podle toho fotku a z ní uděláme model. Jméno patří do pole pro podstavec.",
+    "figure.wish.ph": "Např.: bez brýlí, s úsměvem, zavřená pusa, bez čepice",
+    "pet.wish.ph": "Např.: je to fena, uši nahoru, bez obojku, ocas dolů",
+    "figure.wish.rejected": "Tohle přání neumíme splnit. Napište, co má na zvířeti nebo osobě vypadat jinak (např. uši, výraz, obojek, brýle)."
 }

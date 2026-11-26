@@ -3155,5 +3155,11 @@
     "keep.off.home": "A matplace.com",
     "figure.limit.account": "Con una cuenta gratuita tiene :m al día.",
     "figure.limit.tomorrow": "Podrá crear más modelos mañana.",
-    "figure.preparing.badge": "Preparamos el modelo para imprimir y su base…"
+    "figure.preparing.badge": "Preparamos el modelo para imprimir y su base…",
+    "figure.wish": "¿Quiere cambiar algo?",
+    "figure.wish.optional": "opcional",
+    "figure.wish.hint": "Escriba qué debe ser distinto de la foto: ajustamos la foto y hacemos el modelo con ella. El nombre va en el campo de la base.",
+    "figure.wish.ph": "P. ej.: sin gafas, sonriendo, boca cerrada, sin gorra",
+    "pet.wish.ph": "P. ej.: es hembra, orejas arriba, sin collar, cola abajo",
+    "figure.wish.rejected": "No podemos cumplir este deseo. Indique qué debe verse distinto en el animal o la persona (orejas, expresión, collar, gafas)."
 }

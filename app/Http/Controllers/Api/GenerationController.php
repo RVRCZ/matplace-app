@@ -6,7 +6,9 @@ use App\Domain\Generation\BustStyles;
 use App\Domain\Generation\GenerationService;
 use App\Domain\Generation\PedestalChanger;
 use App\Domain\Generation\QuotaExceeded;
+use App\Domain\Generation\WishReader;
 use App\Domain\Intake\IntakeDesign;
+use App\Engines\Exceptions\EngineException;
 use App\Engines\Vision\VisionDescriber;
 use App\Http\Controllers\Controller;
 use App\Models\GenerationRequest;
@@ -70,6 +72,8 @@ class GenerationController extends Controller
             'pedestal_name' => ['nullable', 'string', 'max:24'],
             'pedestal_dedication' => ['nullable', 'string', 'max:40'],
             'target_mm' => ['nullable', 'integer', 'min:5', 'max:1000'],
+            // what the customer wants changed on the photo (docs/AU.md §9): read by the assistant before anything is stored
+            'wish' => ['nullable', 'string', 'max:'.WishReader::MAX],
             // the box must be ticked; a signed-in customer who ticked it before (users.photo_consent_at) needs no tick again, except for a
             // photo with a person in it (the pet with its owner), whose consent is a different one and is given every time
             'consent' => $request->hasFile('image') && ! ($request->user()?->photo_consent_at && ! ($request->input('kind') === 'pet' && $request->input('with_person') === '1')) ? ['accepted'] : ['nullable'],
@@ -79,6 +83,22 @@ class GenerationController extends Controller
         // a ticked box of a signed-in customer is remembered with the account (not for a person's photo: that consent is not a general one)
         if ($user && $request->hasFile('image') && $request->boolean('consent') && ! (($data['kind'] ?? null) === 'pet' && ($data['with_person'] ?? '0') === '1')) {
             $user->forceFill(['photo_consent_at' => now()])->save();
+        }
+
+        // the wish first: a refused one costs the customer no photo check and no generation
+        $wish = [];
+        if ($request->hasFile('image') && trim((string) ($data['wish'] ?? '')) !== '') {
+            try {
+                $read = app(WishReader::class)->read((string) $data['wish'], (string) $data['kind'], app()->getLocale());
+                if (! $read['ok']) {
+                    return response()->json(['error' => 'wish_rejected', 'message' => $read['reason'] !== '' ? $read['reason'] : __('figure.wish.rejected')], 422);
+                }
+                $wish = ['wish' => trim((string) $data['wish']), 'wish_en' => $read['instruction']];
+            } catch (EngineException $e) {
+                // the assistant is down: the model is made as before, the words stay with the request for the admin
+                Log::warning('The wish could not be read, the model is made without it', ['error' => mb_substr($e->getMessage(), 0, 200)]);
+                $wish = ['wish' => trim((string) $data['wish']), 'wish_unread' => true];
+            }
         }
 
         try {
@@ -127,9 +147,9 @@ class GenerationController extends Controller
                         'type' => $plain,
                         'name' => in_array($plain, PedestalChanger::NAMED, true) ? ($data['pedestal_name'] ?? null) : null,
                         'dedication' => in_array($plain, PedestalChanger::DEDICATED, true) ? ($data['pedestal_dedication'] ?? null) : null,
-                    ], array_diff_key($stored, ['front' => 1]), $pet ? ['style' => $style, 'roughness' => $style === 'miniature' ? (int) ($data['roughness'] ?? 2) : null, 'name_side' => ($data['name_side'] ?? 'auto') !== 'auto' ? $data['name_side'] : null,
+                    ], array_diff_key($stored, ['front' => 1]), ($pet ? ['style' => $style, 'roughness' => $style === 'miniature' ? (int) ($data['roughness'] ?? 2) : null, 'name_side' => ($data['name_side'] ?? 'auto') !== 'auto' ? $data['name_side'] : null,
                         // the consent of this request is the one for a person in the figure (what the page showed with the choice)
-                        'with_person' => $withPerson ? true : null, 'consent_kind' => $withPerson ? 'person' : null] : []);
+                        'with_person' => $withPerson ? true : null, 'consent_kind' => $withPerson ? 'person' : null] : []) + $wish);
                 } catch (QuotaExceeded $e) {
                     $disk->delete(array_values($stored));
                     throw $e;
