@@ -209,6 +209,8 @@ class UploadController extends Controller
             'glb_base_top_z' => $glbFit['base_top_z'] ?? null,
             // the planes the body was cut by (a classic bust's arms), the coloured model is cut by them too
             'glb_clip' => $glbFit['clip'] ?? [],
+            // the steps of a pet base under paws that stood higher: drawn as the base, not in the animal's colours
+            'glb_risers' => $glbFit['risers'] ?? [],
             'kind' => $f->kind(),
             'check' => ModelCheck::report($f),
             'hints' => $f->printHints(),

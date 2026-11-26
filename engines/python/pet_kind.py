@@ -186,6 +186,73 @@ def _profiled(M, outline, ped_h, tall):
     return body, r, foot
 
 
+def _centre(m):
+    """Where the weight of the figure lies, seen from above (x, y)."""
+    try:
+        if m.is_watertight and abs(float(m.volume)) > 1e-6:
+            return np.asarray(m.center_mass[:2], dtype=float)
+    except Exception:  # noqa: BLE001 - the middle of the surface is close enough
+        pass
+    return np.asarray(m.vertices[:, :2].mean(0), dtype=float)
+
+
+def _inside(pts, p, inset=0.0):
+    """Is the point `p` inside the convex hull of `pts` (2D), at least `inset` mm from its edge?"""
+    from scipy.spatial import ConvexHull
+    try:
+        hull = ConvexHull(pts)
+    except Exception:  # noqa: BLE001 - a line of points holds nothing
+        return False
+    return bool((hull.equations[:, :2] @ p + hull.equations[:, 2] <= -inset).all())
+
+
+def raised_feet(m, z0, h, above):
+    """
+    The paws that stand higher than the others: the animal on the photo had them on a step, a box, a stone (Roman, 26 Nov
+    2026: a dog with its front paws on a white cube came out with them in the air, the base under the hind paws only, and
+    it tipped over). The generator keeps the pose and leaves the box out.
+
+    A paw is the bottom of a leg: seen from above, the lowest place of the figure within a tenth of its size round it.
+    Only bottoms in the lower third of the figure count (a belly, a hanging tail lie higher), and only those over `above`
+    (the ones lower down already stand on the base). Returns [(level, points xy)] from the lowest up.
+    """
+    from scipy import ndimage
+    import trimesh
+    size = float(max(m.extents))
+    pitch = max(1.0, size / 120.0)
+    # the vertices and points spread over the surface: a coarse mesh (a box for a leg) has its corners only
+    try:
+        spread, _ = trimesh.sample.sample_surface_even(m, 40000, radius=0.5 * pitch, seed=1)
+    except Exception:  # noqa: BLE001 - the vertices alone are enough for a generated (dense) mesh
+        spread = np.zeros((0, 3))
+    v = np.vstack([m.vertices, spread])
+    xy0 = v[:, :2].min(0)
+    ij = np.floor((v[:, :2] - xy0) / pitch).astype(int)
+    n = ij.max(0) + 1
+    minz = np.full(n, np.inf)
+    np.minimum.at(minz, (ij[:, 0], ij[:, 1]), v[:, 2])
+    filled = np.where(np.isfinite(minz), minz, 1e9)
+    R = max(3, int(round(0.08 * size / pitch)))
+    yy, xx = np.mgrid[-R:R + 1, -R:R + 1]
+    lowest = ndimage.minimum_filter(filled, footprint=(xx ** 2 + yy ** 2) <= R * R, mode="constant", cval=1e9)
+    top = z0 + 0.35 * h
+    bottom = np.isfinite(minz) & (minz <= lowest + max(0.8, 0.01 * size)) & (minz <= top)
+    labels, count = ndimage.label(ndimage.binary_dilation(bottom) & (filled <= top))
+    cell = labels[ij[:, 0], ij[:, 1]]
+    feet = []
+    for k in range(1, count + 1):
+        mine = (labels == k) & bottom
+        if not mine.any():
+            continue
+        level = float(minz[mine].min())
+        if level <= above:
+            continue
+        pts = v[(cell == k) & (v[:, 2] <= level + 0.12 * h)][:, :2]
+        if len(pts) >= 3:
+            feet.append((level, pts))
+    return sorted(feet, key=lambda f: f[0])
+
+
 def stand(m, kind, extras, target):
     """
     The base under the paws: one body with the figure. Returns (mesh, note).
@@ -197,6 +264,9 @@ def stand(m, kind, extras, target):
     flank and a compact one in front. The paws sink a millimetre into the base, so an uneven sole never shows.
     "none" is no base at all (Roman, 17 Oct 2026): the figure stands on its own paws, their soles cut flat by at most
     1 mm so they sit on the bed. It prints with supports and tips over more easily; the page says so.
+    When the paws on the ground do not hold the figure (its weight lies outside them) and other paws stand higher (on a
+    step in the photo), the base reaches under those too and carries a step for them, as high as they stand: the step is
+    part of the base (note["risers"], [x0, y0, x1, y1, top] each). Without such paws the base reaches under the weight.
     """
     import manifold3d as M
     import trimesh
@@ -223,10 +293,27 @@ def stand(m, kind, extras, target):
         return flat, note
     v = m.vertices
     low = v[v[:, 2] <= z0 + 0.12 * h]                                    # the paws, or whatever the animal sits on
-    x0, y0 = float(low[:, 0].min()), float(low[:, 1].min())
-    x1, y1 = float(low[:, 0].max()), float(low[:, 1].max())
     margin = max(2.5, 0.04 * target)
     sink = max(1.0, 0.015 * target)
+    paws = low[:, :2]
+    steps = []                      # (top, points xy) of each step for paws that stand higher
+    centre = _centre(m)
+    if not _inside(paws, centre, 0.5 * margin):
+        # the figure would tip over on the paws that touch the ground: the higher paws get a step, and the base reaches
+        # under the weight in any case
+        group = []
+        for level, pts in raised_feet(m, z0, h, z0 + 0.12 * h) + [(None, None)]:
+            if group and (level is None or level - group[0][0] > max(2.0, 0.03 * h)):
+                steps.append((group[0][0] + sink, np.vstack([p for _, p in group])))
+                group = []
+            if level is not None:
+                group.append((level, pts))
+        paws = np.vstack([paws] + [p for _, p in steps] + [centre[None, :]])
+        note["tipping"] = True
+        if steps:
+            note["steps"] = len(steps)
+    x0, y0 = float(paws[:, 0].min()), float(paws[:, 1].min())
+    x1, y1 = float(paws[:, 0].max()), float(paws[:, 1].max())
     tall = kind == "plaque"
     ped_h = max(12.0, 0.13 * target) if tall else max(4.0, 0.05 * target)
     chamfer = min(1.0, 0.08 * ped_h) if tall else min(1.6, 0.4 * ped_h)     # the rounded top edge (see _profiled)
@@ -265,7 +352,7 @@ def stand(m, kind, extras, target):
         # round the paws themselves, not round their box: a stadium cuts the corners of the box, and a paw of an
         # animal standing wide is exactly there (seen 14 Nov 2026: a hind paw over the edge). The side with the name
         # keeps its full width.
-        pts = low[:, :2] - np.array([cx, cy])
+        pts = paws - np.array([cx, cy])
         hx, hy = (x1 - x0) / 2, (y1 - y0) / 2
         if strip:
             edge = {"right": [[hx, -hy], [hx, hy]], "left": [[-hx, -hy], [-hx, hy]],
@@ -325,6 +412,29 @@ def stand(m, kind, extras, target):
     # the top of the base lies `sink` above the lowest point of the paws
     z_top = z0 + sink
     base = body.translate([cx, cy, z_top - ped_h])
+    risers = []
+    for top, pts in steps:
+        # a low block round the higher paws, standing 0.3 mm deep in the base; the paws sink into it like into the base
+        try:
+            from scipy.spatial import ConvexHull
+            ring = pts[ConvexHull(pts).vertices]
+            outline = M.CrossSection([ring.tolist()]).offset(max(2.0, 0.6 * margin), M.JoinType.Round, 2.0, 64)
+            rise = top - (z_top - 0.3)
+            if outline.area() <= 0 or rise < 1.0:
+                continue
+            block, _, _ = _profiled(M, outline, rise, False)
+            base = base + block.translate([0, 0, z_top - 0.3])
+            bx0, by0, bx1, by1 = outline.bounds()
+            risers.append([round(float(bx0), 3), round(float(by0), 3), round(float(bx1), 3), round(float(by1), 3), round(float(top), 3)])
+            try:
+                from mesh_tool import riser_outline
+                riser_outline(outline, top)
+            except Exception:  # noqa: BLE001 - the colours of the step are an extra
+                pass
+        except Exception as e:  # noqa: BLE001 - a base without the step is still a base
+            note["step_error"] = str(e)[:120]
+    if risers:
+        note["risers"] = risers
     try:
         from mesh_tool import name_outline, _mx
         for cs_, steps, z_a, z_b in names:

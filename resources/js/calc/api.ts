@@ -18,6 +18,8 @@ export interface FileInfo {
     glb_base_top_z?: number | null;
     /** the planes the body was cut by (a classic bust's arms), [nx, ny, nz, d] kept where n.x >= d, in the STL's mm */
     glb_clip?: number[][] | null;
+    /** the steps of a pet base under paws that stood higher, [x0, y0, x1, y1, top] in the STL's mm: part of the base */
+    glb_risers?: number[][] | null;
     kind?: string;
     hints?: { supports?: boolean; infill?: number; quality?: string; vase?: boolean };
     generation?: { token: string; refinable: boolean; design?: boolean; pedestal?: { type: string; name: string; dedication: string; sink?: number; tidy?: boolean; cut_controls?: boolean; cut_shift?: number; pitch?: number } | null; pet?: { style: string; type: string; name: string; dedication: string; thinnest_mm: number | null; safe_mm: number; with_person?: boolean } | null } | null;

@@ -175,7 +175,7 @@ export function previewFit(color: Object3D, targetMm: number, turns = 0): { matr
 }
 
 /** What the server measured: the GLB's coordinates to the STL's (4x4, row-major) and the height (mm) the figure stands on its base. */
-export type ExactFit = { matrix: number[]; baseTopZ: number; clip?: number[][] | null };
+export type ExactFit = { matrix: number[]; baseTopZ: number; clip?: number[][] | null; risers?: number[][] | null };
 
 /**
  * The coloured model wrapped so it can be hung on the STL mesh (same coordinates); null when it cannot be fitted.
@@ -192,6 +192,7 @@ export function colorHolder(color: Object3D, stl: BufferGeometry, exact?: ExactF
     if (exact && exact.matrix.length === 16) {
         holder.userData.baseTopZ = Math.max(0, Number(exact.baseTopZ) || 0);
         holder.userData.clip = (exact.clip ?? []).filter((p) => Array.isArray(p) && p.length === 4 && p.every((x) => Number.isFinite(Number(x))));
+        holder.userData.risers = (exact.risers ?? []).filter((b) => Array.isArray(b) && b.length === 5 && b.every((x) => Number.isFinite(Number(x)))).map((b) => b.map(Number));
         return holder;
     }
     // estimate: where the coloured figure ends at the bottom, in the STL's millimetres: whatever of the STL lies deeper

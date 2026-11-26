@@ -371,6 +371,68 @@ class PetFigurineTest extends TestCase
         File::deleteDirectory($dir);
     }
 
+    public function test_paws_that_stood_on_a_step_get_a_step_and_the_figure_does_not_tip_over(): void
+    {
+        // Roman, 26 Nov 2026: a dog with its front paws on a box in the photo came out with them in the air, the plinth
+        // under the hind paws only, and the figure fell over
+        $this->python();
+        $dir = sys_get_temp_dir().'/mp_pet_'.uniqid();
+        File::ensureDirectoryExists($dir);
+        MeshFixtures::tableStl($dir.'/level.stl', 4.0);
+        MeshFixtures::tableStl($dir.'/in.stl', 4.0, 8.0);
+        $n = app(ModelNormalizer::class);
+        config(['engines.repair' => 'trimesh']);
+        $extras = ['pet' => true, 'pedestal' => 'plaque', 'name' => 'Rex', 'name_side' => 'front', 'parts' => true];
+
+        // four paws on the ground: nothing changes
+        $n->toPrintableStl($dir.'/level.stl', $dir.'/level_out.stl', 80, false, ['clean', 'pedestal', 'solid'], $extras);
+        $this->assertArrayNotHasKey('tipping', $n->report);
+        $this->assertArrayNotHasKey('risers', $n->glbFit() ?? []);
+
+        $n->toPrintableStl($dir.'/in.stl', $dir.'/out.stl', 80, false, ['clean', 'pedestal', 'solid'], $extras);
+        $r = $n->report;
+        $this->assertArrayNotHasKey('stand_error', $r);
+        $this->assertTrue($r['tipping']);
+        $this->assertSame(1, $r['steps'], 'both raised paws stand on one step');
+        // the plinth reaches from the hind paws to the front ones (the table is 80 mm long, its legs 64 mm apart)
+        $this->assertGreaterThan(64, $r['base_mm'][0]);
+        // the step is as high as the paws stood above the others, and the browser draws it as the base
+        $fit = $n->glbFit();
+        $this->assertCount(1, $fit['risers']);
+        [$x0, , $x1, , $top] = $fit['risers'][0];
+        $scale = (float) $r['figure_scale'];
+        $this->assertEqualsWithDelta($fit['base_top_z'] + 8.0 * $scale, $top, 0.6);
+        $this->assertGreaterThan(40, $x0, 'under the raised legs, not the others');
+        // one closed body, its base and step in the colour of the base
+        $solid = app(MeshRepair::class)->check($dir.'/out.stl');
+        $this->assertTrue($solid->watertight);
+        $this->assertSame(1, $solid->shells);
+        [$onStep, $asBase] = $this->stepFaces($dir.'/out.stl', $r['parts']['file'], $fit['risers'][0], (float) $fit['base_top_z']);
+        $this->assertGreaterThan(8, $onStep);
+        $this->assertSame($onStep, $asBase, 'every face of the step prints in the colour of the base');
+        File::deleteDirectory($dir);
+    }
+
+    /** Faces of a binary STL inside the step [x0, y0, x1, y1, top] above the base top, and how many of them the parts file calls the base. */
+    private function stepFaces(string $stl, string $parts, array $step, float $baseTop): array
+    {
+        [$x0, $y0, $x1, $y1, $top] = $step;
+        $data = (string) file_get_contents($stl);
+        $kind = (string) file_get_contents($parts);
+        $n = unpack('V', substr($data, 80, 4))[1];
+        $on = $base = 0;
+        for ($i = 0; $i < $n; $i++) {
+            $t = unpack('f12', substr($data, 84 + $i * 50, 48));
+            [$cx, $cy, $cz] = [($t[4] + $t[7] + $t[10]) / 3, ($t[5] + $t[8] + $t[11]) / 3, ($t[6] + $t[9] + $t[12]) / 3];
+            if ($cx >= $x0 && $cx <= $x1 && $cy >= $y0 && $cy <= $y1 && $cz > $baseTop + 0.5 && $cz < $top - 0.5) {
+                $on++;
+                $base += ord($kind[$i]) === 1 ? 1 : 0;
+            }
+        }
+
+        return [$on, $base];
+    }
+
     /** How many corners of a binary STL lie on its lowest plane (within 0.01 mm). */
     private function lowest(string $stl): int
     {

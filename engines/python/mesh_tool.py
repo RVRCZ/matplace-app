@@ -943,18 +943,22 @@ def without_pedestal(m):
 # and the extrusion's range in z.
 NAME_OUTLINES = []
 
+# The steps of the last pet base (pet_kind.stand: a block under paws that stood higher in the photo): they are the base,
+# so face_parts() gives them its colour. Each is the outline from above (grown by 0.1 mm) and the height of its top.
+RISER_OUTLINES = []
 
-def _name_lists():
-    """NAME_OUTLINES of this script and of its copy imported as `mesh_tool` (pet_kind imports it: another module object)."""
-    lists = [NAME_OUTLINES]
+
+def _name_lists(name="NAME_OUTLINES"):
+    """NAME_OUTLINES (or another such list) of this script and of its copy imported as `mesh_tool` (pet_kind imports it: another module object)."""
+    lists = [globals()[name]]
     other = sys.modules.get("mesh_tool")
-    if other is not None and getattr(other, "NAME_OUTLINES", None) is not None and other.NAME_OUTLINES is not NAME_OUTLINES:
-        lists.append(other.NAME_OUTLINES)
+    if other is not None and getattr(other, name, None) is not None and getattr(other, name) is not lists[0]:
+        lists.append(getattr(other, name))
     return lists
 
 
 def clear_names():
-    for names in _name_lists():
+    for names in _name_lists() + _name_lists("RISER_OUTLINES"):
         names.clear()
 
 
@@ -1001,6 +1005,15 @@ def inside_rings(pts, rings):
     return inside
 
 
+def riser_outline(cs, top):
+    """Notes a step of a pet base for face_parts(): `cs` its outline from above, `top` the height of its top."""
+    import numpy as np
+    import manifold3d as M
+    rings = [np.asarray(p, dtype=np.float64) for p in cs.offset(0.1, M.JoinType.Round).to_polygons() if len(p) >= 3]
+    if rings:
+        RISER_OUTLINES.append({"rings": rings, "top": float(top)})
+
+
 def face_parts(m, top):
     """
     What every triangle of the finished model is, for printing it in colours without the colouring tool (Roman, 24 Nov
@@ -1011,6 +1024,10 @@ def face_parts(m, top):
     c = m.triangles_center
     st = np.zeros(len(m.faces), dtype=np.uint8)
     st[c[:, 2] <= float(top) + 0.05] = 1
+    for r in [r for risers in _name_lists("RISER_OUTLINES") for r in risers]:
+        cand = np.where((st == 0) & (c[:, 2] <= r["top"] + 0.05))[0]
+        if len(cand):
+            st[cand[inside_rings(c[cand, :2], r["rings"])]] = 1
     for n in [n for names in _name_lists() for n in names]:
         local = c @ n["inv"][:3, :3].T + n["inv"][:3, 3]
         cand = np.where((local[:, 2] >= n["z0"] - 0.05) & (local[:, 2] <= n["z1"] + 0.15))[0]
@@ -1882,7 +1899,7 @@ def moved(m, T, M):
     return np.asarray(M) @ T
 
 
-def pack_matrices(T, TF, TS, seat, T_seat, planes=None):
+def pack_matrices(T, TF, TS, seat, T_seat, planes=None, risers=None):
     """
     What the browser needs to lay the coloured GLB exactly over the printed STL: 4x4 matrices (row-major, 16 numbers) from
     the coordinates of the input file into the output, the whole figure (full_out) and the source (source_out); and the
@@ -1899,6 +1916,16 @@ def pack_matrices(T, TF, TS, seat, T_seat, planes=None):
     if seat:
         z = float((np.asarray(T) @ np.linalg.inv(T_seat) @ np.array([0.0, 0.0, float(seat), 1.0]))[2])
     pack["base_top_z"] = round(max(0.0, z), 3)
+    if risers:
+        # the steps of a pet base ([x0, y0, x1, y1, top] in the coordinates of T_seat) in the output: drawn as the base
+        Mx = np.asarray(T) @ np.linalg.inv(T_seat)
+        boxes = []
+        for x0, y0, x1, y1, zt in risers:
+            a = Mx @ np.array([x0, y0, zt, 1.0])
+            b = Mx @ np.array([x1, y1, zt, 1.0])
+            boxes.append([round(float(min(a[0], b[0])), 3), round(float(min(a[1], b[1])), 3),
+                          round(float(max(a[0], b[0])), 3), round(float(max(a[1], b[1])), 3), round(float(a[2]), 3)])
+        pack["risers"] = boxes
     if planes:
         # the planes that cut the body (in the coordinates of T_seat) in the output: [nx, ny, nz, d], kept where n.x >= d
         Mx = np.asarray(T) @ np.linalg.inv(T_seat)
@@ -2104,6 +2131,7 @@ def main(argv):
                     ped_note.update(stood)
                     parts = safe_parts(m, float(stood.get("seat_z", 0.0))) if "solid" in opts and extras.get("parts") else None
                     seat, T_seat = float(ped_note.pop("seat_z", 0.0)), T.copy()
+                    risers = ped_note.pop("risers", None)
                     T = moved(m, T, TM(-m.bounds[0]))
                     factor = target / float(max(m.extents))
                     T = moved(m, T, np.diag([factor] * 3 + [1.0]))
@@ -2115,7 +2143,7 @@ def main(argv):
                     if parts is not None and len(parts) == len(m.faces) and (parts == 1).any() and (parts == 0).any():
                         parts.tofile(argv[3] + ".parts")
                         ped_note["parts"] = {"file": argv[3] + ".parts", "counts": [int((parts == k).sum()) for k in range(3)]}
-                    ped_note.update(pack_matrices(T, TF, TS, seat, T_seat))
+                    ped_note.update(pack_matrices(T, TF, TS, seat, T_seat, risers=risers))
                     out(report(m, dict({"out": argv[3], "removed_fragments": removed}, **ped_note)))
                 except SystemExit:
                     raise

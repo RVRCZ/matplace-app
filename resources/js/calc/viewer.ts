@@ -124,7 +124,11 @@ export class Viewer {
         }
         this.colored = false;
         this.clipSync = null;
-        if (this.baseMesh) { (this.baseMesh.material as Material).dispose(); this.baseMesh = null; }
+        if (this.baseMesh) {
+            (this.baseMesh.material as Material).dispose();
+            this.baseMesh.children.forEach((c) => { (c as Mesh).geometry?.dispose(); ((c as Mesh).material as Material | undefined)?.dispose(); });
+            this.baseMesh = null;
+        }
         this.dropPreview();
         if (this.grid) this.scene.remove(this.grid);
         const painted = !!faces && paintByFaces(geom, faces);
@@ -223,6 +227,8 @@ export class Viewer {
         const hasBase = Number.isFinite(top) && top > 0.05;
         // the base's flat top lies exactly at `top`: cut there it vanished and the base looked like an open tray (24 Nov 2026)
         const lid = hasBase ? top + 0.4 : 0;
+        // the steps of a pet base under paws that stood higher (Roman, 26 Nov 2026): base, not animal, above the lid too
+        const risers = hasBase ? ((holder.userData.risers ?? []) as number[][]) : [];
         const own: Plane[] = ((holder.userData.clip ?? []) as number[][]).map((p) => new Plane(new Vector3(p[0], p[1], p[2]).normalize(), -Number(p[3])));
         if (hasBase) own.push(new Plane(new Vector3(0, 0, 1), -lid));
         if (own.length) {
@@ -255,7 +261,7 @@ export class Viewer {
             // … and what the printable file has where the colours have nothing (a paw the server moved onto the body, Roman
             // 24 Nov 2026: the leg ended in the air) is drawn in the model's colour; the cut faces of a bust are drawn above
             if (covered && !sides.length) {
-                const bare = Viewer.uncovered(geom, covered, lid);
+                const bare = Viewer.uncovered(geom, covered, lid, risers);
                 const firstMat = shells[0] ? (Array.isArray(shells[0].material) ? shells[0].material[0] : shells[0].material) : null;
                 if (bare) mesh.add(new Mesh(bare, new MeshStandardMaterial({ color: firstMat ? Viewer.capColor(firstMat) : 0x8a8f96, roughness: 0.9, metalness: 0, side: DoubleSide })));
             }
@@ -265,6 +271,8 @@ export class Viewer {
                 const base = new Mesh(geom, graphite);
                 mesh.add(base);
                 this.baseMesh = base;
+                const steps = risers.length ? Viewer.riserFaces(geom, risers, lid) : null;
+                if (steps) base.add(new Mesh(steps, new MeshStandardMaterial({ color: 0x3a3d42, roughness: 0.85, metalness: 0, side: DoubleSide })));
             }
             holder.userData.fit = holder.matrix.clone();
             holder.userData.lid = lid;
@@ -439,7 +447,31 @@ export class Viewer {
     }
 
     /** The triangles of the printable file above `lid` that no colour covers (all three corners away from `covered`), or null. */
-    private static uncovered(geom: BufferGeometry, covered: Set<string>, lid: number): BufferGeometry | null {
+    /** Is the point inside one of the steps of a pet base ([x0, y0, x1, y1, top], mm), with a little room? */
+    private static inRiser(risers: number[][], x: number, y: number, z: number): boolean {
+        return risers.some(([x0, y0, x1, y1, top]) => x >= x0 - 0.3 && x <= x1 + 0.3 && y >= y0 - 0.3 && y <= y1 + 0.3 && z <= top + 0.05);
+    }
+
+    /** The triangles of the steps above the lid (under it the base is drawn whole), as a geometry of their own; null when none. */
+    private static riserFaces(geom: BufferGeometry, risers: number[][], lid: number): BufferGeometry | null {
+        const pos = geom.getAttribute('position');
+        if (!pos) return null;
+        const index = geom.getIndex();
+        const n = index ? index.count : pos.count;
+        const out: number[] = [];
+        for (let i = 0; i + 2 < n; i += 3) {
+            const t = [index ? index.getX(i) : i, index ? index.getX(i + 1) : i + 1, index ? index.getX(i + 2) : i + 2];
+            if (t.every((k) => pos.getZ(k) <= lid) || !t.every((k) => Viewer.inRiser(risers, pos.getX(k), pos.getY(k), pos.getZ(k)))) continue;
+            for (const k of t) out.push(pos.getX(k), pos.getY(k), pos.getZ(k));
+        }
+        if (!out.length) return null;
+        const g = new BufferGeometry();
+        g.setAttribute('position', new Float32BufferAttribute(out, 3));
+        g.computeVertexNormals();
+        return g;
+    }
+
+    private static uncovered(geom: BufferGeometry, covered: Set<string>, lid: number, risers: number[][] = []): BufferGeometry | null {
         const CELL = 4;
         const pos = geom.getAttribute('position');
         if (!pos) return null;
@@ -454,6 +486,7 @@ export class Viewer {
         for (let i = 0; i + 2 < n; i += 3) {
             const t = [index ? index.getX(i) : i, index ? index.getX(i + 1) : i + 1, index ? index.getX(i + 2) : i + 2];
             if (t.some((k) => pos.getZ(k) <= lid) || t.some((k) => near(k))) continue;
+            if (risers.length && t.every((k) => Viewer.inRiser(risers, pos.getX(k), pos.getY(k), pos.getZ(k)))) continue;
             for (const k of t) out.push(pos.getX(k), pos.getY(k), pos.getZ(k));
         }
         // a few stray triangles are noise; a whole part is what is missing

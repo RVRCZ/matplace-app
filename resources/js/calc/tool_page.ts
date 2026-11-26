@@ -448,7 +448,7 @@ export class Stage {
             // the viewer may have welded the STL into its own copy (generated models): the swap must name THAT geometry
             const shown = this.viewer.shownGeometry() ?? geom;
             void loadColoredModel(file.glb_url)
-                .then((color) => { if (!this.viewer.showColored(color, shown, file.glb_matrix && file.glb_matrix.length === 16 ? { matrix: file.glb_matrix, baseTopZ: Number(file.glb_base_top_z) || 0, clip: file.glb_clip ?? [] } : null)) console.debug('colored preview not applied (another model shown, or it did not fit)'); })
+                .then((color) => { if (!this.viewer.showColored(color, shown, file.glb_matrix && file.glb_matrix.length === 16 ? { matrix: file.glb_matrix, baseTopZ: Number(file.glb_base_top_z) || 0, clip: file.glb_clip ?? [], risers: file.glb_risers ?? [] } : null)) console.debug('colored preview not applied (another model shown, or it did not fit)'); })
                 .catch((e) => { console.debug('colored preview failed, the STL stays', e); });
         }
     }
