@@ -98,6 +98,8 @@
             <label class="{{ $lb }}">Nabízené částky dobití ({{ $czk }}, oddělené čárkou)<input name="topup_amounts" required value="{{ old('topup_amounts', implode(', ', $settings['topup_amounts'])) }}" class="{{ $in }}"></label>
             <label class="{{ $lb }}">Verze podmínek<input name="terms_version" required value="{{ old('terms_version', $settings['terms_version']) }}" class="{{ $in }}"></label>
             <label class="{{ $lb }}">E-mail obsluhy (upozornění)<input type="email" name="admin_email" value="{{ old('admin_email', $settings['admin_email']) }}" class="{{ $in }}"></label>
+            {{-- the owner's own address for the watch (docs/AU.md): a person wrote to info@, the server has a problem --}}
+            <label class="{{ $lb }}">Můj e-mail pro hlídače (lidé v info@, potíže serveru)<input type="email" name="alert_email" value="{{ old('alert_email', $settings['alert_email'] ?? '') }}" class="{{ $in }}"></label>
             <label class="{{ $lb }}">{{ __('youtube.settings.shorts_hour') }}<input type="time" name="shorts_publish_hour" required value="{{ old('shorts_publish_hour', $settings['shorts_publish_hour']) }}" class="{{ $in }}"></label>
         </div>
         {{-- the home page's router (docs/AN.md §22): the Christmas promise and the reply time are the operator's numbers, not the code's --}}

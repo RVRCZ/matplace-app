@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Admin;
 
+use App\Domain\Mail\MailboxWatch;
 use App\Domain\Mail\Outbox;
 use App\Engines\Exceptions\EngineException;
 use App\Engines\Mail\Mailbox;
@@ -34,6 +35,7 @@ class EmailController extends Controller
     public function inbox(Request $request, Mailbox $mailbox): View
     {
         $all = $request->query('all') === '1';
+        $auto = $request->query('auto') === '1';
         $messages = [];
         $error = null;
         if ($mailbox->available()) {
@@ -43,10 +45,17 @@ class EmailController extends Controller
                 $error = $e->getMessage();
             }
         }
+        // robots, reports and our own notifications are folded away unless asked for (the watch, docs/AU.md)
+        $own = app(MailboxWatch::class)->ownAddresses();
+        $human = array_values(array_filter($messages, fn (array $m) => MailboxWatch::kind($m['from'], $m['subject'], $own) === MailboxWatch::HUMAN));
+        $robots = count($messages) - count($human);
+        if (! $auto) {
+            $messages = $human;
+        }
         // what already has a draft or a reply: the admin sees it next to the message
         $answered = OutgoingEmail::whereIn('inbox_message_id', array_column($messages, 'id'))->get()->groupBy('inbox_message_id');
 
-        return view('admin.emails.inbox', ['messages' => $messages, 'all' => $all, 'error' => $error, 'available' => $mailbox->available(), 'address' => $mailbox->address(), 'answered' => $answered]);
+        return view('admin.emails.inbox', ['messages' => $messages, 'all' => $all, 'auto' => $auto, 'robots' => $robots, 'error' => $error, 'available' => $mailbox->available(), 'address' => $mailbox->address(), 'answered' => $answered]);
     }
 
     /** One message of the mailbox with its text, and the drafts written for it. */

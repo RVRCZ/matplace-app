@@ -40,4 +40,12 @@ interface Mailbox
 
     /** @throws MailboxFailed */
     public function markRead(string $id): void;
+
+    /**
+     * Out of the inbox: read and archived, still in "all mail" and in search (the watch does this with our own
+     * notifications and with bounce/authentication reports, docs/AU.md).
+     *
+     * @throws MailboxFailed
+     */
+    public function archive(string $id): void;
 }

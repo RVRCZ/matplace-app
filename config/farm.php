@@ -129,6 +129,9 @@ return [
         'snapshot_keep' => 1,               // snapshots kept per order (the last one is what people see)
         'terms_version' => '2026-10',
         'admin_email' => env('FARM_ADMIN_EMAIL', env('MAIL_FROM_ADDRESS')),
+        // the owner's own address for the watch (docs/AU.md): a person wrote to info@, the server has a problem. Kept apart
+        // from admin_email on purpose – that one is the shared box the farm's own notifications flood (Roman, 26 Nov 2026)
+        'alert_email' => env('FARM_ALERT_EMAIL', ''),
         // ── what the operator is mailed about (OrderFlow::alertAdmin; one mail per event; Roman, 18 Oct 2026) ──
         'notify_paid' => true,              // a customer paid: who, what, which spool, where it prints and when
         'notify_printing' => true,          // an agent's printer began the first plate

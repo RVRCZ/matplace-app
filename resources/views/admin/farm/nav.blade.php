@@ -6,6 +6,7 @@
     {{-- partners and discount codes (docs/AT.md) --}}
     <a href="{{ route('admin.affiliates') }}" class="chip {{ request()->routeIs('admin.affiliates*') ? 'chip-on' : '' }}">Partneři</a>
     <a href="{{ route('admin.promo-codes') }}" class="chip {{ request()->routeIs('admin.promo-codes*') ? 'chip-on' : '' }}">Slevové kódy</a>
+    <a href="{{ route('admin.health') }}" class="chip {{ request()->routeIs('admin.health*') ? 'chip-on' : '' }}">Hlídač</a>
 </nav>
 {{-- the state of the whole service (App\Domain\Farm\FarmState, docs/AL.md §23) on every page of the farm's admin, loud while
      the farm does not serve customers, so that opening it again is not forgotten --}}

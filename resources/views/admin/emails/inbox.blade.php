@@ -8,8 +8,11 @@
     <a href="{{ route('admin.emails.index') }}" class="chip">← Odchozí a koncepty</a>
     <a href="{{ route('admin.emails.inbox') }}" class="chip {{ $all ? '' : 'chip-on' }}">Nepřečtené</a>
     <a href="{{ route('admin.emails.inbox', ['all' => 1]) }}" class="chip {{ $all ? 'chip-on' : '' }}">Všechny poslední</a>
+    {{-- robots, reports and our own notifications: folded away by default (the watch, docs/AU.md) --}}
+    <a href="{{ route('admin.emails.inbox', array_filter(['all' => $all ? 1 : null, 'auto' => $auto ? null : 1])) }}" class="chip {{ $auto ? 'chip-on' : '' }}">{{ $auto ? 'Skrýt automatické' : 'Automatické' }}@if($robots > 0) ({{ $robots }})@endif</a>
+    <a href="{{ route('admin.health') }}" class="chip">Hlídač</a>
 </nav>
-<p class="mt-1 text-xs text-slate-500">Schránka {{ $address }}. U zprávy klikněte na „Navrhnout odpověď“: AI napíše koncept, vy ho upravíte a schválením odejde jako odpověď ve vlákně.</p>
+<p class="mt-1 text-xs text-slate-500">Schránka {{ $address }}. Zobrazují se zprávy od lidí; hlášení webu, odrazy a roboti jsou pod „Automatické“. U zprávy klikněte na „Navrhnout odpověď“: AI napíše koncept, vy ho upravíte a schválením odejde jako odpověď ve vlákně.</p>
 
 @unless($available)
     <p class="mt-3 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">Schránka není připojená: v <code>.env</code> chybí <code>GMAIL_CLIENT_ID</code>, <code>GMAIL_CLIENT_SECRET</code> nebo soubor s tokenem (<code>GMAIL_TOKEN_PATH</code>).</p>
@@ -35,7 +38,7 @@
                     </td>
                 </tr>
             @empty
-                <tr><td colspan="4" class="px-3 py-6 text-center text-slate-500">{{ $available && ! $error ? ($all ? 'Žádné zprávy.' : 'Nic nepřečteného.') : '—' }}</td></tr>
+                <tr><td colspan="4" class="px-3 py-6 text-center text-slate-500">{{ $available && ! $error ? ($all ? 'Žádné zprávy od lidí.' : 'Nic nepřečteného od lidí.') : '—' }}</td></tr>
             @endforelse
         </tbody>
     </table>

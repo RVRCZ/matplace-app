@@ -14,9 +14,11 @@
         'Uživatelé' => ['admin.users.index', ['admin.users.*']],
     ];
     $drafts = \App\Models\OutgoingEmail::where('status', 'draft')->count();
+    // people's unread mails in the shared box, as the watch last counted them (docs/AU.md)
+    $unreadHuman = (int) (\Illuminate\Support\Facades\Cache::get(\App\Domain\Mail\MailboxWatch::CACHE)['unread_human'] ?? 0);
 @endphp
 <nav class="mb-3 flex flex-wrap items-center gap-x-4 gap-y-1 border-b border-line pb-2 text-sm font-semibold" aria-label="Admin">
     @foreach($sections as $label => [$route, $patterns])
-        <a href="{{ route($route) }}" @if(request()->routeIs(...$patterns)) aria-current="page" @endif class="{{ request()->routeIs(...$patterns) ? 'text-action-dark underline' : 'text-slate-600 hover:text-ink' }}">{{ $label }}@if($label === 'E-maily' && $drafts > 0) <span class="rounded-full bg-action px-1.5 text-xs text-white">{{ $drafts }}</span>@endif</a>
+        <a href="{{ route($route) }}" @if(request()->routeIs(...$patterns)) aria-current="page" @endif class="{{ request()->routeIs(...$patterns) ? 'text-action-dark underline' : 'text-slate-600 hover:text-ink' }}">{{ $label }}@if($label === 'E-maily' && $unreadHuman > 0) <span class="rounded-full bg-red-600 px-1.5 text-xs text-white" title="nepřečtené od lidí">{{ $unreadHuman }}</span>@endif @if($label === 'E-maily' && $drafts > 0) <span class="rounded-full bg-action px-1.5 text-xs text-white" title="koncepty ke schválení">{{ $drafts }}</span>@endif</a>
     @endforeach
 </nav>

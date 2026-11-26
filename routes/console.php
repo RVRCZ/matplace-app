@@ -6,6 +6,9 @@ Schedule::command('matplace:expire-inquiries')->hourly();
 Schedule::command('queue:prune-failed --hours=168')->daily();
 Schedule::command('matplace:prune')->dailyAt('03:30');
 Schedule::command('matplace:lead-reminders')->dailyAt('10:00');   // the one reminder a visitor ticked at "send me my bust" (ModelLead)
+// the watch (docs/AU.md): people's mails in the shared inbox every five minutes, the server's state every ten
+Schedule::command('matplace:watch-inbox')->everyFiveMinutes()->withoutOverlapping();
+Schedule::command('matplace:health')->everyTenMinutes()->withoutOverlapping();
 Schedule::command('farm:watch')->everyMinute()->withoutOverlapping();
 Schedule::command('youtube:stats')->hourlyAt(20);   // numbers, and scheduled videos YouTube made public meanwhile (1 quota unit)
 Schedule::command('youtube:analytics')->dailyAt('20:30')->timezone('Europe/Prague');   // 28-day retention and traffic, after the stats run

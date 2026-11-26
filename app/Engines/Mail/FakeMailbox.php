@@ -42,7 +42,7 @@ final class FakeMailbox implements Mailbox
         $this->up();
         $out = [];
         foreach (array_reverse(self::$messages) as $m) {
-            if ($unreadOnly && ! $m['unread']) {
+            if (($unreadOnly && ! $m['unread']) || ! empty($m['archived'])) {
                 continue;
             }
             $out[] = ['id' => $m['id'], 'thread_id' => $m['thread_id'], 'from' => $m['from'], 'from_name' => $m['from_name'], 'subject' => $m['subject'], 'date' => $m['date'],
@@ -72,6 +72,15 @@ final class FakeMailbox implements Mailbox
         $this->up();
         if (isset(self::$messages[$id])) {
             self::$messages[$id]['unread'] = false;
+        }
+    }
+
+    public function archive(string $id): void
+    {
+        $this->up();
+        if (isset(self::$messages[$id])) {
+            self::$messages[$id]['unread'] = false;
+            self::$messages[$id]['archived'] = true;
         }
     }
 

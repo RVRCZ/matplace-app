@@ -114,6 +114,11 @@ final class GmailMailbox implements Mailbox
         $this->post('messages/'.$id.'/modify', ['removeLabelIds' => ['UNREAD']]);
     }
 
+    public function archive(string $id): void
+    {
+        $this->post('messages/'.$id.'/modify', ['removeLabelIds' => ['INBOX', 'UNREAD']]);
+    }
+
     // ── the API ──────────────────────────────────────────────────────────────
 
     /** @return array<string, mixed>|null null only when $nullOn404 and the message is gone */

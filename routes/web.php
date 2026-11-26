@@ -7,6 +7,7 @@ use App\Http\Controllers\Admin\CatalogController as AdminCatalogController;
 use App\Http\Controllers\Admin\CollectionController as AdminCollectionController;
 use App\Http\Controllers\Admin\ContentController as AdminContentController;
 use App\Http\Controllers\Admin\EmailController as AdminEmailController;
+use App\Http\Controllers\Admin\HealthController as AdminHealthController;
 use App\Http\Controllers\Admin\FarmCatalogController;
 use App\Http\Controllers\Admin\FarmFileController;
 use App\Http\Controllers\Admin\FarmOrderController;
@@ -703,6 +704,9 @@ Route::middleware(['auth', 'role:admin'])->prefix('admin')->name('admin.')->grou
     Route::get('/emails/inbox/{id}', [AdminEmailController::class, 'inboxShow'])->where('id', '[A-Za-z0-9_-]+')->name('emails.inbox.show');
     Route::post('/emails/inbox/{id}/reply', [AdminEmailController::class, 'reply'])->where('id', '[A-Za-z0-9_-]+')->middleware('throttle:30,1,admin-ai')->name('emails.inbox.reply');
     Route::post('/emails/inbox/{id}/read', [AdminEmailController::class, 'markRead'])->where('id', '[A-Za-z0-9_-]+')->name('emails.inbox.read');
+    // the watch (docs/AU.md): the state of every server check and the people's mails the owner was told about
+    Route::get('/health', [AdminHealthController::class, 'index'])->name('health');
+    Route::post('/health/run', [AdminHealthController::class, 'run'])->middleware('throttle:10,1,admin-health')->name('health.run');
     Route::get('/emails/{email}', [AdminEmailController::class, 'show'])->whereNumber('email')->name('emails.show');
     Route::post('/emails/{email}', [AdminEmailController::class, 'update'])->whereNumber('email')->name('emails.update');
 });

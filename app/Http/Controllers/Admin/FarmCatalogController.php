@@ -631,6 +631,7 @@ class FarmCatalogController extends Controller
             'offline_after_seconds' => ['required', 'integer', 'min:30', 'max:3600'],
             'terms_version' => ['required', 'string', 'max:20'],
             'admin_email' => ['nullable', 'email'],
+            'alert_email' => ['nullable', 'email'],   // the watch (docs/AU.md)
             'qualities' => ['required', 'json'],
             'strengths' => ['required', 'json'],
             // the home page's router (docs/AN.md §22): an empty date takes the Christmas line off the page
