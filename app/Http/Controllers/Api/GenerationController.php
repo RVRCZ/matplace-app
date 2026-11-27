@@ -87,9 +87,12 @@ class GenerationController extends Controller
 
         // the wish first: a refused one costs the customer no photo check and no generation
         $wish = [];
+        if (isset($data['wish'])) {
+            $data['wish'] = mb_scrub((string) $data['wish'], 'UTF-8');   // broken bytes were a 500 in the assistant's JSON (27 Nov 2026)
+        }
         if ($request->hasFile('image') && trim((string) ($data['wish'] ?? '')) !== '') {
             try {
-                $read = app(WishReader::class)->read((string) $data['wish'], (string) $data['kind'], app()->getLocale());
+                $read = app(WishReader::class)->read((string) $data['wish'], (string) $data['kind'], app()->getLocale(), $request->file('image')->getRealPath() ?: null);
                 if (! $read['ok']) {
                     return response()->json(['error' => 'wish_rejected', 'message' => $read['reason'] !== '' ? $read['reason'] : __('figure.wish.rejected')], 422);
                 }

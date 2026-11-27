@@ -22,6 +22,9 @@ final class FakeGenerator implements ImageRestyler, ModelGenerator
     /** A test of a cleaning that fails: the picture task then ends as the real one does when the image model refuses. */
     public static bool $imageFails = false;
 
+    /** A test of a cleaning refused at once, when it is sent (Tripo "violation of content policy", 27 Nov 2026). */
+    public static bool $imageRefused = false;
+
     /** How many next tasks are refused as "too many at once" (Tripo's limit of tasks running together). */
     public static int $busy = 0;
 
@@ -54,6 +57,9 @@ final class FakeGenerator implements ImageRestyler, ModelGenerator
     public function restyle(string $imagePath, string $prompt): GenerationHandle
     {
         self::$restyled[] = $prompt;
+        if (self::$imageRefused) {
+            throw new \App\Engines\Exceptions\GenerationException('Tripo task failed: The input is rejected due to violation of content policy');
+        }
 
         return new GenerationHandle('fake', 'fake-image-'.Str::random(8), ['credits' => 5]);
     }

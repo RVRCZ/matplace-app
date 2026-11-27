@@ -48,10 +48,11 @@ class GenerateModel implements ShouldQueue
 
     /**
      * Said to every redraw of an animal (docs/AU.md §9): the image model drew male genitals on a female dog that had none on
-     * the photo (order F26-000194 "Sára", 26 Nov 2026), and the print came out as a male.
+     * the photo (order F26-000194 "Sára", 26 Nov 2026), and the print came out as a male. No anatomical word: Tripo refused
+     * a cleaning that named them ("violation of content policy", 27 Nov 2026), and a refusal must not cost the figure.
      */
-    public const KEEP_SEX = 'Keep the sex of the animal exactly as on the photo: never add, enlarge or invent genitals; where the belly between the hind legs is not clearly visible, '
-        .'show it plain and neutral.';
+    public const KEEP_SEX = 'Keep the anatomy of the animal exactly as on the photo and add nothing under the belly or between the hind legs; '
+        .'where that area is not clearly visible, show it plain, smooth and neutral.';
 
     /**
      * What the photo of a pet becomes before a generator without its own clean-up (Meshy) makes the model: the animal
@@ -165,11 +166,19 @@ class GenerateModel implements ShouldQueue
             if ($sides && ! $req->external_id && $restyler && empty($req->description['stage'])) {
                 // every side redrawn with the same words, all at once; the model waits for all of them
                 $tasks = [];
+                $refused = [];
                 foreach ($req->photoPaths() as $view => $rel) {
-                    $tasks[$view] = $restyler->restyle(Storage::disk('local')->path((string) $rel), $redraw)->externalId;
+                    try {
+                        $tasks[$view] = $restyler->restyle(Storage::disk('local')->path((string) $rel), $redraw)->externalId;
+                    } catch (\Throwable $e) {
+                        if (self::busyGenerator($e) && $tasks === []) {
+                            throw $e;
+                        }
+                        $refused[$view] = mb_substr($e->getMessage(), 0, 200);   // that side stays as it was sent
+                    }
                 }
                 $req->update(['external_id' => 'sides', 'engine' => 'tripo-image', 'status' => 'running', 'cost_cents' => 5 * count($tasks),
-                    'description' => ['stage' => 'images', 'image_tasks' => $tasks] + $req->description]);
+                    'description' => ['stage' => 'images', 'image_tasks' => $tasks, 'image_failed' => $refused] + $req->description]);
             }
             if (($req->description['stage'] ?? null) === 'images' && $restyler) {
                 if (! $this->sidesDrawn($req, $restyler)) {
@@ -181,9 +190,19 @@ class GenerateModel implements ShouldQueue
             }
             if (! $sides && ! $req->external_id && $redraw && $restyler && empty($req->description['stage'])) {
                 // first task: the photo redrawn (as a cartoon figure, or as the animal alone)
-                $handle = $restyler->restyle(Storage::disk('local')->path((string) $req->image_path), $redraw);
-                $req->update(['external_id' => $handle->externalId, 'engine' => $handle->engine, 'status' => 'running',
-                    'cost_cents' => (int) ($handle->meta['credits'] ?? 5), 'description' => ['stage' => 'image'] + $req->description]);
+                try {
+                    $handle = $restyler->restyle(Storage::disk('local')->path((string) $req->image_path), $redraw);
+                    $req->update(['external_id' => $handle->externalId, 'engine' => $handle->engine, 'status' => 'running',
+                        'cost_cents' => (int) ($handle->meta['credits'] ?? 5), 'description' => ['stage' => 'image'] + $req->description]);
+                } catch (\Throwable $e) {
+                    // refused right away (Tripo "violation of content policy" on a clean photo of a dog, 27 Nov 2026): like a
+                    // cleaning that fails later, a pet alone or a bust is made of the photo as it is; busy = asked again below
+                    if (self::busyGenerator($e) || $style === 'cartoon' || ! empty($req->description['with_person'])) {
+                        throw $e;
+                    }
+                    Log::warning('Photo cleaning refused, the model is made of the photo as it is', ['id' => $req->id, 'error' => $e->getMessage()]);
+                    $req->update(['external_id' => null, 'progress' => 30, 'description' => ['stage' => 'model', 'clean_failed' => mb_substr($e->getMessage(), 0, 200)] + $req->description]);
+                }
             }
             if (($req->description['stage'] ?? null) === 'image' && $restyler) {
                 $drawn = $restyler->pollImage(new GenerationHandle((string) $req->engine, (string) $req->external_id));
