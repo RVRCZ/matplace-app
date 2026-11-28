@@ -586,6 +586,15 @@ společné kusy níže (commit 19dfe46c a navazující). Žádná změna výpoč
   který je na telefonu skrytý, `max-lg:hidden lg:contents`, aby oranžové tlačítko bylo jedno) a pod ním stav modelu
   (`#tool-status`: „vytvářím…“, hotovo s rozměry). Po dokončení modelu se stránka nehýbe (`revealStage()` jen blikne
   kartou náhledu); dřív skočila nahoru k vieweru.
+- **Změna 28. 11. 2026 (Roman: „při skrolování se obraz fixuje nahoru“, „po stisku tlačítka má obraz vyjet nahoru na
+  animaci“):** na telefonu je `#tool-stage` `max-lg:contents`, jeho bloky jsou bloky mřížky stránky (`max-lg:order-2`,
+  `@yield('stage')` v obalu `lg:contents`) a karta náhledu `#tool-viewer-card` je `sticky top-1`, jakmile je model na
+  scéně (`#tool-empty` skrytý; app.css mimo vrstvy) – drží nahoře přes celý panel voleb, pod mřížkou se pustí; náhled je
+  pak 36vh místo 46vh, aby volbám zbylo místo (jako barvy na stránce zakázky). Dokud je náhled místem pro fotky nebo
+  soubor, sticky není. `revealStage()` na telefonu stránku k náhledu posune, když není vidět (`revealIfHidden(card,
+  'start')`), a blikne. Stránka zakázky: „Spočítat/Přepočítat cenu“ posune k modelu hned při stisku, ne až když odpověď
+  řekne, že řez běží (známá cena se vrátí hned a stránka zůstala dole). Ověřeno headless 390 px (`tool_pin`, box):
+  karta drží nahoře 400–1600 px, pod panelem odjede; bez vodorovného posuvu.
 - Kroky v liště: klik přepíná sekci uvnitř panelu (`revealIfHidden(sec, 'start')` pod sticky lištu), bez `#hash`
   a bez pohybu stránky; `reveal()` modulů (chyby, výsledky, barvy) roluje panel jen když cíl není vidět, prstenec zůstává.
   Na telefonu (panel není rolující) se stránka posune k sekci, jen když není vidět.

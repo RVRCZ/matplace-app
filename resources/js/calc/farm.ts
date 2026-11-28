@@ -1551,6 +1551,9 @@ export function bootFarmOrder(): void {
         // started over with the new choices (the server drops the running one's result, docs/AL.md §11)
         if (state.status === 'uploaded' && !state.big) return;
         step('o_slice');
+        // the page goes up to the model at the press, not only when the answer says a slice runs: a price the server
+        // already knew comes back at once (no "running" in between) and the page stayed down (Roman, 28 Nov 2026)
+        revealIfHidden($('farm-viewer'), 'center');
         const btn = $<HTMLButtonElement>('farm-reslice');
         const recolor = $<HTMLButtonElement>('farm-recolor');
         const start = $<HTMLButtonElement>('farm-slice-start');

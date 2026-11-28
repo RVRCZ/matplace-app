@@ -161,12 +161,16 @@ export class Stage {
     }
 
     /**
-     * On a phone (under lg) the viewer is above the options: nothing moves the page (docs/AN.md §18, no jumps), the model's
-     * card gets a ring and the bar at the bottom carries the status and the way on. False on lg, where both are in view.
+     * On a phone (under lg) the viewer is above the options: the page goes up to the model being made or shown when it is
+     * out of sight (Roman, 28 Nov 2026: "the picture should come up to the animation"; it only got a ring before, docs/AN.md
+     * §18), and the card gets the ring. A model already on show stays at the top anyway (app.css #tool-viewer-card), so
+     * nothing moves then. False on lg, where both are in view.
      */
     revealStage(): boolean {
         if (window.matchMedia('(min-width: 64rem)').matches) return false;
-        flash(this.el('tool-stage').firstElementChild);
+        const card = this.el('tool-viewer-card');
+        revealIfHidden(card, 'start');
+        flash(card);
         return true;
     }
 
