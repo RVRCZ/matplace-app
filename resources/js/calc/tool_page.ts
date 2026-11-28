@@ -70,8 +70,15 @@ export class Stage {
         this.emptyTakesFile();
         this.spy();
         this.el('tool-go').addEventListener('click', () => { if (this.goHref) void this.leave(this.ordered(this.goHref)); else void this.goAction?.(); });
-        // the second action (secondary(): the card's button and its copy in the phone's bar)
+        // the second action (secondary(): the card's button beside the main one)
         document.addEventListener('click', (e) => { if ((e.target as HTMLElement).closest('[data-again]')) void this.againAction?.(); });
+        // a phone has one button in its bar (Roman, 28 Nov 2026: two buttons and the line why took most of the screen): while
+        // the design was changed after the model it is that change ("Změnit podstavec" / "Přegenerovat"), else the way on
+        document.querySelector('[data-action-bar][data-for="tool-go"]')?.addEventListener('click', (e) => {
+            if (!this.againAction || !(e.target as HTMLElement).closest('[data-bar-button]')) return;
+            e.stopPropagation();
+            void this.againAction();
+        }, true);
         // a row with a colour swatch (class tool-swatch-row): the whole row opens the colour window, not the small circle
         // alone – people click the words "pick a colour". The row's other buttons (move, join) keep their own work.
         document.addEventListener('click', (e) => {
@@ -350,10 +357,13 @@ export class Stage {
 
     /**
      * A second action beside the main one, with the line that says why it is there (the card and the phone's bar both
-     * have it, data-again / data-again-why); `null` takes it away. Nothing else is changed: the main button stays as it is.
+     * have it, data-again / data-again-why); `null` takes it away. The main button stays as it is; the phone's bar, which has
+     * room for one button, shows this one in its place while it is there (data-bar-label, read by site/sticky.ts).
      */
     secondary(o: { label: string; why: string; run: () => void | Promise<void> } | null): void {
         this.againAction = o?.run ?? null;
+        const go = this.el('tool-go');
+        if (o) go.dataset.barLabel = o.label; else delete go.dataset.barLabel;
         document.querySelectorAll<HTMLElement>('[data-again]').forEach((b) => { b.hidden = !o; if (o) b.textContent = o.label; });
         document.querySelectorAll<HTMLElement>('[data-again-why]').forEach((p) => { p.hidden = !o; if (o) p.textContent = o.why; });
     }

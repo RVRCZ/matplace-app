@@ -93,8 +93,8 @@ export function bootFigure(stage: Stage): void {
         }
         if (!base && !other) { stage.secondary(null); return; }
         stage.secondary(other
-            ? { label: t('figure.again'), why: t('figure.again.why'), run: () => form.requestSubmit() }
-            : { label: t('figure.again.rebase'), why: t('figure.again.rebase.why'), run: () => { document.getElementById('figure-rebase')?.click(); } });
+            ? { label: t('figure.again'), why: t('figure.again.why'), run: () => { step('again'); form.requestSubmit(); } }
+            : { label: t('figure.again.rebase'), why: t('figure.again.rebase.why'), run: () => { step('again'); document.getElementById('figure-rebase')?.click(); } });
     };
     form.addEventListener('change', stale);
     form.addEventListener('input', stale);
@@ -510,7 +510,6 @@ export function bootFigure(stage: Stage): void {
     const goOn = [document.getElementById('tool-go'), goBar?.querySelector('[data-bar-button]') ?? null];
     goOn.forEach((b) => { watch(b, 'cta_seen', isMade); b?.addEventListener('click', () => { ordered = true; }); });
     ['pointerdown', 'wheel'].forEach((ev) => document.getElementById('tool-viewer')?.parentElement?.addEventListener(ev, () => { if (made) step('model_touch'); }, { passive: true, capture: true }));
-    document.querySelectorAll('[data-again]').forEach((b) => b.addEventListener('click', () => step('again')));
     ['tool-download', 'tool-download-menu'].forEach((id) => document.getElementById(id)?.addEventListener('click', () => step('dl_click')));
 
     form.onsubmit = async (e) => {

@@ -600,6 +600,12 @@ společné kusy níže (commit 19dfe46c a navazující). Žádná změna výpoč
   = volí se), už ne jen u barev; pustí se jen při psaní do pole objednávky (klávesnice). Řez, který doběhne v tomto
   zobrazení stránky, posune okno tak, že karta „Objednávka“ (`#farm-pay`, doprava a platba) začíná hned pod připnutým
   náhledem (`toPayment`). Ověřeno místně 390 px: po konci řezu náhled nahoře (top 5), „Objednávka“ od 318 px.
+- **Lišta nástroje na telefonu má jen jedno tlačítko, 28. 11. 2026 (Roman: „dvě tlačítka a text zabírají skoro celou
+  spodní část obrazovky“):** po změně návrhu po vzniku modelu (jméno, podstavec, styl…) lišta neukazuje řádek „proč“
+  ani druhé tlačítko; hlavní tlačítko lišty dostane popisek té změny („Změnit podstavec“ / „Přegenerovat“) a stisk ji
+  provede (`ToolPage.secondary` dá `data-bar-label` na `#tool-go`, klik v liště zachytí dřív než přeposlání na
+  `#tool-go`). Bez změny (nebo po jejím vrácení) je to zase „Spočítat cenu a možnosti tisku“. Karta na počítači má
+  obě tlačítka a řádek „proč“ jako dřív. Ověřeno místně 390 px (`pet_bar`): lišta 65 px ve všech stavech.
 - Kroky v liště: klik přepíná sekci uvnitř panelu (`revealIfHidden(sec, 'start')` pod sticky lištu), bez `#hash`
   a bez pohybu stránky; `reveal()` modulů (chyby, výsledky, barvy) roluje panel jen když cíl není vidět, prstenec zůstává.
   Na telefonu (panel není rolující) se stránka posune k sekci, jen když není vidět.

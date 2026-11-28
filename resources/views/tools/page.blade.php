@@ -210,8 +210,7 @@
     </div>
 </div>
 {{-- a phone: the way on in a bar fixed to the bottom, the status of the model as its second line (components/action-bar, docs/AN.md §18) --}}
-<x-action-bar for="tool-go" sub="tool-status" class="lg:hidden">
-    <p data-again-why class="mb-1 text-xs text-ink" hidden></p>
-    <button type="button" data-again class="btn-secondary mb-1 w-full text-sm" hidden></button>
-</x-action-bar>
+{{-- one button only: after a change of the design it is that change (ToolPage.secondary), Roman 28 Nov 2026 --}}
+<x-action-bar for="tool-go" sub="tool-status" class="lg:hidden" />
+
 @endsection

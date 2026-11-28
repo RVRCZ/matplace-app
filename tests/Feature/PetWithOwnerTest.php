@@ -177,9 +177,10 @@ class PetWithOwnerTest extends TestCase
             app()->setLocale($lang);
             foreach (['/tools/pet-figurine' => ['figure.again', 'figure.again.why', 'figure.again.rebase', 'figure.again.rebase.why'], '/tools/figure' => ['figure.again', 'figure.again.why']] as $path => $keys) {
                 $page = $this->get($prefix.$path)->assertOk();
-                // the button and its line, in the card and in the phone's bar, both hidden until the script has a reason
-                $this->assertSame(2, substr_count($page->getContent(), 'data-again class='), $lang.$path);
-                $this->assertSame(2, substr_count($page->getContent(), 'data-again-why'), $lang.$path);
+                // the button and its line in the card, hidden until the script has a reason; the phone's bar has only its
+                // one button, which takes the label of the change (ToolPage.secondary, Roman 28 Nov 2026)
+                $this->assertSame(1, substr_count($page->getContent(), 'data-again class='), $lang.$path);
+                $this->assertSame(1, substr_count($page->getContent(), 'data-again-why'), $lang.$path);
                 foreach ($keys as $key) {
                     $this->assertNotSame($key, __($key), $lang.' '.$key);
                     $page->assertSee('"'.$key.'"', false);
