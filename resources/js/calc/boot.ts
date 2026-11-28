@@ -11,7 +11,8 @@ import { bootToolPage } from './tool_page';
 import { bootSpare } from './spare';
 import { bootFarmCta, bootFarmStart, bootFarmOrder, bootFarmAdminViewer, bootFarmDashboard } from './farm';
 import { bootPhotobox } from './photobox';
+import { bootAdminActivity } from './activity';
 
 export function bootCalc(): void {
-    boot(); bootSearch(); bootChat(); bootMiniViewers(); bootToolPage(); bootSpare(); bootFarmCta(); bootFarmStart(); bootFarmOrder(); bootFarmAdminViewer(); bootFarmDashboard(); bootPhotobox();
+    boot(); bootSearch(); bootChat(); bootMiniViewers(); bootToolPage(); bootSpare(); bootFarmCta(); bootFarmStart(); bootFarmOrder(); bootFarmAdminViewer(); bootFarmDashboard(); bootPhotobox(); bootAdminActivity();
 }

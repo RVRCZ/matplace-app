@@ -513,6 +513,8 @@ Route::middleware(['auth', 'role:admin'])->prefix('admin/farm')->name('admin.far
     $catalog = FarmCatalogController::class;
 
     Route::get('/', [$orders, 'dashboard'])->name('dashboard');
+    // what happened on the web, newest first (Roman 28 Nov 2026, App\Domain\Stats\ActivityStream)
+    Route::get('/activity', \App\Http\Controllers\Admin\ActivityController::class)->name('activity');
     Route::post('/attention/clear', [$orders, 'clearAttention'])->name('attention.clear');
     Route::post('/orders/{order}/attention/clear', [$orders, 'clearAttention'])->name('attention.clear.one');
     Route::get('/orders', [$orders, 'index'])->name('orders');
