@@ -27,7 +27,10 @@ use Illuminate\Validation\Rule;
 use Illuminate\View\View;
 use Symfony\Component\HttpFoundation\BinaryFileResponse;
 
-/** /admin/youtube: connect the channel, approve (publish) or reject the print videos customers agreed to share. */
+/**
+ * /admin/youtube/channel: connect the channel, its numbers, the showcase print, and the cuts of many prints and the how-to
+ * videos to approve; a print's own Short and 16:9 are settled in the video studio (VideoStudioController).
+ */
 class YouTubeController extends Controller
 {
     public function __construct(private readonly YouTubeClient $youtube, private readonly FarmVideos $videos, private readonly TestPhotos $photos, private readonly MetaClient $meta) {}
@@ -44,7 +47,9 @@ class YouTubeController extends Controller
     public function index(): View
     {
         $videos = FarmVideo::with(['order.color.material', 'order.printer', 'order.user', 'order.modelFile', 'order.catalogModel', 'clips'])->latest('id')->limit(300)->get();
-        $waiting = $videos->whereIn('status', [FarmVideo::STATUS_PENDING, FarmVideo::STATUS_UPLOADED, FarmVideo::STATUS_QUEUED, FarmVideo::STATUS_UPLOADING, FarmVideo::STATUS_FAILED])
+        // a print's Short and 16:9 are settled in the video studio (VideoStudioController): here the cuts of many prints and the how-to videos
+        $others = $videos->whereNotIn('kind', [FarmVideo::KIND_SHORT, FarmVideo::KIND_WIDE]);
+        $waiting = $others->whereIn('status', [FarmVideo::STATUS_PENDING, FarmVideo::STATUS_UPLOADED, FarmVideo::STATUS_QUEUED, FarmVideo::STATUS_UPLOADING, FarmVideo::STATUS_FAILED])
             ->sort(fn ($a, $b) => $this->videos->queueRank($a) <=> $this->videos->queueRank($b) ?: ($b->score ?? -1) <=> ($a->score ?? -1))->values();
 
         return view('admin.youtube.index', [
@@ -58,7 +63,7 @@ class YouTubeController extends Controller
                 ->mapWithKeys(fn ($v) => [$v->farm_order_id => $v->order ? $this->photos->finishIndex($v->order) : null])->all(),
             'kinds' => $this->byKind(),
             'videoPrices' => $this->videos->showsPrices(),
-            'done' => $videos->whereIn('status', [FarmVideo::STATUS_SCHEDULED, FarmVideo::STATUS_PUBLISHED, FarmVideo::STATUS_REJECTED, FarmVideo::STATUS_WITHDRAWN, FarmVideo::STATUS_MISSING]),
+            'done' => $others->whereIn('status', [FarmVideo::STATUS_SCHEDULED, FarmVideo::STATUS_PUBLISHED, FarmVideo::STATUS_REJECTED, FarmVideo::STATUS_WITHDRAWN, FarmVideo::STATUS_MISSING]),
             'nextSlot' => $this->videos->nextSlot()->timezone((string) config('youtube.publish_timezone', 'Europe/Prague')),
             // the Facebook page / Instagram: offered at the approval when Meta is connected, and what came of it per video
             'metaAvailable' => $this->meta->available(),
@@ -122,25 +127,25 @@ class YouTubeController extends Controller
     {
         $state = $request->session()->pull('youtube_oauth_state');
         if (! $state || ! hash_equals($state, (string) $request->query('state'))) {
-            return redirect()->route('admin.youtube.index')->with('error', 'Přihlášení vypršelo, zkuste připojení znovu.');
+            return redirect()->route('admin.youtube.channel')->with('error', 'Přihlášení vypršelo, zkuste připojení znovu.');
         }
         if ($request->query('error') || ! $request->query('code')) {
-            return redirect()->route('admin.youtube.index')->with('error', 'Google připojení nepovolil: '.$request->query('error', 'bez kódu'));
+            return redirect()->route('admin.youtube.channel')->with('error', 'Google připojení nepovolil: '.$request->query('error', 'bez kódu'));
         }
         try {
             $account = $this->youtube->connect((string) $request->query('code'), route('admin.youtube.callback'), $request->user()->id);
         } catch (YouTubeError $e) {
-            return redirect()->route('admin.youtube.index')->with('error', 'Připojení se nepovedlo: '.$e->getMessage());
+            return redirect()->route('admin.youtube.channel')->with('error', 'Připojení se nepovedlo: '.$e->getMessage());
         }
 
-        return redirect()->route('admin.youtube.index')->with('status', 'Kanál „'.$account->channel_title.'“ je připojený.');
+        return redirect()->route('admin.youtube.channel')->with('status', 'Kanál „'.$account->channel_title.'“ je připojený.');
     }
 
     public function disconnect(): RedirectResponse
     {
         $this->youtube->disconnect();
 
-        return redirect()->route('admin.youtube.index')->with('status', 'Kanál je odpojený. Nová videa se nahrávat nebudou.');
+        return redirect()->route('admin.youtube.channel')->with('status', 'Kanál je odpojený. Nová videa se nahrávat nebudou.');
     }
 
     public function queue(Request $request, FarmOrder $order): RedirectResponse
@@ -207,25 +212,7 @@ class YouTubeController extends Controller
             return back()->with('error', 'Nahrazení se nepovedlo: '.$e->getMessage());
         }
 
-        return back()->with('status', 'Stará verze je z YouTube smazaná, nová se nahrává.');
-    }
-
-    /** "Postavit znovu": the waiting Short again from its frames, with today's settings (e.g. without the price). */
-    public function rebuild(Request $request, FarmVideo $video): RedirectResponse
-    {
-        // "ukázat předlohu": the customer's picture only ever goes in when an admin ticks it for this video
-        if ($request->boolean('source_form')) {
-            $meta = (array) $video->meta;
-            $meta['show_source'] = $request->boolean('show_source');
-            $video->update(['meta' => $meta]);
-        }
-        if (! $this->videos->rebuild($video)) {
-            return back()->with('error', 'Video teď nejde postavit znovu: snímky tisku už jsou smazané, nebo se právě staví.');
-        }
-
-        return back()->with('status', $video->status === FarmVideo::STATUS_UPLOADED
-            ? 'Video se staví znovu, za pár minut tu bude nové. Na YouTube je zatím stará verze: potom klikněte na „Nahradit novou verzí“.'
-            : 'Video se staví znovu, za pár minut tu bude nové (obnovte stránku).');
+        return back()->with('status', 'Video je z YouTube smazané a čeká tu znovu: upravte ho a zveřejněte.');
     }
 
     /** A print for the channel on a free machine (ShowcasePrints). */

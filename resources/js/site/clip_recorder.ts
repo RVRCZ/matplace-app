@@ -1,4 +1,4 @@
-export const CLIP_LIMITS: Record<string, number> = { removal: 10, turn: 10, detail: 3, with_source: 3, in_hand: 3 };
+export const CLIP_LIMITS: Record<string, number> = { removal: 10, turn: 10, detail: 3, with_source: 3, in_hand: 3, clip: 10 };
 
 type Capture = {
     getUserMedia: (constraints: MediaStreamConstraints) => Promise<MediaStream>;

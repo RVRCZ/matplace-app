@@ -231,7 +231,7 @@ M83
         $order->forceFill(['test_params' => ['photos' => [['file' => $order->dir().'/photos/left.jpg', 'view' => 'left']]]])->save();
         $this->artisan('farm:timelapse', ['number' => $order->number])->assertSuccessful();
         $order->refresh();
-        $this->assertEqualsWithDelta($without[0], $seconds($order->timelapse_short_path), 0.3, 'the Short keeps its 8 s: the 1.5 s photographed piece closes it instead of the 1 s held plate and the growth gives the half second');
+        $this->assertEqualsWithDelta($without[0] + 1.5, $seconds($order->timelapse_short_path), 0.3, 'the Short: + 1.5 s of the photographed piece at its end (the video studio\'s media list)');
         $this->assertEqualsWithDelta($without[1] + 3.0, $seconds($order->timelapse_path), 0.3, 'the landscape video: + 3 s photo');
         $this->assertMatchesRegularExpression('/Video: h264.*\b1080x1920\b/', Process::run([$ffmpeg, '-hide_banner', '-i', $disk->path($order->timelapse_short_path)])->errorOutput());
         $info = Process::run([$ffmpeg, '-hide_banner', '-i', $disk->path($order->timelapse_short_path)])->errorOutput();

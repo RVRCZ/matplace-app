@@ -11,6 +11,8 @@
 @section('content')
 @include('admin.farm.nav')
 
+<p class="mt-4 text-sm"><a href="{{ route('admin.youtube.index') }}" class="font-semibold underline">← Videa z tisků</a></p>
+
 {{-- the channel --}}
 <section class="mt-4 rounded-2xl border border-slate-200 bg-white p-4">
     <h2 class="font-bold">YouTube kanál</h2>
@@ -110,7 +112,8 @@
 @endif
 
 {{-- waiting for a decision: the Short and the 16:9 of one print side by side, each approved on its own --}}
-<h2 class="mt-6 text-lg font-bold">Ke schválení</h2>
+<h2 class="mt-6 text-lg font-bold">Sestřihy a návody ke schválení</h2>
+<p class="text-xs text-slate-500">Videa jednotlivých tisků (Short a 16:9) se schvalují ve <a href="{{ route('admin.youtube.index') }}" class="underline">Videích z tisků</a>.</p>
 @forelse($waiting as $group)
     @php($o = $group->first()->order)
     <section class="mt-3 rounded-2xl border border-slate-200 bg-white p-4">
@@ -178,7 +181,7 @@
     </div>
 @endif
 
-<h2 class="mt-6 text-lg font-bold">Vyřízené</h2>
+<h2 class="mt-6 text-lg font-bold">Vyřízené sestřihy a návody</h2>
 <div class="mt-2 space-y-2">
     @forelse($done as $v)
         <div class="flex flex-wrap items-center justify-between gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm">

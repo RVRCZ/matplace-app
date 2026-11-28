@@ -3,13 +3,23 @@
 namespace Tests\Feature;
 
 use App\Domain\Farm\FarmSettings;
+use App\Domain\Generation\SourcePhotos;
 use App\Domain\YouTube\FarmVideos;
+use App\Domain\YouTube\ModelPicture;
+use App\Domain\YouTube\StudioCutter;
+use App\Domain\YouTube\StudioMedia;
 use App\Domain\YouTube\TimelapseCutter;
+use App\Engines\Exceptions\EngineException;
+use App\Engines\Repair\PythonTool;
+use App\Engines\Repair\ScriptRunner;
 use App\Jobs\BuildFarmTimelapse;
-use App\Jobs\RebuildFarmShort;
+use App\Jobs\BuildStudioVideos;
 use App\Mail\FarmAdminAlert;
+use App\Models\FarmColor;
 use App\Models\FarmOrder;
 use App\Models\FarmVideo;
+use App\Models\GenerationRequest;
+use App\Models\ModelFile;
 use App\Models\Payment;
 use App\Models\User;
 use Database\Seeders\FarmSeeder;
@@ -21,6 +31,7 @@ use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Process;
+use Illuminate\Support\Facades\Queue;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use Tests\Support\MeshFixtures;
@@ -42,11 +53,11 @@ class FarmVideosCutTest extends TestCase
         parent::setUp();
         Storage::fake('models');
         // the server's model picture is drawn only by the tests that want it: here python is "not there", the Short opens as it did
-        $this->app->instance(\App\Engines\Repair\ScriptRunner::class, new class implements \App\Engines\Repair\ScriptRunner
+        $this->app->instance(ScriptRunner::class, new class implements ScriptRunner
         {
             public function runScript(string $script, array $args, int $timeout = 90): array
             {
-                throw new \App\Engines\Exceptions\EngineException('no python in this test');
+                throw new EngineException('no python in this test');
             }
         });
         Storage::fake('farm');
@@ -191,68 +202,67 @@ class FarmVideosCutTest extends TestCase
         }
     }
 
-    public function test_a_waiting_short_is_built_again_without_the_price_and_keeps_the_old_file_when_that_fails(): void
+    public function test_the_studio_builds_both_videos_again_keeps_the_old_files_when_that_fails_and_never_touches_one_on_youtube(): void
     {
         $admin = User::factory()->create();
         $admin->setRole(User::ROLE_ADMIN, true);
         $order = $this->order();
         app(FarmSettings::class)->set('video_prices', true);
         $disk = Storage::disk('farm');
-        foreach (['timelapse.mp4' => 'customer', 'short.mp4' => 'old'] as $file => $content) {
+        foreach (['timelapse.mp4' => 'customer', 'short.mp4' => 'old', 'wide.mp4' => 'old wide'] as $file => $content) {
             $disk->put($order->dir().'/'.$file, $content);
         }
-        $order->forceFill(['price_total' => 1190, 'currency' => 'CZK', 'timelapse_short_path' => $order->dir().'/short.mp4'])->save();
+        $order->forceFill(['price_total' => 1190, 'currency' => 'CZK', 'timelapse_short_path' => $order->dir().'/short.mp4', 'timelapse_wide_path' => $order->dir().'/wide.mp4'])->save();
         $this->frames($order, 300);
         $videos = app(FarmVideos::class);
         $edited = 'Moje věta. '.$videos->defaultDescription($order);
         $video = FarmVideo::create(['farm_order_id' => $order->id, 'kind' => FarmVideo::KIND_SHORT, 'status' => FarmVideo::STATUS_PENDING, 'title' => 'T', 'description' => $edited]);
-        $action = route('admin.youtube.rebuild', $video);
-        $this->actingAs($admin)->get('/admin/youtube')->assertOk()->assertSee($action, false)->assertDontSee('Ceny ve videích jsou vypnuté');
+        $action = route('admin.youtube.studio.rebuild', $order);
+        $this->actingAs($admin)->get(route('admin.youtube.studio', $order))->assertOk()->assertSee($action, false);
         // only for admins
-        Process::fake();
+        Queue::fake();
         $this->actingAs(User::factory()->create())->post($action)->assertRedirect();
-        Process::assertNothingRan();
+        Queue::assertNothingPushed();
+        $this->actingAs($admin)->post($action)->assertRedirect()->assertSessionHas('status');
+        Queue::assertPushed(BuildStudioVideos::class, fn ($job) => $job->orderId === $order->id);
+        $build = fn () => app()->call([new BuildStudioVideos($order->id, (int) Cache::get(BuildStudioVideos::versionKey($order->id))), 'handle']);
 
+        // ffmpeg fails: the files the admin sees stay, the page says so
         app(FarmSettings::class)->set('video_prices', false);
-        $this->actingAs($admin)->get('/admin/youtube')->assertOk()->assertSee($action, false)->assertSee('„Postavit znovu“ ji odstraní');
-
-        // ffmpeg fails: the file the admin sees stays, the page says so, and it can be pressed again
         Process::fake(fn () => Process::result(exitCode: 1, errorOutput: 'boom'));
-        $this->actingAs($admin)->post($action)->assertRedirect()->assertSessionHas('status');
-        $this->assertSame('old', $disk->get($order->dir().'/short.mp4'));
-        $this->assertStringContainsString('Postavit znovu se nepovedlo', (string) $video->refresh()->error);
-        $this->assertSame('ready', $videos->rebuildState($video));
+        $build();
+        $this->assertSame(['old', 'old wide'], [$disk->get($order->dir().'/short.mp4'), $disk->get($order->dir().'/wide.mp4')]);
+        $this->assertStringContainsString('nepodařilo postavit', BuildStudioVideos::state($order->id)['errors']['short']);
+        $this->actingAs($admin)->get(route('admin.youtube.studio', $order))->assertOk()->assertSee('Video se nepodařilo postavit');
 
-        // it works: the new file in place, the customer's video and the admin's edited Short description untouched
+        // it works: both new files in place, the customer's video untouched, the admin's description kept (its price words follow the switch)
         Process::fake(fn (PendingProcess $p) => file_put_contents(end($p->command), 'new') ? Process::result() : Process::result(exitCode: 1));
-        $this->actingAs($admin)->post($action)->assertRedirect()->assertSessionHas('status');
-        Process::assertRan(fn (PendingProcess $p) => ! str_contains(implode(' ', $p->command), 'short_price.txt') && str_ends_with(end($p->command), 'short.mp4.new.mp4'));
-        $this->assertSame('new', $disk->get($order->dir().'/short.mp4'));
+        $build();
+        Process::assertRan(fn (PendingProcess $p) => str_ends_with(end($p->command), 'short.mp4.new.mp4'));
+        Process::assertRan(fn (PendingProcess $p) => str_ends_with(end($p->command), 'wide.mp4.new.mp4'));
+        $this->assertSame(['new', 'new', 'customer'], [$disk->get($order->dir().'/short.mp4'), $disk->get($order->dir().'/wide.mp4'), $disk->get($order->dir().'/timelapse.mp4')]);
         $this->assertFalse($disk->exists($order->dir().'/short.mp4.new.mp4'));
-        $this->assertSame('customer', $disk->get($order->dir().'/timelapse.mp4'));
+        $this->assertTrue($disk->exists($order->dir().'/growth.mp4'), 'the growing print is kept for builds after the frames go');
+        $this->assertSame([], BuildStudioVideos::state($order->id)['errors']);
         $video->refresh();
-        $this->assertSame([FarmVideo::STATUS_PENDING, null], [$video->status, $video->error]);
-        $this->assertSame($edited, $video->description);
+        $this->assertSame(FarmVideo::STATUS_PENDING, $video->status);
+        $this->assertStringStartsWith('Moje věta. ', (string) $video->description);
+        $this->assertStringNotContainsString(__('youtube.video.shown_price', [], 'cs'), (string) $video->description);
 
-        // while it runs a second press builds nothing
-        Cache::put(RebuildFarmShort::lockKey($video->id), true, 60);
-        $this->assertSame('running', $videos->rebuildState($video));
-        $this->actingAs($admin)->get('/admin/youtube')->assertOk()->assertDontSee($action, false)->assertSee('Staví se znovu');
-        $this->actingAs($admin)->post($action)->assertRedirect()->assertSessionHas('error');
-        Cache::forget(RebuildFarmShort::lockKey($video->id));
+        // a newer change is on its way: the older job builds nothing
+        $stale = new BuildStudioVideos($order->id, (int) Cache::get(BuildStudioVideos::versionKey($order->id)));
+        BuildStudioVideos::later($order);
+        Process::fake(fn (PendingProcess $p) => file_put_contents(end($p->command), 'stale') ? Process::result() : Process::result(exitCode: 1));
+        app()->call([$stale, 'handle']);
+        $this->assertSame(['new', 'new'], [$disk->get($order->dir().'/short.mp4'), $disk->get($order->dir().'/wide.mp4')]);
 
-        // the frames are gone (14 days): no button, the page says what is left
+        // the frames are gone (14 days): the growing print comes from growth.mp4; a Short on YouTube is never built again
         $disk->deleteDirectory($order->dir().'/frames');
-        $this->assertSame('no_frames', $videos->rebuildState($video));
-        $this->actingAs($admin)->get('/admin/youtube')->assertOk()->assertDontSee($action, false)->assertSee('Snímky tisku už jsou smazané');
-        $this->actingAs($admin)->post($action)->assertRedirect()->assertSessionHas('error');
-        $this->assertSame('new', $disk->get($order->dir().'/short.mp4'));
-
-        // a video that is public, or not a Short, has no button at all
-        $video->update(['status' => FarmVideo::STATUS_PUBLISHED]);
-        $this->assertNull($videos->rebuildState($video));
-        $video->update(['status' => FarmVideo::STATUS_PENDING, 'kind' => FarmVideo::KIND_WIDE]);
-        $this->assertNull($videos->rebuildState($video));
+        $video->update(['youtube_id' => 'yt1', 'status' => FarmVideo::STATUS_PUBLISHED]);
+        Process::fake(fn (PendingProcess $p) => file_put_contents(end($p->command), 'newer') ? Process::result() : Process::result(exitCode: 1));
+        $build();
+        $this->assertSame(['new', 'newer'], [$disk->get($order->dir().'/short.mp4'), $disk->get($order->dir().'/wide.mp4')]);
+        Process::assertRan(fn (PendingProcess $p) => str_ends_with(end($p->command), 'wide.mp4.new.mp4') && in_array($disk->path($order->dir().'/growth.mp4'), $p->command, true));
     }
 
     public function test_the_weekly_cut_takes_the_weeks_shareable_prints_with_a_chapter_each_and_waits_for_the_admin(): void
@@ -325,6 +335,9 @@ class FarmVideosCutTest extends TestCase
         $cuts = (new BuildFarmTimelapse($order->id))->cuts($order);
         (new BuildFarmTimelapse($order->id, rebuild: true))->handle();
         $order->refresh();
+        // the Short and the 16:9 come from the video studio's media list (growth.mp4 made from the frames by now)
+        $cuts['short'] = app(StudioCutter::class)->plan($order, FarmVideo::KIND_SHORT);
+        $cuts['wide'] = app(StudioCutter::class)->plan($order, FarmVideo::KIND_WIDE);
         $disk = Storage::disk('farm');
         $report = [];
         foreach (['customer' => $order->timelapse_path, 'short' => $order->timelapse_short_path, 'wide' => $order->timelapse_wide_path] as $kind => $path) {
@@ -340,13 +353,13 @@ class FarmVideosCutTest extends TestCase
         $this->samples($report, [[$order->timelapse_short_path, $report['short']['seconds'] - 1, 'short'], [$order->timelapse_wide_path, 0.8, 'wide-title'], [$order->timelapse_wide_path, 14, 'wide'],
             [$order->timelapse_wide_path, $report['wide']['seconds'] - 1, 'wide-end'], [$order->timelapse_path, 20, 'customer']], $disk);
 
-        // the photo of the cleaned piece: the Short ends with it (1.5 s instead of the held plate's 1 s); the 16:9 and the customer's cut gain 3 s
+        // the photo of the cleaned piece: the Short ends with it (+ 1.5 s), the 16:9 shows it 2.5 s, the customer's cut gains 3 s
         $disk->put($order->dir().'/photos/left.jpg', $this->picture(200, 'photo'));
         $order->forceFill(['test_params' => ['photos' => [['file' => $order->dir().'/photos/left.jpg', 'view' => 'left']]]])->save();
         $this->artisan('farm:timelapse', ['number' => $order->number])->assertSuccessful();
         $order->refresh();
-        $this->assertEqualsWithDelta($report['short']['seconds'] + 0.5, $this->probe($disk->path($order->timelapse_short_path))['seconds'], 0.3);
-        $this->assertEqualsWithDelta($report['wide']['seconds'] + 3.0, $this->probe($disk->path($order->timelapse_wide_path))['seconds'], 0.3);
+        $this->assertEqualsWithDelta($report['short']['seconds'] + 1.5, $this->probe($disk->path($order->timelapse_short_path))['seconds'], 0.3);
+        $this->assertEqualsWithDelta($report['wide']['seconds'] + 2.5, $this->probe($disk->path($order->timelapse_wide_path))['seconds'], 0.3);
         $this->assertEqualsWithDelta($report['customer']['seconds'] + 3.0, $this->probe($disk->path($order->timelapse_path))['seconds'], 0.3);
     }
 
@@ -365,8 +378,8 @@ class FarmVideosCutTest extends TestCase
         $this->samples([], [[$order->timelapse_short_path, $before['seconds'] - 1, 'short-before-rebuild']], $disk);
 
         app(FarmSettings::class)->set('video_prices', false);
-        $video = FarmVideo::create(['farm_order_id' => $order->id, 'kind' => FarmVideo::KIND_SHORT, 'status' => FarmVideo::STATUS_PENDING, 'title' => 'T']);
-        $this->assertTrue(app(FarmVideos::class)->rebuild($video));
+        FarmVideo::create(['farm_order_id' => $order->id, 'kind' => FarmVideo::KIND_SHORT, 'status' => FarmVideo::STATUS_PENDING, 'title' => 'T']);
+        BuildStudioVideos::later($order, 0);   // sync queue: built now
         $after = $this->probe($disk->path($order->refresh()->timelapse_short_path));
         $this->assertEqualsWithDelta($before['seconds'], $after['seconds'], 0.05);
         $this->assertSame([1080, 1920], [$after['width'], $after['height']]);
@@ -513,7 +526,7 @@ class FarmVideosCutTest extends TestCase
         $cutter = app(TimelapseCutter::class);
 
         $calls = 0;
-        $this->app->instance(\App\Engines\Repair\ScriptRunner::class, new class($calls, $this) implements \App\Engines\Repair\ScriptRunner
+        $this->app->instance(ScriptRunner::class, new class($calls, $this) implements ScriptRunner
         {
             public function __construct(private int &$calls, private $test) {}
 
@@ -529,7 +542,7 @@ class FarmVideosCutTest extends TestCase
         });
         $first = $cutter->shortStills($order->fresh(), null)['model'];
         $this->assertNotNull($first, 'the plan picks the server picture when no preview exists');
-        $this->assertTrue(\App\Domain\YouTube\ModelPicture::isOurs($first));
+        $this->assertTrue(ModelPicture::isOurs($first));
         $this->assertSame($first, $cutter->shortStills($order->fresh(), null)['model']);
         $this->assertSame(1, $calls, 'a rebuild finds the cached picture and does not render again');
         $graph = $cutter->short($order->fresh())->graph;
@@ -550,7 +563,7 @@ class FarmVideosCutTest extends TestCase
         $order = $this->order();
         $this->frames($order, 600);
         $calls = 0;
-        $this->app->instance(\App\Engines\Repair\ScriptRunner::class, new class($calls) implements \App\Engines\Repair\ScriptRunner
+        $this->app->instance(ScriptRunner::class, new class($calls) implements ScriptRunner
         {
             public function __construct(private int &$calls) {}
 
@@ -558,7 +571,7 @@ class FarmVideosCutTest extends TestCase
             {
                 $this->calls++;
 
-                throw new \App\Engines\Exceptions\EngineException('timed out');   // what PythonTool gives for a script that printed nothing
+                throw new EngineException('timed out');   // what PythonTool gives for a script that printed nothing
             }
         });
         $cutter = app(TimelapseCutter::class);
@@ -570,7 +583,7 @@ class FarmVideosCutTest extends TestCase
     public function test_a_real_short_opens_with_a_picture_the_server_drew_of_the_model(): void
     {
         $this->ffmpeg();
-        $this->app->instance(\App\Engines\Repair\ScriptRunner::class, app(\App\Engines\Repair\PythonTool::class));
+        $this->app->instance(ScriptRunner::class, app(PythonTool::class));
         $order = $this->order();
         $disk = Storage::disk('farm');
         $order->forceFill(['status' => FarmOrder::STATUS_DONE])->save();
@@ -589,10 +602,10 @@ class FarmVideosCutTest extends TestCase
 
     public function test_the_model_picture_keeps_its_shading_for_black_and_white_filaments(): void
     {
-        $picture = app(\App\Domain\YouTube\ModelPicture::class);
+        $picture = app(ModelPicture::class);
         $order = $this->order();
-        foreach (['#0a0a0a' => '4a4d52', '#ffffff' => \App\Domain\YouTube\ModelPicture::NEUTRAL, '#C8873A' => 'c8873a', 'nonsense' => \App\Domain\YouTube\ModelPicture::NEUTRAL] as $hex => $drawn) {
-            $order->setRelation('color', (new \App\Models\FarmColor)->forceFill(['hex' => $hex]));
+        foreach (['#0a0a0a' => '4a4d52', '#ffffff' => ModelPicture::NEUTRAL, '#C8873A' => 'c8873a', 'nonsense' => ModelPicture::NEUTRAL] as $hex => $drawn) {
+            $order->setRelation('color', (new FarmColor)->forceFill(['hex' => $hex]));
             $this->assertSame($drawn, $picture->colour($order), 'a black filament is drawn dark grey, a white one neutral grey, any other in its own colour');
         }
     }
@@ -602,37 +615,37 @@ class FarmVideosCutTest extends TestCase
         $order = $this->order();
         $first = $order->modelFile;
         $first->forceFill(['origin' => 'generated', 'origin_ref' => 'gen123456789'])->save();
-        Storage::disk(\App\Models\ModelFile::DISK)->put($first->dir().'/source_hold.jpg', $this->picture(120, 'F'));
+        Storage::disk(ModelFile::DISK)->put($first->dir().'/source_hold.jpg', $this->picture(120, 'F'));
         // the pedestal was changed: a new file of the same generation, nothing held beside it
         $second = $first->replicate();
-        $second->uuid = (string) \Illuminate\Support\Str::uuid();
+        $second->uuid = (string) Str::uuid();
         $second->save();
         $order->forceFill(['model_file_id' => $second->id])->save();
         $order = $order->fresh();
 
-        app(\App\Domain\Generation\SourcePhotos::class)->keep($order, $order->modelFile);
+        app(SourcePhotos::class)->keep($order, $order->modelFile);
         $this->assertNotNull(app(TimelapseCutter::class)->sourcePicture($order), 'the photo held beside the first file of the generation reaches the order');
 
         // the Short opens with a picture: the title sits low, not over the face; without a picture it stays where it was
         $this->frames($order, 300);
         $video = FarmVideo::create(['farm_order_id' => $order->id, 'kind' => FarmVideo::KIND_SHORT, 'status' => FarmVideo::STATUS_PENDING, 'title' => 'T', 'meta' => ['show_source' => true]]);
-        $this->assertStringContainsString("y=h*0.84-text_h", app(TimelapseCutter::class)->short($order->fresh())->graph);
+        $this->assertStringContainsString('y=h*0.84-text_h', app(TimelapseCutter::class)->short($order->fresh())->graph);
         $video->forceFill(['meta' => ['show_source' => false]])->save();
-        $this->assertStringContainsString("y=h*0.16", app(TimelapseCutter::class)->short($order->fresh())->graph);
+        $this->assertStringContainsString('y=h*0.16', app(TimelapseCutter::class)->short($order->fresh())->graph);
     }
 
     public function test_a_pet_figurine_is_titled_as_a_pet_figurine_and_a_bust_as_a_bust(): void
     {
-        $videos = app(\App\Domain\YouTube\FarmVideos::class);
+        $videos = app(FarmVideos::class);
         foreach (['pet' => 'Figurka mazlíčka z fotky', 'bust' => 'Busta z jedné fotky', 'figure' => 'Figurka z jedné fotky', 'none' => 'Busta z jedné fotky'] as $kind => $title) {
             $order = $this->order();
-            $req = \App\Models\GenerationRequest::create(['token' => 'tok'.$kind.'12345678', 'type' => 'image', 'engine' => 'fake', 'status' => 'done', 'progress' => 100,
+            $req = GenerationRequest::create(['token' => 'tok'.$kind.'12345678', 'type' => 'image', 'engine' => 'fake', 'status' => 'done', 'progress' => 100,
                 'description' => $kind === 'none' ? [] : ['kind' => $kind]]);
             $order->modelFile->forceFill(['origin' => 'generated', 'origin_ref' => $req->token])->save();
             $order->refresh();
             $this->assertSame(['pet' => 'pet', 'figure' => 'figurine'][$kind] ?? 'figure', $videos->toolKind($order));
-            $this->assertStringContainsString('figure' === $kind ? 'figurka' : ('pet' === $kind ? 'mazlíčka' : 'busta'), $videos->hook($order, 'cs'), 'the hook follows the kind');
-            $this->assertStringContainsString('figure' === $kind ? '#figurka' : ('pet' === $kind ? '#mazlíček' : '#figurka'), $videos->hashtags($order, 'cs'));
+            $this->assertStringContainsString($kind === 'figure' ? 'figurka' : ($kind === 'pet' ? 'mazlíčka' : 'busta'), $videos->hook($order, 'cs'), 'the hook follows the kind');
+            $this->assertStringContainsString($kind === 'figure' ? '#figurka' : ($kind === 'pet' ? '#mazlíček' : '#figurka'), $videos->hashtags($order, 'cs'));
             $this->assertStringStartsWith($title, $videos->defaultTitle($order), 'the opening words of the Short name the right tool');
         }
     }
@@ -643,11 +656,11 @@ class FarmVideosCutTest extends TestCase
         Storage::fake('local');
         Storage::disk('local')->put('photos/figures/front.jpg', $this->picture(100, 'F'));
         Storage::disk('local')->put('photos/figures/left.jpg', $this->picture(50, 'L'));
-        $req = \App\Models\GenerationRequest::create(['token' => 'abcdef123456', 'type' => 'image', 'engine' => 'fake', 'status' => 'done', 'progress' => 100,
+        $req = GenerationRequest::create(['token' => 'abcdef123456', 'type' => 'image', 'engine' => 'fake', 'status' => 'done', 'progress' => 100,
             'image_path' => 'photos/figures/front.jpg', 'views' => ['left' => 'photos/figures/left.jpg'], 'description' => ['kind' => 'pet', 'delete_photo' => true]]);
         $file = $order->modelFile;
         $file->forceFill(['origin' => 'generated', 'origin_ref' => $req->token])->save();
-        $photos = app(\App\Domain\Generation\SourcePhotos::class);
+        $photos = app(SourcePhotos::class);
         $cutter = app(TimelapseCutter::class);
 
         // the run is over: the front photo (not the side view) waits beside the model, the generation forgets its own
@@ -663,7 +676,7 @@ class FarmVideosCutTest extends TestCase
 
         // a non-photo model is not kept; the pruning removes the held photo after a day, the copy with the frames
         $this->frames($order, 8);
-        $old = time() - (\App\Jobs\BuildFarmTimelapse::KEEP_FRAMES_DAYS + 1) * 86400;
+        $old = time() - (BuildFarmTimelapse::KEEP_FRAMES_DAYS + 1) * 86400;
         touch(Storage::disk('models')->path($file->dir().'/source_hold.jpg'), time() - 25 * 3600);
         $this->artisan('matplace:prune')->assertSuccessful();
         $this->assertFalse(Storage::disk('models')->exists($file->dir().'/source_hold.jpg'));
@@ -676,20 +689,30 @@ class FarmVideosCutTest extends TestCase
         $this->assertNull($cutter->sourcePicture($order->fresh()), 'gone with the frames');
     }
 
-    public function test_a_waiting_short_is_rebuilt_from_the_admin_page_with_the_source_tick_remembered(): void
+    public function test_the_customers_photo_is_an_item_of_its_own_out_of_the_videos_until_the_admin_switches_it_on(): void
     {
         $order = $this->order();
         $this->frames($order, 8);
         $this->stillsFor($order, source: true);
         $video = FarmVideo::create(['farm_order_id' => $order->id, 'kind' => FarmVideo::KIND_SHORT, 'status' => FarmVideo::STATUS_PENDING, 'title' => 'T']);
-        \Illuminate\Support\Facades\Queue::fake();
+        $items = app(StudioMedia::class)->items($order);
+        $this->assertSame(['source', 'design', 'sliced', 'growth', 'photo'], $items->pluck('kind')->all());
+        $source = $items->firstWhere('kind', 'source');
+        $this->assertFalse($source->included, 'a consent that does not name the photo');
+        $this->assertStringNotContainsString('artwork.jpg', implode(' ', app(StudioCutter::class)->plan($order, FarmVideo::KIND_SHORT, $video)->inputs));
+
+        Queue::fake();
         $admin = User::factory()->create();
         $admin->setRole(User::ROLE_ADMIN, true);
-        $this->actingAs($admin)->post(route('admin.youtube.rebuild', $video), ['source_form' => 1, 'show_source' => 1])->assertRedirect();
-        $this->assertTrue($video->fresh()->meta['show_source']);
-        \Illuminate\Support\Facades\Queue::assertPushed(RebuildFarmShort::class);
-        $this->actingAs($admin)->post(route('admin.youtube.rebuild', $video), ['source_form' => 1])->assertRedirect();
-        $this->assertFalse($video->fresh()->meta['show_source'], 'unticked is remembered as a decision');
+        $this->actingAs(User::factory()->create())->post(route('admin.youtube.media.update', $source), ['included' => 1])->assertRedirect();
+        $this->assertFalse($source->fresh()->included);
+        $this->actingAs($admin)->postJson(route('admin.youtube.media.update', $source), ['included' => true])->assertOk();
+        $this->assertTrue($source->fresh()->included);
+        Queue::assertPushed(BuildStudioVideos::class);
+        $this->assertStringContainsString('artwork.jpg', implode(' ', app(StudioCutter::class)->plan($order, FarmVideo::KIND_SHORT, $video)->inputs));
+        // the app's own items are only left out, never deleted
+        $this->actingAs($admin)->postJson(route('admin.youtube.media.delete', $source))->assertStatus(422);
+        $this->assertNotNull($source->fresh());
     }
 
     public function test_a_real_short_goes_from_the_design_through_the_process_to_the_photographed_piece_and_ends_with_the_photographed_piece(): void

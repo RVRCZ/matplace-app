@@ -1552,7 +1552,7 @@ Svislé 1080×1920 (dřív čtverec 1080×1080), `config/youtube.php` `cut.short
    (`address`), dole otázka „Co vytisknout příště?“ (`youtube.video.ask_short`). Logo v rohu po celou dobu, hudba z
    Audio Library jako dosud.
 4. **16:9 duplikát** se už nenahrává: `FarmVideos::queueFor` řadí k YouTube jen Short; 16:9 se dál staví (zákaznické
-   video, týdenní sestřih) a nahrává jen s `YOUTUBE_WIDE_UPLOADS=true` (`youtube.wide_uploads`).
+   video, týdenní sestřih) a nahrává jen s `YOUTUBE_WIDE_UPLOADS=true` (`youtube.wide_uploads`). Od 28. 11. 2026 čekají obě a Roman vybírá (§13.10).
 
 Místní render skutečným ffmpeg 9 (`FFMPEG_BIN`, test `test_real_videos_from_numbered_frames…`): Short 1080×1920,
 25,1 s při 200 snímcích (háček 1 + růst 20 + držení 1,5 + konec 3; s fotkou o 0,4 s kratší kvůli prolnutí), zvuk ano.
@@ -2010,6 +2010,25 @@ Shorty mají vlastní denní slot `shorts_publish_hour` (výchozí 18:00, Europe
 - **Kde a jak dlouho.** `files/<uuid>/short_model_<klíč>.png` na disku modelů (vedle náhledu z prohlížeče, ten se nikdy nepřepisuje a vyhrává); klíč = zdroj + čas + velikost + barva, starý obrázek se při změně smaže. Časový limit skriptu `ModelPicture::SECONDS` = 90 s (proces se po něm zabije). Selhání nebo limit: `Log::warning`, soubor `short_model.failed` (klíč) a 24 hodin se nezkouší znovu; Short se otevře jako dřív (zastavená deska 1 s) a nikdy kvůli obrázku nespadne. Vykresluje se při stavbě Shortu (BuildFarmTimelapse i RebuildFarmShort volají `short()`).
 - **Okraje.** Obrázek ze serveru má světlé pozadí, proto se `$matte` v `short()` pro něj doplní barvou 0xF4F3F0 místo černé; náhled z prohlížeče a ostatní snímky zůstávají s černou. Server potřebuje jen Python s numpy, trimesh a Pillow (už pro PrintAdvisor); nic nového. Pozn.: trimesh na 3MF potřebuje lxml, ale `stl_path` je vždy STL.
 - **Figurka celého člověka.** `FarmVideos::toolKind()` vrací pro generovaný model `figurine` (generace `kind` = `figure`), `pet` pro mazlíčka a `figure` (busta, i bez `kind`). `figurine` má nadpis „Figurka z jedné fotky“ / „A figurine from one photo“ / „Una figura a partir de una foto“, úvod „Z jedné fotky → figurka“, hashtag #figurka a patří do playlistu „Figurky z fotky“ (config/youtube.php); ChannelCurator a SeriesCutter řadí podle `toolKind`, takže mají nový druh sám. Uložené názvy hotových videí se nemění.
+
+## 13.10 Stavba videa: seznam videí z tisků a detail s médii (28. 11. 2026, feature/video-studio)
+
+Roman 28. 11.: stránka videí má být jen seznam natočených videí z tisků s příznakem zveřejnění; proklik vede do detailu stavby videa, kde se mažou a nahrávají videa a fotky, mění texty a úvodní text, a po každé změně se video přestaví. Rozhodnutí (dotazník 28. 11.):
+
+1. Ke každému tisku vznikají vždy **obě** videa (Short 9:16 i 16:9), v detailu jsou vedle sebe a Roman vybere, které zveřejní (každé má vlastní tlačítko). `youtube.wide_uploads` zmizel, `FarmVideos::queueFor` řadí obě.
+2. Video **na YouTube**: obraz je zamčený, měnit jdou jen název a popis (`FarmVideos::saveTexts` → `YouTubeClient::retitle`). Obraz se dá změnit až po „Stáhnout a upravit“ (`replace`).
+3. **Úvodní text** = nápis v obraze na začátku; Short ho má pod logem (Roman 28. 11.: „Short začíná textem, tam doplnit logo“), 16:9 na úvodní kartě. Prázdný = název videa (Short) / jméno modelu (16:9).
+4. **Média** = jeden seznam pro obě videa, pořadí přetažením (nebo šipkami), každá položka jde vypnout, u každé jde nastavit sekundy, klip může mít vlastní zvuk (hudba pod ním ztichne na 0,18).
+
+**Data.** Tabulka `farm_video_media` (model `FarmVideoMedia`): `kind` design | source | sliced | growth | photo | clip | image, `path` (null = obrázek dodá aplikace při stavbě), `position`, `included`, `seconds`, `sound`, `meta` (délka a zvuk klipu, původní jméno, `from_clip`). Seznam se založí při prvním otevření (`StudioMedia::items`): předloha zákazníka (zapnutá jen podle `TimelapseCutter::showsSource`), návrh, po naslicování, růst, klipy starého Shortu z `farm_video_clips` (sundání s vlastním zvukem), hotový kus. Přidané video nebo obrázek jde před hotový kus; HEIC z telefonu se převede `photo_tool.py normalize`.
+
+**Obrázky aplikace.** Návrh = náhled z prohlížeče (`preview_path`), jinak `ModelPicture::get($order, w, h)` (nově i 1920×1080 pro 16:9). Po naslicování = `ModelPicture::plate()` → `advise_tool.py plate <png> <w> <h> <supports.bin|-> <stl>=<barva> …`: díly zakázky po dílech v barvách svých cívek (`part_plates`), jinak připravené STL v barvě zakázky, šedé čáry podpěr ze `supports.bin` (posunuté na STL podle rámečku extruzí modelu), stejný pohled a podklad jako náhled modelu. Ukládá se `orders/{token}/studio_sliced_<klíč>.png`, selhání → `studio_sliced.failed` na 24 h. Stránka obrázky nekreslí (až 90 s), ukáže je, jen když už jsou.
+
+**Růst bez snímků.** `StudioCutter::growthMaster` udělá ze snímků jednou `orders/{token}/growth.mp4` (velikost kamery, tempo 16:9, `youtube.cut.studio.master`); `BuildFarmTimelapse` ho dělá hned po tisku, takže video jde přestavět i po smazání snímků (`KEEP_FRAMES_DAYS` = 14). Short ho zrychlí na 4–6 s.
+
+**Stavba.** `StudioCutter::plan($order, short|wide, $video)` z položek v pořadí (`youtube.cut.studio`): obrázky celé na podkladu (naše kresby na F4F3F0, ostatní na černé), klipy Short vyplní (ořez po stranách), 16:9 je ukáže celé; Short: logo + úvodní text 1,5 s nahoře, nástroj + matplace.com poslední sekundu, nejméně 8 s (růst se protáhne až na 6 s); 16:9: úvodní karta, logo v rohu, závěrečná karta. `BuildStudioVideos` (job) staví obě videa, která nejsou na YouTube, 8 s po poslední změně (`later()`: číslo verze v cache, starší job nic nedělá; zámek, ať běží jedna stavba), starý soubor zůstává, dokud nový není hotový; stav pro stránku `BuildStudioVideos::state()` (čeká / staví se / hotovo + chyby). Popisy čekajících videí při stavbě následují vypínač cen (`followPriceSwitch`). `BuildFarmTimelapse` staví Short a 16:9 už touto cestou (zákazníkovo `timelapse.mp4` beze změny); `RebuildFarmShort` a tlačítko „Postavit znovu“ u starých karet zmizely.
+
+**Stránky.** `/admin/youtube` = seznam (`VideoStudioController::index`, filtr vše / čeká / zveřejněné, štítek ✓ zveřejněno + stav Shortu a 16:9 se zhlédnutími); `/admin/youtube/orders/{token}` = detail (`show`, `resources/views/admin/youtube/studio.blade.php`, skript `resources/js/site/video_studio.ts`: přetahování, okamžité ukládání, hlídání stavby a obnova přehrávačů); `/admin/youtube/channel` = kanál, statistiky, ukázkový tisk a sestřihy / návody (stará stránka bez videí jednotlivých tisků). Mail „Video ke schválení“ odkazuje rovnou na detail.
 
 ## 14. Import 3MF s namalovanými barvami (TODO #50, 28. 10. 2026)
 

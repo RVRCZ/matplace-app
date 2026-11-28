@@ -3,9 +3,9 @@
 namespace App\Domain\YouTube;
 
 use App\Domain\Farm\PrintPhotos;
-use App\Domain\Generation\SourcePhotos;
 use App\Domain\Farm\TestPhotos;
 use App\Domain\Farm\TimelapseFrames;
+use App\Domain\Generation\SourcePhotos;
 use App\Models\FarmOrder;
 use App\Models\FarmVideo;
 use App\Models\FarmVideoClip;
@@ -48,6 +48,19 @@ class TimelapseCutter
     public function frames(FarmOrder $order): Collection
     {
         return $this->frames[$order->id] ??= $this->collectFrames($order);
+    }
+
+    /** How many camera pictures the print has, only counted (frames() also looks into each one for strays: half a minute for a thousand). */
+    public function frameCount(FarmOrder $order): int
+    {
+        if (isset($this->frames[$order->id])) {
+            return $this->frames[$order->id]->count();
+        }
+        $disk = Storage::disk(config('farm.disk'));
+        $count = fn (string $dir) => collect($disk->files($order->dir().'/'.$dir))->filter(fn ($f) => str_ends_with($f, '.jpg'))->count();
+        $layer = $count('frames_layer');
+
+        return $layer < 10 ? $count('frames') : $layer;
     }
 
     private function collectFrames(FarmOrder $order): Collection
@@ -567,19 +580,19 @@ class TimelapseCutter
     }
 
     /** @return list<array{0: string, 1: float}> */
-    private function timed(Collection $frames, float $seconds): array
+    public function timed(Collection $frames, float $seconds): array
     {
         return $frames->map(fn ($f) => [(string) $f, $seconds])->values()->all();
     }
 
     /** A camera picture into the frame: whole (black bars where the shapes differ), enlarged smoothly and sharpened a little. */
-    private function fit(int $w, int $h): string
+    public function fit(int $w, int $h): string
     {
         return sprintf('scale=%d:%d:force_original_aspect_ratio=decrease:flags=lanczos,pad=%d:%d:(ow-iw)/2:(oh-ih)/2,unsharp=5:5:0.5:5:5:0', $w, $h, $w, $h);
     }
 
     /** One line of white (or $color) text centred at $y, read from a file. */
-    private function text(string $file, int $size, string $y, string $color = 'white'): string
+    public function text(string $file, int $size, string $y, string $color = 'white'): string
     {
         return sprintf("drawtext=fontfile='%s':textfile='%s':expansion=none:fontsize=%d:fontcolor=%s:x=(w-text_w)/2:y=%s", $this->font(), $this->path($file), $size, $color, $y);
     }
@@ -592,14 +605,14 @@ class TimelapseCutter
      * shadow, no box behind them; white, or the logo's teal for the name of a tool. Lines are centred on each other.
      * $place: the drawtext position, "x=…:y=…".
      */
-    private function caption(string $file, int $size, string $place, string $color = 'white'): string
+    public function caption(string $file, int $size, string $place, string $color = 'white'): string
     {
         return sprintf("drawtext=fontfile='%s':textfile='%s':expansion=none:text_align=C:line_spacing=%d:fontsize=%d:fontcolor=%s:borderw=%d:bordercolor=black@0.9:shadowx=%d:shadowy=%d:shadowcolor=black@0.55:%s",
             $this->font(), $this->path($file), (int) round($size * 0.3), $size, $color, max(2, (int) round($size * 0.09)), max(1, (int) round($size * 0.06)), max(1, (int) round($size * 0.06)), $place);
     }
 
     /** The closing card: the logo, the name of the tool that made the model (when there is one) and the address, fading in. */
-    private function endCard(string $logo, string $urlFile, int $w, int $h, int $fps, float $seconds, string $label, ?string $toolFile = null): string
+    public function endCard(string $logo, string $urlFile, int $w, int $h, int $fps, float $seconds, string $label, ?string $toolFile = null): string
     {
         $words = ($toolFile !== null ? $this->text($toolFile, (int) round($h * 0.045), 'h*0.58', self::TEAL).',' : '').$this->text($urlFile, (int) round($h * 0.06), 'h*0.66');
 
@@ -681,7 +694,7 @@ class TimelapseCutter
      * The cleaned piece: the photo made presentable (PrintPhotos, the render that fits the video – the 9:16 one for the
      * Short, the 3:2 web one elsewhere), else a photo of the photo box as it is (TestPhotos::finishIndex says which).
      */
-    private function finishPhoto(FarmOrder $order, string $variant = 'web'): ?string
+    public function finishPhoto(FarmOrder $order, string $variant = 'web'): ?string
     {
         if ($composed = PrintPhotos::file($order, $variant)) {
             return $composed;

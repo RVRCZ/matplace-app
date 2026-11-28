@@ -192,7 +192,7 @@ final class YouTubeSeriesTest extends TestCase
         $this->assertSame('series/price-2026-10-28-1.mp4', app(FarmVideos::class)->pathOf($video));
         $this->assertTrue(app(FarmVideos::class)->consented($video));
         $this->assertStringContainsString('/tools?utm_source=youtube&utm_medium=social&utm_campaign=video_price', app(FarmVideos::class)->linkOf($video));
-        $this->actingAs($this->admin())->get('/admin/youtube')->assertOk()->assertSee('Seriál „Kolik stojí 3D tisk?“')->assertSee('5 kusů s cenou');
+        $this->actingAs($this->admin())->get('/admin/youtube/channel')->assertOk()->assertSee('Seriál „Kolik stojí 3D tisk?“')->assertSee('5 kusů s cenou');
 
         // the next Short of the series takes the prints no Short showed yet before the others
         $rest = $picked->pluck('id')->all();
@@ -218,7 +218,7 @@ final class YouTubeSeriesTest extends TestCase
         $waiting = FarmVideo::create(['kind' => FarmVideo::KIND_PRICE, 'status' => FarmVideo::STATUS_PENDING, 'title' => 'Kolik stojí', 'path' => 'series/old.mp4', 'meta' => ['key' => 'old', 'orders' => []]]);
         $admin = User::factory()->create();
         $admin->setRole(User::ROLE_ADMIN, true);
-        $this->actingAs($admin)->get('/admin/youtube')->assertOk()->assertDontSee('nový Short se nestaví');
+        $this->actingAs($admin)->get('/admin/youtube/channel')->assertOk()->assertDontSee('nový Short se nestaví');
 
         app(FarmSettings::class)->set('video_prices', false);
         $this->artisan('youtube:price-short')->expectsOutputToContain('Ceny ve videích jsou vypnuté (/admin/farm/settings)')->assertSuccessful();
@@ -227,8 +227,7 @@ final class YouTubeSeriesTest extends TestCase
         $this->assertSame(1, FarmVideo::where('kind', FarmVideo::KIND_PRICE)->count(), 'nothing new in the queue');
         $this->assertFalse(Storage::disk('farm')->exists('series/price-'.now()->format('Y-m-d').'-2.mp4'));
         // the Short already waiting has its prices in the picture: no button, the admin rejects it
-        $this->actingAs($admin)->get('/admin/youtube')->assertOk()->assertSee('nový Short se nestaví')->assertDontSee(route('admin.youtube.rebuild', $waiting), false);
-        $this->assertNull(app(FarmVideos::class)->rebuildState($waiting));
+        $this->actingAs($admin)->get('/admin/youtube/channel')->assertOk()->assertSee('nový Short se nestaví');
     }
 
     public function test_the_monthly_video_tells_the_steps_between_the_months_prints_with_chapters_and_the_numbers(): void

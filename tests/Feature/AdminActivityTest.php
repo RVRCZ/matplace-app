@@ -118,6 +118,39 @@ class AdminActivityTest extends TestCase
         $this->actingAs($this->admin2())->get('/admin/farm')->assertOk()->assertSee('Aktivita na webu');
     }
 
+    public function test_generated_models_have_a_link_and_refused_photos_their_reason(): void
+    {
+        $person = $this->visitorSession(true);
+        $gen = \App\Models\GenerationRequest::create(['token' => 'tokbust123', 'type' => 'image', 'status' => 'done', 'description' => ['kind' => 'bust']]);
+        $file = ModelFile::factory()->create(['original_name' => 'bust.stl', 'origin' => 'generated', 'origin_ref' => 'tokbust123']);
+        $gen->forceFill(['result_model_file_id' => $file->id])->save();
+        $pet = \App\Models\GenerationRequest::create(['token' => 'tokpet456', 'type' => 'image', 'status' => 'done', 'description' => ['kind' => 'pet']]);
+        $pet->forceFill(['result_model_file_id' => ModelFile::factory()->create(['origin' => 'generated', 'origin_ref' => 'tokpet456'])->id])->save();
+        $failed = \App\Models\GenerationRequest::create(['token' => 'tokfail789', 'type' => 'image', 'status' => 'failed', 'error' => 'Tripo task failed: The input is rejected due to violation of content policy']);
+        Event::create(['session_id' => $person, 'type' => 'generate', 'subject_type' => 'generation_request', 'subject_id' => $gen->id, 'meta' => ['kind' => 'image']]);
+        Event::create(['session_id' => $person, 'type' => 'model_ready', 'subject_type' => 'model_file', 'subject_id' => $file->id]);
+        Event::create(['session_id' => $person, 'type' => 'generate', 'subject_type' => 'generation_request', 'subject_id' => $pet->id, 'meta' => ['kind' => 'image']]);
+        Event::create(['session_id' => $person, 'type' => 'failed', 'subject_type' => 'generation_request', 'subject_id' => $failed->id, 'meta' => ['step' => 'generate', 'kind' => 'image']]);
+        // the server's refusal with its reason and the page's own step of the same moment: one line
+        Event::create(['session_id' => $person, 'type' => 'photo_rejected', 'meta' => ['step' => 'front', 'code' => 'cropped', 'kind' => 'figure']]);
+        Event::create(['session_id' => $person, 'type' => 'tool_step', 'meta' => ['tool' => 'figure', 'step' => 'rejected']]);
+        Event::create(['session_id' => $person, 'type' => 'photo_rejected', 'meta' => ['step' => 'left', 'code' => 'no_clear_single_subject_is_visible', 'kind' => 'bust']]);
+        // an older refusal without the server's line (before 28 Nov 2026) still shows
+        $old = $this->visitorSession(true);
+        Event::create(['session_id' => $old, 'type' => 'tool_step', 'meta' => ['tool' => 'pet', 'step' => 'rejected']]);
+
+        $html = $this->actingAs($this->admin())->get('/admin/farm/activity')->assertOk()
+            ->assertSee('otevřít model')
+            ->assertSee(route((string) config('tools.figure.route'), ['generation' => 'tokbust123']), false)
+            ->assertSee(route((string) config('tools.pet.route'), ['generation' => 'tokpet456']), false)
+            ->assertDontSee('tokfail789')
+            ->assertSee('violation of content policy')
+            ->assertSee('postava nebo zvíře není na fotce celé')
+            ->assertSee('boční fotka zleva · AI: no clear single subject is visible')
+            ->getContent();
+        $this->assertSame(3, substr_count($html, 'Fotka odmítnuta'), 'two refusals with a reason and the old one without');
+    }
+
     private function admin2(): User
     {
         $admin = User::factory()->create();

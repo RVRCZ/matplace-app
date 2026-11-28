@@ -2,6 +2,7 @@
 
   advise_tool.py analyze <in.stl> <out_dir> [overhang_deg]
   advise_tool.py preview <in.stl> <out.png> [colour_hex] [width] [height]   one picture of the model for a video (see preview())
+  advise_tool.py plate <out.png> <width> <height> <supports.bin|-> <part.stl>=<hex> ...   the sliced plate, parts in their colours (see plate())
 
 Numbers (all in the model's own orientation, Z up, millimetres): size, volume, surface, closedness, separate bodies,
 the area touching the plate, the footprint, overhang area steeper than <overhang_deg> (default 45) from vertical
@@ -271,11 +272,89 @@ def preview(src, dest, colour="b9bec6", width=1080, height=1920):
     out({"ok": True, "file": dest, "faces": int(len(m.faces)), "drawn": int(len(order))})
 
 
+def plate(dest, width, height, supports, parts):
+    """The plate as it was sliced, for the print's video: every part in its filament colour (parts = [(stl, hex)], the
+    prepared STLs share one frame), the support lines of the slice in grey behind them (supports.bin of
+    App\\Engines\\Gcode\\SupportLines, '-' = none), the same view and ground as preview()."""
+    import trimesh
+    from PIL import Image, ImageDraw
+
+    meshes, colours = [], []
+    for src, colour in parts:
+        m = trimesh.load(src, force="mesh")
+        if m.is_empty or len(m.faces) == 0:
+            continue
+        light = clustered(m, 220)
+        meshes.append(light)
+        rgb = [int(colour[i:i + 2], 16) / 255 for i in (0, 2, 4)] if len(colour) == 6 else [0.73, 0.75, 0.78]
+        colours.append(np.tile(np.array(rgb), (len(light.faces), 1)))
+    if not meshes:
+        out({"ok": False, "error": "empty"})
+    whole = trimesh.util.concatenate(meshes)
+    face_rgb = np.concatenate(colours)
+    lo, hi = whole.bounds
+    segs = None
+    if supports != "-" and os.path.isfile(supports):
+        raw = np.fromfile(supports, dtype="<f4")
+        if len(raw) >= 8 and int(raw[1]) > 0:
+            n = int(raw[1])
+            segs = raw[8:8 + n * 6].reshape(-1, 2, 3).astype(float)
+            # printer coordinates -> the STL's: the model's own extrusions span the same box as the parts (SupportLines)
+            segs[:, :, 0] += lo[0] - raw[2]
+            segs[:, :, 1] += lo[1] - raw[3]
+            if len(segs) > 60000:
+                segs = segs[np.linspace(0, len(segs) - 1, 60000).astype(int)]
+    el, az = math.radians(24), math.radians(-52)
+    eye = np.array([math.cos(el) * math.cos(az), math.cos(el) * math.sin(az), math.sin(el)])
+    right = np.cross([0.0, 0.0, 1.0], eye)
+    right = right / np.linalg.norm(right)
+    up = np.cross(eye, right)
+    centre = (lo + hi) / 2
+    v = whole.vertices - centre
+    sx, sy, depth = v @ right, v @ up, v @ eye
+    xs, ys = [sx], [sy]
+    if segs is not None:
+        sv = segs.reshape(-1, 3) - centre
+        xs.append(sv @ right)
+        ys.append(sv @ up)
+    allx, ally = np.concatenate(xs), np.concatenate(ys)
+    k = 2
+    bw, bh = width * k, height * k
+    span_x, span_y = float(allx.max() - allx.min()) or 1.0, float(ally.max() - ally.min()) or 1.0
+    scale = min(bw * 0.84 / span_x, bh * 0.70 / span_y)
+    mid_x, mid_y = (allx.max() + allx.min()) / 2, (ally.max() + ally.min()) / 2
+    to_px = lambda a, b: np.stack([bw / 2 + (a - mid_x) * scale, bh / 2 - (b - mid_y) * scale], axis=1)
+    im = Image.new("RGB", (bw, bh), BACKGROUND)
+    draw = ImageDraw.Draw(im)
+    if segs is not None:
+        sv = segs.reshape(-1, 3) - centre
+        p = to_px(sv @ right, sv @ up).reshape(-1, 2, 2)
+        grey = (178, 180, 184)
+        for a, b in p:
+            draw.line([tuple(a), tuple(b)], fill=grey, width=k)
+    pts = to_px(sx, sy)
+    facing = whole.face_normals @ eye
+    order = np.argsort(depth[whole.faces].mean(axis=1))
+    order = order[facing[order] > -0.05]
+    light_dir = eye * 0.55 + up * 0.55 + right * 0.3
+    light_dir /= np.linalg.norm(light_dir)
+    shade = 0.40 + 0.60 * np.clip(whole.face_normals @ light_dir, 0, 1)
+    rgb = np.clip(face_rgb * shade[:, None], 0, 1) * 255
+    tri = pts[whole.faces]
+    for f in order:
+        c = (int(rgb[f, 0]), int(rgb[f, 1]), int(rgb[f, 2]))
+        draw.polygon([tuple(tri[f, 0]), tuple(tri[f, 1]), tuple(tri[f, 2])], fill=c, outline=c)
+    im.resize((width, height), Image.LANCZOS).save(dest, optimize=True)
+    out({"ok": True, "file": dest, "parts": len(meshes), "supports": 0 if segs is None else int(len(segs))})
+
+
 def main(argv):
     if len(argv) >= 3 and argv[0] == "analyze":
         analyze(argv[1], argv[2], float(argv[3]) if len(argv) > 3 else 45.0)
     if len(argv) >= 3 and argv[0] == "preview":
         preview(argv[1], argv[2], *(argv[3:4] or ["b9bec6"]), *(int(a) for a in argv[4:6]))
+    if len(argv) >= 6 and argv[0] == "plate":
+        plate(argv[1], int(argv[2]), int(argv[3]), argv[4], [tuple(a.rsplit("=", 1)) if "=" in a else (a, "b9bec6") for a in argv[5:]])
     out({"ok": False, "error": "usage"})
 
 
