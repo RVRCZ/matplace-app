@@ -595,6 +595,11 @@ společné kusy níže (commit 19dfe46c a navazující). Žádná změna výpoč
   'start')`), a blikne. Stránka zakázky: „Spočítat/Přepočítat cenu“ posune k modelu hned při stisku, ne až když odpověď
   řekne, že řez běží (známá cena se vrátí hned a stránka zůstala dole). Ověřeno headless 390 px (`tool_pin`, box):
   karta drží nahoře 400–1600 px, pod panelem odjede; bez vodorovného posuvu.
+- **Stránka tisku na telefonu, 28. 11. 2026 večer (Roman: „fixovat i pod barvy, po slicování zůstane obraz nahoře a ve
+  spodní části obrazovky rovnou najede na volbu dopravy a platbu“):** náhled drží nahoře po celou dobu výběru (`data-pin`
+  = volí se), už ne jen u barev; pustí se jen při psaní do pole objednávky (klávesnice). Řez, který doběhne v tomto
+  zobrazení stránky, posune okno tak, že karta „Objednávka“ (`#farm-pay`, doprava a platba) začíná hned pod připnutým
+  náhledem (`toPayment`). Ověřeno místně 390 px: po konci řezu náhled nahoře (top 5), „Objednávka“ od 318 px.
 - Kroky v liště: klik přepíná sekci uvnitř panelu (`revealIfHidden(sec, 'start')` pod sticky lištu), bez `#hash`
   a bez pohybu stránky; `reveal()` modulů (chyby, výsledky, barvy) roluje panel jen když cíl není vidět, prstenec zůstává.
   Na telefonu (panel není rolující) se stránka posune k sekci, jen když není vidět.
