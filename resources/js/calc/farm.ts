@@ -1172,13 +1172,27 @@ export function bootFarmOrder(): void {
         box.textContent = `${tr('farm.order.why.lead', { from: money(was.total), to: money(now) })} ${reasons.join(', ')}.`.replace(/:\s*\.$/, '.');
         show(box, true);
     };
-    // A phone: while the colours are being chosen the model stays at the top of the window, so a tap on a colour is seen
-    // on it at once (Stella, 20 Nov 2026: "I scroll to the preview and back after every change"). Only while the block of
-    // the colours is in the window: further down (delivery, address, payment) the window belongs to the form.
-    let pinWanted = false; let pinSeen = false;
-    const pin = (): void => { $('farm-order')?.toggleAttribute('data-pin', pinWanted && pinSeen); };
-    const pinBlock = $('farm-material');
-    if (pinBlock && 'IntersectionObserver' in window) new IntersectionObserver((e) => { pinSeen = e[e.length - 1].isIntersecting; pin(); }).observe(pinBlock);
+    // A phone: while the customer chooses, the model stays at the top of the window, so a tap on a colour is seen on it at
+    // once (Stella, 20 Nov 2026: "I scroll to the preview and back after every change"), and the slice's animation is seen
+    // whatever was pressed. Under the colours too, down to the delivery and the payment (Roman, 28 Nov 2026: "fixovat i pod
+    // barvy"; it let go there before and a press of "Přepočítat" lower down left the model out of sight).
+    // Not while a line of the delivery or the e-mail is typed: with the phone's keyboard up the pinned model would leave
+    // the field almost no room.
+    let pinWanted = false; let typing = false;
+    const pin = (): void => { $('farm-order')?.toggleAttribute('data-pin', pinWanted && !typing); };
+    const typed = (e: Event): boolean => (e.target as HTMLElement | null)?.matches?.('input:not([type=radio]):not([type=checkbox]), textarea, select') ?? false;
+    $('farm-pay')?.addEventListener('focusin', (e) => { if (typed(e)) { typing = true; pin(); } });
+    $('farm-pay')?.addEventListener('focusout', () => { typing = false; pin(); });
+    // A slice that ends in this page view, on a phone: the model stays at the top and the delivery and the payment come
+    // right under it (Roman, 28 Nov 2026: "po slicování ... ve spodní části obrazovky rovnou najede na volbu dopravy a platbu")
+    const toPayment = (): void => {
+        if (window.matchMedia('(min-width: 64rem)').matches) return;
+        const form = $('farm-pay');
+        const card = $('farm-viewer')?.parentElement;
+        if (!form || form.classList.contains('hidden') || !card) return;
+        const under = 4 + card.getBoundingClientRect().height + 8;   // the pinned card's top-1 and a gap
+        window.scrollTo({ top: Math.max(0, window.scrollY + form.getBoundingClientRect().top - under), behavior: 'smooth' });
+    };
     let wasWorking: boolean | null = null;
     const render = (): void => {
         const s = state;
@@ -1186,6 +1200,7 @@ export function bootFarmOrder(): void {
         viewer.setPrinting(working);      // while the order is being prepared and sliced the model is shown being printed
         // a slice started from the choices further down: the page goes up to the model being "printed" (Roman, 19 Nov 2026)
         if (working && wasWorking === false) revealIfHidden($('farm-viewer'), 'center');
+        const sliceEnded = wasWorking === true && !working && s.status === 'sliced';
         wasWorking = working;
         // a big model (docs/AL.md §11): waiting for the choices and the colour before any slice; while its slice runs a
         // change of the choices starts it over
@@ -1219,6 +1234,8 @@ export function bootFarmOrder(): void {
         $('farm-order')?.toggleAttribute('data-choosing', choosing);
         $('farm-side')?.classList.toggle('stick-stage', choosing);
         pinWanted = choosing; pin();
+        // after the whole render (the payment's card is shown further down in it) and the browser's layout
+        if (sliceEnded) requestAnimationFrame(() => requestAnimationFrame(toPayment));
         const hasResult = s.minutes !== null && s.status !== 'uploaded' && !(s.status === 'failed' && !s.number);
         // a recalculation keeps the last numbers in place, greyed, until the new ones come (the page under the finger does
         // not shrink and nothing below moves up, docs/AO.md §5); the payment box and its bar stay the same way
@@ -1551,6 +1568,9 @@ export function bootFarmOrder(): void {
         // started over with the new choices (the server drops the running one's result, docs/AL.md §11)
         if (state.status === 'uploaded' && !state.big) return;
         step('o_slice');
+        // the page goes up to the model at the press, not only when the answer says a slice runs: a price the server
+        // already knew comes back at once (no "running" in between) and the page stayed down (Roman, 28 Nov 2026)
+        revealIfHidden($('farm-viewer'), 'center');
         const btn = $<HTMLButtonElement>('farm-reslice');
         const recolor = $<HTMLButtonElement>('farm-recolor');
         const start = $<HTMLButtonElement>('farm-slice-start');

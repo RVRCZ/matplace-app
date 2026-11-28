@@ -111,8 +111,10 @@
     </div>
 
     {{-- ── the stage: viewer, status, the ways on ── --}}
-    <div id="tool-stage" class="order-2 flex min-w-0 scroll-mt-3 flex-col gap-3 lg:col-start-2 lg:row-span-2 lg:row-start-1 lg:h-full lg:min-h-0">
-        <div class="card relative flex min-h-0 flex-1 flex-col overflow-hidden">
+    {{-- a phone: the stage is no box of its own (contents), its blocks are blocks of the page's grid, so the model's card can stay
+         at the top of the window while the options under it are scrolled (Roman, 28 Nov 2026; app.css #tool-viewer-card) --}}
+    <div id="tool-stage" class="order-2 flex min-w-0 scroll-mt-3 flex-col gap-3 max-lg:contents lg:col-start-2 lg:row-span-2 lg:row-start-1 lg:h-full lg:min-h-0">
+        <div id="tool-viewer-card" class="card relative flex min-h-0 flex-1 flex-col overflow-hidden max-lg:order-2">
             <div class="relative min-h-0 flex-1">
                 <canvas id="tool-viewer" class="block h-[46vh] w-full touch-none lg:absolute lg:inset-0 lg:h-full" role="img" aria-label="{{ __('param.viewer') }}"></canvas>
                 @if(! empty($sample))
@@ -169,10 +171,10 @@
             <dl id="param-dims" class="hidden grid-cols-1 gap-x-6 gap-y-1 border-t border-line px-4 py-2 text-sm sm:grid-cols-2" aria-live="polite"></dl>
         </div>
 
-        <div id="tool-error" class="note-error hidden text-sm" role="alert"></div>
+        <div id="tool-error" class="note-error hidden text-sm max-lg:order-2" role="alert"></div>
 
         {{-- the two ways on; the price shows first in the calculation (no estimate here: Roman, 16 Oct 2026) --}}
-        <div id="tool-go-card" class="card flex flex-wrap items-center justify-end gap-x-6 gap-y-3 p-4">
+        <div id="tool-go-card" class="card flex flex-wrap items-center justify-end gap-x-6 gap-y-3 p-4 max-lg:order-2">
             {{-- on a phone one under the other over the whole card, the main one first: "Get the price and print options" does
                  not fit beside "Download the model" at 390 px; side by side on wider screens as before --}}
             <div class="flex w-full flex-col-reverse gap-2 sm:w-auto sm:flex-row sm:flex-wrap sm:items-center">
@@ -204,7 +206,7 @@
             {{-- the farm is paused: said where the page promises a print with us (only to visitors the farm is offered to) --}}
             @if($next === \App\Support\NextStep::FARM)@include('farm._pause', ['class' => 'w-full'])@endif
         </div>
-        @yield('stage')
+        @hasSection('stage')<div class="flex min-w-0 flex-col gap-3 max-lg:order-2 lg:contents">@yield('stage')</div>@endif
     </div>
 </div>
 {{-- a phone: the way on in a bar fixed to the bottom, the status of the model as its second line (components/action-bar, docs/AN.md §18) --}}

@@ -210,6 +210,11 @@
     #tool-viewbar:not([data-open]) { display: none; }
     /* the photo dialog of a bust or a pet holds the whole start (photos, consent, Create): the viewer is taller while it is there */
     #tool-stage:has(#tool-empty:not(.hidden) #figure-drop) #tool-viewer { height: 60vh; }
+    /* the model stays at the top of the window while the options are scrolled (Roman, 28 Nov 2026, like the order page's colours):
+       a block of the page's grid (#tool-stage is display: contents here), so it sticks until the grid ends; a little lower
+       than before so the options keep room. Not while the viewer is still the place for the photos or the file (#tool-empty) */
+    #tool-page:not(:has(#tool-empty:not(.hidden))) #tool-viewer-card { position: sticky; top: 0.25rem; z-index: 20; box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.1); }
+    #tool-page:not(:has(#tool-empty:not(.hidden))) #tool-viewer { height: 36vh; }
     #tool-view-toggle[aria-expanded='true'] svg:last-child { rotate: 180deg; }
     #param-dims > div.text-muted { display: none; }
     #param-dims:not(:has(> div.flex)) { display: none; }
