@@ -129,6 +129,9 @@ class GenerationController extends Controller
                     $disk->delete($rel);
                     // the reason is the only trace of why a photo was not used
                     Log::info('figure photo rejected', ['view' => $view, 'subject' => $check['subject'], 'reason' => $check['reason'], 'kind' => $data['kind'] ?? null, 'with_person' => $withPerson]);
+                    // …and production keeps no info lines: the reason as a short code in our events, for the admin's
+                    // activity stream (Roman, 28 Nov 2026: "why were some photos refused?"). The photo itself is gone.
+                    Track::event('photo_rejected', null, array_filter(['step' => $view, 'code' => self::reasonCode((string) $check['reason']), 'kind' => $withPerson ? 'pet_owner' : ($data['kind'] ?? null)]));
                     if ($view === 'front') {
                         return response()->json(['error' => 'photo_rejected', 'reason' => $check['reason'], 'view' => $view], 422);
                     }
@@ -169,7 +172,8 @@ class GenerationController extends Controller
             return response()->json(self::quotaAnswer($e, $request), 429);
         }
 
-        Track::event('generate', null, ['kind' => $req->type]);
+        // the generation is the subject: the admin's activity stream links its model (ActivityStream)
+        Track::event('generate', $req, ['kind' => $req->type]);
 
         return response()->json(['generation' => self::describe($req), 'skipped_views' => $skipped ?? []], 201);
     }
@@ -182,6 +186,17 @@ class GenerationController extends Controller
             'price' => Money::of($e->price, $e->currency)->format(), 'missing' => Money::of($e->missing, $e->currency)->format(),
             'topup_url' => $request->user() ? route('account.credit', ['need' => ceil($e->missing * 10) / 10]) : null,
         ];
+    }
+
+    /**
+     * The moderation's reason as an event's code: its own words as they are ("cropped", "no_animal"), a sentence of the
+     * content rules as its words joined ("no_clear_single_subject_is_visible"), at most 64 characters.
+     */
+    public static function reasonCode(string $reason): string
+    {
+        $code = trim((string) preg_replace('/[^a-z0-9]+/', '_', strtolower($reason)), '_');
+
+        return $code === '' ? 'unknown' : rtrim(substr($code, 0, 64), '_');
     }
 
     /** POST /api/generate/{token}/refine {instruction} → a new generation: the same subject changed in words */
@@ -208,7 +223,7 @@ class GenerationController extends Controller
             return response()->json($design + self::quotaAnswer($e, $request), 429);
         }
 
-        Track::event('generate', null, ['kind' => 'refine']);
+        Track::event('generate', $req, ['kind' => 'refine']);
 
         return response()->json(['generation' => self::describe($req)], 201);
     }

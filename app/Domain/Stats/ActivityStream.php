@@ -6,6 +6,7 @@ use App\Http\Controllers\Api\StepController;
 use App\Models\Event;
 use App\Models\FarmOrder;
 use App\Models\FarmOrderEvent;
+use App\Models\GenerationRequest;
 use App\Models\Intake;
 use App\Models\ModelFile;
 use App\Models\User;
@@ -50,6 +51,7 @@ class ActivityStream
         'download' => ['model', 'Stáhl model', 'info', false],
         'share' => ['model', 'Sdílel model', 'info', true],
         'failed' => ['model', 'Chyba', 'bad', false],
+        'photo_rejected' => ['model', 'Fotka odmítnuta', 'bad', false],
         'order_started' => ['order', 'Otevřel návrh tisku', 'info', false],
         'order_created' => ['order', 'Založil zakázku (návrh tisku)', 'info', false],
         'price_shown' => ['order', 'Uviděl přesnou cenu', 'info', false],
@@ -135,6 +137,17 @@ class ActivityStream
         'print_cancelled' => 'tisk zrušen na tiskárně',
     ];
 
+    /** The photo moderation's reasons (VisionDescriber::moderate, GenerationController::reasonCode) in Czech. */
+    private const REASONS = [
+        'cropped' => 'postava nebo zvíře není na fotce celé',
+        'no_animal' => 'na fotce není zvíře',
+        'no_person' => 'na fotce chybí člověk',
+        'several' => 'víc zvířat najednou',
+        'several_people' => 'víc lidí najednou',
+    ];
+
+    private const VIEWS = ['left' => 'boční fotka zleva', 'right' => 'boční fotka zprava', 'back' => 'fotka zezadu'];
+
     private const ACTORS = ['agent' => 'tiskárna', 'system' => 'systém', 'admin' => 'admin', 'user' => 'zákazník'];
 
     private const SOURCES = ['facebook' => 'Facebook', 'google' => 'Google', 'seznam' => 'Seznam', 'designer' => 'designér', 'direct' => 'přímo', 'other' => 'jinde'];
@@ -144,7 +157,7 @@ class ActivityStream
      *
      * @param  string|null  $group  one of GROUPS, null = all
      * @param  int|null  $session  one visitor's whole way (anonymous_sessions.id): every step, the last 30 days
-     * @return list<array{key: string, at: Carbon, group: string, label: string, tone: string, who: string, user: ?int, session: ?int, source: ?string, detail: list<string>, order: ?FarmOrder, intake: ?Intake}>
+     * @return list<array{key: string, at: Carbon, group: string, label: string, tone: string, who: string, user: ?int, session: ?int, source: ?string, detail: list<string>, order: ?FarmOrder, intake: ?Intake, model: ?string}>
      */
     public function lines(int $hours, ?string $group = null, bool $detailed = false, ?int $session = null): array
     {
@@ -185,6 +198,15 @@ class ActivityStream
         $files = ModelFile::whereIn('id', $events->where('subject_type', 'model_file')->pluck('subject_id')->unique())->get(['id', 'original_name', 'origin', 'origin_ref'])->keyBy('id');
         $intakes = Intake::whereIn('id', $events->where('subject_type', 'intake')->pluck('subject_id')->unique())->get()->keyBy('id');
         $orders = FarmOrder::whereIn('id', $events->map(fn (Event $e) => (int) ($e->meta['order'] ?? 0))->filter()->unique())->get(['id', 'number', 'token', 'status'])->keyBy('id');
+        // the generations behind the events: their own (generate, notify, a failure) and the one that made a generated file
+        $tokens = $files->where('origin', 'generated')->pluck('origin_ref')->filter()->unique();
+        $generations = GenerationRequest::query()
+            ->where(fn ($q) => $q->whereIn('id', $events->where('subject_type', 'generation_request')->pluck('subject_id')->unique())->orWhereIn('token', $tokens))
+            ->get(['id', 'token', 'type', 'status', 'description', 'error', 'result_model_file_id']);
+        $byToken = $generations->keyBy('token');
+        $generations = $generations->keyBy('id');
+        // the page's own "refused" step, when the server wrote the refusal with its reason next to it, is the same moment twice
+        $refusals = $events->where('type', 'photo_rejected')->map(fn (Event $e) => [$e->session_id, $e->created_at->getTimestamp()])->values();
 
         $out = [];
         foreach ($events as $e) {
@@ -196,6 +218,16 @@ class ActivityStream
             [$group, $label, $tone, $quiet] = $def;
             $file = $e->subject_type === 'model_file' ? $files->get($e->subject_id) : null;
             $intake = $e->subject_type === 'intake' ? $intakes->get($e->subject_id) : null;
+            if ($e->type === StepController::TYPE && ($meta['step'] ?? '') === 'rejected'
+                && $refusals->contains(fn (array $r) => $r[0] === $e->session_id && abs($r[1] - $e->created_at->getTimestamp()) <= 120)) {
+                continue;
+            }
+            $generation = $e->subject_type === 'generation_request' ? $generations->get($e->subject_id)
+                : ($file?->origin === 'generated' ? $byToken->get($file->origin_ref) : null);
+            $detail = $this->detail($e->type, $meta, $file, $intake);
+            if ($e->type === 'failed' && $generation?->error) {
+                $detail[] = mb_strimwidth((string) $generation->error, 0, 140, '…');
+            }
             $out[] = [
                 'key' => 'e'.str_pad((string) $e->id, 12, '0', STR_PAD_LEFT),
                 'at' => $e->created_at,
@@ -207,9 +239,10 @@ class ActivityStream
                 'user' => $e->user_id,
                 'session' => $e->session_id,
                 'source' => $this->source($e),
-                'detail' => $this->detail($e->type, $meta, $file, $intake),
+                'detail' => $detail,
                 'order' => isset($meta['order']) ? $orders->get((int) $meta['order']) : null,
                 'intake' => $intake,
+                'model' => $generation && $generation->status === 'done' && $generation->result_model_file_id ? $this->modelUrl($generation) : null,
             ];
         }
 
@@ -253,6 +286,7 @@ class ActivityStream
                 'detail' => array_values($detail),
                 'order' => $o,
                 'intake' => null,
+                'model' => null,
             ];
         }
 
@@ -290,6 +324,10 @@ class ActivityStream
             'failed' => trim(($meta['step'] ?? '').' '.($meta['code'] ?? '')) ?: $kind,
             StepController::TYPE => isset($meta['ms']) ? 'po '.max(1, (int) round(((int) $meta['ms']) / 1000)).' s' : ($meta['code'] ?? null),
             'intake_chip', 'intake_spam' => $meta['code'] ?? null,
+            'photo_rejected' => trim(implode(' · ', array_filter([
+                self::VIEWS[$meta['step'] ?? ''] ?? null,
+                isset($meta['code']) ? (self::REASONS[$meta['code']] ?? 'AI: '.str_replace('_', ' ', (string) $meta['code'])) : null,
+            ]))) ?: null,
             default => null,
         };
         if ($type === 'order_paid' && isset($meta['value'])) {
@@ -302,6 +340,17 @@ class ActivityStream
         }
 
         return array_values(array_unique(array_filter($out, fn ($v) => $v !== null && $v !== '')));
+    }
+
+    /**
+     * The tool's page with the generated model on it, as the customer's mail opens it (GenerationReady::url): the token
+     * is the secret, so the admin sees the very model the visitor saw.
+     */
+    private function modelUrl(GenerationRequest $g): string
+    {
+        $kind = ((array) $g->description)['kind'] ?? null;
+
+        return route((string) config('tools.'.($kind === 'pet' ? 'pet' : 'figure').'.route'), ['generation' => $g->token]);
     }
 
     /** The tool's page name ("Busta nebo figurka z fotky"), its key when it has none. */
