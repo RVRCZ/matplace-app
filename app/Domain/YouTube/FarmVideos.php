@@ -4,7 +4,7 @@ namespace App\Domain\YouTube;
 
 use App\Domain\Farm\FarmSettings;
 use App\Domain\Social\VideoSharer;
-use App\Jobs\RebuildFarmShort;
+use App\Jobs\BuildStudioVideos;
 use App\Jobs\UploadFarmVideo;
 use App\Mail\FarmAdminAlert;
 use App\Mail\FarmVideoPublished;
@@ -62,8 +62,9 @@ class FarmVideos
         $text = $this->titleData($order);
         $rows = [];
         $fresh = false;
-        // the 16:9 of the same print goes up only when youtube.wide_uploads says so (the audit of 27 Oct 2026: duplicates split the views)
-        foreach (config('youtube.wide_uploads') ? [FarmVideo::KIND_SHORT, FarmVideo::KIND_WIDE] : [FarmVideo::KIND_SHORT] as $kind) {
+        // both wait, the admin picks which goes up in the video studio (Roman, 28 Nov 2026); the audit of 27 Oct 2026 found
+        // that a print's Short and 16:9 both published split the views, so the page offers the Short first
+        foreach ([FarmVideo::KIND_SHORT, FarmVideo::KIND_WIDE] as $kind) {
             if (! $this->eligible($order, $kind, $allowTest)) {
                 continue;
             }
@@ -345,6 +346,45 @@ class FarmVideos
         }
     }
 
+    /**
+     * The texts of a print video from the video studio: the title, the description and the opening text in the picture.
+     * A video on YouTube takes the new title and description there at once (its picture is locked, the opening text
+     * stays as built); one that is not there yet is built again when the words in its picture changed.
+     *
+     * @return bool whether the video is being built again
+     */
+    public function saveTexts(FarmVideo $video, string $title, string $description, ?string $intro): bool
+    {
+        $intro = trim((string) $intro) !== '' ? trim((string) $intro) : null;
+        if ($video->youtube_id && in_array($video->status, [FarmVideo::STATUS_UPLOADED, FarmVideo::STATUS_SCHEDULED, FarmVideo::STATUS_PUBLISHED], true)) {
+            $description = self::withVideoId($description, $video->youtube_id);
+            $this->youtube->retitle($video->youtube_id, $title, $description);
+            $video->update(['title' => $title, 'description' => $description]);
+
+            return false;
+        }
+        $cutter = app(StudioCutter::class);
+        $order = $video->order;
+        $before = $order ? $cutter->intro($order, (string) $video->kind, $video) : null;
+        $meta = (array) $video->meta;
+        if ($intro === null) {
+            unset($meta['intro']);
+        } else {
+            $meta['intro'] = $intro;
+        }
+        if (! empty($meta['title_needed']) && $title !== $video->title) {
+            unset($meta['title_needed']);
+        }
+        $video->update(['title' => $title, 'description' => $description, 'meta' => $meta]);
+        if ($order && $before !== $cutter->intro($order, (string) $video->kind, $video->refresh())) {
+            BuildStudioVideos::later($order);
+
+            return true;
+        }
+
+        return false;
+    }
+
     /** Not for the channel: delete it from YouTube, remember the decision (a later consent does not upload it again). */
     public function reject(FarmVideo $video, int $adminId): void
     {
@@ -369,37 +409,15 @@ class FarmVideos
     }
 
     /**
-     * "Postavit znovu": what the button of a waiting Short can do. Rebuilding also replaces an older price card; null =
-     * no button, `running` = being built, `no_frames` = the frames are gone (BuildFarmTimelapse::KEEP_FRAMES_DAYS).
+     * A print's videos are built again (BuildStudioVideos): the descriptions not on YouTube yet follow the price switch
+     * (the farm setting video_prices) at once, the words alone, whatever the admin wrote around them stays.
      */
-    public function rebuildState(FarmVideo $video): ?string
+    public function followPriceSwitch(FarmOrder $order): void
     {
-        if ($video->kind !== FarmVideo::KIND_SHORT || ! $video->order || ! in_array($video->status, [FarmVideo::STATUS_PENDING, FarmVideo::STATUS_UPLOADED], true)) {
-            return null;
-        }
-        if (Cache::has(RebuildFarmShort::lockKey($video->id))) {
-            return 'running';
-        }
-        $disk = Storage::disk(config('farm.disk'));
-        $dir = $video->order->dir();
-
-        return count($disk->files($dir.'/frames_layer')) + count($disk->files($dir.'/frames')) >= 4 ? 'ready' : 'no_frames';
-    }
-
-    /** The Short built again with today's settings, in the background; its waiting descriptions follow the switch at once. False when there is nothing to build from or it runs already. */
-    public function rebuild(FarmVideo $video): bool
-    {
-        if ($this->rebuildState($video) !== 'ready' || ! Cache::add(RebuildFarmShort::lockKey($video->id), true, RebuildFarmShort::TIMEOUT)) {
-            return false;
-        }
         $locale = (string) config('youtube.language');
         [$old, $new] = [$this->shownAtEnd(! $this->showsPrices(), $locale), $this->shownAtEnd($this->showsPrices(), $locale)];
-        // the words alone: whatever the admin wrote around them stays
-        $video->order->videos()->whereIn('status', [FarmVideo::STATUS_PENDING, FarmVideo::STATUS_UPLOADED])->get()
+        $order->videos()->whereIn('status', [FarmVideo::STATUS_PENDING, FarmVideo::STATUS_UPLOADED])->get()
             ->each(fn (FarmVideo $v) => $v->update(['description' => str_replace($old, $new, (string) $v->description)]));
-        RebuildFarmShort::dispatch($video->id);
-
-        return true;
     }
 
     /** Failed, or stuck in `uploading` after a crash: try again (an approved video goes up, an unapproved one waits for the admin). */
@@ -475,7 +493,7 @@ class FarmVideos
                     ? $what.' je na YouTube jako soukromé video a čeká na schválení.'
                     : $what.' čeká na schválení; na YouTube se nahraje až po něm.',
                 'Název: '.$video->title,
-            ], route('admin.youtube.index')));
+            ], $order ? route('admin.youtube.studio', $order) : route('admin.youtube.channel')));
         } catch (\Throwable $e) {
             Log::warning('YouTube approval mail failed', ['video' => $video->id, 'error' => $e->getMessage()]);
         }

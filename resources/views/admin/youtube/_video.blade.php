@@ -1,4 +1,4 @@
-{{-- one waiting video: the Short, the 16:9 or the weekly cut, with its own approval --}}
+{{-- one waiting cut of many prints or how-to video, with its own approval (a print's Short and 16:9: the video studio) --}}
 @php($file = in_array($v->kind, ['weekly', 'howto', 'price', 'monthly'], true) ? $v->path : ($v->kind === 'wide' ? $v->order?->timelapse_wide_path : ($v->order?->timelapse_short_path ?: $v->order?->timelapse_path)))
 @php($vertical = $v->kind === 'price' || ($v->kind === 'howto' && ($v->meta['variant'] ?? null) === 'short'))
 <div>
@@ -51,62 +51,7 @@
             <button class="btn-primary text-sm">{{ $v->status === 'pending' ? 'Nahrát na YouTube a zveřejnit' : 'Zveřejnit na YouTube' }}</button>
         </form>
     @endif
-    @if($v->kind === 'short' && $v->farm_order_id)
-        @php($clipRows = $v->clips->keyBy('kind'))
-        <section class="mt-4 rounded-xl border border-slate-200 p-3" aria-label="{{ __('youtube.clips.title') }}">
-            <h4 class="text-sm font-bold">{{ __('youtube.clips.title') }}</h4>
-            <p class="mt-1 text-xs text-slate-500">{{ __('youtube.clips.help') }}</p>
-            @if($clipRows->count() < 5)<p class="mt-1 text-xs font-semibold text-action-dark">{{ __('youtube.clips.missing', ['kinds' => $clipRows->count() === 0 ? __('youtube.clips.all') : collect(\App\Models\FarmVideoClip::KINDS)->diff($clipRows->keys())->map(fn ($kind) => __('youtube.clips.kinds.'.$kind))->implode(', ')]) }}</p>@endif
-            <div class="mt-3 space-y-3">
-                @foreach(\App\Models\FarmVideoClip::KINDS as $clipKind)
-                    @php($clip = $clipRows->get($clipKind))
-                    <div class="border-t border-slate-100 pt-3" data-clip-recorder data-kind="{{ $clipKind }}"
-                         data-upload-url="{{ route('admin.youtube.clips.store', [$v, $clipKind]) }}"
-                         data-camera-label="{{ __('youtube.clips.camera') }}" data-microphone-label="{{ __('youtube.clips.microphone') }}"
-                         data-default-camera="{{ __('youtube.clips.default_camera') }}" data-default-microphone="{{ __('youtube.clips.default_microphone') }}"
-                         data-start-label="{{ __('youtube.clips.start') }}" data-again-label="{{ __('youtube.clips.again') }}" data-upload-label="{{ __('youtube.clips.save') }}"
-                         data-rewind-label="{{ __('youtube.clips.rewind') }}" data-guide="{{ __('youtube.clips.guides.'.$clipKind) }}"
-                         data-remaining-label="{{ __('youtube.clips.remaining') }}" data-ready-label="{{ __('youtube.clips.ready') }}"
-                         data-error-label="{{ __('youtube.clips.camera_error') }}" data-upload-error-label="{{ __('youtube.clips.upload_error') }}">
-                        <h5 class="text-xs font-bold">{{ __('youtube.clips.kinds.'.$clipKind) }} <span class="font-normal text-slate-500">· {{ __('youtube.clips.seconds.'.$clipKind) }}</span></h5>
-                        @if($clip)
-                            <video src="{{ route('admin.youtube.clips.file', [$v, $clipKind]) }}?v={{ $clip->updated_at?->timestamp }}" controls playsinline preload="metadata" class="mt-2 max-h-64 w-full rounded-lg"></video>
-                        @else
-                            <p class="mt-1 text-xs text-slate-500">{{ __('youtube.clips.not_recorded') }}</p>
-                        @endif
-                        <div class="mt-2 flex flex-wrap gap-2">
-                            <button type="button" class="btn-quiet text-sm" data-record>{{ __('youtube.clips.record') }}</button>
-                        </div>
-                        <form method="post" action="{{ route('admin.youtube.clips.store', [$v, $clipKind]) }}" enctype="multipart/form-data" class="mt-2 flex flex-wrap items-center gap-2">
-                            @csrf
-                            <label class="text-xs"><span class="sr-only">{{ __('youtube.clips.upload') }}</span><input type="file" name="clip" accept="video/mp4,video/webm,video/quicktime,video/x-m4v" required class="max-w-full text-xs"></label>
-                            <button class="btn-quiet text-sm">{{ __('youtube.clips.upload') }}</button>
-                        </form>
-                        <div data-recorder-panel hidden class="mt-2 space-y-2"></div>
-                    </div>
-                @endforeach
-            </div>
-            <p class="mt-3 text-xs text-slate-500">{{ __('youtube.clips.rebuild') }}</p>
-        </section>
-    @endif
-    @php($rebuild = app(\App\Domain\YouTube\FarmVideos::class)->rebuildState($v))
-    @if($rebuild === 'running')
-        <p class="mt-2 text-xs font-semibold text-action-dark">Staví se znovu, za pár minut obnovte stránku.</p>
-    @elseif($rebuild === 'no_frames' && ! $videoPrices)
-        <p class="mt-2 text-xs text-slate-500">Snímky tisku už jsou smazané (drží se {{ \App\Jobs\BuildFarmTimelapse::KEEP_FRAMES_DAYS }} dní), bez ceny toto video nejde postavit. Pokud cenu ukazuje, zamítněte ho.</p>
-    @elseif($rebuild === 'ready' && ! $videoPrices)
-        <p class="mt-2 text-xs text-slate-500">Ceny ve videích jsou vypnuté. Video postavené dřív může cenu ještě ukazovat, „Postavit znovu“ ji odstraní.</p>
-    @endif
     <div class="mt-2 flex flex-wrap gap-2">
-        @if($rebuild === 'ready')
-            <form method="post" action="{{ route('admin.youtube.rebuild', $v) }}" class="flex flex-wrap items-center gap-2">@csrf
-                @if($v->order && app(\App\Domain\YouTube\TimelapseCutter::class)->sourcePicture($v->order))
-                    <input type="hidden" name="source_form" value="1">
-                    <label class="text-xs" title="Fotka zákazníka je osobní údaj (často obličej). Souhlas zákazníka na stránce objednávky platí jen pro záznam tisku, ukažte ji jen s jeho svolením."><input type="checkbox" name="show_source" value="1" @checked(app(\App\Domain\YouTube\TimelapseCutter::class)->showsSource($v->order, $v))> ukázat předlohu</label>
-                @endif
-                <button class="btn-quiet text-sm" title="Postaví Short znovu ze snímků tisku s dnešním nastavením, trvá pár minut">Postavit znovu</button>
-            </form>
-        @endif
         @if($v->status === 'uploaded')
             <form method="post" action="{{ route('admin.youtube.replace', $v) }}" onsubmit="return confirm('Smazat soukromou verzi z YouTube a nahrát aktuální video?')">@csrf<button class="btn-quiet text-sm" title="po přestavění videa (php artisan farm:timelapse)">Nahradit novou verzí</button></form>
         @endif

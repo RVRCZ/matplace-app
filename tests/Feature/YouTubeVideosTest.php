@@ -154,7 +154,7 @@ class YouTubeVideosTest extends TestCase
         $this->assertNull($video->youtube_id);
         Http::assertNotSent(fn (HttpRequest $r) => str_contains($r->url(), 'uploadType=resumable'));
         $this->assertSame('Popisný výtisk z 3D tiskárny', $video->title); // a visual proposal, never "part.stl"
-        Mail::assertQueued(FarmAdminAlert::class, fn ($m) => str_contains($m->subjectLine, 'Video ke schválení') && $m->url === route('admin.youtube.index'));
+        Mail::assertQueued(FarmAdminAlert::class, fn ($m) => str_contains($m->subjectLine, 'Video ke schválení') && $m->url === route('admin.youtube.studio', $order));
 
         // the customer can download the portrait Short once it exists
         $this->actingAs($this->user)->get("/farm/orders/{$order->token}/short.mp4")->assertNotFound();
@@ -169,7 +169,8 @@ class YouTubeVideosTest extends TestCase
         Http::assertNotSent(fn (HttpRequest $r) => $r->method() === 'DELETE');
 
         // the admin page lists it; the approval uses the edited title: uploaded private, then made public, in one go (sync queue)
-        $this->actingAs($this->admin)->get('/admin/youtube')->assertOk()->assertSee('Nahrát na YouTube a zveřejnit')->assertSee('Bez fotky hotového kusu');
+        $this->actingAs($this->admin)->get('/admin/youtube')->assertOk()->assertSee($order->number)->assertSee('nezveřejněno')->assertSee(route('admin.youtube.studio', $order), false);
+        $this->actingAs($this->admin)->get(route('admin.youtube.studio', $order))->assertOk()->assertSee('Zveřejnit Short')->assertSee('Zatím bez fotky');
         $this->actingAs($this->admin)->post("/admin/youtube/videos/{$video->id}/publish", ['title' => 'Váza ve spirále', 'description' => 'Popis', 'when' => 'now'])->assertRedirect()->assertSessionHas('status');
         $video->refresh();
         $this->assertSame(FarmVideo::STATUS_PUBLISHED, $video->status);
@@ -240,7 +241,8 @@ class YouTubeVideosTest extends TestCase
         $this->assertSame(FarmVideo::STATUS_PUBLISHED, $video->status, 'made public by hand in YouTube Studio');
         Http::assertSent(fn (HttpRequest $r) => $r->method() === 'GET' && str_contains($r->url(), 'part=statistics%2Cstatus') && str_contains($r->url(), 'vid123'));
 
-        $this->actingAs($this->admin)->get('/admin/youtube')->assertOk()->assertSee('1 520')->assertSee('Nejsledovanější');
+        $this->actingAs($this->admin)->get('/admin/youtube/channel')->assertOk()->assertSee('1 520')->assertSee('Nejsledovanější');
+        $this->actingAs($this->admin)->get('/admin/youtube')->assertOk()->assertSee('✓ zveřejněno')->assertSee('1 520 zhl.');
         $this->actingAs($this->admin)->post('/admin/youtube/stats')->assertRedirect()->assertSessionHas('status');
     }
 
@@ -309,7 +311,6 @@ class YouTubeVideosTest extends TestCase
 
     public function test_the_short_and_the_wide_wait_side_by_side_carry_their_own_campaign_and_go_up_as_they_were_built(): void
     {
-        config(['youtube.wide_uploads' => true]);   // the 16:9 twin goes up only when asked for (the audit of 27 Oct 2026)
         $this->connectedChannel();
         $this->fakeGoogle();
         $dir = sys_get_temp_dir().'/mp_music_'.uniqid();
@@ -334,8 +335,9 @@ class YouTubeVideosTest extends TestCase
         $this->assertCount(1, Mail::queued(FarmAdminAlert::class, fn ($m) => str_contains($m->subjectLine, 'Video ke schválení')), 'one mail for the print, not one per version');
 
         // side by side on the approval page, one button each; the page and Instagram only for the Short
-        $page = $this->actingAs($this->admin)->get('/admin/youtube')->assertOk()->assertSee('Short (na výšku)')->assertSee('Klasické video 16:9');
-        $this->assertSame(2, substr_count($page->getContent(), 'Nahrát na YouTube a zveřejnit'));
+        $page = $this->actingAs($this->admin)->get(route('admin.youtube.studio', $order))->assertOk()->assertSee('Short (na výšku 9:16)')->assertSee('Klasické video 16:9');
+        $this->assertSame(2, substr_count($page->getContent(), 'data-publish-button'));
+        $this->assertSame(1, substr_count($page->getContent(), 'name="share_choice"'), 'Facebook and Instagram take the Short only');
         $this->actingAs($this->admin)->get("/admin/youtube/videos/{$wide->id}/video.mp4")->assertOk()->assertHeader('Content-Type', 'video/mp4');
 
         // the files carry their music already: the upload sends them as they are, ffmpeg does not run
@@ -364,7 +366,7 @@ class YouTubeVideosTest extends TestCase
         FarmVideo::create(['farm_order_id' => $order->id, 'kind' => 'wide', 'status' => 'published', 'title' => 'Nové', 'youtube_id' => 'new1', 'views' => 120, 'likes' => 7, 'published_at' => now()->subDays(2)]);
         FarmVideo::create(['kind' => 'weekly', 'status' => 'published', 'title' => 'Týden', 'youtube_id' => 'wk1', 'views' => 55, 'likes' => 3, 'published_at' => now()->subDays(40), 'path' => 'weekly/2026-W38.mp4', 'meta' => ['week' => '2026-W38', 'orders' => [$order->id]]]);
 
-        $page = $this->actingAs($this->admin)->get('/admin/youtube')->assertOk()->assertSee('Podle druhu videa')->getContent();
+        $page = $this->actingAs($this->admin)->get('/admin/youtube/channel')->assertOk()->assertSee('Podle druhu videa')->getContent();
         $row = fn (string $name) => preg_match('/'.preg_quote($name, '/').'<\/td>(.*?)<\/tr>/s', $page, $m) ? preg_replace('/\s+/', ' ', strip_tags($m[1])) : '';
         $this->assertSame(' 0 vid. · 0 zhl. · 0 lajků 1 vid. · 900 zhl. · 40 lajků 1 vid. · 900 zhl. · 40 lajků ', $row('Short (na výšku)'));
         $this->assertSame(' 1 vid. · 120 zhl. · 7 lajků 1 vid. · 120 zhl. · 7 lajků 1 vid. · 120 zhl. · 7 lajků ', $row('Klasické video 16:9'));
@@ -381,12 +383,13 @@ class YouTubeVideosTest extends TestCase
         $videos = app(FarmVideos::class);
         $video = $videos->queueWeekly('2026-W42', 'weekly/2026-W42.mp4', [$a->id, $b->id], 'Tento týden na farmě', "0:00 A\n0:13 B\n0:24 C", null);
         $this->assertSame([FarmVideo::KIND_WEEKLY, null], [$video->kind, $video->farm_order_id]);
-        $this->actingAs($this->admin)->get('/admin/youtube')->assertOk()->assertSee('Týdenní sestřih')->assertSee('Týden 2026-W42');
+        $this->actingAs($this->admin)->get('/admin/youtube/channel')->assertOk()->assertSee('Týdenní sestřih')->assertSee('Týden 2026-W42');
+        $this->actingAs($this->admin)->get('/admin/youtube')->assertOk()->assertSee('sestřihy a návody ke schválení (1)');
 
         $this->actingAs($this->admin)->post("/admin/youtube/videos/{$video->id}/publish", ['title' => 'Tento týden na farmě', 'description' => 'Kapitoly', 'when' => 'now'])->assertRedirect();
         $this->assertSame(FarmVideo::STATUS_PUBLISHED, $video->refresh()->status);
         Http::assertSent(fn (HttpRequest $r) => str_contains($r->url(), 'uploadType=resumable') && $r['snippet']['title'] === 'Tento týden na farmě');
-        $this->actingAs($this->admin)->get('/admin/youtube')->assertOk()->assertSee('Týdenní sestřih');
+        $this->actingAs($this->admin)->get('/admin/youtube/channel')->assertOk()->assertSee('Týdenní sestřih');
 
         // a second week, and one customer changes their mind before the approval: it does not go up
         Storage::disk('farm')->put('weekly/2026-W43.mp4', str_repeat("\0", 2048));
@@ -447,7 +450,7 @@ class YouTubeVideosTest extends TestCase
         $a = $this->paidOrder(consent: true);
         $this->filmed($a);
         $first = $videos->queueFor($a)->refresh();
-        $this->actingAs($this->admin)->get('/admin/youtube')->assertOk()->assertSee('Po 5. 10. 18:00');
+        $this->actingAs($this->admin)->get(route('admin.youtube.studio', $a))->assertOk()->assertSee('Po 5. 10. 18:00');
         $this->actingAs($this->admin)->post("/admin/youtube/videos/{$first->id}/publish", ['title' => 'První', 'description' => ''])->assertRedirect()->assertSessionHas('status');
         $first->refresh();
         $this->assertSame([FarmVideo::STATUS_SCHEDULED, 'vid123', '2026-10-05 16:00:00'], [$first->status, $first->youtube_id, $first->scheduled_at->toDateTimeString()]);
@@ -460,7 +463,9 @@ class YouTubeVideosTest extends TestCase
         $second = $videos->queueFor($b)->refresh();
         $this->actingAs($this->admin)->post("/admin/youtube/videos/{$second->id}/publish", ['title' => 'Druhé', 'description' => ''])->assertRedirect();
         $this->assertSame('2026-10-06 16:00:00', $second->refresh()->scheduled_at->toDateTimeString());
-        $this->actingAs($this->admin)->get('/admin/youtube')->assertOk()->assertSee('Naplánováno na Po 5. 10. 18:00')->assertSee('Naplánováno na Út 6. 10. 18:00')->assertSee('Zveřejnit hned');
+        $this->actingAs($this->admin)->get(route('admin.youtube.studio', $a))->assertOk()->assertSee('Naplánováno na Po 5. 10. 18:00')->assertSee('Zveřejnit hned');
+        $this->actingAs($this->admin)->get(route('admin.youtube.studio', $b))->assertOk()->assertSee('Naplánováno na Út 6. 10. 18:00');
+        $this->actingAs($this->admin)->get('/admin/youtube?show=published')->assertOk()->assertSee('Naplánováno 5. 10. 18:00')->assertSee('Naplánováno 6. 10. 18:00');
         $this->actingAs($this->user)->get("/farm/orders/{$a->token}")->assertOk()->assertDontSee('watch?v=vid123', false);
 
         // the evening came, YouTube flipped the first one: the hourly stats run writes it down with the planned time
@@ -485,7 +490,7 @@ class YouTubeVideosTest extends TestCase
         $order = $this->paidOrder(consent: true);
         $this->filmed($order);
         $video = app(FarmVideos::class)->queueFor($order)->refresh();
-        $this->actingAs($this->admin)->get('/admin/youtube')->assertOk()->assertSee('Facebook stránka (video)')->assertSee('Instagram (Reel)');
+        $this->actingAs($this->admin)->get(route('admin.youtube.studio', $order))->assertOk()->assertSee('Facebook stránka (video)')->assertSee('Instagram (Reel)');
 
         // approved for YouTube now, Facebook and Instagram ticked: they follow once the video is public
         $this->actingAs($this->admin)->post("/admin/youtube/videos/{$video->id}/publish", ['title' => 'Váza', 'description' => 'Popis', 'when' => 'now', 'share_choice' => 1, 'share' => ['facebook', 'facebook_link', 'instagram']])->assertRedirect();
@@ -505,7 +510,7 @@ class YouTubeVideosTest extends TestCase
         $this->assertSame(['facebook' => 'posted', 'facebook_link' => 'posted', 'instagram' => 'posted'], $posts->pluck('status', 'platform')->all());
         $this->assertSame(['facebook_video_1', 'facebook_2', 'instagram_reel_3'], $posts->pluck('external_id')->all());
         $this->artisan('social:videos')->expectsOutputToContain('posted: 0');   // done is done
-        $this->actingAs($this->admin)->get('/admin/youtube')->assertOk()->assertSee('Facebook ✓')->assertSee('FB odkaz ✓')->assertSee('Instagram ✓');
+        $this->actingAs($this->admin)->get(route('admin.youtube.studio', $order))->assertOk()->assertSee('Facebook ✓')->assertSee('FB odkaz ✓')->assertSee('Instagram ✓');
 
         // a refusal is kept for the admin; "try again" asks once more at the next run
         $other = $this->paidOrder(consent: true);
@@ -515,7 +520,7 @@ class YouTubeVideosTest extends TestCase
         FakeMetaClient::$refuse = 'Page token expired';
         $this->artisan('social:videos')->expectsOutputToContain('posted: 0');
         $this->assertSame('Page token expired', SocialPost::where('subject_id', $second->id)->value('error'));
-        $this->actingAs($this->admin)->get('/admin/youtube')->assertOk()->assertSee('Facebook ✗ Page token expired')->assertSee('zkusit znovu');
+        $this->actingAs($this->admin)->get(route('admin.youtube.studio', $other))->assertOk()->assertSee('Facebook ✗ Page token expired')->assertSee('zkusit znovu');
         FakeMetaClient::$refuse = null;
         $this->artisan('social:videos')->expectsOutputToContain('posted: 0', 'a failure is not retried by itself');
         $this->actingAs($this->admin)->post("/admin/youtube/videos/{$second->id}/share/facebook/retry")->assertRedirect();
@@ -661,7 +666,7 @@ class YouTubeVideosTest extends TestCase
         $this->actingAs($this->admin)->post("/admin/youtube/videos/{$video->id}/publish", ['title' => 'T', 'when' => 'now'])->assertRedirect();
         $this->assertSame(FarmVideo::STATUS_UPLOADED, $video->refresh()->status);
         $this->assertStringContainsString('private', (string) $video->error);
-        $this->actingAs($this->admin)->get('/admin/youtube')->assertOk()->assertSee('Zveřejnit na YouTube')->assertSee('private');
+        $this->actingAs($this->admin)->get(route('admin.youtube.studio', $order))->assertOk()->assertSee('Zveřejnit Short')->assertSee('private');
         $this->actingAs($this->admin)->post("/admin/youtube/videos/{$video->id}/publish", ['title' => 'T', 'when' => 'now'])
             ->assertRedirect()->assertSessionHas('error');
     }
@@ -676,12 +681,12 @@ class YouTubeVideosTest extends TestCase
         $this->assertSame('offline', $q['access_type']);
 
         // a forged state is refused
-        $this->actingAs($this->admin)->get('/admin/youtube/callback?code=x&state=wrong')->assertRedirect('/admin/youtube')->assertSessionHas('error');
+        $this->actingAs($this->admin)->get('/admin/youtube/callback?code=x&state=wrong')->assertRedirect('/admin/youtube/channel')->assertSessionHas('error');
         $this->assertSame(0, YouTubeAccount::count());
 
         $this->actingAs($this->admin)->post('/admin/youtube/connect');
         $state = session('youtube_oauth_state');
-        $this->actingAs($this->admin)->get('/admin/youtube/callback?code=abc&state='.$state)->assertRedirect('/admin/youtube')->assertSessionHas('status');
+        $this->actingAs($this->admin)->get('/admin/youtube/callback?code=abc&state='.$state)->assertRedirect('/admin/youtube/channel')->assertSessionHas('status');
 
         $account = YouTubeAccount::current();
         $this->assertSame('UC123', $account->channel_id);

@@ -152,7 +152,7 @@ class HowtoVideoTest extends TestCase
         // the approval page: the pair side by side, one button each, Facebook/Instagram only at the Short
         $admin = User::factory()->create();
         $admin->setRole(User::ROLE_ADMIN, true);
-        $page = $this->actingAs($admin)->get('/admin/youtube')->assertOk()->assertSee('Instruktážní video · 16:9')->assertSee('Instruktážní video · Short 9:16')->getContent();
+        $page = $this->actingAs($admin)->get('/admin/youtube/channel')->assertOk()->assertSee('Instruktážní video · 16:9')->assertSee('Instruktážní video · Short 9:16')->getContent();
         $this->assertSame(2, substr_count($page, 'Nahrát na YouTube a zveřejnit'));
         $this->actingAs($admin)->get("/admin/youtube/videos/{$rows[1]->id}/video.mp4")->assertOk();
     }

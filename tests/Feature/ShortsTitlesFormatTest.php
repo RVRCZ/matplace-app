@@ -182,7 +182,8 @@ class ShortsTitlesFormatTest extends TestCase
         $this->assertSame(1, FarmVideoClip::count());
         $this->assertFalse(Storage::disk('farm')->exists($old));
         $this->assertSame(['removal', 'detail', 'with_source', 'in_hand'], app(VideoClips::class)->missing($video->refresh()));
-        $this->actingAs($admin)->get('/admin/youtube')->assertOk()->assertSee('Natočit')->assertSee('Nahrát soubor');
+        $this->actingAs($admin)->get(route('admin.youtube.studio', $video->order))->assertOk()->assertSee('Natočit klip kamerou')->assertSee('Přidat videa a fotky')
+            ->assertSee(route('admin.youtube.media.store', $video->order), false);
     }
 
     public function test_short_plan_has_loop_ordered_clips_original_sound_and_music(): void
