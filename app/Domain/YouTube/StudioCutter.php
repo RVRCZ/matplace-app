@@ -38,8 +38,11 @@ class StudioCutter
         if ($disk->exists($rel)) {
             return $disk->path($rel);
         }
+        if (! $make) {
+            return null;
+        }
         $frames = $this->cutter->frames($order);
-        if (! $make || $frames->count() < 4) {
+        if ($frames->count() < 4) {
             return null;
         }
         $c = (array) config('youtube.cut.studio.master');

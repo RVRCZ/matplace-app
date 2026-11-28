@@ -198,7 +198,7 @@ class StudioMedia
     /** The growing print can be built: the camera frames are still there, or the growth clip made from them. */
     public function hasGrowth(FarmOrder $order): bool
     {
-        return $this->cutter->frames($order)->count() >= 4 || Storage::disk(config('farm.disk'))->exists($order->dir().'/growth.mp4');
+        return $this->cutter->frameCount($order) >= 4 || Storage::disk(config('farm.disk'))->exists($order->dir().'/growth.mp4');
     }
 
     /** Length and sound of a clip, by ffmpeg; empty when it cannot tell. */

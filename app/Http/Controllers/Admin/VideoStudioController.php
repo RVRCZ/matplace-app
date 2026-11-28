@@ -66,7 +66,7 @@ class VideoStudioController extends Controller
             // the app's own pictures shown when they are drawn already (drawing one takes up to a minute: the build does it)
             'pictures' => $items->mapWithKeys(fn (FarmVideoMedia $m) => [$m->id => $m->kind === FarmVideoMedia::KIND_CLIP || $m->kind === FarmVideoMedia::KIND_GROWTH
                 ? null : ($this->media->file($order, $m, FarmVideo::KIND_SHORT, false) !== null)])->all(),
-            'growth' => ['master' => $this->studio->growthMaster($order, false) !== null, 'frames' => app(TimelapseCutter::class)->frames($order)->count()],
+            'growth' => ['master' => $this->studio->growthMaster($order, false) !== null, 'frames' => app(TimelapseCutter::class)->frameCount($order)],
             'state' => BuildStudioVideos::state($order->id),
             'intros' => collect(self::KINDS)->mapWithKeys(fn ($k) => [$k => $this->studio->intro($order, $k, $videos->get($k))])->all(),
             'nextSlot' => $this->videos->nextSlot()->timezone((string) config('youtube.publish_timezone', 'Europe/Prague')),

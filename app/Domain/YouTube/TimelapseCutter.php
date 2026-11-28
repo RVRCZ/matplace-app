@@ -50,6 +50,19 @@ class TimelapseCutter
         return $this->frames[$order->id] ??= $this->collectFrames($order);
     }
 
+    /** How many camera pictures the print has, only counted (frames() also looks into each one for strays: half a minute for a thousand). */
+    public function frameCount(FarmOrder $order): int
+    {
+        if (isset($this->frames[$order->id])) {
+            return $this->frames[$order->id]->count();
+        }
+        $disk = Storage::disk(config('farm.disk'));
+        $count = fn (string $dir) => collect($disk->files($order->dir().'/'.$dir))->filter(fn ($f) => str_ends_with($f, '.jpg'))->count();
+        $layer = $count('frames_layer');
+
+        return $layer < 10 ? $count('frames') : $layer;
+    }
+
     private function collectFrames(FarmOrder $order): Collection
     {
         $disk = Storage::disk(config('farm.disk'));
