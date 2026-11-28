@@ -43,6 +43,15 @@ return [
         // stills: seconds of the model as it went to print, the customer's source picture (only when ticked per video), the photographed piece at the end; the design first, the process, the result last (no hook with the finished plate)
         'short' => ['growth' => [4, 6], 'stills' => ['model' => 1.5, 'source' => 1.5, 'photo' => 1.5], 'fps' => 24, 'width' => 1080, 'height' => 1920],
         // the classic 16:9: title, the print, the piece held, the photo, the card with the tool's address; under 45 s
+        // the video studio (/admin/youtube/orders/{order}, docs/AL.md §13.10): the Short and the 16:9 from the admin's media list.
+        // still / clip = seconds of a picture / a clip when the item says nothing (a clip never longer than itself);
+        // intro = the Short's opening text with the logo; end = the closing address; title = the 16:9's title card;
+        // min_seconds = the Short's least length: the growing print stretched (up to its longest) to reach it
+        'studio' => [
+            'short' => ['width' => 1080, 'height' => 1920, 'fps' => 24, 'growth' => [4, 6], 'min_seconds' => 8.0, 'still' => 1.5, 'clip' => 3.0, 'intro' => 1.5, 'end' => 1.0],
+            'wide' => ['width' => 1920, 'height' => 1080, 'fps' => 30, 'growth' => [20, 28], 'hold' => 2.0, 'still' => 2.5, 'clip' => 6.0, 'title' => 1.5, 'end' => 3.0],
+            'master' => ['growth' => [20, 28], 'fps' => 24],   // growth.mp4: the print growing, kept after the frames go (BuildFarmTimelapse::KEEP_FRAMES_DAYS)
+        ],
         'wide' => ['growth' => [20, 28], 'title' => 1.5, 'hold' => 2.0, 'photo' => 3.0, 'end' => 3.0, 'fps' => 30, 'width' => 1920, 'height' => 1080],
         // "Tento týden na farmě": intro, every print of the week with its name, the closing card; 2 to 4 min
         'weekly' => ['growth' => [8.5, 10], 'piece_min' => 10.0, 'intro' => 3.0, 'end' => 4.0, 'max_seconds' => 240, 'min_prints' => 3, 'fps' => 30, 'width' => 1920, 'height' => 1080],
@@ -55,10 +64,6 @@ return [
         // numbers card, the closing card; never over `max_seconds` (the likely hits stay)
         'monthly' => ['piece' => [12, 20], 'card' => 3.0, 'intro' => 4.0, 'photo' => 3.0, 'photos_max' => 6, 'numbers' => 6.0, 'end' => 4.0, 'min_seconds' => 180, 'max_seconds' => 300, 'min_prints' => 4, 'fps' => 30, 'width' => 1920, 'height' => 1080],
     ],
-
-    // the classic 16:9 of a print is built for the customer and the weekly cut but not uploaded next to its Short (the same
-    // time-lapse twice split the views and looked like spam, YouTube audit of 27 Oct 2026); on = upload both as before
-    'wide_uploads' => (bool) env('YOUTUBE_WIDE_UPLOADS', false),
 
     // The channel's playlists (youtube:playlists, docs/AL.md §13.5), mirroring the tools of the site: the name, what it
     // says, and the tools whose prints belong in it (`tools`, FarmVideos::toolKind) or the kinds of video (`kinds`). A

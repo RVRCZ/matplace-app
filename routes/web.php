@@ -7,19 +7,20 @@ use App\Http\Controllers\Admin\CatalogController as AdminCatalogController;
 use App\Http\Controllers\Admin\CollectionController as AdminCollectionController;
 use App\Http\Controllers\Admin\ContentController as AdminContentController;
 use App\Http\Controllers\Admin\EmailController as AdminEmailController;
-use App\Http\Controllers\Admin\HealthController as AdminHealthController;
 use App\Http\Controllers\Admin\FarmCatalogController;
 use App\Http\Controllers\Admin\FarmFileController;
 use App\Http\Controllers\Admin\FarmOrderController;
 use App\Http\Controllers\Admin\FarmTestPhotoController;
 use App\Http\Controllers\Admin\FarmTuningController;
 use App\Http\Controllers\Admin\FilamentShopController;
+use App\Http\Controllers\Admin\HealthController as AdminHealthController;
 use App\Http\Controllers\Admin\IntakeController as AdminIntakeController;
 use App\Http\Controllers\Admin\MetaController as AdminMetaController;
 use App\Http\Controllers\Admin\SearchConsoleController;
 use App\Http\Controllers\Admin\StatsController as AdminStatsController;
 use App\Http\Controllers\Admin\ToolController as AdminToolController;
 use App\Http\Controllers\Admin\UserController as AdminUserController;
+use App\Http\Controllers\Admin\VideoStudioController;
 use App\Http\Controllers\Admin\YouTubeController;
 use App\Http\Controllers\AffiliateController;
 use App\Http\Controllers\Api\AdviceController;
@@ -719,7 +720,20 @@ Route::middleware(['auth', 'role:admin'])->prefix('admin')->name('admin.')->grou
 // ── Admin: print videos on the YouTube channel (the callback URI is registered in Google Cloud, keep it) ──
 Route::middleware(['auth', 'role:admin'])->prefix('admin/youtube')->name('admin.youtube.')->group(function () {
     $yt = YouTubeController::class;
-    Route::get('/', [$yt, 'index'])->name('index');
+    $studio = VideoStudioController::class;
+    // the videos filmed from prints and the video studio of one print (docs/AL.md §13.10)
+    Route::get('/', [$studio, 'index'])->name('index');
+    Route::get('/orders/{order}', [$studio, 'show'])->name('studio');
+    Route::get('/orders/{order}/state', [$studio, 'state'])->name('studio.state');
+    Route::post('/orders/{order}/rebuild', [$studio, 'rebuild'])->name('studio.rebuild');
+    Route::post('/orders/{order}/media', [$studio, 'store'])->name('media.store');
+    Route::post('/orders/{order}/media/order', [$studio, 'reorder'])->name('media.order');
+    Route::post('/media/{media}', [$studio, 'update'])->whereNumber('media')->name('media.update');
+    Route::post('/media/{media}/delete', [$studio, 'destroy'])->whereNumber('media')->name('media.delete');
+    Route::get('/media/{media}/file', [$studio, 'file'])->whereNumber('media')->name('media.file');
+    Route::post('/videos/{video}/texts', [$studio, 'texts'])->name('texts');
+    // the channel, its numbers, the showcase print and the cuts of many prints
+    Route::get('/channel', [$yt, 'index'])->name('channel');
     Route::post('/connect', [$yt, 'connect'])->name('connect');
     Route::get('/callback', [$yt, 'callback'])->name('callback');
     Route::post('/disconnect', [$yt, 'disconnect'])->name('disconnect');
@@ -731,7 +745,6 @@ Route::middleware(['auth', 'role:admin'])->prefix('admin/youtube')->name('admin.
     Route::post('/videos/{video}/reject', [$yt, 'reject'])->name('reject');
     Route::post('/videos/{video}/retry', [$yt, 'retry'])->name('retry');
     Route::post('/videos/{video}/replace', [$yt, 'replace'])->name('replace');
-    Route::post('/videos/{video}/rebuild', [$yt, 'rebuild'])->name('rebuild');
     Route::post('/videos/{video}/share/{platform}/retry', [$yt, 'shareRetry'])->name('share_retry');
     Route::post('/stats', [$yt, 'stats'])->name('stats');
     Route::post('/showcase', [$yt, 'showcase'])->name('showcase');

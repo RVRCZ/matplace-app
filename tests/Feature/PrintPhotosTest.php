@@ -223,7 +223,7 @@ final class PrintPhotosTest extends TestCase
 
     public function test_the_video_queue_links_each_order_to_the_photo_upload(): void
     {
-        $src = file_get_contents(resource_path('views/admin/youtube/index.blade.php'));
+        $src = file_get_contents(resource_path('views/admin/youtube/studio.blade.php'));
         $this->assertStringContainsString('#foto', $src);
         $this->assertStringContainsString('Přidat fotku', $src);
     }
