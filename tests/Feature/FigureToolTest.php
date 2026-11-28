@@ -58,6 +58,17 @@ class FigureToolTest extends TestCase
         $r->assertStatus(422)->assertJsonPath('error', 'photo_rejected');
         $this->assertSame(0, GenerationRequest::count());
         $this->assertSame([], Storage::disk('local')->allFiles('photos/figures'));
+        // the photo is gone, its reason stays as a short code for the admin's activity stream (28 Nov 2026)
+        $event = \App\Models\Event::where('type', 'photo_rejected')->sole();
+        $this->assertSame(['step' => 'front', 'code' => 'nudity', 'kind' => 'figure'], $event->meta);
+    }
+
+    public function test_the_reason_of_a_refusal_becomes_a_short_code(): void
+    {
+        $this->assertSame('cropped', \App\Http\Controllers\Api\GenerationController::reasonCode('cropped'));
+        $this->assertSame('no_clear_single_subject_is_visible', \App\Http\Controllers\Api\GenerationController::reasonCode('No clear single subject is visible.'));
+        $this->assertSame('unknown', \App\Http\Controllers\Api\GenerationController::reasonCode(' — '));
+        $this->assertLessThanOrEqual(64, strlen(\App\Http\Controllers\Api\GenerationController::reasonCode(str_repeat('word ', 40))));
     }
 
     public function test_refused_side_photo_is_not_used_and_the_bust_is_still_made(): void

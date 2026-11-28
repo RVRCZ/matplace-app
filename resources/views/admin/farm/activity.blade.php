@@ -68,6 +68,10 @@
                     @if($l['detail'] !== [])
                         <span class="min-w-0 break-words text-slate-700">{{ implode(' · ', $l['detail']) }}</span>
                     @endif
+                    @if($l['model'])
+                        {{-- the very model the visitor saw: the tool's page by the generation's token (opens in a new tab) --}}
+                        <a class="text-xs font-semibold text-sky-800 underline" href="{{ $l['model'] }}" target="_blank" rel="noopener">otevřít model ↗</a>
+                    @endif
                     @if($l['intake'])
                         <a class="text-xs underline" href="{{ route('admin.intake.index') }}">rozcestník</a>
                     @endif
